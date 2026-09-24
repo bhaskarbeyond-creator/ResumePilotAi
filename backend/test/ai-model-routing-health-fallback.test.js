@@ -229,13 +229,18 @@ test('5. Retry policy: latency-critical ops retry transient 5xx once with bounde
   });
   const config = twoProviderConfig();
 
-  // Latency-critical (autocomplete): 500 → bounded retry → success, no fallback.
+  // Latency-critical (autocomplete): 500 → bounded FAST retry → success, no
+  // fallback. The user is waiting live, so the backoff must actually be
+  // applied (not skipped) but must stay well under a second — the old 3s
+  // backoff was itself a measured latency regression for live operations.
   const started = Date.now();
   const critical = await router.route({ prompt: 'p', configuration: config, operation: 'autocomplete', fetchImpl: flakyFetch });
+  const elapsed = Date.now() - started;
   assert.equal(critical.provider, 'openai', 'recovered on the same candidate');
   assert.equal(openaiCalls, 2, 'exactly one retry for the transient failure');
   assert.equal(critical.routing.attempts, 2);
-  assert.ok(Date.now() - started >= 1400, 'backoff was actually applied (bounded ≥1.5s)');
+  assert.ok(elapsed >= 100, 'backoff was actually applied (not skipped)');
+  assert.ok(elapsed < 1000, 'latency-critical backoff is bounded fast (<1s)');
 
   // Non-critical (generate-summary): exactly ONE attempt per candidate.
   openaiCalls = 0;

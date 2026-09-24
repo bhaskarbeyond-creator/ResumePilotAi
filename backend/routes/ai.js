@@ -19,11 +19,15 @@ const { applyTenantAiPolicy } = require('../enterprise/tenantAi');
 const router = express.Router();
 
 async function resolveEffectiveAiConfiguration(req, res) {
-    const baseConfig = await loadProviderConfiguration();
+    // Start provider-config load immediately: it is independent of tenant
+    // resolution (and usually a cache hit), but on a cache miss it is DB
+    // work. Running it concurrently with tenant context resolution removes
+    // one serial DB hop from the critical path of every tenant AI request.
+    const baseConfigPromise = loadProviderConfiguration();
     const requestedTenantId = req?.get?.('x-tenant-id') || req?.body?.tenantId || req?.query?.tenantId;
     if (!requestedTenantId) {
         return {
-            configuration: baseConfig,
+            configuration: await baseConfigPromise,
             tenantContext: null,
             tenant: null,
             tenantService: null,
@@ -93,6 +97,7 @@ async function resolveEffectiveAiConfiguration(req, res) {
         });
     }
 
+    const baseConfig = await baseConfigPromise; // resolved during tenant checks above
     const effectiveConfig = applyTenantAiPolicy(
         baseConfig,
         resolved.context,
@@ -107,6 +112,14 @@ async function resolveEffectiveAiConfiguration(req, res) {
     };
 }
 
+/**
+ * Post-generation tenant accounting (usage rows + safe audit entry).
+ *
+ * Fire-and-forget by design: admission (daily quota) is enforced BEFORE the
+ * request, so this cannot gate anything. Awaiting it would put an extra DB
+ * write on the critical path of every AI response. The function never
+ * rejects (all errors are swallowed internally), so `void record...` is safe.
+ */
 async function recordTenantAiUsageIfApplicable(tenantResolution, { operation, generated }) {
     if (!tenantResolution?.tenantContext || !tenantResolution?.tenantService) return;
     try {
@@ -184,7 +197,7 @@ async function generateConfiguredText(req, res, prompt, operation, overrides = {
         }
     }
     if (tenantResolution) {
-        await recordTenantAiUsageIfApplicable(tenantResolution, { operation, generated });
+        void recordTenantAiUsageIfApplicable(tenantResolution, { operation, generated });
     }
     return generated.raw;
 }
@@ -690,14 +703,14 @@ router.post('/generate-interview', async (req, res) => {
             configuration,
             tenantResolution,
             maxTokens: requestedTokens,
-            timeoutMs: 160_000,
+            timeoutMs: 90_000,
         });
 
         let responseText = await generateConfiguredText(req, res, built.prompt, 'generate-interview', {
             configuration,
             tenantResolution,
             maxTokens: requestedTokens,
-            timeoutMs: 160_000,
+            timeoutMs: 90_000,
         });
         let jsonData = extractJson(responseText);
         if (!jsonData || typeof jsonData !== 'object') {
@@ -751,7 +764,7 @@ router.post('/generate-interview', async (req, res) => {
                     configuration,
                     tenantResolution,
                     maxTokens: retryTokens,
-                    timeoutMs: 120_000,
+                    timeoutMs: 60_000,
                 });
                 const retryJson = extractJson(retryText);
                 if (retryJson && typeof retryJson === 'object') {
@@ -856,7 +869,7 @@ router.post('/live-interview/sessions', async (req, res) => {
         if (tenantResolution?.tenantContext) {
             const activePrimary = tenantResolution.configuration?.primary || 'nvidia';
             const activeModel = tenantResolution.configuration?.providers?.[activePrimary]?.model || '';
-            await recordTenantAiUsageIfApplicable(tenantResolution, {
+            void recordTenantAiUsageIfApplicable(tenantResolution, {
                 operation: 'live-interview-open',
                 generated: { provider: activePrimary, model: activeModel },
             });
@@ -895,7 +908,7 @@ router.post('/live-interview/sessions/:sessionId/turns', async (req, res) => {
         if (tenantResolution?.tenantContext) {
             const activePrimary = tenantResolution.configuration?.primary || 'nvidia';
             const activeModel = tenantResolution.configuration?.providers?.[activePrimary]?.model || '';
-            await recordTenantAiUsageIfApplicable(tenantResolution, {
+            void recordTenantAiUsageIfApplicable(tenantResolution, {
                 operation: 'live-interview-turn',
                 generated: { provider: activePrimary, model: activeModel },
             });
@@ -921,7 +934,7 @@ router.post('/live-interview/sessions/:sessionId/complete', async (req, res) => 
         if (tenantResolution?.tenantContext) {
             const activePrimary = tenantResolution.configuration?.primary || 'nvidia';
             const activeModel = tenantResolution.configuration?.providers?.[activePrimary]?.model || '';
-            await recordTenantAiUsageIfApplicable(tenantResolution, {
+            void recordTenantAiUsageIfApplicable(tenantResolution, {
                 operation: 'live-interview-report',
                 generated: { provider: activePrimary, model: activeModel },
             });
@@ -1089,7 +1102,7 @@ router.post('/generate-content', async (req, res) => {
             requestId: res.locals.requestId,
             configuration: tenantResolution.configuration,
         });
-        await recordTenantAiUsageIfApplicable(tenantResolution, { operation, generated: result });
+        void recordTenantAiUsageIfApplicable(tenantResolution, { operation, generated: result });
         res.setHeader('X-AI-Provider', result.provider);
         res.setHeader('X-AI-Model', result.model);
         res.setHeader('X-AI-Grounding', result.grounding);
@@ -1115,7 +1128,7 @@ router.post('/parse-resume', async (req, res) => {
     try {
         const tenantResolution = await resolveEffectiveAiConfiguration(req, res);
         const result = await executeResumeParsing({ rawText, signal: req.aiAbortSignal, configuration: tenantResolution.configuration });
-        await recordTenantAiUsageIfApplicable(tenantResolution, { operation: 'parse-resume', generated: result });
+        void recordTenantAiUsageIfApplicable(tenantResolution, { operation: 'parse-resume', generated: result });
         res.setHeader('X-AI-Provider', result.provider);
         res.setHeader('X-AI-Model', result.model);
         res.setHeader('X-AI-Grounding', result.grounding);

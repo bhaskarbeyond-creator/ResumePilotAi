@@ -28,6 +28,35 @@ const LATENCY_CRITICAL_OPERATIONS = new Set([
     'autocomplete', 'generate-interview', 'live-interview-turn', 'live-interview-open', 'live-interview-report',
 ]);
 
+/**
+ * Live-facing latency budgets: the MAXIMUM total time a single candidate may
+ * consume (all attempts included) before the router fails over to the next
+ * eligible candidate. A live interviewer waits for the NEXT question in real
+ * time; spending 3s of sleep + 75s of timeout per attempt on one degraded
+ * candidate is a worse user experience than moving to a healthy alternative.
+ * Non-latency-critical operations have no budget (bounded by their own
+ * per-attempt timeouts).
+ */
+const LATENCY_BUDGET_MS = {
+    'live-interview-turn': 45_000,
+    'live-interview-open': 45_000,
+    'live-interview-guide': 15_000,
+    'autocomplete': 10_000,
+    'generate-interview': 90_000,
+};
+// Retrying a 429 whose Retry-After exceeds this budget is worth less than
+// failing over to the next eligible candidate.
+const RETRY_AFTER_MAX_MS = 2_000;
+
+// Backoff between attempts on the SAME candidate. Latency-critical
+// operations fail over fast (the user is waiting); long-form operations keep
+// the historical, more patient backoff.
+function retryBackoffMs(attempt, latencyCritical) {
+    return latencyCritical
+        ? Math.min(500, 150 * attempt)          // 150ms, 300ms
+        : Math.min(5000, (1 + attempt) * 1500); // 3000ms, 4500ms (legacy)
+}
+
 const NETWORK_ERROR_PATTERN = /ECONNRESET|ETIMEDOUT|fetch failed|Inference connection error|connection error|socket hang up|network|ENOTFOUND|EAI_AGAIN/i;
 
 function classifyProviderError({ status, message = '' }) {
@@ -175,6 +204,8 @@ class AiModelRouter {
         let totalAttempts = 0;
         let lastError = null;
         let lastCandidate = null;
+        const latencyCritical = LATENCY_CRITICAL_OPERATIONS.has(operation);
+        const budgetMs = LATENCY_BUDGET_MS[operation] || 0;
 
         for (let index = 0; index < decision.order.length; index += 1) {
             const candidate = decision.order[index];
@@ -188,19 +219,36 @@ class AiModelRouter {
                 continue;
             }
 
+            const candidateStart = this.now();
             const generation = {
                 temperature: operation === 'autocomplete' ? 0.1 : configuration.temperature,
                 maxTokens: operation === 'autocomplete' ? 180 : configuration.maxTokens,
             };
             const effectiveTimeout = timeoutMs
                 || (operation === 'live-interview-report' ? 120000 : (/^live-interview|generate-interview/.test(String(operation || '')) ? 75000 : 45000));
-            const attempts = LATENCY_CRITICAL_OPERATIONS.has(operation) ? 3 : 1;
+            // Latency-critical live operations get a BOUNDED number of
+            // attempts; long-form operations keep the historical behavior.
+            const attempts = latencyCritical ? 2 : 1;
             const callFetch = typeof fetchImpl === 'function' ? fetchImpl : globalThis.fetch;
 
             let executed = false;
+            let budgetExhausted = false;
             for (let attempt = 1; attempt <= attempts && !executed; attempt += 1) {
+                // Fail over before starting another attempt once this
+                // candidate has consumed the operation's latency budget.
+                if (budgetMs && this.now() - candidateStart >= budgetMs) {
+                    budgetExhausted = true;
+                    this.log(`[aiRouting] latency budget exhausted for ${provider}/${model} (${budgetMs}ms) — failing over`);
+                    break;
+                }
                 totalAttempts += 1;
                 const attemptStart = this.now();
+                // Within the budget, an attempt may only run as long as the
+                // budget allows — a 75s timeout inside a 45s live budget
+                // would defeat the bound.
+                const attemptTimeout = budgetMs
+                    ? Math.min(effectiveTimeout, Math.max(2000, budgetMs - (this.now() - candidateStart)))
+                    : effectiveTimeout;
                 let request;
                 try {
                     request = adapter.buildChatRequest({
@@ -218,7 +266,7 @@ class AiModelRouter {
                         method: request.method,
                         headers: request.headers,
                         body: request.body,
-                    }, effectiveTimeout, signal);
+                    }, attemptTimeout, signal);
 
                     const retryAfterMs = parseRetryAfterMs(response.headers, 0);
                     let body = null;
@@ -248,9 +296,22 @@ class AiModelRouter {
                             });
                         }
                         if (RETRYABLE_CLASSES.has(errorClass) && attempt < attempts && !signal?.aborted) {
-                            const backoffMs = Math.min(5000, (1 + attempt) * 1500);
-                            this.log(`[aiRouting] retry ${provider}/${model} attempt ${attempt + 1}/${attempts} after ${errorClass} in ${backoffMs}ms`);
-                            await sleep(backoffMs);
+                            // A 429 with a long Retry-After is a "back off"
+                            // signal, not a "retry now" signal: waiting out a
+                            // 30s Retry-After on a live turn is worse than
+                            // failing over to the next eligible candidate.
+                            if (errorClass === 'rate_limited' && retryAfterMs > RETRY_AFTER_MAX_MS) {
+                                lastError = Object.assign(new Error(message), { status: response.status, errorClass, retryAfterMs });
+                                break;
+                            }
+                            // A short Retry-After is the provider telling us
+                            // exactly when to come back — honor it (never
+                            // wait LESS than it); otherwise use backoff.
+                            let waitMs = retryBackoffMs(attempt, latencyCritical);
+                            if (retryAfterMs > 0) waitMs = Math.max(waitMs, retryAfterMs);
+                            if (budgetMs && this.now() - candidateStart + waitMs >= budgetMs) break;
+                            this.log(`[aiRouting] retry ${provider}/${model} attempt ${attempt + 1}/${attempts} after ${errorClass} in ${waitMs}ms`);
+                            await sleep(waitMs);
                             continue;
                         }
                         const err = Object.assign(new Error(message), {
@@ -275,7 +336,8 @@ class AiModelRouter {
                             latencyMs: this.now() - attemptStart, errorClass,
                         });
                         if (attempt < attempts && !signal?.aborted) {
-                            const backoffMs = Math.min(5000, (1 + attempt) * 1500);
+                            const backoffMs = retryBackoffMs(attempt, latencyCritical);
+                            if (budgetMs && this.now() - candidateStart + backoffMs >= budgetMs) break;
                             await sleep(backoffMs);
                             continue;
                         }
@@ -334,7 +396,8 @@ class AiModelRouter {
                     const retryable = RETRYABLE_CLASSES.has(errorClass) && errorClass !== 'timeout' && !(err?.code === 'AI_PROVIDER_TIMEOUT') && status !== 504;
                     lastError = err;
                     if (retryable && attempt < attempts && !signal?.aborted) {
-                        const backoffMs = Math.min(5000, (1 + attempt) * 1500);
+                        const backoffMs = retryBackoffMs(attempt, latencyCritical);
+                        if (budgetMs && this.now() - candidateStart + backoffMs >= budgetMs) break;
                         this.log(`[aiRouting] retry ${provider}/${model} attempt ${attempt + 1}/${attempts} after ${errorClass} in ${backoffMs}ms`);
                         await sleep(backoffMs);
                         continue;
@@ -348,9 +411,9 @@ class AiModelRouter {
                 provider,
                 model,
                 status: Number(lastError?.status) || 0,
-                code: lastError?.code || 'PROVIDER_ERROR',
+                code: budgetExhausted ? 'LATENCY_BUDGET_EXHAUSTED' : (lastError?.code || 'PROVIDER_ERROR'),
                 errorClass: finalClass,
-                message: String(lastError?.message || 'provider failed').slice(0, 500),
+                message: String(lastError?.message || (budgetExhausted ? 'latency budget exhausted' : 'provider failed')).slice(0, 500),
             });
         }
 

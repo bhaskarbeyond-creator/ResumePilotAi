@@ -1,9 +1,20 @@
 'use strict';
 
+const { withPooledAgent } = require('./providerHttp');
+
 /**
  * Bounded HTTP fetch with an external abort signal. Shared by the provider
  * adapters (chat + discovery) so every outbound AI call has a deadline and
  * honors client cancellation.
+ *
+ * Connection handling: for fetch implementations that support an explicit
+ * agent (node-fetch v2 — what this backend installs as global.fetch), the
+ * call runs over a dedicated pooled keep-alive agent (see ./providerHttp)
+ * so repeated AI calls on the same origin reuse one TLS connection instead
+ * of paying DNS+TCP+TLS every time. Credential isolation is preserved:
+ * agents carry no headers; each request sends its own tenant-scoped
+ * Authorization header over a connection that serves at most one request at
+ * a time (HTTP/1.1).
  */
 async function fetchWithDeadline(fetchImpl, url, options, timeoutMs, externalSignal) {
     const controller = new AbortController();
@@ -18,7 +29,7 @@ async function fetchWithDeadline(fetchImpl, url, options, timeoutMs, externalSig
         else externalSignal.addEventListener('abort', abort, { once: true });
     }
     try {
-        return await fetchImpl(url, { ...options, signal: controller.signal });
+        return await fetchImpl(url, withPooledAgent(fetchImpl, url, { ...options, signal: controller.signal }));
     } catch (err) {
         if (timedOut && !externalSignal?.aborted) {
             throw Object.assign(new Error(`AI provider timed out (${timeoutMs}ms)`), { status: 504, code: 'AI_PROVIDER_TIMEOUT' });
