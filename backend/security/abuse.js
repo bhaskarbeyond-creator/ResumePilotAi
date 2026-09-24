@@ -105,45 +105,57 @@ async function enforceDailyAiQuota(req, res, next) {
     const uidHash = crypto.createHash('sha256').update(req.user.uid).digest('hex').slice(0, 40);
     const day = dayKey();
     const pool = require('../database/mysql').getPool();
-    const conn = await pool.getConnection();
     let limit = Number(process.env.AI_BASIC_DAILY_LIMIT || 10);
     let count = 0;
-    try {
-      await conn.beginTransaction();
-      const [userRows] = await conn.query('SELECT * FROM users WHERE id = ? LIMIT 1', [req.user.uid]);
-      const userData = userRows[0] || {};
-      const [quotaRows] = await conn.query("SELECT data FROM system_settings WHERE category = 'ai_quota' LIMIT 1");
-      const quotaConfig = quotaRows[0]
-        ? (typeof quotaRows[0].data === 'string' ? JSON.parse(quotaRows[0].data) : quotaRows[0].data)
-        : {};
-      const entitlement = resolveEffectiveEntitlement(userData, {
-        userClaims: req.user || {},
-        tenantData: req.tenantContext?.tenant || null,
-        quotaConfig,
-      });
-      limit = entitlement.dailyLimit;
-      const [rows] = await conn.query(
-        'SELECT count FROM ai_usage WHERE day_key = ? AND uid_hash = ? FOR UPDATE',
-        [day, uidHash]
-      );
-      count = rows.length ? Number(rows[0].count || 0) + 1 : 1;
-      if (count > limit) {
-        const error = new Error('AI_DAILY_QUOTA_EXCEEDED');
-        error.status = 429;
-        throw error;
+    const maxAttempts = 3;
+    let attempts = 0;
+
+    while (attempts < maxAttempts) {
+      attempts++;
+      const conn = await pool.getConnection();
+      try {
+        await conn.beginTransaction();
+        const [userRows] = await conn.query('SELECT * FROM users WHERE id = ? LIMIT 1', [req.user.uid]);
+        const userData = userRows[0] || {};
+        const [quotaRows] = await conn.query("SELECT data FROM system_settings WHERE category = 'ai_quota' LIMIT 1");
+        const quotaConfig = quotaRows[0]
+          ? (typeof quotaRows[0].data === 'string' ? JSON.parse(quotaRows[0].data) : quotaRows[0].data)
+          : {};
+        const entitlement = resolveEffectiveEntitlement(userData, {
+          userClaims: req.user || {},
+          tenantData: req.tenantContext?.tenant || null,
+          quotaConfig,
+        });
+        limit = entitlement.dailyLimit;
+        const [rows] = await conn.query(
+          'SELECT count FROM ai_usage WHERE day_key = ? AND uid_hash = ? FOR UPDATE',
+          [day, uidHash]
+        );
+        count = rows.length ? Number(rows[0].count || 0) + 1 : 1;
+        if (count > limit) {
+          const error = new Error('AI_DAILY_QUOTA_EXCEEDED');
+          error.status = 429;
+          throw error;
+        }
+        await conn.query(
+          `INSERT INTO ai_usage (day_key, uid_hash, uid, email, count, limit_used, last_used_at)
+           VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+           ON DUPLICATE KEY UPDATE count = VALUES(count), email = VALUES(email), limit_used = VALUES(limit_used), last_used_at = CURRENT_TIMESTAMP`,
+          [day, uidHash, req.user.uid, String(req.user?.email || '').slice(0, 255), count, limit]
+        );
+        await conn.commit();
+        break;
+      } catch (err) {
+        try { await conn.rollback(); } catch { /* broken connection */ }
+        const isDeadlock = err?.code === 'ER_LOCK_DEADLOCK' || err?.errno === 1213 || (err?.message && err.message.includes('Deadlock'));
+        if (isDeadlock && attempts < maxAttempts) {
+          await new Promise(r => setTimeout(r, 25 * attempts + Math.floor(Math.random() * 25)));
+          continue;
+        }
+        throw err;
+      } finally {
+        conn.release();
       }
-      await conn.query(
-        `INSERT INTO ai_usage (day_key, uid_hash, uid, email, count, limit_used, last_used_at)
-         VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-         ON DUPLICATE KEY UPDATE count = VALUES(count), email = VALUES(email), limit_used = VALUES(limit_used), last_used_at = CURRENT_TIMESTAMP`,
-        [day, uidHash, req.user.uid, String(req.user?.email || '').slice(0, 255), count, limit]
-      );
-      await conn.commit();
-    } catch (err) {
-      try { await conn.rollback(); } catch { /* broken connection */ }
-      throw err;
-    } finally {
-      conn.release();
     }
     res.setHeader('X-AI-Daily-Limit', String(limit));
     res.setHeader('X-AI-Daily-Remaining', String(Math.max(0, limit - count)));
