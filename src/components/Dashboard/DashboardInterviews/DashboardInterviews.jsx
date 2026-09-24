@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { FaArrowLeft, FaArrowRight, FaAward, FaBrain, FaBriefcase, FaBullseye, FaCalendarAlt, FaCheck, FaCheckCircle, FaChevronDown, FaChevronRight, FaClock, FaDownload, FaExclamationTriangle, FaFileAlt, FaFlag, FaGraduationCap, FaKeyboard, FaLaptopCode, FaLightbulb, FaMagic, FaPlay, FaPrint, FaRedo, FaRegClipboard, FaSave, FaSignOutAlt, FaTimes, FaTrashAlt, FaTrophy, FaUserTie, FaVideo } from 'react-icons/fa';
+import { FaArrowLeft, FaArrowRight, FaAward, FaBrain, FaBriefcase, FaBullseye, FaCalendarAlt, FaCheck, FaCheckCircle, FaChevronDown, FaChevronRight, FaChevronUp, FaClock, FaDownload, FaExclamationTriangle, FaFileAlt, FaFlag, FaGraduationCap, FaKeyboard, FaLaptopCode, FaLightbulb, FaMagic, FaPlay, FaPrint, FaRedo, FaRegClipboard, FaSave, FaSignOutAlt, FaTimes, FaTrashAlt, FaTrophy, FaUserTie, FaVideo } from 'react-icons/fa';
 import { AuthContext } from '../../../context/AuthContext';
 import { generateUserAiContent } from '../../../services/aiService';
 import { getLiveInterviewSession, startLiveInterviewSession } from '../../../services/liveInterviewApi';
@@ -17,6 +17,47 @@ const POPULAR_ROLES = [
     { title: 'DevOps & Cloud Engineer', type: 'technical' },
     { title: 'UI/UX Designer', type: 'case' },
     { title: 'Engineering Lead', type: 'managerial' },
+];
+
+const ROLE_DISCIPLINES = [
+    { id: 'all', label: 'All Disciplines' },
+    { id: 'engineering', label: 'Software & Systems' },
+    { id: 'data', label: 'Data & AI' },
+    { id: 'cloud', label: 'Cloud & DevOps' },
+    { id: 'product', label: 'Product & Design' },
+    { id: 'leadership', label: 'Leadership' },
+];
+
+const COMPREHENSIVE_ROLES = [
+    // Software & Systems
+    { title: 'Fullstack Engineer', discipline: 'engineering', type: 'technical', badge: 'Full Stack' },
+    { title: 'Frontend Developer', discipline: 'engineering', type: 'technical', badge: 'React / Web' },
+    { title: 'Backend Developer', discipline: 'engineering', type: 'technical', badge: 'APIs / Distributed' },
+    { title: 'Mobile Developer (iOS / Android)', discipline: 'engineering', type: 'technical', badge: 'Mobile Apps' },
+    { title: 'Systems & Embedded Engineer', discipline: 'engineering', type: 'technical', badge: 'C++ / Systems' },
+    { title: 'QA & Test Automation Engineer', discipline: 'engineering', type: 'technical', badge: 'Automation' },
+
+    // Data & AI
+    { title: 'AI & Machine Learning Engineer', discipline: 'data', type: 'technical', badge: 'LLMs & ML' },
+    { title: 'Data Scientist', discipline: 'data', type: 'technical', badge: 'Analytics & Models' },
+    { title: 'Data Analyst / BI Specialist', discipline: 'data', type: 'technical', badge: 'SQL & Dashboards' },
+    { title: 'Data Engineer', discipline: 'data', type: 'technical', badge: 'Pipelines & ETL' },
+
+    // Cloud & DevOps
+    { title: 'DevOps & Site Reliability Engineer (SRE)', discipline: 'cloud', type: 'technical', badge: 'CI/CD & K8s' },
+    { title: 'Cloud Solutions Architect', discipline: 'cloud', type: 'technical', badge: 'AWS / Azure / GCP' },
+    { title: 'Cybersecurity & InfoSec Analyst', discipline: 'cloud', type: 'technical', badge: 'Security' },
+
+    // Product & Design
+    { title: 'Product Manager', discipline: 'product', type: 'managerial', badge: 'Product Strategy' },
+    { title: 'Technical Product Owner', discipline: 'product', type: 'managerial', badge: 'Agile & Execution' },
+    { title: 'UI/UX & Product Designer', discipline: 'product', type: 'case', badge: 'Design & UX' },
+    { title: 'Enterprise Solutions Architect', discipline: 'product', type: 'technical', badge: 'Architecture' },
+
+    // Leadership & Management
+    { title: 'Engineering Manager', discipline: 'leadership', type: 'managerial', badge: 'People & Tech' },
+    { title: 'Technical Lead / Staff Engineer', discipline: 'leadership', type: 'technical', badge: 'System Design' },
+    { title: 'Scrum Master / Agile Delivery Lead', discipline: 'leadership', type: 'managerial', badge: 'Agile Ops' },
 ];
 
 const EXAM_PERSIST_DEBOUNCE_MS = 600;
@@ -597,6 +638,91 @@ const DashboardInterviews = () => {
     const [liveReport, setLiveReport] = useState(null);
     const [liveRecoverySessionId, setLiveRecoverySessionId] = useState(null);
     const media = useInterviewMedia();
+
+    const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
+    const [selectedDiscipline, setSelectedDiscipline] = useState('all');
+    const [aiRoleSuggestions, setAiRoleSuggestions] = useState([]);
+    const [isFetchingAiRoles, setIsFetchingAiRoles] = useState(false);
+    const [aiRoleCache, setAiRoleCache] = useState({});
+    const roleContainerRef = useRef(null);
+
+    // Outside click dismissal for Role & Discipline dropdown
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (roleContainerRef.current && !roleContainerRef.current.contains(event.target)) {
+                setRoleDropdownOpen(false);
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // Real-time AI autocomplete suggestions when typing
+    useEffect(() => {
+        if (!roleDropdownOpen) return;
+        const query = String(state.occupation || '').trim();
+        if (!query || query.length < 2) return;
+
+        const cacheKey = `role_autocomplete_${query.toLowerCase()}`;
+        if (aiRoleCache[cacheKey]) {
+            setAiRoleSuggestions(aiRoleCache[cacheKey]);
+            return;
+        }
+
+        let active = true;
+        const timer = setTimeout(async () => {
+            setIsFetchingAiRoles(true);
+            try {
+                const res = await generateUserAiContent('autocomplete', {
+                    type: 'jobTitle',
+                    query,
+                    context: {
+                        target: { role: query },
+                        facts: state.resumeFacts || '',
+                    },
+                });
+                if (!active) return;
+                const suggestions = Array.isArray(res?.suggestions) ? res.suggestions : (Array.isArray(res) ? res : []);
+                const valid = suggestions
+                    .map(s => typeof s === 'string' ? s : (s?.title || s?.name || ''))
+                    .filter(Boolean)
+                    .slice(0, 4);
+                setAiRoleSuggestions(valid);
+                setAiRoleCache(prev => ({ ...prev, [cacheKey]: valid }));
+            } catch {
+                // Fail gracefully without interrupting local catalog
+            } finally {
+                if (active) setIsFetchingAiRoles(false);
+            }
+        }, 300);
+
+        return () => {
+            active = false;
+            clearTimeout(timer);
+        };
+    }, [roleDropdownOpen, state.occupation, state.resumeFacts, aiRoleCache]);
+
+    const filteredRoles = useMemo(() => {
+        const q = String(state.occupation || '').trim().toLowerCase();
+        return COMPREHENSIVE_ROLES.filter(role => {
+            const matchesCategory = selectedDiscipline === 'all' || role.discipline === selectedDiscipline;
+            const matchesQuery = !q || role.title.toLowerCase().includes(q) || role.badge.toLowerCase().includes(q);
+            return matchesCategory && matchesQuery;
+        });
+    }, [state.occupation, selectedDiscipline]);
+
+    const handleSelectRole = useCallback((title, type = null) => {
+        const matchedRole = COMPREHENSIVE_ROLES.find(r => r.title.toLowerCase() === title.toLowerCase());
+        const effectiveType = type || matchedRole?.type || 'technical';
+        dispatch({
+            type: 'PATCH',
+            patch: {
+                occupation: title,
+                interviewType: effectiveType,
+            },
+        });
+        setRoleDropdownOpen(false);
+    }, []);
 
     const requestControllerRef = useRef(null);
     const finishInFlightRef = useRef(false);
@@ -1784,12 +1910,18 @@ const DashboardInterviews = () => {
                         </div>
                     </div>
 
-                    {/* Step 2: Target Role & Quick-Pick Chips */}
-                    <div>
-                        <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-800 mb-3 flex items-center gap-2">
-                            <span className="w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] flex items-center justify-center font-black" aria-hidden="true">2</span>
-                            <span>Target Role &amp; Discipline</span>
-                        </h2>
+                    {/* Step 2: Target Role & Discipline with AI Dropdown */}
+                    <div ref={roleContainerRef} className="relative">
+                        <div className="flex items-center justify-between mb-2">
+                            <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-2">
+                                <span className="w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] flex items-center justify-center font-black" aria-hidden="true">2</span>
+                                <span>Target Role &amp; Discipline</span>
+                            </h2>
+                            <span className="text-[11px] font-medium text-slate-400 hidden sm:inline-flex items-center gap-1">
+                                <FaMagic className="w-3 h-3 text-indigo-500" />
+                                <span>AI-calibrated rubric</span>
+                            </span>
+                        </div>
 
                         <div className="relative mb-3">
                             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
@@ -1798,21 +1930,193 @@ const DashboardInterviews = () => {
                             <input
                                 type="text"
                                 aria-label="Target role"
-                                className="w-full bg-white border border-slate-300 rounded-2xl pl-11 pr-4 py-3.5 text-sm sm:text-base font-semibold text-slate-900 placeholder-slate-400 focus:outline-hidden focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100 transition-all shadow-xs"
+                                aria-expanded={roleDropdownOpen}
+                                aria-haspopup="listbox"
+                                className="w-full bg-white border border-slate-300 rounded-2xl pl-11 pr-28 py-3.5 text-sm sm:text-base font-semibold text-slate-900 placeholder-slate-400 focus:outline-hidden focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100 transition-all shadow-xs"
                                 value={state.occupation}
-                                onChange={event => dispatch({ type: 'PATCH', patch: { occupation: event.target.value } })}
-                                placeholder="Software Engineer"
+                                onFocus={() => setRoleDropdownOpen(true)}
+                                onChange={event => {
+                                    dispatch({ type: 'PATCH', patch: { occupation: event.target.value } });
+                                    setRoleDropdownOpen(true);
+                                }}
+                                onKeyDown={event => {
+                                    if (event.key === 'Escape') setRoleDropdownOpen(false);
+                                    if (event.key === 'ArrowDown' && !roleDropdownOpen) setRoleDropdownOpen(true);
+                                }}
+                                placeholder="e.g. Fullstack Engineer, Data Scientist, Product Manager"
                             />
+
+                            {/* Input Right Action Buttons */}
+                            <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center gap-1.5">
+                                {state.occupation && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            dispatch({ type: 'PATCH', patch: { occupation: '' } });
+                                            setRoleDropdownOpen(true);
+                                        }}
+                                        className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                                        title="Clear target role"
+                                        aria-label="Clear target role">
+                                        <FaTimes className="w-3.5 h-3.5" />
+                                    </button>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={() => setRoleDropdownOpen(prev => !prev)}
+                                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                        roleDropdownOpen
+                                            ? 'bg-indigo-600 text-white shadow-xs'
+                                            : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80'
+                                    }`}
+                                    title="Explore AI Target Role & Discipline Navigator"
+                                    aria-label="Toggle AI role dropdown">
+                                    <FaMagic className={`w-3 h-3 ${isFetchingAiRoles ? 'animate-spin' : ''}`} />
+                                    <span className="hidden sm:inline">AI Roles</span>
+                                    {roleDropdownOpen ? (
+                                        <FaChevronUp className="w-3 h-3 ml-0.5 opacity-80" />
+                                    ) : (
+                                        <FaChevronDown className="w-3 h-3 ml-0.5 opacity-80" />
+                                    )}
+                                </button>
+                            </div>
+
+                            {/* Intelligent Auto AI Dropdown Panel */}
+                            {roleDropdownOpen && (
+                                <div
+                                    className="absolute left-0 right-0 top-full mt-2 z-40 bg-white rounded-2xl border border-indigo-200 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150 text-left"
+                                    role="listbox">
+                                    {/* Dropdown Header Bar */}
+                                    <div className="flex items-center justify-between px-4 py-2.5 bg-gradient-to-r from-indigo-50/90 via-slate-50 to-indigo-50/50 border-b border-indigo-100 text-xs font-bold text-indigo-950">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-5 h-5 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-[10px]">
+                                                <FaMagic className="w-2.5 h-2.5" />
+                                            </div>
+                                            <span>AI Role &amp; Discipline Catalog</span>
+                                            {isFetchingAiRoles && (
+                                                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-indigo-600 ml-1">
+                                                    <span className="w-2 h-2 rounded-full bg-indigo-600 animate-ping"></span>
+                                                    <span>Analyzing...</span>
+                                                </span>
+                                            )}
+                                        </div>
+                                        <span className="text-[11px] font-semibold text-slate-500">
+                                            {filteredRoles.length} Available
+                                        </span>
+                                    </div>
+
+                                    {/* Discipline Filter Tabs */}
+                                    <div className="px-3.5 py-2 bg-slate-50/70 border-b border-slate-200/70 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                                        {ROLE_DISCIPLINES.map(cat => (
+                                            <button
+                                                key={cat.id}
+                                                type="button"
+                                                onClick={() => setSelectedDiscipline(cat.id)}
+                                                className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg whitespace-nowrap transition-all cursor-pointer ${
+                                                    selectedDiscipline === cat.id
+                                                        ? 'bg-indigo-600 text-white shadow-2xs'
+                                                        : 'bg-white hover:bg-slate-200/70 text-slate-600 border border-slate-200'
+                                                }`}>
+                                                {cat.label}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {/* Dynamic AI Real-Time Suggestions (If available) */}
+                                    {aiRoleSuggestions.length > 0 && (
+                                        <div className="px-3.5 py-2.5 bg-gradient-to-r from-amber-50/60 via-indigo-50/40 to-white border-b border-indigo-100/70">
+                                            <div className="text-[10px] font-bold uppercase tracking-wider text-indigo-900 mb-1.5 flex items-center gap-1">
+                                                <FaLightbulb className="w-3 h-3 text-amber-500" />
+                                                <span>AI Contextual Matches for Your Profile</span>
+                                            </div>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {aiRoleSuggestions.map((suggestion, idx) => (
+                                                    <button
+                                                        key={`ai-sug-${idx}`}
+                                                        type="button"
+                                                        onClick={() => handleSelectRole(suggestion)}
+                                                        className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white border border-indigo-300 text-indigo-800 hover:bg-indigo-600 hover:text-white transition-all shadow-2xs flex items-center gap-1 cursor-pointer">
+                                                        <span>{suggestion}</span>
+                                                        <span className="text-[9px] px-1 py-0.2 bg-indigo-100 text-indigo-700 rounded font-bold uppercase tracking-tight">AI</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Categorized Catalog List */}
+                                    <div className="p-2 max-h-64 overflow-y-auto divide-y divide-slate-100">
+                                        {filteredRoles.length === 0 ? (
+                                            <div className="py-6 px-4 text-center">
+                                                <p className="text-xs text-slate-500 font-medium mb-1">No matching roles found in catalog.</p>
+                                                <p className="text-[11px] text-slate-400">You can still type any custom role title in the input box.</p>
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                                {filteredRoles.map(role => {
+                                                    const isSelected = state.occupation.toLowerCase().trim() === role.title.toLowerCase().trim();
+                                                    return (
+                                                        <button
+                                                            key={role.title}
+                                                            type="button"
+                                                            onClick={() => handleSelectRole(role.title, role.type)}
+                                                            className={`flex items-center justify-between p-2.5 rounded-xl border transition-all text-left cursor-pointer group ${
+                                                                isSelected
+                                                                    ? 'bg-indigo-50/90 border-indigo-500 text-indigo-950 font-bold shadow-2xs'
+                                                                    : 'bg-white hover:bg-indigo-50/50 border-slate-200/80 hover:border-indigo-300 text-slate-800'
+                                                            }`}>
+                                                            <div className="flex flex-col min-w-0 pr-2">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <span className="text-xs font-semibold truncate group-hover:text-indigo-600 transition-colors">
+                                                                        {role.title}
+                                                                    </span>
+                                                                    {isSelected && <FaCheck className="w-3 h-3 text-indigo-600 shrink-0" />}
+                                                                </div>
+                                                                <span className="text-[10px] text-slate-400 font-normal truncate mt-0.5">
+                                                                    {role.badge}
+                                                                </span>
+                                                            </div>
+                                                            <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0 ${
+                                                                role.type === 'technical'
+                                                                    ? 'bg-blue-50 text-blue-700 border border-blue-200/60'
+                                                                    : role.type === 'managerial'
+                                                                    ? 'bg-purple-50 text-purple-700 border border-purple-200/60'
+                                                                    : 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
+                                                            }`}>
+                                                                {role.type}
+                                                            </span>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Dropdown Footer Tip */}
+                                    <div className="px-4 py-2 bg-slate-50 border-t border-slate-200/80 flex items-center justify-between text-[11px] text-slate-500">
+                                        <div className="flex items-center gap-1.5">
+                                            <FaBrain className="w-3 h-3 text-indigo-500 shrink-0" />
+                                            <span>Selects role and auto-calibrates evaluation track &amp; rubric.</span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setRoleDropdownOpen(false)}
+                                            className="text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-600 cursor-pointer">
+                                            Close ✕
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Quick Selection Pills */}
                         <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-xs text-slate-500 font-medium mr-1">Suggested:</span>
+                            <span className="text-xs text-slate-500 font-medium mr-1">Quick Select:</span>
                             {POPULAR_ROLES.map(role => (
                                 <button
                                     key={role.title}
                                     type="button"
-                                    onClick={() => dispatch({ type: 'PATCH', patch: { occupation: role.title, interviewType: role.type } })}
+                                    onClick={() => handleSelectRole(role.title, role.type)}
                                     aria-pressed={state.occupation === role.title}
                                     className={`px-3 py-1.5 text-xs font-semibold rounded-full border transition-all cursor-pointer ${
                                         state.occupation === role.title

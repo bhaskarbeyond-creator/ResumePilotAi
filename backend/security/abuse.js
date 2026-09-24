@@ -102,6 +102,21 @@ function dayKey(now = new Date()) {
  */
 async function enforceDailyAiQuota(req, res, next) {
   try {
+    if (injectedCounterStore) {
+      const uidHash = crypto.createHash('sha256').update(req.user.uid).digest('hex').slice(0, 40);
+      const day = dayKey();
+      const limit = Number(process.env.AI_BASIC_DAILY_LIMIT || 100);
+      const resCount = await injectedCounterStore.increment(`ai-quota:${day}:${uidHash}`, { ttlMs: 86400000 });
+      const count = Number(resCount?.count || 1);
+      if (count > limit) {
+        const error = new Error('AI_DAILY_QUOTA_EXCEEDED');
+        error.status = 429;
+        throw error;
+      }
+      res.setHeader('X-AI-Daily-Limit', String(limit));
+      res.setHeader('X-AI-Daily-Remaining', String(Math.max(0, limit - count)));
+      return next();
+    }
     const uidHash = crypto.createHash('sha256').update(req.user.uid).digest('hex').slice(0, 40);
     const day = dayKey();
     const pool = require('../database/mysql').getPool();
