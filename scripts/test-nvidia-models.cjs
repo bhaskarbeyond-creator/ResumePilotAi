@@ -1,4 +1,4 @@
-const apiKey = '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';
+const apiKey = process.env.NVIDIA_API_KEY || '';
 
 const candidates = [
   'meta/llama-3.2-11b-vision-instruct',

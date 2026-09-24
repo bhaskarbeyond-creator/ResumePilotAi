@@ -32,7 +32,7 @@ async function fixAi() {
       data.nvidia.enabled = true;
       data.nvidia.model = "meta/llama-3.2-11b-vision-instruct";
       if (!data.nvidia.apiKey) {
-        data.nvidia.apiKey = "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";
+        data.nvidia.apiKey = process.env.NVIDIA_API_KEY || "";
       }
       await pool.query("UPDATE system_settings SET data = ?, revision = ? WHERE category = ?", [
         JSON.stringify(data), rev, "ai_providers"

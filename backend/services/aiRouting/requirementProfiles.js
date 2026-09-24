@@ -40,12 +40,12 @@ const PROFILES = Object.freeze({
     'live-interview-open': Object.freeze({
         structuredOutput: true, streaming: false, reasoningRequired: false,
         latencySensitivity: 'high', qualityTier: 'enhanced', determinism: 'normal',
-        maxOutputTokens: 1600, modalities: [],
+        maxOutputTokens: 640, modalities: [],
     }),
     'live-interview-turn': Object.freeze({
         structuredOutput: true, streaming: false, reasoningRequired: false,
         latencySensitivity: 'high', qualityTier: 'enhanced', determinism: 'normal',
-        maxOutputTokens: 1600, modalities: [],
+        maxOutputTokens: 640, modalities: [],
     }),
     // Final report: depth over speed.
     'live-interview-report': Object.freeze({
@@ -54,7 +54,7 @@ const PROFILES = Object.freeze({
         maxOutputTokens: 4096, modalities: [],
     }),
     'live-interview-guide': Object.freeze({
-        structuredOutput: false, streaming: false, reasoningRequired: false,
+        structuredOutput: true, streaming: false, reasoningRequired: false,
         latencySensitivity: 'high', qualityTier: 'enhanced', determinism: 'normal',
         maxOutputTokens: 400, modalities: [],
     }),

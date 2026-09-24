@@ -136,8 +136,16 @@ export default function LiveAnswerGuide({
         };
     }, [question, role, topic, intent, propModelAnswer, propTip, hasPropModelAnswer, resumeFacts, talkingPoints, regeneratedMap]);
 
-    // Active guide data: AI-generated only. Empty while loading or unavailable.
-    const activeGuide = useMemo(() => aiGuide || { goal: intent || '', modelAnswer: '', tip: propTip || '' }, [aiGuide, intent, propTip]);
+    // Active guide data: AI-generated only. Preserves server-delivered intent and tip even on secondary fetch error.
+    const activeGuide = useMemo(() => {
+        if (!aiGuide) return { goal: intent || '', modelAnswer: '', tip: propTip || '' };
+        return {
+            goal: aiGuide.goal || intent || '',
+            modelAnswer: aiGuide.modelAnswer || '',
+            tip: aiGuide.tip || propTip || '',
+            error: Boolean(aiGuide.error),
+        };
+    }, [aiGuide, intent, propTip]);
     const guideUnavailable = !loading && !activeGuide.modelAnswer;
 
     // Regenerate an alternative 10/10 STAR answer on-demand for the current question

@@ -25,7 +25,7 @@ const { fetchWithDeadline, parseRetryAfterMs } = require('./httpDeadline');
 
 // Operations where the existing runtime retried transient errors up to 3x.
 const LATENCY_CRITICAL_OPERATIONS = new Set([
-    'autocomplete', 'generate-interview', 'live-interview-turn', 'live-interview-open', 'live-interview-report',
+    'autocomplete', 'generate-interview', 'live-interview-turn', 'live-interview-open', 'live-interview-report', 'live-interview-guide',
 ]);
 
 /**
@@ -220,9 +220,14 @@ class AiModelRouter {
             }
 
             const candidateStart = this.now();
+            const opMaxTokens = requirement?.maxOutputTokens || 2048;
+            const requestedMax = Number(configuration.maxTokens);
+            const effectiveMaxTokens = Number.isFinite(requestedMax) && requestedMax > 0
+                ? Math.min(requestedMax, opMaxTokens)
+                : opMaxTokens;
             const generation = {
                 temperature: operation === 'autocomplete' ? 0.1 : configuration.temperature,
-                maxTokens: operation === 'autocomplete' ? 180 : configuration.maxTokens,
+                maxTokens: operation === 'autocomplete' ? 180 : effectiveMaxTokens,
             };
             const effectiveTimeout = timeoutMs
                 || (operation === 'live-interview-report' ? 120000 : (/^live-interview|generate-interview/.test(String(operation || '')) ? 75000 : 45000));

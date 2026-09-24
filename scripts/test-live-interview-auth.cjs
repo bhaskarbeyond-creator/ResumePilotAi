@@ -40,7 +40,7 @@ async function main() {
   const customToken = await auth.createCustomToken(superAdmin.uid, { role: "SUPER_ADMIN" });
   
   // Exchange for ID token via Google Identity Toolkit
-  const webApiKey = "AIzaSyDigXT7n4Pyf-8WHQtvjHa0wGvJ86nmrwc";
+  const webApiKey = process.env.VITE_FIREBASE_API_KEY || "";
   const tokenRes = await fetch("https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=" + webApiKey, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

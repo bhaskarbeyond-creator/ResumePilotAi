@@ -365,10 +365,11 @@ function latencyScoreFor(requirement, stats) {
     if (stats.p50LatencyMs === null || stats.p50LatencyMs === undefined) return requirement.latencySensitivity === 'high' ? 3 : 1;
     const p50 = stats.p50LatencyMs;
     if (requirement.latencySensitivity === 'high') {
-        if (p50 <= 1500) return WEIGHTS.latencyMax;
-        if (p50 <= 4000) return Math.round(WEIGHTS.latencyMax * 0.6);
-        if (p50 <= 8000) return Math.round(WEIGHTS.latencyMax * 0.25);
-        return 0;
+        if (p50 <= 1000) return WEIGHTS.latencyMax;
+        if (p50 <= 2500) return Math.round(WEIGHTS.latencyMax * 0.8);
+        if (p50 <= 5000) return Math.round(WEIGHTS.latencyMax * 0.4);
+        if (p50 <= 8000) return 0;
+        return -10; // Active penalty for degraded >8s models on live conversational requests
     }
     if (p50 <= 8000) return 4;
     if (p50 <= 20000) return 2;

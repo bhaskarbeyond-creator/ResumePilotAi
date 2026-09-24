@@ -1,4 +1,4 @@
-const cfToken = process.env.CLOUDFLARE_API_TOKEN || 'cfut_Su0qFg1y8DIfMAMbGP9hNM89hW87cVhEBqfdVzeH84cb9675';
+const cfToken = process.env.CLOUDFLARE_API_TOKEN || process.env.CF_TOKEN || '';
 const zoneId = 'd8ccfbd6071f6832c01ead8cef2bed3f';
 
 const cfRes = await fetch(`https://api.cloudflare.com/client/v4/zones/${zoneId}/purge_cache`, {

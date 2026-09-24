@@ -144,7 +144,7 @@ check().catch(e => { console.error(e); process.exit(1); });
   try {
     createdUser = await auth.createUser({
       email: testSubUserEmail,
-      password: 'TestPassword123#Secure',
+      password: process.env.TEST_USER_PASSWORD || 'test-pass',
       displayName: 'Operator Test User',
       emailVerified: true
     });
