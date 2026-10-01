@@ -153,9 +153,9 @@ const Contact = ({ user, t }) => {
               <BiSupport className="w-4 h-4" />
               {t('contact.title')}
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 tracking-tight leading-tight">
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 tracking-tight leading-tight">
               {t('contact.title')}
-            </h2>
+            </h1>
             <p className="text-gray-600 text-lg max-w-2xl mx-auto leading-relaxed">
               {t('contact.subtitle')}
             </p>

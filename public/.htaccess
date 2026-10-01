@@ -11,10 +11,23 @@
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
+  RewriteBase /
 
   # Route all /api/* requests to PHP proxy -> Node backend (port 8080)
   RewriteRule ^api/(.*)$ api/index.php [L,QSA]
   RewriteRule ^api$ api/index.php [L,QSA]
+
+  # Route documented public backend probes and discovery documents to the
+  # backend. These are declared in docs/PRODUCTION_RUNBOOK.md (health/readiness)
+  # and are probed by operators and monitoring. Without these rules the SPA
+  # fallback below answers them with index.html (200 text/html), which silently
+  # reports a healthy application even when the backend is down.
+  #
+  # These are proxied straight to the Node backend with [P] rather than through
+  # api/index.php: the VirtualHost's "ProxyPass /api" is evaluated before
+  # .htaccess rewriting, so a rewrite targeting api/index.php is re-proxied to
+  # the backend as /api/index.php and never executes the PHP proxy.
+  RewriteRule ^(healthz|readyz|llms\.txt|public/.*\.json)$ http://127.0.0.1:8080/$1 [P,L,QSA]
 
   # Route all non-file/directory requests to SPA index.html
   RewriteCond %{REQUEST_FILENAME} !-f
