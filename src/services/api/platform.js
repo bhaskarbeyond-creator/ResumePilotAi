@@ -99,6 +99,70 @@ function hasAuthoritativeMariaDbSettings(data) {
     return /^mariadb(?:$|-)/.test(String(data?._settingsSource || ''));
 }
 
+// ── Public configuration fetch coalescing ───────────────────────────────────
+// /api/platform/public-config is a MariaDB-authoritative projection read by
+// many independent consumers (navbar, footer, language picker, templates,
+// pricing, analytics, meta manager). Each caller used to issue its own
+// request, so a single homepage render produced ~10 identical database reads.
+//
+// Callers are now coalesced onto one in-flight request and a short-lived
+// snapshot, matching the existing backend patterns in
+// backend/services/featureFlagService.js (CACHE_TTL_MS) and
+// backend/services/platformHealth.js (SNAPSHOT_TTL_MS + inFlight).
+//
+// Correctness constraints preserved:
+//  - Only authoritative MariaDB payloads are cached; failures are never cached
+//    so a transient outage still recovers on the next call.
+//  - The snapshot is dropped whenever an admin writes settings, so editors and
+//    public surfaces never read a stale projection after a save.
+const PUBLIC_CONFIG_TTL_MS = Number(
+    (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_PUBLIC_CONFIG_TTL_MS)
+    || 15000,
+);
+let publicConfigSnapshot = null;
+let publicConfigSnapshotAt = 0;
+let publicConfigInFlight = null;
+
+function invalidatePublicConfigCache() {
+    publicConfigSnapshot = null;
+    publicConfigSnapshotAt = 0;
+}
+
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+    // saveSystemSettings() dispatches 'systemSettingsUpdated' with a `category`
+    // after a successful admin write. Those must be observed by the next reader.
+    // The boot-time relay in main.jsx dispatches the same event without a
+    // category; that is an echo of the read this snapshot already holds, so
+    // treating it as an invalidation would discard the cache on every load.
+    window.addEventListener('systemSettingsUpdated', (event) => {
+        if (event?.detail?.category) invalidatePublicConfigCache();
+    });
+}
+
+/**
+ * Fetch the authoritative public configuration, coalescing concurrent callers
+ * onto a single request and reusing a short-lived snapshot.
+ */
+export async function fetchPublicConfig() {
+    const now = Date.now();
+    if (publicConfigSnapshot && (now - publicConfigSnapshotAt) < PUBLIC_CONFIG_TTL_MS) {
+        return publicConfigSnapshot;
+    }
+    if (publicConfigInFlight) return publicConfigInFlight;
+
+    publicConfigInFlight = apiJson('/api/platform/public-config')
+        .then((data) => {
+            if (hasAuthoritativeMariaDbSettings(data)) {
+                publicConfigSnapshot = data;
+                publicConfigSnapshotAt = Date.now();
+            }
+            return data;
+        })
+        .finally(() => { publicConfigInFlight = null; });
+
+    return publicConfigInFlight;
+}
+
 export async function apiJson(url, options = {}) {
     const headers = { ...(options.headers || {}) };
     const user = fire.auth().currentUser;
@@ -961,7 +1025,7 @@ export async function getFeaturedJobs(limit = 6) {
 
 export async function getWebsiteData() {
     try {
-        const data = await apiJson('/api/platform/public-config');
+        const data = await fetchPublicConfig();
         if (!hasAuthoritativeMariaDbSettings(data)) {
             throw new Error('Website configuration has not been loaded from MariaDB.');
         }
@@ -1082,7 +1146,7 @@ export async function getSubscriptionStatus() {
         // Public configuration endpoint: exposes the payment provider toggles,
         // sandbox mode, and currency without requiring admin permission.
         // (The admin payment-settings projection stays admin-only.)
-        const data = await apiJson('/api/platform/public-config');
+        const data = await fetchPublicConfig();
         if (!hasAuthoritativeMariaDbSettings(data)) {
             throw new Error('Subscription configuration has not been loaded from MariaDB.');
         }
@@ -1591,7 +1655,7 @@ export async function getPageByName(name) {
 
 export async function getWebsiteDetails() {
     try {
-        const data = await apiJson('/api/platform/public-config');
+        const data = await fetchPublicConfig();
         if (!hasAuthoritativeMariaDbSettings(data)) return null;
         return { websiteName: data?.website?.title || '', websitedescription: data?.website?.description || '', _settingsSource: 'remote', _settingsStale: false };
     } catch {
@@ -1601,7 +1665,7 @@ export async function getWebsiteDetails() {
 
 export async function getSocialLinks() {
     try {
-        const data = await apiJson('/api/platform/public-config');
+        const data = await fetchPublicConfig();
         if (!hasAuthoritativeMariaDbSettings(data)) {
             throw new Error('Social-link configuration has not been loaded from MariaDB.');
         }
@@ -2160,7 +2224,7 @@ export async function getSystemSettings({ admin = false } = {}) {
             remoteRevisions = data.revisions || {};
             adminSettingsReadAvailable = true;
         } else {
-            const publicConfig = await apiJson('/api/platform/public-config');
+            const publicConfig = await fetchPublicConfig();
             if (!publicConfig || typeof publicConfig !== 'object' || Array.isArray(publicConfig)) {
                 throw new Error('Public configuration response is invalid.');
             }
