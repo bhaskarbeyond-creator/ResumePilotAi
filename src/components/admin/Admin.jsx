@@ -32,6 +32,7 @@ import { AdminProvider } from './AdminContext';
 import { FaCircle, FaExternalLinkAlt, FaSignOutAlt, FaChevronRight, FaSyncAlt, FaCrown, FaBars, FaChevronDown, FaCheck } from 'react-icons/fa';
 import { FiSearch } from 'react-icons/fi';
 import AdminReauthPrompt from './AdminReauthPrompt';
+import ContextSwitcher from '../Common/ContextSwitcher';
 
 const ROLE_DEFINITIONS = [
     { id: 'SUPER_ADMIN', label: 'Super Admin', icon: '👑', desc: 'Full authority across all 26 control modules' },
@@ -128,7 +129,7 @@ const AdminHeader = ({ userEmail, isSuperAdminUser, viewAsRole, onSelectRole, on
         <header className="sticky top-0 z-40 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-4 py-3 shadow-2xs backdrop-blur-md sm:px-6">
             <div className="min-w-0">
                 <nav aria-label="Admin breadcrumbs" className="flex min-w-0 items-center gap-2 text-xs font-semibold text-slate-500">
-                    <Link to="/adm/dashboard" className="font-bold hover:text-indigo-600">Admin Console</Link>
+                    <Link to="/admin/dashboard" className="font-bold hover:text-indigo-600">Admin Console</Link>
                     {pathSegments.slice(1).map((segment, index) => (
                         <React.Fragment key={`${segment}-${index}`}>
                             <FaChevronRight className="h-2.5 w-2.5 flex-none text-slate-300" aria-hidden="true" />
@@ -140,6 +141,12 @@ const AdminHeader = ({ userEmail, isSuperAdminUser, viewAsRole, onSelectRole, on
                     <span className={`h-1.5 w-1.5 rounded-full ${health.reachable ? 'bg-emerald-600 animate-pulse' : 'bg-rose-600'}`} aria-hidden="true" />
                     {statusLabel}
                 </button>
+            </div>
+
+            {/* Same shared switcher the candidate and employer shells use, so the
+                product exposes exactly one persona switcher. */}
+            <div className="hidden md:block md:w-56 lg:w-64">
+                <ContextSwitcher variant="header" />
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3">
@@ -395,11 +402,11 @@ const Admin = () => {
             const activeTenant = tenantId || sessionStorage.getItem('superadmin_enterprise_tenant') || '';
             navigate(`/enterprise?tenant=${activeTenant}&superadmin_view=1`);
         } else if (normalized === 'SUPPORT') {
-            navigate('/adm/users');
+            navigate('/admin/users');
         } else if (normalized === 'AUDITOR') {
-            navigate('/adm/audit-logs');
+            navigate('/admin/audit-logs');
         } else {
-            navigate('/adm/dashboard');
+            navigate('/admin/dashboard');
         }
     };
 
@@ -496,7 +503,7 @@ const Admin = () => {
         if (!required) return children;
         const need = Array.isArray(required) ? required : [required];
         if (need.some((p) => p === '*' ? effectiveIsSuperAdmin : hasPerm(p))) return children;
-        return <Navigate to={`/adm/${FIRST_ACCESSIBLE_TAB}`} replace />;
+        return <Navigate to={`/admin/${FIRST_ACCESSIBLE_TAB}`} replace />;
     };
 
     return (

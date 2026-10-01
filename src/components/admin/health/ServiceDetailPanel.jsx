@@ -126,7 +126,7 @@ export default function ServiceDetailPanel({ open, loading, error, detail, onClo
                         {service.affectedUiModules.map(module => (
                           <li key={module}>
                             {module.startsWith('/adm') ? (
-                              <Link to={module.replace(/^\/adm/, '/adm')} onClick={onClose} className="inline-flex items-center gap-1 font-semibold text-indigo-700 underline-offset-2 hover:underline">
+                              <Link to={module.replace(/^\/admin/, '/adm')} onClick={onClose} className="inline-flex items-center gap-1 font-semibold text-indigo-700 underline-offset-2 hover:underline">
                                 {module} <FiExternalLink className="h-2.5 w-2.5" aria-hidden="true" />
                               </Link>
                             ) : <span className="font-mono text-[11px]">{module}</span>}
@@ -231,7 +231,7 @@ export default function ServiceDetailPanel({ open, loading, error, detail, onClo
                 ) : (
                   <p className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-500">No audit event in the recent window references this service.</p>
                 )}
-                <Link to="/adm/audit-logs" onClick={onClose} className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-indigo-700 hover:underline">
+                <Link to="/admin/audit-logs" onClick={onClose} className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-indigo-700 hover:underline">
                   Open full audit trail <FiExternalLink className="h-2.5 w-2.5" aria-hidden="true" />
                 </Link>
               </section>

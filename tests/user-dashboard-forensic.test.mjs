@@ -38,8 +38,14 @@ describe('USER Dashboard Forensic Audit & Functionality Suite', () => {
             assert.match(dashboardMain, /<Route[\s\S]*?path="portfolios"[\s\S]*?<DashboardPortfolios/);
             assert.match(dashboardMain, /<Route[\s\S]*?path="applied-jobs"[\s\S]*?<AppliedJobs/);
             assert.match(dashboardMain, /<Route[\s\S]*?path="job-tracker"[\s\S]*?<JobTracker/);
-            assert.match(dashboardMain, /<Route[\s\S]*?path="my-employments"[\s\S]*?<EmployerDashboard/);
-            assert.match(dashboardMain, /<Route[\s\S]*?path="my-companies"[\s\S]*?<CompaniesManagement/);
+            // Recruiter capability moved to the standalone /employer portal. The legacy
+            // candidate URLs must now redirect to their canonical recruiter routes
+            // rather than mounting recruiter components inside the candidate shell.
+            assert.match(dashboardMain, /<Route[\s\S]*?path="my-employments"[\s\S]*?<Navigate\s+to="\/employer\/jobs"\s+replace\s*\/>/);
+            assert.match(dashboardMain, /<Route[\s\S]*?path="my-companies"[\s\S]*?<Navigate\s+to="\/employer\/company"\s+replace\s*\/>/);
+            // Recruiter components must no longer be mounted by the candidate shell.
+            assert.doesNotMatch(dashboardMain, /path="my-employments"[\s\S]*?<EmployerDashboard/);
+            assert.doesNotMatch(dashboardMain, /path="my-companies"[\s\S]*?<CompaniesManagement/);
             assert.match(dashboardMain, /<Route[\s\S]*?path="plans"[\s\S]*?<Billing/);
             assert.match(dashboardMain, /<Route[\s\S]*?path="support"[\s\S]*?<DashboardSupport/);
             assert.match(dashboardMain, /<Route[\s\S]*?path="tickets"[\s\S]*?<Navigate\s+to="\/dashboard\/support"/);

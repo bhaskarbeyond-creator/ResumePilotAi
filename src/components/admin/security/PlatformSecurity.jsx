@@ -100,7 +100,7 @@ export default function PlatformSecurity() {
             <FiShield className="h-5 w-5" />
           </div>
         </div>
-        <Link to="/adm/audit-logs" className="bg-white p-5 rounded-2xl border border-slate-200 hover:border-indigo-300 shadow-2xs transition group">
+        <Link to="/admin/audit-logs" className="bg-white p-5 rounded-2xl border border-slate-200 hover:border-indigo-300 shadow-2xs transition group">
           <p className="text-xs font-bold uppercase text-slate-500 tracking-wide">Admin Audit Trail</p>
           <p className="text-sm font-bold mt-2 text-indigo-600 group-hover:text-indigo-700 flex items-center gap-1">
             Open full mutation ledger →
@@ -207,7 +207,7 @@ export default function PlatformSecurity() {
                       {event.tenantId ? (
                         <Link
                           className="text-indigo-600 hover:text-indigo-800 font-bold"
-                          to={`/adm/tenants?focus=${encodeURIComponent(event.tenantId)}`}
+                          to={`/admin/tenants?focus=${encodeURIComponent(event.tenantId)}`}
                           onClick={e => e.stopPropagation()}
                         >
                           {event.tenantId.slice(0, 8)}…

@@ -210,7 +210,7 @@ test('Platform Health is a first-class navigation item, not a hidden debug page'
   const [admin, sidebar] = await Promise.all([source('admin'), source('sidebar')]);
   assert.match(admin, /<Route path="health" element=\{[\s\S]*?<PlatformHealth \/>/);
   assert.match(sidebar, /label: 'Platform Health'/);
-  assert.match(sidebar, /path: '\/adm\/health'/);
+  assert.match(sidebar, /path: '\/admin\/health'/);
   // The nav dot is driven by the backend indicator.
   assert.match(sidebar, /getHealthIndicator/);
   assert.match(sidebar, /INDICATOR_TONE\[healthIndicator\.indicator\]/);
@@ -221,7 +221,7 @@ test('Platform Health is a first-class navigation item, not a hidden debug page'
 test('command center and attention integrate health with per-item deep links', async () => {
   const [dashboard, attention] = await Promise.all([source('dashboard'), source('attention')]);
   assert.match(dashboard, /operationalStatus/);
-  assert.match(dashboard, /\/adm\/health\?service=/);
+  assert.match(dashboard, /\/admin\/health\?service=/);
   assert.match(dashboard, /Data unavailable/);
   assert.match(dashboard, /health collector did not respond/);
   assert.match(attention, /Open Platform Health/);

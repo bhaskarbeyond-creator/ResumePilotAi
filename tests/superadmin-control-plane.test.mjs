@@ -15,9 +15,9 @@ test('super admin shell mounts control-plane modules without dropping consumer a
   assert.match(sidebar, /Consumer Product/);
   assert.match(sidebar, /Security Events/);
   assert.match(sidebar, /Phrases/);
-  assert.match(palette, /\/adm\/security/);
-  assert.match(palette, /\/adm\/operations/);
-  assert.match(palette, /\/adm\/phrases/);
+  assert.match(palette, /\/admin\/security/);
+  assert.match(palette, /\/admin\/operations/);
+  assert.match(palette, /\/admin\/phrases/);
 });
 
 test('tenant registry calls the real Enterprise suspend/reactivate endpoints', async () => {

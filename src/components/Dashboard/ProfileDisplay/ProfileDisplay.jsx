@@ -2,8 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FiGrid, FiSettings, FiFileText, FiBarChart, FiMousePointer, FiDownload, FiSearch, FiChevronLeft, FiChevronRight, FiChevronDown, FiSun, FiMoon, FiSidebar, FiX, FiUser, FiShield, FiLogOut, FiBell, FiMenu, FiMessageSquare, FiLifeBuoy } from 'react-icons/fi';
 import { GoSidebarCollapse, GoSidebarExpand } from 'react-icons/go';
-import { FaRegComments, FaBriefcase, FaBuilding, FaCrown } from 'react-icons/fa';
-import { FaListCheck } from 'react-icons/fa6';
+import { FaRegComments, FaBriefcase, FaCrown } from 'react-icons/fa';
 import logo from '../../../assets/logo/logo.png';
 import userPlaceholder from '../../../assets/user.png';
 import { Link, useLocation } from 'react-router-dom';
@@ -14,6 +13,7 @@ import NotificationPanel from './NotificationPanel';
 import { useUnreadMessages } from '../../../hooks/useUnreadMessages';
 import { useUnreadNotifications } from '../../../hooks/useUnreadNotifications';
 import { useServiceAvailability } from '../../../hooks/useServiceAvailability';
+import ContextSwitcher from '../../Common/ContextSwitcher';
 
 const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapsed }) => {
     const { t } = useTranslation('common');
@@ -62,7 +62,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
         const p = location.pathname;
         if (p.startsWith('/build-resume') || p.startsWith('/create-resume') || p === '/dashboard/cover-letters' || p === '/dashboard/portfolios') {
             setOpenGroups(prev => ({ ...prev, career: true }));
-        } else if (p.startsWith('/jobs') || p.startsWith('/dashboard/jobs') || p === '/dashboard/applied-jobs' || p === '/dashboard/job-tracker' || p === '/dashboard/interview' || p === '/dashboard/messages' || p === '/dashboard/my-employments' || p === '/dashboard/my-companies') {
+        } else if (p.startsWith('/jobs') || p.startsWith('/dashboard/jobs') || p === '/dashboard/applied-jobs' || p === '/dashboard/job-tracker' || p === '/dashboard/interview' || p === '/dashboard/messages') {
             setOpenGroups(prev => ({ ...prev, jobIntel: true }));
         } else if (p === '/dashboard/settings' || p === '/dashboard/plans' || p === '/dashboard/support' || p === '/dashboard/tickets' || p === '/dashboard/help') {
             setOpenGroups(prev => ({ ...prev, billing: true }));
@@ -515,18 +515,14 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
                                 {!sidebarCollapsed && <span className="flex-1">Overview &amp; Resumes</span>}
                             </div>
                         </Link>
-                        {enterpriseEnabled && (
-                            <Link to="/enterprise" onClick={closeMobileSidebar}>
-                                <div
-                                    className={`flex items-center text-xs transition-all duration-150 rounded-xl mt-1 ${
-                                        location.pathname.startsWith('/enterprise')
-                                            ? 'bg-violet-50 text-violet-700 font-bold border-l-3 border-violet-600 shadow-2xs pl-2.5'
-                                            : 'text-violet-700 hover:bg-violet-50 hover:text-violet-800 font-semibold'
-                                    } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'px-2.5 py-2'}`}>
-                                    <FiShield className={`text-base min-w-[18px] ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
-                                    {!sidebarCollapsed && <span className="flex-1">Enterprise Workspace</span>}
-                                </div>
-                            </Link>
+                        {/* Persona switching is centralized in the shared
+                            ContextSwitcher below. The candidate sidebar does not
+                            carry its own enterprise or admin entry, so there is
+                            exactly one context switcher in the product. */}
+                        {!sidebarCollapsed && (
+                            <div className="mt-2">
+                                <ContextSwitcher variant="sidebar" onNavigate={closeMobileSidebar} />
+                            </div>
                         )}
                     </div>
 
@@ -544,15 +540,15 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
 
                         {(openGroups.career || sidebarCollapsed) && (
                             <div className="space-y-0.5">
-                                <Link to="/dashboard" onClick={closeMobileSidebar}>
+                                <Link to="/build-resume" onClick={closeMobileSidebar}>
                                     <div
                                         className={`flex items-center text-xs transition-all duration-150 rounded-xl ${
-                                            location.pathname === '/dashboard' || location.pathname.startsWith('/build-resume') || location.pathname.startsWith('/create-resume')
+                                                location.pathname.startsWith('/build-resume') || location.pathname.startsWith('/create-resume')
                                                 ? 'bg-indigo-50 text-indigo-700 font-bold border-l-3 border-indigo-600 shadow-2xs pl-2.5'
                                                 : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium'
                                         } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'px-2.5 py-2'}`}>
                                         <FiFileText className={`text-base min-w-[18px] ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
-                                        {!sidebarCollapsed && <span className="flex-1">AI Resumes &amp; Master CV</span>}
+                                        {!sidebarCollapsed && <span className="flex-1">Resumes &amp; Master CV</span>}
                                     </div>
                                 </Link>
 
@@ -672,34 +668,6 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
                                         </div>
                                     </Link>
                                 )}
-
-                                {isEmployer && modulesConfig.enableJobScraperModule && (
-                                    <Link to="/dashboard/my-employments" onClick={closeMobileSidebar}>
-                                        <div
-                                            className={`flex items-center text-xs transition-all duration-150 rounded-xl ${
-                                                location.pathname === '/dashboard/my-employments'
-                                                    ? 'bg-indigo-50 text-indigo-700 font-bold border-l-3 border-indigo-600 shadow-2xs pl-2.5'
-                                                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium'
-                                            } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'px-2.5 py-2'}`}>
-                                            <FaBriefcase className={`text-base min-w-[18px] ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
-                                            {!sidebarCollapsed && <span className="flex-1">My Posted Jobs</span>}
-                                        </div>
-                                    </Link>
-                                )}
-
-                                {isEmployer && (
-                                    <Link to="/dashboard/my-companies" onClick={closeMobileSidebar}>
-                                        <div
-                                            className={`flex items-center text-xs transition-all duration-150 rounded-xl ${
-                                                location.pathname === '/dashboard/my-companies'
-                                                    ? 'bg-indigo-50 text-indigo-700 font-bold border-l-3 border-indigo-600 shadow-2xs pl-2.5'
-                                                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium'
-                                            } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'px-2.5 py-2'}`}>
-                                            <FaBuilding className={`text-base min-w-[18px] ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
-                                            {!sidebarCollapsed && <span className="flex-1">My Companies</span>}
-                                        </div>
-                                    </Link>
-                                )}
                             </div>
                         )}
                     </div>
@@ -775,10 +743,12 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
                             {!sidebarCollapsed && (
                                 <p className="text-[9px] font-extrabold text-red-600 uppercase tracking-widest px-2 mb-1.5">System Admin</p>
                             )}
-                            <Link to="/adm/dashboard" onClick={closeMobileSidebar}>
+                            <Link to="/admin/dashboard" onClick={closeMobileSidebar}>
                                 <div
                                     className={`flex items-center text-xs transition-all duration-150 rounded-xl ${
-                                        location.pathname.startsWith('/adm')
+                                        // /admin is canonical; /adm still exists as a one-way
+                                        // compatibility redirect so treat both as the console.
+                                        location.pathname.startsWith('/admin') || location.pathname.startsWith('/adm')
                                             ? 'bg-red-50 text-red-700 font-bold border-l-3 border-red-600 shadow-2xs pl-2.5'
                                             : 'text-red-600/90 hover:bg-red-50 hover:text-red-800 font-medium'
                                     } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'px-2.5 py-2'}`}>

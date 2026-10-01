@@ -347,7 +347,7 @@ class DashboardMain extends Component {
                     type="button"
                     onClick={() => {
                         sessionStorage.removeItem('superadmin_role_view');
-                        window.location.href = '/adm/dashboard';
+                        window.location.href = '/admin/dashboard';
                     }}
                     className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1 text-xs font-black text-amber-900 transition hover:bg-amber-50 cursor-pointer shadow-xs"
                     data-testid="return-from-user-view-button"
@@ -542,8 +542,8 @@ class DashboardMain extends Component {
                                 <Route path="jobs/portal/:jobId" element={<MainJobListings isInsideDashboard={true} showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
                                 <Route path="jobs/browse" element={<MainJobListings isInsideDashboard={true} showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
                                 <Route path="jobs/category/:catName" element={<MainJobListings isInsideDashboard={true} showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
-                                <Route path="my-employments" element={<EmployerDashboard showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
-                                <Route path="my-companies" element={<CompaniesManagement showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} />} />
+                                <Route path="my-employments" element={<Navigate to="/employer/jobs" replace />} />
+                                <Route path="my-companies" element={<Navigate to="/employer/company" replace />} />
                                 <Route path="job-matching" element={<Navigate to="/dashboard/job-tracker" replace />} />
                                 <Route path="plans" element={<Billing user={this.state.user} showToast={this.showToast} />} />
                                 <Route path="support" element={<DashboardSupport showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />

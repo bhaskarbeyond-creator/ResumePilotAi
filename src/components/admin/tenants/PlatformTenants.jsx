@@ -1979,7 +1979,7 @@ export default function PlatformTenants() {
                             <a className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition" href={`/enterprise?tab=usage&tenant=${encodeURIComponent(selectedTenant.id)}`}>
                               Usage Analytics →
                             </a>
-                            <a className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition" href="/adm/security">
+                            <a className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition" href="/admin/security">
                               Security Events →
                             </a>
                           </div>

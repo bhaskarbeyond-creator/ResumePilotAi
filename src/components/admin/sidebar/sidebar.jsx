@@ -12,26 +12,26 @@ import { useAdminSession } from '../AdminContext';
 // Map sidebar paths to minimum backend permissions required to see that link.
 // Mirrors RequireTabPerm in Admin.jsx. The backend is authoritative; this is UI-only.
 const PATH_PERMS = Object.freeze({
-    '/adm/dashboard': ['system.config.read', 'users.read', 'audit.read'],
-    '/adm/tenants': 'tenants.read',
-    '/adm/audit-logs': 'audit.read',
-    '/adm/security': 'security.read',
-    '/adm/queues': ['system.config.read', 'security.read'],
-    '/adm/operations': ['system.config.read', 'security.read'],
-    '/adm/attention': ['system.config.read', 'tickets.manage'],
-    '/adm/health': 'security.read',
-    '/adm/users': 'users.read',
-    '/adm/operators': '*',
-    '/adm/employer-applications': ['applications.review', 'users.read'],
-    '/adm/jobs-manager': ['jobs.manage', 'system.config.write'],
-    '/adm/company-management': ['jobs.manage', 'system.config.write'],
-    '/adm/blog-management': 'system.config.write',
-    '/adm/landing-pages': 'system.config.write',
-    '/adm/reviews': 'system.config.write',
-    '/adm/trustedby': 'system.config.write',
-    '/adm/messages': 'notifications.send',
-    '/adm/help-desk': 'tickets.manage',
-    '/adm/phrases': 'system.config.write',
+    '/admin/dashboard': ['system.config.read', 'users.read', 'audit.read'],
+    '/admin/tenants': 'tenants.read',
+    '/admin/audit-logs': 'audit.read',
+    '/admin/security': 'security.read',
+    '/admin/queues': ['system.config.read', 'security.read'],
+    '/admin/operations': ['system.config.read', 'security.read'],
+    '/admin/attention': ['system.config.read', 'tickets.manage'],
+    '/admin/health': 'security.read',
+    '/admin/users': 'users.read',
+    '/admin/operators': '*',
+    '/admin/employer-applications': ['applications.review', 'users.read'],
+    '/admin/jobs-manager': ['jobs.manage', 'system.config.write'],
+    '/admin/company-management': ['jobs.manage', 'system.config.write'],
+    '/admin/blog-management': 'system.config.write',
+    '/admin/landing-pages': 'system.config.write',
+    '/admin/reviews': 'system.config.write',
+    '/admin/trustedby': 'system.config.write',
+    '/admin/messages': 'notifications.send',
+    '/admin/help-desk': 'tickets.manage',
+    '/admin/phrases': 'system.config.write',
 });
 
 // Selection state uses the left rail marker. The only status dot in this
@@ -179,7 +179,7 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                 : `${healthIndicator.attentionCount} service(s) need attention`)
         : healthIndicator.state === 'unavailable' ? 'Platform health status unavailable' : 'Checking platform health';
 
-    const isSettingsPage = location.pathname.startsWith('/adm/settings');
+    const isSettingsPage = location.pathname.startsWith('/admin/settings');
     const searchParams = new URLSearchParams(location.search);
     const activeTab = searchParams.get('tab') || 'modulesSettings';
 
@@ -201,7 +201,7 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
     };
 
     const handleSettingsTabClick = (tabKey) => {
-        navigate(`/adm/settings?tab=${tabKey}`);
+        navigate(`/admin/settings?tab=${tabKey}`);
     };
 
     const handleLogout = () => {
@@ -212,36 +212,36 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
         {
             label: 'Control Plane',
             items: [
-                { path: '/adm/dashboard', icon: FiGrid, label: 'Command Center', badgeColor: 'bg-indigo-50 text-indigo-600 border-indigo-100' },
-                { path: '/adm/tenants', icon: FaServer, label: 'Tenants Registry', badgeColor: 'bg-sky-50 text-sky-600 border-sky-100' },
-                { path: '/adm/audit-logs', icon: FiShield, label: 'Admin Audit Trail', badgeColor: 'bg-purple-50 text-purple-600 border-purple-100' },
-                { path: '/adm/security', icon: FiLock, label: 'Security Events', badgeColor: 'bg-rose-50 text-rose-600 border-rose-100' },
-                { path: '/adm/queues', icon: FiActivity, label: 'Queue & DLQ Monitor', badgeColor: 'bg-amber-50 text-amber-600 border-amber-100' },
-                { path: '/adm/operations', icon: FiTool, label: 'Platform Operations', badgeColor: 'bg-slate-100 text-slate-700 border-slate-200' },
-                { path: '/adm/attention', icon: FiAlertTriangle, label: 'Attention', badgeColor: 'bg-orange-50 text-orange-600 border-orange-100' },
-                { path: '/adm/health', icon: FaHeartbeat, label: 'Platform Health', healthIndicator: true, badgeColor: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
+                { path: '/admin/dashboard', icon: FiGrid, label: 'Command Center', badgeColor: 'bg-indigo-50 text-indigo-600 border-indigo-100' },
+                { path: '/admin/tenants', icon: FaServer, label: 'Tenants Registry', badgeColor: 'bg-sky-50 text-sky-600 border-sky-100' },
+                { path: '/admin/audit-logs', icon: FiShield, label: 'Admin Audit Trail', badgeColor: 'bg-purple-50 text-purple-600 border-purple-100' },
+                { path: '/admin/security', icon: FiLock, label: 'Security Events', badgeColor: 'bg-rose-50 text-rose-600 border-rose-100' },
+                { path: '/admin/queues', icon: FiActivity, label: 'Queue & DLQ Monitor', badgeColor: 'bg-amber-50 text-amber-600 border-amber-100' },
+                { path: '/admin/operations', icon: FiTool, label: 'Platform Operations', badgeColor: 'bg-slate-100 text-slate-700 border-slate-200' },
+                { path: '/admin/attention', icon: FiAlertTriangle, label: 'Attention', badgeColor: 'bg-orange-50 text-orange-600 border-orange-100' },
+                { path: '/admin/health', icon: FaHeartbeat, label: 'Platform Health', healthIndicator: true, badgeColor: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
             ],
         },
         {
             label: 'Identity',
             items: [
-                { path: '/adm/users', icon: FiUsers, label: 'Users Manager', badgeColor: 'bg-blue-50 text-blue-600 border-blue-100' },
-                { path: '/adm/operators', icon: FiLock, label: 'Platform Operators', badgeColor: 'bg-teal-50 text-teal-600 border-teal-100' },
+                { path: '/admin/users', icon: FiUsers, label: 'Users Manager', badgeColor: 'bg-blue-50 text-blue-600 border-blue-100' },
+                { path: '/admin/operators', icon: FiLock, label: 'Platform Operators', badgeColor: 'bg-teal-50 text-teal-600 border-teal-100' },
             ],
         },
         {
             label: 'Consumer Product',
             items: [
-                { path: '/adm/employer-applications', icon: FiBriefcase, label: 'Employer Applications', badgeColor: 'bg-cyan-50 text-cyan-600 border-cyan-100' },
-                { path: '/adm/jobs-manager', icon: FiLayers, label: 'Jobs Manager', badgeColor: 'bg-indigo-50 text-indigo-600 border-indigo-100' },
-                { path: '/adm/company-management', icon: FaRegBuilding, label: 'Company Management', badgeColor: 'bg-violet-50 text-violet-600 border-violet-100' },
-                { path: '/adm/blog-management', icon: FiFileText, label: 'Blog Management', badgeColor: 'bg-amber-50 text-amber-600 border-amber-100' },
-                { path: '/adm/landing-pages', icon: FiGlobe, label: 'Landing Pages', badgeColor: 'bg-sky-50 text-sky-600 border-sky-100' },
-                { path: '/adm/reviews', icon: MdOutlineReviews, label: 'Reviews', badgeColor: 'bg-pink-50 text-pink-600 border-pink-100' },
-                { path: '/adm/trustedby', icon: FiShield, label: 'Trusted by', badgeColor: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
-                { path: '/adm/messages', icon: FiMail, label: 'Messages', badgeColor: 'bg-purple-50 text-purple-600 border-purple-100' },
-                { path: '/adm/help-desk', icon: FiHelpCircle, label: 'Help Desk', badgeColor: 'bg-indigo-50 text-indigo-600 border-indigo-100' },
-                { path: '/adm/phrases', icon: FiType, label: 'Phrases', badgeColor: 'bg-slate-100 text-slate-700 border-slate-200' },
+                { path: '/admin/employer-applications', icon: FiBriefcase, label: 'Employer Applications', badgeColor: 'bg-cyan-50 text-cyan-600 border-cyan-100' },
+                { path: '/admin/jobs-manager', icon: FiLayers, label: 'Jobs Manager', badgeColor: 'bg-indigo-50 text-indigo-600 border-indigo-100' },
+                { path: '/admin/company-management', icon: FaRegBuilding, label: 'Company Management', badgeColor: 'bg-violet-50 text-violet-600 border-violet-100' },
+                { path: '/admin/blog-management', icon: FiFileText, label: 'Blog Management', badgeColor: 'bg-amber-50 text-amber-600 border-amber-100' },
+                { path: '/admin/landing-pages', icon: FiGlobe, label: 'Landing Pages', badgeColor: 'bg-sky-50 text-sky-600 border-sky-100' },
+                { path: '/admin/reviews', icon: MdOutlineReviews, label: 'Reviews', badgeColor: 'bg-pink-50 text-pink-600 border-pink-100' },
+                { path: '/admin/trustedby', icon: FiShield, label: 'Trusted by', badgeColor: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
+                { path: '/admin/messages', icon: FiMail, label: 'Messages', badgeColor: 'bg-purple-50 text-purple-600 border-purple-100' },
+                { path: '/admin/help-desk', icon: FiHelpCircle, label: 'Help Desk', badgeColor: 'bg-indigo-50 text-indigo-600 border-indigo-100' },
+                { path: '/admin/phrases', icon: FiType, label: 'Phrases', badgeColor: 'bg-slate-100 text-slate-700 border-slate-200' },
             ],
         },
     ];
@@ -309,7 +309,7 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
                                 {/* Brand Name aligned with Enterprise Console */}
-                                <Link to="/adm/dashboard" className="flex items-center gap-2.5 group">
+                                <Link to="/admin/dashboard" className="flex items-center gap-2.5 group">
                                     <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white shadow-sm shadow-indigo-600/20">I</span>
                                     <span className="font-bold text-[0.95rem] text-slate-900 group-hover:text-indigo-700 transition-colors tracking-tight">IME365 <span className="font-normal opacity-75">Admin</span></span>
                                 </Link>
@@ -352,7 +352,7 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                             )}
                             <div className="space-y-0.5">
                                 {group.items.map(item => {
-                                    const isCurrent = location.pathname === item.path || (item.path !== '/adm/dashboard' && location.pathname.startsWith(item.path));
+                                    const isCurrent = location.pathname === item.path || (item.path !== '/admin/dashboard' && location.pathname.startsWith(item.path));
                                     return (
                                         <Link to={item.path} key={item.path} onClick={onCloseMobile}>
                                             <div
@@ -400,10 +400,10 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                                     onClick={() => {
                                         const firstTab = visibleSettingsGroups[0]?.items[0]?.key || 'modulesSettings';
                                         if (sidebarCollapsed) {
-                                            navigate(`/adm/settings?tab=${firstTab}`);
+                                            navigate(`/admin/settings?tab=${firstTab}`);
                                         } else {
                                             setSettingsOpen((prev) => !prev);
-                                            if (!isSettingsPage) navigate(`/adm/settings?tab=${firstTab}`);
+                                            if (!isSettingsPage) navigate(`/admin/settings?tab=${firstTab}`);
                                         }
                                     }}
                                     className={`group relative flex items-center text-[0.84rem] transition-all duration-200 rounded-xl cursor-pointer ${

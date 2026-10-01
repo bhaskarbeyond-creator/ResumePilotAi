@@ -65,7 +65,7 @@ export default function PlatformAttention() {
       </div>
 
       {operational ? (
-        <Link to="/adm/health" className="block rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-indigo-300">
+        <Link to="/admin/health" className="block rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-indigo-300">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <span aria-hidden="true" className={`h-3 w-3 flex-none rounded-full ${overall.dot}`} />
@@ -108,7 +108,7 @@ export default function PlatformAttention() {
       ) : (
         <div className="space-y-2">
           {unique.map(item => (
-            <Link key={`${item.source}-${item.id}`} to={item.href || '/adm/dashboard'} className="block rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-indigo-300">
+            <Link key={`${item.source}-${item.id}`} to={item.href || '/admin/dashboard'} className="block rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-indigo-300">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex min-w-0 items-start gap-2">
                   {item.severity === 'INFO'

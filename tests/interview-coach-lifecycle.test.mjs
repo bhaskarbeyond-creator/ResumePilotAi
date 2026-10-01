@@ -92,7 +92,7 @@ async function renderComponent(vite, _root) {
 }
 
 async function startExam(root) {
-    const roleInput = root.querySelector('input[placeholder="Software Engineer"]');
+    const roleInput = root.querySelector('input[placeholder*="Engineer"]');
     assert.ok(roleInput, 'role input rendered');
     // Use the real quick-pick affordance (click-driven) to set the occupation.
     const pill = Array.from(root.querySelectorAll('button')).find(b => (textOf(b) || '').trim() === 'Frontend Developer');
@@ -251,7 +251,7 @@ test('interview coach lifecycle: keyboard CBT, exit protection, multi-tab, submi
         await act(async () => { await new Promise(r => setTimeout(r, 50)); });
         assert.ok(textOf(root()).includes('AI Interview Coach'), 'returned to setup after takeover');
         assert.ok(textOf(root()).includes('continued in another tab'), 'takeover notice shown');
-        assert.ok(root().querySelector('input[placeholder="Software Engineer"]'), 'setup screen restored, no corrupt exam state');
+        assert.ok(root().querySelector('input[placeholder*="Engineer"]'), 'setup screen restored, no corrupt exam state');
 
         // 12. Multi-tab: session submitted elsewhere also exits cleanly.
         // (restart an exam, then simulate the key being cleared)

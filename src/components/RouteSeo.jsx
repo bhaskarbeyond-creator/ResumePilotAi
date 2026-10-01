@@ -20,26 +20,53 @@ const PUBLIC_PAGES = {
 
 // All route prefixes that are private (authenticated or sensitive) — must not be indexed.
 const PRIVATE_PREFIXES = [
-  '/dashboard', '/dashboard2', '/build-resume', '/create-resume',
-  '/adm', '/blog-editor', '/portfolio/builder',
-  '/export', '/shared', '/coverletter', '/resume', '/front', '/enterprise',
+  '/dashboard', '/build-resume', '/create-resume',
+  '/admin', '/adm', '/platform', '/blog-editor', '/portfolio/builder',
+  '/export', '/shared', '/coverletter', '/resume', '/front',
+  '/org', '/enterprise', '/employer',
 ];
 
 // Private page titles — shown in browser tab but never indexed.
 const PRIVATE_TITLES = {
   '/dashboard': `My Dashboard — ${SITE_NAME}`,
-  '/dashboard2': `My Dashboard — ${SITE_NAME}`,
+  '/employer': `Recruiter & Hiring Portal — ${SITE_NAME}`,
+  '/org': `Organization Workspace — ${SITE_NAME}`,
+  '/enterprise': `Organization Workspace — ${SITE_NAME}`,
   '/build-resume': `Build Resume — ${SITE_NAME}`,
   '/create-resume': `Create Resume — ${SITE_NAME}`,
   '/coverletter': `Cover Letter Builder — ${SITE_NAME}`,
   '/resume': `Resume Builder — ${SITE_NAME}`,
-  '/adm': `Admin Panel — ${SITE_NAME}`,
+  // /adm and /platform are one-way compatibility aliases; they share the
+  // canonical console title and resolve to /admin/* immediately.
+  '/admin': `Admin Console — ${SITE_NAME}`,
+  '/adm': `Admin Console — ${SITE_NAME}`,
+  '/platform': `Admin Console — ${SITE_NAME}`,
   '/blog-editor': `Blog Editor — ${SITE_NAME}`,
   '/portfolio/builder': `Portfolio Builder — ${SITE_NAME}`,
   '/export': `Export — ${SITE_NAME}`,
   '/shared': `Shared Resume — ${SITE_NAME}`,
   '/front': `${SITE_NAME}`,
-  '/enterprise': `Enterprise Console — ${SITE_NAME}`,
+};
+
+// Descriptions for the authenticated portals. These are never indexed
+// (noindex,nofollow) but keep tab titles, history, and internal deep links
+// self-describing instead of falling back to an empty meta tag.
+const PRIVATE_DESCRIPTIONS = {
+  '/dashboard': 'Your IME365 career workspace: resumes, Master CV, cover letters, portfolios, job tracking, and AI interview practice.',
+  '/employer': 'Post requisitions, review your applicant pipeline, message candidates, and manage your company profile on IME365.',
+  '/org': 'Organization workspace for teams, seats, shared talent, and AI quota governance on IME365.',
+  '/enterprise': 'Organization workspace for teams, seats, shared talent, and AI quota governance on IME365.',
+  '/admin': 'Internal IME365 operations console: command center, platform health, queues, audit, security, and system settings.',
+  '/adm': 'Internal IME365 operations console: command center, platform health, queues, audit, security, and system settings.',
+  '/platform': 'Internal IME365 operations console: command center, platform health, queues, audit, security, and system settings.',
+  '/build-resume': 'Build an ATS-friendly resume with live scoring and professional templates.',
+  '/create-resume': 'Create a new ATS-friendly resume with live scoring and professional templates.',
+  '/coverletter': 'Create a targeted cover letter that matches your resume to the role.',
+  '/resume': 'Create and export an ATS-friendly resume.',
+  '/blog-editor': 'Author and publish IME365 career blog articles.',
+  '/portfolio/builder': 'Build and publish your professional portfolio and WebCV.',
+  '/export': 'Export your IME365 document.',
+  '/shared': 'View a resume shared with you on IME365.',
 };
 
 export default function RouteSeo() {
@@ -74,7 +101,9 @@ export default function RouteSeo() {
       // Find the best matching private title
       const matchedPrefix = PRIVATE_PREFIXES.find(p => path === p || path.startsWith(p + '/'));
       title = PRIVATE_TITLES[matchedPrefix] || `${SITE_NAME}`;
-      description = '';
+      // Portals stay noindex, but a real description keeps the browser tab,
+      // history entry, and any internal deep link self-describing.
+      description = PRIVATE_DESCRIPTIONS[matchedPrefix] || '';
     } else {
       title = `Page Not Found — ${SITE_NAME}`;
       description = 'The requested page is unavailable.';

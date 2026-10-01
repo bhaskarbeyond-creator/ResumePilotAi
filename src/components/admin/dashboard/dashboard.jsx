@@ -68,7 +68,7 @@ const Dashboard = () => {
       ),
       badgeBg: 'bg-emerald-50 border-emerald-100',
       sub: center?.kpis?.activeSubscriptions ? `${center.kpis.activeSubscriptions} active paid subscription(s)` : 'Verified transactional gross revenue',
-      href: '/adm/settings?tab=ordersManagement',
+      href: '/admin/settings?tab=ordersManagement',
     },
     {
       label: 'Total Registered Accounts',
@@ -76,7 +76,7 @@ const Dashboard = () => {
       icon: <FaUsers className="h-5 w-5 text-blue-600" />,
       badgeBg: 'bg-blue-50 border-blue-100',
       sub: center?.kpis?.newUsers30d ? `${center.kpis.newUsers30d} joined in last 30 days` : 'Active consumer & employer profiles',
-      href: '/adm/users',
+      href: '/admin/users',
     },
     {
       label: 'Resumes & Portfolios Engineered',
@@ -84,7 +84,7 @@ const Dashboard = () => {
       icon: <FaFileAlt className="h-5 w-5 text-violet-600" />,
       badgeBg: 'bg-violet-50 border-violet-100',
       sub: '51 template engines compiled',
-      href: '/adm/audit-logs',
+      href: '/admin/audit-logs',
     },
     {
       label: 'Exports & Downloads Generated',
@@ -92,7 +92,7 @@ const Dashboard = () => {
       icon: <FaDownload className="h-5 w-5 text-amber-600" />,
       badgeBg: 'bg-amber-50 border-amber-100',
       sub: 'High-fidelity PDF and DOCX pipelines',
-      href: '/adm/health',
+      href: '/admin/health',
     },
   ];
 
@@ -147,7 +147,7 @@ const Dashboard = () => {
             <span>Refresh Stream</span>
           </button>
           <Link
-            to="/adm/health"
+            to="/admin/health"
             className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 !text-white text-xs font-extrabold transition shadow-md shadow-indigo-600/30 border border-indigo-500/30 cursor-pointer whitespace-nowrap"
           >
             <FaHeartbeat className="h-3.5 w-3.5 !text-white shrink-0" />
@@ -215,12 +215,12 @@ const Dashboard = () => {
 
             {/* Quick Control Plane Navigation Shortcuts */}
             <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
-              <Link to="/adm/audit-logs" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-100 transition"><FaShieldAlt /> Audit Trail</Link>
-              <Link to="/adm/queues" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-100 transition"><FiActivity /> Queues &amp; DLQ</Link>
-              <Link to="/adm/tenants" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-100 transition"><FaServer /> Tenants</Link>
-              <Link to="/adm/security" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-100 transition"><FiLock /> Security</Link>
-              <Link to="/adm/operations" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition">Operations</Link>
-              <Link to="/adm/attention" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-100 transition">Attention</Link>
+              <Link to="/admin/audit-logs" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-100 transition"><FaShieldAlt /> Audit Trail</Link>
+              <Link to="/admin/queues" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-100 transition"><FiActivity /> Queues &amp; DLQ</Link>
+              <Link to="/admin/tenants" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-100 transition"><FaServer /> Tenants</Link>
+              <Link to="/admin/security" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-100 transition"><FiLock /> Security</Link>
+              <Link to="/admin/operations" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition">Operations</Link>
+              <Link to="/admin/attention" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-100 transition">Attention</Link>
             </div>
           </div>
 
@@ -230,38 +230,38 @@ const Dashboard = () => {
               label="Database"
               ok={center.signals?.database?.status === 'HEALTHY'}
               text={center.signals?.database?.status === 'HEALTHY' ? 'MariaDB Live' : 'Unavailable'}
-              to="/adm/health"
+              to="/admin/health"
             />
             <Signal
               label="Queue & DLQ"
               ok={!center.signals?.queue?.deadLetter}
               text={center.signals?.queue?.deadLetter ? `${center.signals.queue.deadLetter} DLQ Alert` : 'Outbox Healthy'}
-              to="/adm/queues"
+              to="/admin/queues"
             />
             <Signal
               label="Payments"
               ok={center.signals?.payments?.status === 'HEALTHY'}
               text={center.signals?.payments?.status === 'UNAVAILABLE' ? 'Gateway Inactive' : `${center.signals?.payments?.failed ?? 0} Failed`}
-              to="/adm/settings?tab=ordersManagement"
+              to="/admin/settings?tab=ordersManagement"
             />
             <Signal
               label="Threat Sensor"
               ok={(center.signals?.security?.activeThreats ?? 0) === 0 && center.signals?.security?.status !== 'UNAVAILABLE'}
               text={center.signals?.security?.status === 'UNAVAILABLE' ? 'Sensor Offline' : `${center.signals?.security?.activeThreats ?? 0} Active • ${center.signals?.security?.highSeverity ?? 0} Historical`}
-              to="/adm/security"
+              to="/admin/security"
             />
             <Signal
               label="Encryption"
               ok={center.signals?.encryption?.status === 'CONFIGURED'}
               text={center.signals?.encryption?.provider || 'AES-256 GCM'}
-              to="/adm/operations"
+              to="/admin/operations"
             />
             <Signal
               label="Runtime Engine"
               ok
               icon={<FiCpu className="text-indigo-600 h-3.5 w-3.5" />}
               text={center.subsystems?.runtime?.nodeVersion || 'Node.js v20'}
-              to="/adm/health"
+              to="/admin/health"
             />
           </div>
         </div>
@@ -274,7 +274,7 @@ const Dashboard = () => {
             <h2 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">Live Service Matrix</h2>
             <p className="text-xs text-slate-500 mt-0.5">Real-time status of microservices, worker pipelines, and public API gates.</p>
           </div>
-          <Link to="/adm/health" className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition cursor-pointer">
+          <Link to="/admin/health" className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition cursor-pointer">
             Platform Health Diagnostics <FaArrowRight className="h-2.5 w-2.5" />
           </Link>
         </div>
@@ -305,7 +305,7 @@ const Dashboard = () => {
                 {center.operationalStatus.attention.slice(0, 4).map(item => (
                   <Link
                     key={item.id}
-                    to={`/adm/health?service=${encodeURIComponent(item.id)}`}
+                    to={`/admin/health?service=${encodeURIComponent(item.id)}`}
                     className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/60 p-3 hover:bg-slate-50 transition cursor-pointer"
                   >
                     <div className="min-w-0">
@@ -353,7 +353,7 @@ const Dashboard = () => {
             (center?.recommendations || []).map(item => (
               <Link
                 key={item.id}
-                to={item.href || '/adm/dashboard'}
+                to={item.href || '/admin/dashboard'}
                 className="flex items-start justify-between gap-4 p-4 rounded-2xl border border-slate-200/80 bg-slate-50/50 hover:bg-slate-50 transition group cursor-pointer"
               >
                 <div className="space-y-1 min-w-0">
@@ -387,7 +387,7 @@ const Dashboard = () => {
               <h2 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">Tenants Needing Attention</h2>
               <p className="text-xs text-slate-500 mt-0.5">Suspended, deleting, or degraded organization lifecycles.</p>
             </div>
-            <Link to="/adm/tenants" className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 cursor-pointer">
+            <Link to="/admin/tenants" className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 cursor-pointer">
               Registry <FaArrowRight className="h-2.5 w-2.5" />
             </Link>
           </div>
@@ -401,7 +401,7 @@ const Dashboard = () => {
               {center.attentionTenants.map(tenant => (
                 <Link
                   key={tenant.id}
-                  to={`/adm/tenants?focus=${encodeURIComponent(tenant.id)}`}
+                  to={`/admin/tenants?focus=${encodeURIComponent(tenant.id)}`}
                   className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200/80 hover:bg-indigo-50/40 hover:border-indigo-200 text-xs transition cursor-pointer"
                 >
                   <div className="truncate">
@@ -424,7 +424,7 @@ const Dashboard = () => {
               <h2 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">Live Security &amp; Audit Stream</h2>
               <p className="text-xs text-slate-500 mt-0.5">Real-time immutable control-plane mutation ledger.</p>
             </div>
-            <Link to="/adm/audit-logs" className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 cursor-pointer">
+            <Link to="/admin/audit-logs" className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 cursor-pointer">
               Full Ledger <FaArrowRight className="h-2.5 w-2.5" />
             </Link>
           </div>
@@ -438,7 +438,7 @@ const Dashboard = () => {
               {center.recentAudit.map(log => (
                 <Link
                   key={log.id}
-                  to="/adm/audit-logs"
+                  to="/admin/audit-logs"
                   className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200/80 hover:bg-indigo-50/30 hover:border-indigo-200 text-xs transition block cursor-pointer"
                 >
                   <div className="min-w-0 flex-1">
@@ -471,7 +471,7 @@ const Dashboard = () => {
             <FaExclamationTriangle className="text-amber-600 shrink-0" />
             <span>Active Maintenance Mode: {center.maintenance.message}</span>
           </div>
-          <Link to="/adm/operations" className="font-bold underline text-amber-800">Configure Maintenance Mode</Link>
+          <Link to="/admin/operations" className="font-bold underline text-amber-800">Configure Maintenance Mode</Link>
         </div>
       )}
     </div>

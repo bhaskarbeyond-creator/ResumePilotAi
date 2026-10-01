@@ -1,0 +1,70 @@
+.employerShell {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  background: #f8fafc;
+  overflow-x: clip;
+}
+
+.employerContent {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.employerMain {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 1.25rem 1.5rem 3rem;
+}
+
+/* The sidebar is a sibling flex item, so the content column never needs the
+   fixed padding-left the candidate/admin shells rely on. This keeps the portal
+   free of horizontal overflow at every tested viewport. */
+.employerSidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  flex: 0 0 auto;
+}
+
+/* Below 1024px the sidebar becomes an overlay drawer, so the mobile header is
+   the only chrome participating in document flow. */
+.employerMobileHeader {
+  display: none;
+}
+
+.employerOnboardingCard {
+  max-width: 46rem;
+  margin: 0 auto;
+}
+
+.employerEmptyStat {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 1023px) {
+  .employerMobileHeader {
+    display: flex;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    align-items: center;
+    gap: 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+    background: #ffffff;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .employerMain {
+    padding: 1rem 1rem 3rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .employerMain {
+    padding: 0.875rem 0.75rem 2.5rem;
+  }
+}

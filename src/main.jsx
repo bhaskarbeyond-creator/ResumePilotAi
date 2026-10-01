@@ -139,6 +139,7 @@ const PublicPortfolio = lazy(() => import('./components/PublicPortfolio/PublicPo
 const PortfolioGallery = lazy(() => import('./components/PortfolioGallery/PortfolioGallery'));
 const BuildResume = lazy(() => import('./components/BuildResume/BuildResume'));
 const EnterpriseConsole = lazy(() => import('./enterprise/EnterpriseConsole'));
+const EmployerPortal = lazy(() => import('./components/EmployerPortal/EmployerPortal'));
 const Features = lazy(() => import('./components/Features/Features'));
 const JobsLanding = lazy(() => import('./components/JobsLanding/JobsLanding'));
 const MainJobListings = lazy(() => import('./components/JobsListings/MainJobListings'));
@@ -156,17 +157,31 @@ function RequireAuthenticated({ user, children }) {
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
-function AdminAliasRedirect() {
+function AdmAliasRedirect() {
     const location = useLocation();
-    const suffix = location.pathname.replace(/^\/admin/, '') || '/';
-    return <Navigate to={`/adm${suffix}${location.search}${location.hash}`} replace />;
+    const suffix = location.pathname.replace(/^\/adm/, '') || '/';
+    return <Navigate to={`/admin${suffix}${location.search}${location.hash}`} replace />;
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
 function PlatformAliasRedirect() {
     const location = useLocation();
     const suffix = location.pathname.replace(/^\/platform/, '') || '/';
-    return <Navigate to={`/adm${suffix}${location.search}${location.hash}`} replace />;
+    return <Navigate to={`/admin${suffix}${location.search}${location.hash}`} replace />;
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+function EnterpriseLegacyRedirect() {
+    const location = useLocation();
+    const suffix = location.pathname.replace(/^\/enterprise/, '') || '';
+    return <Navigate to={`/org${suffix}${location.search}${location.hash}`} replace />;
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+function Dashboard2Redirect() {
+    const location = useLocation();
+    const suffix = location.pathname.replace(/^\/dashboard2/, '') || '';
+    return <Navigate to={`/dashboard${suffix}${location.search}${location.hash}`} replace />;
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -433,6 +448,7 @@ const AuthWrapper = () => {
     if (authLoading || maintenance.loading) return <Spinner />;
 
     const emergencyPath = window.location.pathname === '/login'
+        || window.location.pathname.startsWith('/admin')
         || window.location.pathname.startsWith('/adm')
         || window.location.pathname.startsWith('/export/');
     if (maintenance.enabled && !maintenance.admin && !emergencyPath) {
@@ -502,7 +518,12 @@ const AuthWrapper = () => {
                             <Route path="/cover-letter" element={<RequireAuthenticated user={user}><CoverLetter key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
                             <Route path="/cover-letter/*" element={<RequireAuthenticated user={user}><CoverLetter key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
                             <Route path="/dashboard/*" element={<RequireAuthenticated user={user}><Dashboard key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
-                            <Route path="/enterprise/*" element={<RequireAuthenticated user={user}><EnterpriseConsole key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
+                            <Route path="/employer/*" element={<RequireAuthenticated user={user}><EmployerPortal key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
+                            <Route path="/org/:slug/*" element={<RequireAuthenticated user={user}><EnterpriseConsole key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
+                            <Route path="/org/*" element={<RequireAuthenticated user={user}><EnterpriseConsole key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
+                            {/* Legacy enterprise alias: one-way redirect to the canonical
+                                /org namespace, still behind the session guard. */}
+                            <Route path="/enterprise/*" element={<RequireAuthenticated user={user}><EnterpriseLegacyRedirect /></RequireAuthenticated>} />
                             <Route path="/contact" element={<Contact user={user} />} />
                             <Route path="/build-resume/*" element={<RequireAuthenticated user={user}><AuthenticatedAppShell><BuildResume key={user?.uid || 'authenticated'} /></AuthenticatedAppShell></RequireAuthenticated>} />
                             <Route path="/create-resume/*" element={<RequireAuthenticated user={user}><AuthenticatedAppShell><BuildResume key={user?.uid || 'authenticated'} /></AuthenticatedAppShell></RequireAuthenticated>} />
@@ -518,12 +539,13 @@ const AuthWrapper = () => {
                             <Route path="/portfolio/builder" element={<RequireAuthenticated user={user}><PortfolioBuilder key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
                             <Route path="/portfolio/:slug" element={<PublicPortfolio />} />
                             <Route path="/portfolios" element={<PortfolioGallery key={user?.uid || 'guest'} />} />
-                            {/* Compatibility alias used by the Enterprise app switcher. The
-                                canonical console namespace is /adm; both paths land in the
-                                same authenticated Admin shell rather than a blank route. */}
-                            <Route path="/admin/*" element={<AdminAliasRedirect />} />
-                            <Route path="/platform/*" element={<PlatformAliasRedirect />} />
-                            <Route path="/adm/*" element={<RequireAuthenticated user={user}><Admin key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
+                            {/* Admin Console: /admin/* is canonical. /adm/* and /platform/* are one-way compatibility redirects. */}
+                            <Route path="/admin/*" element={<RequireAuthenticated user={user}><Admin key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
+                            {/* Compatibility aliases stay session-guarded: an unauthenticated
+                                visitor must reach the login screen, never a redirect that
+                                reveals whether a private console path exists. */}
+                            <Route path="/adm/*" element={<RequireAuthenticated user={user}><AdmAliasRedirect /></RequireAuthenticated>} />
+                            <Route path="/platform/*" element={<RequireAuthenticated user={user}><PlatformAliasRedirect /></RequireAuthenticated>} />
                             <Route path="/front" element={<Navigate to="/" replace />} />
                             <Route path="/features" element={<Features user={user} />} />
                             <Route path="/templates" element={<Navigate to="/#templates" replace />} />
@@ -551,9 +573,11 @@ const AuthWrapper = () => {
                             {Array.from({ length: 51 }, (_, i) => i + 1).map((num) => (
                                 <Route key={`cv-route-${num}`} path={`/export/Cv${num}/:resumeId/:language`} element={<RequireExportAccess user={user}><Exporter key={user?.uid || 'render'} resumeName={`Cv${num}`} export={true} /></RequireExportAccess>} />
                             ))}
-                             {/* Dashboard2 mapped to main User Dashboard */}
-                             <Route path="/dashboard2/*" element={<RequireAuthenticated user={user}><Dashboard key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
-                             <Route path="/dashboard2" element={<RequireAuthenticated user={user}><Dashboard key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
+                             {/* Dashboard2 legacy → redirect to /dashboard. Still session-guarded:
+                                an unauthenticated visitor must be sent to login, not bounced
+                                into a private candidate workspace. */}
+                             <Route path="/dashboard2/*" element={<RequireAuthenticated user={user}><Dashboard2Redirect /></RequireAuthenticated>} />
+                             <Route path="/dashboard2" element={<RequireAuthenticated user={user}><Dashboard2Redirect /></RequireAuthenticated>} />
                             {/* Covers export routes */}
                             {/* Generate Cover Letter routes dynamically */}
                             {Array.from({ length: 4 }, (_, i) => i + 1).map((num) => (

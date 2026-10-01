@@ -117,10 +117,13 @@ class Register extends Component {
             }
             const currentPath = window.location.pathname;
             if (
+                currentPath.startsWith('/org') ||
                 currentPath.startsWith('/enterprise') ||
                 currentPath.startsWith('/dashboard') ||
+                currentPath.startsWith('/employer') ||
                 currentPath.startsWith('/build') ||
                 currentPath.startsWith('/portfolio') ||
+                currentPath.startsWith('/admin') ||
                 currentPath.startsWith('/adm')
             ) {
                 return;
@@ -128,7 +131,7 @@ class Register extends Component {
             const { checkIfAdmin } = await import('../../../services/api/platform');
             const isAdmin = await checkIfAdmin(uid);
             if (isAdmin) {
-                window.location.href = '/adm/dashboard';
+                window.location.href = '/admin/dashboard';
             } else {
                 window.location.href = '/dashboard';
             }
@@ -144,10 +147,13 @@ class Register extends Component {
             } catch (_) {}
             const currentPath = window.location.pathname;
             if (
+                !currentPath.startsWith('/org') &&
                 !currentPath.startsWith('/enterprise') &&
                 !currentPath.startsWith('/dashboard') &&
+                !currentPath.startsWith('/employer') &&
                 !currentPath.startsWith('/build') &&
                 !currentPath.startsWith('/portfolio') &&
+                !currentPath.startsWith('/admin') &&
                 !currentPath.startsWith('/adm')
             ) {
                 window.location.href = '/dashboard';

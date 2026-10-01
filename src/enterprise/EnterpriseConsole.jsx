@@ -19,6 +19,7 @@ import EnterpriseSettingsTab from './components/EnterpriseSettingsTab';
 import EnterpriseSupportTab from './components/EnterpriseSupportTab';
 import EnterprisePlatformTab from './components/EnterprisePlatformTab';
 import fire from '../conf/fire';
+import ContextSwitcher from '../components/Common/ContextSwitcher';
 import './enterprise.css';
 
 // Information architecture: the flat module list is grouped so the sidebar
@@ -192,82 +193,22 @@ function WorkspaceBadge() {
   );
 }
 
-function AppSwitcher({ platformAdmin }) {
-  const [open, setOpen] = useState(false);
-  const dropdownRef = useRef(null);
-
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setOpen(false);
-      }
-    }
-    if (open) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [open]);
-
+/**
+ * Enterprise persona entry point.
+ *
+ * The previous bespoke "Switch View" popover duplicated persona switching and
+ * was the one place a stale client-side role could surface the admin console.
+ * It now delegates to the single shared ContextSwitcher, which re-validates
+ * every portal against server-derived availability before navigating.
+ */
+function AppSwitcher() {
   return (
-    <div className="enterprise-app-switcher" ref={dropdownRef}>
-      <button
-        type="button"
-        className="enterprise-app-switcher-btn"
-        onClick={() => setOpen(val => !val)}
-        aria-expanded={open}
-        aria-label="Switch application"
-        data-tooltip="Switch App / Views"
-      >
-        <FiGrid aria-hidden="true" />
-        <span>Switch View</span>
-        <FiChevronDown aria-hidden="true" style={{ fontSize: '0.75rem', opacity: 0.7 }} />
-      </button>
-
-      {open && (
-        <div className="enterprise-popover enterprise-app-popover" role="menu">
-          <div className="enterprise-app-popover-header">
-            <span>SWITCH APPLICATION</span>
-          </div>
-          <div className="enterprise-app-popover-list">
-            <Link to="/dashboard" className="enterprise-app-item" role="menuitem" onClick={() => setOpen(false)}>
-              <div className="enterprise-app-item-icon"><FiHome /></div>
-              <div>
-                <strong>User Dashboard</strong>
-                <small>Resumes, job tracker, interviews & cover letters</small>
-              </div>
-            </Link>
-
-            <Link to="/build-resume" className="enterprise-app-item" role="menuitem" onClick={() => setOpen(false)}>
-              <div className="enterprise-app-item-icon"><FiFileText /></div>
-              <div>
-                <strong>AI Resume Builder</strong>
-                <small>Create & format high-impact resumes</small>
-              </div>
-            </Link>
-
-            {platformAdmin && (
-              <Link to="/admin" className="enterprise-app-item" role="menuitem" onClick={() => setOpen(false)}>
-                <div className="enterprise-app-item-icon enterprise-app-admin-icon"><FiShield /></div>
-                <div>
-                  <strong>Platform Admin Portal</strong>
-                  <small>System configurations & AI settings</small>
-                </div>
-              </Link>
-            )}
-
-            <Link to="/" className="enterprise-app-item" role="menuitem" onClick={() => setOpen(false)}>
-              <div className="enterprise-app-item-icon"><FiExternalLink /></div>
-              <div>
-                <strong>IME365 Home</strong>
-                <small>Public homepage & features</small>
-              </div>
-            </Link>
-          </div>
-        </div>
-      )}
+    <div className="enterprise-app-switcher">
+      <ContextSwitcher variant="header" />
     </div>
   );
 }
+
 
 function UserIdentityMenu({ user, roles, platformAdmin }) {
   const [open, setOpen] = useState(false);
@@ -483,7 +424,7 @@ function EnterpriseConsoleInner() {
         });
       }
     } catch (_) {}
-    navigate('/adm/dashboard');
+    navigate('/admin/dashboard');
   }, [navigate]);
 
   const visibleNav = useMemo(() => {
@@ -740,7 +681,7 @@ function EnterpriseConsoleInner() {
             <kbd>⌘K</kbd>
           </button>
 
-          <AppSwitcher platformAdmin={platformAdmin} />
+          <AppSwitcher />
 
           <button
             type="button"

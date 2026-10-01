@@ -30,6 +30,26 @@ const AddCompanyModal = ({ isOpen, onClose, showToast, t }) => {
         }
     }, []);
 
+    // Escape closes the dialog, and the previously focused element is restored
+    // so keyboard users are never dropped at the top of the document.
+    React.useEffect(() => {
+        if (!isOpen) return undefined;
+        const previouslyFocused = document.activeElement;
+        const onKeyDown = (event) => {
+            if (event.key === 'Escape') {
+                event.stopPropagation();
+                onClose?.();
+            }
+        };
+        document.addEventListener('keydown', onKeyDown);
+        return () => {
+            document.removeEventListener('keydown', onKeyDown);
+            if (previouslyFocused && typeof previouslyFocused.focus === 'function') {
+                previouslyFocused.focus();
+            }
+        };
+    }, [isOpen, onClose]);
+
 
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
@@ -194,6 +214,9 @@ const AddCompanyModal = ({ isOpen, onClose, showToast, t }) => {
                     transition={{ duration: 0.2 }}
                 >
                     <motion.div 
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="add-company-modal-title"
                         className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-slate-200"
                         onClick={(e) => e.stopPropagation()}
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -208,7 +231,7 @@ const AddCompanyModal = ({ isOpen, onClose, showToast, t }) => {
                             <FaBuilding className="w-5 h-5 text-blue-600" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-slate-900">{t('JobsUpdate.AddCompanyModal.header.title', 'Add Company')}</h2>
+                            <h2 id="add-company-modal-title" className="text-xl font-bold text-slate-900">{t('JobsUpdate.AddCompanyModal.header.title', 'Add Company')}</h2>
                             <p className="text-sm text-slate-600 mt-0.5">
                                 {t('JobsUpdate.AddCompanyModal.header.subtitle', 'Add your company details for review and approval')}
                             </p>
@@ -217,6 +240,7 @@ const AddCompanyModal = ({ isOpen, onClose, showToast, t }) => {
                     <button
                         onClick={handleClose}
                         disabled={loading}
+                            aria-label="Close add company dialog"
                         className="p-2.5 hover:bg-slate-100 rounded-xl transition-all duration-200 disabled:opacity-50 hover:scale-105"
                     >
                         <FaTimes className="w-5 h-5 text-slate-500 hover:text-slate-700" />

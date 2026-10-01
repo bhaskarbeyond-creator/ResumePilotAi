@@ -1083,7 +1083,7 @@ export default function User360Drawer({
                           </select>
                           {availableTenants.length === 0 && (
                             <p className="text-[10px] text-amber-700 mt-1 font-semibold">
-                              ℹ No organizations exist yet. Provision a tenant in <a href="/adm/tenants" className="underline font-bold">Tenants Registry</a> first.
+                              ℹ No organizations exist yet. Provision a tenant in <a href="/admin/tenants" className="underline font-bold">Tenants Registry</a> first.
                             </p>
                           )}
                           {selectedTenantId && workspacePreview.status === 'loading' && (
@@ -1102,7 +1102,7 @@ export default function User360Drawer({
                           )}
                           {selectedTenantId && workspacePreview.status === 'ready' && (!workspacePreview.lifecycleState || String(workspacePreview.lifecycleState).toUpperCase() === 'ACTIVE') && !workspacePreview.workspace && (
                             <p className="text-[10px] text-red-700 mt-1 font-semibold" role="alert" data-testid="tenant-workspace-missing">
-                              ⚠ This organization has no active workspace. Create one in the <a href="/adm/tenants" className="underline font-bold">Tenants Registry</a> before assigning members.
+                              ⚠ This organization has no active workspace. Create one in the <a href="/admin/tenants" className="underline font-bold">Tenants Registry</a> before assigning members.
                             </p>
                           )}
                           {selectedTenantId && workspacePreview.status === 'unavailable' && (
