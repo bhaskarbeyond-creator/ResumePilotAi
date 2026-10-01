@@ -14,7 +14,7 @@ const {
 } = require('../database/canonical');
 const { toCanonicalUser, isMembershipActive } = require('../database/domain');
 
-const FUTURE_ISO = '2026-09-25T00:00:00.000Z';
+const FUTURE_ISO = '2030-09-25T00:00:00.000Z';
 const FUTURE_MS = Date.parse(FUTURE_ISO);
 const FUTURE_SEC = Math.floor(FUTURE_MS / 1000);
 
@@ -37,7 +37,7 @@ test('canonical dates: ISO string', () => {
 });
 
 test('canonical dates: RFC 2822', () => {
-    const rfc = 'Fri, 25 Sep 2026 00:00:00 GMT';
+    const rfc = 'Wed, 25 Sep 2030 00:00:00 GMT';
     assert.equal(toCanonicalDate(rfc), FUTURE_ISO);
 });
 
@@ -97,7 +97,7 @@ test('toCanonicalUser + isMembershipActive works with ISO membershipEnds', () =>
     });
     assert.equal(user.membershipEnds, FUTURE_ISO);
     assert.equal(isMembershipActive(user, Date.parse('2026-01-01T00:00:00.000Z')), true);
-    assert.equal(isMembershipActive(user, Date.parse('2026-12-01T00:00:00.000Z')), false);
+    assert.equal(isMembershipActive(user, Date.parse('2031-12-01T00:00:00.000Z')), false);
 });
 
 test('toCanonicalUser does not expose toDate() on membershipEnds', () => {
