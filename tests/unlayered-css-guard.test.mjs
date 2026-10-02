@@ -261,7 +261,36 @@ describe('Unlayered CSS & Utility Isolation Architecture Guard', () => {
         );
     });
 
-    it('verifies all 4 portal shells initialize Cuba state synchronously without frame 0 legacy mounts', () => {
+    it('renders a single h1 and no heading-level skips on public marketing surfaces', () => {
+    // A document must expose exactly one h1, and heading levels must not skip
+    // (h2 -> h4 breaks screen-reader navigation by heading). These assertions
+    // pin the semantic fixes made to the landing, features and gallery pages.
+    const pricing = fs.readFileSync(path.join(root, 'src/components/Dashboard2/elements/HomepagePricing.jsx'), 'utf8');
+    const footer = fs.readFileSync(path.join(root, 'src/components/Dashboard2/elements/HomepageFooter.jsx'), 'utf8');
+    const hero = fs.readFileSync(path.join(root, 'src/components/Dashboard2/elements/HomepageHero.jsx'), 'utf8');
+    const features = fs.readFileSync(path.join(root, 'src/components/Features/Features.jsx'), 'utf8');
+    const gallery = fs.readFileSync(path.join(root, 'src/components/PortfolioGallery/PortfolioGallery.jsx'), 'utf8');
+
+    // The pricing section is a sibling of the hero, not a second page-level h1.
+    assert.doesNotMatch(pricing, /<h1[\s>]/, 'HomepagePricing must not emit a second h1');
+    assert.match(pricing, /<h2[^>]*>\s*Simple, Powerful Plans for Every Stage/);
+
+    // Footer column groups follow h2 sections; h4 skipped a level.
+    assert.doesNotMatch(footer, /<h4[\s>]/, 'HomepageFooter must not skip to h4 column headings');
+    assert.match(footer, /<h2[^>]*>\s*Product/);
+    assert.match(footer, /<h2[^>]*>\s*Legal/);
+
+    // A candidate name inside a decorative resume mockup is not a heading.
+    assert.doesNotMatch(hero, /<h4[^>]*>\s*Jordan Vance/);
+
+    // Feature cards under the page h1 must be h2, not a skipping h3.
+    assert.doesNotMatch(features, /<h3 className="text-lg font-bold text-gray-900 group-hover/);
+
+    // Empty-state message is not a heading.
+    assert.doesNotMatch(gallery, /<h3[^>]*>\s*No portfolios found/);
+});
+
+it('verifies all 4 portal shells initialize Cuba state synchronously without frame 0 legacy mounts', () => {
         const authShellJsx = fs.readFileSync(path.join(root, 'src/components/AppShell/AuthenticatedAppShell.jsx'), 'utf8');
         assert.match(authShellJsx, /useState\(\(\)\s*=>\s*isCubaShellEnabled\(\)\)/, 'AuthenticatedAppShell must initialize synchronously');
 

@@ -415,9 +415,13 @@ const Features = ({ _t }) => {
                   
                   {/* Clean typography */}
                   <div className="space-y-3">
-                    <h3 className="text-lg font-bold text-gray-900 group-hover:text-[#4a6cf7] transition-colors duration-300">
+                    {/* This first grid sits directly under the page h1 with no intervening
+                        section heading, so its card titles are h2 — not h3, which
+                        skipped a level. Tailwind classes are unchanged, so the
+                        rendered size/weight is identical. */}
+                    <h2 className="text-lg font-bold text-gray-900 group-hover:text-[#4a6cf7] transition-colors duration-300">
                       {feature.title}
-                    </h3>
+                    </h2>
                     
                     <p className="text-gray-600 text-sm leading-relaxed">
                       {feature.description}

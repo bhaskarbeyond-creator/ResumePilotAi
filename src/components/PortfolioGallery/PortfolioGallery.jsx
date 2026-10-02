@@ -185,7 +185,10 @@ const PortfolioGallery = () => {
                         {filteredPortfolios.length === 0 && !loading && (
                             <div className="text-center py-12">
                                 <div className="text-6xl mb-4">🎨</div>
-                                <h3 className="text-xl font-medium text-gray-900 mb-2">No portfolios found</h3>
+                                {/* An empty-state message is not a document heading. As an h3 it skipped a
+                                    level from the page h1 and announced a status line as a
+                                    section. Tailwind classes unchanged, so rendering is identical. */}
+                                <p className="text-xl font-medium text-gray-900 mb-2">No portfolios found</p>
                                 <p className="text-gray-600 mb-6">{searchTerm || selectedTheme ? 'Try adjusting your search or filter criteria.' : 'Be the first to publish a portfolio!'}</p>
                                 <Link to="/portfolio/builder?create=1" className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
                                     Create Portfolio
