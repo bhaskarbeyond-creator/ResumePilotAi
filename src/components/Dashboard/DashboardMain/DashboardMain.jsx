@@ -35,6 +35,8 @@ const Billing = lazy(() => import('../../Billing/Plans/Plans'));
 // Cuba design system showcase (§13). Lazy so the documentation surface costs
 // nothing for the routes real users actually visit.
 const DesignSystemShowcase = lazy(() => import('../../cuba/DesignSystemShowcase'));
+const CubaCandidateShell = lazy(() => import('../../Candidate/CubaCandidateShell'));
+import { isCubaShellEnabled } from '../../cuba/cubaShellFlag';
 const MainJobListings = lazy(() => import('../../JobsListings/MainJobListings'));
 class DashboardMain extends Component {
     static contextType = AuthContext;
@@ -486,82 +488,136 @@ class DashboardMain extends Component {
 
                 <DashboardFavourites showFavorites={this.showFavorites} isFavoritesShowed={this.state.isFavoritesShowed} />
 
-                <ProfileDisplay
-                    user={resolvedUser}
-                    profile={{
-                        name: (this.state.firstname && this.state.lastname) ? `${this.state.firstname} ${this.state.lastname}`.trim() : (this.state.profile?.name || `${this.state.profile?.firstname || ''} ${this.state.profile?.lastname || ''}`.trim() || ''),
-                        firstname: this.state.firstname || this.state.profile?.firstname || '',
-                        lastname: this.state.lastname || this.state.profile?.lastname || '',
-                        email: this.state.profile?.email || '',
-                        phone: this.state.profile?.phone || '',
-                        address: this.state.profile?.address || '',
-                        city: this.state.profile?.city || '',
-                        country: this.state.profile?.country || '',
-                        occupation: this.state.profile?.occupation || '',
-                        membership: this.state.membership || this.state.profile?.membership,
-                        selectedImage: this.state.profile?.selectedImage || this.state.profile?.image,
-                        image: this.state.profile?.image || this.state.profile?.selectedImage,
-                    }}
-                    image={this.state.profile}
-                    sidebarCollapsed={this.state.sidebarCollapsed}
-                    onSidebarToggle={this.handleSidebarToggle}
-                />
-
-                <div className={`dashboardContentWrapper ${this.state.sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-                    <div className="dashboardMainContent">
-                        <Suspense fallback={<Spinner />}>
-                            <Routes>
-                                <Route
-                                    index
-                                    element={
-                                        <DashboardHomepage
-                                            profile={{
-                                                name: this.state.firstname + ' ' + this.state.lastname,
-                                                email: this.state.profile?.email || '',
-                                                phone: this.state.profile?.phone || '',
-                                                address: this.state.profile?.address || '',
-                                                city: this.state.profile?.city || '',
-                                                country: this.state.profile?.country || '',
-                                                occupation: this.state.profile?.occupation || '',
-                                            }}
-                                            membership={this.state.membership}
-                                            role={this.state.role}
-                                            showFavorites={this.showFavorites}
-                                            showToast={this.showToast}
-                                            sidebarCollapsed={this.state.sidebarCollapsed}
-                                            handleSidebarToggle={this.handleSidebarToggle}
+                {isCubaShellEnabled() ? (
+                    <Suspense fallback={<div className="min-h-screen bg-cuba-canvas" aria-busy="true" />}>
+                        <CubaCandidateShell>
+                            <div className="dashboardMainContent max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                                <Suspense fallback={<Spinner />}>
+                                    <Routes>
+                                        <Route
+                                            index
+                                            element={
+                                                <DashboardHomepage
+                                                    profile={{
+                                                        name: this.state.firstname + ' ' + this.state.lastname,
+                                                        email: this.state.profile?.email || '',
+                                                        phone: this.state.profile?.phone || '',
+                                                        address: this.state.profile?.address || '',
+                                                        city: this.state.profile?.city || '',
+                                                        country: this.state.profile?.country || '',
+                                                        occupation: this.state.profile?.occupation || '',
+                                                    }}
+                                                    membership={this.state.membership}
+                                                    role={this.state.role}
+                                                    showFavorites={this.showFavorites}
+                                                    showToast={this.showToast}
+                                                    sidebarCollapsed={this.state.sidebarCollapsed}
+                                                    handleSidebarToggle={this.handleSidebarToggle}
+                                                />
+                                            }
                                         />
-                                    }
-                                />
-                                <Route path="settings" element={<DashboardSettings showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
-                                <Route path="messages" element={<DashboardMessages showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />     
-                                <Route path="favorites" element={<DashboardFavourites showToast={this.showToast} />} />
-                                <Route path="interview" element={<DashboardInterviews showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
-                                <Route path="cover-letters" element={<CoverLetter />} />
-                                <Route path="portfolios" element={<DashboardPortfolios showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
-                                <Route path="applied-jobs" element={<AppliedJobs showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
-                                <Route path="job-tracker" element={<JobTracker showToast={this.showToast} />} />
-                                <Route path="jobs" element={<MainJobListings isInsideDashboard={true} showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
-                                <Route path="jobs/portal" element={<MainJobListings isInsideDashboard={true} showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
-                                <Route path="jobs/portal/:jobId" element={<MainJobListings isInsideDashboard={true} showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
-                                <Route path="jobs/browse" element={<MainJobListings isInsideDashboard={true} showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
-                                <Route path="jobs/category/:catName" element={<MainJobListings isInsideDashboard={true} showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
-                                <Route path="my-employments" element={<Navigate to="/employer/jobs" replace />} />
-                                <Route path="my-companies" element={<Navigate to="/employer/company" replace />} />
-                                <Route path="job-matching" element={<Navigate to="/dashboard/job-tracker" replace />} />
-                                <Route path="plans" element={<Billing user={this.state.user} showToast={this.showToast} />} />
-                                <Route path="support" element={<DashboardSupport showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
-                                <Route path="tickets" element={<Navigate to="/dashboard/support" replace />} />
-                                <Route path="help" element={<Navigate to="/dashboard/support" replace />} />
-                                {/* Cuba design system showcase (§13). Mounted inside the
-                                    already session-guarded /dashboard namespace so it
-                                    inherits authentication without adding a new public
-                                    surface. It documents and exercises every primitive. */}
-                                <Route path="design-system" element={<DesignSystemShowcase />} />
-                            </Routes>
-                        </Suspense>
-                    </div>
-                </div>
+                                        <Route path="settings" element={<DashboardSettings showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
+                                        <Route path="messages" element={<DashboardMessages showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />     
+                                        <Route path="favorites" element={<DashboardFavourites showToast={this.showToast} />} />
+                                        <Route path="interview" element={<DashboardInterviews showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
+                                        <Route path="cover-letters" element={<CoverLetter />} />
+                                        <Route path="portfolios" element={<DashboardPortfolios showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
+                                        <Route path="applied-jobs" element={<AppliedJobs showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
+                                        <Route path="job-tracker" element={<JobTracker showToast={this.showToast} />} />
+                                        <Route path="jobs" element={<MainJobListings isInsideDashboard={true} showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
+                                        <Route path="jobs/portal" element={<MainJobListings isInsideDashboard={true} showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
+                                        <Route path="jobs/portal/:jobId" element={<MainJobListings isInsideDashboard={true} showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
+                                        <Route path="jobs/browse" element={<MainJobListings isInsideDashboard={true} showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
+                                        <Route path="jobs/category/:catName" element={<MainJobListings isInsideDashboard={true} showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
+                                        <Route path="my-employments" element={<Navigate to="/employer/jobs" replace />} />
+                                        <Route path="my-companies" element={<Navigate to="/employer/company" replace />} />
+                                        <Route path="job-matching" element={<Navigate to="/dashboard/job-tracker" replace />} />
+                                        <Route path="plans" element={<Billing user={this.state.user} showToast={this.showToast} />} />
+                                        <Route path="support" element={<DashboardSupport showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
+                                        <Route path="tickets" element={<Navigate to="/dashboard/support" replace />} />
+                                        <Route path="help" element={<Navigate to="/dashboard/support" replace />} />
+                                        <Route path="design-system" element={<DesignSystemShowcase />} />
+                                    </Routes>
+                                </Suspense>
+                            </div>
+                        </CubaCandidateShell>
+                    </Suspense>
+                ) : (
+                    <>
+                        <ProfileDisplay
+                            user={resolvedUser}
+                            profile={{
+                                name: (this.state.firstname && this.state.lastname) ? `${this.state.firstname} ${this.state.lastname}`.trim() : (this.state.profile?.name || `${this.state.profile?.firstname || ''} ${this.state.profile?.lastname || ''}`.trim() || ''),
+                                firstname: this.state.firstname || this.state.profile?.firstname || '',
+                                lastname: this.state.lastname || this.state.profile?.lastname || '',
+                                email: this.state.profile?.email || '',
+                                phone: this.state.profile?.phone || '',
+                                address: this.state.profile?.address || '',
+                                city: this.state.profile?.city || '',
+                                country: this.state.profile?.country || '',
+                                occupation: this.state.profile?.occupation || '',
+                                membership: this.state.membership || this.state.profile?.membership,
+                                selectedImage: this.state.profile?.selectedImage || this.state.profile?.image,
+                                image: this.state.profile?.image || this.state.profile?.selectedImage,
+                            }}
+                            image={this.state.profile}
+                            sidebarCollapsed={this.state.sidebarCollapsed}
+                            onSidebarToggle={this.handleSidebarToggle}
+                        />
+
+                        <div className={`dashboardContentWrapper ${this.state.sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+                            <div className="dashboardMainContent">
+                                <Suspense fallback={<Spinner />}>
+                                    <Routes>
+                                        <Route
+                                            index
+                                            element={
+                                                <DashboardHomepage
+                                                    profile={{
+                                                        name: this.state.firstname + ' ' + this.state.lastname,
+                                                        email: this.state.profile?.email || '',
+                                                        phone: this.state.profile?.phone || '',
+                                                        address: this.state.profile?.address || '',
+                                                        city: this.state.profile?.city || '',
+                                                        country: this.state.profile?.country || '',
+                                                        occupation: this.state.profile?.occupation || '',
+                                                    }}
+                                                    membership={this.state.membership}
+                                                    role={this.state.role}
+                                                    showFavorites={this.showFavorites}
+                                                    showToast={this.showToast}
+                                                    sidebarCollapsed={this.state.sidebarCollapsed}
+                                                    handleSidebarToggle={this.handleSidebarToggle}
+                                                />
+                                            }
+                                        />
+                                        <Route path="settings" element={<DashboardSettings showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
+                                        <Route path="messages" element={<DashboardMessages showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />     
+                                        <Route path="favorites" element={<DashboardFavourites showToast={this.showToast} />} />
+                                        <Route path="interview" element={<DashboardInterviews showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
+                                        <Route path="cover-letters" element={<CoverLetter />} />
+                                        <Route path="portfolios" element={<DashboardPortfolios showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
+                                        <Route path="applied-jobs" element={<AppliedJobs showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
+                                        <Route path="job-tracker" element={<JobTracker showToast={this.showToast} />} />
+                                        <Route path="jobs" element={<MainJobListings isInsideDashboard={true} showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
+                                        <Route path="jobs/portal" element={<MainJobListings isInsideDashboard={true} showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
+                                        <Route path="jobs/portal/:jobId" element={<MainJobListings isInsideDashboard={true} showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
+                                        <Route path="jobs/browse" element={<MainJobListings isInsideDashboard={true} showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
+                                        <Route path="jobs/category/:catName" element={<MainJobListings isInsideDashboard={true} showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
+                                        <Route path="my-employments" element={<Navigate to="/employer/jobs" replace />} />
+                                        <Route path="my-companies" element={<Navigate to="/employer/company" replace />} />
+                                        <Route path="job-matching" element={<Navigate to="/dashboard/job-tracker" replace />} />
+                                        <Route path="plans" element={<Billing user={this.state.user} showToast={this.showToast} />} />
+                                        <Route path="support" element={<DashboardSupport showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
+                                        <Route path="tickets" element={<Navigate to="/dashboard/support" replace />} />
+                                        <Route path="help" element={<Navigate to="/dashboard/support" replace />} />
+                                        <Route path="design-system" element={<DesignSystemShowcase />} />
+                                    </Routes>
+                                </Suspense>
+                            </div>
+                        </div>
+                    </>
+                )}
             </div>
             </>
         );

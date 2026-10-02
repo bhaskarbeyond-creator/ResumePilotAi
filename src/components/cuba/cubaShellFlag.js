@@ -31,6 +31,17 @@ const isKnownValue = (value) => value === 'legacy' || value === 'cuba';
 
 const readStored = () => {
     try {
+        if (typeof window !== 'undefined' && window.location) {
+            const search = String(window.location.search || '');
+            if (search.includes('cuba=1') || search.includes('cuba=true')) {
+                localStorage.setItem(CUBA_SHELL_STORAGE_KEY, 'cuba');
+                return 'cuba';
+            }
+            if (search.includes('legacy=1') || search.includes('cuba=0')) {
+                localStorage.setItem(CUBA_SHELL_STORAGE_KEY, 'legacy');
+                return 'legacy';
+            }
+        }
         const raw = localStorage.getItem(CUBA_SHELL_STORAGE_KEY);
         return isKnownValue(raw) ? raw : null;
     } catch {
