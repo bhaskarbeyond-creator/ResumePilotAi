@@ -26,7 +26,7 @@ test('enterprise route is authenticated and isolated from certified builder rout
   assert.match(main, /isSafeInternalPath/);
   const sidebar = await source('sidebar');
   assert.match(sidebar, /VITE_ENTERPRISE_TENANCY_ENABLED === 'true'/);
-  assert.match(sidebar, /Enterprise Workspace/);
+  assert.match(sidebar, /ContextSwitcher/);
 });
 
 test('tenant context selection is feature-gated, server-resolved and cleared with account browser state', async () => {
