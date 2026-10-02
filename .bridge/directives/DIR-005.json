@@ -1,0 +1,29 @@
+{
+  "id": "DIR-005",
+  "title": "Semantic Marketing Consolidation & Dashboard2 Legacy Residue Purge",
+  "priority": "P2",
+  "status": "QUEUED",
+  "leadAuthor": "Antigravity (Lead Supervisor)",
+  "assignedTo": "Cline (Staff Developer)",
+  "createdAt": "2026-10-02T16:33:06.184Z",
+  "specFile": null,
+  "spec": "CONSOLIDATION OBJECTIVE:\nEliminate architectural confusion surrounding 'Dashboard2' by establishing a clean, semantic marketing directory ('src/components/Marketing/') for all public landing elements, removing misleading legacy names while maintaining 100% backward-compatibility for existing routes, tests, and consumers.\n\nACTIONABLE EXECUTION PLAN:\n1. Create semantic home:\n   - Establish 'src/components/Marketing/' with 'elements/' containing 'HomepageNavbar.jsx', 'HomepageFooter.jsx', 'HomepageHero.jsx', 'HomepagePricing.jsx', 'Homepagefaqs.jsx', 'HomepageComparison.jsx', 'HomepageStorySections.jsx', etc.\n   - Relocate 'src/components/Dashboard2/dashboard2.jsx' to 'src/components/Marketing/LandingPage.jsx'.\n2. Backward-Compatible Facade:\n   - Retain 'src/components/Dashboard2/' as re-export facades pointing to 'src/components/Marketing/' so any external or cached consumer continues to resolve without errors.\n3. Migrate 15 Consumers:\n   - Update all public page imports ('Plans.jsx', 'Features.jsx', 'BlogList.jsx', 'BlogPost.jsx', 'Contact.jsx', 'CustomePage.jsx', 'JobsLanding.jsx', 'MainJobListings.jsx', 'PortfolioBuilder.jsx', 'BlogEditor.jsx') to import cleanly from the semantic marketing directory.\n4. Preserve Test Assertions:\n   - Update test paths in 'tests/four-portal-architecture.test.mjs', 'tests/unlayered-css-guard.test.mjs', 'tests/product-ux-audit-regressions.test.mjs', 'tests/public-discovery.test.mjs', and 'tests/admin-workflow.test.mjs'.\n   - Ensure 'Dashboard2Redirect' in 'src/main.jsx' remains intact for session-safe redirection from '/dashboard2' to '/dashboard'.\n5. Verification Gate:\n   - Zero build errors ('npm run build').\n   - Zero broken routes (verify with Playwright crawler).\n   - 100% passing test suites.",
+  "invariants": [
+    "Resume Templates & ATS Engine 100% FROZEN (git diff = 0)",
+    "Candidate Workspace (/dashboard) completely unaffected",
+    "Session guard on /dashboard2 redirect preserved",
+    "Zero broken public routes or dead navigation targets"
+  ],
+  "acceptanceCriteria": [
+    "Semantic Marketing directory created with all 14 landing elements",
+    "Dashboard2 contains backward-compatible re-export facades",
+    "All 15 consumer components migrated to semantic marketing imports",
+    "5 test suites updated and passing 100%",
+    "npm run build succeeds in <4s with zero errors"
+  ],
+  "plan": null,
+  "heartbeats": [],
+  "evidence": null,
+  "reviews": [],
+  "freezeHash": null
+}
