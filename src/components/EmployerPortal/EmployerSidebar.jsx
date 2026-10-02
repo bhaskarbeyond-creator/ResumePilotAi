@@ -6,7 +6,7 @@ import { GoSidebarCollapse, GoSidebarExpand } from 'react-icons/go';
 import logo from '../../assets/logo/logo.png';
 import { AuthContext } from '../../context/AuthContext';
 import signOutUser from '../../utils/signOut';
-import ContextSwitcher from '../Common/ContextSwitcher';
+import ContextSwitcher from '../common/ContextSwitcher';
 
 // Employer portal information architecture. Recruiter capability is deliberately
 // separate from the candidate sidebar: there are no resume-builder or admin

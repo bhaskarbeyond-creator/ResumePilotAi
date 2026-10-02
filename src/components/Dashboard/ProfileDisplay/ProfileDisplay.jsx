@@ -13,7 +13,7 @@ import NotificationPanel from './NotificationPanel';
 import { useUnreadMessages } from '../../../hooks/useUnreadMessages';
 import { useUnreadNotifications } from '../../../hooks/useUnreadNotifications';
 import { useServiceAvailability } from '../../../hooks/useServiceAvailability';
-import ContextSwitcher from '../../Common/ContextSwitcher';
+import ContextSwitcher from '../../common/ContextSwitcher';
 
 const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapsed }) => {
     const { t } = useTranslation('common');

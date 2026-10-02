@@ -18,7 +18,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { FiChevronLeft, FiMenu, FiSearch, FiSun, FiMoon, FiX } from 'react-icons/fi';
 import AiEngineStatus from './AiEngineStatus';
 import CubaCommandPalette from './CubaCommandPalette';
-import ContextSwitcher from '../Common/ContextSwitcher';
+import ContextSwitcher from '../common/ContextSwitcher';
 import { useDialogA11y } from './useDialogA11y';
 
 const cx = (...parts) => parts.filter(Boolean).join(' ');

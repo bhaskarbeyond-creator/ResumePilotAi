@@ -36,7 +36,7 @@ import { AdminProvider } from './AdminContext';
 import { FaCircle, FaExternalLinkAlt, FaSignOutAlt, FaChevronRight, FaSyncAlt, FaCrown, FaBars, FaChevronDown, FaCheck } from 'react-icons/fa';
 import { FiSearch } from 'react-icons/fi';
 import AdminReauthPrompt from './AdminReauthPrompt';
-import ContextSwitcher from '../Common/ContextSwitcher';
+import ContextSwitcher from '../common/ContextSwitcher';
 
 const ROLE_DEFINITIONS = [
     { id: 'SUPER_ADMIN', label: 'Super Admin', icon: '👑', desc: 'Full authority across all 26 control modules' },

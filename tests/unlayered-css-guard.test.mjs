@@ -21,6 +21,116 @@ function walk(dir) {
     return files;
 }
 
+function walkSource(dir) {
+    let files = [];
+    for (const item of fs.readdirSync(dir)) {
+        const full = path.join(dir, item);
+        const stat = fs.statSync(full);
+        if (stat.isDirectory()) {
+            if (item !== 'node_modules' && item !== 'dist' && item !== '.git') {
+                files = files.concat(walkSource(full));
+            }
+        } else if (/\.(jsx?|mjs|cjs)$/.test(item)) {
+            files.push(full);
+        }
+    }
+    return files;
+}
+
+/**
+ * Case-sensitive import-resolution guard.
+ *
+ * WHY THIS EXISTS: five source files imported `../Common/ContextSwitcher`
+ * while the directory on disk is `components/common`. Windows and macOS are
+ * case-insensitive by default, so `npm run build` passed locally while
+ * BOTH CI workflows (.github/workflows/quality-gate.yml and
+ * production-release.yml) run `npm run build` on ubuntu-24.04, where the
+ * module cannot resolve and the build fails. A local green build therefore
+ * proved nothing about the shipped artifact.
+ *
+ * NOTE: `fs.existsSync` CANNOT be used here — on Windows it is itself
+ * case-insensitive and would report the mismatched path as present, making
+ * this guard a false green. Every segment is therefore compared against the
+ * real directory entry names from readdirSync, so the mismatch fails here on
+ * Windows exactly as it fails on the Linux build agents.
+ */
+describe('Case-sensitive import resolution guard', () => {
+    it('resolves every relative import in src/ with exact on-disk casing', () => {
+        const files = walkSource(path.join(root, 'src'));
+        const offenders = [];
+        const SOURCE_EXTS = ['.js', '.jsx', '.mjs', '.cjs'];
+
+        const listDir = (dir) => {
+            try { return fs.readdirSync(dir); } catch { return null; }
+        };
+
+        for (const file of files) {
+            const source = fs.readFileSync(file, 'utf8');
+            const importPattern = /(?:from|import)\s+['"](\.{1,2}\/[^'"]+)['"]/g;
+            let match;
+            while ((match = importPattern.exec(source)) !== null) {
+                const spec = match[1];
+                const segments = spec.split('/').filter((s) => s && s !== '.');
+                if (segments[0] !== '..') continue; // only relative parent imports can leave the file's own folder tree this way
+                const rel = path.relative(root, file).replace(/\\/g, '/');
+
+                let currentDir = path.dirname(file);
+                for (let i = 0; i < segments.length; i += 1) {
+                    const segment = segments[i];
+                    const isLast = i === segments.length - 1;
+
+                    // `..` is a traversal instruction, not a directory entry, so it
+                    // must never be matched against readdir output.
+                    if (segment === '..') { currentDir = path.dirname(currentDir); continue; }
+
+                    const entries = listDir(currentDir);
+                    if (entries === null) { currentDir = null; break; }
+
+                    const exact = entries.find((e) => e === segment);
+                    const fuzzy = entries.find((e) => e.toLowerCase() === segment.toLowerCase());
+
+                    if (!exact && fuzzy) {
+                        offenders.push(`${rel}: '${spec}' -> segment '${segment}' is '${fuzzy}' on disk (case differs)`);
+                        currentDir = null;
+                        break;
+                    }
+                    if (!exact) {
+                        if (!isLast) { currentDir = null; break; }
+                        // Last segment may omit the extension: match the stem exactly.
+                        const stemOk = entries.some((e) => {
+                            const dot = e.lastIndexOf('.');
+                            const stem = dot > 0 ? e.slice(0, dot) : e;
+                            return stem === segment && SOURCE_EXTS.includes(e.slice(dot));
+                        });
+                        if (!stemOk) { currentDir = null; break; }
+                        currentDir = null;
+                        break;
+                    }
+
+                    const candidate = path.join(currentDir, exact);
+                    if (isLast) {
+                        let ok = false;
+                        try { ok = fs.statSync(candidate).isFile(); } catch { ok = false; }
+                        if (!ok) {
+                            const dirEntries = listDir(candidate);
+                            ok = Array.isArray(dirEntries) && dirEntries.some((e) => SOURCE_EXTS.includes(path.extname(e)));
+                        }
+                        if (!ok) { currentDir = null; break; }
+                        currentDir = null;
+                        break;
+                    }
+
+                    const candidateEntries = listDir(candidate);
+                    if (candidateEntries === null) { currentDir = null; break; }
+                    currentDir = candidate;
+                }
+            }
+        }
+
+        assert.deepEqual(offenders, [], 'Case-mismatched relative imports break the Linux CI build:\n' + offenders.join('\n'));
+    });
+});
+
 describe('Unlayered CSS & Utility Isolation Architecture Guard', () => {
     it('prohibits raw top-level .hidden rules that sabotage Tailwind v4 @layer utilities', () => {
         const files = walk(path.join(root, 'src'));
