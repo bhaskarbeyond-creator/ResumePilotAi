@@ -525,8 +525,11 @@ const Features = ({ _t }) => {
 
       {/* CTA Section - Dashboard2 Style */}
       <section className="py-20 bg-gradient-to-br from-slate-50 via-blue-50/50 to-purple-50/50 relative">
-        {/* Simple background matching Dashboard2 theme */}
-        <div className="absolute inset-0 -z-10 pointer-events-none">
+        {/* Simple background matching Dashboard2 theme.
+            overflow-hidden clips the decorative blur orbs: at mobile widths the
+            w-96 orb offset by left-1/4 extends past the viewport and otherwise
+            widens the document, producing horizontal page scroll. */}
+        <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#4a6cf7]/10 rounded-full blur-3xl animate-pulse"></div>
           <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-purple-400/15 rounded-full blur-3xl animate-pulse delay-1000"></div>
         </div>
