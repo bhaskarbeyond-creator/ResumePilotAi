@@ -153,7 +153,7 @@ const CubaAppShell = ({
     }, [onNavigate]);
 
     return (
-        <div className="flex min-h-screen flex-col bg-cuba-canvas text-cuba-ink">
+        <div className="w-full flex min-h-screen flex-col bg-cuba-canvas text-cuba-ink">
             <a
                 href="#cuba-main-content"
                 className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-[70] focus:rounded-cuba-sm focus:bg-cuba-card focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-cuba-ink focus:shadow-cuba-md"
@@ -233,7 +233,7 @@ const CubaAppShell = ({
                 )}
             </header>
 
-            <div className="flex min-h-0 flex-1">
+            <div className="w-full flex min-h-0 flex-1">
                 <aside
                     className={cx(
                         'cuba-glass sticky top-[var(--cuba-header-h)] hidden h-[calc(100vh-var(--cuba-header-h))] flex-none flex-col border-y-0 border-l-0 lg:flex',
@@ -321,7 +321,7 @@ const CubaAppShell = ({
                     </div>
                 )}
 
-                <main id="cuba-main-content" tabIndex={-1} className="min-w-0 flex-1 overflow-x-hidden">
+                <main id="cuba-main-content" tabIndex={-1} className="w-full min-w-0 flex-1 overflow-x-hidden">
                     <div className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">{children}</div>
                 </main>
             </div>

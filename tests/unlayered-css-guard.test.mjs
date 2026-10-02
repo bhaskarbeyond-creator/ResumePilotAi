@@ -112,4 +112,62 @@ describe('Unlayered CSS & Utility Isolation Architecture Guard', () => {
         const appCss = fs.readFileSync(path.join(root, 'src/App.css'), 'utf8');
         assert.doesNotMatch(appCss, /^\.card\s*\{/m, 'App.css must not have unscoped .card');
     });
+
+    it('verifies ProfileDisplay and Admin sidebar inline style tags are strictly scoped to legacy shell', () => {
+        const profileDisplayJsx = fs.readFileSync(path.join(root, 'src/components/Dashboard/ProfileDisplay/ProfileDisplay.jsx'), 'utf8');
+        assert.doesNotMatch(
+            profileDisplayJsx,
+            /<style>[\s\S]*?^\s*\.dashboardContentWrapper\s*,/m,
+            'ProfileDisplay.jsx must not have unscoped .dashboardContentWrapper selector'
+        );
+        assert.match(
+            profileDisplayJsx,
+            /\[data-shell-variant="legacy"\]\s+\.dashboardContentWrapper/m,
+            'ProfileDisplay.jsx must scope .dashboardContentWrapper to legacy shell variant'
+        );
+
+        const adminSidebarJsx = fs.readFileSync(path.join(root, 'src/components/admin/sidebar/sidebar.jsx'), 'utf8');
+        assert.doesNotMatch(
+            adminSidebarJsx,
+            /<style>[\s\S]*?^\s*\.dashboardContentWrapper\s*,/m,
+            'admin/sidebar.jsx must not have unscoped .dashboardContentWrapper selector'
+        );
+        assert.match(
+            adminSidebarJsx,
+            /\[data-shell-variant="legacy"\]\s+\.dashboardContentWrapper/m,
+            'admin/sidebar.jsx must scope .dashboardContentWrapper to legacy shell variant'
+        );
+
+        const appShellScss = fs.readFileSync(path.join(root, 'src/components/AppShell/AuthenticatedAppShell.scss'), 'utf8');
+        assert.doesNotMatch(
+            appShellScss,
+            /^\.dashboardWrapper\s*\{/m,
+            'AuthenticatedAppShell.scss must not have unscoped .dashboardWrapper selector'
+        );
+        assert.match(
+            appShellScss,
+            /\[data-shell-variant="legacy"\]\.dashboardWrapper/m,
+            'AuthenticatedAppShell.scss must scope .dashboardWrapper to legacy variant'
+        );
+    });
+
+    it('verifies all 4 portal shells initialize Cuba state synchronously without frame 0 legacy mounts', () => {
+        const authShellJsx = fs.readFileSync(path.join(root, 'src/components/AppShell/AuthenticatedAppShell.jsx'), 'utf8');
+        assert.match(authShellJsx, /useState\(\(\)\s*=>\s*isCubaShellEnabled\(\)\)/, 'AuthenticatedAppShell must initialize synchronously');
+
+        const employerPortalJsx = fs.readFileSync(path.join(root, 'src/components/EmployerPortal/EmployerPortal.jsx'), 'utf8');
+        assert.match(employerPortalJsx, /useState\(\(\)\s*=>\s*isCubaShellEnabled\(\)\)/, 'EmployerPortal must initialize synchronously');
+
+        const adminJsx = fs.readFileSync(path.join(root, 'src/components/admin/Admin.jsx'), 'utf8');
+        assert.match(adminJsx, /useState\(\(\)\s*=>\s*isCubaShellEnabled\(\)\)/, 'Admin must initialize synchronously');
+
+        const enterpriseJsx = fs.readFileSync(path.join(root, 'src/enterprise/EnterpriseConsole.jsx'), 'utf8');
+        assert.match(enterpriseJsx, /useState\(\(\)\s*=>\s*isCubaShellEnabled\(\)\)/, 'EnterpriseConsole must initialize synchronously');
+    });
+
+    it('verifies CubaAppShell enforces w-full on root and main elements', () => {
+        const cubaAppShellJsx = fs.readFileSync(path.join(root, 'src/components/cuba/CubaAppShell.jsx'), 'utf8');
+        assert.match(cubaAppShellJsx, /className="w-full flex min-h-screen flex-col bg-cuba-canvas text-cuba-ink"/, 'CubaAppShell root must have w-full');
+        assert.match(cubaAppShellJsx, /<main id="cuba-main-content"[^>]*className="w-full min-w-0 flex-1 overflow-x-hidden"/, 'CubaAppShell main must have w-full');
+    });
 });

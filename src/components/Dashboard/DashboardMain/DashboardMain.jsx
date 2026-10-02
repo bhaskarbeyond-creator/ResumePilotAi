@@ -373,7 +373,7 @@ class DashboardMain extends Component {
         return (
             <>
                 {roleViewBanner}
-                <div className="dashboardWrapper" style={{ overflowX: 'clip' }}>
+                <div className="dashboardWrapper" data-testid="application-shell" data-shell-variant={isCubaShellEnabled() ? 'cuba' : 'legacy'} style={{ overflowX: 'clip' }}>
                     {/* Floating Mobile Sidebar Toggle */}
                 <button
                     onClick={() => {
@@ -491,7 +491,7 @@ class DashboardMain extends Component {
                 {isCubaShellEnabled() ? (
                     <Suspense fallback={<div className="min-h-screen bg-cuba-canvas" aria-busy="true" />}>
                         <CubaCandidateShell>
-                            <div className="dashboardMainContent max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                            <div className="dashboardMainContent w-full">
                                 <Suspense fallback={<Spinner />}>
                                     <Routes>
                                         <Route

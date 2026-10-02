@@ -986,9 +986,8 @@ function EnterpriseConsoleInner() {
  * an operator explicitly opts in, and rollback is a single localStorage write.
  */
 export default function EnterpriseConsole() {
-  const [cubaChrome, setCubaChrome] = useState(false);
+  const [cubaChrome, setCubaChrome] = useState(() => isCubaShellEnabled());
 
-  // Read after mount so the first paint is identical until the flag is evaluated.
   useEffect(() => { setCubaChrome(isCubaShellEnabled()); }, []);
 
   return (

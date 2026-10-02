@@ -270,29 +270,29 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
     return (
         <>
             <style>{`
-                .dashboardContentWrapper,
-                .dashboardGrid {
+                [data-shell-variant="legacy"] .dashboardContentWrapper,
+                [data-shell-variant="legacy"] .dashboardGrid {
                     margin-left: 280px !important;
                     width: calc(100% - 280px) !important;
                     box-sizing: border-box !important;
                     transition: margin-left 0.3s ease, width 0.3s ease !important;
                 }
 
-                .dashboardContentWrapper.sidebar-collapsed,
-                .dashboardGrid.sidebar-collapsed {
+                [data-shell-variant="legacy"] .dashboardContentWrapper.sidebar-collapsed,
+                [data-shell-variant="legacy"] .dashboardGrid.sidebar-collapsed {
                     margin-left: 60px !important;
                     width: calc(100% - 60px) !important;
                 }
 
                 @media only screen and (max-width: 1050px) {
-                    .dashboardContentWrapper,
-                    .dashboardGrid {
+                    [data-shell-variant="legacy"] .dashboardContentWrapper,
+                    [data-shell-variant="legacy"] .dashboardGrid {
                         margin-left: 0 !important;
                         width: 100% !important;
                     }
 
-                    .dashboardContentWrapper.sidebar-collapsed,
-                    .dashboardGrid.sidebar-collapsed {
+                    [data-shell-variant="legacy"] .dashboardContentWrapper.sidebar-collapsed,
+                    [data-shell-variant="legacy"] .dashboardGrid.sidebar-collapsed {
                         margin-left: 60px !important;
                         width: calc(100% - 60px) !important;
                     }
@@ -300,16 +300,16 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
 
                 @media only screen and (max-width: 1023px) {
                     /* Content shifts down for mobile top bar + up for bottom nav */
-                    .dashboardContentWrapper,
-                    .dashboardGrid {
+                    [data-shell-variant="legacy"] .dashboardContentWrapper,
+                    [data-shell-variant="legacy"] .dashboardGrid {
                         margin-left: 0 !important;
                         width: 100% !important;
                         padding-top: 56px !important;
                         padding-bottom: 68px !important;
                     }
 
-                    .dashboardContentWrapper.sidebar-collapsed,
-                    .dashboardGrid.sidebar-collapsed {
+                    [data-shell-variant="legacy"] .dashboardContentWrapper.sidebar-collapsed,
+                    [data-shell-variant="legacy"] .dashboardGrid.sidebar-collapsed {
                         margin-left: 0 !important;
                         width: 100% !important;
                     }
@@ -327,10 +327,10 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
                 }
 
                 @media only screen and (max-width: 480px) {
-                    .dashboardContentWrapper,
-                    .dashboardGrid,
-                    .dashboardContentWrapper.sidebar-collapsed,
-                    .dashboardGrid.sidebar-collapsed {
+                    [data-shell-variant="legacy"] .dashboardContentWrapper,
+                    [data-shell-variant="legacy"] .dashboardGrid,
+                    [data-shell-variant="legacy"] .dashboardContentWrapper.sidebar-collapsed,
+                    [data-shell-variant="legacy"] .dashboardGrid.sidebar-collapsed {
                         padding-left: 0 !important;
                         width: 100% !important;
                     }

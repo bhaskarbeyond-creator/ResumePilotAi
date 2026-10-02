@@ -33,9 +33,7 @@ const EmployerPortal = () => {
     });
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    // Read after mount so the first paint is identical for every user until the
-    // flag has actually been evaluated.
-    const [cubaChrome, setCubaChrome] = useState(false);
+    const [cubaChrome, setCubaChrome] = useState(() => isCubaShellEnabled());
 
     useEffect(() => {
         setCubaChrome(isCubaShellEnabled());

@@ -252,28 +252,28 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
 
     return (
         <>
-            {/* Custom styles for global content adjustment (same as ProfileDisplay) */}
+            {/* Custom styles for global content adjustment (scoped to legacy shell) */}
             <style>{`
-                .dashboardContentWrapper,
-                .dashboardGrid {
+                [data-shell-variant="legacy"] .dashboardContentWrapper,
+                [data-shell-variant="legacy"] .dashboardGrid {
                     padding-left: 280px !important; /* Standard expanded width */
                     box-sizing: border-box !important;
                     transition: padding-left 0.3s ease !important;
                 }
 
-                .dashboardContentWrapper.sidebar-collapsed,
-                .dashboardGrid.sidebar-collapsed {
+                [data-shell-variant="legacy"] .dashboardContentWrapper.sidebar-collapsed,
+                [data-shell-variant="legacy"] .dashboardGrid.sidebar-collapsed {
                     padding-left: 70px !important; /* Standard collapsed width */
                 }
 
                 @media only screen and (max-width: 1050px) {
-                    .dashboardContentWrapper,
-                    .dashboardGrid {
+                    [data-shell-variant="legacy"] .dashboardContentWrapper,
+                    [data-shell-variant="legacy"] .dashboardGrid {
                         padding-left: 0 !important; /* On smaller screens, default to no padding */
                     }
 
-                    .dashboardContentWrapper.sidebar-collapsed,
-                    .dashboardGrid.sidebar-collapsed {
+                    [data-shell-variant="legacy"] .dashboardContentWrapper.sidebar-collapsed,
+                    [data-shell-variant="legacy"] .dashboardGrid.sidebar-collapsed {
                         padding-left: 70px !important;
                     }
                 }

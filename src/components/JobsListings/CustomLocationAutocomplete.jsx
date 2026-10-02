@@ -298,11 +298,11 @@ const CustomLocationAutocomplete = ({ value, onChange, placeholder = 'Location',
                     style={{
                         boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
                     }}>
-                    <div className="py-2 max-h-80 overflow-y-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                    <div data-autocomplete-suggestions="true" className="py-2 max-h-80 overflow-y-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                         <style
                             dangerouslySetInnerHTML={{
                                 __html: `
-                                .overflow-y-auto::-webkit-scrollbar {
+                                [data-autocomplete-suggestions]::-webkit-scrollbar {
                                     display: none;
                                 }
                             `,

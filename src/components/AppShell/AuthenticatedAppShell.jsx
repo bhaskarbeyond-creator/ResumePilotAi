@@ -24,11 +24,8 @@ const AuthenticatedAppShell = ({ children }) => {
     const decision = resolveApplicationShell({ authReady: true, user });
     const [sidebarCollapsed, setSidebarCollapsed] = useState(readCollapsed);
     const [profile, setProfile] = useState({});
-    const [cubaShell, setCubaShell] = useState(false);
+    const [cubaShell, setCubaShell] = useState(() => isCubaShellEnabled());
 
-    // Read the rollout flag after mount rather than during render: reading
-    // localStorage during render would let the first paint differ between
-    // server and client.
     useEffect(() => {
         setCubaShell(isCubaShellEnabled());
     }, []);

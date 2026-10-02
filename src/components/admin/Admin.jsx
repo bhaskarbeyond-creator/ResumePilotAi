@@ -718,9 +718,8 @@ const AdminConsoleInner = () => {
  * `backend/security/policy.js`. This wrapper decides nothing (§7).
  */
 const Admin = () => {
-  const [cubaChrome, setCubaChrome] = React.useState(false);
+  const [cubaChrome, setCubaChrome] = React.useState(() => isCubaShellEnabled());
 
-  // Read after mount so the first paint is identical until the flag is evaluated.
   React.useEffect(() => { setCubaChrome(isCubaShellEnabled()); }, []);
 
   return cubaChrome ? (

@@ -1,4 +1,4 @@
-.dashboardWrapper {
+[data-shell-variant="legacy"].dashboardWrapper {
   width: 100%;
   min-height: 100vh;
   position: relative;
@@ -6,7 +6,7 @@
   display: flex;
 }
 
-.dashboardContentWrapper {
+[data-shell-variant="legacy"] .dashboardContentWrapper {
   display: flex;
   flex-direction: column;
   flex: 1;
