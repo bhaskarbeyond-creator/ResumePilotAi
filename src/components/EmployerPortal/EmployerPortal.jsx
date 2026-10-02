@@ -1,10 +1,15 @@
-import React, { useState, useCallback, useEffect, Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useCallback, useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { FiMenu } from 'react-icons/fi';
 import DashboardToast from '../Dashboard/DashboardToast/DashboardToast';
 import EmployerSidebar from './EmployerSidebar';
 import Spinner from '../Spinner/Spinner';
+import { isCubaShellEnabled } from '../cuba/cubaShellFlag';
 import './EmployerPortal.scss';
+
+// Phase 5 (§49): the Cuba recruiter console. Lazily loaded, so the default
+// legacy chrome never downloads it. Kept behind a lazy boundary here rather
+// than in main.jsx so the canonical `/employer/*` route element is untouched.
+const EmployerPortalCuba = lazy(() => import('./EmployerPortalCuba'));
 
 // Recruiter capability is mounted under /employer only. Candidate-only asset
 // builders (resume, cover letter, portfolio) are intentionally absent here and
@@ -27,6 +32,13 @@ const EmployerPortal = () => {
     });
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    // Read after mount so the first paint is identical for every user until the
+    // flag has actually been evaluated.
+    const [cubaChrome, setCubaChrome] = useState(false);
+
+    useEffect(() => {
+        setCubaChrome(isCubaShellEnabled());
+    }, []);
 
     // Every employer child receives a real function here, so no descendant can
     // ever call an undefined showToast.
@@ -64,6 +76,20 @@ const EmployerPortal = () => {
     const closeMobileMenu = useCallback(() => {
         setMobileMenuOpen(false);
     }, []);
+
+    // Rollout switch (§49). Default OFF, so every existing recruiter keeps the
+    // shell that already passed the four-portal architecture gates. The Cuba
+    // console mounts the identical child routes, so no recruiter capability is
+    // conditional on this flag.
+    if (cubaChrome) {
+        return (
+            <div data-testid="employer-portal-shell" data-shell-variant="cuba">
+                <Suspense fallback={<div className="min-h-screen bg-cuba-canvas" aria-busy="true" />}>
+                    <EmployerPortalCuba />
+                </Suspense>
+            </div>
+        );
+    }
 
     return (
         <div className="employerShell" data-testid="employer-portal-shell">
