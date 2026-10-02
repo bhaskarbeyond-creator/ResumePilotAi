@@ -14,6 +14,7 @@ import CubaStatCard from './CubaStatCard';
 import CubaInput, { CubaSelect, CubaTextarea } from './CubaField';
 import AiEngineStatus from './AiEngineStatus';
 import AiSurface from './AiSurface';
+import CubaPublicHeader from './CubaPublicHeader';
 import { AI_STATUS } from './aiStatus';
 
 /**
@@ -206,6 +207,20 @@ title="Design system showcase"
                             />
                         </div>
                     </div>
+                </Section>
+
+                <Section
+                    title="Public marketing header"
+                    description="Phase 8. Sticky frosted bar built from the real public route table. Resize to 320px to check the mobile disclosure, and press Escape to close it."
+                >
+                    <div className="-mx-4 -mt-2 overflow-hidden rounded-cuba-lg border border-cuba-line sm:-mx-5">
+                        <CubaPublicHeader currentPath="/pricing" />
+                    </div>
+                    <p className="text-xs text-cuba-ink-muted">
+                        Renders <code>/features</code>, <code>/#templates</code>, <code>/pricing</code>,
+                        {' '}<code>/jobs</code>, <code>/blog</code> and <code>/contact</code> — every entry is a
+                        route the application actually mounts.
+                    </p>
                 </Section>
 
                 <Section
