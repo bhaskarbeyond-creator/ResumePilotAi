@@ -1,15 +1,15 @@
 {
-  "updatedAt": "2026-10-02T16:33:06.190Z",
-  "eventCount": 40,
-  "activeDirectiveId": "DIR-003",
-  "activeDirectiveTitle": "Public Secondary Pages & Marketing Header Harmonization",
-  "activeDirectiveStatus": "ISSUED",
-  "unreadForLead": 0,
-  "unreadForDev": 26,
-  "pendingBlockers": 0,
+  "updatedAt": "2026-10-02T23:25:02.533Z",
+  "eventCount": 359,
+  "activeDirectiveId": null,
+  "activeDirectiveTitle": null,
+  "activeDirectiveStatus": null,
+  "unreadForLead": 109,
+  "unreadForDev": 165,
+  "pendingBlockers": 14,
   "latestHeartbeat": {
-    "timestamp": "2026-10-02T07:30:39.055Z",
-    "status": "Investigating Candidate sub-surfaces and ContextSwitcher",
-    "percent": 25
+    "timestamp": "2026-10-02T23:24:36.322Z",
+    "status": "Pass 40: adjudicating pass35 FAILs. Confirmed INV3.4 = units defect (char-offset compared to line-number; RequireAuthenticated L152 < route L579). Running git-truth consumer census at dd6c85d8 to settle AC3 14-vs-15.",
+    "percent": 40
   }
 }

@@ -2,7 +2,7 @@
   "id": "DIR-003",
   "title": "Public Secondary Pages & Marketing Header Harmonization",
   "priority": "P1",
-  "status": "ISSUED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "Antigravity (Lead Supervisor)",
   "assignedTo": "Cline (Staff Developer)",
   "createdAt": "2026-10-02T07:47:42.956Z",
@@ -23,5 +23,7 @@
   "heartbeats": [],
   "evidence": null,
   "reviews": [],
-  "freezeHash": null
+  "freezeHash": "c1a13301a5e7ec9ba6915f082e66fcb498f395b2",
+  "certifiedAt": "2026-10-02T16:36:34.547Z",
+  "certifiedBy": "Antigravity (Lead Gatekeeper)"
 }
