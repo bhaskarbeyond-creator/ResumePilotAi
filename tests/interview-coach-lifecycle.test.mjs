@@ -79,6 +79,28 @@ function textOf(root) {
     return root.textContent || '';
 }
 
+/**
+ * Awaits a real DOM condition instead of guessing a fixed sleep duration.
+ *
+ * WHY: the multi-tab takeover assertions previously did
+ * `await new Promise(r => setTimeout(r, 50))` and then asserted the takeover
+ * screen had rendered. 50ms is a guess, not a guarantee, so on a loaded or
+ * throttled runner the assertion could fire before React committed and fail
+ * intermittently (this suite was the documented flake in crawl-report.md).
+ *
+ * The assertions themselves are UNCHANGED — only the wait is made
+ * condition-driven, so this still proves the takeover actually rendered rather
+ * than that 50ms happened to be enough on an idle machine. Bounded so a real
+ * regression fails fast instead of hanging.
+ */
+async function waitForText(root, needle, { attempts = 60, stepMs = 25 } = {}) {
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+        if (textOf(root()).includes(needle)) return true;
+        await act(async () => { await new Promise(r => setTimeout(r, stepMs)); });
+    }
+    return textOf(root()).includes(needle);
+}
+
 async function renderComponent(vite, _root) {
     const module = await vite.ssrLoadModule('/src/components/Dashboard/DashboardInterviews/DashboardInterviews.jsx');
     const AuthContextMod = await vite.ssrLoadModule('/src/context/AuthContext.jsx');
@@ -248,7 +270,7 @@ test('interview coach lifecycle: keyboard CBT, exit protection, multi-tab, submi
             Object.defineProperty(storageEvent, 'newValue', { value: foreignWrite });
             dom.window.dispatchEvent(storageEvent);
         });
-        await act(async () => { await new Promise(r => setTimeout(r, 50)); });
+        await waitForText(root, 'AI Interview Coach');
         assert.ok(textOf(root()).includes('AI Interview Coach'), 'returned to setup after takeover');
         assert.ok(textOf(root()).includes('continued in another tab'), 'takeover notice shown');
         assert.ok(root().querySelector('input[placeholder*="Engineer"]'), 'setup screen restored, no corrupt exam state');
@@ -263,7 +285,7 @@ test('interview coach lifecycle: keyboard CBT, exit protection, multi-tab, submi
             Object.defineProperty(storageEvent, 'newValue', { value: null });
             dom.window.dispatchEvent(storageEvent);
         });
-        await act(async () => { await new Promise(r => setTimeout(r, 50)); });
+        await waitForText(root, 'finished in another tab');
         assert.ok(textOf(root()).includes('finished in another tab'), 'submitted-elsewhere notice shown');
 
 // 13. Full submission flow: keyboard-driven exam → report → history.
