@@ -51,7 +51,8 @@
   background-color: #222d46;
 }
 
-.hidden {
+.languageDropDown.hidden,
+.languagePicker .hidden {
   display: none;
 }
 

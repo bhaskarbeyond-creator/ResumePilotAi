@@ -42,7 +42,8 @@
 }
 }
 
-.hidden{
+.languageDropDown.hidden,
+.languagePicker .hidden {
     display: none;
 }
 
