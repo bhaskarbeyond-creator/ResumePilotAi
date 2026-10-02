@@ -117,3 +117,10 @@ tests/.auth-states/
 test-results/
 playwright-report/
 scripts/capture-user-dashboard-visuals.mjs
+
+# Crawl evidence is intentionally committed so every QA claim in crawl-report.md
+# is reproducible from the repository. The broad "logs" and "*.log" rules above
+# would otherwise silently discard it.
+!crawl-artifacts/logs/
+!crawl-artifacts/logs/*.log
+

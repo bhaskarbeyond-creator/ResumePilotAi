@@ -1,0 +1,142 @@
+﻿{
+  "base": "https://ime365.local",
+  "httpStatus": 200,
+  "loadMs": 2179,
+  "title": "IME365 ΓÇö Resume Builder & CV Maker",
+  "url": "https://ime365.local/",
+  "bodyLen": 11481,
+  "headText": "Skip to main content Product Resume Templates Resources Pricing Enterprise Log In Get Started BUILD BETTER RESUMES. INTERVIEW WITH CONFIDENCE. Build| with Context-Aware AI. IME365 turns your real experience into metric-driven achievements, optimizes for 51 ATS layouts, and simulates real-world CBT behavioral interviews. Build My Resume ΓÇö Free Explore Platform No credit card required Free forever account Context-Aware AI 51 Enterprise ATS Layouts IME365 Studio Canvas Resume Studio ATS Score (Live) Interview AI Senior Software Engineer Principal Product Manager Staff Cloud Architect DRAFT EXPERI",
+  "rootChildren": 2,
+  "links": [
+    "#main-content",
+    "/",
+    "#resume-builder",
+    "#ats-checker",
+    "#interview-ai",
+    "#templates",
+    "/blog",
+    "#faqs",
+    "#pricing",
+    "/enterprise",
+    "/enterprise",
+    "/",
+    "#resume-builder",
+    "#ats-checker",
+    "#interview-ai",
+    "#templates",
+    "#pricing",
+    "/blog",
+    "/templates",
+    "/#faqs",
+    "/enterprise",
+    "/p/privacy-policy",
+    "/p/terms-of-service",
+    "/p/cookie-policy",
+    "/contact",
+    "/p/privacy-policy"
+  ],
+  "buttons": [
+    "Product",
+    "Resources",
+    "Log In",
+    "Get Started",
+    "Toggle Navigation Menu",
+    "Build My Resume ΓÇö Free",
+    "Explore Platform",
+    "Resume Studio",
+    "ATS Score (Live)",
+    "Interview AI",
+    "Senior Software Engineer",
+    "Principal Product Manager",
+    "Staff Cloud Architect",
+    "Apply AI Recommendation",
+    "Try Resume Builder Free",
+    "Check Your ATS Score Free",
+    "Start Tailoring Free",
+    "Practice Interviews Free",
+    "All Formats (51)",
+    "Executive Leadership",
+    "Modern Split",
+    "Minimalist ATS Pure",
+    "Technical & Engineering",
+    "Europass Standard",
+    "Preview",
+    "Use This Template",
+    "Preview",
+    "Use This Template",
+    "Preview",
+    "Use This Template",
+    "Preview",
+    "Use This Template",
+    "Preview",
+    "Use This Template",
+    "Preview",
+    "Use This Template",
+    "Monthly",
+    "Quarterly\nSave 33% off retail",
+    "Annual Pass\nSAVE 79% ΓÇó BEST VALUE",
+    "Get Started Free"
+  ],
+  "consoleErrorCount": 0,
+  "consoleErrors": [],
+  "pageErrors": [],
+  "failedCount": 0,
+  "failed": [],
+  "api": [
+    {
+      "url": "https://ime365.local/api/platform/public-config",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "url": "https://ime365.local/api/platform/public-config",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "url": "https://ime365.local/api/platform/public-config",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "url": "https://ime365.local/api/platform/public-config",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "url": "https://ime365.local/api/platform/public-config",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "url": "https://ime365.local/api/public/custom-pages",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "url": "https://ime365.local/api/platform/public-config",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "url": "https://ime365.local/api/platform/public-config",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "url": "https://ime365.local/api/platform/public-config",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "url": "https://ime365.local/api/platform/public-config",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "url": "https://ime365.local/api/platform/public-config",
+      "status": 200,
+      "method": "GET"
+    }
+  ]
+}

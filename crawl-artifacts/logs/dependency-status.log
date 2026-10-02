@@ -1,0 +1,27 @@
+﻿AI providers: 0/6 configured
+   GEMINI_API_KEY             EMPTY
+   OPENAI_API_KEY             ABSENT
+   NVIDIA_API_KEY             ABSENT
+   GROQ_API_KEY               ABSENT
+   OPENROUTER_API_KEY         ABSENT
+   DEEPSEEK_API_KEY           ABSENT
+Payments: 3/7 configured
+   STRIPE_SECRET              EMPTY
+   STRIPE_WEBHOOK_SECRET      EMPTY
+   PAYPAL_CLIENT_ID           EMPTY
+   PAYPAL_CLIENT_SECRET       EMPTY
+   PAYPAL_ENV                 SET (len 7)
+   RAZORPAY_KEY_ID            SET (len 23)
+   RAZORPAY_KEY_SECRET        SET (len 24)
+Email: 0/3 configured
+   SMTP_HOST                  ABSENT
+   SMTP_USER                  ABSENT
+   SMTP_PASS                  ABSENT
+Identity: 3/3 configured
+   FIREBASE_PROJECT_ID        SET (len 23)
+   FIREBASE_CLIENT_EMAIL      SET (len 71)
+   FIREBASE_PRIVATE_KEY       SET (len 1732)
+Database: 3/3 configured
+   DB_HOST                    SET (len 9)
+   DB_USER                    SET (len 4)
+   DB_NAME                    SET (len 17)

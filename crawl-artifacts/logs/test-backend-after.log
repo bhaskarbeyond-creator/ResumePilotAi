@@ -1,0 +1,1207 @@
+﻿
+> backend@1.0.0 test
+> node scripts/run-tests-with-annotations.js
+
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒöä add secrets lifecycle management: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ≡ƒöÉ encrypt with Dotenvx: https://dotenvx.com
+Γ£ö admin audit search filters records and redacts raw credential values at read time (2.2761ms)
+Γ£ö Admin -> DB -> Backend -> API -> Frontend -> Runtime Control Plane Lifecycle (79.9842ms)
+[dotenv@17.2.3] injecting env (27) from .env -- tip: Γ£à audit secrets and track compliance: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (6) from ..\.env -- tip: ΓÜÖ∩╕Å  enable debug logging with { debug: true }
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ΓÜÖ∩╕Å  load multiple .env files with { path: ['.env.local', '.env'] }
+[Firebase Admin] Initialized via environment variables (identity only)
+Γ£ö ordinary Admin cannot replace secrets or run external provider tests (94.4965ms)
+Γ£ö an explicitly unsupported email test type still returns validation, not a misleading auth result (5.2947ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒùé∩╕Å backup and recover secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ≡ƒôí add observability to secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ΓÜÖ∩╕Å  suppress all logs with { quiet: true }
+[Firebase Admin] Initialized via environment variables (identity only)
+Γ£ö GAP-22: Super Admin tenant assignment resolves the default workspace and persists membership (83.1617ms)
+Γ£ö GAP-22: assignment surfaces workspace context and is visible to User 360 refresh path (10.4701ms)
+Γ£ö GAP-22: tenant with no usable workspace fails with actionable 409, not a generic 400 (8.7752ms)
+Γ£ö GAP-22: invalid tenant id fails deterministically (14.7672ms)
+Γ£ö GAP-22: suspended tenant cannot receive members (5.5014ms)
+Γ£ö GAP-22: workspace from another tenant is rejected ΓÇö cross-tenant isolation holds (4.722ms)
+Γ£ö GAP-22: malformed explicit workspace id returns 400 INVALID_WORKSPACE_ID (6.6652ms)
+Γ£ö GAP-22: explicit tenant-owned workspace is honored and validated (5.7271ms)
+Γ£ö GAP-22: duplicate assignment is an honest idempotent update, alreadyMember is reported (9.5287ms)
+Γ£ö GAP-22: RBAC ΓÇö USER/SUPPORT/AUDITOR receive 403 regardless of UI visibility (10.0568ms)
+Γ£ö GAP-22: unauthenticated request fails closed with 401 (4.3491ms)
+Γ£ö GAP-22: invalid role and invalid uid are validated before any registry work (7.2527ms)
+Γ£ö GAP-22: removal revokes tenant + workspace membership atomically (lifecycle) (7.3215ms)
+Γ£ö GAP-22: tenant isolation ΓÇö assigned member is invisible to other tenants (6.2226ms)
+Γ£ö GAP-22: platform member registry resolves default workspace and persists (5.3542ms)
+Γ£ö GAP-22: platform member registry rejects cross-tenant workspace and empty-workspace tenants (7.5819ms)
+Γ£ö GAP-22: platform member registry ΓÇö SUPPORT and AUDITOR are denied, suspension blocks assignment (11.174ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒôí add observability to secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (25) from .env -- tip: ≡ƒùé∩╕Å backup and recover secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ΓÜÖ∩╕Å  override existing env vars with { override: true }
+[Firebase Admin] Initialized via environment variables (identity only)
+Γû╢ ADVERSARIAL CERTIFICATION SUITE ΓÇö 10/10 Verification
+  Γ£ö 1. Entitlement Separation from Role (1.4479ms)
+Playwright exporting PDF, navigating to:  https://ai-resume-builder.local/export/Cv1/resume-candidate-free/en#renderToken=IYRlbwmsNKHqZlpx71G5E1EHWI3jqrbjaV8AdeIN3_c
+[Export PDF] {
+  code: 'EXPORT_FAILED',
+  message: 'EXPORT_RENDER_FAILED:not-found',
+  requestId: 'bafea6a4-b495-49f7-932a-a987dbdcf378'
+}
+  Γ£ö 2. Admin Toggle Dynamic Cycle: OFF -> ON -> OFF (1657.1087ms)
+  Γ£ö 3. Frontend Bypass Resistance: Direct API calls rejected regardless of client claims (8.2075ms)
+  Γ£ö 4. DOCX Matrix: Valid OOXML generated for allowed tiers and toggles (46.5652ms)
+  Γ£ö 5. Share Security: Ownership, Public snapshot, Revocation (19.4218ms)
+Γ£ö ADVERSARIAL CERTIFICATION SUITE ΓÇö 10/10 Verification (1734.6425ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒöÉ encrypt with Dotenvx: https://dotenvx.com
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ≡ƒöÉ prevent building .env in docker: https://dotenvx.com/prebuild
+[AI quota] MariaDB unavailable
+[Rate limit store] counter offline
+Γ£ö daily AI quota is account-bound, durable, and fails closed after the basic limit (6.0536ms)
+Γ£ö AI quota fails closed when its authoritative MariaDB store is unavailable (0.9027ms)
+Γ£ö burst limiter cannot be bypassed by changing source address for one account (1.1539ms)
+Γ£ö burst limiter fails closed when the durable counter store is unavailable (0.7452ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒæÑ sync secrets across teammates & machines: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ≡ƒöÉ prevent building .env in docker: https://dotenvx.com/prebuild
+Γ£ö AI Admin public settings preserve all six providers and fallback controls (2.0396ms)
+Γ£ö authorized AI settings save is revisioned, audited, split, and never returns secrets (3.4549ms)
+Γ£ö AI secret lifecycle preserves blank values and accepts only explicit clears (0.324ms)
+Γ£ö AI settings load reports configured booleans without returning provider keys (0.6599ms)
+Γ£ö provider test succeeds for each supported provider using deterministic mocked contracts (2.3086ms)
+Γ£ö provider test distinguishes missing config, rejected credentials, invalid model, outage, and timeout without mutating settings (6.2302ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒöÉ encrypt with Dotenvx: https://dotenvx.com
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ≡ƒæÑ sync secrets across teammates & machines: https://dotenvx.com/ops
+Γ£ö Adversarial: Prompt injection & instruction override attempts are sanitized and strictly bound (4.5027ms)
+Γ£ö Adversarial: Client API key and identity spoofing are strictly rejected with 400 (239.6549ms)
+Γ£ö Adversarial: Payloads exceeding 50,000 bytes are rejected with 413 AI_INPUT_TOO_LARGE (5.076ms)
+Γ£ö JSON Stress: extractJson handles unescaped newlines, prose wrapping, and malformed markers (1.1207ms)
+Γ£ö Fallback Cascade: Step-by-step failover through all providers with deterministic recovery (10.5735ms)
+Γ£ö Concurrency: 20 simultaneous AI requests execute safely without state corruption (5.7418ms)
+Γ£ö Concurrency: Admin settings optimistic concurrency control with revision conflict (409) (3.7011ms)
+Γ£ö Cache Invalidation: Saving settings immediately flushes configuration cache (0.7373ms)
+Γ£ö Isolation: Role-based access control blocks unauthorized and unverified users (27.1922ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ΓÜÖ∩╕Å  load multiple .env files with { path: ['.env.local', '.env'] }
+[dotenv@17.2.3] injecting env (25) from .env -- tip: ΓÜÖ∩╕Å  specify custom .env file path with { path: '/custom/path/.env' }
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ≡ƒöæ add access controls to secrets: https://dotenvx.com/ops
+[Firebase Admin] Initialized via environment variables (identity only)
+[Enterprise Architecture] {"enterpriseTenancy":"ENABLED","dataProvider":"Enterprise Data Provider: mysql","dataPlaneConfigured":true,"cache":"Cache: none (MySQL/MariaDB is the authoritative store)","queue":"Queue: MariaDB transactional outbox","encryption":"Encryption Provider: ServerKey","encryptionSecurityLevel":"SERVER_SIDE_MASTER_KEY_ENVELOPE_AES_256_GCM","quotaStore":"mariadb-atomic"}
+Γ£ö 1. Concurrent execution of Tenant A vs Tenant B strictly isolates context, prompts, and credentials (136.5104ms)
+[generate-content] Provider failed grounding or availability checks; returning safe fallback { operation: 'generate-job-description', code: 'AI_PROVIDER_ERROR' }
+[generate-content] Provider failed grounding or availability checks; returning safe fallback { operation: 'generate-job-description', code: 'INVALID_AI_RESPONSE' }
+Γ£ö 2. Same-Tenant User Isolation: User A1 (Alice) session is completely inaccessible to User A2 (Charlie) (27.7648ms)
+Γ£ö 3. Same-User Multi-Session Isolation: Interview 1 facts and state do not bleed into Interview 2 (3.4504ms)
+Γ£ö 4. Cache Isolation: tenantCacheKey incorporates tenant, workspace, subject, domain, resource, and revision (0.8576ms)
+Γ£ö 5. Retry Isolation: Failed/timed-out requests preserve per-request context and never mix with concurrent callers (8.5946ms)
+Γ£ö 6. Prompt Injection Resistance: Malicious instructions in candidate fields are fenced as untrusted data (1.1171ms)
+Γ£ö 7. Long Interview Memory: Maintains earlier concrete claims and bounds prompt size over 30 turns (19.3806ms)
+Γ£ö 8. Output Validation: Clamps out-of-range scores (e.g. 100 -> 98, 20 -> 50) and rejects malformed fields (0.822ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒùé∩╕Å backup and recover secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ≡ƒöæ add access controls to secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ≡ƒöÉ encrypt with Dotenvx: https://dotenvx.com
+[Firebase Admin] Initialized via environment variables (identity only)
+Γ£ö extractJson parses clean, wrapped, and malformed JSON with raw control characters (2.7558ms)
+Γ£ö grounded prompt builder validates operations, source facts, and evidence contracts (3.6619ms)
+Γ£ö AI gateway enforces security boundary, identity protections, and size constraints (1798.8215ms)
+Γ£ö AI endpoints support multi-language routing and deterministic fallbacks (24.9417ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒôí add observability to secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ΓÜÖ∩╕Å  suppress all logs with { quiet: true }
+Γ£ö Acceptance Gate 1: 50 concurrent provider calls preserve per-request results without shared-state corruption (34.4781ms)
+Γ£ö Acceptance Gate 2: Concurrent Admin settings update + User AI generation race test (75.5276ms)
+Γ£ö Acceptance Gate 3: 12 provider failure contracts fail over once without retry storms (7.2735ms)
+Γ£ö Acceptance Gate 4: AI settings RBAC and secret-redaction boundaries are enforced (16.1121ms)
+Γ£ö Acceptance Gate 5: Behavioral Cache Invalidation & Dynamic Model Switch Verification (1.7728ms)
+Γ£ö P1: providerHttp exposes a keep-alive agent for provider URLs (1.3086ms)
+Γ£ö P2: withPooledAgent adds agent only for node-fetch v2, never mutates options (0.4041ms)
+Γ£ö P3: two sequential AI calls reuse ONE pooled connection (node-fetch v2) (47.2711ms)
+Γ£ö P4: concurrent requests from two tenants over the pooled layer ΓÇö zero credential cross-talk (10.8068ms)
+Γ£ö P5: timeout on the pooled fetch still aborts and does not poison the pool (306.7095ms)
+Γ£ö R1: latency-critical op retries with FAST bounded backoff (150ms, not 3s) (161.2814ms)
+Γ£ö R2: long Retry-After on a 429 is NOT waited out ΓÇö immediate failover to next candidate (1.3362ms)
+Γ£ö R3: short Retry-After (<=2s) IS respected on latency-critical retry (1006.5799ms)
+Γ£ö R4: latency budget bounds total candidate spend on a degraded provider (153.5622ms)
+Γ£ö R4b: budget exhaustion is recorded when failover occurs mid-attempt-plan (156.0719ms)
+Γ£ö R5: non-latency-critical operations keep exactly ONE attempt (no retry storms) (1.2667ms)
+Γ£ö R6: client abort during backoff sleep is honored (no orphaned retry) (160.0547ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒöÉ encrypt with Dotenvx: https://dotenvx.com
+[dotenv@17.2.3] injecting env (25) from .env -- tip: ΓÜÖ∩╕Å  suppress all logs with { quiet: true }
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ≡ƒöÉ encrypt with Dotenvx: https://dotenvx.com
+[Firebase Admin] Initialized via environment variables (identity only)
+[Enterprise Architecture] {"enterpriseTenancy":"ENABLED","dataProvider":"Enterprise Data Provider: mysql","dataPlaneConfigured":true,"cache":"Cache: none (MySQL/MariaDB is the authoritative store)","queue":"Queue: MariaDB transactional outbox","encryption":"Encryption Provider: ServerKey","encryptionSecurityLevel":"SERVER_SIDE_MASTER_KEY_ENVELOPE_AES_256_GCM","quotaStore":"mariadb-atomic"}
+Γ£ö 1. Concurrent Tenant A vs Tenant B: every call carries its own tenant's BYOK credential (108.93ms)
+Γ£ö 2. Tenant A failure NEVER falls back to Tenant B credential/provider (same-tenant only) (27.3329ms)
+[generate-content] Provider failed grounding or availability checks; returning safe fallback { operation: 'generate-summary', code: 'AI_PROVIDER_ERROR' }
+Γ£ö 3. Tenant policy bounds the fallback path: a disallowed provider is never used to "save" a failing request (12.7636ms)
+Γ£ö 4. User-controlled X-Tenant-Id naming another tenant fails closed (no credential selection by payload) (21.0858ms)
+Γ£ö 5. Credentials never appear in responses, headers, routing telemetry, or health snapshots (11.8437ms)
+Γ£ö 6. Platform (non-tenant) request uses platform credentials ΓÇö control case (5.4806ms)
+[generate-content] Provider failed grounding or availability checks; returning safe fallback { operation: 'generate-summary', code: 'AI_PROVIDER_ERROR' }
+Γ£ö 7. Tenant-scoped routing state does not leak across tenants (telemetry + health isolation) (21.9584ms)
+Γ£ö 1. OpenAI-compatible discovery normalizes metadata into the capability model without fabrication (5.619ms)
+Γ£ö 2. Brand-new model from a registered future provider participates end-to-end via the generic path (7.1691ms)
+Γ£ö 3. Gemini-native discovery and request shapes work through the same engine (1.6384ms)
+Γ£ö 4. Discovery 401/403 marks credentials rejected for THAT tenant only (cache isolation) (2.0618ms)
+Γ£ö 5. Transient discovery failures (429 / network / malformed / 400) preserve last-known-good (1.8921ms)
+Γ£ö 6. Discovery refresh is deduped and rate-limited; getCachedState is synchronous (selection never blocks on network) (49.2926ms)
+Γ£ö 7. Discovery timeouts are bounded and produce safe errors (never fabricated models) (501.9371ms)
+Γ£ö 8. Provider adapter registry is the ONLY provider-specific extension point (no provider names in the selection core) (1.2166ms)
+Γ£ö 9. Credential-rejected state persists safely (no secret material in discovery state) (0.6562ms)
+Γ£ö 10. Bounded catalog size (LRU eviction) keeps memory predictable (0.3511ms)
+Γ£ö 1. Rolling/decaying health stats: percentiles, success rate, and TTL expiry (1.692ms)
+Γ£ö 2. 429 ΓåÆ tenant-scoped rate-limit cooldown honoring Retry-After; recovery after the window (7.1488ms)
+Γ£ö 3. 404 model_not_found ΓåÆ 30min model-unavailable block for the tenant; other tenants unaffected (2.1164ms)
+Γ£ö 4. Consecutive hard failures ΓåÆ exponential backoff; a success resets the chain (0.4207ms)
+[generate-content] Provider failed grounding or availability checks; returning safe fallback { operation: 'generate-summary', code: 'AI_PROVIDER_ERROR' }
+Γ£ö 5. Retry policy: latency-critical ops retry transient 5xx once with bounded backoff; non-critical ops never retry (162.859ms)
+Γ£ö 6. Fallback candidates must re-satisfy the original requirement (structured output) (3.3588ms)
+Γ£ö 7. Zero fabricated content on total failure: honest error contract + explicit AI-unavailable state (5.3124ms)
+Γ£ö 8. External cancellation is honored at every hop (no orphaned provider work) (24.6308ms)
+Γ£ö 9. Telemetry on failure paths: tenant-scoped, explainable, prompt-free (0.9606ms)
+Γ£ö 10. Requirement derivation drives the execution path (operation-aware generation parameters) (0.3906ms)
+Γ£ö 1. Requirement profiles are operation-driven data with explicit token math (1.4443ms)
+Γ£ö 2. Provider order: primary first; fallback disabled pins the primary; disabled providers never appear (1.0566ms)
+Γ£ö 3. Hard eligibility gates reject before ranking (each with an explainable reason) (3.1102ms)
+Γ£ö 4. Context capacity: insufficient is a violation; unverified long context is a hard rejection; verified short stays eligible (0.4708ms)
+Γ£ö 5. Selection is explainable: configured intent dominates; reasons and rationale are recorded (0.3532ms)
+Γ£ö 6. Determinism: identical inputs produce identical ordering across repeated runs (0.8699ms)
+Γ£ö 7. A brand-new discovered model with verified long-context capacity outranks a configured model that cannot fit (0.2841ms)
+Γ£ö 8. Runtime health cooldowns exclude models per tenant; last-resort releases the earliest expiry (1.1549ms)
+Γ£ö 9. Model-not-found blocks for the tenant until the catalog refreshes (30min), then recovers (0.4308ms)
+Γ£ö 10. Tenant primary-model policy is the strongest selection signal (governance, not ranking of unknowns) (0.4568ms)
+Γ£ö 11. Verified capability evidence and tenant health refine ranking without overriding eligibility (0.5373ms)
+Γ£ö 12. Auto option (model: "auto" / "dynamic") unpins candidate selection so discovered models compete dynamically (0.2686ms)
+Γ£ö PG-1: 3-tenant concurrent connection reuse ΓÇö zero credential cross-talk across 12 requests (68.5856ms)
+Γ£ö PG-2: Operation token limits strictly clamp generation parameters (4.6311ms)
+Γ£ö PG-3: live-interview-guide is latency-critical with fast bounded backoff and 15s budget (164.3292ms)
+Γ£ö PG-4: Model selector penalizes >8s p50 models on latency-sensitive operations (0.5998ms)
+Γ£ö PG-5: Opening and turn prompts include suggested_talking_points and negative metric directives (2.0919ms)
+Γ£ö PG-6: Latency benchmark ΓÇö steady-state, degraded failover, and token clamping metrics (7.7065ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒ¢á∩╕Å  run anywhere with `dotenvx run -- yourcommand`
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ≡ƒôí add observability to secrets: https://dotenvx.com/ops
+Γ£ö F1: work-description prompt no longer instructs the model to invent benchmark metrics (4.2238ms)
+Γ£ö F2: the turn prompt contains the exact question being answered (11.997ms)
+Γ£ö F2: buildTurnPrompt tolerates a missing current question (0.3845ms)
+Γ£ö F4: provider-outage fallbacks ask questions instead of fabricating metrics or coursework (1.1855ms)
+Γ£ö F4 (Phase 3): summary fallback never assembles template sentences from structured facts (0.552ms)
+Γ£ö F6: out-of-band turn scores are clamped to the 50-98 rubric (2.7051ms)
+Γ£ö F6: MCQs whose correctAnswer does not reference a real option are dropped (0.3345ms)
+Γ£ö F7: non-question prose is not promoted into the interview question (2.1395ms)
+Γ£ö F7: a real question in the message is still recovered (1.4918ms)
+Γ£ö F10: interviewer output echoing an injection is rejected, not shown to the candidate (1.9049ms)
+Γ£ö F10: detector flags override attempts without flagging ordinary interview language (0.2327ms)
+Γ£ö F10: grammar suggestions carrying override text are dropped (1.4333ms)
+Γ£ö F8: live turn output budget leaves headroom for the full JSON contract (0.2742ms)
+Γ£ö F12: provider token usage is surfaced to callers (27.8385ms)
+Γ£ö F3: tenant configuration helpers are exported for every AI route (0.1767ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ΓÜÖ∩╕Å  specify custom .env file path with { path: '/custom/path/.env' }
+[dotenv@17.2.3] injecting env (26) from .env -- tip: Γ£à audit secrets and track compliance: https://dotenvx.com/ops
+[generate-content] Provider failed grounding or availability checks; returning safe fallback { operation: 'generate-projects', code: 'AI_PROVIDER_UNAVAILABLE' }
+Γ£ö P3-1 generate-projects outage returns an explicit empty unavailable state, no role templates (2.9516ms)
+Γ£ö P3-2 generate-job-description outage returns empty text, never a synthesized JD (0.4047ms)
+Γ£ö P3-3 summary outage preserves candidate text verbatim, otherwise asks ΓÇö never assembles a template (1.8922ms)
+Γ£ö P3-4 bullet outage without a draft asks; with a draft returns it unchanged (0.3589ms)
+Γ£ö P3-5 executeContentOperation marks provider-outage fallbacks aiUnavailable (so clients never cache/present them as AI) (6.7171ms)
+Γ£ö P3-6 clarification starter chips never offer canned outcome metrics (1.1369ms)
+Γ£ö P3-7 cover letter prompt carries only supplied facts, fenced as untrusted data (0.6658ms)
+Γ£ö P3-8 cover letter years are only accepted when explicitly numeric (no heuristic years) (0.2537ms)
+Γ£ö P3-9 cover letter validator rejects fabricated metrics, placeholders, truncation and injection echoes (1.4901ms)
+Γ£ö P3-10 answer guide prompt fences untrusted input and forbids invented figures (0.5245ms)
+Γ£ö P3-11 answer guide validator: grounded figures pass, invented figures and malformed output fail (1.614ms)
+Γ£ö P3-12 a missing turn score stays null (unscored) ΓÇö no invented 74/78/84 baseline (2.0854ms)
+Γ£ö P3-13 a missing report score is derived from real turn scores only, else rejected (no keyword-guessed score) (0.8959ms)
+Γ£ö P3-14 report competencies are kept only with cited evidence and valid scores (0.4819ms)
+Γ£ö P3-15 assistant filler is stripped from interviewer lines and no canned acknowledgement is substituted (0.6034ms)
+Γ£ö P3-16 claims ledger keeps early concrete facts verbatim and ignores injected instructions (0.5333ms)
+Γ£ö P3-17 conflicting later quantities are flagged neutrally for clarification (1.0844ms)
+Γ£ö P3-18 ledger stays bounded and keeps the earliest anchors on long interviews (0.8486ms)
+Γ£ö P3-19 long interview (F13): early facts reach late prompts, conflicts surface, questions are not repeated, prompt stays bounded (19.2736ms)
+Γ£ö P3-20 a repeated question triggers one side-effect-free regeneration (3.3181ms)
+Γ£ö P3-21 model answers with figures absent from the candidate material: graduated grounding (0.7345ms)
+Γ£ö P3-22 a live session is bound to its starting tenant; switching tenant mid-interview is refused before any AI call (1.818ms)
+Γ£ö P3-23 concurrent interviews for two tenants/users keep claims and prompts fully separate (2.0772ms)
+Γ£ö P3-24 turn prompt states voice, grounding, injection boundary and memory blocks (0.3447ms)
+Γ£ö P3-25 grammar prompt fences the user text as untrusted and strips tag spoofing (0.257ms)
+Γ£ö P3-26 grammar outage never claims the text is well-written; findings are exact and marked unavailable (0.5765ms)
+Γ£ö P3-27 summary/bullet output with a number absent from the candidate input is rejected (3.6106ms)
+Γ£ö P3-28 education/work starter chips contain no claim-like items (numbers, awards, publications) (3.4753ms)
+Γ£ö P3-29 bullet metric helpers ask for the candidate number and never inject invented figures (0.7782ms)
+Γ£ö P3-30 grammar parse without a model summary gives no canned quality verdict (0.2414ms)
+Γ£ö P3-31 bullet rewrite prompt example adds no method or result absent from the notes (0.5868ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒöä add secrets lifecycle management: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ≡ƒöÉ prevent building .env in docker: https://dotenvx.com/prebuild
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ≡ƒöæ add access controls to secrets: https://dotenvx.com/ops
+[Firebase Admin] Initialized via environment variables (identity only)
+Γ£ö AI generation requires a verified authenticated Firebase identity (700.3073ms)
+Γ£ö AI route preserves prompt context and response contract through the authenticated provider boundary (25.6868ms)
+Γ£ö ungrounded whole-resume generation is explicitly retired without calling a provider (6.0869ms)
+Γ£ö resume parser strips provider hallucinations and exposes extraction grounding (8.2712ms)
+Γ£ö AI route rejects client credentials, cross-account identity fields, and oversized context (13.2529ms)
+[generate-content] Provider failed grounding or availability checks; returning safe fallback { operation: 'generate-summary', code: 'AI_PROVIDER_ERROR' }
+Γ£ö provider failures return source-preserving content without leaking provider details (6.8631ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒöä add secrets lifecycle management: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (25) from .env -- tip: ≡ƒôí add observability to secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ≡ƒöæ add access controls to secrets: https://dotenvx.com/ops
+[Firebase Admin] Initialized via environment variables (identity only)
+[Enterprise Architecture] {"enterpriseTenancy":"ENABLED","dataProvider":"Enterprise Data Provider: mysql","dataPlaneConfigured":true,"cache":"Cache: none (MySQL/MariaDB is the authoritative store)","queue":"Queue: MariaDB transactional outbox","encryption":"Encryption Provider: ServerKey","encryptionSecurityLevel":"SERVER_SIDE_MASTER_KEY_ENVELOPE_AES_256_GCM","quotaStore":"mariadb-atomic"}
+Γ£ö 1. Injection: user-controlled fields cannot select another tenant credential or privileged config (108.8852ms)
+Γ£ö 2. Injection: prompt-injection text in sourceFacts cannot change credentials or leak secrets (15.5411ms)
+Γ£ö 3. Cache poisoning: a poisoned global catalog (Tenant A credential) cannot reach Tenant B or the platform (35.5559ms)
+Γ£ö 4. Config cache isolation: platform -> tenant -> platform never cross-pollutes credentials (18.6014ms)
+[generate-content] Provider failed grounding or availability checks; returning safe fallback { operation: 'generate-summary', code: 'AI_PROVIDER_ERROR' }
+Γ£ö 5. Telemetry leakage: provider error echoing a secret stays out of responses, telemetry, health, and audit (13.167ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒöä add secrets lifecycle management: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ΓÜÖ∩╕Å  specify custom .env file path with { path: '/custom/path/.env' }
+[generate-content] Provider failed grounding or availability checks; returning safe fallback { operation: 'generate-summary', code: 'AI_PROVIDER_ERROR' }
+[generate-content] Provider failed grounding or availability checks; returning safe fallback { operation: 'enhance-single-bullet', code: 'AI_PROVIDER_ERROR' }
+Γ£ö content prompts are built only from verified candidate evidence (no profession taxonomy) (5.0613ms)
+Γ£ö response normalization preserves UI contracts across markdown, aliases, and cleanup (5.8854ms)
+Γ£ö grammar responses are deterministically bounded and invalid indexes are rejected (1.0847ms)
+Γ£ö server configuration preserves primary provider, model, controls, and fallback order without exposing keys (82.8364ms)
+Γ£ö provider configuration cache avoids cross-request mutation of generation controls (0.348ms)
+Γ£ö legacy server-side provider settings remain migration-compatible without returning secrets to browsers (0.3353ms)
+Γ£ö provider failure falls back in configured order and returns the original normalized contract (33.2541ms)
+Γ£ö disabled fallback fails after the selected provider and never spends against another provider (1.8354ms)
+Γ£ö resume extraction returns only source-contained values with grounding metadata (2.9281ms)
+Γ£ö grounded factual responses reject uncited and lexically unsupported wording (3.4239ms)
+Γ£ö resume grounding drops hallucinations, unsupported associations, and implicit proficiency (1.39ms)
+Γ£ö provider requests honor cancellation and bounded timeout controls (0.624ms)
+Γ£ö getContentOperationFallback is source-preserving, asks questions, or returns honest empties ΓÇö never taxonomy filler (1.4032ms)
+Γ£ö executeContentOperation gracefully falls back on provider failure without throwing 502 (3.6396ms)
+Γ£ö password reset token and encrypted notification commit in one MariaDB transaction (8.1893ms)
+Γ£ö email verification token rolls back when its notification cannot enqueue (2.0452ms)
+Γ£ö sensitive token creation cannot commit when encryption is unavailable (1.8481ms)
+Γ£ö canonical dates: Firestore Timestamp-like toDate() (2.2349ms)
+Γ£ö canonical dates: toMillis() (0.2063ms)
+Γ£ö canonical dates: JavaScript Date (0.1496ms)
+Γ£ö canonical dates: ISO string (0.2064ms)
+Γ£ö canonical dates: RFC 2822 (0.2224ms)
+Γ£ö canonical dates: epoch milliseconds (0.1448ms)
+Γ£ö canonical dates: epoch seconds (0.1714ms)
+Γ£ö canonical dates: {seconds, nanoseconds} (0.1594ms)
+Γ£ö canonical dates: {_seconds, _nanoseconds} (0.1728ms)
+Γ£ö canonical dates: null/undefined/invalid never throw (0.3595ms)
+Γ£ö canonicalizeRecord converts membershipEnds without leaking Timestamp (0.4408ms)
+Γ£ö paid membership tiers include Premium, Pro, Enterprise (0.2312ms)
+Γ£ö toCanonicalUser + isMembershipActive works with ISO membershipEnds (0.4438ms)
+Γ£ö toCanonicalUser does not expose toDate() on membershipEnds (0.2445ms)
+Γ£ö expired membership is not active (0.178ms)
+Γ£ö boolean canonicalization (0.1481ms)
+Γ£ö mutation IDs are unique and prefixed (0.4929ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ΓÜÖ∩╕Å  load multiple .env files with { path: ['.env.local', '.env'] }
+[dotenv@17.2.3] injecting env (26) from .env -- tip: Γ£à audit secrets and track compliance: https://dotenvx.com/ops
+Γ£ö trusted CMS scheduler transaction publishes only due revisions and is idempotent (3.7877ms)
+Γ£ö CMS scheduler rolls back and surfaces a concurrent revision conflict (0.9368ms)
+Γ£ö CMS scheduler fails closed when the atomic repository adapter is absent (0.3023ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ΓÜÖ∩╕Å  load multiple .env files with { path: ['.env.local', '.env'] }
+[dotenv@17.2.3] injecting env (25) from .env -- tip: ΓÜÖ∩╕Å  enable debug logging with { debug: true }
+[dotenv@17.2.3] injecting env (0) from .env -- tip: Γ£à audit secrets and track compliance: https://dotenvx.com/ops
+[Firebase Admin] Initialized via environment variables (identity only)
+Γû╢ CROSS-APPLICATION AUDIT: Entitlement, Download, Share & Security Invariants
+  Γ£ö TEST A: Free user -> POST /api/export-docx -> HTTP 402 ACTIVE_SUBSCRIPTION_REQUIRED (55.4249ms)
+  Γ£ö TEST A2: Free user with allowFreeDocxDownload: true -> POST /api/export-docx -> HTTP 200 authorized (57.925ms)
+  Γ£ö TEST B: Free user -> POST /api/export (PDF) -> HTTP 402 ACTIVE_SUBSCRIPTION_REQUIRED (6.82ms)
+Playwright exporting PDF, navigating to:  https://ai-resume-builder.local/export/Cv1/resume-free-01/en#renderToken=fn8wcI_dy5u5aqGsI0kx0xiORNvrIxMtbhEDPbeZo2Q
+[Export PDF] {
+  code: 'EXPORT_FAILED',
+  message: 'EXPORT_RENDER_FAILED:not-found',
+  requestId: 'a9c885be-2437-4a41-bccb-bb96b3481dc5'
+}
+  Γ£ö TEST B2: Free user with allowFreePdfDownload: true -> Entitlement granted (proceeds to export pipeline) (1452.4321ms)
+  Γ£ö TEST C1: Premium user -> POST /api/export-docx -> HTTP 200 DOCX binary authorized (17.2575ms)
+  Γ£ö TEST C2: Enterprise user -> POST /api/export-docx -> HTTP 200 DOCX binary authorized (15.9374ms)
+  Γ£ö TEST F: IDOR Defense: Attacker cannot export or publish another user resume (10.1907ms)
+  Γ£ö TEST E: Canonical Share Flow: Owner publishes resume -> public endpoint serves authorized snapshot (9.5285ms)
+  Γ£ö TEST G: Revocation: Owner unpublishes resume -> public endpoint returns HTTP 404 (7.4846ms)
+Γ£ö CROSS-APPLICATION AUDIT: Entitlement, Download, Share & Security Invariants (1635.9135ms)
+[dotenv@17.2.3] injecting env (27) from .env -- tip: ΓÜÖ∩╕Å  load multiple .env files with { path: ['.env.local', '.env'] }
+[dotenv@17.2.3] injecting env (6) from ..\.env -- tip: ≡ƒùé∩╕Å backup and recover secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ΓÜÖ∩╕Å  override existing env vars with { override: true }
+[Firebase Admin] Initialized via environment variables (identity only)
+Γ£ö 1. Unauthenticated request to /api/admin/database-settings is rejected with 401 (30.6468ms)
+Γ£ö 2. Plain USER request to /api/admin/database-settings is rejected with 403 (14.4674ms)
+Γ£ö 3. SUPER ADMIN can read truthful MariaDB and Firebase Authentication ownership telemetry (13.7208ms)
+Γ£ö 4. Test connection endpoint rejects every non-MariaDB engine (15.0927ms)
+Γ£ö 5. Runtime database-owner switching is rejected fail-closed (5.6537ms)
+Γ£ö 6. Admin jobs fail closed when the authoritative MariaDB is unavailable (8.3112ms)
+Γ£ö 7. Public jobs fail closed without fabricated fallback data when MariaDB is unavailable (5.7357ms)
+Γ£ö authority starts NORMAL with MariaDB as the only application-data owner (1.7945ms)
+Γ£ö consecutive MariaDB failures reject writes without silent fallback (0.4093ms)
+Γ£ö a report about an unsupported engine cannot alter MariaDB authority (0.1802ms)
+Γ£ö authoritative outage never produces fake acceptance (0.1963ms)
+Γ£ö recovery threshold restores the same owner and records the transition (1.0211ms)
+Γ£ö runtime switching and secondary fallback are explicitly rejected (1.3059ms)
+Γ£ö every migrated application table has exactly one declared MariaDB domain owner (4.7028ms)
+Γ£ö ownership declarations do not point at nonexistent or renamed tables (1.5718ms)
+Γ£ö non-MariaDB owners are limited to identity and immutable code policy (0.2972ms)
+[dotenv@17.2.3] injecting env (27) from .env -- tip: ≡ƒùé∩╕Å backup and recover secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (6) from ..\.env -- tip: ≡ƒöä add secrets lifecycle management: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ≡ƒ¢á∩╕Å  run anywhere with `dotenvx run -- yourcommand`
+[Firebase Admin] Initialized via environment variables (identity only)
+[OAuth begin github] no client id configured
+[OAuth begin linkedin] no client id configured
+Γ£ö OAuth begin redirects with an explanatory reason instead of a blank 503 (58.5965ms)
+Γ£ö legacy client-authored notification dispatchers are permanently retired (21.2316ms)
+Γ£ö Naukri ingestion returns a coded 501 rather than fabricating listings (4.8751ms)
+Γ£ö the CMS scheduler distinguishes not-configured from a failed run (9.6056ms)
+[PayPal create] PAYMENT_PROVIDER_UNAVAILABLE
+[Paytm create] PAYMENT_PROVIDER_UNAVAILABLE
+[PhonePe create] PAYMENT_PROVIDER_UNAVAILABLE
+Γ£ö unconfigured payment gateways return a coded, explained response (31.6755ms)
+[OAuth begin github] no client id configured
+[Paytm create] PAYMENT_PROVIDER_UNAVAILABLE
+[PhonePe create] PAYMENT_PROVIDER_UNAVAILABLE
+Γ£ö no audited endpoint returns an empty body alongside an error status (24.8173ms)
+Γ£ö the firebase service-account status endpoint reports configuration without leaking key material (6.0158ms)
+Γ£ö LLM discovery publication is default-off and retains only its canonical fields (2.7781ms)
+Γ£ö LLM discovery publication requires meaningful content (0.6003ms)
+Γ£ö LLM discovery rejects unsupported rankings, ratings, social proof, and outcomes (0.3064ms)
+Γ£ö LLM discovery normalizes line endings and rejects controls or oversized payloads (0.3423ms)
+Γ£ö DOCX export is a valid Word package containing meaningful resume sections (66.9317ms)
+Γ£ö DOCX export strictly sanitizes raw editor HTML and prevents markup leakage (24.1391ms)
+Γ£ö rich text becomes native Word formatting rather than stripped plaintext only (24.2176ms)
+Γ£ö DOCX export renders authentic 2-column layout tables (<w:tbl>) for 2-column templates (18.5167ms)
+Γ£ö DOCX export applies authentic template color identity from the PDF theme preset for Cv1 (14.6767ms)
+Γ£ö client-supplied colors cannot override the authoritative theme palette (11.0259ms)
+Γ£ö DOCX export successfully generates valid OOXML packages for all 51 templates (591.0349ms)
+Γ£ö DOCX export correctly renders Unicode scripts (Telugu, Devanagari, European accents) (18.2458ms)
+Γ£ö DOCX export renders distinct layout structures for all 5 archetypes (71.4877ms)
+Γ£ö native Word numbering is emitted for bullets (15.2293ms)
+Γ£ö two-column templates stay two-column and ATS stays single-column (122.4114ms)
+Γ£ö content cannot disappear across archetypes (62.7705ms)
+Γ£ö theme registry stays synchronized with the PDF themePresets source (1.1733ms)
+Γ£ö resolveExportTemplate rejects client spoofing and mismatch (0.8223ms)
+Γ£ö layoutFamily maps archetypes the way the PDF composer does (0.122ms)
+Γ£ö HTML parser never returns raw tags and stripAllHtmlTags is complete (0.2144ms)
+Γ£ö long dense resumes stay valid OOXML without dropping later sections (17.5316ms)
+Γ£ö Cv1 split uses the PDF 34/66 column architecture without overflowing nested tables (12.8236ms)
+Γ£ö cover letters remain valid editable OOXML (8.5643ms)
+Γ£ö all 51 templates produce forensic-grade DOCX matching PDF architecture (774.9999ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒöÉ prevent building .env in docker: https://dotenvx.com/prebuild
+[dotenv@17.2.3] injecting env (26) from .env -- tip: Γ£à audit secrets and track compliance: https://dotenvx.com/ops
+Γ£ö an unconfigured sender reports NOT_CONFIGURED, not a healthy default (313.5917ms)
+Γ£ö every record carries a real state drawn from the health vocabulary (2263.0487ms)
+Γ£ö the overall verdict is the worst record, so one bad record cannot be averaged away (242.5793ms)
+Γ£ö a p=none DMARC policy is reported as DEGRADED, not as enforced (272.9616ms)
+Γ£ö the fabricated deliverability claims are gone from the Admin UI (0.7979ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒöæ add access controls to secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ≡ƒöÉ prevent building .env in docker: https://dotenvx.com/prebuild
+Γû╢ Email Resilience & Anti-Spam Test Suite
+  Γ£ö 1. Error discriminator distinguishes transport outages from recipient rejections (0.8561ms)
+  Γ£ö 2. Transporter configuration enforces resilient timeouts and TLS 1.2+ (1.0203ms)
+  Γ£ö 3. Template subject lines are free from spam-trigger emojis and aggressive hype buzzwords (26.0857ms)
+  Γ£ö 4. Outbound headers NEVER inject damaging Auto-Submitted on transactional messages (36.1035ms)
+Γ£ö Email Resilience & Anti-Spam Test Suite (65.7756ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒ¢á∩╕Å  run anywhere with `dotenvx run -- yourcommand`
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ΓÜÖ∩╕Å  specify custom .env file path with { path: '/custom/path/.env' }
+Γ£ö blank mail password preserves a local credential and never invents one (7.4902ms)
+Γ£ö mail settings projection is allowlisted and exposes only credential state (0.4984ms)
+Γ£ö mail runtime validation rejects plaintext transport, malformed hosts and invalid toggles (1.7271ms)
+Γû╢ Email Verification & AI Access Lifecycle Suite
+  Γ£ö 1. Valid verified token produces emailVerified: true immediately (1.0076ms)
+  Γ£ö 2. Unverified token without live backend verification remains emailVerified: false (0.4999ms)
+  Γ£ö 3. Stale JWT (email_verified=false) automatically recovers when live Firebase user is verified (0.3539ms)
+  Γ£ö 4. Invalid or malformed token is rejected with 401 INVALID_AUTH_TOKEN (0.4776ms)
+  Γ£ö 5. Revoked token is rejected with 401 INVALID_AUTH_TOKEN (0.3774ms)
+  Γ£ö 6. Missing Authorization header returns 401 AUTH_REQUIRED (0.2626ms)
+Γ£ö Email Verification & AI Access Lifecycle Suite (4.7913ms)
+Γ£ö v3 export uses one consistent read-only transaction and includes invitation delivery state (4ms)
+Γ£ö export rolls back rather than returning a partial snapshot when any required table fails (0.8305ms)
+Γ£ö snapshot verification rejects missing tables, duplicate keys and broken invitation references (2.3646ms)
+Γ£ö dry-run validates a snapshot without acquiring a write connection (1.5762ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ΓÜÖ∩╕Å  override existing env vars with { override: true }
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ≡ƒöÉ encrypt with Dotenvx: https://dotenvx.com
+Γ£ö enterprise invitation HTML uses the configured public origin, not a hardcoded host (22.9847ms)
+Γ£ö development invitation links stay on the development origin (3.0042ms)
+Γ£ö custom invitation body turns the raw URL into a working CTA plus fallback text URL (3.5585ms)
+Γ£ö enterprise role update, workspace assignment, security alert, quota alert, and password reset render actionable CTA and fallback text links (3.1401ms)
+Γ£ö membership, workspace binding, invitation state and email outbox commit in one transaction (4.9092ms)
+Γ£ö outbox enqueue failure rolls back the membership and invitation transaction (1.0928ms)
+Γ£ö invitation recipient cannot differ from the Firebase identity bound to the membership (0.6256ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒöÉ prevent committing .env to code: https://dotenvx.com/precommit
+[dotenv@17.2.3] injecting env (25) from .env -- tip: ≡ƒöÉ prevent committing .env to code: https://dotenvx.com/precommit
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ≡ƒ¢á∩╕Å  run anywhere with `dotenvx run -- yourcommand`
+[Firebase Admin] Initialized via environment variables (identity only)
+[Enterprise Architecture] {"enterpriseTenancy":"ENABLED","dataProvider":"Enterprise Data Provider: mysql","dataPlaneConfigured":true,"cache":"Cache: none (MySQL/MariaDB is the authoritative store)","queue":"Queue: MariaDB transactional outbox","encryption":"Encryption Provider: ServerKey","encryptionSecurityLevel":"SERVER_SIDE_MASTER_KEY_ENVELOPE_AES_256_GCM","quotaStore":"mariadb-atomic"}
+Γû╢ Enterprise Role View & Simulation Security Architecture
+  Γ£ö 1. role-view-audit accepts all 5 Enterprise roles when caller is Super Admin (78.1096ms)
+  Γ£ö 2. role-view-audit strictly requires a valid tenant UUID for Enterprise roles (11.8488ms)
+  Γ£ö 3. Non-SuperAdmin cannot invoke role-view-audit (4.9567ms)
+  Γ£ö 4. Enterprise context simulation: Viewer has strictly scoped permissions (9.3439ms)
+  Γ£ö 5. Non-SuperAdmin cannot spoof simulated enterprise role (5.0018ms)
+  Γ£ö 6. Super Admin role switching does NOT mutate MariaDB user role or permissions (3.73ms)
+  Γ£ö 7. Super Admin role switching does NOT mutate tenant configuration or lifecycle state (1.0456ms)
+  Γ£ö 8. Multi-tenant isolation: Tenant A cannot access Tenant B workspace (13.9886ms)
+Γ£ö Enterprise Role View & Simulation Security Architecture (181.2972ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ΓÜÖ∩╕Å  override existing env vars with { override: true }
+[dotenv@17.2.3] injecting env (25) from .env -- tip: ≡ƒæÑ sync secrets across teammates & machines: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ΓÜÖ∩╕Å  enable debug logging with { debug: true }
+[Firebase Admin] Initialized via environment variables (identity only)
+Playwright exporting PDF, navigating to:  https://ai-resume-builder.local/export/Cv1/published-01/en#renderToken=Gfa14f-iQ-zq5ao0_uq4GEbCINlbxi-CgphI0JAgQ4w
+[Export PDF] {
+  code: 'EXPORT_FAILED',
+  message: 'EXPORT_RENDER_FAILED:not-found',
+  requestId: '5801d67c-2892-44c4-992c-4fbe91b8e16c'
+}
+Γ£ö public export serves an explicitly published resume rather than rejecting it (1620.0498ms)
+Γ£ö public export still refuses revoked, implicit, and unknown publications (25.077ms)
+Playwright exporting PDF, navigating to:  https://ai-resume-builder.local/export/Cover1/cover-alice-01/en#renderToken=hguD1gb0s1pxkPwOaENpmcyBVs-mmSKHKn9ALOJp1Rg
+[Export PDF] {
+  code: 'EXPORT_FAILED',
+  message: 'EXPORT_RENDER_FAILED:not-found',
+  requestId: '3d90deb5-e32a-4b90-ad9d-4acbade9132c'
+}
+Γ£ö cover-letter templates are accepted and resolved from the owner-scoped covers table (1485.2158ms)
+Γ£ö template identifiers outside the rendered registry are rejected (33.4236ms)
+Γ£ö private export enforces authentication, ownership, and entitlement server-side (12.3074ms)
+Γ£ö cross-account DOCX export is refused for both owner-scoped tables (9.7245ms)
+Γ£ö owner DOCX export resolves cover documents and returns a real OOXML package (58.2424ms)
+Γ£ö DOCX export rejects invalid template identifiers and template mismatches (15.8344ms)
+Γ£ö DOCX export ignores client-supplied colors and still returns authentic Cv1 navy (118.6271ms)
+Γ£ö render-data endpoint is one-time, rejects malformed tokens, and never caches (38.3982ms)
+Playwright exporting PDF, navigating to:  https://ai-resume-builder.local/export/Cv1/resume-alice-01/en#renderToken=TH_XGlTVGtV3MG4XS_FtsoK0ISCUvKPIiPm1hyJvWUU
+[Export PDF] {
+  code: 'EXPORT_FAILED',
+  message: 'EXPORT_RENDER_FAILED:not-found',
+  requestId: 'fb069d73-4268-4ddb-8916-b5dda4978b7c'
+}
+Γ£ö export errors return a stable code without leaking internal render diagnostics (1581.6773ms)
+Playwright exporting PDF, navigating to:  https://ai-resume-builder.local/export/Cv1/resume-alice-01/en#renderToken=CVOYkE1v09b10mBf6kTppQs8K8IFDemnuc9tnkefAnM
+Playwright exporting PDF, navigating to:  https://ai-resume-builder.local/export/Cv1/resume-alice-01/en#renderToken=wCbS9VBrrtmtDvFUFvQm6DXgcOf9g8rFbMnmMxIKgRs
+Playwright exporting PDF, navigating to:  https://ai-resume-builder.local/export/Cv1/resume-alice-01/en#renderToken=hkCzvruUyV-sWQndEQ_7wZWbbnhwpqXnwFxWke4bSAg
+Playwright exporting PDF, navigating to:  https://ai-resume-builder.local/export/Cv1/resume-alice-01/en#renderToken=zrZgv7UwG-heezCyZOKyhdV4KKqgoYZ1cW25JV4onRs
+Playwright exporting PDF, navigating to:  https://ai-resume-builder.local/export/Cv1/resume-alice-01/en#renderToken=OZVUHGRbnurzYiQ7tpN9N2bH70VRqX_oilWTP4AjKEI
+[Export PDF] {
+  code: 'EXPORT_FAILED',
+  message: 'EXPORT_RENDER_FAILED:not-found',
+  requestId: 'd0ba8557-cbd6-48a0-b92f-adb60b91b354'
+}
+[Export PDF] {
+  code: 'EXPORT_FAILED',
+  message: 'EXPORT_RENDER_FAILED:not-found',
+  requestId: 'eb2dec29-3268-4046-a179-0c9b7b8cf4cc'
+}
+[Export PDF] {
+  code: 'EXPORT_FAILED',
+  message: 'EXPORT_RENDER_FAILED:not-found',
+  requestId: 'a9d5aa3c-56ab-458c-85b1-3fb498f7b951'
+}
+[Export PDF] {
+  code: 'EXPORT_FAILED',
+  message: 'EXPORT_RENDER_FAILED:not-found',
+  requestId: '6c642a68-9fbe-45fa-8b17-2b36f2b2734d'
+}
+[Export PDF] {
+  code: 'EXPORT_FAILED',
+  message: 'EXPORT_RENDER_FAILED:not-found',
+  requestId: 'e2eff7de-354e-40a6-b58e-e6c65dd6b4a2'
+}
+Γ£ö the concurrency ceiling is claimed before awaiting so parallel exports cannot overshoot (2251.3581ms)
+Γ£ö the PDF pipeline writes no temporary artifacts into the backend directory (0.5548ms)
+Γ£ö export bearer creation has no memory fallback and persists only an encrypted payload (6.5832ms)
+Γ£ö export bearer redemption locks and deletes MariaDB row before returning decrypted PII (3.3933ms)
+Γ£ö authoritative export-token store outages fail closed for create, consume and discard (1.7952ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ΓÜÖ∩╕Å  enable debug logging with { debug: true }
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ΓÜÖ∩╕Å  load multiple .env files with { path: ['.env.local', '.env'] }
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ΓÜÖ∩╕Å  enable debug logging with { debug: true }
+[Firebase Admin] Initialized via environment variables (identity only)
+Γ£ö feature flags: definition contract and default values (1.0574ms)
+Γ£ö feature flags: getFlagValue priority resolution (MySQL > Env > Default) (1.7898ms)
+Γ£ö feature flags: getAllFlags returns structured metadata and effective source (0.6674ms)
+Γ£ö feature flags: setFlagValue validates parameters, persists to MySQL, and logs audit (1.5409ms)
+Γ£ö feature flags: enterpriseFeatureEnabled and enterpriseFeatureEnabledAsync helpers (0.5811ms)
+Γ£ö feature flags: Express API RBAC enforcement (96.2319ms)
+[dotenv@17.2.3] injecting env (0) from backend\.env -- tip: ≡ƒöæ add access controls to secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (27) from .env -- tip: ≡ƒ¢á∩╕Å  run anywhere with `dotenvx run -- yourcommand`
+[dotenv@17.2.3] injecting env (6) from ..\.env -- tip: ≡ƒùé∩╕Å backup and recover secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ≡ƒùé∩╕Å backup and recover secrets: https://dotenvx.com/ops
+[Firebase Admin] Initialized via environment variables (identity only)
+Γû╢ Forensic MariaDB Γåö API Data Lineage Validation Suite
+  Γ£ö 1. Domain: Users Lineage (697.8988ms)
+  Γ£ö 2. Domain: System Settings & INR Currency Lineage (12.7142ms)
+  Γ£ö 3. Domain: Admin Audit Logs Lineage (10.6375ms)
+  Γ£ö 4. Domain: Security Audit Events Lineage (10.1496ms)
+  Γ£ö 5. Domain: Enterprise Tenants Lineage (8.0665ms)
+  Γ£ö 6. Domain: Blog Posts Lineage (14.3499ms)
+  Γ£ö 7. Domain: Command Center Platform KPIs Lineage (767.0716ms)
+  Γ£ö 8. Domain: Health Matrix (28 Services) Lineage (5.5439ms)
+  Γ£ö 9. Domain: Enterprise Queues Lineage (5.508ms)
+  Γ£ö 10. Domain: Contact Messages CRUD Lineage (8.9618ms)
+  Γ£ö 11. Domain: Payment Settings & Gateway Lineage (5.585ms)
+  Γ£ö 12. Domain: Support Tickets Lineage (6.4239ms)
+Γ£ö Forensic MariaDB Γåö API Data Lineage Validation Suite (1582.8299ms)
+Γ£ö 1. Free User Contract: PDF click triggers Premium modal, not direct download or redirect (1.4637ms)
+Γ£ö 2. Free User Contract: Direct backend API call is denied with HTTP 402 (49.592ms)
+Γ£ö 3. Free User Contract: Spoofed or modified client entitlement payload is rejected (15.253ms)
+Γ£ö 4. Premium User Contract: PDF click grants download immediately without upgrade modal (0.8052ms)
+Γ£ö 5. Enterprise User Contract: PDF click grants download, preserving Enterprise identity (1.3637ms)
+Γ£ö 6. Payment Lifecycle: Upgrade -> Payment Success -> Entitlement -> Original Download Resumption (0.5373ms)
+Γ£ö 7. Payment Lifecycle: Payment failure leaves user as Free with no download access (0.431ms)
+Γ£ö 8. Payment Lifecycle: User selects Maybe Later ΓÇö keeps builder state with zero loss (0.3694ms)
+Γ£ö 9. State Transitions: Free -> Premium -> Expired -> Enterprise Removed (0.4594ms)
+Γ£ö 10. DOCX Export Contract: Free users gated, Premium & Enterprise granted direct export (0.5504ms)
+Γ£ö 11. Coupon Engine: Valid, Invalid, Expired, Disabled, and Max-Uses Validation (35.3639ms)
+Γ£ö 12. Payment Amount Integrity: Client manipulation of discount or price is rejected (0.6062ms)
+Γ£ö 13. Phase 5 UX Theme Consistency: SubscriptionModal matches light design tokens (0.7679ms)
+Γ£ö executable backend drains its listener and closes cleanly on SIGTERM (1266.0354ms)
+Γû╢ indian gateway webhook activation
+  Γ£ö hashes oversized webhook event ids to 128 characters (1.7306ms)
+  Γ£ö always returns a user-visible Paytm HTML acknowledgement (0.1787ms)
+  Γ£ö claims then activates a Paytm callback after a live status query (1.5453ms)
+  Γ£ö is idempotent when the Paytm webhook event was already claimed (1.5305ms)
+  Γ£ö releases the Paytm webhook claim when activation fails (1.1555ms)
+  Γ£ö rejects PhonePe callbacks with a forged X-VERIFY header (0.7335ms)
+  Γ£ö ignores the PhonePe callback payload and activates from the status API (0.7443ms)
+  Γ£ö reconciles pending Paytm and PhonePe orders from the outbox worker query (1.0732ms)
+  Γ£ö HMAC-signs Paytm status the same way as /api/paytm/verify-transaction (0.8817ms)
+Γ£ö indian gateway webhook activation (11.4057ms)
+Γ£ö supported enums match the product configuration surface exactly (1.7532ms)
+Γ£ö normalizeSeniority maps aliases and free text to canonical bands; garbage falls back deterministically (1.4725ms)
+Γ£ö normalizeDifficulty and normalizeTrack only accept supported values (1.0624ms)
+Γ£ö clampAdaptiveDifficulty: model-reported difficulty can never exceed the configured ceiling (0.3346ms)
+Γ£ö difficulty guidance is seniority-conditional: hard never means "senior-level content" for early bands (0.7951ms)
+Γ£ö seniorityCeilingDirective is binding, defines the band, and locks precedence against untrusted context (0.4615ms)
+Γ£ö track category guidance is track-conditional and scale-bounded per seniority (0.3312ms)
+Γ£ö adaptive policy declares start, trigger, ceiling, floor and seniority boundary (0.2677ms)
+Γ£ö assessQuestionFit deterministically flags over-band questions per seniority (5.6944ms)
+(node:14512) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/xampp/htdocs/IME365/backend/test/interview-contextual-quality.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\xampp\htdocs\IME365\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ΓÜÖ∩╕Å  write to custom object with { processEnv: myObject }
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ΓÜÖ∩╕Å  override existing env vars with { override: true }
+Γ£ö 1. cleanInterviewMetadataArtifacts strips all forms of leaked metadata, UI headers, and robotic preambles (3.0198ms)
+Γ£ö 2. cleanInterviewMetadataArtifacts preserves authentic candidate scenario questions without over-stripping (0.2469ms)
+Γ£ö 3. Candidate Profile extraction structures verified facts without hallucination (1.0163ms)
+Γ£ö 4. Job Requirements extraction cleans raw input and preserves technical keywords (0.2671ms)
+Γ£ö 5. Blueprint identifies high-value skill intersections between Candidate and JD (0.4645ms)
+Γ£ö 6. Prompt Builder enforces 4-Level Hierarchy and strict anti-leakage directives (1.3611ms)
+Γ£ö 7. isGenericQuestion reliably detects banned superficial questions (0.6028ms)
+Γ£ö 8. normalizeQuestions cleans and validates options, questions, and bounds in frontend (0.5204ms)
+Γ£ö 9. Dynamic generation never exposes a static question-bank fallback (0.8824ms)
+Γ£ö 10. Multi-Scenario Validation: Ad Operations / Programmatic (DV360 / CM360) (0.7201ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒôí add observability to secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ≡ƒöæ add access controls to secrets: https://dotenvx.com/ops
+Γ£ö interview generation helper exports exist (1.1332ms)
+Γ£ö difficulty distribution is exact and meaningfully changes with difficulty (0.9089ms)
+Γ£ö prompt builder injects a fresh per-request nonce and a difficulty distribution (3.0768ms)
+Γ£ö dedupeQuestions removes within-set duplicates and recent-history exact matches (1.1495ms)
+Γ£ö AI path is invoked and returns distinct sets across identical-input attempts (53.992ms)
+[aiRouting] retry gemini/gemini-2.0-flash attempt 2/2 after server in 150ms
+[Interview generation error] {
+  code: 'AI_PROVIDER_ERROR',
+  status: 502,
+  message: 'All configured AI providers failed',
+  stack: 'Error: All configured AI providers failed\n' +
+    '    at AiModelRouter.route (D:\\xampp\\htdocs\\IME365\\backend\\services\\aiRouting\\orchestrator.js:441:37)\n' +
+    '    at async generateConfiguredText (D:\\xampp\\htdocs\\IME365\\backend\\routes\\ai.js:185:23)\n' +
+    '    at async D:\\xampp\\htdocs\\IME365\\backend\\routes\\ai.js:709:28',
+  requestId: undefined
+}
+Γ£ö provider failure returns a recoverable error instead of predefined interview content (158.7518ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒæÑ sync secrets across teammates & machines: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (25) from .env -- tip: Γ£à audit secrets and track compliance: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ≡ƒæÑ sync secrets across teammates & machines: https://dotenvx.com/ops
+[Firebase Admin] Initialized via environment variables (identity only)
+[Enterprise Architecture] {"enterpriseTenancy":"ENABLED","dataProvider":"Enterprise Data Provider: mysql","dataPlaneConfigured":true,"cache":"Cache: none (MySQL/MariaDB is the authoritative store)","queue":"Queue: MariaDB transactional outbox","encryption":"Encryption Provider: ServerKey","encryptionSecurityLevel":"SERVER_SIDE_MASTER_KEY_ENVELOPE_AES_256_GCM","quotaStore":"mariadb-atomic"}
+Γ£ö 1. Standard non-tenant candidate uses platform AI configuration without tenant headers (79.5555ms)
+Γ£ö 2. Unauthenticated request with X-Tenant-Id fails closed with 401 AUTH_REQUIRED (9.5432ms)
+[Interview generation error] {
+  code: 'TENANT_MEMBERSHIP_NOT_FOUND',
+  status: 404,
+  message: 'Tenant membership was not found',
+  stack: 'Error: Tenant membership was not found\n' +
+    '    at resolveEffectiveAiConfiguration (D:\\xampp\\htdocs\\IME365\\backend\\routes\\ai.js:77:23)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n' +
+    '    at async D:\\xampp\\htdocs\\IME365\\backend\\routes\\ai.js:684:34',
+  requestId: '8123d0ca-3a1a-4324-8044-c3c1dc317729'
+}
+Γ£ö 3. Unauthorized caller with another tenant X-Tenant-Id fails closed with 403 TENANT_ACCESS_DENIED (32.7531ms)
+Γ£ö 4. Authorized tenant candidate with BYOK custom keys generates questions using tenant AI policy (25.7854ms)
+Γ£ö 5. Live Interview Session propagates Tenant BYOK configuration across opening, turn, and complete (43.4195ms)
+Γ£ö 6. Enterprise namespace /api/enterprise/ai/generate-interview executes within tenant context (18.0115ms)
+Γ£ö 7. Legacy UID route /api/generate-summary continues to reject X-Tenant-Id with 400 TENANT_CONTEXT_UNSUPPORTED_FOR_LEGACY_ROUTE (6.7698ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒùé∩╕Å backup and recover secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ≡ƒôí add observability to secrets: https://dotenvx.com/ops
+Γ£ö matrix: every supported seniority ├ù difficulty produces a band-bound, in-band-difficulty prompt (5.2255ms)
+Γ£ö fresher + hard is challenging but still fresher-appropriate (no silent upgrade) (0.2621ms)
+Γ£ö seniority ceiling is identical authority regardless of difficulty (0.2583ms)
+Γ£ö every supported track keeps its own assessment style without losing the ceiling (1.6518ms)
+Γ£ö multiple materially different roles keep role-specific framing and the ceiling (0.3343ms)
+Γ£ö advanced JD and advanced resume enrich topics but never raise the fresher band (0.597ms)
+Γ£ö prompt injection inside JD/resume is fenced as untrusted data and cannot change configuration (0.4849ms)
+Γ£ö live prompts fence poisoned context and keep the ceiling in front of it (2.2757ms)
+Γ£ö live parse layer clamps model-reported difficulty to the configured ceiling (2.7857ms)
+Γ£ö live session: 10 turns of excellent answers with expert-drifting model output never exceed the configured difficulty or seniority (18.2136ms)
+Γ£ö live session: weak, short, contradictory and candidate-question answers do not rewrite the configuration (3.3847ms)
+Γ£ö live session: over-band follow-up triggers a corrective regeneration, then safe failure rather than serving a mismatch (3.9008ms)
+Γ£ö live session: repeated questions trigger the existing corrective retry (dedupe preserved) (1.0331ms)
+Γ£ö long conversation keeps role/seniority/difficulty/track stable (30-turn simulated history on the assessment path + full live session) (0.7324ms)
+Γ£ö question count and duration survive the constraint changes (assessment) (0.3932ms)
+Γ£ö malformed live output is rejected (no canned fallback), invalid difficulty is clamped, missing question is fatal (2.4409ms)
+Γ£ö question-level difficulty labels are normalized to the schema vocabulary (malformed labels never leak) (1.7776ms)
+Γ£ö report prompt judges readiness at the configured band, not above it (0.4421ms)
+Γ£ö normalizeStartInput validates enums like the product surface (0.3176ms)
+Γ£ö route /generate-interview drops over-band questions with one corrective top-up and keeps the exact count (43.1564ms)
+Γ£ö semantic rubric detects obvious seniority mismatch (fresher + senior architecture question = FAIL) (0.4067ms)
+Γ£ö no hardcoded question bank exists anywhere in the interview AI path (0.9055ms)
+Γ£ö difficulty distribution monotonicity is preserved (regression of the control shape) (0.1931ms)
+Γ£ö semantic rubric catches indirect/subtle over-band architectural and operational questions (0.2925ms)
+Γ£ö semantic rubric avoids over-rejection for valid questions with advanced vocabulary (0.1685ms)
+Γ£ö live session: opening question is fit-gated with corrective retry and safe failure (1.7447ms)
+[Interview generation error] {
+  code: 'INSUFFICIENT_CALIBRATED_QUESTIONS',
+  status: 502,
+  message: 'The AI service could not generate the full set of 5 calibrated questions for this seniority and difficulty. Please try again.',
+  stack: 'Error: The AI service could not generate the full set of 5 calibrated questions for this seniority and difficulty. Please try again.\n' +
+    '    at D:\\xampp\\htdocs\\IME365\\backend\\routes\\ai.js:784:33\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)',
+  requestId: undefined
+}
+Γ£ö route /generate-interview fails safely when persistent over-band model cannot reach exact count (9.0824ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒ¢á∩╕Å  run anywhere with `dotenvx run -- yourcommand`
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ΓÜÖ∩╕Å  override existing env vars with { override: true }
+Γ£ö GST state registry uses current Andhra Pradesh and Ladakh codes (1.3526ms)
+Γ£ö supplier projection rejects incomplete or mismatched legal configuration (2.348ms)
+Γ£ö customer GST state is derived and conflicting state input is rejected (0.9336ms)
+Γ£ö amount words preserve rupees and paise without accepting a client total (0.6235ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒöÉ encrypt with Dotenvx: https://dotenvx.com
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ΓÜÖ∩╕Å  enable debug logging with { debug: true }
+Γ£ö public and non-owner listing cannot select drafts, paused, tombstoned, or expired jobs (40.0069ms)
+Γ£ö single-job reads hide every non-active record from non-owners while preserving owner access (21.2264ms)
+Γ£ö legacy job mutation routes deny primary-key takeover and ownerless deletion (19.2652ms)
+Γ£ö tracker ownership, revision conflicts, and partial status/order moves are enforced behaviorally (11.9562ms)
+Γ£ö MariaDB failures return stable unavailable contracts without leaking driver details (8.9367ms)
+Γ£ö MariaDB tracker update uses owner-scoped locking and preserves omitted fields (1.4615ms)
+Γ£ö MariaDB job writes and deletes keep ownership in the SQL predicate (1.2004ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒöæ add access controls to secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ΓÜÖ∩╕Å  load multiple .env files with { path: ['.env.local', '.env'] }
+Γ£ö live interview routes are authenticated, owner-scoped, revision-safe, and never return canned content (108.3795ms)
+Γ£ö live interview service generates a server-owned adaptive session and only sends bounded relevant context per turn (11.9118ms)
+Γ£ö live interview safely handles short, long, and candidate-question responses without expanding prompt context (5.6631ms)
+Γ£ö live interview state rejects stale/out-of-order turns and produces a dynamic completion report (4.2809ms)
+Γ£ö expired active and completed sessions are removed rather than retained as interview records (1.1358ms)
+Γ£ö live interview closes at its server-calculated duration bound when a provider keeps asking (4.0819ms)
+Γ£ö invalid model output does not fall back to a predefined question or answer (0.768ms)
+Γ£ö live prompt builders keep static controls separate from untrusted data (0.3877ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒöÉ prevent building .env in docker: https://dotenvx.com/prebuild
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ≡ƒöÉ prevent building .env in docker: https://dotenvx.com/prebuild
+Γû╢ clean MariaDB 11.4 ownership, concurrency, outbox, payment, and deletion integration
+  Γ£ö applies the complete checksummed migration chain from empty state and is idempotent (1672.7185ms)
+  Γ£ö persists owner-scoped live interview state with optimistic revision guards (20.1785ms)
+  Γ£ö boots optional modules and discovery publication fail-closed without a fabricated rating (2.1272ms)
+  Γ£ö keeps CMS domains relational, revision-guarded, and quarantines legacy generic rows (12.6103ms)
+  Γ£ö serializes concurrent operational counter increments without lost updates (66.4825ms)
+  Γ£ö enforces profile ownership and exactly-one-winner optimistic concurrency (12.3601ms)
+  Γ£ö prevents cross-owner resume-id collisions (6.2523ms)
+  Γ£ö commits currency configuration and audit together and rejects stale writers (7.7608ms)
+  Γ£ö stores AI entitlement overrides only in the MariaDB user owner (7.4274ms)
+  Γ£ö rolls outbox entries back with the business transaction and safely reclaims expired leases (13.4417ms)
+  Γ£ö derives payment duration under the order lock and makes concurrent activation idempotent (43.6074ms)
+  Γ£ö issues exactly one owner-bound invoice and allocates its sequence transactionally (21.6ms)
+  Γ£ö reconciles a pending full refund and issues exactly one immutable credit note (25.5234ms)
+[DB-ALERT] HIGH ACCOUNT_IDENTITY_PENDING Account application data deleted while identity deletion remains pending
+  Γ£ö makes identity-provider failure durable and completes deletion on retry (45.2599ms)
+Γ£ö clean MariaDB 11.4 ownership, concurrency, outbox, payment, and deletion integration (2291.0071ms)
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ≡ƒöÉ prevent committing .env to code: https://dotenvx.com/precommit
+[dotenv@17.2.3] injecting env (6) from ..\.env -- tip: ΓÜÖ∩╕Å  override existing env vars with { override: true }
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ΓÜÖ∩╕Å  suppress all logs with { quiet: true }
+[Firebase Admin] Initialized via environment variables (identity only)
+Γ£ö CERTIFICATION: application starts and reports MySQL-only authority with the retired data plane absent (62.955ms)
+Γ£ö CERTIFICATION: public configuration loads from MariaDB only (10.0815ms)
+Γ£ö CERTIFICATION: llms.txt is default-off, claim-validated, audited, and MariaDB-backed (50.4656ms)
+Γ£ö CERTIFICATION: authentication is enforced on protected routes (identity-plane only) (7.9243ms)
+Γ£ö CERTIFICATION: user profile create/read/update with optimistic revision guard (MySQL transactions) (26.2021ms)
+Γ£ö CERTIFICATION: resume create -> list -> load -> edit -> publish -> delete (MySQL persistence) (42.794ms)
+Γ£ö CERTIFICATION: cross-user access is denied (multi-tenant zero-trust) (13.1534ms)
+Γ£ö CERTIFICATION: favourites are MySQL-backed and owner-scoped (31.331ms)
+Γ£ö CERTIFICATION: stats read + authenticated increments (MySQL) (22.8149ms)
+Γ£ö CERTIFICATION: public reviews use relational owner and phrases use canonical documents (30.2183ms)
+Γ£ö CERTIFICATION: contact messages persist to MySQL (12.2705ms)
+Γ£ö CERTIFICATION: AI endpoints fail with controlled configuration errors (not retired data plane errors) (9.9919ms)
+Γ£ö CERTIFICATION: export render token lifecycle is MySQL-durable (6.8207ms)
+Γ£ö CERTIFICATION: OAuth state & exchange codes are MySQL-backed (single-use) (9.0317ms)
+Γ£ö CERTIFICATION: password-reset token store is MySQL-backed and latest-token-wins (13.1533ms)
+Γ£ö CERTIFICATION: GDPR account export assembles owner data from MySQL (17.8502ms)
+Γ£ö CERTIFICATION: admin surfaces operate with MySQL (users list, audit write) (687.9886ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: Γ£à audit secrets and track compliance: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ≡ƒöÉ encrypt with Dotenvx: https://dotenvx.com
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ≡ƒ¢á∩╕Å  run anywhere with `dotenvx run -- yourcommand`
+[Firebase Admin] Initialized via environment variables (identity only)
+[payments] indian-gateway reconcile paytm ord_0 PAYTM_STATUS_UNAVAILABLE
+[payments] indian-gateway reconcile phonepe ord_1 PAYTM_STATUS_UNAVAILABLE
+[payments] indian-gateway reconcile paytm ord_2 PAYTM_STATUS_UNAVAILABLE
+[payments] indian-gateway reconcile phonepe ord_3 PAYTM_STATUS_UNAVAILABLE
+[payments] indian-gateway reconcile paytm ord_4 PAYTM_STATUS_UNAVAILABLE
+[payments] indian-gateway reconcile phonepe ord_5 PAYTM_STATUS_UNAVAILABLE
+[payments] indian-gateway reconcile paytm ord_6 PAYTM_STATUS_UNAVAILABLE
+[payments] indian-gateway reconcile phonepe ord_7 PAYTM_STATUS_UNAVAILABLE
+[payments] indian-gateway reconcile paytm ord_8 PAYTM_STATUS_UNAVAILABLE
+[payments] indian-gateway reconcile phonepe ord_9 PAYTM_STATUS_UNAVAILABLE
+[payments] indian-gateway reconcile paytm ord_10 PAYTM_STATUS_UNAVAILABLE
+[payments] indian-gateway reconcile phonepe ord_11 PAYTM_STATUS_UNAVAILABLE
+[payments] indian-gateway reconcile paytm ord_12 PAYTM_STATUS_UNAVAILABLE
+[payments] indian-gateway reconcile phonepe ord_13 PAYTM_STATUS_UNAVAILABLE
+[payments] indian-gateway reconcile paytm ord_14 PAYTM_STATUS_UNAVAILABLE
+[payments] indian-gateway reconcile phonepe ord_15 PAYTM_STATUS_UNAVAILABLE
+[payments] indian-gateway reconcile paytm ord_16 PAYTM_STATUS_UNAVAILABLE
+[payments] indian-gateway reconcile phonepe ord_17 PAYTM_STATUS_UNAVAILABLE
+[payments] indian-gateway reconcile paytm ord_18 PAYTM_STATUS_UNAVAILABLE
+[payments] indian-gateway reconcile phonepe ord_19 PAYTM_STATUS_UNAVAILABLE
+[payments] indian-gateway reconcile paytm ord_20 PAYTM_STATUS_UNAVAILABLE
+[payments] indian-gateway reconcile phonepe ord_21 PAYTM_STATUS_UNAVAILABLE
+[payments] indian-gateway reconcile paytm ord_22 PAYTM_STATUS_UNAVAILABLE
+[payments] indian-gateway reconcile phonepe ord_23 PAYTM_STATUS_UNAVAILABLE
+[payments] indian-gateway reconcile paytm ord_24 PAYTM_STATUS_UNAVAILABLE
+[payments] indian-gateway reconcile paytm a PAYMENT_CONFIGURATION_UNAVAILABLE
+[payments] indian-gateway reconcile paytm b PAYMENT_CONFIGURATION_UNAVAILABLE
+Γ£ö payment reconciliation reads provider credentials once per provider, not once per order (6.1298ms)
+Γ£ö an unconfigured gateway no longer multiplies configuration reads across the batch (0.4847ms)
+Γ£ö a credential resolution failure is reported per row exactly as before (0.4835ms)
+Γ£ö reconciliation bounds the batch size it requests from the pool (1.0733ms)
+Γ£ö conversation list issues a constant three round trips regardless of conversation count (51.9959ms)
+Γ£ö conversation list preserves per-conversation participants and latest message shape (9.1038ms)
+Γ£ö an empty conversation list performs no per-conversation queries at all (5.5177ms)
+Γ£ö conversation list is unauthenticated without a verified token (4.9714ms)
+Γ£ö a full administrative page is served by batched reads, not per-identity round trips (12.7246ms)
+[Admin user directory] batch profile read failed, using per-identity read: METHOD_NOT_IMPLEMENTED
+Γ£ö administrative directory falls back to per-identity reads when no batch reader exists (7.3418ms)
+Γ£ö tenant memberships are projected per identity from the batched reader (5.2137ms)
+Γ£ö batch membership read attributes every row only to its own principal (1.422ms)
+Γ£ö batch membership read is empty and query-free for an empty page (0.1915ms)
+Γ£ö indian gateway status probes carry an enforced request deadline (0.4531ms)
+Γ£ö operational-status snapshot is bounded and served from cache on repeat reads (20.4112ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒöÉ prevent building .env in docker: https://dotenvx.com/prebuild
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ΓÜÖ∩╕Å  override existing env vars with { override: true }
+Γ£ö Master Configuration Control: Canonical Membership Normalization & Non-Flattening (1.1448ms)
+Γ£ö Master Configuration Control: Dynamic AI Quotas & Context Isolation (0.7541ms)
+Γ£ö Master Configuration Control: Enterprise Role Inventory Verification (0.9067ms)
+Γ£ö Master Configuration Control: Server-Side Module Gate for Portfolios (35.2277ms)
+Γ£ö Master Configuration Control: Dynamic Pricing & Zero Client Price Authority (0.3955ms)
+Γ£ö Master Configuration Control: PDF Export Policy Gating (Free vs Pro vs Free Mode) (0.4783ms)
+Γ£ö B2C Pro subscriber with ISO membershipEnds is Premium-entitled (2.2929ms)
+Γ£ö B2C Enterprise string membership is entitled without tenant document (0.2503ms)
+Γ£ö membershipEnds as {seconds} does not crash entitlements (0.2144ms)
+Γ£ö expired Premium is Basic (0.1813ms)
+Γ£ö activation / renewal / cancellation semantics (0.6912ms)
+Γ£ö internal notifier durably queues and never claims provider delivery (28.7419ms)
+Γ£ö notification enqueue failure is surfaced instead of falling back to synchronous SMTP (1.4561ms)
+Γ£ö notification outbox identity and retry policy are deterministic and bounded (1.7471ms)
+Γ£ö outbox is MySQL-backed: zero Firestore primitives in the delivery queue (0.5445ms)
+Γ£ö queued email stores trusted recipient, explicit initial state, and is idempotent (1.5454ms)
+Γ£ö sensitive lifecycle variables are encrypted at rest and decrypt only in the worker projection (2.5237ms)
+Γ£ö sensitive enqueue and encrypted payload reads fail closed without key continuity (1.9373ms)
+Γ£ö an unreadable encrypted payload is never dispatched and reaches the DLQ after bounded retries (1.7546ms)
+Γ£ö OAuth state is session-bound, constant-time comparable, provider-bound, expiring, and replay detectable (1.7633ms)
+Γ£ö PKCE challenge is deterministic and rejects weak verifier input (0.8216ms)
+Γ£ö cookie parser handles encoded values and rejects malformed encoding (1.0507ms)
+Γ£ö verified provider identity is mandatory (0.38ms)
+Γ£ö email auto-link, provider identity conflict, and custom-token MFA bypass are blocked (0.3512ms)
+Γ£ö one-time OAuth exchange codes reject expiration and replay (0.3733ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ΓÜÖ∩╕Å  specify custom .env file path with { path: '/custom/path/.env' }
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ≡ƒ¢á∩╕Å  run anywhere with `dotenvx run -- yourcommand`
+Γ£ö Platform Operators IAM Suite: GET /api/platform/operators lists operators with verified claims & MFA (23.2625ms)
+Γ£ö Platform Operators IAM Suite: POST /api/platform/operators assigns ADMIN role to target user (16.9961ms)
+Γ£ö Platform Operators IAM Suite: POST /api/platform/operators rejects assignment of SUPER_ADMIN role (6.1962ms)
+Γ£ö Platform Operators IAM Suite: POST /api/platform/operators/:uid/revoke-sessions invalidates all tokens (5.2462ms)
+Γ£ö Platform Operators IAM Suite: POST /api/platform/operators rejects self-demotion by Super Admin (5.1211ms)
+Γû╢ P1 gap source contracts
+  Γ£ö GAP-03 wraps cover-letter routes in RequireAuthenticated (2.1372ms)
+  Γ£ö GAP-12 redirects /front to the public home (1.3117ms)
+  Γ£ö GAP-17 exposes a skip link and main-content landmarks (0.7457ms)
+  Γ£ö GAP-06 ships migration 015, ownership, deletion, and admin Help Desk (1.2952ms)
+  Γ£ö GAP-08 registers Paytm and PhonePe callbacks plus outbox reconcile (2.3378ms)
+  Γ£ö GAP-10 fires a readiness alert without awaiting it before 503 (1.4731ms)
+Γ£ö P1 gap source contracts (10.922ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒ¢á∩╕Å  run anywhere with `dotenvx run -- yourcommand`
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ΓÜÖ∩╕Å  load multiple .env files with { path: ['.env.local', '.env'] }
+Γ£ö activation atomically grants entitlement and issues an invoice from pre-provider snapshots (26.4313ms)
+Γ£ö snapshot integrity failure rolls back entitlement writes and emits no invoice (1.3613ms)
+Γ£ö audit failure after invoice enqueue rolls back the complete activation transaction (1.3559ms)
+Γ£ö legacy orders without pre-provider evidence cannot activate or synthesize invoices (0.4543ms)
+Γ£ö activateVerifiedOrder is idempotent for duplicate webhooks (3.4558ms)
+Γ£ö duplicate provider event claim is a no-op (0.3395ms)
+Γ£ö webhook claim is released so a failed activation can retry (0.2761ms)
+Γ£ö conflicting providerPaymentId on an ACTIVE order is refused (2.0522ms)
+Γ£ö refund of latest order reverses entitlement; older order does not (0.7749ms)
+Γ£ö membership write failure rolls back the atomic payment activation (0.7368ms)
+Γ£ö Pro membership is preserved on activation (not forced to Premium string only) (0.4919ms)
+Γ£ö durable webhook ledger is consulted before in-memory claim (0.2082ms)
+Γ£ö createOrder idempotency key replays PAYMENT_CREATED client secret (1.0046ms)
+Γ£ö createOrder refuses provider contact without versioned immutable billing evidence (0.4366ms)
+Γ£ö same idempotency key cannot be replayed with changed legal billing evidence (0.4247ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒôí add observability to secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ΓÜÖ∩╕Å  suppress all logs with { quiet: true }
+Γ£ö payment secret lifecycle preserves blank and masked reload values (2.3614ms)
+Γ£ö payment status exposes only configuration state and a non-reversible mask (0.3867ms)
+Γ£ö payment projection ignores retired legacy settings and never mixes incomplete credential sources (1.2562ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒôí add observability to secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ΓÜÖ∩╕Å  override existing env vars with { override: true }
+Γ£ö new payment order persists verified versioned billing evidence in a transaction (2.6011ms)
+Γ£ö new payment order without valid billing evidence is rejected before any write (0.8448ms)
+Γ£ö payment owner, plan, provider, amount, and currency cannot change after creation (1.1577ms)
+Γû╢ billing snapshots cannot be replaced, removed, or backfilled after order creation
+  Γ£ö replace (0.3937ms)
+  Γ£ö remove (0.3617ms)
+  Γ£ö legacy backfill (0.4585ms)
+Γ£ö billing snapshots cannot be replaced, removed, or backfilled after order creation (1.8312ms)
+Γ£ö stale payment update fails compare-and-swap instead of overwriting provider state (0.4206ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒùé∩╕Å backup and recover secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ΓÜÖ∩╕Å  load multiple .env files with { path: ['.env.local', '.env'] }
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ΓÜÖ∩╕Å  load multiple .env files with { path: ['.env.local', '.env'] }
+[Firebase Admin] Initialized via environment variables (identity only)
+Γ£ö REGRESSION: ADMIN (system.config.read) can READ the secret-free payment projection (37.4456ms)
+Γ£ö REGRESSION: the payment projection never exposes a raw secret over HTTP (16.3652ms)
+Γ£ö REGRESSION: a plain USER cannot read the payment projection (6.8132ms)
+Γ£ö REGRESSION: unauthenticated read is rejected (6.023ms)
+Γ£ö REGRESSION: the alias and the canonical route expose the same gate and payload (14.9756ms)
+Γ£ö REGRESSION: ADMIN still cannot WRITE payment settings (write stays SUPER_ADMIN + MFA + recent auth) (19.4599ms)
+Γ£ö REGRESSION: SUPER_ADMIN without a verified second factor still cannot WRITE (5.625ms)
+Γ£ö Stripe webhook cryptography accepts authentic payload and rejects tampering (8.2883ms)
+Γ£ö Stripe intent binding validates order, UID, plan, amount, currency, and intent (0.8011ms)
+Γ£ö PayPal completed order validates exact internal binding (0.5908ms)
+Γ£ö Razorpay requires timing-safe HMAC and captured provider payment (0.6441ms)
+Γ£ö Paytm and PhonePe provider states require exact amount/currency/completion (0.5344ms)
+Γ£ö order ownership, replay states, refund targeting, and renewal math fail safely (2.3676ms)
+[dotenv@17.2.3] injecting env (27) from .env -- tip: ΓÜÖ∩╕Å  override existing env vars with { override: true }
+[dotenv@17.2.3] injecting env (6) from ..\.env -- tip: ≡ƒæÑ sync secrets across teammates & machines: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ≡ƒöÉ prevent building .env in docker: https://dotenvx.com/prebuild
+[Firebase Admin] Initialized via environment variables (identity only)
+Γ£ö operational status rejects unauthenticated callers (44.3703ms)
+Γ£ö operational status rejects an ordinary authenticated user (5.2691ms)
+Γ£ö SUPPORT cannot read the platform health control plane (3.9484ms)
+Γ£ö ADMIN may read operational status and the API matrix (708.1235ms)
+Γ£ö ADMIN is denied the SUPER_ADMIN-only provider test (5.4273ms)
+Γ£ö an ordinary user is denied the provider test (3.3107ms)
+Γ£ö the provider test rejects unauthenticated callers (3.5668ms)
+Γ£ö SUPER_ADMIN may read every operational-status surface (124.3928ms)
+Γ£ö an unknown service id yields 404 with a stable error code, not a 500 (3.1571ms)
+Γ£ö a malformed service id is rejected as 400, never reaching the collector (4.134ms)
+Γ£ö a service with no safe automated test is refused rather than faked (3.6674ms)
+Γ£ö no operational-status payload leaks configured secret values (325.3606ms)
+Γ£ö host-level diagnostics are withheld from ADMIN and shown to SUPER_ADMIN (323.2029ms)
+Γ£ö service availability is public, uncached and secret-free (9.5668ms)
+Γ£ö a disabled enterprise tenancy is reported as DISABLED, never inferred during collector failure (6.8398ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒöä add secrets lifecycle management: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ΓÜÖ∩╕Å  override existing env vars with { override: true }
+Γ£ö anonymous portfolio detail is an explicit public allowlist (2.5944ms)
+Γ£ö public gallery projection excludes full content and parameterizes theme filtering (0.6594ms)
+Γ£ö unpublished slug rows do not become public through repository projection (0.2366ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒùé∩╕Å backup and recover secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ΓÜÖ∩╕Å  suppress all logs with { quiet: true }
+[dotenv@17.2.3] injecting env (0) from .env -- tip: Γ£à audit secrets and track compliance: https://dotenvx.com/ops
+[Firebase Admin] Initialized via environment variables (identity only)
+Γ£ö only exact validated published-portfolio paths bypass authentication (61.249ms)
+Γ£ö draft and owner portfolio surfaces require Firebase authentication and use token ownership (14.2571ms)
+Γ£ö portfolio writes reject owner injection and require optimistic revisions (24.3257ms)
+Γ£ö portfolio deletion is owner-scoped and revision-required (7.9884ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒöæ add access controls to secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ≡ƒöæ add access controls to secrets: https://dotenvx.com/ops
+Γ£ö new profile and deterministic welcome event commit atomically (3.0513ms)
+Γ£ö new profile rolls back when welcome enqueue fails (1.2265ms)
+Γ£ö profile updates do not enqueue duplicate welcome events (0.4121ms)
+Γ£ö first portfolio publication and publication event commit atomically (1.8415ms)
+Γ£ö portfolio publication rolls back if its outbox event cannot enqueue (0.662ms)
+Γ£ö portfolio CAS rejects stale revisions before mutation or notification (0.525ms)
+Γ£ö portfolio identifiers cannot be reassigned across owners (0.4468ms)
+Γ£ö profile sanitizer preserves bounded Unicode content and recognized resume-profile sections (2.2303ms)
+Γ£ö profile sanitizer rejects every server-owned authorization and billing field (0.745ms)
+Γ£ö profile sanitizer rejects identity-email mismatch, unknown fields, active image content, and oversize payloads (3.5215ms)
+Γ£ö profile projection excludes legacy role and billing data and exposes the authoritative revision (0.4352ms)
+Γ£ö profile sanitizer supports 100% parity sections: achievements, references, customSections, and credential URLs (0.6433ms)
+Γ£ö profile sanitizer preserves newlines, tabs, and multiline bullet points in descriptions and summaries (0.2567ms)
+Γû╢ stripe maps completed, pending, failed, and unknown refund states without guessing
+  Γ£ö completed (2.0827ms)
+  Γ£ö pending (0.5219ms)
+  Γ£ö failed (0.3346ms)
+  Γ£ö unknown (1.3399ms)
+Γ£ö stripe maps completed, pending, failed, and unknown refund states without guessing (6.2224ms)
+Γû╢ paypal maps completed, pending, failed, and unknown refund states without guessing
+  Γ£ö completed (1.0829ms)
+  Γ£ö pending (0.373ms)
+  Γ£ö failed (0.5764ms)
+  Γ£ö unknown (0.4858ms)
+Γ£ö paypal maps completed, pending, failed, and unknown refund states without guessing (5.8413ms)
+Γû╢ razorpay maps completed, pending, failed, and unknown refund states without guessing
+  Γ£ö completed (0.7265ms)
+  Γ£ö pending (0.3181ms)
+  Γ£ö failed (0.1678ms)
+  Γ£ö unknown (0.2042ms)
+Γ£ö razorpay maps completed, pending, failed, and unknown refund states without guessing (1.9847ms)
+Γû╢ paytm maps completed, pending, failed, and unknown refund states without guessing
+  Γ£ö completed (0.9206ms)
+  Γ£ö pending (0.1797ms)
+  Γ£ö failed (0.1811ms)
+  Γ£ö unknown (0.1695ms)
+Γ£ö paytm maps completed, pending, failed, and unknown refund states without guessing (1.8133ms)
+Γû╢ phonepe maps completed, pending, failed, and unknown refund states without guessing
+  Γ£ö completed (0.9902ms)
+  Γ£ö pending (0.1793ms)
+  Γ£ö failed (0.1509ms)
+  Γ£ö unknown (0.1797ms)
+Γ£ö phonepe maps completed, pending, failed, and unknown refund states without guessing (1.8389ms)
+Γ£ö new refund commands use the durable idempotency identity for every provider (0.9637ms)
+Γ£ö reconciliation retrieves the original logical refund instead of issuing a second money command (0.8184ms)
+Γ£ö Paytm response signature failure is ambiguous and never restores entitlement (0.3268ms)
+Γ£ö rate limiting and unknown statuses stay non-terminal (0.4501ms)
+Γ£ö development uses PROTOCOL + WEBSITE_NAME without a hardcoded production host (1.3759ms)
+Γ£ö staging/production-like env uses https + WEBSITE_NAME (0.3627ms)
+Γ£ö PUBLIC_APP_URL wins over WEBSITE_NAME (0.2317ms)
+Γ£ö production rejects placeholder and loopback hosts (0.7399ms)
+Γ£ö enterprise console URLs encode tenant and tab without localhost (0.7354ms)
+Γ£ö publicAppUrl never invents a production domain (1.069ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒæÑ sync secrets across teammates & machines: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ≡ƒöæ add access controls to secrets: https://dotenvx.com/ops
+Γû╢ Public Review Link & Published Resume Architecture
+  Γ£ö 1. Anonymous reviewer can view published review link without auth token (29.3185ms)
+  Γ£ö 2. Another logged-in user (peer/mentor/recruiter) can view the published review link (6.405ms)
+  Γ£ö 3. Non-existent resume returns 404 (4.4074ms)
+  Γ£ö 4. Revoked or unpublished resume returns 404 to reviewers (3.6337ms)
+  Γ£ö 5. Private draft endpoint STILL rejects unauthenticated callers with 401 (4.4347ms)
+  Γ£ö 6. Private draft endpoint STILL protects against IDOR (404 for different user) (3.8475ms)
+  Γ£ö 7. Private draft endpoint is accessible ONLY by the authenticated owner (3.3153ms)
+  Γ£ö 8. Free user public review link delivers watermark configuration (3.2608ms)
+  Γ£ö 9. Pro subscriber public review link is 100% clean and watermark-free (4.3609ms)
+Γ£ö Public Review Link & Published Resume Architecture (68.0492ms)
+[dotenv@17.2.3] injecting env (27) from .env -- tip: ΓÜÖ∩╕Å  write to custom object with { processEnv: myObject }
+[dotenv@17.2.3] injecting env (6) from ..\.env -- tip: ≡ƒöä add secrets lifecycle management: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ≡ƒöÉ prevent building .env in docker: https://dotenvx.com/prebuild
+[Firebase Admin] Initialized via environment variables (identity only)
+Γ£ö RBAC Forensic: Super Admin has authoritative access to all platform and system configuration endpoints (1046.3154ms)
+Γ£ö RBAC Forensic: Auditor is strictly limited to Audit, Security, and Read-Only domains; System Configuration and Operators are blocked (38.1539ms)
+Γ£ö RBAC Forensic: Support role is strictly limited to Help Desk and User directory; Settings, Audit and Operators are blocked (14.1399ms)
+Γ£ö RBAC Forensic: Plain USER role is completely rejected on all administrative routes (11.6738ms)
+Γ£ö RBAC Forensic: Enterprise roles are strictly scoped and blocked from platform-wide system configuration (25.0624ms)
+Γ£ö RBAC Forensic: Unauthenticated requests are rejected fail-closed with 401 (8.7167ms)
+Γ£ö RBAC Forensic: Sensitive Credentials Redaction Contract (Zero Plaintext Secrets Leaked) (7.494ms)
+Γû╢ readyz consecutive-failure admin alerts
+  Γ£ö does not enqueue on the first failure (1.2932ms)
+  Γ£ö enqueues an hourly-deduped admin_system_alert after two consecutive failures (0.5747ms)
+  Γ£ö skips invalid ADMIN_EMAIL and never throws into the readiness handler (0.387ms)
+  Γ£ö resets the consecutive counter after a healthy probe (0.3069ms)
+Γ£ö readyz consecutive-failure admin alerts (4.9247ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒöä add secrets lifecycle management: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ΓÜÖ∩╕Å  enable debug logging with { debug: true }
+Γ£ö completed full refund issues one immutable credit note from the source invoice snapshot (23.4065ms)
+Γ£ö aggregate refund credit note distinguishes reconciliation reference from child provider ids (1.2894ms)
+Γ£ö refund without an issued invoice does not fabricate a credit note (0.2394ms)
+Γ£ö Stripe refund pagination follows has_more and cursor evidence exactly once per page (1.9556ms)
+Γ£ö single completed full Stripe refund retains its provider reference (0.8683ms)
+Γ£ö multiple completed Stripe refunds receive an order-bound deterministic aggregate reference and retain every child (10.994ms)
+Γ£ö Stripe reconciliation uses a complete embedded list without making a second provider request (0.2534ms)
+Γû╢ Stripe aggregate reconciliation rejects total, state, currency, charge, ID, and duplicate mismatches
+  Γ£ö provider total mismatch (0.6303ms)
+  Γ£ö pending child (0.17ms)
+  Γ£ö wrong currency (0.1385ms)
+  Γ£ö wrong charge (0.1332ms)
+  Γ£ö unsafe id (1.0211ms)
+  Γ£ö duplicate id (0.2372ms)
+Γ£ö Stripe aggregate reconciliation rejects total, state, currency, charge, ID, and duplicate mismatches (3.4403ms)
+Γû╢ Stripe reconciliation independently refuses a charge that is not authoritative and fully refunded
+  Γ£ö partial (0.3748ms)
+  Γ£ö wrong amount (0.1374ms)
+  Γ£ö wrong currency (0.1373ms)
+  Γ£ö wrong intent (0.1963ms)
+Γ£ö Stripe reconciliation independently refuses a charge that is not authoritative and fully refunded (1.4442ms)
+Γ£ö Stripe pagination fails closed on a non-advancing cursor (0.3154ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒöä add secrets lifecycle management: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ΓÜÖ∩╕Å  write to custom object with { processEnv: myObject }
+Γ£ö new refund claim creates one durable attempt key and audits the lease transaction (3.0544ms)
+Γ£ö stale pending refund reuses its original idempotency key instead of creating a second money command (0.4318ms)
+Γ£ö fresh refund lease rejects concurrent provider contact with Retry-After evidence (0.7164ms)
+Γ£ö ambiguous provider failure preserves pending state and idempotency key (0.439ms)
+Γ£ö explicit terminal provider failure can restore ACTIVE and clear the failed attempt (0.3325ms)
+Γ£ö pending provider acceptance and normalized refund evidence commit in one transaction (2.3463ms)
+Γ£ö terminal aggregate reconciliation persists every child before entitlement reversal (1.9936ms)
+Γ£ö a provider refund reference owned by another order aborts and rolls back (0.4474ms)
+Γ£ö audit failure rolls back refund evidence and payment state instead of partially committing (0.7062ms)
+Γ£ö aggregate evidence must be unique and exactly equal the authoritative payment amount (0.5224ms)
+Γ£ö reset tokens use the exact 256-bit base64url shape and hash deterministically (1.8034ms)
+Γ£ö password policy rejects short, oversized, malformed-email, and email-derived passwords (0.7239ms)
+Γ£ö token record is email/state/expiry/single-use bound and blocks active concurrent leases (0.4781ms)
+Γ£ö lease completion is owner-only and cannot reuse an already consumed token (0.2633ms)
+Γ£ö enumeration delay has a fixed floor and bounded jitter (0.2121ms)
+Γ£ö reads from MariaDB when primary is healthy (3.4151ms)
+Γ£ö read fails with a controlled error when MariaDB is down ΓÇö no Firestore read failover (0.8973ms)
+Γ£ö writes are rejected with a controlled error during MariaDB outage ΓÇö no Firestore write path (0.4532ms)
+Γ£ö ordinary business write errors do not trip MariaDB availability state (1.9872ms)
+Γ£ö MariaDB down: write throws SERVICE_DEGRADED and does not fake success (0.4626ms)
+Γ£ö duplicate-safe delete while secondary is conceptually offline still succeeds on primary (0.2986ms)
+[dotenv@17.2.3] injecting env (27) from .env -- tip: ≡ƒöä add secrets lifecycle management: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (6) from ..\.env -- tip: ΓÜÖ∩╕Å  specify custom .env file path with { path: '/custom/path/.env' }
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ΓÜÖ∩╕Å  override existing env vars with { override: true }
+[Firebase Admin] Initialized via environment variables (identity only)
+Γ£ö every legacy client-authored notification dispatcher is authenticated and retired (154.2355ms)
+[dotenv@17.2.3] injecting env (27) from .env -- tip: ΓÜÖ∩╕Å  write to custom object with { processEnv: myObject }
+[dotenv@17.2.3] injecting env (6) from ..\.env -- tip: ΓÜÖ∩╕Å  specify custom .env file path with { path: '/custom/path/.env' }
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ΓÜÖ∩╕Å  specify custom .env file path with { path: '/custom/path/.env' }
+[Firebase Admin] Initialized via environment variables (identity only)
+Γ£ö minimal health endpoint is public and does not cache (37.1101ms)
+Γ£ö readiness is truthful: reflects the MySQL data plane, never a secondary store (31.9195ms)
+Γ£ö protected endpoint rejects absent and invalid Firebase tokens (9.4233ms)
+Γ£ö one-time export render data endpoint is public only through an opaque token (12.1002ms)
+Γ£ö valid authenticated user reaches an ordinary route (4.7193ms)
+Γ£ö admin aliases and mail logs reject an ordinary authenticated user (29.2932ms)
+Γ£ö stale admin sessions cannot perform sensitive destructive account deletion (4.6606ms)
+Γ£ö unverified admin cannot load or mutate protected configuration (3113.0858ms)
+Γ£ö admin lacking super-admin role cannot mutate or test AI provider settings (18.3768ms)
+Γ£ö email settings projections expose configured state without runtime credentials (22.1651ms)
+Γ£ö Twilio settings persist in the canonical MySQL secret namespace without response disclosure (27.629ms)
+Γ£ö Ads create and revision-safe delete persist through audited backend routes (28.4217ms)
+Γ£ö job application submission and employer status transitions are atomic, audited, and revision safe (69.0882ms)
+Γ£ö employer job create, pause, edit, and delete routes are owned, audited, and revision safe (45.4628ms)
+Γ£ö generic settings preserve omitted and blank backend secrets without browser disclosure (20.0433ms)
+[Email settings save] { code: undefined, requestId: '8837c026-907f-4b89-960d-dcb578bdffe2' }
+Γ£ö email runtime save rejects unencrypted or malformed transport configuration (6.4519ms)
+Γ£ö Firebase credential status loads without recent auth but runtime rotation remains recent-auth protected (11.4505ms)
+Γ£ö loading non-secret AI settings does not require recent authentication (8.517ms)
+Γ£ö fresh authorized admin reaches revisioned AI settings persistence without secret disclosure (18.0977ms)
+Γ£ö legacy shared provider-test endpoint is retired instead of reporting false success (4.6165ms)
+Γ£ö fresh authorized admin provider test reaches the dedicated AI route with useful errors (10.098ms)
+Γ£ö unverified users cannot consume paid AI or payment endpoints (2180.5719ms)
+Γ£ö password reset request is generic and timing-equalized for malformed accounts (328.8623ms)
+Γ£ö verification requires authentication and legacy notification dispatch is retired (6.3429ms)
+Γ£ö CORS grants only exact configured origins (5.4425ms)
+Γ£ö public contact endpoint uses validation, honeypot and per-source throttling (11.2298ms)
+[Stripe Webhook] Signature error: Stripe webhook is not configured
+Γ£ö Stripe webhook fails closed without a configured signature secret (4.0033ms)
+[Razorpay create] PAYMENT_PROVIDER_UNAVAILABLE
+Γ£ö legacy/demo payment bypasses fail closed and client entitlement dates are ignored (14.4247ms)
+Γ£ö payment verification rejects malformed or unbound provider orders (6.8904ms)
+[Unhandled request error] 4495053d-1fd4-49b5-9800-8f53aa14c926 request entity too large
+Γ£ö JSON body limit rejects oversized payloads before route work (6.5992ms)
+Γ£ö Runtime Journey 1: Free Candidate PDF Click -> Modal -> Upgrade -> Auto-Resumed Export (43.017ms)
+Γ£ö Runtime Journey 2: Premium Candidate 1-Click Vector PDF and Native DOCX (0.946ms)
+Γ£ö Runtime Journey 3: Enterprise Candidate Isolation & Full Export Privileges (0.2721ms)
+Γ£ö private and reserved IP encodings are rejected (6.1384ms)
+Γ£ö network target guard rejects literal metadata, loopback, local names, and malformed hosts (4.7806ms)
+Γ£ö HTTPS allowlist rejects credentials, insecure schemes and suffix confusion (0.4924ms)
+Γ£ö role permissions are normalized but ordinary users receive none (0.2363ms)
+Γ£ö route policy classifies aliases and sensitive operations (0.2161ms)
+Γ£ö route policy blocks normal user from admin alias (0.4959ms)
+Γ£ö ordinary ADMIN cannot rotate Firebase credentials (0.2823ms)
+Γ£ö stale admin sessions can mutate or test AI provider configuration (0.3579ms)
+Γ£ö route policy requires verified email for paid AI and payments (0.2506ms)
+Γ£ö account limiter cannot be bypassed by changing IP for an authenticated account (0.9536ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒæÑ sync secrets across teammates & machines: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (25) from .env -- tip: ≡ƒöä add secrets lifecycle management: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ΓÜÖ∩╕Å  enable debug logging with { debug: true }
+[Firebase Admin] Initialized via environment variables (identity only)
+[Enterprise Architecture] {"enterpriseTenancy":"ENABLED","dataProvider":"Enterprise Data Provider: mysql","dataPlaneConfigured":true,"cache":"Cache: none (MySQL/MariaDB is the authoritative store)","queue":"Queue: MariaDB transactional outbox","encryption":"Encryption Provider: ServerKey","encryptionSecurityLevel":"SERVER_SIDE_MASTER_KEY_ENVELOPE_AES_256_GCM","quotaStore":"mariadb-atomic"}
+Γû╢ Authentication, Token Lifecycle & Re-Authentication Architecture
+  Γ£ö A & B. Refreshed token is accepted and updates iat without corrupting auth_time (1163.2138ms)
+  Γ£ö C & D. Single-flight token refresh coalesces concurrent requests and fails finite (16.9036ms)
+  Γ£ö E. Genuine maximum-session expiry enforces TENANT_SESSION_REAUTH_REQUIRED for tenant members (13.3956ms)
+  Γ£ö F. Return-to-context preserves safe internal paths and rejects open redirects (0.6543ms)
+  Γ£ö G & H. Enterprise role simulation alters authorization context without mutating auth_time or identity (7.8064ms)
+  Γ£ö I. Super Admin is governed by Platform policy and not blocked by customer tenant sessionMaxMinutes (6.4151ms)
+  Γ£ö J. Non-Super-Admin cannot spoof simulation headers (7.0153ms)
+Γ£ö Authentication, Token Lifecycle & Re-Authentication Architecture (1268.3497ms)
+[dotenv@17.2.3] injecting env (27) from .env -- tip: ≡ƒ¢á∩╕Å  run anywhere with `dotenvx run -- yourcommand`
+[dotenv@17.2.3] injecting env (6) from ..\.env -- tip: ≡ƒöÉ prevent committing .env to code: https://dotenvx.com/precommit
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ΓÜÖ∩╕Å  specify custom .env file path with { path: '/custom/path/.env' }
+[Firebase Admin] Initialized via environment variables (identity only)
+Γ£ö Super Admin User Directory: rejects anonymous and unprivileged users (67.5071ms)
+Γ£ö Super Admin User Directory: returns users with pagination metadata when available (722.8734ms)
+Γ£ö Super Admin Platform Currency: returns platform currency configuration when available (13.8673ms)
+Γ£ö Super Admin Platform Currency: updates platform currency when authorized (24.5373ms)
+Γ£ö Super Admin Subscriptions: allows payment administrators to query active subscribers (28.4612ms)
+Γ£ö Super Admin AI Entitlements: allows querying global AI dashboard data when available (11.6753ms)
+Γ£ö Super Admin User Creation: rejects invalid email and role escalation deterministically (14.2394ms)
+Γ£ö Super Admin User PATCH: rejects invalid role and SUPER_ADMIN role grants deterministically (11.5142ms)
+Γ£ö Super Admin User PATCH: rejects invalid membership and empty changes deterministically (10.0847ms)
+Γ£ö Super Admin User PATCH: unprivileged and read-only roles cannot mutate users (11.18ms)
+Γ£ö Super Admin User PATCH: mutation requires the user directory and fails closed when unavailable (478.6684ms)
+Γ£ö Super Admin User PATCH: membership update handles expectedRevision and invalid revisions (1595.5374ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒ¢á∩╕Å  run anywhere with `dotenvx run -- yourcommand`
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ≡ƒöÉ prevent committing .env to code: https://dotenvx.com/precommit
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ΓÜÖ∩╕Å  override existing env vars with { override: true }
+[Firebase Admin] Initialized via environment variables (identity only)
+Γ£ö Super Admin & Platform Module: Sanitization protects secrets (1.8728ms)
+Γ£ö Super Admin & Platform Module: Action & Category Derivation (0.463ms)
+Γ£ö Super Admin & Platform Module: Severity derivation matches operational risk (0.2342ms)
+Γ£ö Super Admin & Platform Module: isSuperAdmin correctly identifies role & wildcard (0.3432ms)
+Γ£ö Super Admin & Platform Module: recordAdminAuditLog persists through the repository contract (0.9282ms)
+Γ£ö Platform API: /api/platform/health returns structured diagnostic data (1245.9038ms)
+Γ£ö Platform API: /api/platform/version exposes both halves of the release identity (6.0613ms)
+Γ£ö Platform API: /api/platform/health rejects unauthenticated & non-admin callers (6.9471ms)
+Γ£ö Platform API: /api/platform/maintenance status is readable by Admin and editable only by Super Admin (13.1177ms)
+Γ£ö Platform API: command center returns telemetry or a controlled database failure, and rejects users (662.1731ms)
+Γ£ö Platform API: encryption and observability are read-only control-plane views (10.4493ms)
+Γ£ö Platform API: tenant decommission and announcements require Super Admin (12.0229ms)
+Γ£ö Platform API: announcement delete and operator assignment require Super Admin (10.2298ms)
+Γ£ö Platform API: attention and enterprise-queue are readable or fail closed for Admin (334.4618ms)
+Γ£ö Platform API: search rejects one-character queries (4.0536ms)
+Γ£ö Platform API: search executes the MariaDB SQL contract and escapes LIKE metacharacters (4.313ms)
+Γ£ö Platform API: Super Admin mutations require MFA when SUPER_ADMIN_MFA_REQUIRED=true (3.4802ms)
+[dotenv@17.2.3] injecting env (27) from .env -- tip: ≡ƒöÉ prevent committing .env to code: https://dotenvx.com/precommit
+[dotenv@17.2.3] injecting env (6) from ..\.env -- tip: ≡ƒùé∩╕Å backup and recover secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ΓÜÖ∩╕Å  enable debug logging with { debug: true }
+[Firebase Admin] Initialized via environment variables (identity only)
+Γ£ö Super Admin Bulk Operations: rejects unauthorized callers and self-modification (57.8532ms)
+Γ£ö Super Admin Bulk Operations: validates action parameter and uid bounds (21.2766ms)
+Γ£ö Super Admin Command Center: returns extended telemetry with growth and subscription metrics (1078.5463ms)
+Γ£ö Super Admin Global Search: returns multi-entity search results including orders and tickets (6.9741ms)
+Γ£ö Payment Webhooks Diagnostic: returns sanitized events stream and rejects unauthorized callers (12.9398ms)
+Γ£ö Payment Webhooks Replay: requires SuperAdmin authorization and validates event ID (8.6997ms)
+Γû╢ support ticket RBAC and ownership source contracts
+  Γ£ö grants tickets.manage to SUPPORT and ADMIN, not AUDITOR (1.3455ms)
+  Γ£ö keeps user ticket routes off the admin write gate and staffs admin routes with tickets.manage (1.7168ms)
+  Γ£ö scopes consumer reads to the owner uid and lets staff bypass that filter (0.3209ms)
+  Γ£ö does not reuse contact_messages for the help desk (0.3942ms)
+Γ£ö support ticket RBAC and ownership source contracts (5.9654ms)
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ≡ƒæÑ sync secrets across teammates & machines: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (6) from ..\.env -- tip: ≡ƒöÉ encrypt with Dotenvx: https://dotenvx.com
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ≡ƒ¢á∩╕Å  run anywhere with `dotenvx run -- yourcommand`
+[Firebase Admin] Initialized via environment variables (identity only)
+[Enterprise Architecture] {"enterpriseTenancy":"ENABLED","dataProvider":"Enterprise Data Provider: mysql","dataPlaneConfigured":true,"cache":"Cache: none (MySQL/MariaDB is the authoritative store)","queue":"Queue: MariaDB transactional outbox","encryption":"Encryption Provider: ServerKey","encryptionSecurityLevel":"SERVER_SIDE_MASTER_KEY_ENVELOPE_AES_256_GCM","quotaStore":"mariadb-atomic"}
+Γ£ö POST /api/enterprise/tenants: 201 Created on valid input by platform admin (68.6866ms)
+Γ£ö POST /api/enterprise/tenants: 400 INVALID_TENANT for invalid name or slug (11.0234ms)
+Γ£ö POST /api/enterprise/tenants: 409 TENANT_SLUG_CONFLICT for duplicate organization slug (9.8945ms)
+Γ£ö POST /api/enterprise/tenants: 403 FORBIDDEN for non-platform-provisioner callers (4.2632ms)
+Γ£ö POST /api/enterprise/tenants: 403 EMAIL_VERIFICATION_REQUIRED for unverified emails (910.7867ms)
+[Enterprise Request Audit]: {"timestamp":"2026-10-01T23:40:56.064Z","level":"ERROR","requestId":"a6c12874-084f-4978-b292-8d131ec31786","correlationId":"a6c12874-084f-4978-b292-8d131ec31786","tenantId":"public","workspaceId":null,"method":"POST","path":"/tenants","status":503,"durationMs":0}
+Γ£ö POST /api/enterprise/tenants: 503 TENANT_CONTROL_PLANE_UNAVAILABLE when registry is uninitialized (4.8745ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ≡ƒ¢á∩╕Å  run anywhere with `dotenvx run -- yourcommand`
+[dotenv@17.2.3] injecting env (26) from .env -- tip: ≡ƒöæ add access controls to secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ΓÜÖ∩╕Å  specify custom .env file path with { path: '/custom/path/.env' }
+[Firebase Admin] Initialized via environment variables (identity only)
+Γ£ö P0 TOTP MFA: Authenticated normal user CANNOT access Super Admin endpoints (AUTHENTICATED != MFA AUTHENTICATED) (37.84ms)
+Γ£ö P0 TOTP MFA: Super Admin WITHOUT second factor is REJECTED with SUPER_ADMIN_MFA_REQUIRED (RECENT AUTH != MFA VERIFIED) (18.2169ms)
+Γ£ö P0 TOTP MFA: Super Admin with MFA but STALE auth_time is REJECTED with RECENT_AUTH_REQUIRED (5.3118ms)
+Γ£ö P0 TOTP MFA: Super Admin WITH valid TOTP MFA and recent auth SUCCEEDS and records audit log (5.6906ms)
+Γ£ö Unified Entitlements Matrix: Admin user receives full administrative entitlement and 10,000/day quota (1.3922ms)
+Γ£ö Unified Entitlements Matrix: Enterprise tenant member (with Basic personal profile) inherits Enterprise tier and elevated quota (0.2675ms)
+Γ£ö Unified Entitlements Matrix: B2C Pro subscriber receives Premium tier and 100/day quota (0.2148ms)
+Γ£ö Unified Entitlements Matrix: Free/Basic user without enterprise tenant is restricted to Basic tier (10/day, no DOCX) (0.1657ms)
+Γ£ö Unified Entitlements Matrix: Suspended enterprise membership does NOT grant Enterprise tier (0.2076ms)
+Γ£ö Unified Entitlements Matrix: Individual AI quota override takes precedence when active and unexpired (0.8266ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ΓÜÖ∩╕Å  write to custom object with { processEnv: myObject }
+[dotenv@17.2.3] injecting env (25) from .env -- tip: ≡ƒæÑ sync secrets across teammates & machines: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ΓÜÖ∩╕Å  load multiple .env files with { path: ['.env.local', '.env'] }
+[Firebase Admin] Initialized via environment variables (identity only)
+Γû╢ USER Dashboard & Export Pipeline Forensic Suite
+  Γ£ö 1. Dashboard Download PDF: Unauthenticated export is rejected with 401 (58.0744ms)
+  Γ£ö 2. Dashboard Download PDF: IDOR attempt by Bob on Alice resume returns 404 (11.9103ms)
+  Γ£ö 3. Dashboard Download DOCX: Direct Word export requires Bearer token and owner authorization (10.8512ms)
+Playwright exporting PDF, navigating to:  https://ai-resume-builder.local/export/Cv1/resume-alice-01/en#renderToken=gUCGeOkK-rauE20cW893lN0_W4gOzjsOKVutvcixUao
+[Export PDF] {
+  code: 'EXPORT_FAILED',
+  message: 'EXPORT_RENDER_FAILED:not-found',
+  requestId: '720f755b-6471-48ce-b644-38182f20bda7'
+}
+  Γ£ö 4. Dashboard Download PDF: Owner export returns valid PDF stream with application/pdf header (1640.3645ms)
+Γ£ö USER Dashboard & Export Pipeline Forensic Suite (1723.3875ms)
+[dotenv@17.2.3] injecting env (7) from ..\.env -- tip: ΓÜÖ∩╕Å  override existing env vars with { override: true }
+[dotenv@17.2.3] injecting env (26) from .env -- tip: Γ£à audit secrets and track compliance: https://dotenvx.com/ops
+Γ£ö profile API requires an explicit revision and rejects protected-field mass assignment (57.7063ms)
+Γ£ö profile API rejects owner mismatch, identity-email mismatch, and malformed envelope (16.3145ms)
+Γ£ö profile API applies a valid owner update, preserves billing state, and returns nested profile revision (7.1474ms)
+Γ£ö profile API stale write returns authoritative revision/profile and performs no mutation (6.3242ms)
+Γ£ö UX-Entitlement Alignment: Tier Resolution & Privilege Inheritance (2.2539ms)
+Γ£ö UX-Entitlement Alignment: Zero Customer-Facing AI Provider Leakage (2.7077ms)
+Γ£ö UX-Entitlement Alignment: Accurate Feature Copy (No Fake "Unlimited" Claims) (0.6258ms)
+Γ£ö UX-Entitlement Alignment: Multi-Currency Pricing Dynamic Mapping (0.2103ms)
+Γä╣ tests 821
+Γä╣ suites 4
+Γä╣ pass 821
+Γä╣ fail 0
+Γä╣ cancelled 0
+Γä╣ skipped 0
+Γä╣ todo 0
+Γä╣ duration_ms 108721.7293
