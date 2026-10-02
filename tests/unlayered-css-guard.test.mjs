@@ -265,9 +265,9 @@ describe('Unlayered CSS & Utility Isolation Architecture Guard', () => {
     // A document must expose exactly one h1, and heading levels must not skip
     // (h2 -> h4 breaks screen-reader navigation by heading). These assertions
     // pin the semantic fixes made to the landing, features and gallery pages.
-    const pricing = fs.readFileSync(path.join(root, 'src/components/Dashboard2/elements/HomepagePricing.jsx'), 'utf8');
-    const footer = fs.readFileSync(path.join(root, 'src/components/Dashboard2/elements/HomepageFooter.jsx'), 'utf8');
-    const hero = fs.readFileSync(path.join(root, 'src/components/Dashboard2/elements/HomepageHero.jsx'), 'utf8');
+    const pricing = fs.readFileSync(path.join(root, 'src/components/Marketing/elements/HomepagePricing.jsx'), 'utf8');
+    const footer = fs.readFileSync(path.join(root, 'src/components/Marketing/elements/HomepageFooter.jsx'), 'utf8');
+    const hero = fs.readFileSync(path.join(root, 'src/components/Marketing/elements/HomepageHero.jsx'), 'utf8');
     const features = fs.readFileSync(path.join(root, 'src/components/Features/Features.jsx'), 'utf8');
     const gallery = fs.readFileSync(path.join(root, 'src/components/PortfolioGallery/PortfolioGallery.jsx'), 'utf8');
 

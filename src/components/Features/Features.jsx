@@ -6,8 +6,8 @@ import { withTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router-dom';
 import LoaderAnimation from '../../assets/animations/lottie-loader.json';
 import { getPages, getWebsiteData, getSocialLinks } from '../../services/api/platform';
-import HomepageFooter from '../../components/Dashboard2/elements/HomepageFooter';  
-import HomepageNavbar from '../../components/Dashboard2/elements/HomepageNavbar';
+import HomepageFooter from '../Marketing/elements/HomepageFooter';
+import HomepageNavbar from '../Marketing/elements/HomepageNavbar';
 import { AuthContext } from '../../context/AuthContext';
 import fire from '../../conf/fire';
 import AuthWrapper from '../auth/authWrapper/AuthWrapper';
@@ -297,14 +297,14 @@ const Features = ({ _t }) => {
 
       {/* Clean Hero Section */}
       <section className="relative py-20 overflow-hidden">
-        {/* Simple background elements matching the Dashboard2 theme */}
+        {/* Simple background elements matching the marketing landing theme */}
         <div className="absolute inset-0 -z-10 pointer-events-none">
           <div className="absolute top-1/4 left-10 w-80 h-80 bg-purple-400/20 rounded-full blur-3xl animate-pulse"></div>
           <div className="absolute bottom-0 right-10 w-96 h-96 bg-blue-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
         </div>
 
         <div className="max-w-7xl mx-auto px-4 relative z-10">
-          {/* Clean header matching Dashboard2 style */}
+          {/* Clean header matching the marketing landing style */}
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-[#4a6cf7] bg-[#4a6cf7]/10 border border-[#4a6cf7]/20 rounded-full backdrop-blur-sm hover:bg-[#4a6cf7]/15 transition-all duration-300 shadow-sm mb-6">
               <FiStar className="w-4 h-4" />
@@ -320,7 +320,7 @@ const Features = ({ _t }) => {
               Tools to create, customize, preview, and export a professional resume.
             </p>
             
-            {/* Clean CTA buttons matching Dashboard2 style */}
+            {/* Clean CTA buttons matching the marketing landing style */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
               <button className="group relative flex items-center justify-center gap-2 px-6 py-3 bg-[#4a6cf7] text-white rounded-lg hover:bg-[#3b5ce6] transition-all duration-200 font-medium text-sm shadow-md hover:shadow-lg">
                 <FiZap className="w-4 h-4" />
@@ -335,7 +335,7 @@ const Features = ({ _t }) => {
             </div>
           </div>
 
-          {/* Clean Stats matching Dashboard2 style */}
+          {/* Clean Stats matching the marketing landing style */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
             {stats.map((stat, index) => (
               <div
@@ -354,9 +354,9 @@ const Features = ({ _t }) => {
         </div>
       </section>
 
-      {/* Main Features Section - Dashboard2 Style */}
+      {/* Main Features Section - Marketing landing style */}
       <section className="py-20 scroll-mt-20 relative">
-        {/* Simple background matching Dashboard2 theme */}
+        {/* Simple background matching the marketing landing theme */}
         <div className="absolute inset-0 -z-10 pointer-events-none">
           <div className="absolute top-1/4 left-10 w-80 h-80 bg-purple-400/20 rounded-full blur-3xl animate-pulse"></div>
           <div className="absolute bottom-0 right-10 w-96 h-96 bg-blue-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
@@ -446,9 +446,9 @@ const Features = ({ _t }) => {
         </div>
       </section>
 
-      {/* Additional Features Section - Dashboard2 Style */}
+      {/* Additional Features Section - Marketing landing style */}
       <section className="py-20 bg-gradient-to-b from-transparent via-white/5 to-transparent relative">
-        {/* Simple background matching Dashboard2 theme */}
+        {/* Simple background matching the marketing landing theme */}
         <div className="absolute inset-0 -z-10 pointer-events-none">
           <div className="absolute top-1/4 left-10 w-80 h-80 bg-purple-400/20 rounded-full blur-3xl animate-pulse"></div>
           <div className="absolute bottom-0 right-10 w-96 h-96 bg-blue-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
@@ -527,9 +527,9 @@ const Features = ({ _t }) => {
         </div>
       </section>
 
-      {/* CTA Section - Dashboard2 Style */}
+      {/* CTA Section - Marketing landing style */}
       <section className="py-20 bg-gradient-to-br from-slate-50 via-blue-50/50 to-purple-50/50 relative">
-        {/* Simple background matching Dashboard2 theme.
+        {/* Simple background matching the marketing landing theme.
             overflow-hidden clips the decorative blur orbs: at mobile widths the
             w-96 orb offset by left-1/4 extends past the viewport and otherwise
             widens the document, producing horizontal page scroll. */}

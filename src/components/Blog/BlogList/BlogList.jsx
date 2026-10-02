@@ -4,9 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { listBlogPosts, listBlogCategories, getBlogSettings } from '../../../services/api/platform';
 import { sanitizeImageUrl } from '../../../utils/sanitizeHtml';
 import Spinner from '../../Spinner/Spinner';
-import HomepageNavbar from '../../Dashboard2/elements/HomepageNavbar';
-import HomepageFooter from '../../Dashboard2/elements/HomepageFooter';
-import '../../Dashboard2/public-site.css';
+import HomepageNavbar from '../../Marketing/elements/HomepageNavbar';
+import HomepageFooter from '../../Marketing/elements/HomepageFooter';
+import '../../Marketing/public-site.css';
 import { AuthContext } from '../../../context/AuthContext';
 import fire from '../../../conf/fire';
 import { 

@@ -3,7 +3,7 @@ import './Action.scss';
 import ActionStepSelection from '../action-step-selection/ActionSelection';
 import ActionFilling from '../action-step-filling/ActionFilling';
 import ActionCoverFilling from '../action-step-cover-filling/ActionCoverFilling';
-import Dashboard2 from '../../Dashboard2/dashboard2';
+import LandingPage from '../../Marketing/LandingPage';
 
 class Action extends Component {
     constructor(props) {
@@ -29,7 +29,7 @@ class Action extends Component {
                     //     goToCoverSelection={this.props.goToCoverSelection}
                     //     goToResumeSelectionStep={this.props.goToResumeSelectionStep}
                     // />
-                    <Dashboard2 
+                    <LandingPage 
                     
                     values={this.props.values}
                     currentStep={this.props.currentStep}
@@ -156,7 +156,7 @@ class Action extends Component {
                 );
 
             default:
-                return <Dashboard2 />;
+                return <LandingPage />;
         }
     }
 }

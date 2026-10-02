@@ -11,11 +11,11 @@ import { getUserMembership } from '../../../data/entitlements';
 import { parseSafeDate, isUserPremium } from '../../../utils/subscriptionUtils';
 import { printAuthoritativeCreditNote, printAuthoritativeInvoice } from '../../../utils/authoritativeInvoice';
 import fire from '../../../conf/fire';
-import HomepageNavbar from '../../Dashboard2/elements/HomepageNavbar';
-import HomepageFooter from '../../Dashboard2/elements/HomepageFooter';
-import HomepagePricing from '../../Dashboard2/elements/HomepagePricing';
+import HomepageNavbar from '../../Marketing/elements/HomepageNavbar';
+import HomepageFooter from '../../Marketing/elements/HomepageFooter';
+import HomepagePricing from '../../Marketing/elements/HomepagePricing';
 import AuthWrapper from '../../auth/authWrapper/AuthWrapper';
-import '../../Dashboard2/public-site.css';
+import '../../Marketing/public-site.css';
 import './Plans.scss';
 import '../../CustomPage/CustomPage.scss';
 

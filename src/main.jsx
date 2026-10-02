@@ -6,7 +6,7 @@ import { isSafeInternalPath, loginPathWithNext, getPostLoginRedirectPath, clearP
 import './tailwind.css';
 import './index.scss';
 import './index.css';
-import './components/Dashboard2/public-site.css';
+import './components/Marketing/public-site.css';
 import './cv-templates/css/globalTemplateEnhancements.css';
 import './i18n'; // Import i18n configuration
 
@@ -132,7 +132,7 @@ const Contact = lazy(() => import('./components/Contact/Contact'));
 const Exporter = lazy(() => import('./components/Exporter/Exporter'));
 const Billing = lazy(() => import('./components/Billing/Plans/Plans'));
 const CustomePage = lazy(() => import('./components/CustomPage/CustomePage'));
-const Dashboard2 = lazy(() => import('./components/Dashboard2/dashboard2'));
+const LandingPage = lazy(() => import('./components/Marketing/LandingPage'));
 const CoverLetter = lazy(() => import('./components/CoverLetter/CoverLetter'));
 const PortfolioBuilder = lazy(() => import('./components/PortfolioBuilder/PortfolioBuilder'));
 const PublicPortfolio = lazy(() => import('./components/PublicPortfolio/PublicPortfolio'));

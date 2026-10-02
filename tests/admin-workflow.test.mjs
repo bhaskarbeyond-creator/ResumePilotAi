@@ -157,7 +157,7 @@ test('contact messages expose truthful loading, error, search, filter, paginatio
 test('Trusted By lifecycle is relational, revisioned, publish-aware, audited, sanitized, and backend-only', async () => {
   const [adminView, publicView, operations, backend, repository, policy] = await Promise.all([
     fs.readFile('src/components/admin/TrustedBy/TrustedBy.jsx', 'utf8'),
-    fs.readFile('src/components/Dashboard2/elements/HomepageTrustedBy.jsx', 'utf8'),
+    fs.readFile('src/components/Marketing/elements/HomepageTrustedBy.jsx', 'utf8'),
     fs.readFile('src/services/api/platform.js', 'utf8'),
     fs.readFile('backend/index.js', 'utf8'),
     fs.readFile('backend/repositories/MySQLRepository.js', 'utf8'),

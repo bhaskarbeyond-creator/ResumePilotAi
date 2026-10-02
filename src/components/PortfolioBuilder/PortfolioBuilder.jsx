@@ -6,7 +6,7 @@ import '@puckeditor/core/puck.css';
 import { AuthContext } from '../../context/AuthContext';
 import { publishPortfolio, updateExistingPortfolio, savePortfolioDraft, getUserPortfolios, updatePortfolioVisibility, deletePortfolio, duplicatePortfolio, renamePortfolio, getPortfolioById } from '../../services/api/platform';
 import { NavbarCategory, HeroCategory, AboutCategory, SkillsCategory, ExperienceCategory, EducationCategory, ProjectsCategory, ServicesCategory, TestimonialsCategory, ResumeCategory, AwardsCategory, ContactCategory, FooterCategory, GridLayoutCategory, GridItemCategory, FlexLayoutCategory, FlexItemCategory, LayoutCategory } from './PortfolioComponents';
-import HomepageFooter from '../Dashboard2/elements/HomepageFooter';
+import HomepageFooter from '../Marketing/elements/HomepageFooter';
 import TemplateSelector from './TemplateSelector';
 import { SecurityUtils, loadTemplate } from './templateUtils';
 import Toasts from '../Toasts/Toats';

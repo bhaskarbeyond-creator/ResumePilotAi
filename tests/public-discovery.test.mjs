@@ -7,7 +7,7 @@ test('Blog taxonomy and Trusted By mutations are backend-owned and public lists 
     fs.readFile('backend/index.js', 'utf8'), fs.readFile('src/services/api/platform.js', 'utf8'),
     fs.readFile('backend/repositories/MySQLRepository.js', 'utf8'), fs.readFile('backend/security/policy.js', 'utf8'),
     fs.readFile('backend/database/migrations/013_cms_relational_authority.sql', 'utf8'),
-    fs.readFile('src/components/Dashboard2/elements/HomepageTrustedBy.jsx', 'utf8'),
+    fs.readFile('src/components/Marketing/elements/HomepageTrustedBy.jsx', 'utf8'),
   ]);
   assert.match(backend, /CMS_CATEGORY_CREATED/);
   assert.match(backend, /CMS_CATEGORY_UPDATED/);

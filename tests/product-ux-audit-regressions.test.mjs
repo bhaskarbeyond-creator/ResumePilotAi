@@ -10,8 +10,8 @@ import fs from 'node:fs';
 const read = (file) => fs.readFileSync(file, 'utf8');
 
 test('homepage exposes only supported document workflows and removes the obsolete Quick entry point', () => {
-  const hero = read('src/components/Dashboard2/elements/HomepageHero.jsx');
-  const shell = read('src/components/Dashboard2/dashboard2.jsx');
+  const hero = read('src/components/Marketing/elements/HomepageHero.jsx');
+  const shell = read('src/components/Marketing/LandingPage.jsx');
   const routes = read('src/main.jsx');
   assert.doesNotMatch(hero, /quickBuilder|goToResumeSelectionStep|goToCoverSelection|>Quick</i);
   assert.match(hero, /build-resume\/heading/);
@@ -21,7 +21,7 @@ test('homepage exposes only supported document workflows and removes the obsolet
 });
 
 test('authenticated Dashboard navigation is a labelled link with active, mobile, focus and meaningful-icon states', () => {
-  const navbar = read('src/components/Dashboard2/elements/HomepageNavbar.jsx');
+  const navbar = read('src/components/Marketing/elements/HomepageNavbar.jsx');
   const globalCss = read('src/index.css');
   assert.match(navbar, /useLocation/);
   assert.match(navbar, /to="\/dashboard"/);
@@ -31,7 +31,7 @@ test('authenticated Dashboard navigation is a labelled link with active, mobile,
 });
 
 test('features menu is keyboard-operable and its feature cards actually navigate', () => {
-  const navbar = read('src/components/Dashboard2/elements/HomepageNavbar.jsx');
+  const navbar = read('src/components/Marketing/elements/HomepageNavbar.jsx');
   assert.match(navbar, /id="rp-nav-product-btn"/);
   assert.match(navbar, /aria-expanded=\{productDropdownOpen\}/);
   assert.match(navbar, /setProductDropdownOpen/);

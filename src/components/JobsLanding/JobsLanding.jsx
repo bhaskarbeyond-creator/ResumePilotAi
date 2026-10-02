@@ -1,8 +1,8 @@
 import React, { useState, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
-import HomepageNavbar from '../Dashboard2/elements/HomepageNavbar';
-import HomepageFooter from '../Dashboard2/elements/HomepageFooter';
-import GridBackground from '../Dashboard2/elements/GridBackground';
+import HomepageNavbar from '../Marketing/elements/HomepageNavbar';
+import HomepageFooter from '../Marketing/elements/HomepageFooter';
+import GridBackground from '../Marketing/elements/GridBackground';
 import JobsLandingHero from './JobsLandingHero';
 import LandingJobTopCompanies from './LandingJobTopCompanies';
 import LandingJobsFeatured from './LandingJobsFeatured';

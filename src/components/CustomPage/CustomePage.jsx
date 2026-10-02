@@ -5,8 +5,8 @@ import { getPageByName, getPages, getSocialLinks, getWebsiteData } from '../../s
 
 import { withTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
-import HomepageNavbar from '../Dashboard2/elements/HomepageNavbar';
-import HomepageFooter from '../Dashboard2/elements/HomepageFooter';
+import HomepageNavbar from '../Marketing/elements/HomepageNavbar';
+import HomepageFooter from '../Marketing/elements/HomepageFooter';
 import { sanitizePublicHtml } from '../../utils/sanitizeHtml';
 
 const DEFAULT_LEGAL_PAGES = {

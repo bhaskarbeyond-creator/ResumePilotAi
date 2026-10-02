@@ -39,7 +39,7 @@ test('UX-Entitlement Alignment: Zero Customer-Facing AI Provider Leakage', async
     'src/components/Dashboard/DashboardSupport/DashboardSupport.jsx',
     'src/components/Dashboard/DashboardSettings/SubscriptionModal.jsx',
     'src/components/Billing/Plans/Plans.jsx',
-    'src/components/Dashboard2/elements/HomepagePricing.jsx'
+    'src/components/Marketing/elements/HomepagePricing.jsx'
   ];
 
   const forbiddenProviderTerms = [

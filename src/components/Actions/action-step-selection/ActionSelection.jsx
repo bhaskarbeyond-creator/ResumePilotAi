@@ -7,7 +7,7 @@ import { AiOutlineEye, AiOutlineHeart, AiFillHeart } from 'react-icons/ai';
 import { BsGrid3X3Gap, BsList, BsFilter } from 'react-icons/bs';
 import { FiSearch, FiStar, FiArrowLeft, FiArrowRight, FiDownload, FiHeart, FiX, FiZoomIn } from 'react-icons/fi';
 import { HiSparkles } from 'react-icons/hi';
-import HomepageNavbar from '../../Dashboard2/elements/HomepageNavbar';
+import HomepageNavbar from '../../Marketing/elements/HomepageNavbar';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import 'react-lazy-load-image-component/src/effects/blur.css';
 
