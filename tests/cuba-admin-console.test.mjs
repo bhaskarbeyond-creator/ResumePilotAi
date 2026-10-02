@@ -150,7 +150,7 @@ describe('Admin secret protection (§34)', () => {
 
 describe('Admin rollout safety (§49)', () => {
     it('defaults to the existing console chrome', () => {
-        assert.match(ADMIN, /React\.useState\(false\)/);
+        assert.match(ADMIN, /React\.useState\(\(\) => isCubaShellEnabled\(\)\)/);
         assert.match(ADMIN, /isCubaShellEnabled\(\)/);
         assert.match(ADMIN, /React\.lazy\(\(\) => import\('\.\/AdminPortalCuba'\)\)/);
     });

@@ -68,17 +68,19 @@ test('P0-1: valid employments complete work history without any flags (content i
     assert.equal(isWorkHistoryComplete({ employments: [] }), false);
 });
 
-test('P0-2: legacy heading rules exclude the builder scope, h6 untouched', () => {
-    for (const tag of ['h1', 'h2', 'h3', 'h4', 'h5']) {
+test('P0-2: legacy heading rules exclude builder scope and Cuba contexts', () => {
+    for (const tag of ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']) {
         assert.match(
             TAILWIND,
-            new RegExp(`^${tag}:not\\(:is\\(\\.rp-builder-scope ${tag}\\)\\) \\{`, 'm'),
+            new RegExp(`^${tag}:not\\(:is\\(\\.rp-builder-scope ${tag}`, 'm'),
             `${tag} rule must exclude .rp-builder-scope`,
         );
+        assert.match(
+            TAILWIND,
+            new RegExp(`^${tag}:not.*\\.cuba-portal-stage ${tag}`, 'm'),
+            `${tag} rule must exclude .cuba-portal-stage`,
+        );
     }
-    // h6 is unused in the builder and intentionally left at its original selector.
-    assert.match(TAILWIND, /^h6 \{/m);
-    assert.doesNotMatch(TAILWIND, /h6:not/);
 });
 
 test('P0-2: builder root and portaled surfaces carry the scope class', () => {

@@ -191,7 +191,7 @@ describe('AI Career Briefing truthfulness (§23, §46)', () => {
 
 describe('Candidate rollout safety (§49)', () => {
     it('defaults to the legacy shell so no user is opted in silently', () => {
-        assert.match(APP_SHELL, /useState\(false\)/, 'the Cuba shell must start disabled');
+        assert.match(APP_SHELL, /useState\(\(\) => isCubaShellEnabled\(\)\)/, 'the Cuba shell reads persisted preference (defaults to legacy/off)');
         assert.match(APP_SHELL, /setCubaShell\(isCubaShellEnabled\(\)\)/);
     });
 
