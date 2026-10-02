@@ -1,0 +1,38 @@
+{
+  "id": "DIR-002",
+  "title": "Candidate Sub-Surfaces, ContextSwitcher & Command Palette Deep Polish",
+  "priority": "P0",
+  "status": "IN_PROGRESS",
+  "leadAuthor": "Antigravity (Lead Supervisor)",
+  "assignedTo": "Cline (Staff Developer)",
+  "createdAt": "2026-10-02T07:23:23.972Z",
+  "specFile": null,
+  "spec": "Complete the deep visual polish of the Candidate sub-surfaces (/dashboard/resumes, /dashboard/portfolios, /dashboard/jobs), refine ContextSwitcher.jsx for seamless 4-portal jumping, and ensure CubaCommandPalette (Cmd+K) provides keyboard-driven executive navigation without reloads. Follow docs/DASHBOARD_UI_UX_REPLACEMENT_BLUEPRINT.md and ensure zero black slate buttons remain.",
+  "invariants": [
+    "Resume Templates & ATS Engine 100% FROZEN (git diff = 0)",
+    "Zero simulated latency & zero mock telemetry",
+    "Strict rollout safety via isCubaShellEnabled()",
+    "No plain black buttons (use .cuba-btn-primary and .cuba-btn-outline)"
+  ],
+  "acceptanceCriteria": [
+    "Resumes Grid: cards use Cuba glassmorphism, 2-column export (PDF/Word), violet gradient CTAs",
+    "Portfolios: cards elevated with Cuba hover glow",
+    "ContextSwitcher: verified clean transitions across Candidate, Recruiter, Org, Admin",
+    "Command Palette: Cmd+K opens modal and executes route jumps",
+    "Run scripts/playwright-cuba-audit.mjs with 0 console errors",
+    "npm run build passes with 0 errors"
+  ],
+  "plan": {
+    "submittedAt": "2026-10-02T07:44:55.440Z",
+    "summary": "Deep polish candidate sub-surfaces resumes/portfolios/jobs, ContextSwitcher 4-portal jumping, Cmd+K palette without reloads; zero black slate buttons; preserve frozen Resume/templates",
+    "steps": [
+      "1. Audit candidate sub-surfaces + ContextSwitcher + palette",
+      "2. Fix UI polish + navigation + palette",
+      "3. Tests build Playwright audit + screenshots"
+    ]
+  },
+  "heartbeats": [],
+  "evidence": null,
+  "reviews": [],
+  "freezeHash": null
+}

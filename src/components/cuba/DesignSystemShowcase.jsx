@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { FiFileText, FiGrid, FiSearch, FiShield, FiUser, FiZap } from 'react-icons/fi';
 import CubaAppShell from './CubaAppShell';
 import CubaBadge from './CubaBadge';
@@ -78,23 +78,12 @@ const COMMANDS = [
 ];
 
 const DesignSystemShowcase = () => {
-    const [theme, setTheme] = useState('light');
     const [modalOpen, setModalOpen] = useState(false);
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [retrying, setRetrying] = useState(false);
-    const [aiStatus, setAiStatus] = useState(AI_STATUS.READY);
 
     return (
-        <CubaAppShell
-            navigation={NAVIGATION}
-            breadcrumb="Design system / Showcase"
-            theme={theme}
-            onToggleTheme={() => setTheme((value) => (value === 'dark' ? 'light' : 'dark'))}
-            aiStatus={aiStatus}
-            commands={COMMANDS}
-            user={{ name: 'Design review' }}
-        >
-            <div className="space-y-12">
+        <div className="space-y-12">
                 <CubaPageHeader
                     eyebrow="Cuba Modern Executive Glassmorphism"
 title="Design system showcase"
@@ -232,7 +221,6 @@ title="Design system showcase"
                         <CubaButton variant="outline" onClick={() => setDrawerOpen(true)}>Drawer — same contract, different geometry</CubaButton>
                     </Row>
                 </Section>
-            </div>
 
             <CubaModal
                 open={modalOpen}
@@ -261,7 +249,7 @@ title="Design system showcase"
                     Drawers are how candidate review, filters and detail panels are presented across the portals.
                 </p>
             </CubaDrawer>
-        </CubaAppShell>
+        </div>
     );
 };
 

@@ -1,3 +1,18 @@
+// Early theme initialization — completely eliminates Theme FOUC before React mounts
+try {
+    const saved = localStorage.getItem('cuba_theme') || localStorage.getItem('theme');
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const theme = (saved === 'dark' || saved === 'light') ? saved : (prefersDark ? 'dark' : 'light');
+    if (document?.documentElement) {
+        document.documentElement.setAttribute('data-theme', theme);
+        if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    }
+} catch (_) {}
+
 // Recover from stale chunks without requiring inline script execution in index.html.
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations().then(registrations => {

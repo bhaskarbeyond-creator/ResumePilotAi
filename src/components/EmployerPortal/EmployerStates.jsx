@@ -69,24 +69,38 @@ export function EmployerEmptyState({ icon, title, description, action }) {
     );
 }
 
-export function EmployerStatCard({ icon, label, value, hint, tone = 'indigo' }) {
+export function EmployerStatCard({ icon, label, value, hint, trend, tone = 'indigo' }) {
     const tones = {
-        indigo: 'bg-indigo-50 text-indigo-600 border-indigo-100',
-        emerald: 'bg-emerald-50 text-emerald-600 border-emerald-100',
-        amber: 'bg-amber-50 text-amber-600 border-amber-100',
-        slate: 'bg-slate-100 text-slate-600 border-slate-200',
+        indigo: { bubble: 'border-indigo-200', chip: 'bg-indigo-50 text-indigo-600', pill: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+        emerald: { bubble: 'border-emerald-200', chip: 'bg-emerald-50 text-emerald-600', pill: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+        amber: { bubble: 'border-amber-200', chip: 'bg-amber-50 text-amber-600', pill: 'bg-amber-50 text-amber-700 border-amber-200' },
+        slate: { bubble: 'border-slate-200', chip: 'bg-slate-100 text-slate-600', pill: 'bg-slate-100 text-slate-600 border-slate-200' },
     };
+    const active = tones[tone] || tones.indigo;
     return (
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
-            <div className="flex items-start gap-3">
-                <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${tones[tone] || tones.indigo}`}>
-                    {icon}
-                </span>
-                <div className="min-w-0">
-                    <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</p>
-                    <p className="employerEmptyStat mt-1 text-2xl font-extrabold text-slate-900">{value}</p>
-                    {hint && <p className="mt-0.5 truncate text-xs text-slate-500">{hint}</p>}
-                </div>
+        <div className="rounded-[15px] border border-cuba-line bg-cuba-card p-5 shadow-[0_9px_20px_rgba(46,35,94,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_24px_rgba(46,35,94,0.12)] flex flex-col justify-between">
+            <div className="flex items-center justify-between gap-2 mb-3">
+                {icon && (
+                    <div className={`relative flex-none p-1 rounded-full border border-dashed transition-transform duration-300 ${active.bubble}`}>
+                        <div className={`flex h-11 w-11 items-center justify-center rounded-full shadow-xs transition-transform ${active.chip}`}>
+                            {icon}
+                        </div>
+                    </div>
+                )}
+                {trend && (
+                    <span className={`flex-none inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold border whitespace-nowrap ${active.pill}`}>
+                        {trend}
+                    </span>
+                )}
+            </div>
+            <div className="space-y-0.5">
+                <p className="text-2xl sm:text-3xl font-black tracking-tight text-cuba-ink tabular-nums font-rubik leading-tight">
+                    {value}
+                </p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-cuba-ink-subtle">
+                    {label}
+                </p>
+                {hint && <p className="text-[11px] font-medium text-cuba-ink-muted leading-tight pt-0.5">{hint}</p>}
             </div>
         </div>
     );

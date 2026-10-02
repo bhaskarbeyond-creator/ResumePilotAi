@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { FiChevronDown, FiGrid, FiBriefcase, FiLayers, FiShield, FiCheck } from 'react-icons/fi';
 import { AuthContext } from '../../context/AuthContext';
 import { checkIfAdmin } from '../../services/api/platform';
@@ -16,10 +16,10 @@ export const PORTALS = Object.freeze({
 });
 
 export const PORTAL_META = {
-    [PORTALS.CANDIDATE]: { id: PORTALS.CANDIDATE, label: 'Candidate Dashboard', path: '/dashboard', icon: FiGrid },
-    [PORTALS.RECRUITER]: { id: PORTALS.RECRUITER, label: 'Recruiter & Hiring Portal', path: '/employer', icon: FiBriefcase },
-    [PORTALS.ORGANIZATION]: { id: PORTALS.ORGANIZATION, label: 'Organization Workspace', path: '/org', icon: FiLayers },
-    [PORTALS.ADMIN]: { id: PORTALS.ADMIN, label: 'Platform Admin Console', path: '/admin', icon: FiShield },
+    [PORTALS.CANDIDATE]: { id: PORTALS.CANDIDATE, label: 'Candidate Dashboard', shortLabel: 'Candidate Suite', path: '/dashboard', icon: FiGrid },
+    [PORTALS.RECRUITER]: { id: PORTALS.RECRUITER, label: 'Recruiter & Hiring Portal', shortLabel: 'Recruiter Portal', path: '/employer', icon: FiBriefcase },
+    [PORTALS.ORGANIZATION]: { id: PORTALS.ORGANIZATION, label: 'Organization Workspace', shortLabel: 'Organization', path: '/org', icon: FiLayers },
+    [PORTALS.ADMIN]: { id: PORTALS.ADMIN, label: 'Platform Admin Console', shortLabel: 'Admin Console', path: '/admin', icon: FiShield },
 };
 
 export const isKnownPortal = (value) => Object.prototype.hasOwnProperty.call(PORTAL_META, String(value || ''));
@@ -37,6 +37,14 @@ const writeStoredPortal = (portal) => {
         else localStorage.removeItem(ACTIVE_PORTAL_STORAGE_KEY);
     } catch { /* preference storage is optional and never authorization */ }
 };
+
+const portalForPathname = (pathname = '/') => {
+        if (pathname.startsWith('/employer')) return PORTALS.RECRUITER;
+        if (pathname.startsWith('/org')) return PORTALS.ORGANIZATION;
+        if (pathname.startsWith('/admin')) return PORTALS.ADMIN;
+        if (pathname.startsWith('/dashboard')) return PORTALS.CANDIDATE;
+        return null;
+    };
 
 /**
  * Resolve the set of portals the signed-in principal may actually enter.
@@ -136,6 +144,7 @@ const portalPath = (portalId, availability) => {
  */
 const ContextSwitcher = ({ variant = 'sidebar', onNavigate, className = '' }) => {
     const navigate = useNavigate();
+    const { pathname } = useLocation();
     const { loading, allowed, ...availability } = usePortalAvailability();
     const [open, setOpen] = useState(false);
     const [activePortal, setActivePortal] = useState(() => readStoredPortal());
@@ -144,11 +153,20 @@ const ContextSwitcher = ({ variant = 'sidebar', onNavigate, className = '' }) =>
 
     // Reconcile the persisted selection against what the server actually allows.
     // A logged-out user, a revoked admin role, a disabled tenancy service, or a
-    // deleted tenant all fall back to the candidate portal.
+    // deleted tenant all fall back to the candidate portal. The URL is the source
+    // of truth for the current workspace: when the path unambiguously identifies
+    // an allowed portal it wins over a stale stored preference (a Candidate Suite
+    // value persisted from an earlier session must not label /admin or /org).
     useEffect(() => {
         if (loading) return;
         if (allowed.length === 0) {
             if (activePortal !== null) { setActivePortal(null); writeStoredPortal(null); }
+            return;
+        }
+        const pathPortal = portalForPathname(pathname);
+        if (pathPortal && allowed.includes(pathPortal) && activePortal !== pathPortal) {
+            setActivePortal(pathPortal);
+            writeStoredPortal(pathPortal);
             return;
         }
         if (!activePortal || !allowed.includes(activePortal)) {
@@ -156,7 +174,7 @@ const ContextSwitcher = ({ variant = 'sidebar', onNavigate, className = '' }) =>
             setActivePortal(fallback);
             writeStoredPortal(fallback);
         }
-    }, [loading, allowed, activePortal]);
+    }, [loading, allowed, activePortal, pathname]);
 
     // Close on outside click and on Escape; restore focus to the trigger.
     useEffect(() => {
@@ -204,12 +222,12 @@ const ContextSwitcher = ({ variant = 'sidebar', onNavigate, className = '' }) =>
                 aria-haspopup="menu"
                 aria-expanded={open}
                 data-testid="context-switcher-trigger"
-                className={`flex w-full items-center gap-2 rounded-xl border border-slate-200 bg-white text-slate-700 transition-colors hover:border-indigo-300 hover:bg-indigo-50/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${variant === 'header' ? 'px-2.5 py-1.5 text-xs font-bold' : 'px-3 py-2.5 text-xs font-bold'}`}
+                className={`flex w-full items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1e222d] text-slate-700 dark:text-slate-200 transition-colors hover:border-indigo-300 dark:hover:border-indigo-500 hover:bg-indigo-50/40 dark:hover:bg-slate-800/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${variant === 'header' ? 'px-2.5 py-1.5 text-xs font-bold' : 'px-3 py-2 text-xs font-bold'}`}
             >
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
                     <CurrentIcon className="h-4 w-4" aria-hidden="true" />
                 </span>
-                <span className="min-w-0 flex-1 truncate text-left">{currentMeta.label}</span>
+                <span className="min-w-0 flex-1 truncate text-left">{variant === 'sidebar' ? (currentMeta.shortLabel || currentMeta.label) : currentMeta.label}</span>
                 <FiChevronDown className={`h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
             </button>
 
@@ -218,9 +236,9 @@ const ContextSwitcher = ({ variant = 'sidebar', onNavigate, className = '' }) =>
                     role="menu"
                     aria-label="Switch workspace"
                     data-testid="context-switcher-menu"
-                    className={`absolute z-50 mt-1.5 w-64 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg ${variant === 'header' ? 'right-0' : 'left-0'}`}
+                    className={`absolute z-50 mt-1.5 w-64 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1e222d] shadow-xl ${variant === 'header' ? 'right-0' : 'left-0'}`}
                 >
-                    <p className="border-b border-slate-100 bg-slate-50 px-3 py-2 text-[10px] font-extrabold uppercase tracking-widest text-slate-500">
+                    <p className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-[#15181f] px-3 py-2 text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400">
                         Switch workspace
                     </p>
                     <ul className="p-1.5">
@@ -235,19 +253,19 @@ const ContextSwitcher = ({ variant = 'sidebar', onNavigate, className = '' }) =>
                                         role="menuitem"
                                         onClick={() => selectPortal(portalId)}
                                         aria-current={selected ? 'true' : undefined}
-                                        className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-xs font-semibold transition-colors ${selected ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700 hover:bg-slate-50'}`}
+                                        className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-xs font-semibold transition-colors ${selected ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/60'}`}
                                     >
-                                        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${selected ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-500'}`}>
+                                        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${selected ? 'bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
                                             <Icon className="h-4 w-4" aria-hidden="true" />
                                         </span>
                                         <span className="min-w-0 flex-1 truncate">{meta.label}</span>
-                                        {selected && <FiCheck className="h-3.5 w-3.5 shrink-0 text-indigo-600" aria-hidden="true" />}
+                                        {selected && <FiCheck className="h-3.5 w-3.5 shrink-0 text-indigo-600 dark:text-indigo-400" aria-hidden="true" />}
                                     </button>
                                 </li>
                             );
                         })}
                     </ul>
-                    <div className="border-t border-slate-100 px-3 py-2">
+                    <div className="border-t border-slate-100 dark:border-slate-800 px-3 py-2">
                         <button
                             type="button"
                             onClick={async () => {

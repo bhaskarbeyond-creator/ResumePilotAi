@@ -180,7 +180,7 @@ const Dashboard = () => {
                 {icon}
               </div>
             </div>
-            <p className="break-words text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            <p className="truncate text-xl sm:text-2xl font-black text-slate-900 tracking-tight" title={typeof value === 'string' ? value : undefined}>
               {loading ? '—' : value}
             </p>
             <p className="mt-2 text-[11px] font-medium text-slate-500">{sub}</p>

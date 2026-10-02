@@ -1,0 +1,15 @@
+{
+  "updatedAt": "2026-10-02T07:46:02.624Z",
+  "eventCount": 11,
+  "activeDirectiveId": "DIR-002",
+  "activeDirectiveTitle": "Candidate Sub-Surfaces, ContextSwitcher & Command Palette Deep Polish",
+  "activeDirectiveStatus": "IN_PROGRESS",
+  "unreadForLead": 2,
+  "unreadForDev": 4,
+  "pendingBlockers": 0,
+  "latestHeartbeat": {
+    "timestamp": "2026-10-02T07:30:39.055Z",
+    "status": "Investigating Candidate sub-surfaces and ContextSwitcher",
+    "percent": 25
+  }
+}

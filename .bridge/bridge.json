@@ -1,0 +1,33 @@
+{
+  "bridgeVersion": "1.0.0",
+  "projectName": "IME365 Career Intelligence Platform",
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "initializedAt": "2026-10-02T07:09:50.929Z",
+  "roles": {
+    "supervisor": {
+      "role": "LEAD_SUPERVISOR",
+      "name": "Antigravity (Google DeepMind)",
+      "titles": [
+        "Senior Engineering Lead",
+        "Principal Architect",
+        "Product Designer & UX Architect",
+        "QA Lead & Test Strategist",
+        "Accessibility Lead",
+        "Performance Engineer",
+        "Security Reviewer",
+        "Release Gatekeeper"
+      ]
+    },
+    "developer": {
+      "role": "STAFF_DEVELOPER",
+      "name": "Cline (Autonomous Senior Developer)",
+      "responsibilities": [
+        "Deep codebase inspection & symbol resolution",
+        "Hands-on surgical code implementation",
+        "UI DOM crawling & browser inspection",
+        "End-to-end testing & verification evidence",
+        "Zero-regression delivery"
+      ]
+    }
+  }
+}

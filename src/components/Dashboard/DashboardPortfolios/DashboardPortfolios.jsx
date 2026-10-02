@@ -317,10 +317,10 @@ const DashboardPortfolios = ({ t, showToast }) => {
                             <p className="text-sm text-slate-600 mt-0.5">{t('DashboardPortfolios.subtitle')}</p>
                         </div>
                     </div>
-                    <Link to="/portfolio/builder?create=1" className="inline-flex items-center px-4 py-2 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 transition-colors text-sm shadow-sm">
-                        <FiPlus className="w-4 h-4 mr-2" />
-                        {t('DashboardPortfolios.createPortfolio')}
-                    </Link>
+                        <Link to="/portfolio/builder?create=1" className="cuba-btn-primary inline-flex items-center px-4 py-2.5 text-white text-sm font-bold rounded-xl transition-all min-h-[44px] shadow-sm">
+                            <FiPlus className="w-4 h-4 mr-2" />
+                            {t('DashboardPortfolios.createPortfolio')}
+                        </Link>
                 </div>
 
                 {/* Filters and Controls */}
@@ -373,7 +373,7 @@ const DashboardPortfolios = ({ t, showToast }) => {
                         <div className="text-6xl mb-4">🎨</div>
                         <h3 className="text-lg font-medium text-slate-900 mb-2">{t('DashboardPortfolios.emptyState.title')}</h3>
                         <p className="text-slate-600 mb-6 text-sm">{searchTerm || selectedTheme ? t('DashboardPortfolios.emptyState.noSearchResults') : t('DashboardPortfolios.emptyState.noPortfolios')}</p>
-                        <Link to="/portfolio/builder" className="inline-flex items-center px-5 py-2.5 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 transition-colors shadow-sm text-sm">
+                        <Link to="/portfolio/builder" className="cuba-btn-primary inline-flex items-center px-5 py-2.5 text-white text-sm font-bold rounded-xl transition-all min-h-[44px] shadow-sm">
                             <FiPlus className="w-5 h-5 mr-2" />
                             {t('DashboardPortfolios.emptyState.createFirstPortfolio')}
                         </Link>

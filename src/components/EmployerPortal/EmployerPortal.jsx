@@ -1,5 +1,6 @@
 import React, { Suspense, lazy, useCallback, useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { FiMenu } from 'react-icons/fi';
 import DashboardToast from '../Dashboard/DashboardToast/DashboardToast';
 import EmployerSidebar from './EmployerSidebar';
 import Spinner from '../Spinner/Spinner';

@@ -60,7 +60,9 @@ const scoreable = (entry) => {
 };
 
 export const summariseResumes = (resumes) => {
-    const documents = Array.isArray(resumes) ? resumes : [];
+    const documents = Array.isArray(resumes)
+        ? resumes
+        : (resumes?.allResumes || resumes?.resumes || []);
     const scored = documents.map(scoreable).filter(Boolean);
     const best = scored.reduce(
         (top, current) => (top === null || current.score > top.score ? current : top),

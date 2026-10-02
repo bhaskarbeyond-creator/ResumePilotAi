@@ -20,6 +20,8 @@
 @import 'tailwindcss';
 @import './styles/cuba-tokens.css';
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, .dark, .dark *));
+
 /* Preserve original heading styles.
  *
  * IMPORTANT (cascade): this file is loaded alongside Tailwind v4
@@ -34,37 +36,37 @@
  * elements, where any competing class-scoped rule in index.scss still wins by
  * source order — index.scss is imported after this file).
  */
-h1:not(:is(.rp-builder-scope h1)) {
+h1:not(:is(.rp-builder-scope h1, .cuba-portal-stage h1, [data-cuba-shell] h1, aside h1, header h1, nav h1)) {
     font-size: 2em;
     margin: 0.67em 0;
     font-weight: 600;
 }
 
-h2:not(:is(.rp-builder-scope h2)) {
+h2:not(:is(.rp-builder-scope h2, .cuba-portal-stage h2, [data-cuba-shell] h2, aside h2, header h2, nav h2)) {
     font-size: 1.5em;
     margin: 0.83em 0;
     font-weight: 600;
 }
 
-h3:not(:is(.rp-builder-scope h3)) {
+h3:not(:is(.rp-builder-scope h3, .cuba-portal-stage h3, [data-cuba-shell] h3, aside h3, header h3, nav h3)) {
     font-size: 1.17em;
     margin: 1em 0;
     font-weight: 500;
 }
 
-h4:not(:is(.rp-builder-scope h4)) {
+h4:not(:is(.rp-builder-scope h4, .cuba-portal-stage h4, [data-cuba-shell] h4, aside h4, header h4, nav h4)) {
     font-size: 1em;
     margin: 1.33em 0;
     font-weight: 500;
 }
 
-h5:not(:is(.rp-builder-scope h5)) {
+h5:not(:is(.rp-builder-scope h5, .cuba-portal-stage h5, [data-cuba-shell] h5, aside h5, header h5, nav h5)) {
     font-size: 0.83em;
     margin: 1.67em 0;
     font-weight: 400;
 }
 
-h6 {
+h6:not(:is(.rp-builder-scope h6, .cuba-portal-stage h6, [data-cuba-shell] h6, aside h6, header h6, nav h6)) {
     font-size: 0.67em;
     margin: 2.33em 0;
     font-weight: 500;

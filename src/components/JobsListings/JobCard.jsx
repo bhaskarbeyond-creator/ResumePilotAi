@@ -81,8 +81,8 @@ const JobCard = ({ job, isSaved, onToggleSaved, onViewDetails, onAuthRequired, o
             try {
                 const result = await checkUserApplicationStatus(user.uid, job.id);
                 setApplicationStatus({
-                    hasApplied: result.hasApplied,
-                    status: result.status,
+                    hasApplied: Boolean(result?.hasApplied ?? result),
+                    status: result?.status || null,
                     loading: false,
                 });
             } catch (error) {
@@ -112,8 +112,8 @@ const JobCard = ({ job, isSaved, onToggleSaved, onViewDetails, onAuthRequired, o
         if (user?.uid && job?.id) {
             checkUserApplicationStatus(user.uid, job.id).then((result) => {
                 setApplicationStatus({
-                    hasApplied: result.hasApplied,
-                    status: result.status,
+                    hasApplied: Boolean(result?.hasApplied ?? result),
+                    status: result?.status || null,
                     loading: false,
                 });
             });

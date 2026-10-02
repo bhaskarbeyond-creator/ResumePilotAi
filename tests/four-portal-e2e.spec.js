@@ -117,9 +117,9 @@ test.describe('canonical portals', () => {
         const { pageErrors } = await bootPage(page, recruiterState());
         await page.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });
         await expect(page).toHaveURL(/\/dashboard$/);
-        // Assert on real navigation copy, not internal wrapper classes.
-        await expect(page.getByText('Main Workspace')).toBeVisible({ timeout: 30_000 });
-        await expect(page.getByText('Career Suite')).toBeVisible();
+        // Assert on real navigation copy, supporting both Cuba Workspace and legacy Main Workspace
+        await expect(page.getByRole('heading', { name: 'Workspace' }).or(page.getByText('Main Workspace'))).toBeVisible({ timeout: 30_000 });
+        await expect(page.getByText('Job Intelligence').or(page.getByText('Career Suite'))).toBeVisible();
         expect(isUnexpectedJsError(pageErrors)).toEqual([]);
     });
 
@@ -130,9 +130,9 @@ test.describe('canonical portals', () => {
         await expect(page.getByTestId('employer-portal-shell')).toBeVisible({ timeout: 30_000 });
         await expect(page.getByRole('heading', { name: 'Recruiter Overview' }).first()).toBeVisible({ timeout: 30_000 });
 
-        const nav = page.getByRole('navigation', { name: /employer navigation/i });
+        const nav = page.getByRole('navigation', { name: /employer navigation/i }).first();
         for (const label of ['Recruiter Overview', 'Job Postings', 'Applicant ATS Pipeline', 'Candidate Messages', 'Company Profile', 'Hiring Preferences']) {
-            await expect(nav.getByText(label)).toBeVisible();
+            await expect(nav.getByText(label).first()).toBeVisible();
         }
         // Recruiter portal must not carry candidate-only or admin capability.
         await expect(nav.getByText('Cover Letters')).toHaveCount(0);
@@ -291,7 +291,7 @@ test.describe('candidate navigation integrity', () => {
     test('candidate sidebar exposes no recruiter capability', async ({ page }) => {
         const { pageErrors } = await bootPage(page, recruiterState());
         await page.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });
-        await expect(page.getByText('Main Workspace')).toBeVisible({ timeout: 30_000 });
+        await expect(page.getByRole('heading', { name: 'Workspace' }).or(page.getByText('Main Workspace'))).toBeVisible({ timeout: 30_000 });
 
         await expect(page.getByText('My Posted Jobs')).toHaveCount(0);
         await expect(page.getByText('My Companies')).toHaveCount(0);
@@ -306,7 +306,7 @@ test.describe('context switcher', () => {
     test('offers only server-authorized portals and switches between them', async ({ page }) => {
         const { pageErrors } = await bootPage(page, recruiterState());
         await page.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });
-        await expect(page.getByText('Main Workspace')).toBeVisible({ timeout: 30_000 });
+        await expect(page.getByRole('heading', { name: 'Workspace' }).or(page.getByText('Main Workspace'))).toBeVisible({ timeout: 30_000 });
 
         const trigger = page.getByTestId('context-switcher-trigger').first();
         await expect(trigger).toBeVisible({ timeout: 20_000 });
@@ -329,7 +329,7 @@ test.describe('context switcher', () => {
     test('Escape closes the menu without navigating', async ({ page }) => {
         await bootPage(page, recruiterState());
         await page.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });
-        await expect(page.getByText('Main Workspace')).toBeVisible({ timeout: 30_000 });
+        await expect(page.getByRole('heading', { name: 'Workspace' }).or(page.getByText('Main Workspace'))).toBeVisible({ timeout: 30_000 });
 
         const before = page.url();
         const trigger = page.getByTestId('context-switcher-trigger').first();
@@ -348,7 +348,7 @@ test.describe('context switcher', () => {
             localStorage.setItem('ime365_active_portal', 'admin');
         });
         await page.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });
-        await expect(page.getByText('Main Workspace')).toBeVisible({ timeout: 30_000 });
+        await expect(page.getByRole('heading', { name: 'Workspace' }).or(page.getByText('Main Workspace'))).toBeVisible({ timeout: 30_000 });
 
         const trigger = page.getByTestId('context-switcher-trigger').first();
         await expect(trigger).toBeVisible({ timeout: 20_000 });

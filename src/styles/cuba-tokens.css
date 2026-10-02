@@ -1,4 +1,4 @@
-﻿/* =============================================================================
+/* =============================================================================
  * IME365 Ã¢â‚¬â€ Cuba Modern Executive Glassmorphism Ã‚Â· Design Token Layer
  * -----------------------------------------------------------------------------
  * SINGLE SOURCE OF TRUTH for the Cuba design language.
@@ -177,6 +177,51 @@
    NOTE: an explicit [data-theme='light'] always wins, so a user who picks light
    is never overridden by the OS setting.
 */
+:root[data-theme='dark'],
+[data-theme='dark'] {
+    color-scheme: dark;
+    --cuba-primary: var(--cuba-dark-primary);
+    --cuba-primary-strong: var(--cuba-dark-primary-strong);
+    --cuba-primary-ink: var(--cuba-dark-primary-ink);
+    --cuba-primary-ink-strong: var(--cuba-dark-primary-ink-strong);
+    --cuba-primary-fill: var(--cuba-dark-primary-fill);
+    --cuba-primary-soft: var(--cuba-dark-primary-soft);
+    --cuba-primary-soft-hover: var(--cuba-dark-primary-soft-hover);
+    --cuba-primary-ring: var(--cuba-dark-primary-ring);
+    --cuba-primary-gradient: var(--cuba-dark-primary-gradient);
+    --cuba-on-primary: var(--cuba-dark-on-primary);
+    --cuba-success: var(--cuba-dark-success);
+    --cuba-success-soft: var(--cuba-dark-success-soft);
+    --cuba-info: var(--cuba-dark-info);
+    --cuba-info-soft: var(--cuba-dark-info-soft);
+    --cuba-warning: var(--cuba-dark-warning);
+    --cuba-warning-soft: var(--cuba-dark-warning-soft);
+    --cuba-danger: var(--cuba-dark-danger);
+    --cuba-danger-soft: var(--cuba-dark-danger-soft);
+    --cuba-secondary: var(--cuba-dark-secondary);
+    --cuba-secondary-soft: var(--cuba-dark-secondary-soft);
+    --cuba-canvas: var(--cuba-dark-canvas);
+    --cuba-card: var(--cuba-dark-card);
+    --cuba-elevated: var(--cuba-dark-elevated);
+    --cuba-line: var(--cuba-dark-line);
+    --cuba-line-strong: var(--cuba-dark-line-strong);
+    --cuba-ink: var(--cuba-dark-ink);
+    --cuba-ink-muted: var(--cuba-dark-ink-muted);
+    --cuba-ink-subtle: var(--cuba-dark-ink-subtle);
+    --cuba-ink-inverse: var(--cuba-dark-ink-inverse);
+    --cuba-glass-bg: var(--cuba-dark-glass-bg);
+    --cuba-glass-bg-strong: var(--cuba-dark-glass-bg-strong);
+    --cuba-glass-border: var(--cuba-dark-glass-border);
+    --cuba-glass-shadow: var(--cuba-dark-glass-shadow);
+    --cuba-ai-aurora-a: var(--cuba-dark-ai-aurora-a);
+    --cuba-ai-aurora-b: var(--cuba-dark-ai-aurora-b);
+    --cuba-ai-border: var(--cuba-dark-ai-border);
+    --cuba-ai-ink: var(--cuba-dark-ai-ink);
+    --cuba-shadow-sm: var(--cuba-dark-shadow-sm);
+    --cuba-shadow-md: var(--cuba-dark-shadow-md);
+    --cuba-shadow-lg: var(--cuba-dark-shadow-lg);
+}
+
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme='light']),
     [data-theme='dark'] {
@@ -449,3 +494,132 @@
     white-space: nowrap;
     border-width: 0;
 }
+
+/* =============================================================================
+ * Cuba Portal Stage Integration (Admin, Employer, Enterprise)
+ * -----------------------------------------------------------------------------
+ * When legacy admin or enterprise components render inside CubaPortalShell,
+ * hide the duplicate legacy sidebars, headers, and top navs so Cuba is the
+ * single authoritative executive shell.
+ * ========================================================================== */
+
+.cuba-portal-stage .admin__left,
+.cuba-portal-stage .adminHeader,
+.cuba-portal-stage .admin__right > header,
+.cuba-portal-stage .admin-header,
+.cuba-portal-stage .enterprise-header,
+.cuba-portal-stage .enterprise-topbar,
+.cuba-portal-stage .enterprise-shell > header,
+.cuba-portal-stage .enterprise-top-nav,
+.cuba-portal-stage .enterprise-sidebar,
+.cuba-portal-stage .enterprise-mobile-nav-toggle,
+.cuba-portal-stage .enterprise-mobile-context-bar {
+    display: none !important;
+}
+
+.cuba-portal-stage .admin {
+    display: block !important;
+    background: transparent !important;
+    min-height: auto !important;
+}
+
+.cuba-portal-stage .admin__right {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    background: transparent !important;
+    min-height: auto !important;
+}
+
+.cuba-portal-stage .enterprise-workspace-layout,
+.cuba-portal-stage .enterprise-layout {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+}
+
+.cuba-portal-stage .enterprise-main {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    background: transparent !important;
+}
+
+/* =============================================================================
+ * Authentic Cuba Animations & Widget Textures
+ * ========================================================================== */
+
+@keyframes bounce-effect {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+    100% { transform: translateY(0); }
+}
+
+@keyframes cuba-tada {
+    0% { transform: scale(1); }
+    10%, 20% { transform: scale(0.92) rotate(-3deg); }
+    30%, 50%, 70%, 90% { transform: scale(1.08) rotate(3deg); }
+    40%, 60%, 80% { transform: scale(1.08) rotate(-3deg); }
+    100% { transform: scale(1) rotate(0); }
+}
+
+.cuba-animate-bounce {
+    animation: bounce-effect 4.5s ease-in-out infinite;
+}
+
+.cuba-stat-card:hover .cuba-stat-icon {
+    animation: cuba-tada 1.2s ease infinite;
+}
+
+.cuba-widget-texture {
+    background-image: url('/images/dashboard/widget-bg.png') !important;
+    background-repeat: no-repeat !important;
+    background-position: right bottom !important;
+    background-size: cover !important;
+}
+
+[data-theme='dark'] .cuba-widget-texture {
+    background-image: linear-gradient(135deg, rgba(21, 24, 38, 0.94), rgba(21, 24, 38, 0.85)), url('/images/dashboard/widget-bg.png') !important;
+    background-blend-mode: overlay;
+}
+
+.cuba-btn-primary {
+    background: linear-gradient(135deg, #7366ff 0%, #5949d6 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(115, 102, 255, 0.3) !important;
+    transition: all 0.25s cubic-bezier(0.22, 0.61, 0.36, 1) !important;
+}
+
+.cuba-btn-primary:hover {
+    background: linear-gradient(135deg, #5949d6 0%, #4b3ec4 100%) !important;
+    box-shadow: 0 6px 20px rgba(115, 102, 255, 0.45) !important;
+    transform: translateY(-1.5px) !important;
+}
+
+.cuba-btn-outline {
+    border: 1px solid var(--cuba-line) !important;
+    background-color: var(--cuba-card) !important;
+    color: var(--cuba-ink) !important;
+    transition: all 0.2s cubic-bezier(0.22, 0.61, 0.36, 1) !important;
+}
+
+.cuba-btn-outline:hover {
+    border-color: rgba(115, 102, 255, 0.5) !important;
+    background-color: rgba(115, 102, 255, 0.08) !important;
+    color: #7366ff !important;
+    transform: translateY(-1px) !important;
+}
+
+.font-rubik {
+    font-family: 'Rubik', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.font-roboto {
+    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+
+

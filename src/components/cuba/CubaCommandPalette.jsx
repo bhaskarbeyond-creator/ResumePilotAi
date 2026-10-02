@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FiSearch } from 'react-icons/fi';
 import { CubaPortal, useDialogA11y } from './useDialogA11y';
 
@@ -121,7 +121,7 @@ const CubaCommandPalette = ({ open, onClose, commands = [], placeholder = 'Searc
                                         <span className="flex-none text-cuba-primary-ink-strong" aria-hidden="true">{command.icon}</span>
                                     )}
                                     <span className="min-w-0 flex-1 truncate">
-                                        {command.isAi && <span aria-hidden="true" className="cuba-ai-mark mr-1.5">âœ¦</span>}
+                                        {command.isAi && <span aria-hidden="true" className="cuba-ai-mark mr-1.5">✦</span>}
                                         {command.isAi && <span className="cuba-sr-only">AI: </span>}
                                         {command.label}
                                     </span>

@@ -22,6 +22,7 @@ import PreviewModal from "../../BuildResume/PreviewModal";
 import PremiumUpgradeModal from "../../common/PremiumUpgradeModal";
 import SubscriptionModal from "../DashboardSettings/SubscriptionModal";
 import ShareModal from "../ShareModal/ShareModal";
+import { isCubaShellEnabled } from "../../cuba/cubaShellFlag";
 
 const LoaderView = () => {
   const loaderOptions = {
@@ -881,16 +882,18 @@ class DashboardHomepage extends Component {
 
   render() {
     const { t } = this.props;
+    const isCuba = isCubaShellEnabled();
     return (
-      <div className="min-h-screen bg-slate-50">
-        <div className="mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-4 sm:py-6 max-w-none w-full" style={{maxWidth: '1600px'}}>
+      <div className={isCuba ? "space-y-6" : "min-h-screen bg-slate-50"}>
+        <div className={isCuba ? "w-full" : "mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-4 sm:py-6 max-w-none w-full"} style={isCuba ? undefined : {maxWidth: '1600px'}}>
           {this.state.documentsError && <div role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{this.state.documentsError} <button type="button" onClick={() => this.getAllDocuments()} className="ml-2 font-semibold underline">Try again</button></div>}
-          {/* Header Section */}
+          {/* Header Section (Legacy only — CubaCandidateHero provides the executive welcome banner) */}
+          {!isCuba && (
           <div className="mb-6 sm:mb-8">
             <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center space-x-3 flex-1 min-w-0">
                 <div className="p-2 bg-slate-100 rounded-lg">
-                  <FaFileAlt className="w-5 h-5 text-slate-600" />
+                  <FaFileAlt className="w-5 h-5 text-current" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h1 className="text-xl sm:text-2xl font-semibold text-slate-900 tracking-tight truncate">
@@ -948,9 +951,11 @@ class DashboardHomepage extends Component {
               </div>
             </div>
           </div>
+          )}
 
           {/* Career Command Center — AI Next Best Action Hub */}
           {(() => {
+            if (isCubaShellEnabled()) return null;
             const docs = this.state.fetchedDocuments || [];
             const hasResumes = docs.length > 0;
             const topDoc = hasResumes ? docs[0] : null;
@@ -1086,26 +1091,26 @@ class DashboardHomepage extends Component {
           })()}
 
           {/* Real-Time Search & Category Folder Filter Tabs */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 pb-2 border-b border-slate-200 gap-3">
+          <div className={isCuba ? "flex flex-col md:flex-row md:items-center md:justify-between mb-6 pb-3 border-b border-cuba-line gap-3" : "flex flex-col md:flex-row md:items-center md:justify-between mb-6 pb-2 border-b border-slate-200 gap-3"}>
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
-              <button onClick={() => this.setState({ activeTab: 'all' })} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'all' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>All Resumes ({this.state.pagination?.totalItems ?? this.state.fetchedDocuments?.length ?? 0})</button>
+              <button onClick={() => this.setState({ activeTab: 'all' })} className={isCuba ? (this.state.activeTab === 'all' ? 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#7366ff] text-white shadow-xs transition-colors shrink-0' : 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-[#1e222d] border border-cuba-line text-cuba-ink-muted hover:text-[#7366ff] hover:bg-[#7366ff]/5 transition-colors shrink-0') : `px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'all' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>All Resumes ({this.state.pagination?.totalItems ?? this.state.fetchedDocuments?.length ?? 0})</button>
               {this.state.enableCoverLetterModule && (
-              <button onClick={() => this.setState({ activeTab: 'cover-letters' })} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'cover-letters' ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'}`}>Cover Letters ({this.state.savedCoverLetters?.length || 0})</button>
+              <button onClick={() => this.setState({ activeTab: 'cover-letters' })} className={isCuba ? (this.state.activeTab === 'cover-letters' ? 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#7366ff] text-white shadow-xs transition-colors shrink-0' : 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-[#1e222d] border border-cuba-line text-cuba-ink-muted hover:text-[#7366ff] hover:bg-[#7366ff]/5 transition-colors shrink-0') : `px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'cover-letters' ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'}`}>Cover Letters ({this.state.savedCoverLetters?.length || 0})</button>
               )}
-              <button onClick={() => this.setState({ activeTab: 'tech' })} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'tech' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Tech &amp; Engineering</button>
-              <button onClick={() => this.setState({ activeTab: 'mgmt' })} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'mgmt' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Management</button>
+              <button onClick={() => this.setState({ activeTab: 'tech' })} className={isCuba ? (this.state.activeTab === 'tech' ? 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#7366ff] text-white shadow-xs transition-colors shrink-0' : 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-[#1e222d] border border-cuba-line text-cuba-ink-muted hover:text-[#7366ff] hover:bg-[#7366ff]/5 transition-colors shrink-0') : `px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'tech' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Tech &amp; Engineering</button>
+              <button onClick={() => this.setState({ activeTab: 'mgmt' })} className={isCuba ? (this.state.activeTab === 'mgmt' ? 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#7366ff] text-white shadow-xs transition-colors shrink-0' : 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-[#1e222d] border border-cuba-line text-cuba-ink-muted hover:text-[#7366ff] hover:bg-[#7366ff]/5 transition-colors shrink-0') : `px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'mgmt' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Management</button>
             </div>
             
-            {/* Search Box */}
+            {/* Search Box & Actions */}
             <div className="flex items-center gap-2">
-              <div className="relative w-full md:w-72">
+              <div className="relative w-full md:w-64">
                 <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none" />
                 <input
                   type="text"
-                  placeholder="Search resumes by title, role, skill..."
+                  placeholder="Search resumes..."
                   value={this.state.searchQuery}
                   onChange={(e) => this.setState({ searchQuery: e.target.value })}
-                  className="w-full pl-8 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  className={isCuba ? "w-full pl-8 pr-8 py-2 bg-white dark:bg-[#1e222d] border border-cuba-line rounded-xl text-xs text-cuba-ink placeholder:text-cuba-ink-subtle focus:outline-none focus:ring-2 focus:ring-[#7366ff]/30 focus:border-[#7366ff] transition-all" : "w-full pl-8 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"}
                   aria-label="Search resumes"
                 />
                 {this.state.searchQuery && (
@@ -1118,11 +1123,25 @@ class DashboardHomepage extends Component {
                   </button>
                 )}
               </div>
+              {isCuba && (
+                <button
+                  type="button"
+                  className="bg-gradient-to-r from-[#7366ff] to-[#5949d6] hover:from-[#6455f5] hover:to-[#4e3ecb] text-white px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-all text-xs font-semibold shadow-[0_4px_12px_rgba(115,102,255,0.25)] cursor-pointer shrink-0"
+                  onClick={() => {
+                    localStorage.removeItem("currentResumeId");
+                    localStorage.removeItem("currentResumeItem");
+                    this.props.navigate("/build-resume/heading?new=1");
+                  }}
+                >
+                  <FaPlus className="w-3 h-3" />
+                  <span>Create Resume</span>
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Statistics Cards */}
-          {this.state.isfetcing && this.state.fetchedDocuments.length === 0 ? (
+          {/* Statistics Cards (suppressed in Cuba mode because CubaCandidateHero provides the 4 KPI stat cards) */}
+          {!isCuba && (this.state.isfetcing && this.state.fetchedDocuments.length === 0 ? (
             /* Statistics Cards Skeleton */
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
               {[...Array(4)].map((_, index) => (
@@ -1185,18 +1204,19 @@ class DashboardHomepage extends Component {
                 </div>
               </div>
             )
-          )}
+          ))}
 
 
 
-          {/* Document header */}
+          {/* Document header (Legacy only — Cuba toolbar provides the title and count) */}
+          {!isCuba && (
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
             <div className="flex-1">
-              <h2 className="text-base sm:text-lg font-semibold text-slate-900">{t("DashboardHomepage.sections.myResumes", "My Resumes")}</h2>
+              <h2 className="text-base sm:text-lg font-bold text-cuba-ink dark:text-slate-100">{t("DashboardHomepage.sections.myResumes", "My Resumes")}</h2>
             </div>
 
             {this.state.fetchedDocuments.length > 0 && (
-              <div className="flex items-center space-x-3 text-sm text-slate-600">
+              <div className="flex items-center space-x-3 text-sm text-cuba-ink-muted dark:text-slate-400">
                 <div>
                   {this.state.displayDocuments?.length || 0}{" "}
                   {t("DashboardHomepage.stats.resumesCount", "resumes")}
@@ -1204,6 +1224,7 @@ class DashboardHomepage extends Component {
               </div>
             )}
           </div>
+          )}
 
           {/* Resume cards grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
@@ -1293,14 +1314,19 @@ class DashboardHomepage extends Component {
                 if (document) {
                   const atsScore = calculateAtsScore(document.item)?.qualityScore || 0;
                   return (
-                    <div key={document.id} className={`group bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-all duration-300 p-5 flex flex-col justify-between relative ${this.state.openDropdownId === document.id ? 'z-30' : 'z-0'}`}>
+                    <div key={document.id} className={isCuba
+                      ? `group bg-white dark:bg-[#1e222d] rounded-2xl shadow-sm border border-cuba-line hover:border-[#7366ff]/40 hover:shadow-[0_8px_24px_rgba(115,102,255,0.12)] transition-all duration-300 p-5 flex flex-col justify-between relative ${this.state.openDropdownId === document.id ? 'z-30' : 'z-0'}`
+                      : `group bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-all duration-300 p-5 flex flex-col justify-between relative ${this.state.openDropdownId === document.id ? 'z-30' : 'z-0'}`
+                    }>
                       {/* Header */}
                       <div className={`flex items-start justify-between mb-3 relative ${this.state.openDropdownId === document.id ? 'z-30' : 'z-10'}`}>
                         <div className="flex-1 min-w-0 pr-2">
                           <button
                             type="button"
                             onClick={() => this.setAsCurrentResume(document.id, document)}
-                            className="block max-w-full truncate text-left text-base font-semibold text-slate-900 transition-colors hover:text-blue-600"
+                            className={isCuba
+                              ? "block max-w-full truncate text-left text-base font-bold text-cuba-ink transition-colors hover:text-[#7366ff]"
+                              : "block max-w-full truncate text-left text-base font-semibold text-slate-900 transition-colors hover:text-blue-600"}
                           >
                             {document.item?.title && document.item.title !== 'Untitled Resume'
                               ? document.item.title
@@ -1435,9 +1461,15 @@ class DashboardHomepage extends Component {
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="space-y-2.5 mt-auto">
+                      <div className="space-y-2 mt-auto">
                         {/* Primary Action - Edit Resume */}
-                        <button className="w-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 shadow-sm" onClick={() => this.setAsCurrentResume(document.id, document)}>
+                        <button
+                          className={isCuba
+                            ? "cuba-btn-primary w-full text-white text-xs font-bold py-2.5 px-4 rounded-xl flex items-center justify-center space-x-2 cursor-pointer shadow-xs"
+                            : "w-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 shadow-sm"
+                          }
+                          onClick={() => this.setAsCurrentResume(document.id, document)}
+                        >
                           <FaPencilAlt className="w-3.5 h-3.5" />
                           <span>
                             {t(
@@ -1447,13 +1479,75 @@ class DashboardHomepage extends Component {
                           </span>
                         </button>
 
-                        {/* Share Button - Secondary Style */}
+                        {/* Export Actions (PDF + DOCX in sleek 2-col row in Cuba mode) */}
+                        <div className={isCuba ? "grid grid-cols-2 gap-2" : "space-y-2.5"}>
+                          {/* Download PDF Button */}
+                          <button className={isCuba
+                            ? `cuba-btn-outline w-full text-xs font-semibold py-2 px-3 rounded-xl flex items-center justify-center space-x-1.5 cursor-pointer ${
+                                this.state.downloadingResumeIds.has(document.id) ? "opacity-60 cursor-not-allowed" : ""
+                              }`
+                            : `w-full text-white text-sm font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 shadow-sm ${
+                                this.state.downloadingResumeIds.has(document.id) ? "bg-slate-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"
+                              }`
+                            } onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (!this.state.downloadingResumeIds.has(document.id)) {
+                              this.downloadResume(document);
+                            }
+                          }}>
+                            {this.state.downloadingResumeIds.has(document.id) ? (
+                              <>
+                                <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                <span>PDF...</span>
+                              </>
+                            ) : (
+                              <>
+                                <FaDownload className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                                <span>{isCuba ? "PDF" : t("DashboardHomepage.actions.downloadPdf", "Download PDF")}</span>
+                              </>
+                            )}
+                          </button>
+
+                          {/* Download Word (DOCX) Button */}
+                          <button className={isCuba
+                            ? `cuba-btn-outline w-full text-xs font-semibold py-2 px-3 rounded-xl flex items-center justify-center space-x-1.5 cursor-pointer ${
+                                this.state.downloadingDocxIds.has(document.id) ? "opacity-60 cursor-not-allowed" : ""
+                              }`
+                            : `w-full text-white text-sm font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 shadow-sm ${
+                                this.state.downloadingDocxIds.has(document.id) ? "bg-slate-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+                              }`
+                            } onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (!this.state.downloadingDocxIds.has(document.id)) {
+                              this.downloadResumeDocx(document);
+                            }
+                          }}>
+                            {this.state.downloadingDocxIds.has(document.id) ? (
+                              <>
+                                <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                <span>DOCX...</span>
+                              </>
+                            ) : (
+                              <>
+                                <FaDownload className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                                <span>{isCuba ? "Word" : "Download Word (DOCX)"}</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+
+                        {/* Share Button */}
                         <button
-                          className={`w-full border border-slate-300 text-slate-700 text-sm font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 shadow-sm ${
-                            this.state.sharingResumeIds?.has(document.id)
-                              ? "bg-slate-100 cursor-not-allowed opacity-75"
-                              : "bg-white hover:bg-slate-50 cursor-pointer"
-                          }`}
+                          className={isCuba
+                            ? `cuba-btn-outline w-full text-xs font-semibold py-2 px-4 rounded-xl flex items-center justify-center space-x-1.5 cursor-pointer ${
+                                this.state.sharingResumeIds?.has(document.id) ? "opacity-60 cursor-not-allowed" : ""
+                              }`
+                            : `w-full border border-slate-300 text-slate-700 text-sm font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 shadow-sm ${
+                                this.state.sharingResumeIds?.has(document.id) ? "bg-slate-100 cursor-not-allowed opacity-75" : "bg-white hover:bg-slate-50 cursor-pointer"
+                              }`
+                          }
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
@@ -1480,72 +1574,6 @@ class DashboardHomepage extends Component {
                             </>
                           )}
                         </button>
-
-                        {/* Download Button - Gradient Style */}
-                        <button className={`w-full text-white text-sm font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 shadow-sm ${this.state.downloadingResumeIds.has(document.id)
-                              ? "bg-slate-400 cursor-not-allowed"
-                              : "bg-green-600 hover:bg-green-700"
-                          }`} onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            if (
-                              !this.state.downloadingResumeIds.has(
-                                document.id
-                              )
-                            ) {
-                              this.downloadResume(document);
-                            }
-                          }}>
-                          {this.state.downloadingResumeIds.has(document.id) ? (
-                            <>
-                              <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                              <span>
-                                {t(
-                                  "DashboardHomepage.actions.downloading",
-                                  "Downloading..."
-                                )}
-                              </span>
-                            </>
-                          ) : (
-                            <>
-                              <FaDownload className="w-3.5 h-3.5" />
-                              <span>
-                                {t(
-                                  "DashboardHomepage.actions.downloadPdf",
-                                  "Download PDF"
-                                )}
-                              </span>
-                            </>
-                          )}
-                        </button>
-
-                        {/* Download Word (DOCX) Button - Visible to all, free users routed to PRO CAREER PASS */}
-                        <button className={`w-full text-white text-sm font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 shadow-sm ${this.state.downloadingDocxIds.has(document.id)
-                              ? "bg-slate-400 cursor-not-allowed"
-                              : "bg-blue-600 hover:bg-blue-700"
-                          }`} onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            if (
-                              !this.state.downloadingDocxIds.has(
-                                document.id
-                              )
-                            ) {
-                              this.downloadResumeDocx(document);
-                            }
-                          }}>
-                          {this.state.downloadingDocxIds.has(document.id) ? (
-                            <>
-                              <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                              <span>Generating DOCX...</span>
-                            </>
-                          ) : (
-                            <>
-                              <FaDownload className="w-3.5 h-3.5" />
-                              <span>Download Word (DOCX)</span>
-                            </>
-                          )}
-                        </button>
                       </div>
                     </div>
                   );
@@ -1556,7 +1584,10 @@ class DashboardHomepage extends Component {
             {/* Create new resume card - only show when not loading */}
             {!this.state.isPaginating && !this.state.isfetcing && (
               <div 
-                className="bg-white rounded-lg shadow-sm border-2 border-dashed border-slate-300 hover:border-slate-400 hover:bg-slate-50 transition-all duration-200 cursor-pointer group" 
+                className={isCuba
+                  ? "bg-white dark:bg-[#1e222d] rounded-2xl shadow-sm border-2 border-dashed border-[#7366ff]/35 hover:border-[#7366ff] hover:bg-[#7366ff]/5 hover:shadow-[0_8px_25px_rgba(115,102,255,0.14)] transition-all duration-300 cursor-pointer group min-h-[220px]"
+                  : "bg-white rounded-lg shadow-sm border-2 border-dashed border-slate-300 hover:border-slate-400 hover:bg-slate-50 transition-all duration-200 cursor-pointer group min-h-[220px]"
+                } 
                 onClick={() => {
                   localStorage.removeItem("currentResumeId");
                   localStorage.removeItem("currentResumeItem");
@@ -1564,16 +1595,19 @@ class DashboardHomepage extends Component {
                 }}
               >
                 <div className="p-8 text-center h-full flex flex-col items-center justify-center">
-                  <div className="w-16 h-16 bg-slate-100 group-hover:bg-slate-200 rounded-full flex items-center justify-center mb-6 transition-colors">
-                    <FaPlus className="w-6 h-6 text-slate-600" />
+                  <div className={isCuba
+                    ? "w-14 h-14 rounded-2xl bg-[#7366ff]/10 text-[#7366ff] group-hover:bg-[#7366ff] group-hover:text-white flex items-center justify-center mb-4 transition-all duration-200 shadow-xs"
+                    : "w-16 h-16 bg-slate-100 group-hover:bg-slate-200 rounded-full flex items-center justify-center mb-6 transition-colors"
+                  }>
+                    <FaPlus className={isCuba ? "w-5 h-5" : "w-6 h-6 text-slate-600"} />
                   </div>
-                  <h3 className="text-base font-medium text-slate-900 mb-2">
+                  <h3 className={isCuba ? "text-base font-bold text-cuba-ink mb-1.5" : "text-base font-medium text-slate-900 mb-2"}>
                     {t(
                       "DashboardHomepage.card.newResumeTitle",
                       "Create New Resume"
                     )}
                   </h3>
-                  <p className="text-sm text-slate-600 text-center leading-relaxed">
+                  <p className={isCuba ? "text-xs text-cuba-ink-muted text-center leading-relaxed" : "text-sm text-slate-600 text-center leading-relaxed"}>
                     {t(
                       "DashboardHomepage.card.newResumeDescription",
                       "Start with a blank canvas or choose from 50+ templates"

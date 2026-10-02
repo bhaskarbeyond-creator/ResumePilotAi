@@ -83,12 +83,13 @@ const EmployerOverview = ({ showToast }) => {
                 }
             />
 
-            <section aria-label="Hiring metrics" className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <section aria-label="Hiring metrics" className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 sm:gap-5">
                 <EmployerStatCard
                     icon={<FiBriefcase className="h-5 w-5" aria-hidden="true" />}
                     label="Active jobs"
                     value={metrics.activeJobs}
                     hint={`${metrics.totalJobs} total requisitions`}
+                    trend={metrics.totalJobs > 0 ? `${metrics.activeJobs} active` : null}
                     tone="indigo"
                 />
                 <EmployerStatCard
@@ -96,6 +97,7 @@ const EmployerOverview = ({ showToast }) => {
                     label="Candidates"
                     value={metrics.totalApplications}
                     hint="Across all requisitions"
+                    trend={metrics.totalApplications > 0 ? `${metrics.totalApplications} total` : null}
                     tone="emerald"
                 />
                 <EmployerStatCard
@@ -103,6 +105,7 @@ const EmployerOverview = ({ showToast }) => {
                     label="Companies"
                     value={metrics.totalCompanies}
                     hint={`${metrics.verifiedCompanies} verified`}
+                    trend={metrics.totalCompanies > 0 ? `${metrics.verifiedCompanies} verified` : null}
                     tone="amber"
                 />
                 <EmployerStatCard
@@ -110,6 +113,7 @@ const EmployerOverview = ({ showToast }) => {
                     label="Funnel stages"
                     value={funnel.length}
                     hint="Distinct pipeline states"
+                    trend={funnel.length > 0 ? `${funnel.length} stages` : null}
                     tone="slate"
                 />
             </section>
