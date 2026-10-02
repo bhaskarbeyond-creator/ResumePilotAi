@@ -33,20 +33,22 @@ const readStored = () => {
     try {
         if (typeof window !== 'undefined' && window.location) {
             const search = String(window.location.search || '');
-            if (search.includes('cuba=1') || search.includes('cuba=true')) {
-                localStorage.setItem(CUBA_SHELL_STORAGE_KEY, 'cuba');
-                return 'cuba';
-            }
             if (search.includes('legacy=1') || search.includes('cuba=0')) {
                 localStorage.setItem(CUBA_SHELL_STORAGE_KEY, 'legacy');
                 return 'legacy';
             }
+            if (search.includes('cuba=1') || search.includes('cuba=true')) {
+                localStorage.setItem(CUBA_SHELL_STORAGE_KEY, 'cuba');
+                return 'cuba';
+            }
         }
         const raw = localStorage.getItem(CUBA_SHELL_STORAGE_KEY);
-        return isKnownValue(raw) ? raw : null;
+        if (raw === 'legacy') return 'legacy';
+        // Legacy is safely retired: Cuba is the default shell for all users.
+        return 'cuba';
     } catch {
-        // Private-mode / storage-disabled browsers fall back to the default.
-        return null;
+        // Private-mode / storage-disabled browsers fall back to Cuba safely.
+        return 'cuba';
     }
 };
 
@@ -59,13 +61,13 @@ const writeStored = (value) => {
     }
 };
 
-/** Default is 'legacy' — the shell that passed the pre-flight gates. */
+/** Default is Cuba; legacy preserved as zero-downtime rollback target. */
 export const getCubaShellVariant = () => readStored() || 'legacy';
 
 export const isCubaShellEnabled = () => getCubaShellVariant() === 'cuba';
 
 export function setCubaShellVariant(value) {
-    const next = isKnownValue(value) ? value : 'legacy';
+    const next = isKnownValue(value) ? value : 'cuba';
     writeStored(next);
     return next;
 }
