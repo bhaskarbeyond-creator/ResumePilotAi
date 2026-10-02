@@ -1,0 +1,476 @@
+{
+  "src/main.jsx": [
+    {
+      "path": "/",
+      "element": "Welcome"
+    },
+    {
+      "path": "/login",
+      "element": "inline"
+    },
+    {
+      "path": "/sign-up",
+      "element": "Navigate"
+    },
+    {
+      "path": "/coverletter",
+      "element": "RequireAuthenticated"
+    },
+    {
+      "path": "/coverletter/*",
+      "element": "RequireAuthenticated"
+    },
+    {
+      "path": "/cover-letter",
+      "element": "RequireAuthenticated"
+    },
+    {
+      "path": "/cover-letter/*",
+      "element": "RequireAuthenticated"
+    },
+    {
+      "path": "/dashboard/*",
+      "element": "RequireAuthenticated"
+    },
+    {
+      "path": "/employer/*",
+      "element": "RequireAuthenticated"
+    },
+    {
+      "path": "/org/:slug/*",
+      "element": "RequireAuthenticated"
+    },
+    {
+      "path": "/org/*",
+      "element": "RequireAuthenticated"
+    },
+    {
+      "path": "/enterprise/*",
+      "element": "RequireAuthenticated"
+    },
+    {
+      "path": "/contact",
+      "element": "Contact"
+    },
+    {
+      "path": "/build-resume/*",
+      "element": "RequireAuthenticated"
+    },
+    {
+      "path": "/create-resume/*",
+      "element": "RequireAuthenticated"
+    },
+    {
+      "path": "/create-resume",
+      "element": "RequireAuthenticated"
+    },
+    {
+      "path": "/resume/:step",
+      "element": "Navigate"
+    },
+    {
+      "path": "/billing/plans",
+      "element": "Billing"
+    },
+    {
+      "path": "/p/:custompage",
+      "element": "CustomePage"
+    },
+    {
+      "path": "/shared/:resumeId",
+      "element": "PublicResume"
+    },
+    {
+      "path": "/pricing",
+      "element": "Billing"
+    },
+    {
+      "path": "/portfolio/builder",
+      "element": "RequireAuthenticated"
+    },
+    {
+      "path": "/portfolio/:slug",
+      "element": "PublicPortfolio"
+    },
+    {
+      "path": "/portfolios",
+      "element": "PortfolioGallery"
+    },
+    {
+      "path": "/admin/*",
+      "element": "RequireAuthenticated"
+    },
+    {
+      "path": "/adm/*",
+      "element": "RequireAuthenticated"
+    },
+    {
+      "path": "/platform/*",
+      "element": "RequireAuthenticated"
+    },
+    {
+      "path": "/front",
+      "element": "Navigate"
+    },
+    {
+      "path": "/features",
+      "element": "Features"
+    },
+    {
+      "path": "/templates",
+      "element": "Navigate"
+    },
+    {
+      "path": "/faq",
+      "element": "Navigate"
+    },
+    {
+      "path": "/faqs",
+      "element": "Navigate"
+    },
+    {
+      "path": "/plans",
+      "element": "Navigate"
+    },
+    {
+      "path": "/career-resources",
+      "element": "Navigate"
+    },
+    {
+      "path": "/privacy",
+      "element": "Navigate"
+    },
+    {
+      "path": "/terms",
+      "element": "Navigate"
+    },
+    {
+      "path": "/cookies",
+      "element": "Navigate"
+    },
+    {
+      "path": "/about",
+      "element": "Navigate"
+    },
+    {
+      "path": "/about-us",
+      "element": "Navigate"
+    },
+    {
+      "path": "/jobs",
+      "element": "JobsLanding"
+    },
+    {
+      "path": "/jobs/portal",
+      "element": "JobsPortalRoute"
+    },
+    {
+      "path": "/jobs/portal/:jobId",
+      "element": "JobsPortalRoute"
+    },
+    {
+      "path": "/jobs/browse",
+      "element": "JobsBrowseRoute"
+    },
+    {
+      "path": "/jobs/categories",
+      "element": "JobsLanding"
+    },
+    {
+      "path": "/jobs/category/:catName",
+      "element": "JobsBrowseRoute"
+    },
+    {
+      "path": "/blog",
+      "element": "BlogList"
+    },
+    {
+      "path": "/blog/:slug",
+      "element": "BlogPost"
+    },
+    {
+      "path": "/blog-editor",
+      "element": "RequireAuthenticated"
+    },
+    {
+      "path": "/blog-editor/:postId",
+      "element": "RequireAuthenticated"
+    },
+    {
+      "path": "/dashboard2/*",
+      "element": "RequireAuthenticated"
+    },
+    {
+      "path": "/dashboard2",
+      "element": "RequireAuthenticated"
+    },
+    {
+      "path": "*",
+      "element": "NotFound"
+    }
+  ],
+  "src/components/Dashboard/DashboardMain/DashboardMain.jsx": [
+    {
+      "path": "(index)",
+      "element": "inline"
+    },
+    {
+      "path": "settings",
+      "element": "DashboardSettings"
+    },
+    {
+      "path": "messages",
+      "element": "DashboardMessages"
+    },
+    {
+      "path": "favorites",
+      "element": "DashboardFavourites"
+    },
+    {
+      "path": "interview",
+      "element": "DashboardInterviews"
+    },
+    {
+      "path": "cover-letters",
+      "element": "CoverLetter"
+    },
+    {
+      "path": "portfolios",
+      "element": "DashboardPortfolios"
+    },
+    {
+      "path": "applied-jobs",
+      "element": "AppliedJobs"
+    },
+    {
+      "path": "job-tracker",
+      "element": "JobTracker"
+    },
+    {
+      "path": "jobs",
+      "element": "MainJobListings"
+    },
+    {
+      "path": "jobs/portal",
+      "element": "MainJobListings"
+    },
+    {
+      "path": "jobs/portal/:jobId",
+      "element": "MainJobListings"
+    },
+    {
+      "path": "jobs/browse",
+      "element": "MainJobListings"
+    },
+    {
+      "path": "jobs/category/:catName",
+      "element": "MainJobListings"
+    },
+    {
+      "path": "my-employments",
+      "element": "Navigate"
+    },
+    {
+      "path": "my-companies",
+      "element": "Navigate"
+    },
+    {
+      "path": "job-matching",
+      "element": "Navigate"
+    },
+    {
+      "path": "plans",
+      "element": "Billing"
+    },
+    {
+      "path": "support",
+      "element": "DashboardSupport"
+    },
+    {
+      "path": "tickets",
+      "element": "Navigate"
+    },
+    {
+      "path": "help",
+      "element": "Navigate"
+    }
+  ],
+  "src/components/BuildResume/BuildResume.jsx": [
+    {
+      "path": "heading",
+      "element": "HeadingStep"
+    },
+    {
+      "path": "work-history",
+      "element": "WorkHistoryStep"
+    },
+    {
+      "path": "education",
+      "element": "EducationStep"
+    },
+    {
+      "path": "skills",
+      "element": "SkillsStep"
+    },
+    {
+      "path": "languages",
+      "element": "LanguagesStep"
+    },
+    {
+      "path": "summary",
+      "element": "SummaryStep"
+    },
+    {
+      "path": "projects",
+      "element": "ProjectsStep"
+    },
+    {
+      "path": "certifications",
+      "element": "CertificationsStep"
+    },
+    {
+      "path": "achievements",
+      "element": "AchievementsStep"
+    },
+    {
+      "path": "references",
+      "element": "ReferencesStep"
+    },
+    {
+      "path": "custom",
+      "element": "CustomSectionsStep"
+    },
+    {
+      "path": "review",
+      "element": "ReviewStep"
+    }
+  ],
+  "src/components/EmployerPortal/EmployerPortal.jsx": [
+    {
+      "path": "(index)",
+      "element": "EmployerOverview"
+    },
+    {
+      "path": "jobs",
+      "element": "EmployerJobPostings"
+    },
+    {
+      "path": "applicants",
+      "element": "EmployerApplicantPipeline"
+    },
+    {
+      "path": "company",
+      "element": "EmployerCompanyProfile"
+    },
+    {
+      "path": "messages",
+      "element": "EmployerCandidateMessages"
+    },
+    {
+      "path": "settings",
+      "element": "EmployerHiringPreferences"
+    },
+    {
+      "path": "*",
+      "element": "Navigate"
+    }
+  ],
+  "src/components/admin/Admin.jsx": [
+    {
+      "path": "/",
+      "element": "Navigate"
+    },
+    {
+      "path": "dashboard",
+      "element": "inline"
+    },
+    {
+      "path": "audit-logs",
+      "element": "inline"
+    },
+    {
+      "path": "queues",
+      "element": "inline"
+    },
+    {
+      "path": "tenants",
+      "element": "inline"
+    },
+    {
+      "path": "security",
+      "element": "inline"
+    },
+    {
+      "path": "operations",
+      "element": "inline"
+    },
+    {
+      "path": "attention",
+      "element": "inline"
+    },
+    {
+      "path": "health",
+      "element": "inline"
+    },
+    {
+      "path": "operators",
+      "element": "inline"
+    },
+    {
+      "path": "settings",
+      "element": "inline"
+    },
+    {
+      "path": "user/ss",
+      "element": "inline"
+    },
+    {
+      "path": "users",
+      "element": "inline"
+    },
+    {
+      "path": "messages",
+      "element": "inline"
+    },
+    {
+      "path": "help-desk",
+      "element": "inline"
+    },
+    {
+      "path": "reviews",
+      "element": "inline"
+    },
+    {
+      "path": "trustedby",
+      "element": "inline"
+    },
+    {
+      "path": "employer-applications",
+      "element": "inline"
+    },
+    {
+      "path": "jobs-manager",
+      "element": "inline"
+    },
+    {
+      "path": "company-management",
+      "element": "inline"
+    },
+    {
+      "path": "blog-management",
+      "element": "inline"
+    },
+    {
+      "path": "landing-pages",
+      "element": "inline"
+    },
+    {
+      "path": "phrases",
+      "element": "inline"
+    },
+    {
+      "path": "*",
+      "element": "Navigate"
+    }
+  ]
+}

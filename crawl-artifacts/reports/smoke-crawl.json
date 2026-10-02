@@ -1,0 +1,4783 @@
+{
+  "summary": {
+    "label": "smoke",
+    "base": "https://ime365.local",
+    "seed": 1337,
+    "startedAt": "2026-10-01T23:32:18.106Z",
+    "durationMs": 119353,
+    "routesCrawled": 49,
+    "viewports": [
+      "desktop-1440x900"
+    ],
+    "pageVisits": 49,
+    "pageVisitsWithIssues": 2,
+    "cleanPageVisits": 47,
+    "issueAggregate": [
+      {
+        "code": "NO_H1",
+        "occurrences": 1,
+        "affectedRoutes": [
+          "/contact @desktop-1440x900 [public]"
+        ],
+        "exampleDetails": [
+          "page has no h1 landmark"
+        ]
+      },
+      {
+        "code": "CLIENT_404",
+        "occurrences": 1,
+        "affectedRoutes": [
+          "/this-route-does-not-exist-zzz @desktop-1440x900 [public]"
+        ],
+        "exampleDetails": [
+          "Skip to main content Page not found The requested page does not exist or is no longer available. Return home Optional an"
+        ]
+      }
+    ],
+    "consoleErrors": [],
+    "apiCalls": [
+      {
+        "endpoint": "GET /api/platform/public-config -> 200",
+        "occurrences": 463,
+        "routes": [
+          "/",
+          "/features",
+          "/templates",
+          "/faq",
+          "/faqs",
+          "/plans",
+          "/pricing",
+          "/career-resources",
+          "/privacy",
+          "/terms",
+          "/cookies",
+          "/about",
+          "/about-us",
+          "/contact",
+          "/login",
+          "/sign-up",
+          "/billing/plans",
+          "/jobs",
+          "/jobs/portal",
+          "/jobs/browse",
+          "/jobs/categories",
+          "/blog",
+          "/p/privacy-policy",
+          "/p/terms-of-service",
+          "/p/cookie-policy",
+          "/portfolios",
+          "/dashboard2",
+          "/enterprise",
+          "/this-route-does-not-exist-zzz",
+          "/dashboard",
+          "/dashboard/settings",
+          "/dashboard/messages",
+          "/dashboard/favorites",
+          "/dashboard/interview",
+          "/dashboard/cover-letters",
+          "/dashboard/portfolios",
+          "/dashboard/applied-jobs",
+          "/dashboard/job-tracker",
+          "/dashboard/jobs",
+          "/dashboard/plans",
+          "/dashboard/support",
+          "/build-resume",
+          "/create-resume/heading",
+          "/cover-letter",
+          "/portfolio/builder",
+          "/employer",
+          "/admin",
+          "/org/acme",
+          "/blog-editor"
+        ]
+      },
+      {
+        "endpoint": "GET /api/public/custom-pages -> 200",
+        "occurrences": 38,
+        "routes": [
+          "/",
+          "/features",
+          "/templates",
+          "/faq",
+          "/faqs",
+          "/privacy",
+          "/terms",
+          "/cookies",
+          "/about",
+          "/about-us",
+          "/contact",
+          "/login",
+          "/sign-up",
+          "/p/privacy-policy",
+          "/p/terms-of-service",
+          "/p/cookie-policy",
+          "/dashboard2",
+          "/enterprise",
+          "/dashboard",
+          "/dashboard/settings",
+          "/dashboard/messages",
+          "/dashboard/favorites",
+          "/dashboard/interview",
+          "/dashboard/cover-letters",
+          "/dashboard/portfolios",
+          "/dashboard/applied-jobs",
+          "/dashboard/job-tracker",
+          "/dashboard/jobs",
+          "/dashboard/plans",
+          "/dashboard/support",
+          "/build-resume",
+          "/create-resume/heading",
+          "/cover-letter",
+          "/portfolio/builder",
+          "/employer",
+          "/admin",
+          "/org/acme",
+          "/blog-editor"
+        ]
+      },
+      {
+        "endpoint": "GET /api/service-availability -> 200",
+        "occurrences": 27,
+        "routes": [
+          "/plans",
+          "/pricing",
+          "/login",
+          "/sign-up",
+          "/billing/plans",
+          "/dashboard2",
+          "/enterprise",
+          "/dashboard",
+          "/dashboard/settings",
+          "/dashboard/messages",
+          "/dashboard/favorites",
+          "/dashboard/interview",
+          "/dashboard/cover-letters",
+          "/dashboard/portfolios",
+          "/dashboard/applied-jobs",
+          "/dashboard/job-tracker",
+          "/dashboard/jobs",
+          "/dashboard/plans",
+          "/dashboard/support",
+          "/build-resume",
+          "/create-resume/heading",
+          "/cover-letter",
+          "/portfolio/builder",
+          "/employer",
+          "/admin",
+          "/org/acme",
+          "/blog-editor"
+        ]
+      },
+      {
+        "endpoint": "GET /api/jobs-data -> 200",
+        "occurrences": 4,
+        "routes": [
+          "/jobs",
+          "/jobs/portal",
+          "/jobs/browse",
+          "/jobs/categories"
+        ]
+      },
+      {
+        "endpoint": "GET /api/coupons/active -> 200",
+        "occurrences": 3,
+        "routes": [
+          "/plans",
+          "/pricing",
+          "/billing/plans"
+        ]
+      },
+      {
+        "endpoint": "GET /api/blog-data/categories -> 200",
+        "occurrences": 2,
+        "routes": [
+          "/career-resources",
+          "/blog"
+        ]
+      },
+      {
+        "endpoint": "GET /api/blog-data -> 200",
+        "occurrences": 2,
+        "routes": [
+          "/career-resources",
+          "/blog"
+        ]
+      },
+      {
+        "endpoint": "GET /api/public/custom-pages/privacy-policy -> 200",
+        "occurrences": 2,
+        "routes": [
+          "/privacy",
+          "/p/privacy-policy"
+        ]
+      },
+      {
+        "endpoint": "GET /api/public/custom-pages/terms-of-service -> 200",
+        "occurrences": 2,
+        "routes": [
+          "/terms",
+          "/p/terms-of-service"
+        ]
+      },
+      {
+        "endpoint": "GET /api/public/custom-pages/cookie-policy -> 200",
+        "occurrences": 2,
+        "routes": [
+          "/cookies",
+          "/p/cookie-policy"
+        ]
+      },
+      {
+        "endpoint": "GET /api/public/custom-pages/about-us -> 200",
+        "occurrences": 2,
+        "routes": [
+          "/about",
+          "/about-us"
+        ]
+      },
+      {
+        "endpoint": "GET /api/public/featured-companies -> 200",
+        "occurrences": 2,
+        "routes": [
+          "/jobs",
+          "/jobs/categories"
+        ]
+      },
+      {
+        "endpoint": "GET /api/portfolios/public -> 200",
+        "occurrences": 1,
+        "routes": [
+          "/portfolios"
+        ]
+      }
+    ],
+    "loadMs": {
+      "p50": 2254,
+      "p95": 2676,
+      "max": 3523
+    }
+  },
+  "records": [
+    {
+      "route": "/",
+      "httpStatus": 200,
+      "loadMs": 2656,
+      "dom": {
+        "title": "IME365 — Resume Builder & CV Maker",
+        "url": "/",
+        "textLength": 11443,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 2,
+        "h1": [
+          "Build Recruiter-Rea|\nwith Context-Aware AI.",
+          "Simple, Powerful Plans for Every Stage"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content Product Resume Templates Resources Pricing Enterprise Log In Get Started BUILD BETTER RESUMES. INTERVIEW WITH CONFIDENCE. Build Recruiter-Rea| with Context-Aware AI. IME365 turns your real experience into metric-driven achievements, optimizes for 51 ATS layouts, and simulates real-world CBT behavioral interviews. Build My Resume — Free Explore Platform No credit card required "
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "home",
+      "kind": "public",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/"
+    },
+    {
+      "route": "/features",
+      "httpStatus": 200,
+      "loadMs": 2301,
+      "dom": {
+        "title": "IME365 Features",
+        "url": "/features",
+        "textLength": 4071,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 1,
+        "h1": [
+          "Powerful Tools for Professional Resumes"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content Product Resume Templates Resources PricingEnterprise Log In Get Started Professional Features Powerful Tools for Professional Resumes Tools to create, customize, preview, and export a professional resume. Start Building Now View Templates 50+ Professional Templates Industry-specific designs AI Writing Assistance Optional content suggestions ATS Compatibility Checks Structure a"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "features",
+      "kind": "public",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/features"
+    },
+    {
+      "route": "/templates",
+      "httpStatus": 200,
+      "loadMs": 2170,
+      "dom": {
+        "title": "IME365 — Resume Builder & CV Maker",
+        "url": "/",
+        "textLength": 11443,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 2,
+        "h1": [
+          "Build Recruiter-Rea|\nwith Context-Aware AI.",
+          "Simple, Powerful Plans for Every Stage"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content Product Resume Templates Resources Pricing Enterprise Log In Get Started BUILD BETTER RESUMES. INTERVIEW WITH CONFIDENCE. Build Recruiter-Rea| with Context-Aware AI. IME365 turns your real experience into metric-driven achievements, optimizes for 51 ATS layouts, and simulates real-world CBT behavioral interviews. Build My Resume — Free Explore Platform No credit card required "
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "templates",
+      "kind": "public",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/"
+    },
+    {
+      "route": "/faq",
+      "httpStatus": 200,
+      "loadMs": 2169,
+      "dom": {
+        "title": "IME365 — Resume Builder & CV Maker",
+        "url": "/",
+        "textLength": 11443,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 2,
+        "h1": [
+          "Build Recruiter-Rea|\nwith Context-Aware AI.",
+          "Simple, Powerful Plans for Every Stage"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content Product Resume Templates Resources Pricing Enterprise Log In Get Started BUILD BETTER RESUMES. INTERVIEW WITH CONFIDENCE. Build Recruiter-Rea| with Context-Aware AI. IME365 turns your real experience into metric-driven achievements, optimizes for 51 ATS layouts, and simulates real-world CBT behavioral interviews. Build My Resume — Free Explore Platform No credit card required "
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "faq",
+      "kind": "public",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/"
+    },
+    {
+      "route": "/faqs",
+      "httpStatus": 200,
+      "loadMs": 2171,
+      "dom": {
+        "title": "IME365 — Resume Builder & CV Maker",
+        "url": "/",
+        "textLength": 11444,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 2,
+        "h1": [
+          "Build Recruiter-Read|\nwith Context-Aware AI.",
+          "Simple, Powerful Plans for Every Stage"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content Product Resume Templates Resources Pricing Enterprise Log In Get Started BUILD BETTER RESUMES. INTERVIEW WITH CONFIDENCE. Build Recruiter-Read| with Context-Aware AI. IME365 turns your real experience into metric-driven achievements, optimizes for 51 ATS layouts, and simulates real-world CBT behavioral interviews. Build My Resume — Free Explore Platform No credit card required"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "faqs",
+      "kind": "public",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/"
+    },
+    {
+      "route": "/plans",
+      "httpStatus": 200,
+      "loadMs": 2341,
+      "dom": {
+        "title": "IME365 Plans & Pricing",
+        "url": "/pricing",
+        "textLength": 2721,
+        "rootChildren": 1,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 1,
+        "h1": [
+          "Simple, Powerful Plans for Every Stage"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content Product Resume Templates Resources Pricing Enterprise Log In Get Started TRANSPARENT INVESTMENT IN YOUR CAREER Simple, Powerful Plans for Every Stage Upgrade your job search with unlimited AI bullet writing, live mock interview coaching, and high-fidelity Word/PDF exports. Monthly Quarterly Save 33% off retail Annual Pass SAVE 79% • BEST VALUE Free Starter FOREVER FREE Essenti"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/coupons/active",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/service-availability",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "plans",
+      "kind": "public",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/pricing"
+    },
+    {
+      "route": "/pricing",
+      "httpStatus": 200,
+      "loadMs": 2303,
+      "dom": {
+        "title": "IME365 Plans & Pricing",
+        "url": "/pricing",
+        "textLength": 2721,
+        "rootChildren": 1,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 1,
+        "h1": [
+          "Simple, Powerful Plans for Every Stage"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content Product Resume Templates Resources Pricing Enterprise Log In Get Started TRANSPARENT INVESTMENT IN YOUR CAREER Simple, Powerful Plans for Every Stage Upgrade your job search with unlimited AI bullet writing, live mock interview coaching, and high-fidelity Word/PDF exports. Monthly Quarterly Save 33% off retail Annual Pass SAVE 79% • BEST VALUE Free Starter FOREVER FREE Essenti"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/service-availability",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/coupons/active",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "pricing",
+      "kind": "public",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/pricing"
+    },
+    {
+      "route": "/career-resources",
+      "httpStatus": 200,
+      "loadMs": 2139,
+      "dom": {
+        "title": "Career Blog & ATS Resume Guides — IME365",
+        "url": "/blog",
+        "textLength": 1916,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 1,
+        "h1": [
+          "Expert Career Insights & Strategies"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content Product Resume Templates Resources Pricing Enterprise Log In Get Started Career Knowledge & Playbooks Expert Career Insights & Strategies Expert guides, ATS strategies, and actionable advice to accelerate your career. All Articles (3) ATS Optimization Resume Writing Interview Prep Sort Articles Newest First Oldest First Title (A-Z) ATS OPTIMIZATION • 1 min read • Sep 1, 2026 H"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/blog-data/categories",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/blog-data?page=1&limit=20",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "career-resources",
+      "kind": "public",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/blog"
+    },
+    {
+      "route": "/privacy",
+      "httpStatus": 200,
+      "loadMs": 1998,
+      "dom": {
+        "title": "Privacy Policy — IME365",
+        "url": "/p/privacy-policy",
+        "textLength": 1562,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 1,
+        "h1": [
+          "Privacy Policy"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content Product Resume Templates Resources Pricing Enterprise Log In Get Started Legal & Privacy Privacy Policy Last Updated: September 2026 • Certified GDPR & CCPA Compliant 1. Information We Collect IME365 collects account credentials, career experience data, education, skills, and job target details provided directly when crafting resumes, portfolios, and practicing interview simul"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages/privacy-policy",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "privacy",
+      "kind": "public",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/p/privacy-policy"
+    },
+    {
+      "route": "/terms",
+      "httpStatus": 200,
+      "loadMs": 1977,
+      "dom": {
+        "title": "Terms of Service — IME365",
+        "url": "/p/terms-of-service",
+        "textLength": 1165,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 1,
+        "h1": [
+          "Terms of Service"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content Product Resume Templates Resources Pricing Enterprise Log In Get Started Terms of Agreement Terms of Service Effective Date: September 2026 1. Acceptance of Terms By accessing IME365, you agree to these Terms of Service, all applicable laws, and regulations. 2. User Accounts & Subscriptions Free accounts receive access to foundational ATS resume templates and standard AI tailo"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages/terms-of-service",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "terms",
+      "kind": "public",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/p/terms-of-service"
+    },
+    {
+      "route": "/cookies",
+      "httpStatus": 200,
+      "loadMs": 1962,
+      "dom": {
+        "title": "Cookie Policy — IME365",
+        "url": "/p/cookie-policy",
+        "textLength": 1007,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 1,
+        "h1": [
+          "Cookie Policy"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content Product Resume Templates Resources Pricing Enterprise Log In Get Started Cookie Compliance Cookie Policy Last Updated: September 2026 1. Essential Cookies We use essential cookies strictly required to authenticate sessions, maintain secure CSRF protection, and persist your draft builder steps. The modern AI career platform. Build recruiter-ready resumes across 51 certified ATS"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages/cookie-policy",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "cookies",
+      "kind": "public",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/p/cookie-policy"
+    },
+    {
+      "route": "/about",
+      "httpStatus": 200,
+      "loadMs": 1968,
+      "dom": {
+        "title": "About Us — IME365",
+        "url": "/p/about-us",
+        "textLength": 1085,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 1,
+        "h1": [
+          "Empowering Career Excellence"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content Product Resume Templates Resources Pricing Enterprise Log In Get Started About IME365 Empowering Career Excellence Built for modern job seekers, engineers, leaders, and career changers. Our Mission IME365 combines state-of-the-art LLM intelligence, recruiter-certified typography, and real-time ATS scoring to ensure your talent gets recognized by top employers worldwide. The mo"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages/about-us",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "about-redirect",
+      "kind": "public",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/p/about-us"
+    },
+    {
+      "route": "/about-us",
+      "httpStatus": 200,
+      "loadMs": 1953,
+      "dom": {
+        "title": "About Us — IME365",
+        "url": "/p/about-us",
+        "textLength": 1085,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 1,
+        "h1": [
+          "Empowering Career Excellence"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content Product Resume Templates Resources Pricing Enterprise Log In Get Started About IME365 Empowering Career Excellence Built for modern job seekers, engineers, leaders, and career changers. Our Mission IME365 combines state-of-the-art LLM intelligence, recruiter-certified typography, and real-time ATS scoring to ensure your talent gets recognized by top employers worldwide. The mo"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages/about-us",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "about-us-redirect",
+      "kind": "public",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/p/about-us"
+    },
+    {
+      "route": "/contact",
+      "httpStatus": 200,
+      "loadMs": 2283,
+      "dom": {
+        "title": "Contact IME365",
+        "url": "/contact",
+        "textLength": 1015,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 0,
+        "h1": [],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content Product Resume Templates Resources Pricing Enterprise Log In Get Started Get in Touch Get in Touch Have a question or need assistance? Send us a message and we'll get back to you as soon as possible! Full Name * Email Address * Message * Send Message Quick Response We typically respond within 24 hours The modern AI career platform. Build recruiter-ready resumes across 51 certi"
+      },
+      "issues": [
+        {
+          "code": "NO_H1",
+          "detail": "page has no h1 landmark"
+        }
+      ],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "contact",
+      "kind": "public",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/contact"
+    },
+    {
+      "route": "/login",
+      "httpStatus": 200,
+      "loadMs": 3523,
+      "dom": {
+        "title": "IME365 — Resume Builder & CV Maker",
+        "url": "/login",
+        "textLength": 11587,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 2,
+        "h1": [
+          "Build Recruiter-Rea|\nwith Context-Aware AI.",
+          "Simple, Powerful Plans for Every Stage"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content ✕ IME365 🚀 Login Enter your credentials to access your dashboard OR Email Password Remember me Forgot password? Don't have an account? Sign up Product Resume Templates Resources Pricing Enterprise Log In Get Started BUILD BETTER RESUMES. INTERVIEW WITH CONFIDENCE. Build Recruiter-Rea| with Context-Aware AI. IME365 turns your real experience into metric-driven achievements, op"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/service-availability",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "login",
+      "kind": "public",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/login"
+    },
+    {
+      "route": "/sign-up",
+      "httpStatus": 200,
+      "loadMs": 2263,
+      "dom": {
+        "title": "IME365 — Resume Builder & CV Maker",
+        "url": "/login",
+        "textLength": 11587,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 2,
+        "h1": [
+          "Build Recruiter-Rea|\nwith Context-Aware AI.",
+          "Simple, Powerful Plans for Every Stage"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content ✕ IME365 🚀 Login Enter your credentials to access your dashboard OR Email Password Remember me Forgot password? Don't have an account? Sign up Product Resume Templates Resources Pricing Enterprise Log In Get Started BUILD BETTER RESUMES. INTERVIEW WITH CONFIDENCE. Build Recruiter-Rea| with Context-Aware AI. IME365 turns your real experience into metric-driven achievements, op"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/service-availability",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "sign-up-redirect",
+      "kind": "public",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/login"
+    },
+    {
+      "route": "/billing/plans",
+      "httpStatus": 200,
+      "loadMs": 2297,
+      "dom": {
+        "title": "IME365 Plans & Pricing",
+        "url": "/billing/plans",
+        "textLength": 2721,
+        "rootChildren": 1,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 1,
+        "h1": [
+          "Simple, Powerful Plans for Every Stage"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content Product Resume Templates Resources Pricing Enterprise Log In Get Started TRANSPARENT INVESTMENT IN YOUR CAREER Simple, Powerful Plans for Every Stage Upgrade your job search with unlimited AI bullet writing, live mock interview coaching, and high-fidelity Word/PDF exports. Monthly Quarterly Save 33% off retail Annual Pass SAVE 79% • BEST VALUE Free Starter FOREVER FREE Essenti"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/service-availability",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/coupons/active",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "billing-plans",
+      "kind": "public",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/billing/plans"
+    },
+    {
+      "route": "/jobs",
+      "httpStatus": 200,
+      "loadMs": 2270,
+      "dom": {
+        "title": "Jobs and Career Opportunities",
+        "url": "/jobs",
+        "textLength": 3285,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 1,
+        "h1": [
+          "Review current job l|"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content Product Resume Templates Resources PricingEnterprise Log In Get Started Jobs Portal Review current job l| Search published job listings by keyword and location, review employer and role details, and apply through the jobs portal. Search Jobs Browse Jobs Post a Job EMPLOYER Career Tips Browse - Explore all opportunities • Post - Hire top talent • Resources - Career guidance & t"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/featured-companies?limit=8",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/jobs-data?featured=true&limit=6",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "jobs-landing",
+      "kind": "public",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/jobs"
+    },
+    {
+      "route": "/jobs/portal",
+      "httpStatus": 200,
+      "loadMs": 2278,
+      "dom": {
+        "title": "Job Portal — Browse Open Positions",
+        "url": "/jobs/portal",
+        "textLength": 4511,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 1,
+        "h1": [
+          "Find Your Next Career Breakthrough"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content Product Resume Templates Resources Pricing Enterprise Log In Get Started Verified Opportunities • 10,000+ Active Roles Find Your Next Career Breakthrough Discover jobs from top companies worldwide Favorites Search QUICK FILTER: All Jobs Remote Full-time Senior Level ₹120k+ Contract Filters Refine your search Job Type Full-time 21 Part-time 1 Contract 2 Freelance 1 Work Mode Re"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/jobs-data?page=1&limit=100&status=active",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "jobs-portal",
+      "kind": "public",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/jobs/portal"
+    },
+    {
+      "route": "/jobs/browse",
+      "httpStatus": 200,
+      "loadMs": 2271,
+      "dom": {
+        "title": "Browse Jobs — IME365",
+        "url": "/jobs/browse",
+        "textLength": 4511,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 1,
+        "h1": [
+          "Find Your Next Career Breakthrough"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content Product Resume Templates Resources Pricing Enterprise Log In Get Started Verified Opportunities • 10,000+ Active Roles Find Your Next Career Breakthrough Discover jobs from top companies worldwide Favorites Search QUICK FILTER: All Jobs Remote Full-time Senior Level ₹120k+ Contract Filters Refine your search Job Type Full-time 21 Part-time 1 Contract 2 Freelance 1 Work Mode Re"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/jobs-data?page=1&limit=100&status=active",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "jobs-browse",
+      "kind": "public",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/jobs/browse"
+    },
+    {
+      "route": "/jobs/categories",
+      "httpStatus": 200,
+      "loadMs": 2257,
+      "dom": {
+        "title": "Job Categories — IME365",
+        "url": "/jobs/categories",
+        "textLength": 3285,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 1,
+        "h1": [
+          "Review current job l|"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content Product Resume Templates Resources PricingEnterprise Log In Get Started Jobs Portal Review current job l| Search published job listings by keyword and location, review employer and role details, and apply through the jobs portal. Search Jobs Browse Jobs Post a Job EMPLOYER Career Tips Browse - Explore all opportunities • Post - Hire top talent • Resources - Career guidance & t"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/featured-companies?limit=8",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/jobs-data?featured=true&limit=6",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "jobs-categories",
+      "kind": "public",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/jobs/categories"
+    },
+    {
+      "route": "/blog",
+      "httpStatus": 200,
+      "loadMs": 2263,
+      "dom": {
+        "title": "Career Blog & ATS Resume Guides — IME365",
+        "url": "/blog",
+        "textLength": 1916,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 1,
+        "h1": [
+          "Expert Career Insights & Strategies"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content Product Resume Templates Resources Pricing Enterprise Log In Get Started Career Knowledge & Playbooks Expert Career Insights & Strategies Expert guides, ATS strategies, and actionable advice to accelerate your career. All Articles (3) ATS Optimization Resume Writing Interview Prep Sort Articles Newest First Oldest First Title (A-Z) ATS OPTIMIZATION • 1 min read • Sep 1, 2026 H"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/blog-data/categories",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/blog-data?page=1&limit=20",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "blog-list",
+      "kind": "public",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/blog"
+    },
+    {
+      "route": "/p/privacy-policy",
+      "httpStatus": 200,
+      "loadMs": 2242,
+      "dom": {
+        "title": "Privacy Policy — IME365",
+        "url": "/p/privacy-policy",
+        "textLength": 1562,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 1,
+        "h1": [
+          "Privacy Policy"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content Product Resume Templates Resources Pricing Enterprise Log In Get Started Legal & Privacy Privacy Policy Last Updated: September 2026 • Certified GDPR & CCPA Compliant 1. Information We Collect IME365 collects account credentials, career experience data, education, skills, and job target details provided directly when crafting resumes, portfolios, and practicing interview simul"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages/privacy-policy",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "custom-page-privacy",
+      "kind": "public",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/p/privacy-policy"
+    },
+    {
+      "route": "/p/terms-of-service",
+      "httpStatus": 200,
+      "loadMs": 2237,
+      "dom": {
+        "title": "Terms of Service — IME365",
+        "url": "/p/terms-of-service",
+        "textLength": 1165,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 1,
+        "h1": [
+          "Terms of Service"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content Product Resume Templates Resources Pricing Enterprise Log In Get Started Terms of Agreement Terms of Service Effective Date: September 2026 1. Acceptance of Terms By accessing IME365, you agree to these Terms of Service, all applicable laws, and regulations. 2. User Accounts & Subscriptions Free accounts receive access to foundational ATS resume templates and standard AI tailo"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages/terms-of-service",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "custom-page-terms",
+      "kind": "public",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/p/terms-of-service"
+    },
+    {
+      "route": "/p/cookie-policy",
+      "httpStatus": 200,
+      "loadMs": 2239,
+      "dom": {
+        "title": "Cookie Policy — IME365",
+        "url": "/p/cookie-policy",
+        "textLength": 1007,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 1,
+        "h1": [
+          "Cookie Policy"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content Product Resume Templates Resources Pricing Enterprise Log In Get Started Cookie Compliance Cookie Policy Last Updated: September 2026 1. Essential Cookies We use essential cookies strictly required to authenticate sessions, maintain secure CSRF protection, and persist your draft builder steps. The modern AI career platform. Build recruiter-ready resumes across 51 certified ATS"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages/cookie-policy",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "custom-page-cookies",
+      "kind": "public",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/p/cookie-policy"
+    },
+    {
+      "route": "/portfolios",
+      "httpStatus": 200,
+      "loadMs": 2280,
+      "dom": {
+        "title": "Professional Portfolio Gallery",
+        "url": "/portfolios",
+        "textLength": 247,
+        "rootChildren": 1,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 1,
+        "h1": [
+          "Portfolio Gallery"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content Portfolio Gallery Discover amazing portfolios created by our community All Themes Default Dark Theme Minimal Creative Professional 0 portfolios found 🎨 No portfolios found Be the first to publish a portfolio! Create Portfolio"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/portfolios/public?limit=20",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "portfolio-gallery",
+      "kind": "public",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/portfolios"
+    },
+    {
+      "route": "/dashboard2",
+      "httpStatus": 200,
+      "loadMs": 2654,
+      "dom": {
+        "title": "IME365 — Resume Builder & CV Maker",
+        "url": "/login",
+        "textLength": 11592,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 2,
+        "h1": [
+          "Build Recruiter-Ready Re|\nwith Context-Aware AI.",
+          "Simple, Powerful Plans for Every Stage"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content ✕ IME365 🚀 Login Enter your credentials to access your dashboard OR Email Password Remember me Forgot password? Don't have an account? Sign up Product Resume Templates Resources Pricing Enterprise Log In Get Started BUILD BETTER RESUMES. INTERVIEW WITH CONFIDENCE. Build Recruiter-Ready Re| with Context-Aware AI. IME365 turns your real experience into metric-driven achievement"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/service-availability",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "dashboard2-redirect",
+      "kind": "public",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/login"
+    },
+    {
+      "route": "/enterprise",
+      "httpStatus": 200,
+      "loadMs": 2254,
+      "dom": {
+        "title": "IME365 — Resume Builder & CV Maker",
+        "url": "/login",
+        "textLength": 11588,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 2,
+        "h1": [
+          "Build Recruiter-Read|\nwith Context-Aware AI.",
+          "Simple, Powerful Plans for Every Stage"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content ✕ IME365 🚀 Login Enter your credentials to access your dashboard OR Email Password Remember me Forgot password? Don't have an account? Sign up Product Resume Templates Resources Pricing Enterprise Log In Get Started BUILD BETTER RESUMES. INTERVIEW WITH CONFIDENCE. Build Recruiter-Read| with Context-Aware AI. IME365 turns your real experience into metric-driven achievements, o"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/service-availability",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "enterprise-redirect",
+      "kind": "public",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/login"
+    },
+    {
+      "route": "/this-route-does-not-exist-zzz",
+      "httpStatus": 200,
+      "loadMs": 1929,
+      "dom": {
+        "title": "Page Not Found — IME365",
+        "url": "/this-route-does-not-exist-zzz",
+        "textLength": 352,
+        "rootChildren": 2,
+        "is404": true,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 1,
+        "h1": [
+          "Page not found"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content Page not found The requested page does not exist or is no longer available. Return home Optional analytics We use cookies to improve your resume building experience and analyze website traffic. Your choice is currently: pending. Essential authentication and security storage are unaffected. Privacy policy Accept All Cookies Reject"
+      },
+      "issues": [
+        {
+          "code": "CLIENT_404",
+          "detail": "Skip to main content Page not found The requested page does not exist or is no longer available. Return home Optional an"
+        }
+      ],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "not-found-404",
+      "kind": "public",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": true,
+      "finalPath": "/this-route-does-not-exist-zzz"
+    },
+    {
+      "route": "/dashboard",
+      "httpStatus": 200,
+      "loadMs": 2209,
+      "dom": {
+        "title": "IME365 — Resume Builder & CV Maker",
+        "url": "/login",
+        "textLength": 11588,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 2,
+        "h1": [
+          "Build Recruiter-Read|\nwith Context-Aware AI.",
+          "Simple, Powerful Plans for Every Stage"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content ✕ IME365 🚀 Login Enter your credentials to access your dashboard OR Email Password Remember me Forgot password? Don't have an account? Sign up Product Resume Templates Resources Pricing Enterprise Log In Get Started BUILD BETTER RESUMES. INTERVIEW WITH CONFIDENCE. Build Recruiter-Read| with Context-Aware AI. IME365 turns your real experience into metric-driven achievements, o"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/service-availability",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "dashboard",
+      "kind": "private",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/login",
+      "authGuard": "REDIRECTED_TO_LOGIN"
+    },
+    {
+      "route": "/dashboard/settings",
+      "httpStatus": 200,
+      "loadMs": 2204,
+      "dom": {
+        "title": "IME365 — Resume Builder & CV Maker",
+        "url": "/login",
+        "textLength": 11587,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 2,
+        "h1": [
+          "Build Recruiter-Rea|\nwith Context-Aware AI.",
+          "Simple, Powerful Plans for Every Stage"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content ✕ IME365 🚀 Login Enter your credentials to access your dashboard OR Email Password Remember me Forgot password? Don't have an account? Sign up Product Resume Templates Resources Pricing Enterprise Log In Get Started BUILD BETTER RESUMES. INTERVIEW WITH CONFIDENCE. Build Recruiter-Rea| with Context-Aware AI. IME365 turns your real experience into metric-driven achievements, op"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/service-availability",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "dashboard-settings",
+      "kind": "private",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/login",
+      "authGuard": "REDIRECTED_TO_LOGIN"
+    },
+    {
+      "route": "/dashboard/messages",
+      "httpStatus": 200,
+      "loadMs": 2259,
+      "dom": {
+        "title": "IME365 — Resume Builder & CV Maker",
+        "url": "/login",
+        "textLength": 11588,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 2,
+        "h1": [
+          "Build Recruiter-Read|\nwith Context-Aware AI.",
+          "Simple, Powerful Plans for Every Stage"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content ✕ IME365 🚀 Login Enter your credentials to access your dashboard OR Email Password Remember me Forgot password? Don't have an account? Sign up Product Resume Templates Resources Pricing Enterprise Log In Get Started BUILD BETTER RESUMES. INTERVIEW WITH CONFIDENCE. Build Recruiter-Read| with Context-Aware AI. IME365 turns your real experience into metric-driven achievements, o"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/service-availability",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "dashboard-messages",
+      "kind": "private",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/login",
+      "authGuard": "REDIRECTED_TO_LOGIN"
+    },
+    {
+      "route": "/dashboard/favorites",
+      "httpStatus": 200,
+      "loadMs": 2221,
+      "dom": {
+        "title": "IME365 — Resume Builder & CV Maker",
+        "url": "/login",
+        "textLength": 11588,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 2,
+        "h1": [
+          "Build Recruiter-Read|\nwith Context-Aware AI.",
+          "Simple, Powerful Plans for Every Stage"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content ✕ IME365 🚀 Login Enter your credentials to access your dashboard OR Email Password Remember me Forgot password? Don't have an account? Sign up Product Resume Templates Resources Pricing Enterprise Log In Get Started BUILD BETTER RESUMES. INTERVIEW WITH CONFIDENCE. Build Recruiter-Read| with Context-Aware AI. IME365 turns your real experience into metric-driven achievements, o"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/service-availability",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "dashboard-favorites",
+      "kind": "private",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/login",
+      "authGuard": "REDIRECTED_TO_LOGIN"
+    },
+    {
+      "route": "/dashboard/interview",
+      "httpStatus": 200,
+      "loadMs": 2625,
+      "dom": {
+        "title": "IME365 — Resume Builder & CV Maker",
+        "url": "/login",
+        "textLength": 11591,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 2,
+        "h1": [
+          "Build Recruiter-Ready R|\nwith Context-Aware AI.",
+          "Simple, Powerful Plans for Every Stage"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content ✕ IME365 🚀 Login Enter your credentials to access your dashboard OR Email Password Remember me Forgot password? Don't have an account? Sign up Product Resume Templates Resources Pricing Enterprise Log In Get Started BUILD BETTER RESUMES. INTERVIEW WITH CONFIDENCE. Build Recruiter-Ready R| with Context-Aware AI. IME365 turns your real experience into metric-driven achievements"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/service-availability",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "dashboard-interview",
+      "kind": "private",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/login",
+      "authGuard": "REDIRECTED_TO_LOGIN"
+    },
+    {
+      "route": "/dashboard/cover-letters",
+      "httpStatus": 200,
+      "loadMs": 2227,
+      "dom": {
+        "title": "IME365 — Resume Builder & CV Maker",
+        "url": "/login",
+        "textLength": 11588,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 2,
+        "h1": [
+          "Build Recruiter-Read|\nwith Context-Aware AI.",
+          "Simple, Powerful Plans for Every Stage"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content ✕ IME365 🚀 Login Enter your credentials to access your dashboard OR Email Password Remember me Forgot password? Don't have an account? Sign up Product Resume Templates Resources Pricing Enterprise Log In Get Started BUILD BETTER RESUMES. INTERVIEW WITH CONFIDENCE. Build Recruiter-Read| with Context-Aware AI. IME365 turns your real experience into metric-driven achievements, o"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/service-availability",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "dashboard-cover-letters",
+      "kind": "private",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/login",
+      "authGuard": "REDIRECTED_TO_LOGIN"
+    },
+    {
+      "route": "/dashboard/portfolios",
+      "httpStatus": 200,
+      "loadMs": 2261,
+      "dom": {
+        "title": "IME365 — Resume Builder & CV Maker",
+        "url": "/login",
+        "textLength": 11587,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 2,
+        "h1": [
+          "Build Recruiter-Rea|\nwith Context-Aware AI.",
+          "Simple, Powerful Plans for Every Stage"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content ✕ IME365 🚀 Login Enter your credentials to access your dashboard OR Email Password Remember me Forgot password? Don't have an account? Sign up Product Resume Templates Resources Pricing Enterprise Log In Get Started BUILD BETTER RESUMES. INTERVIEW WITH CONFIDENCE. Build Recruiter-Rea| with Context-Aware AI. IME365 turns your real experience into metric-driven achievements, op"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/service-availability",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "dashboard-portfolios",
+      "kind": "private",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/login",
+      "authGuard": "REDIRECTED_TO_LOGIN"
+    },
+    {
+      "route": "/dashboard/applied-jobs",
+      "httpStatus": 200,
+      "loadMs": 2909,
+      "dom": {
+        "title": "IME365 — Resume Builder & CV Maker",
+        "url": "/login",
+        "textLength": 11597,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 2,
+        "h1": [
+          "Build Recruiter-Ready Resumes|\nwith Context-Aware AI.",
+          "Simple, Powerful Plans for Every Stage"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content ✕ IME365 🚀 Login Enter your credentials to access your dashboard OR Email Password Remember me Forgot password? Don't have an account? Sign up Product Resume Templates Resources Pricing Enterprise Log In Get Started BUILD BETTER RESUMES. INTERVIEW WITH CONFIDENCE. Build Recruiter-Ready Resumes| with Context-Aware AI. IME365 turns your real experience into metric-driven achiev"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/service-availability",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "dashboard-applied-jobs",
+      "kind": "private",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/login",
+      "authGuard": "REDIRECTED_TO_LOGIN"
+    },
+    {
+      "route": "/dashboard/job-tracker",
+      "httpStatus": 200,
+      "loadMs": 2289,
+      "dom": {
+        "title": "IME365 — Resume Builder & CV Maker",
+        "url": "/login",
+        "textLength": 11588,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 2,
+        "h1": [
+          "Build Recruiter-Read|\nwith Context-Aware AI.",
+          "Simple, Powerful Plans for Every Stage"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content ✕ IME365 🚀 Login Enter your credentials to access your dashboard OR Email Password Remember me Forgot password? Don't have an account? Sign up Product Resume Templates Resources Pricing Enterprise Log In Get Started BUILD BETTER RESUMES. INTERVIEW WITH CONFIDENCE. Build Recruiter-Read| with Context-Aware AI. IME365 turns your real experience into metric-driven achievements, o"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/service-availability",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "dashboard-job-tracker",
+      "kind": "private",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/login",
+      "authGuard": "REDIRECTED_TO_LOGIN"
+    },
+    {
+      "route": "/dashboard/jobs",
+      "httpStatus": 200,
+      "loadMs": 2270,
+      "dom": {
+        "title": "IME365 — Resume Builder & CV Maker",
+        "url": "/login",
+        "textLength": 11588,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 2,
+        "h1": [
+          "Build Recruiter-Read|\nwith Context-Aware AI.",
+          "Simple, Powerful Plans for Every Stage"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content ✕ IME365 🚀 Login Enter your credentials to access your dashboard OR Email Password Remember me Forgot password? Don't have an account? Sign up Product Resume Templates Resources Pricing Enterprise Log In Get Started BUILD BETTER RESUMES. INTERVIEW WITH CONFIDENCE. Build Recruiter-Read| with Context-Aware AI. IME365 turns your real experience into metric-driven achievements, o"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/service-availability",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "dashboard-jobs",
+      "kind": "private",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/login",
+      "authGuard": "REDIRECTED_TO_LOGIN"
+    },
+    {
+      "route": "/dashboard/plans",
+      "httpStatus": 200,
+      "loadMs": 2676,
+      "dom": {
+        "title": "IME365 — Resume Builder & CV Maker",
+        "url": "/login",
+        "textLength": 11592,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 2,
+        "h1": [
+          "Build Recruiter-Ready Re|\nwith Context-Aware AI.",
+          "Simple, Powerful Plans for Every Stage"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content ✕ IME365 🚀 Login Enter your credentials to access your dashboard OR Email Password Remember me Forgot password? Don't have an account? Sign up Product Resume Templates Resources Pricing Enterprise Log In Get Started BUILD BETTER RESUMES. INTERVIEW WITH CONFIDENCE. Build Recruiter-Ready Re| with Context-Aware AI. IME365 turns your real experience into metric-driven achievement"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/service-availability",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "dashboard-plans",
+      "kind": "private",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/login",
+      "authGuard": "REDIRECTED_TO_LOGIN"
+    },
+    {
+      "route": "/dashboard/support",
+      "httpStatus": 200,
+      "loadMs": 2227,
+      "dom": {
+        "title": "IME365 — Resume Builder & CV Maker",
+        "url": "/login",
+        "textLength": 11588,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 2,
+        "h1": [
+          "Build Recruiter-Read|\nwith Context-Aware AI.",
+          "Simple, Powerful Plans for Every Stage"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content ✕ IME365 🚀 Login Enter your credentials to access your dashboard OR Email Password Remember me Forgot password? Don't have an account? Sign up Product Resume Templates Resources Pricing Enterprise Log In Get Started BUILD BETTER RESUMES. INTERVIEW WITH CONFIDENCE. Build Recruiter-Read| with Context-Aware AI. IME365 turns your real experience into metric-driven achievements, o"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/service-availability",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "dashboard-support",
+      "kind": "private",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/login",
+      "authGuard": "REDIRECTED_TO_LOGIN"
+    },
+    {
+      "route": "/build-resume",
+      "httpStatus": 200,
+      "loadMs": 2226,
+      "dom": {
+        "title": "IME365 — Resume Builder & CV Maker",
+        "url": "/login",
+        "textLength": 11588,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 2,
+        "h1": [
+          "Build Recruiter-Read|\nwith Context-Aware AI.",
+          "Simple, Powerful Plans for Every Stage"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content ✕ IME365 🚀 Login Enter your credentials to access your dashboard OR Email Password Remember me Forgot password? Don't have an account? Sign up Product Resume Templates Resources Pricing Enterprise Log In Get Started BUILD BETTER RESUMES. INTERVIEW WITH CONFIDENCE. Build Recruiter-Read| with Context-Aware AI. IME365 turns your real experience into metric-driven achievements, o"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/service-availability",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "build-resume",
+      "kind": "private",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/login",
+      "authGuard": "REDIRECTED_TO_LOGIN"
+    },
+    {
+      "route": "/create-resume/heading",
+      "httpStatus": 200,
+      "loadMs": 2228,
+      "dom": {
+        "title": "IME365 — Resume Builder & CV Maker",
+        "url": "/login",
+        "textLength": 11587,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 2,
+        "h1": [
+          "Build Recruiter-Rea|\nwith Context-Aware AI.",
+          "Simple, Powerful Plans for Every Stage"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content ✕ IME365 🚀 Login Enter your credentials to access your dashboard OR Email Password Remember me Forgot password? Don't have an account? Sign up Product Resume Templates Resources Pricing Enterprise Log In Get Started BUILD BETTER RESUMES. INTERVIEW WITH CONFIDENCE. Build Recruiter-Rea| with Context-Aware AI. IME365 turns your real experience into metric-driven achievements, op"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/service-availability",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "create-resume-heading",
+      "kind": "private",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/login",
+      "authGuard": "REDIRECTED_TO_LOGIN"
+    },
+    {
+      "route": "/cover-letter",
+      "httpStatus": 200,
+      "loadMs": 2299,
+      "dom": {
+        "title": "IME365 — Resume Builder & CV Maker",
+        "url": "/login",
+        "textLength": 11589,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 2,
+        "h1": [
+          "Build Recruiter-Ready|\nwith Context-Aware AI.",
+          "Simple, Powerful Plans for Every Stage"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content ✕ IME365 🚀 Login Enter your credentials to access your dashboard OR Email Password Remember me Forgot password? Don't have an account? Sign up Product Resume Templates Resources Pricing Enterprise Log In Get Started BUILD BETTER RESUMES. INTERVIEW WITH CONFIDENCE. Build Recruiter-Ready| with Context-Aware AI. IME365 turns your real experience into metric-driven achievements, "
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/service-availability",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "cover-letter",
+      "kind": "private",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/login",
+      "authGuard": "REDIRECTED_TO_LOGIN"
+    },
+    {
+      "route": "/portfolio/builder",
+      "httpStatus": 200,
+      "loadMs": 2223,
+      "dom": {
+        "title": "IME365 — Resume Builder & CV Maker",
+        "url": "/login",
+        "textLength": 11588,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 2,
+        "h1": [
+          "Build Recruiter-Read|\nwith Context-Aware AI.",
+          "Simple, Powerful Plans for Every Stage"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content ✕ IME365 🚀 Login Enter your credentials to access your dashboard OR Email Password Remember me Forgot password? Don't have an account? Sign up Product Resume Templates Resources Pricing Enterprise Log In Get Started BUILD BETTER RESUMES. INTERVIEW WITH CONFIDENCE. Build Recruiter-Read| with Context-Aware AI. IME365 turns your real experience into metric-driven achievements, o"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/service-availability",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "portfolio-builder",
+      "kind": "private",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/login",
+      "authGuard": "REDIRECTED_TO_LOGIN"
+    },
+    {
+      "route": "/employer",
+      "httpStatus": 200,
+      "loadMs": 2249,
+      "dom": {
+        "title": "IME365 — Resume Builder & CV Maker",
+        "url": "/login",
+        "textLength": 11587,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 2,
+        "h1": [
+          "Build Recruiter-Rea|\nwith Context-Aware AI.",
+          "Simple, Powerful Plans for Every Stage"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content ✕ IME365 🚀 Login Enter your credentials to access your dashboard OR Email Password Remember me Forgot password? Don't have an account? Sign up Product Resume Templates Resources Pricing Enterprise Log In Get Started BUILD BETTER RESUMES. INTERVIEW WITH CONFIDENCE. Build Recruiter-Rea| with Context-Aware AI. IME365 turns your real experience into metric-driven achievements, op"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/service-availability",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "employer",
+      "kind": "private",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/login",
+      "authGuard": "REDIRECTED_TO_LOGIN"
+    },
+    {
+      "route": "/admin",
+      "httpStatus": 200,
+      "loadMs": 2612,
+      "dom": {
+        "title": "IME365 — Resume Builder & CV Maker",
+        "url": "/login",
+        "textLength": 11592,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 2,
+        "h1": [
+          "Build Recruiter-Ready Re|\nwith Context-Aware AI.",
+          "Simple, Powerful Plans for Every Stage"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content ✕ IME365 🚀 Login Enter your credentials to access your dashboard OR Email Password Remember me Forgot password? Don't have an account? Sign up Product Resume Templates Resources Pricing Enterprise Log In Get Started BUILD BETTER RESUMES. INTERVIEW WITH CONFIDENCE. Build Recruiter-Ready Re| with Context-Aware AI. IME365 turns your real experience into metric-driven achievement"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/service-availability",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "admin",
+      "kind": "private",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/login",
+      "authGuard": "REDIRECTED_TO_LOGIN"
+    },
+    {
+      "route": "/org/acme",
+      "httpStatus": 200,
+      "loadMs": 2236,
+      "dom": {
+        "title": "IME365 — Resume Builder & CV Maker",
+        "url": "/login",
+        "textLength": 11587,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 2,
+        "h1": [
+          "Build Recruiter-Rea|\nwith Context-Aware AI.",
+          "Simple, Powerful Plans for Every Stage"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content ✕ IME365 🚀 Login Enter your credentials to access your dashboard OR Email Password Remember me Forgot password? Don't have an account? Sign up Product Resume Templates Resources Pricing Enterprise Log In Get Started BUILD BETTER RESUMES. INTERVIEW WITH CONFIDENCE. Build Recruiter-Rea| with Context-Aware AI. IME365 turns your real experience into metric-driven achievements, op"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/service-availability",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "org-workspace",
+      "kind": "private",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/login",
+      "authGuard": "REDIRECTED_TO_LOGIN"
+    },
+    {
+      "route": "/blog-editor",
+      "httpStatus": 200,
+      "loadMs": 2228,
+      "dom": {
+        "title": "IME365 — Resume Builder & CV Maker",
+        "url": "/login",
+        "textLength": 11588,
+        "rootChildren": 2,
+        "is404": false,
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "h1Count": 2,
+        "h1": [
+          "Build Recruiter-Read|\nwith Context-Aware AI.",
+          "Simple, Powerful Plans for Every Stage"
+        ],
+        "hasMainLandmark": true,
+        "imagesMissingAlt": 0,
+        "unlabelledButtons": 0,
+        "textSample": "Skip to main content ✕ IME365 🚀 Login Enter your credentials to access your dashboard OR Email Password Remember me Forgot password? Don't have an account? Sign up Product Resume Templates Resources Pricing Enterprise Log In Get Started BUILD BETTER RESUMES. INTERVIEW WITH CONFIDENCE. Build Recruiter-Read| with Context-Aware AI. IME365 turns your real experience into metric-driven achievements, o"
+      },
+      "issues": [],
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "apiCalls": [
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/public/custom-pages",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/platform/public-config",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "https://ime365.local/api/service-availability",
+          "status": 200,
+          "method": "GET"
+        }
+      ],
+      "name": "blog-editor",
+      "kind": "private",
+      "viewport": "desktop-1440x900",
+      "expectNotFound": false,
+      "finalPath": "/login",
+      "authGuard": "REDIRECTED_TO_LOGIN"
+    }
+  ]
+}

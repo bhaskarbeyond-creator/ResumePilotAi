@@ -1,0 +1,90 @@
+{
+  "base": "https://ime365.local",
+  "startedAt": "2026-10-02T00:31:34.780Z",
+  "checks": [
+    {
+      "name": "probe /healthz returns backend response",
+      "pass": true,
+      "detail": "status=200 content-type=application/json; charset=utf-8"
+    },
+    {
+      "name": "probe /readyz returns backend response",
+      "pass": true,
+      "detail": "status=200 content-type=application/json; charset=utf-8"
+    },
+    {
+      "name": "probe /public/custom-pages.json returns backend response",
+      "pass": true,
+      "detail": "status=200 content-type=application/json; charset=utf-8"
+    },
+    {
+      "name": "/healthz reports MariaDB as the authoritative database",
+      "pass": true,
+      "detail": "authoritativeDatabase=MARIADB commitSha=e10ae1805317"
+    },
+    {
+      "name": "unknown route falls back to the SPA shell",
+      "pass": true,
+      "detail": "status=200 content-type=text/html"
+    },
+    {
+      "name": "security header x-content-type-options present",
+      "pass": true,
+      "detail": "nosniff…"
+    },
+    {
+      "name": "security header x-frame-options present",
+      "pass": true,
+      "detail": "DENY…"
+    },
+    {
+      "name": "security header referrer-policy present",
+      "pass": true,
+      "detail": "no-referrer…"
+    },
+    {
+      "name": "security header strict-transport-security present",
+      "pass": true,
+      "detail": "max-age=31536000; includeSubDomains…"
+    },
+    {
+      "name": "security header content-security-policy present",
+      "pass": true,
+      "detail": "default-src 'self'; base-uri 'self'; object-src 'none'; fram…"
+    },
+    {
+      "name": "anonymous /dashboard is auth-guarded",
+      "pass": true,
+      "detail": "final path=/login"
+    },
+    {
+      "name": "anonymous /build-resume is auth-guarded",
+      "pass": true,
+      "detail": "final path=/login"
+    },
+    {
+      "name": "anonymous /admin is auth-guarded",
+      "pass": true,
+      "detail": "final path=/login"
+    },
+    {
+      "name": "anonymous /employer is auth-guarded",
+      "pass": true,
+      "detail": "final path=/login"
+    },
+    {
+      "name": "anonymous /org/acme is auth-guarded",
+      "pass": true,
+      "detail": "final path=/login"
+    },
+    {
+      "name": "anonymous /blog-editor is auth-guarded",
+      "pass": true,
+      "detail": "final path=/login"
+    }
+  ],
+  "finishedAt": "2026-10-02T00:31:45.457Z",
+  "passed": 16,
+  "failed": 0,
+  "total": 16
+}
