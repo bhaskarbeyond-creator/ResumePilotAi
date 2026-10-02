@@ -1107,7 +1107,7 @@ class DashboardHomepage extends Component {
                 <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none" />
                 <input
                   type="text"
-                  placeholder="Search resumes..."
+                  placeholder="Search resumes by title, role, skill..."
                   value={this.state.searchQuery}
                   onChange={(e) => this.setState({ searchQuery: e.target.value })}
                   className={isCuba ? "w-full pl-8 pr-8 py-2 bg-white dark:bg-[#1e222d] border border-cuba-line rounded-xl text-xs text-cuba-ink placeholder:text-cuba-ink-subtle focus:outline-none focus:ring-2 focus:ring-[#7366ff]/30 focus:border-[#7366ff] transition-all" : "w-full pl-8 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"}
