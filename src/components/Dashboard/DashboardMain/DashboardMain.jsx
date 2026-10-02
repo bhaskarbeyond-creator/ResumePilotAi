@@ -366,9 +366,10 @@ class DashboardMain extends Component {
             );
         }
         return (
-            <div className="dashboardWrapper" style={{ overflowX: 'clip' }}>
+            <>
                 {roleViewBanner}
-                {/* Floating Mobile Sidebar Toggle */}
+                <div className="dashboardWrapper" style={{ overflowX: 'clip' }}>
+                    {/* Floating Mobile Sidebar Toggle */}
                 <button
                     onClick={() => {
                         const newCollapsed = !this.state.sidebarCollapsed;
@@ -554,6 +555,7 @@ class DashboardMain extends Component {
                     </div>
                 </div>
             </div>
+            </>
         );
     }
 }

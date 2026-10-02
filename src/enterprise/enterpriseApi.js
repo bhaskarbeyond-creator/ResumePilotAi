@@ -105,7 +105,9 @@ export async function enterpriseFetch(path, { method = 'GET', tenantId = '', wor
 
         return data;
       } catch (err) {
-        if (isGet && attempt <= maxAttempts && !signal?.aborted && err?.code !== 'TENANT_SESSION_REAUTH_REQUIRED') {
+        // Do not retry deterministic client-side errors (400, 401, 403, 404), aborted requests, or session expiration
+        const isClientAuthOrPermissionError = Boolean(err?.status && [400, 401, 403, 404].includes(err.status));
+        if (isGet && attempt <= maxAttempts && !signal?.aborted && !isClientAuthOrPermissionError && err?.code !== 'TENANT_SESSION_REAUTH_REQUIRED') {
           await new Promise(r => setTimeout(r, attempt * 600));
           continue;
         }
@@ -116,7 +118,9 @@ export async function enterpriseFetch(path, { method = 'GET', tenantId = '', wor
 
   if (cacheKey) {
     inFlightRequests.set(cacheKey, executionPromise);
-    executionPromise.finally(() => inFlightRequests.delete(cacheKey));
+    executionPromise
+      .finally(() => inFlightRequests.delete(cacheKey))
+      .catch(() => {}); // Prevent unhandled promise rejection on internal cache tracking chain
   }
 
   return executionPromise;

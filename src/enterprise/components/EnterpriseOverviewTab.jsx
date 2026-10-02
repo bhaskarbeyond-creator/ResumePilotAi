@@ -43,39 +43,46 @@ function TrendSparkline({ points = [], width = 560, height = 96 }) {
 }
 
 export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
-  const { request, tenant, workspace, workspaceId, context } = useTenantApi();
+  const { request, tenant, workspace, workspaceId, context, hasPermission } = useTenantApi();
+
+  const canReadMembers = typeof hasPermission === 'function' && hasPermission('tenant.members.read');
+  const canReadTeams = typeof hasPermission === 'function' && hasPermission('workspace.read');
+  const canReadUsage = typeof hasPermission === 'function' && hasPermission('tenant.usage.read');
+  const canReadConfig = typeof hasPermission === 'function' && hasPermission('tenant.read');
+  const canReadAudit = typeof hasPermission === 'function' && hasPermission('tenant.audit.read');
+  const canReadSecurity = typeof hasPermission === 'function' && hasPermission('tenant.security.read');
 
   const [members] = useAsyncResource(
-    () => request('/api/enterprise/memberships'),
-    [request],
+    () => canReadMembers ? request('/api/enterprise/memberships') : Promise.resolve({ memberships: [] }),
+    [request, canReadMembers],
   );
   const [teams] = useAsyncResource(
-    () => request('/api/enterprise/teams'),
-    [request],
+    () => canReadTeams ? request('/api/enterprise/teams') : Promise.resolve({ teams: [] }),
+    [request, canReadTeams],
   );
   const [usage] = useAsyncResource(
-    () => request('/api/enterprise/usage/ai?days=30'),
-    [request],
+    () => canReadUsage ? request('/api/enterprise/usage/ai?days=30') : Promise.resolve({ usage: { requests: 0, byDay: [] } }),
+    [request, canReadUsage],
   );
   const [config] = useAsyncResource(
-    () => request('/api/enterprise/configuration'),
-    [request],
+    () => canReadConfig ? request('/api/enterprise/configuration') : Promise.resolve({ configuration: {} }),
+    [request, canReadConfig],
   );
   const [audit] = useAsyncResource(
-    () => request('/api/enterprise/audit'),
-    [request],
+    () => canReadAudit ? request('/api/enterprise/audit') : Promise.resolve({ events: [] }),
+    [request, canReadAudit],
   );
   const [metrics] = useAsyncResource(
-    () => request('/api/enterprise/observability/metrics'),
-    [request],
+    () => canReadSecurity ? request('/api/enterprise/observability/metrics') : Promise.resolve({ metrics: null }),
+    [request, canReadSecurity],
   );
   const [dataPlane] = useAsyncResource(
-    () => request('/api/enterprise/data-plane/status'),
-    [request],
+    () => canReadSecurity ? request('/api/enterprise/data-plane/status') : Promise.resolve({ dataPlane: null }),
+    [request, canReadSecurity],
   );
   const [queue] = useAsyncResource(
-    () => request('/api/enterprise/queue/status'),
-    [request],
+    () => canReadSecurity ? request('/api/enterprise/queue/status') : Promise.resolve({ queue: null }),
+    [request, canReadSecurity],
   );
 
   const metricsData = useMemo(() => metrics?.data?.metrics || null, [metrics]);

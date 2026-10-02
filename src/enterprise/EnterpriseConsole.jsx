@@ -398,8 +398,8 @@ function EnterpriseConsoleInner() {
   const user = useContext(AuthContext);
   const { tenant, workspace, workspaces, selectWorkspace, enabled, loading, context, error, reload, platformAdmin, simulatedRole, isSimulating } = useEnterpriseTenant();
   const permissions = useMemo(
-    () => (loading ? ['*'] : (Array.isArray(context?.permissions) ? context.permissions : [])),
-    [context?.permissions, loading],
+    () => (Array.isArray(context?.permissions) ? context.permissions : []),
+    [context?.permissions],
   );
   const roles = useMemo(() => (Array.isArray(context?.roles) ? context.roles : []), [context?.roles]);
   const location = useLocation();
@@ -837,16 +837,27 @@ function EnterpriseConsoleInner() {
 
         {/* Dynamic Main Workspace */}
         <main className="enterprise-main" role="main">
-          {/* Context breadcrumb: organization → workspace → module */}
-          <nav className="enterprise-breadcrumbs" aria-label="Breadcrumb">
-            <ol>
-              <li><button type="button" onClick={() => selectTab('overview')}>{tenant?.displayName || 'Enterprise'}</button></li>
-              <li aria-hidden="true"><FiChevronRight /></li>
-              <li><button type="button" onClick={() => selectTab('workspaces')}>{workspace?.name || 'Default workspace'}</button></li>
-              <li aria-hidden="true"><FiChevronRight /></li>
-              <li aria-current="page"><span>{activeNavItem?.label || 'Overview'}</span></li>
-            </ol>
-          </nav>
+          {loading ? (
+            <div className="enterprise-card" role="status" aria-live="polite" style={{ padding: '3.5rem 2rem', textAlign: 'center', marginTop: '1rem' }}>
+              <div className="enterprise-loading-row" style={{ justifyContent: 'center' }}>
+                <span className="enterprise-spinner" aria-hidden="true" />
+                <span className="text-muted" style={{ fontSize: '0.95rem', marginLeft: '0.75rem', fontWeight: 500 }}>
+                  Connecting to organization workspace…
+                </span>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Context breadcrumb: organization → workspace → module */}
+              <nav className="enterprise-breadcrumbs" aria-label="Breadcrumb">
+                <ol>
+                  <li><button type="button" onClick={() => selectTab('overview')}>{tenant?.displayName || 'Enterprise'}</button></li>
+                  <li aria-hidden="true"><FiChevronRight /></li>
+                  <li><button type="button" onClick={() => selectTab('workspaces')}>{workspace?.name || 'Default workspace'}</button></li>
+                  <li aria-hidden="true"><FiChevronRight /></li>
+                  <li aria-current="page"><span>{activeNavItem?.label || 'Overview'}</span></li>
+                </ol>
+              </nav>
 
           {activeTab === 'overview' && (
             <EnterpriseOverviewTab
@@ -939,6 +950,8 @@ function EnterpriseConsoleInner() {
 
           {activeTab === 'platform' && (
             <EnterprisePlatformTab />
+          )}
+            </>
           )}
         </main>
       </div>
