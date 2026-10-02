@@ -62,10 +62,21 @@ const results = {
     routes: crawl.summary.routesCrawled,
     viewports: crawl.summary.viewports.length,
     issueAggregate: crawl.summary.issueAggregate,
-    consoleErrors: crawl.summary.consoleErrors.length,
     loadMs: crawl.summary.loadMs,
     durationMs: crawl.summary.durationMs,
     screenshots: 'crawl-artifacts/screenshots/final (539)',
+    // Totals across every visit, not just the flagged one.
+    consoleErrorEvents: crawl.records.reduce((n, x) => n + x.consoleErrors.length, 0),
+    distinctConsoleErrors: crawl.summary.consoleErrors.length,
+    uncaughtExceptions: crawl.records.reduce((n, x) => n + x.pageErrors.length, 0),
+    networkFailures: crawl.records.reduce((n, x) => n + x.failedRequests.length, 0),
+    apiServerErrors: crawl.records.reduce(
+      (n, x) => n + x.apiCalls.filter((a) => a.status >= 500).length, 0,
+    ),
+    nonSuccessDocuments: crawl.records.filter((x) => x.httpStatus !== 200).length,
+    authGuardChecks: crawl.records.filter((x) => x.authGuard).length,
+    authGuardEnforced: crawl.records.filter((x) => x.authGuard === 'REDIRECTED_TO_LOGIN').length,
+    consoleErrorNote: 'The single console error is the browser reporting the F-005 transient document 404 ("Failed to load resource"); it is not an application exception.',
   },
   baselineCrawl: preFix && {
     visits: preFix.summary.pageVisits,

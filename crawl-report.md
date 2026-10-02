@@ -25,9 +25,11 @@ fixed every defect the crawl evidenced.
 | F-003 | P2 | Performance | 10 duplicate `/public-config` requests per homepage render |
 | F-004 | P2 | Responsive | `/features` scrolled horizontally on mobile (492px vs 430px viewport) |
 
-**Final state:** 539 page visits, **538 clean**, 0 console errors, 0 uncaught
-exceptions, 0 network failures, 0 API 5xx, and all 220 anonymous auth-guard checks
-enforced. All 1,448 configured tests pass; lint reports 0 errors; the build is green.
+**Final state:** 539 page visits, **538 clean**, 0 uncaught exceptions, 0 network
+failures, 0 API 5xx, and all 220 anonymous auth-guard checks enforced. All 1,448
+configured tests pass; lint reports 0 errors; the build is green. (One browser
+console event was recorded, and it is the browser reporting the F-005 transient
+document 404 — not an application exception.)
 
 One environmental finding (F-005, P4) is characterized but **not** reproduced and was
 deliberately left unfixed — see §L.
@@ -241,8 +243,11 @@ Warning count is unchanged from baseline (221 before and after) — no new lint 
 Final clean crawl, `crawl-artifacts/reports/crawl-results.json`:
 
 - **539 visits · 538 clean · 1 flagged** (F-005, environmental)
-- **0** console errors · **0** uncaught exceptions · **0** network failures
-- **0** API 5xx · all 539 documents returned HTTP 200
+- **0** uncaught exceptions · **0** network failures · **0** API 5xx
+- **1** console error event — the browser reporting the F-005 transient document 404
+  (`Failed to load resource`). It is not an application exception; no application
+  console error occurred on any of the 539 visits.
+- All 539 documents returned HTTP 200 at the document level
 - Load time (final clean crawl): **p50 2.29 s · p95 2.81 s · max 5.06 s**
 - **220/220** anonymous auth-guard checks redirected to `/login` — no private workspace
   leaked to an unauthenticated visitor on any of 20 private routes
@@ -378,8 +383,8 @@ Using evidence only:
 - **Zero open P2/P3**; the two P2s and the P3 are fixed and verified.
 - **1 P4** remains, characterized and unreproduced, with no application attribution.
 - **1,448 tests pass, 0 fail. Lint 0 errors. Build green.**
-- **538/539 clean browser visits** with zero console errors, zero uncaught exceptions,
-  zero network failures and zero 5xx.
+- **538/539 clean browser visits** with zero uncaught exceptions, zero network
+  failures and zero 5xx.
 - Auth boundaries hold: 220/220 guards enforced; forged tokens rejected.
 
 **What this evidence does not support:** a claim of production readiness. Four
