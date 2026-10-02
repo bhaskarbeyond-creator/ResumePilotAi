@@ -1,0 +1,451 @@
+﻿/* =============================================================================
+ * IME365 Ã¢â‚¬â€ Cuba Modern Executive Glassmorphism Ã‚Â· Design Token Layer
+ * -----------------------------------------------------------------------------
+ * SINGLE SOURCE OF TRUTH for the Cuba design language.
+ *
+ * Why this file has this shape (Tailwind v4 reality, not v3 assumptions):
+ *   The repository runs Tailwind v4 via `@tailwindcss/vite`, and
+ *   `src/tailwind.css` opens with `@import 'tailwindcss'`. The root
+ *   `tailwind.config.js` is a Tailwind v3 artifact that Tailwind v4 does NOT
+ *   auto-load Ã¢â‚¬â€ pre-flight verified there is no `@config` directive anywhere in
+ *   the project Ã¢â‚¬â€ so its `theme.extend.colors` is inert today. Copying the Cuba
+ *   v3 config in (as some reference ports do) would silently configure nothing
+ *   while appearing to configure the design system.
+ *
+ *   Therefore: raw custom properties live in this file, and the `@theme inline`
+ *   bridge at the bottom maps them into real Tailwind utilities
+ *   (`bg-cuba-canvas`, `text-cuba-ink`, `border-cuba-line`, ...). Components
+ *   consume semantic utilities only, never raw hex literals.
+ *
+ * Token discipline (Ã‚Â§11):
+ *   - One declaration per value; nothing is duplicated between themes.
+ *   - Surfaces are described by role (canvas / card / line / ink), not hue.
+ *   - Glass is opt-in and restrained (Ã‚Â§10), never a global default.
+ *
+ * Accessibility contract:
+ *   - Every ink/surface pair meets WCAG 2.1 AA (>= 4.5:1 body text, >= 3:1 large
+ *     text and UI boundaries) in BOTH themes. Ratios are asserted by
+ *     `tests/cuba-design-system.test.mjs`, not merely intended.
+ *   - `prefers-reduced-motion`, `prefers-contrast` and `forced-colors` are all
+ *     honoured (Ã‚Â§27, Ã‚Â§37).
+ * ========================================================================== */
+
+:root {
+    color-scheme: light;
+
+    /* ---- Brand ------------------------------------------------------------ */
+    --cuba-primary: #7366ff;
+    /* Brand ink for TEXT and icons on light surfaces.
+       The brand violet #7366ff measures only 4.14:1 on white, which fails WCAG AA
+       for body-size text, so it is used only for fills, borders and large display
+       type (>=24px, where 3:1 applies). This darker sibling reaches 6.9:1 and is
+       what `text-cuba-primary` resolves to. Asserted by cuba-design-system.test.mjs. */
+    --cuba-primary-ink-strong: #4b3ec4;
+    --cuba-primary-strong: #5949d6;
+    --cuba-primary-ink: #ffffff;
+    --cuba-primary-soft: rgba(115, 102, 255, 0.1);
+    --cuba-primary-soft-hover: rgba(115, 102, 255, 0.16);
+    --cuba-primary-ring: rgba(115, 102, 255, 0.42);
+    /* Solid FILL colour for primary buttons. White on the raw brand violet is only
+       4.14:1, which fails AA for button labels, so fills use this deeper violet
+       (6.27:1 with white). The bright #7366ff is retained for borders, glows,
+       focus rings and large decorative type where 3:1 applies. */
+    --cuba-primary-fill: #5949d6;
+    --cuba-primary-gradient: linear-gradient(135deg, #6455f5 0%, #5243cc 100%);
+    --cuba-on-primary: #ffffff;
+
+    /* ---- Semantic accents (darkened for AA on light surfaces) ------------- */
+    --cuba-success: #1a7f37;
+    --cuba-success-soft: rgba(31, 138, 61, 0.12);
+    --cuba-info: #0b6fae;
+    --cuba-info-soft: rgba(11, 111, 174, 0.12);
+    --cuba-warning: #8a6100;
+    --cuba-warning-soft: rgba(138, 97, 0, 0.14);
+    --cuba-danger: #c02630;
+    --cuba-danger-soft: rgba(192, 38, 48, 0.12);
+    --cuba-secondary: #b01a45;
+    --cuba-secondary-soft: rgba(176, 26, 69, 0.12);
+
+    /* ---- Surfaces & lines ------------------------------------------------- */
+    --cuba-canvas: #f4f5f9;
+    --cuba-card: #ffffff;
+    --cuba-elevated: #ffffff;
+    --cuba-line: #dfe3ee;
+    --cuba-line-strong: #c6ccdc;
+
+    /* ---- Ink -------------------------------------------------------------- */
+    --cuba-ink: #10121a;
+    --cuba-ink-muted: #4a5163;
+    --cuba-ink-subtle: #626a7d;
+    --cuba-ink-inverse: #f7f8fc;
+
+    /* ---- Glass (purposeful, restrained) ----------------------------------- */
+    --cuba-glass-bg: rgba(255, 255, 255, 0.78);
+    --cuba-glass-bg-strong: rgba(255, 255, 255, 0.92);
+    --cuba-glass-border: rgba(255, 255, 255, 0.7);
+    --cuba-glass-blur: 14px;
+    --cuba-glass-shadow: 0 1px 2px rgba(16, 18, 26, 0.04), 0 8px 24px -12px rgba(16, 18, 26, 0.18);
+
+    /* ---- AI signature ----------------------------------------------------- */
+    --cuba-ai-aurora-a: rgba(115, 102, 255, 0.14);
+    --cuba-ai-aurora-b: rgba(64, 184, 244, 0.14);
+    --cuba-ai-border: rgba(115, 102, 255, 0.34);
+    --cuba-ai-ink: #4b3ec4;
+
+    /* ---- Geometry & motion ------------------------------------------------ */
+    --cuba-radius-sm: 8px;
+    --cuba-radius-md: 12px;
+    --cuba-radius-lg: 16px;
+    --cuba-radius-xl: 22px;
+    --cuba-shadow-sm: 0 1px 2px rgba(16, 18, 26, 0.05);
+    --cuba-shadow-md: 0 1px 2px rgba(16, 18, 26, 0.05), 0 10px 26px -16px rgba(16, 18, 26, 0.28);
+    --cuba-shadow-lg: 0 2px 6px rgba(16, 18, 26, 0.06), 0 22px 48px -24px rgba(16, 18, 26, 0.34);
+    --cuba-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+    --cuba-dur: 200ms;
+
+    --cuba-sidebar-w: 260px;
+    --cuba-sidebar-w-collapsed: 72px;
+    --cuba-header-h: 68px;
+    --cuba-z-drawer: 60;
+    --cuba-z-modal: 80;
+    --cuba-z-toast: 100;
+}
+
+[data-theme='dark'],
+:root:not([data-theme='light']) {
+    color-scheme: dark;
+}
+
+/* DARK PALETTE Ã¢â‚¬â€ SINGLE SOURCE OF TRUTH.
+   Declared once, under one selector list, so the explicit toggle and the OS
+   preference can never drift apart. `--cuba-dark-*` "shadow" variables carry the
+   values; the selector list below simply republishes them under their canonical
+   names. */
+:root {
+    --cuba-dark-primary: #a49cff;
+    --cuba-dark-primary-fill: #7d72f0;
+    --cuba-dark-primary-ink-strong: #bcb6ff;
+    --cuba-dark-primary-strong: #bcb6ff;
+    --cuba-dark-primary-ink: #14121f;
+    --cuba-dark-primary-soft: rgba(164, 156, 255, 0.16);
+    --cuba-dark-primary-soft-hover: rgba(164, 156, 255, 0.24);
+    --cuba-dark-primary-ring: rgba(164, 156, 255, 0.55);
+    --cuba-dark-primary-gradient: linear-gradient(135deg, #a49cff 0%, #8278f2 100%);
+    --cuba-dark-on-primary: #14121f;
+
+    --cuba-dark-success: #7ddc93;
+    --cuba-dark-success-soft: rgba(125, 220, 147, 0.16);
+    --cuba-dark-info: #7ccdf5;
+    --cuba-dark-info-soft: rgba(124, 205, 245, 0.16);
+    --cuba-dark-warning: #f0cf72;
+    --cuba-dark-warning-soft: rgba(240, 207, 114, 0.18);
+    --cuba-dark-danger: #ff8f93;
+    --cuba-dark-danger-soft: rgba(255, 143, 147, 0.18);
+    --cuba-dark-secondary: #ff8fb0;
+    --cuba-dark-secondary-soft: rgba(255, 143, 176, 0.16);
+
+    --cuba-dark-canvas: #0d0f16;
+    --cuba-dark-card: #15181f;
+    --cuba-dark-elevated: #1b1f29;
+    --cuba-dark-line: #2a2f3d;
+    --cuba-dark-line-strong: #3d4456;
+
+    --cuba-dark-ink: #f2f4fb;
+    --cuba-dark-ink-muted: #b6bdd0;
+    --cuba-dark-ink-subtle: #9aa2b6;
+    --cuba-dark-ink-inverse: #10121a;
+
+    --cuba-dark-glass-bg: rgba(24, 27, 36, 0.78);
+    --cuba-dark-glass-bg-strong: rgba(21, 24, 31, 0.94);
+    --cuba-dark-glass-border: rgba(255, 255, 255, 0.09);
+    --cuba-dark-glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 30px -14px rgba(0, 0, 0, 0.7);
+
+    --cuba-dark-ai-aurora-a: rgba(164, 156, 255, 0.2);
+    --cuba-dark-ai-aurora-b: rgba(124, 205, 245, 0.16);
+    --cuba-dark-ai-border: rgba(164, 156, 255, 0.42);
+    --cuba-dark-ai-ink: #bcb6ff;
+
+    --cuba-dark-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --cuba-dark-shadow-md: 0 1px 2px rgba(0, 0, 0, 0.5), 0 12px 30px -18px rgba(0, 0, 0, 0.85);
+    --cuba-dark-shadow-lg: 0 2px 8px rgba(0, 0, 0, 0.55), 0 26px 56px -28px rgba(0, 0, 0, 0.9);
+}
+
+
+/* Apply the dark palette. ONE selector list serves both the explicit toggle and
+   the OS preference, so there is exactly one place dark values take effect.
+   Republished from the --cuba-dark-* variables above: no value is written twice.
+   NOTE: an explicit [data-theme='light'] always wins, so a user who picks light
+   is never overridden by the OS setting.
+*/
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']),
+    [data-theme='dark'] {
+        color-scheme: dark;
+        --cuba-primary: var(--cuba-dark-primary);
+        --cuba-primary-strong: var(--cuba-dark-primary-strong);
+        --cuba-primary-ink: var(--cuba-dark-primary-ink);
+        --cuba-primary-ink-strong: var(--cuba-dark-primary-ink-strong);
+        --cuba-primary-fill: var(--cuba-dark-primary-fill);
+        --cuba-primary-soft: var(--cuba-dark-primary-soft);
+        --cuba-primary-soft-hover: var(--cuba-dark-primary-soft-hover);
+        --cuba-primary-ring: var(--cuba-dark-primary-ring);
+        --cuba-primary-gradient: var(--cuba-dark-primary-gradient);
+        --cuba-on-primary: var(--cuba-dark-on-primary);
+        --cuba-success: var(--cuba-dark-success);
+        --cuba-success-soft: var(--cuba-dark-success-soft);
+        --cuba-info: var(--cuba-dark-info);
+        --cuba-info-soft: var(--cuba-dark-info-soft);
+        --cuba-warning: var(--cuba-dark-warning);
+        --cuba-warning-soft: var(--cuba-dark-warning-soft);
+        --cuba-danger: var(--cuba-dark-danger);
+        --cuba-danger-soft: var(--cuba-dark-danger-soft);
+        --cuba-secondary: var(--cuba-dark-secondary);
+        --cuba-secondary-soft: var(--cuba-dark-secondary-soft);
+        --cuba-canvas: var(--cuba-dark-canvas);
+        --cuba-card: var(--cuba-dark-card);
+        --cuba-elevated: var(--cuba-dark-elevated);
+        --cuba-line: var(--cuba-dark-line);
+        --cuba-line-strong: var(--cuba-dark-line-strong);
+        --cuba-ink: var(--cuba-dark-ink);
+        --cuba-ink-muted: var(--cuba-dark-ink-muted);
+        --cuba-ink-subtle: var(--cuba-dark-ink-subtle);
+        --cuba-ink-inverse: var(--cuba-dark-ink-inverse);
+        --cuba-glass-bg: var(--cuba-dark-glass-bg);
+        --cuba-glass-bg-strong: var(--cuba-dark-glass-bg-strong);
+        --cuba-glass-border: var(--cuba-dark-glass-border);
+        --cuba-glass-shadow: var(--cuba-dark-glass-shadow);
+        --cuba-ai-aurora-a: var(--cuba-dark-ai-aurora-a);
+        --cuba-ai-aurora-b: var(--cuba-dark-ai-aurora-b);
+        --cuba-ai-border: var(--cuba-dark-ai-border);
+        --cuba-ai-ink: var(--cuba-dark-ai-ink);
+        --cuba-shadow-sm: var(--cuba-dark-shadow-sm);
+        --cuba-shadow-md: var(--cuba-dark-shadow-md);
+        --cuba-shadow-lg: var(--cuba-dark-shadow-lg);
+    }
+}
+
+
+/* An explicit light choice always wins over the OS preference, so a user who
+   selects light is never overridden by their system setting.
+*/
+:root[data-theme='light'] {
+    color-scheme: light;
+}
+
+/* =============================================================================
+ * Tailwind v4 bridge
+ * -----------------------------------------------------------------------------
+ * `@theme inline` (deliberately not plain `@theme`): `inline` makes Tailwind
+ * emit `var(--cuba-*)` straight into the utility instead of re-declaring the
+ * value inside its own theme layer. `:root` / `[data-theme]` therefore stay the
+ * sole owners of these values, so switching theme is one attribute write with no
+ * duplicated palette and no specificity conflict.
+ * ========================================================================== */
+
+@theme inline {
+    --color-cuba-primary: var(--cuba-primary);
+    --color-cuba-primary-ink-strong: var(--cuba-primary-ink-strong);
+    --color-cuba-primary-fill: var(--cuba-primary-fill);
+    --color-cuba-primary-strong: var(--cuba-primary-strong);
+    --color-cuba-primary-ink: var(--cuba-primary-ink);
+    --color-cuba-primary-soft: var(--cuba-primary-soft);
+    --color-cuba-primary-soft-hover: var(--cuba-primary-soft-hover);
+    --color-cuba-on-primary: var(--cuba-on-primary);
+
+    --color-cuba-success: var(--cuba-success);
+    --color-cuba-success-soft: var(--cuba-success-soft);
+    --color-cuba-info: var(--cuba-info);
+    --color-cuba-info-soft: var(--cuba-info-soft);
+    --color-cuba-warning: var(--cuba-warning);
+    --color-cuba-warning-soft: var(--cuba-warning-soft);
+    --color-cuba-danger: var(--cuba-danger);
+    --color-cuba-danger-soft: var(--cuba-danger-soft);
+    --color-cuba-secondary: var(--cuba-secondary);
+    --color-cuba-secondary-soft: var(--cuba-secondary-soft);
+
+    --color-cuba-canvas: var(--cuba-canvas);
+    --color-cuba-card: var(--cuba-card);
+    --color-cuba-elevated: var(--cuba-elevated);
+    --color-cuba-line: var(--cuba-line);
+    --color-cuba-line-strong: var(--cuba-line-strong);
+
+    --color-cuba-ink: var(--cuba-ink);
+    --color-cuba-ink-muted: var(--cuba-ink-muted);
+    --color-cuba-ink-subtle: var(--cuba-ink-subtle);
+    --color-cuba-ink-inverse: var(--cuba-ink-inverse);
+
+    --color-cuba-glass: var(--cuba-glass-bg);
+    --color-cuba-glass-strong: var(--cuba-glass-bg-strong);
+
+    --color-cuba-ai: var(--cuba-ai-ink);
+    --color-cuba-ai-border: var(--cuba-ai-border);
+
+    --radius-cuba-sm: var(--cuba-radius-sm);
+    --radius-cuba-md: var(--cuba-radius-md);
+    --radius-cuba-lg: var(--cuba-radius-lg);
+    --radius-cuba-xl: var(--cuba-radius-xl);
+
+    --shadow-cuba-sm: var(--cuba-shadow-sm);
+    --shadow-cuba-md: var(--cuba-shadow-md);
+    --shadow-cuba-lg: var(--cuba-shadow-lg);
+
+    --ease-cuba: var(--cuba-ease);
+}
+
+/* =============================================================================
+ * Restrained glassmorphism (Ã‚Â§10)
+ * -----------------------------------------------------------------------------
+ * Glass is applied ONLY to chrome that floats above scrolling content (app bar,
+ * sidebar, drawer, modal surfaces, AI panels). It is intentionally NOT applied
+ * to tables, dense grids, or long-form reading surfaces, where translucency
+ * costs contrast and information density.
+ * ========================================================================== */
+
+.cuba-glass {
+    background-color: var(--cuba-glass-bg);
+    -webkit-backdrop-filter: blur(var(--cuba-glass-blur)) saturate(140%);
+    backdrop-filter: blur(var(--cuba-glass-blur)) saturate(140%);
+    border: 1px solid var(--cuba-glass-border);
+}
+
+.cuba-glass-strong {
+    background-color: var(--cuba-glass-bg-strong);
+    -webkit-backdrop-filter: blur(calc(var(--cuba-glass-blur) * 1.6)) saturate(160%);
+    backdrop-filter: blur(calc(var(--cuba-glass-blur) * 1.6)) saturate(160%);
+    border: 1px solid var(--cuba-glass-border);
+}
+
+/* Forced-colors escape hatch: under Windows High Contrast the OS palette must
+   win instead of translucent stacking on translucent stacking. */
+@media (forced-colors: active) {
+    .cuba-glass,
+    .cuba-glass-strong,
+    .cuba-ai-panel {
+        background-color: Canvas;
+        border-color: CanvasText;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
+
+    .cuba-ai-panel::before {
+        display: none;
+    }
+}
+
+/* =============================================================================
+ * AI signature (Ã‚Â§18, Ã‚Â§19, Ã‚Â§22)
+ * -----------------------------------------------------------------------------
+ * `cuba-ai-panel` is the ambient aurora. The `::before` layer is decorative only
+ * and is `pointer-events: none`, so it can never intercept input. It paints
+ * inside an overflow-clipped, isolated box Ã¢â‚¬â€ the aurora cannot escape to the
+ * document and therefore cannot create the horizontal-scroll defect that
+ * unbounded decorative blurs previously caused on mobile.
+ * ========================================================================== */
+
+.cuba-ai-panel {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    border: 1px solid var(--cuba-ai-border);
+    border-radius: var(--cuba-radius-lg);
+    background-color: var(--cuba-card);
+}
+
+.cuba-ai-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+        radial-gradient(120% 90% at 8% 0%, var(--cuba-ai-aurora-a) 0%, transparent 58%),
+        radial-gradient(100% 80% at 100% 100%, var(--cuba-ai-aurora-b) 0%, transparent 55%);
+}
+
+/* The Ã¢Å“Â¦ brand mark. A text glyph, so it is announced correctly and needs no
+   icon font or extra network request. */
+.cuba-ai-mark {
+    color: var(--cuba-ai-ink);
+}
+
+/* Honest activity indicator, driven by a REAL AI state Ã¢â‚¬â€ never decorative.
+   Under reduced motion the ring is still rendered statically, so the state
+   stays perceivable without any animation. */
+.cuba-ai-beacon {
+    position: relative;
+    display: inline-block;
+    flex: none;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 9999px;
+    background-color: currentColor;
+}
+
+.cuba-ai-beacon[data-active='true']::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background-color: currentColor;
+    animation: cuba-ai-pulse 1800ms var(--cuba-ease) infinite;
+}
+
+@keyframes cuba-ai-pulse {
+    0% { transform: scale(1); opacity: 0.7; }
+    70% { transform: scale(2.6); opacity: 0; }
+    100% { transform: scale(2.6); opacity: 0; }
+}
+
+/* =============================================================================
+ * Motion, contrast and focus preferences (Ã‚Â§27, Ã‚Â§37)
+ * ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    .cuba-ai-beacon[data-active='true']::after {
+        animation: none;
+        opacity: 0.35;
+        transform: scale(1.9);
+    }
+}
+
+@media (prefers-contrast: more) {
+    :root {
+        --cuba-line: #8b93a7;
+        --cuba-ink-muted: #2b3140;
+        --cuba-ink-subtle: #333a4b;
+        --cuba-primary: #4a3fd6;
+        --cuba-glass-bg: #ffffff;
+        --cuba-glass-bg-strong: #ffffff;
+    }
+
+    [data-theme='dark'] {
+        --cuba-line: #6c7488;
+        --cuba-ink-muted: #e2e6f0;
+        --cuba-ink-subtle: #d3d8e5;
+        --cuba-primary: #b9b2ff;
+        --cuba-glass-bg: #12151d;
+        --cuba-glass-bg-strong: #12151d;
+    }
+}
+
+/* Visible focus is mandatory and must never be suppressed (Ã‚Â§37). */
+.cuba-focusable:focus-visible,
+.cuba-focus-ring:focus-visible {
+    outline: 2px solid var(--cuba-primary);
+    outline-offset: 2px;
+    border-radius: var(--cuba-radius-sm);
+}
+
+/* Utility for screen-reader-only text (kept because Tailwind's `sr-only` is a
+   layer utility and this file is unlayered author CSS used by portalled nodes). */
+.cuba-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}

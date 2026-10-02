@@ -18,6 +18,7 @@
  * decorative hero line, with no fallback to a different family.
  */
 @import 'tailwindcss';
+@import './styles/cuba-tokens.css';
 
 /* Preserve original heading styles.
  *

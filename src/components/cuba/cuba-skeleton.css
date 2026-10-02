@@ -1,0 +1,26 @@
+/* Shimmer is defined here, next to the primitives that consume it, so a future
+   reader finds the animation and its reduced-motion escape together. */
+.cuba-skeleton {
+    background-image: linear-gradient(
+        90deg,
+        var(--cuba-line) 0%,
+        color-mix(in srgb, var(--cuba-line) 45%, var(--cuba-card)) 50%,
+        var(--cuba-line) 100%
+    );
+    background-size: 200% 100%;
+    animation: cuba-skeleton-shimmer 1400ms ease-in-out infinite;
+}
+
+@keyframes cuba-skeleton-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cuba-skeleton {
+        animation: none;
+        background-image: none;
+        background-color: var(--cuba-line);
+        opacity: 0.7;
+    }
+}

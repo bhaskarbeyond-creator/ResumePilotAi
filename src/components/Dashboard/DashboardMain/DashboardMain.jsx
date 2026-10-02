@@ -32,6 +32,9 @@ const DashboardMessages = lazy(() => import('../DashboardMessages/DashboardMessa
 const DashboardSupport = lazy(() => import('../DashboardSupport/DashboardSupport'));
 const CoverLetter = lazy(() => import('../../CoverLetter/CoverLetter'));
 const Billing = lazy(() => import('../../Billing/Plans/Plans'));
+// Cuba design system showcase (§13). Lazy so the documentation surface costs
+// nothing for the routes real users actually visit.
+const DesignSystemShowcase = lazy(() => import('../../cuba/DesignSystemShowcase'));
 const MainJobListings = lazy(() => import('../../JobsListings/MainJobListings'));
 class DashboardMain extends Component {
     static contextType = AuthContext;
@@ -550,6 +553,11 @@ class DashboardMain extends Component {
                                 <Route path="support" element={<DashboardSupport showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
                                 <Route path="tickets" element={<Navigate to="/dashboard/support" replace />} />
                                 <Route path="help" element={<Navigate to="/dashboard/support" replace />} />
+                                {/* Cuba design system showcase (§13). Mounted inside the
+                                    already session-guarded /dashboard namespace so it
+                                    inherits authentication without adding a new public
+                                    surface. It documents and exercises every primitive. */}
+                                <Route path="design-system" element={<DesignSystemShowcase />} />
                             </Routes>
                         </Suspense>
                     </div>

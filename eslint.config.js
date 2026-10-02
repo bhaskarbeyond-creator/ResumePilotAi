@@ -21,6 +21,13 @@ export default [
     ignores: [
       'dist/**', 'node_modules/**', 'scratch/**', 'coverage/**',
       'backend/Backend/**', 'backend/check_log_script.js',
+      // Third-party Cuba design reference material. It is read-only design
+      // inspiration (pug/html/vanilla-js), is not IME365 source, is not
+      // imported by Vite or ESLint rules, and is already excluded from git via
+      // .gitignore. ESLint flat config does not read .gitignore, so without
+      // this entry `npm run lint` fails on foreign JSX/pug and minified vendor
+      // files rather than on IME365 code.
+      'dashboardTemplate/**', 'temp_inspect/**',
     ],
   },
   {
