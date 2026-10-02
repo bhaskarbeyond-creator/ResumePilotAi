@@ -81,6 +81,11 @@ const DesignSystemShowcase = () => {
     const [modalOpen, setModalOpen] = useState(false);
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [retrying, setRetrying] = useState(false);
+    // The live beacon below is state-driven so "Simulate a failed check" can
+    // actually exercise the §20 degradation path (a failed check must land on
+    // UNKNOWN and must never be upgraded into a healthy claim). It previously
+    // called an undeclared `setAiStatus`, which threw a ReferenceError on click.
+    const [aiStatus, setAiStatus] = useState(AI_STATUS.READY);
 
     return (
         <div className="space-y-12">
@@ -149,7 +154,7 @@ title="Design system showcase"
                             <p>The briefing renders whatever the caller actually knows. When there is no data, the caller states that plainly.</p>
                         </AiSurface>
                         <Row>
-                            <AiEngineStatus status={AI_STATUS.READY} />
+                            <AiEngineStatus status={aiStatus} />
                             <AiEngineStatus status={AI_STATUS.CHECKING} />
                             <AiEngineStatus status={AI_STATUS.UNAVAILABLE} />
                             <AiEngineStatus status={AI_STATUS.UNKNOWN} />
