@@ -338,7 +338,10 @@ export default function HomepageHero({ onOpenAuthModal }) {
                     </div>
 
                     <div style={{ borderLeft: '4px solid #1a73e8', paddingLeft: '14px', marginBottom: '16px' }}>
-                      <h4 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', margin: '0 0 2px 0' }}>Jordan Vance</h4>
+                      {/* A candidate name inside a decorative resume mockup is not a document
+                          heading. As an h4 it jumped a level from the page h1 and put a
+                          fictional person into the accessibility heading outline. */}
+                      <p style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', margin: '0 0 2px 0' }}>Jordan Vance</p>
                       <p style={{ fontSize: '12px', fontWeight: '600', color: '#1a73e8', margin: 0 }}>{currentRole.title}</p>
                     </div>
 

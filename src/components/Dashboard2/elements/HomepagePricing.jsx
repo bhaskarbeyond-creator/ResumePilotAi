@@ -168,9 +168,12 @@ export default function HomepagePricing({ onOpenAuthModal, nextStep }) {
             <FaStar style={{ fontSize: '13px' }} />
             <span>Transparent Investment in Your Career</span>
           </div>
-          <h1 style={{ fontSize: '42px', fontWeight: '900', color: '#0f172a', letterSpacing: '-0.02em', margin: '0 0 16px 0', lineHeight: 1.2 }}>
+          {/* Section-level heading, not a second page h1. The hero already owns the
+              single h1 for this document; emitting another h1 here gave the page two
+              h1s and made every pricing card (h3) a level-skip below it. */}
+          <h2 style={{ fontSize: '42px', fontWeight: '900', color: '#0f172a', letterSpacing: '-0.02em', margin: '0 0 16px 0', lineHeight: 1.2 }}>
             Simple, Powerful Plans for Every Stage
-          </h1>
+          </h2>
           <p style={{ fontSize: '17px', color: '#475569', maxWidth: '640px', margin: '0 auto', lineHeight: 1.6 }}>
             Upgrade your job search with unlimited AI bullet writing, live mock interview coaching, and high-fidelity Word/PDF exports.
           </p>

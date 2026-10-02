@@ -46,9 +46,12 @@ export default function HomepageFooter() {
 
           {/* Col 2: Product */}
           <div>
-            <h4 style={{ fontSize: '13px', fontWeight: '800', textTransform: 'uppercase', color: '#0f172a', letterSpacing: '0.06em', marginBottom: '16px' }}>
+            {/* Footer column groups are top-level groups inside the footer landmark.
+                h4 skipped a level from the preceding h2 sections, breaking the document
+                outline. Inline fontSize is unchanged, so rendering is identical. */}
+            <h2 style={{ fontSize: '13px', fontWeight: '800', textTransform: 'uppercase', color: '#0f172a', letterSpacing: '0.06em', marginBottom: '16px' }}>
               Product
-            </h4>
+            </h2>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px' }}>
               <li><a href="#resume-builder" style={{ color: '#64748b', textDecoration: 'none' }}>Resume Builder</a></li>
               <li><a href="#ats-checker" style={{ color: '#64748b', textDecoration: 'none' }}>ATS Resume Checker</a></li>
@@ -60,9 +63,9 @@ export default function HomepageFooter() {
 
           {/* Col 3: Resources & Career Tools */}
           <div>
-            <h4 style={{ fontSize: '13px', fontWeight: '800', textTransform: 'uppercase', color: '#0f172a', letterSpacing: '0.06em', marginBottom: '16px' }}>
+            <h2 style={{ fontSize: '13px', fontWeight: '800', textTransform: 'uppercase', color: '#0f172a', letterSpacing: '0.06em', marginBottom: '16px' }}>
               Resources
-            </h4>
+            </h2>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px' }}>
               {blogEnabled && (
                 <li><Link to="/blog" style={{ color: '#64748b', textDecoration: 'none' }}>Career Blog</Link></li>
@@ -78,9 +81,9 @@ export default function HomepageFooter() {
 
           {/* Col 4: Legal & Policies */}
           <div>
-            <h4 style={{ fontSize: '13px', fontWeight: '800', textTransform: 'uppercase', color: '#0f172a', letterSpacing: '0.06em', marginBottom: '16px' }}>
+            <h2 style={{ fontSize: '13px', fontWeight: '800', textTransform: 'uppercase', color: '#0f172a', letterSpacing: '0.06em', marginBottom: '16px' }}>
               Legal
-            </h4>
+            </h2>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px' }}>
               <li><Link to="/p/privacy-policy" style={{ color: '#64748b', textDecoration: 'none' }}>Privacy Policy</Link></li>
               <li><Link to="/p/terms-of-service" style={{ color: '#64748b', textDecoration: 'none' }}>Terms of Service</Link></li>
