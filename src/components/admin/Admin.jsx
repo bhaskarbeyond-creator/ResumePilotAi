@@ -1,4 +1,8 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react';
+import { isCubaShellEnabled } from '../cuba/cubaShellFlag';
+
+// Phase 7: Cuba admin chrome. Lazy so the default console never downloads it.
+const AdminPortalCuba = React.lazy(() => import('./AdminPortalCuba'));
 import Sidebar from './sidebar/sidebar';
 import './Admin.scss';
 import Dashboard from './dashboard/dashboard';
@@ -327,7 +331,7 @@ const AdminHeader = ({ userEmail, isSuperAdminUser, viewAsRole, onSelectRole, on
     );
 };
 
-const Admin = () => {
+const AdminConsoleInner = () => {
     const navigate = useNavigate();
     const [authState, setAuthState] = useState({ checking: true, allowed: false, isSuperAdmin: false, mfaVerified: false, mfaEnrolled: false, hasMfa: false, user: null, permissions: [], role: '' });
     const [viewAsRole, setViewAsRole] = useState(() => {
@@ -698,6 +702,36 @@ const Admin = () => {
         </div>
         </AdminProvider>
     );
+};
+
+/**
+ * Platform Admin entry point.
+ *
+ * Phase 7 rollout switch (§49). `AdminConsoleInner` is the entire existing
+ * console — the MFA gate, the Super Admin role-view banner, `RequireTabPerm` on
+ * every tab, the settings detection and every `/api/admin/*` call. It is mounted
+ * unchanged in both branches, so no administrative capability is ever
+ * conditional on the Cuba flag.
+ *
+ * Authorization is untouched: route gating stays in `src/main.jsx`, tab gating
+ * stays in `RequireTabPerm`, and the authoritative decision stays in
+ * `backend/security/policy.js`. This wrapper decides nothing (§7).
+ */
+const Admin = () => {
+  const [cubaChrome, setCubaChrome] = React.useState(false);
+
+  // Read after mount so the first paint is identical until the flag is evaluated.
+  React.useEffect(() => { setCubaChrome(isCubaShellEnabled()); }, []);
+
+  return cubaChrome ? (
+    <React.Suspense fallback={<div className="min-h-screen bg-cuba-canvas" aria-busy="true" />}>
+      <AdminPortalCuba>
+        <AdminConsoleInner />
+      </AdminPortalCuba>
+    </React.Suspense>
+  ) : (
+    <AdminConsoleInner />
+  );
 };
 
 export default Admin;
