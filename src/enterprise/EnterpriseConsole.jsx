@@ -1,4 +1,9 @@
-import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, lazy, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { isCubaShellEnabled } from '../components/cuba/cubaShellFlag';
+
+// Phase 6: Cuba organization chrome. Lazy so the default tenant console never
+// downloads it.
+const EnterprisePortalCuba = lazy(() => import('./EnterprisePortalCuba'));
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FiActivity, FiBarChart2, FiChevronRight, FiCommand, FiFileText, FiHelpCircle, FiLock, FiSearch, FiSettings, FiShield, FiSliders, FiUserPlus, FiUsers, FiZap, FiMenu, FiPlus, FiLogOut, FiHome, FiGrid, FiExternalLink, FiChevronDown, FiUser, FiX } from 'react-icons/fi';
 import { AuthContext } from '../context/AuthContext';
@@ -968,10 +973,35 @@ function EnterpriseConsoleInner() {
   );
 }
 
+/**
+ * Organization console entry point.
+ *
+ * Phase 6 rollout switch (§49): when the Cuba shell flag is on, the proven
+ * console inner is rendered inside the Cuba chrome. `EnterpriseConsoleInner` —
+ * which owns all thirteen tabs, permission gating and every tenant API call — is
+ * mounted unchanged in both cases, so no organization capability is conditional
+ * on the flag.
+ *
+ * The flag defaults to OFF, so the current tenant experience is untouched until
+ * an operator explicitly opts in, and rollback is a single localStorage write.
+ */
 export default function EnterpriseConsole() {
+  const [cubaChrome, setCubaChrome] = useState(false);
+
+  // Read after mount so the first paint is identical until the flag is evaluated.
+  useEffect(() => { setCubaChrome(isCubaShellEnabled()); }, []);
+
   return (
     <EnterpriseTenantProvider>
-      <EnterpriseConsoleInner />
+      {cubaChrome ? (
+        <Suspense fallback={<div className="min-h-screen bg-cuba-canvas" aria-busy="true" />}>
+          <EnterprisePortalCuba>
+            <EnterpriseConsoleInner />
+          </EnterprisePortalCuba>
+        </Suspense>
+      ) : (
+        <EnterpriseConsoleInner />
+      )}
     </EnterpriseTenantProvider>
   );
 }

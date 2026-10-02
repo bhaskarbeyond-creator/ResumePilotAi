@@ -82,7 +82,10 @@ export const enterpriseNavigationFor = (slug) => {
         label: group.label,
         items: group.tabs.map((id) => {
             const tab = ENTERPRISE_TABS.find((t) => t.id === id);
-            return { id: tab.id, label: tab.label, to: `${base}/${tab.id}` };
+            // `permission` MUST be carried through. Dropping it here made
+            // filterByPermissions a no-op that showed every gated tab to every
+            // tenant member; the tag is copied verbatim from ENTERPRISE_TABS.
+            return { id: tab.id, label: tab.label, to: `${base}/${tab.id}`, permission: tab.permission };
         }),
     }));
 };
