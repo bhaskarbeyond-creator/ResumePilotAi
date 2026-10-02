@@ -24,7 +24,7 @@ import EnterpriseSettingsTab from './components/EnterpriseSettingsTab';
 import EnterpriseSupportTab from './components/EnterpriseSupportTab';
 import EnterprisePlatformTab from './components/EnterprisePlatformTab';
 import fire from '../conf/fire';
-import ContextSwitcher from '../components/Common/ContextSwitcher';
+import ContextSwitcher from '../components/common/ContextSwitcher';
 import './enterprise.css';
 
 // Information architecture: the flat module list is grouped so the sidebar
