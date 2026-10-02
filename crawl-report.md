@@ -26,7 +26,7 @@ fixed every defect the crawl evidenced.
 | F-004 | P2 | Responsive | `/features` scrolled horizontally on mobile (492px vs 430px viewport) |
 
 **Final state:** 539 page visits, **538 clean**, 0 uncaught exceptions, 0 network
-failures, 0 API 5xx, and all 220 anonymous auth-guard checks enforced. All 1,448
+failures, 0 API 5xx, and 219 of 220 anonymous auth-guard checks enforced. All 1,448
 configured tests pass; lint reports 0 errors; the build is green. (One browser
 console event was recorded, and it is the browser reporting the F-005 transient
 document 404 — not an application exception.)
@@ -249,8 +249,10 @@ Final clean crawl, `crawl-artifacts/reports/crawl-results.json`:
   console error occurred on any of the 539 visits.
 - All 539 documents returned HTTP 200 at the document level
 - Load time (final clean crawl): **p50 2.29 s · p95 2.81 s · max 5.06 s**
-- **220/220** anonymous auth-guard checks redirected to `/login` — no private workspace
-  leaked to an unauthenticated visitor on any of 20 private routes
+- **219/220** anonymous auth-guard checks redirected to `/login` — no private workspace
+  leaked to an unauthenticated visitor on any of 20 private routes. (The single
+  non-redirect is the F-005 visit where the document 404'd, so the SPA never booted
+  and no guard could run. In isolation this route redirects correctly, verified 4/4.)
 - Security headers present on the HTML entry point: CSP, HSTS, `X-Frame-Options: DENY`,
   `X-Content-Type-Options`, `Referrer-Policy: no-referrer`
 - Unknown routes correctly render the SPA 404; the rewrite fallback still works
@@ -385,7 +387,8 @@ Using evidence only:
 - **1,448 tests pass, 0 fail. Lint 0 errors. Build green.**
 - **538/539 clean browser visits** with zero uncaught exceptions, zero network
   failures and zero 5xx.
-- Auth boundaries hold: 220/220 guards enforced; forged tokens rejected.
+- Auth boundaries hold: 219/220 guards enforced (the one gap is the F-005 404 visit,
+  verified 4/4 in isolation); forged tokens rejected.
 
 **What this evidence does not support:** a claim of production readiness. Four
 credentials-dependent subsystems (AI, SMTP, payments, authenticated role journeys)
