@@ -1,11 +1,11 @@
 {
-  "updatedAt": "2026-10-02T12:29:31.344Z",
-  "eventCount": 16,
+  "updatedAt": "2026-10-02T12:53:51.421Z",
+  "eventCount": 20,
   "activeDirectiveId": "DIR-003",
   "activeDirectiveTitle": "Public Secondary Pages & Marketing Header Harmonization",
   "activeDirectiveStatus": "ISSUED",
   "unreadForLead": 3,
-  "unreadForDev": 7,
+  "unreadForDev": 11,
   "pendingBlockers": 0,
   "latestHeartbeat": {
     "timestamp": "2026-10-02T07:30:39.055Z",

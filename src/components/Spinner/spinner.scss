@@ -1,6 +1,25 @@
-.loading{
-    .spinner{
-        width: 300px;
-        height: 300px;
+.loading {
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--cuba-canvas, #f4f5f9);
+    color: var(--cuba-ink, #10121a);
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+
+    .spinner {
+        width: 180px;
+        height: 180px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
+}
+
+:root[data-theme='dark'] .loading,
+.dark .loading {
+    background-color: var(--cuba-canvas, #0d0f16);
+    color: var(--cuba-ink, #f2f4fb);
 }

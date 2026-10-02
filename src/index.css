@@ -11,10 +11,10 @@ input:not(:-webkit-autofill) { animation-name: onAutoFillCancel; animation-durat
     font-weight: 400;
     font-size: 16px; /* Restored to standard 16px */
 
-    /* Remove Vite's dark theme defaults */
-    color-scheme: light;
-    color: #213547;
-    background-color: #ffffff;
+    /* Cuba Executive theme-aware defaults (harmonized with cuba-tokens.css) */
+    color-scheme: light dark;
+    color: var(--cuba-ink, #10121a);
+    background-color: var(--cuba-canvas, #f4f5f9);
 
     font-synthesis: none;
     text-rendering: optimizeLegibility;
@@ -31,6 +31,8 @@ body {
     display: block;
     place-items: unset;
     font-size: 16px; /* Standard font size */
+    background-color: var(--cuba-canvas, #f4f5f9);
+    color: var(--cuba-ink, #10121a);
 }
 
 #root {

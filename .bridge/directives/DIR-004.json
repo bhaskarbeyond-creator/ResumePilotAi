@@ -1,0 +1,20 @@
+{
+  "id": "DIR-004",
+  "title": "Zero-FOUC Architecture & Instant Theme/Font Hydration Pipeline",
+  "priority": "P0",
+  "status": "APPROVED_FROZEN",
+  "leadAuthor": "Antigravity (Lead Supervisor)",
+  "assignedTo": "Cline (Staff Developer)",
+  "createdAt": "2026-10-02T12:37:25.156Z",
+  "specFile": null,
+  "spec": "ROOT CAUSE ANALYSIS (RCA):\n1. Deferred Script Timing: src/bootstrap.js is imported in src/main.jsx, which runs via <script type='module' src='/src/main.jsx'>. HTML spec mandates that module scripts are deferred. The browser renders index.html with default white #ffffff canvas BEFORE main.jsx and bootstrap.js execute.\n2. Missing Critical In-Head Theme Rules: index.html has no CSS in <head> declaring background colors.\n3. Competing Hardcoded White in src/index.css: src/index.css sets :root { background-color: #ffffff; color-scheme: light; } which creates flash and color churn.\n4. Unstyled Skip Link: <a class='skip-link'> in index.html has no in-head styling, flashing briefly at top of page before index.css loads.\n5. Un-Themed Off-Center Spinner: When authLoading/maintenance.loading is true, Spinner renders with no viewport centering and no Cuba canvas background.\n\nIMPLEMENTATION INSTRUCTIONS:\n1. Create public/theme-init.js:\n   Synchronously read localStorage ('cuba_theme' || 'theme') and window.matchMedia('(prefers-color-scheme: dark)'). Set document.documentElement.setAttribute('data-theme', theme) and toggle .dark class.\n2. Update index.html:\n   - Add <script src='/theme-init.js'></script> in <head> (synchronous, non-module). Satisfies CSP script-src 'self' and security-static regex test (has src=).\n   - Add critical <style> in <head> with @media (prefers-color-scheme: dark) and html[data-theme='dark'] / html[data-theme='light'] setting background-color (#0d0f16 dark, #f4f5f9 light), color, and .skip-link { position: absolute; top: -100px; }.\n3. Update src/index.css:\n   Replace hardcoded #ffffff on :root with var(--cuba-canvas) and color-scheme: light dark.\n4. Update src/components/Spinner/spinner.scss & Spinner.jsx:\n   Ensure .loading has min-h-screen, flex centering, and background-color: var(--cuba-canvas).\n5. Verify:\n   npm run test:security:static (44/44)\n   npm run test:design-system (147/147)\n   npm run test:templates (72/72)\n   npm run build",
+  "invariants": [],
+  "acceptanceCriteria": [],
+  "plan": null,
+  "heartbeats": [],
+  "evidence": null,
+  "reviews": [],
+  "freezeHash": "fc05a5fa0a9fb692b56b1cdf60f62835598b154c",
+  "certifiedAt": "2026-10-02T12:53:51.418Z",
+  "certifiedBy": "Antigravity (Lead Gatekeeper)"
+}
