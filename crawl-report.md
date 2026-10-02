@@ -131,6 +131,19 @@ Each change is the smallest durable correct fix, matching existing repo patterns
 `overflow-hidden` wrapper in the same file). No dependency, architecture, or API
 contract changes.
 
+### Concurrent change disclosure
+
+While this run was in progress, commit `152da245`
+(`fix(enterprise, dashboard): resolve 403 permission race on navigation …`,
+author "AI Resume Dev") landed on `main` from a different agent. It touches
+`DashboardMain.jsx`, `EnterpriseConsole.jsx`, `EnterpriseOverviewTab.jsx` and
+`enterpriseApi.js` — **none of the files this run changed**, and it does not touch
+`public/.htaccess`, `Contact.jsx`, `Features.jsx` or `services/api/platform.js`.
+
+I did not author, review, or validate that change. It is disclosed here rather than
+silently absorbed into these results, and none of the findings or metrics in this
+report depend on it.
+
 ---
 
 ## F. Findings
@@ -236,6 +249,19 @@ All run **after** the changes:
 
 Warning count is unchanged from baseline (221 before and after) — no new lint debt.
 
+**Observed flake, disclosed rather than hidden:** one intermediate run of
+`test:product` failed a single test — `interview-coach-lifecycle.test.mjs`
+("returned to setup after takeover"). I investigated it rather than re-running until
+it passed:
+
+- it passed 4/4 times in isolation;
+- the concurrent commit `152da245` touches no interview code;
+- a full-suite re-run passed all four sub-suites (`fail 0` × 4).
+
+So it is a load-dependent timing flake under parallel load, not a regression from this
+run's changes. It is recorded here because a single green run would not have proven
+that, and the distinction matters for whoever owns the interview module.
+
 ---
 
 ## I. Browser Results
@@ -318,6 +344,9 @@ Forged alg:none bearer token -> 401 (both /api/resumes and /api/admin/users)
    these alone: they bypass the platform layer by design, and consolidating them would
    risk maintenance-mode semantics for marginal gain.
 5. **No authenticated browser journeys** — see §M.
+6. **`interview-coach-lifecycle.test.mjs` is load-sensitive** — it failed once under
+   full-suite parallel load and passed 4/4 in isolation and on re-run. Worth hardening
+   by whoever owns that module, but it is not a regression from this run.
 
 
 ---

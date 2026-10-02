@@ -1,6 +1,6 @@
 {
   "base": "https://ime365.local",
-  "startedAt": "2026-10-02T00:37:59.173Z",
+  "startedAt": "2026-10-02T00:47:19.679Z",
   "checks": [
     {
       "name": "probe /healthz returns backend response",
@@ -83,7 +83,7 @@
       "detail": "final path=/login"
     }
   ],
-  "finishedAt": "2026-10-02T00:38:10.038Z",
+  "finishedAt": "2026-10-02T00:47:30.515Z",
   "passed": 16,
   "failed": 0,
   "total": 16
