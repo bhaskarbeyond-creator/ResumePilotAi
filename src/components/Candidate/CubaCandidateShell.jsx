@@ -62,8 +62,10 @@ export const buildCommands = (groups, navigate) =>
 const CubaCandidateShell = ({ children }) => {
     const user = useContext(AuthContext);
     const routerNavigate = useNavigate();
-    const navigate = useCallback((to) => {
-        if (/^(https?:)?\/\//i.test(String(to)) || String(to || '').startsWith('mailto:')) {
+    const navigate = useCallback((target) => {
+        const to = typeof target === 'string' ? target : (target?.href || target?.to);
+        if (!to) return;
+        if (/^(https?:)?\/\//i.test(String(to)) || String(to).startsWith('mailto:')) {
             window.location.assign(to);
             return;
         }

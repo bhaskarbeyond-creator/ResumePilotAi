@@ -33,6 +33,10 @@ const readCollapsed = () => {
  * Sidebar / drawer navigation. Group headings are real headings so a screen
  * reader can navigate by structure, and the active item carries `aria-current`
  * rather than colour alone (§37).
+ *
+ * `onNavigate(item, event)` receives the raw click event so the shell can
+ * decide whether to intercept: internal targets are routed through react-router
+ * (no document reload), while external/mailto targets keep the browser default.
  */
 export const CubaNavGroups = ({ groups, collapsed = false, onNavigate, headingId = 'cuba-nav-heading', navigationLabel = 'Candidate workspace navigation' }) => (
     <nav aria-label={navigationLabel} className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-3 space-y-4">
@@ -53,7 +57,7 @@ export const CubaNavGroups = ({ groups, collapsed = false, onNavigate, headingId
                                     href={item.href}
                                     aria-current={active ? 'page' : undefined}
                                     title={collapsed ? item.label : undefined}
-                                    onClick={() => onNavigate?.(item)}
+                                    onClick={(event) => onNavigate?.(item, event)}
                                     className={cx(
                                         'cuba-focusable flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200',
                                         collapsed && 'justify-center px-0 h-10 w-10 mx-auto',
@@ -95,6 +99,7 @@ const CubaAppShell = ({
     commands = [],
     toolbar = null,
     user = null,
+    onNavigate,
     children,
 }) => {
     const [collapsed, setCollapsed] = useState(readCollapsed);
@@ -127,6 +132,25 @@ const CubaAppShell = ({
 
     const groups = useMemo(() => navigation, [navigation]);
     const onMobileNavigate = useCallback(() => setMobileOpen(false), []);
+
+    /**
+     * SPA route jump: intercept left-clicks on INTERNAL hrefs only and hand them
+     * to the shell's router-aware handler (react-router `navigate`) so palette,
+     * sidebar and drawer jumps never reload the document (§25). Modifier-clicks
+     * (new tab / download) and external/mailto targets keep native behaviour.
+     */
+    const handleNavClick = useCallback((item, event) => {
+        const href = String(item?.href || '');
+        const isInternal = href.startsWith('/') && !href.startsWith('//');
+        const intercepted = isInternal
+            && event
+            && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey
+            && event.button === 0;
+        if (intercepted && typeof onNavigate === 'function') {
+            event.preventDefault();
+            onNavigate(href);
+        }
+    }, [onNavigate]);
 
     return (
         <div className="flex min-h-screen flex-col bg-cuba-canvas text-cuba-ink">
@@ -221,7 +245,16 @@ const CubaAppShell = ({
                         'flex items-center h-14 px-4 border-b border-cuba-line/50 flex-none',
                         collapsed ? 'justify-center px-1' : 'justify-between'
                     )}>
-                        <a href="/dashboard" className="flex items-center gap-2.5 min-w-0">
+                    <a
+                        href="/dashboard"
+                        onClick={(event) => {
+                            if (onNavigate && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey && event.button === 0) {
+                                event.preventDefault();
+                                onNavigate('/dashboard');
+                            }
+                        }}
+                        className="flex items-center gap-2.5 min-w-0"
+                    >
                             <div className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-gradient-to-tr from-[#7366ff] to-[#5949d6] text-white font-black text-xs shadow-[0_3px_10px_rgba(115,102,255,0.35)]">
                                 ✦
                             </div>
@@ -241,7 +274,7 @@ const CubaAppShell = ({
                             <ContextSwitcher variant="sidebar" />
                         </div>
                     )}
-                    <CubaNavGroups groups={groups} collapsed={collapsed} headingId="cuba-nav-heading" navigationLabel={navigationLabel} />
+                    <CubaNavGroups groups={groups} collapsed={collapsed} onNavigate={handleNavClick} headingId="cuba-nav-heading" navigationLabel={navigationLabel} />
                 </aside>
 
                 {mobileOpen && (
@@ -275,7 +308,15 @@ const CubaAppShell = ({
                             <div className="px-3 py-2.5 border-b border-cuba-line/40">
                                 <ContextSwitcher variant="sidebar" onNavigate={onMobileNavigate} />
                             </div>
-                            <CubaNavGroups groups={groups} onNavigate={onMobileNavigate} headingId="cuba-drawer-heading" navigationLabel={navigationLabel} />
+                            <CubaNavGroups
+                                groups={groups}
+                                headingId="cuba-drawer-heading"
+                                navigationLabel={navigationLabel}
+                                onNavigate={(item, event) => {
+                                    onMobileNavigate();
+                                    handleNavClick(item, event);
+                                }}
+                            />
                         </div>
                     </div>
                 )}

@@ -908,8 +908,8 @@ class DashboardHomepage extends Component {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button 
-                  className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2.5 rounded-md flex items-center gap-2 transition-colors text-sm font-medium shadow-sm"
+                <button
+                  className="cuba-btn-primary px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-xs"
                   onClick={() => {
                     localStorage.removeItem("currentResumeId");
                     localStorage.removeItem("currentResumeItem");
@@ -1093,12 +1093,12 @@ class DashboardHomepage extends Component {
           {/* Real-Time Search & Category Folder Filter Tabs */}
           <div className={isCuba ? "flex flex-col md:flex-row md:items-center md:justify-between mb-6 pb-3 border-b border-cuba-line gap-3" : "flex flex-col md:flex-row md:items-center md:justify-between mb-6 pb-2 border-b border-slate-200 gap-3"}>
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
-              <button onClick={() => this.setState({ activeTab: 'all' })} className={isCuba ? (this.state.activeTab === 'all' ? 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#7366ff] text-white shadow-xs transition-colors shrink-0' : 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-[#1e222d] border border-cuba-line text-cuba-ink-muted hover:text-[#7366ff] hover:bg-[#7366ff]/5 transition-colors shrink-0') : `px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'all' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>All Resumes ({this.state.pagination?.totalItems ?? this.state.fetchedDocuments?.length ?? 0})</button>
+              <button onClick={() => this.setState({ activeTab: 'all' })} className={isCuba ? (this.state.activeTab === 'all' ? 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#7366ff] text-white shadow-xs transition-colors shrink-0' : 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-[#1e222d] border border-cuba-line text-cuba-ink-muted hover:text-[#7366ff] hover:bg-[#7366ff]/5 transition-colors shrink-0') : `px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'all' ? 'bg-[#7366ff] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>All Resumes ({this.state.pagination?.totalItems ?? this.state.fetchedDocuments?.length ?? 0})</button>
               {this.state.enableCoverLetterModule && (
               <button onClick={() => this.setState({ activeTab: 'cover-letters' })} className={isCuba ? (this.state.activeTab === 'cover-letters' ? 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#7366ff] text-white shadow-xs transition-colors shrink-0' : 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-[#1e222d] border border-cuba-line text-cuba-ink-muted hover:text-[#7366ff] hover:bg-[#7366ff]/5 transition-colors shrink-0') : `px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'cover-letters' ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'}`}>Cover Letters ({this.state.savedCoverLetters?.length || 0})</button>
               )}
-              <button onClick={() => this.setState({ activeTab: 'tech' })} className={isCuba ? (this.state.activeTab === 'tech' ? 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#7366ff] text-white shadow-xs transition-colors shrink-0' : 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-[#1e222d] border border-cuba-line text-cuba-ink-muted hover:text-[#7366ff] hover:bg-[#7366ff]/5 transition-colors shrink-0') : `px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'tech' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Tech &amp; Engineering</button>
-              <button onClick={() => this.setState({ activeTab: 'mgmt' })} className={isCuba ? (this.state.activeTab === 'mgmt' ? 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#7366ff] text-white shadow-xs transition-colors shrink-0' : 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-[#1e222d] border border-cuba-line text-cuba-ink-muted hover:text-[#7366ff] hover:bg-[#7366ff]/5 transition-colors shrink-0') : `px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'mgmt' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Management</button>
+              <button onClick={() => this.setState({ activeTab: 'tech' })} className={isCuba ? (this.state.activeTab === 'tech' ? 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#7366ff] text-white shadow-xs transition-colors shrink-0' : 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-[#1e222d] border border-cuba-line text-cuba-ink-muted hover:text-[#7366ff] hover:bg-[#7366ff]/5 transition-colors shrink-0') : `px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'tech' ? 'bg-[#7366ff] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Tech &amp; Engineering</button>
+              <button onClick={() => this.setState({ activeTab: 'mgmt' })} className={isCuba ? (this.state.activeTab === 'mgmt' ? 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#7366ff] text-white shadow-xs transition-colors shrink-0' : 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-[#1e222d] border border-cuba-line text-cuba-ink-muted hover:text-[#7366ff] hover:bg-[#7366ff]/5 transition-colors shrink-0') : `px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'mgmt' ? 'bg-[#7366ff] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Management</button>
             </div>
             
             {/* Search Box & Actions */}
@@ -1267,7 +1267,7 @@ class DashboardHomepage extends Component {
                         <p className="text-xs text-slate-600 line-clamp-3 font-mono bg-slate-50 p-2.5 rounded border border-slate-100 mb-4">{letter.letterBody}</p>
                       </div>
                       <div className="flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
-                        <button onClick={() => this.props.navigate('/dashboard/cover-letters')} className="flex-1 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg text-center transition-colors">
+                        <button onClick={() => this.props.navigate('/dashboard/cover-letters')} className="cuba-btn-primary flex-1 py-2 text-xs font-bold rounded-lg text-center shadow-xs">
                           Open & Edit
                         </button>
                         <button onClick={async () => {
@@ -1464,9 +1464,8 @@ class DashboardHomepage extends Component {
                       <div className="space-y-2 mt-auto">
                         {/* Primary Action - Edit Resume */}
                         <button
-                          className={isCuba
-                            ? "cuba-btn-primary w-full text-white text-xs font-bold py-2.5 px-4 rounded-xl flex items-center justify-center space-x-2 cursor-pointer shadow-xs"
-                            : "w-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 shadow-sm"
+                          className={
+                            "cuba-btn-primary w-full text-xs font-bold py-2.5 px-4 rounded-xl flex items-center justify-center space-x-2 cursor-pointer shadow-xs"
                           }
                           onClick={() => this.setAsCurrentResume(document.id, document)}
                         >

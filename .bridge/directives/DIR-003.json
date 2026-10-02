@@ -1,0 +1,27 @@
+{
+  "id": "DIR-003",
+  "title": "Public Secondary Pages & Marketing Header Harmonization",
+  "priority": "P1",
+  "status": "ISSUED",
+  "leadAuthor": "Antigravity (Lead Supervisor)",
+  "assignedTo": "Cline (Staff Developer)",
+  "createdAt": "2026-10-02T07:47:42.956Z",
+  "specFile": null,
+  "spec": "Harmonize secondary public routes (/features, /pricing, /about, /blog, /faq) with the new Cuba Modern Executive floating glass header and footer. Verify responsive mobile menu transitions, Escape key dismissal, and WCAG AA contrast compliance across light and dark modes.",
+  "invariants": [
+    "Resume Templates & ATS Engine 100% FROZEN (git diff = 0)",
+    "CSP and static security rules maintained",
+    "Zero mock data or fabricated marketing claims"
+  ],
+  "acceptanceCriteria": [
+    "Secondary routes render with Cuba glass header",
+    "Mobile menu drawer operates smoothly with keyboard Escape trap",
+    "Zero dead links across public marketing footer",
+    "npm run build passes with 0 errors"
+  ],
+  "plan": null,
+  "heartbeats": [],
+  "evidence": null,
+  "reviews": [],
+  "freezeHash": null
+}

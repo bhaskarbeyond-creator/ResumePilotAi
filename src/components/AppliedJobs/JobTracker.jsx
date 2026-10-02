@@ -144,7 +144,7 @@ export default function JobTracker({ showToast }) {
         <main className="min-h-64 flex items-center justify-center px-4">
             <div role="alert" className="text-center">
                 <p className="text-slate-700 mb-3">{loadError}</p>
-                <button type="button" onClick={() => setRetryCount((count) => count + 1)} className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white">Try again</button>
+                <button type="button" onClick={() => setRetryCount((count) => count + 1)} className="cuba-btn-primary rounded-xl px-4 py-2 text-sm font-bold shadow-xs">Try again</button>
             </div>
         </main>
     );
@@ -158,7 +158,7 @@ export default function JobTracker({ showToast }) {
                         <h1 className="text-2xl font-semibold text-slate-900">Job Tracker</h1>
                         <p className="mt-1 text-sm text-slate-600">Keep personal opportunities organized. Employer application statuses remain separate.</p>
                     </div>
-                    <button type="button" onClick={() => { closeForm(); setShowForm(true); }} className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900">Add job</button>
+                    <button type="button" onClick={() => { closeForm(); setShowForm(true); }} className="cuba-btn-primary rounded-xl px-4 py-2 text-sm font-bold shadow-xs">Add job</button>
                 </div>
 
                 {showForm && (

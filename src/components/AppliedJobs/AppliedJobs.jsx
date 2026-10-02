@@ -182,7 +182,7 @@ const AppliedJobs = ({ showToast, t }) => {
                     <FaInfoCircle aria-hidden="true" className="w-10 h-10 text-amber-600 mx-auto mb-3" />
                     <h1 className="text-lg font-semibold text-slate-900 mb-2">Applications unavailable</h1>
                     <p className="text-sm text-slate-600 mb-4">{loadError}</p>
-                    <button type="button" onClick={() => setRetryCount((count) => count + 1)} className="px-4 py-2 rounded-md bg-slate-900 text-white text-sm font-medium hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900">
+                    <button type="button" onClick={() => setRetryCount((count) => count + 1)} className="cuba-btn-primary px-4 py-2 rounded-xl text-sm font-bold shadow-xs">
                         Try again
                     </button>
                 </div>
@@ -326,7 +326,7 @@ const AppliedJobs = ({ showToast, t }) => {
                                 {searchTerm || statusFilter !== 'all' ? t('JobsUpdate.AppliedJobs.noApplications.filterMessage', 'Try adjusting your search or filter criteria.') : t('JobsUpdate.AppliedJobs.noApplications.emptyMessage', "You haven't applied to any jobs yet. Start exploring opportunities!")}
                             </p>
                             {!searchTerm && statusFilter === 'all' && (
-                                <button onClick={redirectToJobs} className="px-4 py-2 bg-slate-900 text-white rounded-md hover:bg-slate-800 transition-colors duration-200 text-sm font-medium">{t('JobsUpdate.AppliedJobs.actions.browseJobs', 'Browse Jobs')}</button>
+                                <button onClick={redirectToJobs} className="cuba-btn-primary px-4 py-2 rounded-xl text-sm font-bold shadow-xs">{t('JobsUpdate.AppliedJobs.actions.browseJobs', 'Browse Jobs')}</button>
                             )}
                         </div>
                     ) : (

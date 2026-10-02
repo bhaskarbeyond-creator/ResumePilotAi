@@ -137,8 +137,10 @@ const CubaPortalShell = ({
         [groups, active, routerNavigate],
     );
 
-    const navigate = useCallback((to) => {
-        if (/^(https?:)?\/\//i.test(String(to)) || String(to || '').startsWith('mailto:')) {
+    const navigate = useCallback((target) => {
+        const to = typeof target === 'string' ? target : (target?.href || target?.to);
+        if (!to) return;
+        if (/^(https?:)?\/\//i.test(String(to)) || String(to).startsWith('mailto:')) {
             window.location.assign(to);
             return;
         }

@@ -153,9 +153,9 @@ const DashboardPortfolios = ({ t, showToast }) => {
     const renderGridView = () => (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
             {filteredPortfolios.map((portfolio) => (
-                <div key={portfolio.id} className="bg-white rounded-lg border border-slate-200 hover:shadow-md transition-all duration-300">
+                <div key={portfolio.id} className="cuba-widget-texture bg-cuba-card rounded-[15px] border border-cuba-line shadow-[0_9px_20px_rgba(46,35,94,0.07)] hover:shadow-[0_14px_28px_rgba(46,35,94,0.12)] hover:-translate-y-1 transition-all duration-300">
                     {/* Preview */}
-                    <div className="h-48 relative rounded-t-lg overflow-hidden bg-slate-100">
+                    <div className="h-48 relative rounded-t-[15px] overflow-hidden bg-slate-100">
                         <img
                             src={getPreviewImage(portfolio)}
                             alt={`${portfolio.title} preview`}
@@ -202,7 +202,7 @@ const DashboardPortfolios = ({ t, showToast }) => {
                         <div className="space-y-2">
                             <Link
                                 to={`/portfolio/${portfolio.slug}`}
-                                className="w-full inline-flex items-center justify-center px-3 py-2 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-slate-800 transition-colors shadow-sm">
+                                className="cuba-btn-primary w-full inline-flex items-center justify-center px-3 py-2 text-white text-sm font-bold rounded-lg shadow-xs">
                                 <FiEye className="w-3.5 h-3.5 mr-2" />
                                 {t('DashboardPortfolios.actions.view')}
                             </Link>
@@ -298,13 +298,13 @@ const DashboardPortfolios = ({ t, showToast }) => {
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7366ff]"></div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-screen bg-cuba-canvas">
             <div className="mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-4 sm:py-6 max-w-none w-full" style={{maxWidth: '1600px'}}>
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
@@ -324,7 +324,7 @@ const DashboardPortfolios = ({ t, showToast }) => {
                 </div>
 
                 {/* Filters and Controls */}
-                <div className="bg-white rounded-lg border border-slate-200 p-4 mb-6">
+                <div className="cuba-widget-texture bg-cuba-card rounded-[15px] border border-cuba-line shadow-[0_9px_20px_rgba(46,35,94,0.07)] p-4 mb-6">
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                         {/* Search and Filter */}
                         <div className="flex flex-col sm:flex-row gap-4 flex-1">
@@ -369,7 +369,7 @@ const DashboardPortfolios = ({ t, showToast }) => {
 
                 {/* Content */}
                 {filteredPortfolios.length === 0 ? (
-                    <div className="text-center py-12 bg-white rounded-lg border border-slate-200">
+                    <div className="text-center py-12 bg-cuba-card rounded-[15px] border border-cuba-line">
                         <div className="text-6xl mb-4">🎨</div>
                         <h3 className="text-lg font-medium text-slate-900 mb-2">{t('DashboardPortfolios.emptyState.title')}</h3>
                         <p className="text-slate-600 mb-6 text-sm">{searchTerm || selectedTheme ? t('DashboardPortfolios.emptyState.noSearchResults') : t('DashboardPortfolios.emptyState.noPortfolios')}</p>
