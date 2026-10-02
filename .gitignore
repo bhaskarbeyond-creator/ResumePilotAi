@@ -124,3 +124,8 @@ scripts/capture-user-dashboard-visuals.mjs
 !crawl-artifacts/logs/
 !crawl-artifacts/logs/*.log
 
+# Temporary reference dashboard template & extraction scratch
+dashboardTemplate/
+temp_inspect/
+archive_list.txt
+
