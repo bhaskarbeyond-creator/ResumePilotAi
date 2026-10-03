@@ -1,15 +1,15 @@
 {
-  "updatedAt": "2026-10-03T01:35:12.217Z",
-  "eventCount": 417,
-  "activeDirectiveId": null,
-  "activeDirectiveTitle": null,
-  "activeDirectiveStatus": null,
-  "unreadForLead": 135,
-  "unreadForDev": 190,
+  "updatedAt": "2026-10-03T02:24:15.407Z",
+  "eventCount": 424,
+  "activeDirectiveId": "DIR-008",
+  "activeDirectiveTitle": "Candidate Career Intelligence & Full-Funnel Application Engine (Google M3 / Cuba Executive 10/10)",
+  "activeDirectiveStatus": "QUEUED",
+  "unreadForLead": 138,
+  "unreadForDev": 193,
   "pendingBlockers": 14,
   "latestHeartbeat": {
-    "timestamp": "2026-10-03T01:26:52.160Z",
-    "status": "FULL FUNNEL GREEN: 7/7 Playwright tests PASS (EXIT=0) against live Vite:3000 + API:8080 + MariaDB. All stages 0 defects (console=0 pageErrors=0 failedApi=0). Verifying stability + build gate.",
-    "percent": 94
+    "timestamp": "2026-10-03T02:01:15.549Z",
+    "status": "Implementation complete: RBAC resume endpoint, pipeline Resume column + in-modal TemplateRenderer (zoom/print/download), stage transitions, real-data E2E spec. Running live Playwright.",
+    "percent": 75
   }
 }

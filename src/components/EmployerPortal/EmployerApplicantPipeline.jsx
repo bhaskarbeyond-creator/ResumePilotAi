@@ -1,10 +1,13 @@
-import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { FiUsers, FiRefreshCw, FiSearch, FiMail } from 'react-icons/fi';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { FiUsers, FiRefreshCw, FiSearch, FiMail, FiFileText, FiZoomIn, FiZoomOut, FiPrinter, FiDownload, FiX } from 'react-icons/fi';
 import { AuthContext } from '../../context/AuthContext';
-import { getJobApplications } from '../../services/api/platform';
+import { getJobApplications, getEmployerApplicationResume, updateApplicationStatus } from '../../services/api/platform';
 import { useEmployerWorkspace, EMPLOYER_DATA_STATUS } from './useEmployerWorkspace';
 import { EmployerPageHeader, EmployerLoading, EmployerErrorState, EmployerEmptyState } from './EmployerStates';
 import SendMessageDialog from '../Dashboard/EmployerDashboard/SendMessageDialog';
+import TemplateRenderer from '../TemplateRenderer';
+import { normalizeResumeData } from '../../utils/resumeData';
+import { sanitizeRichText } from '../../utils/sanitizeHtml';
 
 const STAGE_TONE = {
     pending: 'bg-amber-50 text-amber-700 border-amber-200',
@@ -12,11 +15,53 @@ const STAGE_TONE = {
     interview: 'bg-violet-50 text-violet-700 border-violet-200',
     offer: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     hired: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+    accepted: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     rejected: 'bg-rose-50 text-rose-700 border-rose-200',
     withdrawn: 'bg-slate-100 text-slate-600 border-slate-200',
 };
 
 const stageClass = (status) => STAGE_TONE[String(status || '').toLowerCase()] || 'bg-slate-100 text-slate-600 border-slate-200';
+
+/**
+ * The hiring stages a recruiter can drive an application through. `apiStatus`
+ * is the value the authoritative PATCH /api/job-applications/:id/status
+ * contract accepts; `stage` is what the pipeline displays. The backend
+ * transition map (backend/index.js) is the authority — the UI only offers
+ * stages the server would accept from the current one.
+ */
+const STAGE_OPTIONS = [
+    { stage: 'interview', apiStatus: 'interview', label: 'Interview' },
+    { stage: 'offer', apiStatus: 'accepted', label: 'Offer' },
+    { stage: 'hired', apiStatus: 'accepted', label: 'Hired' },
+    { stage: 'rejected', apiStatus: 'rejected', label: 'Rejected' },
+];
+
+/** Mirrors allowedTransitions in backend/index.js so the UI never offers a move the server refuses. */
+const ALLOWED_TRANSITIONS = {
+    pending: ['interview', 'accepted', 'rejected'],
+    interview: ['accepted', 'rejected', 'pending'],
+    accepted: ['interview', 'rejected'],
+    rejected: ['pending', 'interview'],
+};
+
+const ZOOM_MIN = 60;
+const ZOOM_MAX = 150;
+const ZOOM_STEP = 10;
+/** A4 content width at 96dpi — the rendered page keeps this width while `zoom` scales it. */
+const RESUME_PAGE_WIDTH = 794;
+
+/**
+ * Resume templates are authored as `Cv7`, but stored documents can carry a
+ * lowercase or unprefixed id. Resolve to the canonical registry id.
+ */
+const getCanonicalTemplateId = (doc) => {
+    const raw = doc?.template || doc?.data?.template || 'Cv1';
+    const cv = String(raw).match(/^cv\s*(\d+)$/i);
+    if (cv) return `Cv${cv[1]}`;
+    const cover = String(raw).match(/^cover\s*(\d+)$/i);
+    if (cover) return `Cover${cover[1]}`;
+    return raw || 'Cv1';
+};
 
 /**
  * Applicant ATS Pipeline — /employer/applicants
@@ -35,6 +80,13 @@ const EmployerApplicantPipeline = ({ showToast }) => {
     const [applicantError, setApplicantError] = useState(null);
     const [search, setSearch] = useState('');
     const [messageTarget, setMessageTarget] = useState(null);
+    const [resumeTarget, setResumeTarget] = useState(null);
+    const [resumePayload, setResumePayload] = useState(null);
+    const [resumeLoading, setResumeLoading] = useState(false);
+    const [resumeError, setResumeError] = useState(null);
+    const [zoom, setZoom] = useState(100);
+    const [stageBusyId, setStageBusyId] = useState(null);
+    const printFrameRef = useRef(null);
 
     const loadPipeline = useCallback(async (jobList) => {
         if (!Array.isArray(jobList) || jobList.length === 0) {
@@ -56,11 +108,18 @@ const EmployerApplicantPipeline = ({ showToast }) => {
                         id: application.id,
                         jobId: job.id,
                         jobTitle: job.title,
-                        applicantName: application.applicantName || application.fullName || application.userName || 'Applicant',
-                        applicantEmail: application.applicantEmail || application.email || '',
+                        // MySQL returns raw snake_case rows from getApplications(),
+                        // so every field must accept both casings. Reading only the
+                        // camelCase keys silently rendered "Applicant" / "—" on live data.
+                        applicantName: application.applicantName || application.applicant_name || application.fullName || application.userName || 'Applicant',
+                        applicantEmail: application.applicantEmail || application.applicant_email || application.email || '',
+                        applicantPhone: application.applicantPhone || application.applicant_phone || '',
                         status: String(application.status || 'pending').toLowerCase(),
-                        appliedAt: application.appliedAt || application.createdAt || null,
+                        appliedAt: application.appliedAt || application.createdAt || application.created_at || null,
                         revision: Number(application.revision || 0),
+                        resumeId: application.resumeId || application.resume_id || null,
+                        resumeUrl: application.resumeUrl || application.resume_url || null,
+                        coverLetter: application.coverLetter || application.cover_letter || '',
                     });
                 });
             }
@@ -92,6 +151,127 @@ const EmployerApplicantPipeline = ({ showToast }) => {
         }, {});
         return Object.entries(counts).sort((a, b) => b[1] - a[1]);
     }, [rows]);
+
+    /**
+     * Opens the in-modal resume viewer and fetches the candidate's real document
+     * through the employer-scoped RBAC endpoint.
+     */
+    const handleViewResume = useCallback(async (row) => {
+        setResumeTarget(row);
+        setResumePayload(null);
+        setResumeError(null);
+        setResumeLoading(true);
+        setZoom(100);
+        try {
+            const data = await getEmployerApplicationResume(row.jobId, row.id);
+            setResumePayload(data);
+        } catch (fetchError) {
+            setResumeError(fetchError);
+        } finally {
+            setResumeLoading(false);
+        }
+    }, []);
+
+    const closeResume = useCallback(() => {
+        setResumeTarget(null);
+        setResumePayload(null);
+        setResumeError(null);
+        setResumeLoading(false);
+    }, []);
+
+    /**
+     * Writes the stage through the authoritative status contract. The server is
+     * the owner of the transition rules, so the row is refreshed from the API
+     * response rather than optimistically re-labelled.
+     */
+    const handleStageChange = useCallback(async (row, apiStatus) => {
+        if (!apiStatus || apiStatus === row.status) return;
+        setStageBusyId(row.id);
+        try {
+            const result = await updateApplicationStatus(row.id, apiStatus, '', {
+                expectedStatus: row.status,
+                expectedRevision: row.revision,
+            });
+            const nextRevision = Number(result?.revision ?? row.revision + 1);
+            setRows(current => current.map(item => (
+                item.id === row.id && item.jobId === row.jobId
+                    ? { ...item, status: apiStatus, revision: nextRevision }
+                    : item
+            )));
+            showToast?.('Stage updated', 'success', `Applicant moved to ${apiStatus}.`);
+        } catch (transitionError) {
+            showToast?.('Stage update failed', 'error', transitionError?.message || 'Please try again.');
+        } finally {
+            setStageBusyId(null);
+        }
+    }, [showToast]);
+
+    const availableStages = useCallback((currentStatus) => {
+        const allowed = ALLOWED_TRANSITIONS[currentStatus] || [];
+        return STAGE_OPTIONS.filter(option => allowed.includes(option.apiStatus));
+    }, []);
+
+    /** Prints only the rendered resume surface, never the surrounding recruiter chrome. */
+    const handlePrint = useCallback(() => {
+        const node = printFrameRef.current;
+        if (!node || typeof window === 'undefined') return;
+        const frame = document.createElement('iframe');
+        frame.setAttribute('aria-hidden', 'true');
+        frame.style.position = 'fixed';
+        frame.style.right = '0';
+        frame.style.bottom = '0';
+        frame.style.width = '0';
+        frame.style.height = '0';
+        frame.style.border = '0';
+        document.body.appendChild(frame);
+        const frameDoc = frame.contentDocument;
+        frameDoc.open();
+        frameDoc.write(`<!DOCTYPE html><html><head><title>${resumeTarget?.applicantName || 'Resume'}</title></head><body>${node.innerHTML}</body></html>`);
+        frameDoc.close();
+        frame.contentWindow.focus();
+        frame.contentWindow.print();
+        setTimeout(() => { document.body.removeChild(frame); }, 1000);
+    }, [resumeTarget]);
+
+    /** Exports the rendered resume as a self-contained HTML document. */
+    const handleDownload = useCallback(() => {
+        const node = printFrameRef.current;
+        if (!node || typeof document === 'undefined') return;
+        const name = (resumeTarget?.applicantName || 'candidate').replace(/[^A-Za-z0-9]+/g, '-').toLowerCase();
+        const blob = new Blob([`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${resumeTarget?.applicantName || 'Resume'}</title></head><body>${node.innerHTML}</body></html>`], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${name}-resume.html`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }, [resumeTarget]);
+
+    /** The cover letter is applicant-authored HTML, so it is sanitized before it reaches the DOM. */
+    const safeCoverLetter = useMemo(
+        () => sanitizeRichText(resumeTarget?.coverLetter || ''),
+        [resumeTarget?.coverLetter],
+    );
+
+    const resumeDocument = resumePayload?.resume || null;
+    const resumeTemplateId = useMemo(
+        () => getCanonicalTemplateId(resumeDocument),
+        [resumeDocument],
+    );
+    const resumeValues = useMemo(
+        () => (resumeDocument ? normalizeResumeData(resumeDocument, { template: resumeTemplateId }) : null),
+        [resumeDocument, resumeTemplateId],
+    );
+    const contact = resumeDocument
+        ? {
+            name: [resumeDocument.firstname, resumeDocument.lastname].filter(Boolean).join(' ') || resumeTarget?.applicantName || 'Applicant',
+            email: resumeDocument.email || resumeTarget?.applicantEmail || '',
+            phone: resumeDocument.phone || resumeTarget?.applicantPhone || '',
+            role: resumeDocument.targetRole || resumeDocument.occupation || resumeTarget?.jobTitle || '',
+        }
+        : null;
 
     if (status === EMPLOYER_DATA_STATUS.LOADING || status === EMPLOYER_DATA_STATUS.IDLE) {
         return <EmployerLoading label="Loading your applicant pipeline…" />;
@@ -196,6 +376,7 @@ const EmployerApplicantPipeline = ({ showToast }) => {
                                 <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
                                     <th scope="col" className="py-2.5 pr-4 font-bold">Candidate</th>
                                     <th scope="col" className="py-2.5 pr-4 font-bold">Role</th>
+                                    <th scope="col" className="py-2.5 pr-4 font-bold">Resume</th>
                                     <th scope="col" className="py-2.5 pr-4 font-bold">Stage</th>
                                     <th scope="col" className="py-2.5 pr-4 font-bold">Applied</th>
                                     <th scope="col" className="py-2.5 font-bold text-right">Contact</th>
@@ -210,9 +391,40 @@ const EmployerApplicantPipeline = ({ showToast }) => {
                                         </td>
                                         <td className="py-3 pr-4 text-slate-700">{row.jobTitle}</td>
                                         <td className="py-3 pr-4">
+                                            {row.resumeId ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleViewResume(row)}
+                                                    className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 text-xs font-bold text-indigo-700 transition-colors hover:bg-indigo-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                                                >
+                                                    <FiFileText className="h-3.5 w-3.5" aria-hidden="true" />
+                                                    View Resume
+                                                </button>
+                                            ) : (
+                                                <span className="text-xs text-slate-400">Not attached</span>
+                                            )}
+                                        </td>
+                                        <td className="py-3 pr-4">
                                             <span className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-bold capitalize ${stageClass(row.status)}`}>
                                                 {row.status}
                                             </span>
+                                            <label className="sr-only" htmlFor={`stage-${row.jobId}-${row.id}`}>
+                                                Move {row.applicantName} to another hiring stage
+                                            </label>
+                                            <select
+                                                id={`stage-${row.jobId}-${row.id}`}
+                                                value=""
+                                                disabled={stageBusyId === row.id || availableStages(row.status).length === 0}
+                                                onChange={(event) => handleStageChange(row, event.target.value)}
+                                                className="mt-1.5 block w-full max-w-[9.5rem] rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 focus:border-indigo-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+                                            >
+                                                <option value="">Move stage…</option>
+                                                {availableStages(row.status).map(option => (
+                                                    <option key={`${option.stage}-${option.apiStatus}`} value={option.apiStatus}>
+                                                        {option.label}
+                                                    </option>
+                                                ))}
+                                            </select>
                                         </td>
                                         <td className="py-3 pr-4 text-xs text-slate-600">
                                             {row.appliedAt ? new Date(row.appliedAt).toLocaleDateString() : '—'}
@@ -243,6 +455,152 @@ const EmployerApplicantPipeline = ({ showToast }) => {
                     applicantName={messageTarget.applicantName}
                     showToast={showToast}
                 />
+            )}
+
+            {resumeTarget && (
+                <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
+                    <div
+                        className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
+                        onClick={closeResume}
+                        aria-hidden="true"
+                    />
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="employer-resume-dialog-title"
+                        className="relative flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+                    >
+                        <header className="flex flex-wrap items-start gap-3 border-b border-slate-200 px-5 py-4">
+                            <div className="min-w-0 flex-1">
+                                <h2 id="employer-resume-dialog-title" className="truncate text-base font-bold text-slate-900">
+                                    {contact?.name || resumeTarget.applicantName}
+                                    <span className="sr-only"> resume preview</span>
+                                </h2>
+                                <p className="mt-0.5 truncate text-xs text-slate-500">
+                                    {resumeTarget.jobTitle}
+                                    {contact?.role ? ` · ${contact.role}` : ''}
+                                </p>
+                                {(contact?.email || contact?.phone) && (
+                                    <p className="mt-1 truncate text-xs text-slate-600">
+                                        {[contact.email, contact.phone].filter(Boolean).join(' · ')}
+                                    </p>
+                                )}
+                            </div>
+                            <div className="flex flex-none items-center gap-1.5">
+                                <button
+                                    type="button"
+                                    onClick={() => setZoom(current => Math.max(ZOOM_MIN, current - ZOOM_STEP))}
+                                    disabled={!resumeValues || zoom <= ZOOM_MIN}
+                                    aria-label="Zoom out resume preview"
+                                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                                >
+                                    <FiZoomOut className="h-4 w-4" aria-hidden="true" />
+                                </button>
+                                <span className="w-12 text-center text-xs font-bold text-slate-600" aria-live="polite">{zoom}%</span>
+                                <button
+                                    type="button"
+                                    onClick={() => setZoom(current => Math.min(ZOOM_MAX, current + ZOOM_STEP))}
+                                    disabled={!resumeValues || zoom >= ZOOM_MAX}
+                                    aria-label="Zoom in resume preview"
+                                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                                >
+                                    <FiZoomIn className="h-4 w-4" aria-hidden="true" />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handlePrint}
+                                    disabled={!resumeValues}
+                                    className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                                >
+                                    <FiPrinter className="h-4 w-4" aria-hidden="true" />
+                                    Print
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleDownload}
+                                    disabled={!resumeValues}
+                                    className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                                >
+                                    <FiDownload className="h-4 w-4" aria-hidden="true" />
+                                    Download
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={closeResume}
+                                    aria-label="Close resume preview"
+                                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 text-slate-700 transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                                >
+                                    <FiX className="h-4 w-4" aria-hidden="true" />
+                                </button>
+                            </div>
+                        </header>
+                        <div className="min-h-0 flex-1 overflow-auto bg-slate-100 p-4">
+                            {resumeLoading && (
+                                <p role="status" aria-live="polite" className="py-16 text-center text-sm text-slate-500">
+                                    Loading candidate resume…
+                                </p>
+                            )}
+
+                            {!resumeLoading && resumeError && (
+                                <p role="alert" className="py-16 text-center text-sm font-bold text-rose-600">
+                                    {resumeError.message || 'This resume could not be loaded.'}
+                                </p>
+                            )}
+
+                            {!resumeLoading && !resumeError && !resumeDocument && (
+                                <p role="status" className="py-16 text-center text-sm text-slate-500">
+                                    No resume was attached to this application.
+                                </p>
+                            )}
+
+                            {!resumeLoading && !resumeError && resumeValues && (
+                                /*
+                                 * The page uses a fixed pixel width and the `zoom` scale is
+                                 * applied to it, so zooming genuinely enlarges the CV.
+                                 * A percentage width would self-cancel: at a higher zoom the
+                                 * percentage resolves against the shrunken zoomed space and
+                                 * the visible width would stay constant. The fixed width
+                                 * simply overflows the scrollable viewport, which is the
+                                 * expected behaviour of a document preview.
+                                 */
+                                <div data-testid="employer-resume-canvas" className="min-h-0 flex-1 overflow-auto bg-slate-100 p-4">
+                                    <div
+                                        ref={printFrameRef}
+                                        data-testid="employer-resume-page"
+                                        className="mx-auto bg-white shadow-sm"
+                                        style={{ width: `${RESUME_PAGE_WIDTH}px`, zoom: zoom / 100 }}
+                                    >
+                                        <TemplateRenderer
+                                            templateId={resumeTemplateId}
+                                            values={resumeValues}
+                                            language="en"
+                                            loadingFallback={
+                                                <div className="flex min-h-48 items-center justify-center bg-slate-50 p-6 text-sm text-slate-500">
+                                                    Loading template…
+                                                </div>
+                                            }
+                                            errorFallback={
+                                                <div role="alert" className="flex min-h-48 items-center justify-center bg-slate-50 p-6 text-sm text-slate-600">
+                                                    This resume template could not be rendered.
+                                                </div>
+                                            }
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {safeCoverLetter && (
+                            <footer className="max-h-40 overflow-y-auto border-t border-slate-200 px-5 py-4">
+                                <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">Cover letter</h3>
+                                <div
+                                    className="mt-2 max-w-none text-sm text-slate-700 [&_p]:mb-2"
+                                    dangerouslySetInnerHTML={{ __html: safeCoverLetter }}
+                                />
+                            </footer>
+                        )}
+                    </div>
+                </div>
             )}
         </div>
     );

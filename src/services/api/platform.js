@@ -867,6 +867,14 @@ export async function getJobApplications(jobId) {
     return data.applications || [];
 }
 
+export async function getEmployerApplicationResume(jobId, applicationId) {
+    const data = await apiJson(`/api/employer/jobs/${encodeURIComponent(jobId)}/applications/${encodeURIComponent(applicationId)}/resume`);
+    if (data && data.success === false) {
+        throw new Error(data.error || 'Failed to fetch candidate resume.');
+    }
+    return data;
+}
+
 export async function submitJobApplication(userId, jobId, applicationData) {
     const { response, data } = await fetchAdminWithReauth(`/api/jobs/${encodeURIComponent(jobId)}/applications`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },

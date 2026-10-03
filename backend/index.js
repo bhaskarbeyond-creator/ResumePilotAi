@@ -1510,7 +1510,12 @@ app.patch('/api/job-applications/:applicationId/status', async (req, res) => {
     const expectedRevision = Number(req.body?.expectedRevision || 0);
     if (!/^[A-Za-z0-9:_-]{1,300}$/.test(applicationId) || !['interview', 'accepted', 'rejected'].includes(status)
         || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid application status request.' });
-    const allowedTransitions = { pending: new Set(['interview', 'rejected']), interview: new Set(['accepted', 'rejected']) };
+    const allowedTransitions = {
+        pending: new Set(['interview', 'accepted', 'rejected']),
+        interview: new Set(['accepted', 'rejected', 'pending']),
+        accepted: new Set(['interview', 'rejected']),
+        rejected: new Set(['pending', 'interview'])
+    };
     try {
         // Invariants: employerId !== req.user.uid authorization check, APPLICATION_CHANGED conflict check, allowedTransitions check, JOB_APPLICATION_STATUS_UPDATED audit
         const repo = resilientMutations.repoFor();
@@ -1552,6 +1557,61 @@ app.get('/api/jobs/:jobId/applications', async (req, res) => {
         return res.json({ success: true, applications: visible });
     } catch (_error) {
         return res.status(503).json({ success: false, error: 'Applications are unavailable.' });
+    }
+});
+
+// GET /api/employer/jobs/:jobId/applications/:applicationId/resume
+// Fetches the candidate's resume for an employer viewing their job's applicant pipeline.
+// Strict RBAC: Only the employer who posted the job may view the candidate resume.
+app.get('/api/employer/jobs/:jobId/applications/:applicationId/resume', async (req, res) => {
+    const jobId = String(req.params.jobId || '');
+    const applicationId = String(req.params.applicationId || '');
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(jobId) || !/^[A-Za-z0-9:_-]{1,300}$/.test(applicationId)) {
+        return res.status(400).json({ success: false, error: 'Invalid job or application ID.' });
+    }
+    try {
+        const repo = resilientMutations.repoFor();
+        const job = await repo.getJob(jobId);
+        if (!job) return res.status(404).json({ success: false, error: 'Job not found.' });
+
+        const isOwner = String(job.employerId || job.employer_id || '') === req.user.uid;
+        if (!isOwner) {
+            return res.status(403).json({ success: false, error: 'Access denied: Only the employer who posted this job can review candidate resumes.' });
+        }
+
+        const application = typeof repo.getApplication === 'function' ? await repo.getApplication(applicationId) : null;
+        if (!application || String(application.jobId || application.job_id || '') !== jobId) {
+            return res.status(404).json({ success: false, error: 'Application not found for this job requisition.' });
+        }
+
+        const applicantId = String(application.applicantId || application.applicant_id || application.userId || '');
+        const resumeId = String(application.resumeId || application.resume_id || '');
+
+        let resume = null;
+        if (resumeId && applicantId && typeof repo.getResume === 'function') {
+            resume = await repo.getResume(applicantId, resumeId);
+        }
+
+        return res.json({
+            success: true,
+            application: {
+                id: application.id,
+                jobId: application.jobId,
+                applicantId,
+                applicantName: application.applicantName || application.applicant_name || 'Applicant',
+                applicantEmail: application.applicantEmail || application.applicant_email || '',
+                applicantPhone: application.applicantPhone || application.applicant_phone || '',
+                status: application.status,
+                coverLetter: application.coverLetter || application.cover_letter || '',
+                resumeId: resumeId || null,
+                resumeUrl: application.resumeUrl || application.resume_url || null,
+                appliedAt: application.createdAt || application.created_at || null,
+            },
+            resume
+        });
+    } catch (err) {
+        console.error('[Employer Resume Review] Error fetching candidate resume:', err);
+        return res.status(500).json({ success: false, error: 'Unable to retrieve candidate resume.' });
     }
 });
 
