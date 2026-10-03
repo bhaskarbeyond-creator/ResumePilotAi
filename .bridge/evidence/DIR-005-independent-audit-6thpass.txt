@@ -1,0 +1,85 @@
+DIR-005 INDEPENDENT AUDIT - 6th pass (auto-retry response)
+Generated: 2026-10-02T20:48Z   Auditor: Cline (Staff Developer)
+Method: fresh consolidated gate re-run from scratch (no stale logs) +
+       manual byte-level re-verification of both prior claims.
+
+--------------------------------------------------------------------------
+FINDING 0 - FRESH GATE RE-RUN: 7/7 PASS
+--------------------------------------------------------------------------
+  G1 build       PASS  exit=0 builtIn=3.04s (<4s required)
+  G2 legacy purge PASS  exit=0, 1173 live files scanned, 0 Dashboard2 imports
+  G3 facades      PASS  exit=0 FACADE_FAILURES=0 (16/16 resolve)
+  G4 repathed     PASS  5/5 suites, 0 fail
+  G5 regression   PASS  4/4 suites, 0 fail
+  G6 frozen guard PASS  frozenDiffs=0 guarded=true
+  G7 DOM crawl    PASS  exit=0 routes=14 failures=0
+  OVERALL: PASS. Artifacts rewritten UTF-8 (no BOM, no NUL) at 20:48:02Z.
+
+--------------------------------------------------------------------------
+FINDING 1 - STRUCTURAL CONFIRMATION (spec steps 1-4)
+--------------------------------------------------------------------------
+  src/components/Marketing/  -> LandingPage.jsx, public-site.css,
+                                elements/ with 14 landing elements.
+  src/components/Dashboard2/ -> 16 pure re-export facades (275-311 bytes each):
+      dashboard2.jsx  -> export { default } from '../Marketing/LandingPage';
+      elements/*.jsx  -> export { default } from '../../Marketing/elements/*';
+      public-site.css -> @import '../Marketing/public-site.css';
+  All 15+ consumers (Plans, Features, BlogList, BlogPost, BlogEditor, Contact,
+  CustomePage, JobsLanding, CreateJob, MainJobListings, PortfolioBuilder,
+  ActionSelection, Action, main.jsx) now import from Marketing/.
+  Dashboard2Redirect preserved in main.jsx L181; both /dashboard2 and
+  /dashboard2/* remain wrapped in RequireAuthenticated (L579-580).
+
+--------------------------------------------------------------------------
+FINDING 2 - CORRECTION: the "main.jsx:576 mojibake" claim was FALSE
+--------------------------------------------------------------------------
+  Earlier heartbeats reported "pre-existing mojibake in a main.jsx:576 comment
+  arrow (renders as a-tie), identical in HEAD~1, comment-only".
+
+  That claim does NOT hold. Byte-level UTF-8 read of src/main.jsx line 576:
+      LINE576_UTF8: "{/* Dashboard2 legacy -> redirect to /dashboard. ..."
+      HAS_ARROW_U2192: true
+      HAS_MOJIBAKE:    false
+      FILE_HAS_BOM:    false
+      FILE_HAS_NUL:    false
+
+  The real U+2192 arrow is present and correctly encoded in the working tree.
+  The mojibake was an ARTIFACT OF THE POWERSHELL/GIT-SHOW PIPE in my own audit
+  command (git show output decoded through the console codepage), NOT a defect
+  in the file. It is also NOT present in HEAD~1 - HEAD~1 displays it only
+  because the same pipe mangled that read too.
+
+  IMPACT: no code change is warranted, and none was made. Retracting the
+  earlier note rather than leaving a false defect on the record. The file is
+  clean UTF-8 with no BOM and no NUL bytes.
+
+--------------------------------------------------------------------------
+FINDING 3 - CONFIRMATION: LandingPage differs from dashboard2.jsx by 1 line
+--------------------------------------------------------------------------
+  Line-by-line diff against the pre-move baseline:
+      TOTAL_DIFFERING_LINES = 1
+      L14  old: export default function Dashboard2() {
+          new: export default function LandingPage() {
+  This is the intended semantic rename mandated by spec step 1. No behavioural
+  delta: identical imports, identical hooks, identical JSX tree. The
+  dir005-encoding-verify.cjs "SUBSTANTIVE=1 / RESULT: FAIL" flag is therefore a
+  FALSE POSITIVE of that script, which treats any line delta as substantive; the
+  renamed line is the only delta and it is the expected one. Not a defect.
+
+--------------------------------------------------------------------------
+FINDING 4 - FROZEN INVARIANT: independently confirmed 0 lines
+--------------------------------------------------------------------------
+  git diff --numstat HEAD~1 -- src/components/Resume src/components/ATS
+                             backend/api backend/src   =>  (empty, 0 files)
+  FROZEN (Resume Templates & ATS Engine) diff = exactly 0 lines.
+  backend/test/ux-entitlement-alignment.test.js carries 1 changed line (the
+  HomepagePricing Dashboard2 -> Marketing repath explicitly mandated by spec
+  step 4). It is a test-path assertion, not Resume/ATS product code, so the
+  frozen invariant is intact. Disclosed rather than folded into a 0-line claim.
+
+--------------------------------------------------------------------------
+CONCLUSION
+--------------------------------------------------------------------------
+  Zero remaining development work. All 5 acceptance criteria and all 4
+  invariants are satisfied and independently re-verified. The only open item
+  is Gatekeeper certification (APPROVED_FROZEN).

@@ -1,0 +1,463 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "D:\\xampp\\htdocs\\IME365\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--config=playwright.dir006.config.js"
+    ],
+    "configFile": "D:\\xampp\\htdocs\\IME365\\playwright.dir006.config.js",
+    "rootDir": "D:/xampp/htdocs/IME365/tests/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/xampp/htdocs/IME365/.bridge/evidence/dir006-artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "dir006-live-funnel",
+        "name": "dir006-live-funnel",
+        "testDir": "D:/xampp/htdocs/IME365/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "/dir006-funnel\\.spec\\.js/"
+        ],
+        "timeout": 180000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": ".bridge/evidence/dir006-funnel-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "dir006-funnel.spec.js",
+      "file": "dir006-funnel.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "Stage 0 — the live frontend serves the SPA and proxies /api to the live backend",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "dir006-live-funnel",
+              "projectName": "dir006-live-funnel",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1407,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "[2026-10-03T01:32:29.797Z] DIR-006 funnel run starting. WEB=http://localhost:3000 API=http://localhost:8080\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:32:29.797Z] live identity: uid=OhZdiSIFL7ePA1TMkfu9bnR935D3 email=bhaskar.beyond@gmail.com\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:32:29.802Z] live backend health status=200 authority=MARIADB owner=MARIADB\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:32:31.239Z] landing title=\"IME365 — Resume Builder & CV Maker\"\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:32:31.240Z] stage0 proxied /api/health through http://localhost:3000 => 200 MARIADB; consoleErrors=0\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T01:32:29.769Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5d397bef97edf8e1e791-f2744a3a1be1123d7902",
+          "file": "dir006-funnel.spec.js",
+          "line": 188,
+          "column": 1
+        },
+        {
+          "title": "Stage 1 — Guest Acquisition: the landing page offers a featured template and routes the primary CTA into the ATS builder",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "dir006-live-funnel",
+              "projectName": "dir006-live-funnel",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 21856,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "[2026-10-03T01:32:32.776Z] stage1 hero CTA label=\"Build My Resume — Free\"\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:32:32.783Z] stage1 featured template cards rendered=6\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:32:52.916Z] stage1 guest CTA opened the signup handoff modal (no account yet)\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:32:52.917Z] stage1 defects: console=0 pageErrors=0 failedApi=0\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T01:32:31.288Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5d397bef97edf8e1e791-cdaa55bc02bcf25cf2e2",
+          "file": "dir006-funnel.spec.js",
+          "line": 203,
+          "column": 1
+        },
+        {
+          "title": "Stage 2 — Candidate Intelligence: the authenticated builder mounts every certified step with live preview and ATS scoring",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "dir006-live-funnel",
+              "projectName": "dir006-live-funnel",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 9951,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "[2026-10-03T01:32:55.270Z] stage2 step /build-resume/heading controls=4\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:32:55.275Z] stage2 step /build-resume/heading visibleFields=0\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:32:56.370Z] stage2 step /build-resume/work-history controls=4\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:32:56.373Z] stage2 step /build-resume/work-history visibleFields=0\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:32:57.334Z] stage2 step /build-resume/education controls=4\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:32:57.337Z] stage2 step /build-resume/education visibleFields=0\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:32:58.291Z] stage2 step /build-resume/skills controls=4\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:32:58.294Z] stage2 step /build-resume/skills visibleFields=0\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:32:59.515Z] stage2 step /build-resume/summary controls=4\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:32:59.519Z] stage2 step /build-resume/summary visibleFields=0\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:33:01.519Z] stage2 summary: Generate Executive Bio (AI) control present\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:33:03.018Z] stage2 review step ATS surfaces=4\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:33:03.020Z] stage2 defects: console=0 pageErrors=0 failedApi=0\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T01:32:53.154Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5d397bef97edf8e1e791-db57e5b14b1997976f09",
+          "file": "dir006-funnel.spec.js",
+          "line": 242,
+          "column": 1
+        },
+        {
+          "title": "Stage 3 — Job Application: the real job inventory renders and the application modal opens with the 1-Click Quick Pitch toolbar",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "dir006-live-funnel",
+              "projectName": "dir006-live-funnel",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4406,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "[2026-10-03T01:33:03.193Z] stage3 live job inventory count=25\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:33:05.174Z] stage3 /jobs Apply Now control present for a featured active role\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:33:05.192Z] stage3 searched live inventory for \"Research Engineer (Model Evaluation & Be\"\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:33:05.441Z] stage3 Apply Now routed to /jobs/portal/job-air-23\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:33:06.382Z] stage3 job portal rendered 1 live requisition cards with Apply Now\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:33:07.181Z] stage3 JobApplicationModal opened from requisition card 1\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:33:07.191Z] stage3 JobApplicationModal opened; 1-Click Quick Pitch toolbar present\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:33:07.197Z] stage3 in-modal preview control not offered without a selected resume\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:33:07.198Z] stage3 defects: console=0 pageErrors=0 failedApi=0\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T01:33:03.116Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5d397bef97edf8e1e791-7c012053b6e2e5e7f545",
+          "file": "dir006-funnel.spec.js",
+          "line": 287,
+          "column": 1
+        },
+        {
+          "title": "Stage 4 — Recruiter Verification: /employer/applicants renders the live pipeline for the signed-in owner",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "dir006-live-funnel",
+              "projectName": "dir006-live-funnel",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2870,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "[2026-10-03T01:33:07.919Z] stage4 employer-owned requisitions=25\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:33:10.360Z] stage4 pipeline rows rendered=0 for 25 owned requisition(s)\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:33:10.360Z] stage4 defects: console=0 pageErrors=0 failedApi=0\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T01:33:07.531Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5d397bef97edf8e1e791-c290d4f922011e0c01c3",
+          "file": "dir006-funnel.spec.js",
+          "line": 376,
+          "column": 1
+        },
+        {
+          "title": "Stage 5 — AI Interview Coach: the coach shell mounts and the CBT rubric/HUD surface initialises",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "dir006-live-funnel",
+              "projectName": "dir006-live-funnel",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2648,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "[2026-10-03T01:33:12.546Z] stage5 STRICT CBT mode selected\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:33:12.637Z] stage5 AI Role quick-pick applied (Fullstack Engineer)\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:33:12.739Z] stage5 duration set to 15 min\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:33:12.876Z] stage5 launch outcome=status\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:33:12.876Z] stage5 defects: console=0 pageErrors=0 failedApi=0\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T01:33:10.410Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5d397bef97edf8e1e791-0a45d1f73bee84567d51",
+          "file": "dir006-funnel.spec.js",
+          "line": 409,
+          "column": 1
+        },
+        {
+          "title": "Cross-portal integrity — no funnel page leaks a plaintext secret into the DOM",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "dir006-live-funnel",
+              "projectName": "dir006-live-funnel",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1434,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "[2026-10-03T01:33:13.751Z] cross-portal leak scan clean: /\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:33:14.009Z] cross-portal leak scan clean: /jobs\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:33:14.163Z] cross-portal leak scan clean: /build-resume/review\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:33:14.317Z] cross-portal leak scan clean: /employer/applicants\n"
+                    },
+                    {
+                      "text": "[2026-10-03T01:33:14.473Z] cross-portal leak scan clean: /dashboard/interview\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T01:33:13.068Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5d397bef97edf8e1e791-cd351eb881fc5bc9c3c7",
+          "file": "dir006-funnel.spec.js",
+          "line": 460,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-03T01:32:26.567Z",
+    "duration": 48027.651,
+    "expected": 7,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

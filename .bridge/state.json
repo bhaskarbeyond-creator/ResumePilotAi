@@ -1,15 +1,15 @@
 {
-  "updatedAt": "2026-10-02T23:25:02.533Z",
-  "eventCount": 359,
+  "updatedAt": "2026-10-03T01:35:12.217Z",
+  "eventCount": 417,
   "activeDirectiveId": null,
   "activeDirectiveTitle": null,
   "activeDirectiveStatus": null,
-  "unreadForLead": 109,
-  "unreadForDev": 165,
+  "unreadForLead": 135,
+  "unreadForDev": 190,
   "pendingBlockers": 14,
   "latestHeartbeat": {
-    "timestamp": "2026-10-02T23:24:36.322Z",
-    "status": "Pass 40: adjudicating pass35 FAILs. Confirmed INV3.4 = units defect (char-offset compared to line-number; RequireAuthenticated L152 < route L579). Running git-truth consumer census at dd6c85d8 to settle AC3 14-vs-15.",
-    "percent": 40
+    "timestamp": "2026-10-03T01:26:52.160Z",
+    "status": "FULL FUNNEL GREEN: 7/7 Playwright tests PASS (EXIT=0) against live Vite:3000 + API:8080 + MariaDB. All stages 0 defects (console=0 pageErrors=0 failedApi=0). Verifying stability + build gate.",
+    "percent": 94
   }
 }

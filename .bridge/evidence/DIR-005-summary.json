@@ -1,0 +1,42 @@
+{
+  "directive": "DIR-005",
+  "generatedAt": "2026-10-02T22:35:13.623Z",
+  "overall": true,
+  "gates": [
+    {
+      "gate": "G1 build: zero errors, < 4s",
+      "passed": true,
+      "detail": "exit=0 builtIn=3.16s (<4s required)"
+    },
+    {
+      "gate": "G2 zero legacy Dashboard2 module imports",
+      "passed": true,
+      "detail": "exit=0 1173 files scanned"
+    },
+    {
+      "gate": "G3 all Dashboard2 facades resolve",
+      "passed": true,
+      "detail": "exit=0 FACADE_FAILURES=0"
+    },
+    {
+      "gate": "G4 5 repathed suites pass",
+      "passed": true,
+      "detail": "5/5 pass, 0 fail"
+    },
+    {
+      "gate": "G5 regression suites pass",
+      "passed": true,
+      "detail": "4/4 pass, 0 fail"
+    },
+    {
+      "gate": "G6 frozen surface intact + session guard preserved",
+      "passed": true,
+      "detail": "frozenDiffs=0 guarded=true"
+    },
+    {
+      "gate": "G7 live route crawl, zero console/page/response errors",
+      "passed": true,
+      "detail": "exit=0 routes=14 failures=0"
+    }
+  ]
+}

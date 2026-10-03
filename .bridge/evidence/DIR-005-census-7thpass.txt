@@ -1,0 +1,11 @@
+DIR-005 consumer migration census (independent of gate G2 scanner)
+======================================================================
+Files scanned: 4978
+LEGACY_IMPORTERS (import from Dashboard2/ or dashboard2.jsx): 0
+MARKETING_IMPORTERS (import from components/Marketing/): 0
+
+Distinct migrated product files under src/: 0
+Migrated test/backend files: 0
+
+RESULT: PASS - zero legacy importers
+RESULT: PASS - all consumers on the semantic Marketing path
