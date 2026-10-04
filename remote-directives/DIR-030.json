@@ -1,0 +1,17 @@
+{
+  "id": "DIR-030",
+  "title": "Phase 2 Second Review & v10.0 Protocol Re-Audit — Candidate Workspace & Navigation (Re-evaluating DIR-002, DIR-004, DIR-009, DIR-011)",
+  "priority": "P0",
+  "spec": "# Phase 2 Second Review Directive: Candidate Workspace & Navigation (DIR-030)\n**Governing Protocol:** SKILL.md v10.0 (AI Bridge Supervisor Master Edition)\n**Execution Schedule:** Sequenced immediately after DIR-029 in the Post-DIR-028 Second Review Pipeline.\n**Target Directives for Re-Audit:** DIR-002, DIR-004, DIR-009, DIR-011.\n\n## 1. Objective & Scope\nRe-evaluate and perform deep second review on Candidate Workspace, Navigation Header, Zero-FOUC Hydration, and Sub-Surfaces against v10.0 rules.\n\n## 2. Mandatory Verification Gates\n1. **§19 Zero-FOUC & Hydration Quality:** Hard refresh on candidate routes must exhibit 0ms theme/font flashing.\n2. **§21.1 Token Grounding:** 100% Cuba executive token grounding on CubaCandidateHero, stat cards, action buttons, and command palette.\n3. **§22 WCAG 2.2 AA:** Nav landmarks, focus visibility, keyboard navigation.\n4. **§2 Level 5 Playwright E2E:** Full verification against live MariaDB.",
+  "invariants": [
+    "INV-1: Resume Templates & ATS Engine strictly 0-byte diff.",
+    "INV-2: Zero-FOUC & instant theme hydration: Initial state must never flash unstyled content or default colors on hard refresh.",
+    "INV-3: Universal AppHeader command surface must preserve 100% backward compatibility for all portal shells."
+  ],
+  "acceptanceCriteria": [
+    "§19 Zero-FOUC & Hydration Quality: Zero theme flashing or layout shift on hard reload across /dashboard, /dashboard/resumes, and /dashboard/jobs.",
+    "§21.1 100% Token Grounding: Verify candidate hero, stat cards, quick pitch buttons, and resume grid cards strictly use Cuba semantic tokens. 0 legacy utility residue.",
+    "§22 Accessibility & Landmark Semantics: Unique <nav aria-label='Candidate workspace navigation'>, visible keyboard focus rings on all interactive elements, and zero focus traps in modal dialogs.",
+    "§2 Level 5 Playwright E2E Suite: All candidate navigation journeys, context switcher transitions, and resume actions pass with 100% green tests against live MariaDB."
+  ]
+}

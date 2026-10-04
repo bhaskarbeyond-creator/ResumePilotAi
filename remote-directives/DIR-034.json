@@ -1,0 +1,17 @@
+{
+  "id": "DIR-034",
+  "title": "Universal 10/10 Master Production Certification & Release Freeze (Platform-Wide 68-Route Real-DOM Audit & Cryptographic Seal)",
+  "priority": "P0",
+  "spec": "# Phase 2 Final Directive: Universal 10/10 Master Production Certification & Release Freeze (DIR-034)\n**Governing Protocol:** SKILL.md v10.0 (AI Bridge Supervisor Master Edition)\n**Execution Schedule:** Final gate executed after DIR-033 completion.\n**Target Directives for Re-Audit:** Platform-Wide Universal Crawl across all 68 routes.\n\n## 1. Objective & Scope\nConduct the ultimate platform-wide audit, full 68-route headless Playwright crawl, complete product test suite execution, and issue the immutable cryptographic production release seal.\n\n## 2. Mandatory Verification Gates\n1. **§85 12-Point Release Boundary Checklist:** Zero exceptions.\n2. **68-Route Automated Crawl:** Zero broken routes, zero 404s, zero console errors, zero layout shifts.\n3. **Full Regression Suite:** 656+ tests 100% green.\n4. **Production Bundle:** Vite build under 4.0s.\n5. **Cryptographic Release Freeze:** SHA-256 hash stamped by Antigravity Gatekeeper.",
+  "invariants": [
+    "INV-1: Complete platform invariants verified (CV templates, ATS score, database schema, security boundaries).",
+    "INV-2: Production build budget strictly < 4.0s with 0 ESLint errors and 0 asset hashing failures."
+  ],
+  "acceptanceCriteria": [
+    "§85 12-Point Gatekeeper Final Release Boundary Checklist: 100% satisfied with cryptographic evidence.",
+    "Universal 68-Route Real-DOM Automated Crawl: Headless Playwright crawler crawls all 68 public, candidate, recruiter, enterprise, and admin routes on live stack with 0 HTTP errors, 0 unhandled promise rejections, 0 console errors, and 0 blank viewports.",
+    "Full Product Test Regression Suite: 656+ product tests pass 100% green (npm run test:product).",
+    "Production Vite Build: npm run build completes in < 4.0s with clean bundle chunks.",
+    "Master Release Freeze: Antigravity issues cryptographic SHA-256 release seal and tag."
+  ]
+}
