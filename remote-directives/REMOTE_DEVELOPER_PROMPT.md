@@ -34,24 +34,34 @@ and synchronized into **`.bridge/directives/`**.
 
 ---
 
-## ⚡ QUICK START (60 SECONDS)
+## ⚡ INSTANT UPDATE (10 SECONDS FOR EXISTING CHECKOUT)
+
+If you already have the repository cloned:
 
 ```bash
-# 1. Clone or pull the repository
-git clone git@github.com:bhaskarbeyond-creator/ResumePilotAi.git
-cd ResumePilotAi
-git checkout arena/01a0e100-resumepilotai
+# Pull the latest synchronized branch (both main and arena branches are fully up-to-date)
+git pull origin main
+# OR if you are on the arena branch:
 git pull origin arena/01a0e100-resumepilotai
 
-# 2. Install dependencies
+# Verify all 40 directives are now present
+ls remote-directives/
+```
+
+All 40 directive JSON files (`DIR-001.json` through `DIR-040.json`), `README.md`, and this prompt will immediately appear in your working directory!
+
+---
+
+## 📦 FRESH CLONE INSTRUCTIONS
+
+```bash
+git clone git@github.com:bhaskarbeyond-creator/ResumePilotAi.git
+cd ResumePilotAi
 npm install
 cd backend && npm install && cd ..
 
-# 3. Verify repository baseline (must pass 67/67 with 0 fail)
+# Verify repository baseline (must pass 67/67 with 0 fail)
 npm run test:security:static
-
-# 4. Check all 40 directives
-ls remote-directives/
 ```
 
 ---
@@ -60,8 +70,8 @@ ls remote-directives/
 
 ```
 Repository:  git@github.com:bhaskarbeyond-creator/ResumePilotAi.git
-Branch:      arena/01a0e100-resumepilotai
-Baseline:    commit 5957d00b (contains full 40-directive suite in remote-directives/)
+Branches:    main (Default) OR arena/01a0e100-resumepilotai (Both fully synchronized)
+Baseline:    commit 910430b5 (contains full 40-directive suite in remote-directives/)
 ```
 
 ---
@@ -296,7 +306,9 @@ npm test
 git add .
 git commit -m "feat(<scope>): DIR-0XX <brief description> [freeze]"
 
-# 3. Push to the arena branch
+# 3. Push to your working branch (main or arena branch)
+git push origin main
+# OR:
 git push origin arena/01a0e100-resumepilotai
 ```
 
