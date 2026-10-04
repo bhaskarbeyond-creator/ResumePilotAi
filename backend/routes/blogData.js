@@ -16,8 +16,8 @@ router.use((req, res, next) => {
 function normalizePostPayload(p) {
     if (!p || typeof p !== 'object') return p;
     const cover = p.cover_image || p.coverImage || p.featuredImage || p.featured_image || null;
-    const category = p.category || p.categoryName || 'General';
-    const publishedAt = p.publishedAt || p.published_at || p.created_at || p.createdAt || new Date().toISOString();
+    const category = p.category || p.categoryName || '';
+    const publishedAt = p.publishedAt || p.published_at || p.created_at || p.createdAt || null;
     return {
         ...p,
         featuredImage: cover,

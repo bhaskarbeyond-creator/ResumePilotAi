@@ -49,9 +49,20 @@ test('public and employer media rendering uses safe image URL projections', asyn
   for (const source of [jobCard, companies, addCompany, blogAdmin]) assert.match(source, /sanitizeImageUrl/);
 });
 
-test('static sitemap contains only stable public routes and no fabricated dynamic discovery', async () => {
-  const sitemap = await fs.readFile('public/sitemap.xml', 'utf8');
+test('static sitemap fallback stays stable while live sitemap routes add only real regional listings', async () => {
+  const [sitemap, backend, service, htaccess, vite] = await Promise.all([
+    fs.readFile('public/sitemap.xml', 'utf8'),
+    fs.readFile('backend/index.js', 'utf8'),
+    fs.readFile('backend/services/publicSitemap.js', 'utf8'),
+    fs.readFile('public/.htaccess', 'utf8'),
+    fs.readFile('vite.config.js', 'utf8'),
+  ]);
   assert.doesNotMatch(sitemap, /dashboard|admin|editor|export|shared|portfolio\/[^<]|blog\/[^<]/);
   assert.match(sitemap, /https:\/\/(?:ai-resume-builder\.local|airesume\.projectdemo\.guru)\/blog/);
   assert.match(sitemap, /https:\/\/(?:ai-resume-builder\.local|airesume\.projectdemo\.guru)\/portfolios/);
+  assert.match(backend, /app\.get\('\/sitemap\.xml'/);
+  assert.match(service, /geoSeoEnabled === true/);
+  assert.match(service, /getRegionalJobs\([\s\S]*?limit:\s*1/);
+  assert.match(htaccess, /sitemap\\\.xml/);
+  assert.match(vite, /'\/sitemap\.xml'/);
 });

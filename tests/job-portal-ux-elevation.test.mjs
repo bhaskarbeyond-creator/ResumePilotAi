@@ -9,8 +9,9 @@ describe('Job Portal 10/10 UI/UX Elevation Verification Suite', () => {
     test('1. JobSearchBar.jsx has elevated hero, clear button, and quick trending filter pills', () => {
         const fileContent = fs.readFileSync(path.join(basePath, 'JobSearchBar.jsx'), 'utf8');
 
-        // Check for hero badge & gradient typography
-        assert.match(fileContent, /Verified Opportunities • 10,000\+ Active Roles/, 'Hero badge present');
+        // Discovery copy must not imply fabricated inventory, vetting, or hiring outcomes.
+        assert.match(fileContent, /Current public job listings/, 'Truthful public-listings badge present');
+        assert.doesNotMatch(fileContent, /10,000\+ Active Roles|Verified Opportunities|vetted employers|land your ideal role/, 'Unsupported job-market claims are absent');
         assert.match(fileContent, /bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600/, 'Gradient typography present');
 
         // Check for clear search button
@@ -21,7 +22,8 @@ describe('Job Portal 10/10 UI/UX Elevation Verification Suite', () => {
         assert.match(fileContent, /quickFilters/, 'quickFilters configuration array exists');
         assert.match(fileContent, /Remote/, 'Remote quick filter present');
         assert.match(fileContent, /Full-time/, 'Full-time quick filter present');
-        assert.match(fileContent, /\$120k\+/, 'High salary quick filter present');
+        assert.match(fileContent, /SALARY_FILTER_BANDS\[3\]\.key/, 'Salary quick filter shares the currency-aware band key');
+        assert.match(fileContent, /formatSalaryBandLabel/, 'Salary quick filter formats amounts in the active currency');
         assert.match(fileContent, /handleQuickFilterClick/, 'Quick filter click handler implemented');
     });
 
@@ -95,11 +97,9 @@ describe('Job Portal 10/10 UI/UX Elevation Verification Suite', () => {
     test('5. JobDetailsModal.jsx has no orphaned expressions, wires bookmark saving, and has smooth slide-over', () => {
         const fileContent = fs.readFileSync(path.join(basePath, 'JobDetailsModal.jsx'), 'utf8');
 
-        // Check named functions (no orphaned expressions)
-        assert.match(fileContent, /const toggleSection =/, 'toggleSection is properly named');
-        assert.match(fileContent, /const renderStars =/, 'renderStars is properly named');
-        assert.doesNotMatch(fileContent, /\(section\)\s*=>\s*\{;/, 'No dangling unassigned section arrow function');
-        assert.doesNotMatch(fileContent, /\(rating\)\s*=>\s*\{;/, 'No dangling unassigned rating arrow function');
+        assert.doesNotMatch(fileContent, /companyRating|companyReviews|50 - 250 employees|Comprehensive Healthcare|Fast-Track Application|Competitive/, 'The modal does not invent employer facts, benefits, or application advantages');
+        assert.match(fileContent, /role="dialog"[\s\S]*aria-modal="true"/, 'Modal semantics and accessible name are provided');
+        assert.match(fileContent, /job-detail-tab-overview/, 'Keyboard-accessible tab controls are present');
 
         // Check save bookmark wiring
         assert.match(fileContent, /activeToggleSaved/, 'Bookmark toggle properly wired in drawer footer');

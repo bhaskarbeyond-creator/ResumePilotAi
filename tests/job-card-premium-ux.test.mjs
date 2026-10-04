@@ -7,18 +7,19 @@ test('JobCard Premium UX Enhancement Suite', async (t) => {
     const jobCardPath = path.resolve('src/components/JobsListings/JobCard.jsx');
     const source = fs.readFileSync(jobCardPath, 'utf8');
 
-    await t.test('1. Verified employer badge is present in company row', () => {
-        assert.match(source, /title="Verified Employer"/, 'Verified employer badge title attribute exists');
-        assert.match(source, /FaCheckCircle/, 'Check circle icon used for verified badge');
+    await t.test('1. Employer verification is never claimed without an authoritative verification field', () => {
+        assert.doesNotMatch(source, /Verified Employer|title="Verified Employer"/, 'No unsupported verification badge is shown');
+        assert.match(source, /Employer not listed/, 'Missing employer names are stated honestly');
     });
 
     await t.test('2. Duplicate date is removed from header metadata row', () => {
-        // The top metadata row should only contain Location, Applicants, and Actively Hiring
+        // The metadata row contains public facts only; posting date is kept in the footer.
         const metaRowMatch = source.match(/{\/\* Metadata Row[\s\S]*?{\/\* Bookmark Button/);
         assert.ok(metaRowMatch, 'Metadata row section found');
         const metaContent = metaRowMatch[0];
         assert.ok(!metaContent.includes('job.postedDate'), 'job.postedDate must NOT be in top metadata row');
-        assert.match(metaContent, /Actively Hiring/, 'Actively Hiring status badge present in metadata');
+        assert.match(metaContent, /Active listing/, 'Status label reflects the API listing state');
+        assert.doesNotMatch(metaContent, /Actively Hiring/, 'No unsupported hiring-intent claim is added');
     });
 
     await t.test('3. Date is formatted via formatPostedDate in the footer', () => {

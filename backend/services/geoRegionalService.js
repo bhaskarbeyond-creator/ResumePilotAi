@@ -31,7 +31,7 @@ const CANONICAL_STATES = Object.freeze([
     { slug: 'karnataka', name: 'Karnataka', aliases: ['karnataka', 'bengaluru', 'bangalore'] },
     { slug: 'telangana', name: 'Telangana', aliases: ['telangana', 'hyderabad', 'secunderabad'] },
     { slug: 'maharashtra', name: 'Maharashtra', aliases: ['maharashtra', 'mumbai', 'bombay', 'pune', 'pimpri-chinchwad', 'nagpur'] },
-    { slug: 'delhi', name: 'Delhi NCR', aliases: ['delhi ncr', 'delhi-ncr', 'new delhi', 'noida', 'gurgaon', 'gurugram', 'faridabad', 'ghaziabad'] },
+    { slug: 'delhi', name: 'Delhi NCR', aliases: ['delhi', 'delhi ncr', 'delhi-ncr', 'new delhi', 'noida', 'gurgaon', 'gurugram', 'faridabad', 'ghaziabad'] },
     { slug: 'tamil-nadu', name: 'Tamil Nadu', aliases: ['tamil nadu', 'chennai', 'madras', 'coimbatore'] },
 ]);
 
@@ -70,6 +70,14 @@ function listCanonicalRegions() {
     };
 }
 
+/** Keep the indexed columns in sync with new or edited employer postings. */
+function projectRegionLocation(location) {
+    const normalized = String(location || '').toLowerCase();
+    const city = CANONICAL_CITIES.find(region => region.aliases.some(alias => normalized.includes(alias)));
+    const state = CANONICAL_STATES.find(region => region.aliases.some(alias => normalized.includes(alias)));
+    return { region_city: city?.slug || null, region_state: state?.slug || null };
+}
+
 /**
  * Build the parameterized LIKE predicate for a region.
  *
@@ -91,32 +99,66 @@ function buildLocationMatch(region) {
  * and every derived statistic explicitly null, so the UI is forced to render an
  * empty state instead of a zero-filled "benchmark".
  */
-function summarizeRegion(region, rows) {
+function summarizeRegion(region, rows, authoritativeStats = null) {
     const list = Array.isArray(rows) ? rows : [];
-    const salaries = [];
-    let min = null;
-    let max = null;
+    const salaryBuckets = new Map();
     const companies = new Map();
 
     for (const row of list) {
+        const currency = String(row.salary_currency ?? row.salaryCurrency ?? '').trim().toUpperCase();
         const low = Number(row.salary_min ?? row.salaryMin);
         const high = Number(row.salary_max ?? row.salaryMax);
-        if (Number.isFinite(low) && low > 0) {
-            salaries.push(low);
-            min = min === null ? low : Math.min(min, low);
-        }
-        if (Number.isFinite(high) && high > 0) {
-            salaries.push(high);
-            max = max === null ? high : Math.max(max, high);
+        if (/^[A-Z]{3}$/.test(currency)) {
+            const bucket = salaryBuckets.get(currency) || { values: [], min: null, max: null };
+            if (Number.isFinite(low) && low > 0) {
+                bucket.values.push(low);
+                bucket.min = bucket.min === null ? low : Math.min(bucket.min, low);
+            }
+            if (Number.isFinite(high) && high > 0) {
+                bucket.values.push(high);
+                bucket.max = bucket.max === null ? high : Math.max(bucket.max, high);
+            }
+            salaryBuckets.set(currency, bucket);
         }
         const company = String(row.company_name ?? row.companyName ?? '').trim();
         if (company) companies.set(company, (companies.get(company) || 0) + 1);
     }
 
-    const vacancyCount = list.length;
-    const average = salaries.length
-        ? Math.round(salaries.reduce((total, value) => total + value, 0) / salaries.length)
-        : null;
+    const derivedSalaryRanges = [...salaryBuckets.entries()]
+        .filter(([, bucket]) => bucket.values.length > 0)
+        .sort(([currencyA], [currencyB]) => currencyA.localeCompare(currencyB))
+        .map(([currency, bucket]) => {
+            const average = Math.round(bucket.values.reduce((total, value) => total + value, 0) / bucket.values.length);
+            return {
+                currency,
+                unit: currency === 'INR' ? 'LPA' : 'annual',
+                minAnnual: bucket.min,
+                maxAnnual: bucket.max,
+                averageAnnual: average,
+                minLpa: currency === 'INR' && bucket.min !== null ? Number((bucket.min / 100000).toFixed(2)) : null,
+                maxLpa: currency === 'INR' && bucket.max !== null ? Number((bucket.max / 100000).toFixed(2)) : null,
+                averageLpa: currency === 'INR' ? Number((average / 100000).toFixed(2)) : null,
+            };
+        });
+
+    const vacancyCount = Number.isFinite(Number(authoritativeStats?.vacancyCount))
+        ? Math.max(0, Number(authoritativeStats.vacancyCount))
+        : list.length;
+    const topCompanies = Array.isArray(authoritativeStats?.topCompanies)
+        ? authoritativeStats.topCompanies.map(entry => ({
+            name: String(entry?.name || '').trim(),
+            openings: Math.max(0, Number(entry?.openings) || 0),
+        })).filter(entry => entry.name)
+        : [...companies.entries()]
+            .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+            .slice(0, 8)
+            .map(([name, openings]) => ({ name, openings }));
+    const salaryRanges = Array.isArray(authoritativeStats?.salaryRanges)
+        ? authoritativeStats.salaryRanges
+        : derivedSalaryRanges;
+    const companyCount = Number.isFinite(Number(authoritativeStats?.companyCount))
+        ? Math.max(0, Number(authoritativeStats.companyCount))
+        : companies.size;
 
     return {
         kind: region.kind,
@@ -126,34 +168,24 @@ function summarizeRegion(region, rows) {
         stateName: region.stateName,
         vacancyCount,
         hasVacancies: vacancyCount > 0,
-        // The jobs table stores salary_min/salary_max as annual INR figures, so
-        // the benchmark band is reported in lakhs (INR LPA) exactly as AC-1 asks,
-        // with the raw authoritative integers retained for auditing.
-        salary: {
-            currency: 'INR',
-            unit: 'LPA',
-            minAnnual: min,
-            maxAnnual: max,
-            averageAnnual: average,
-            minLpa: min === null ? null : Number((min / 100000).toFixed(2)),
-            maxLpa: max === null ? null : Number((max / 100000).toFixed(2)),
-            averageLpa: average === null ? null : Number((average / 100000).toFixed(2)),
-        },
-        companyCount: companies.size,
-        topCompanies: [...companies.entries()]
-            .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-            .slice(0, 8)
-            .map(([name, openings]) => ({ name, openings })),
+        // Salary records are never blended across currencies. The repository's
+        // grouped query supplies complete aggregate bands; direct unit callers
+        // derive the same shape from the rows they pass.
+        salaryRanges,
+        companyCount,
+        topCompanies,
         vacancies: list.slice(0, 24).map(row => ({
-            id: String(row.id),
+            id: String(row.id || ''),
             title: String(row.title || ''),
             company: String(row.company_name ?? row.companyName ?? ''),
             location: String(row.location || ''),
             workplaceType: String(row.workplace_type ?? row.workplaceType ?? ''),
             jobType: String(row.job_type ?? row.jobType ?? ''),
-            salaryMin: Number(row.salary_min ?? row.salaryMin) || null,
-            salaryMax: Number(row.salary_max ?? row.salaryMax) || null,
-            salaryCurrency: String(row.salary_currency ?? row.salaryCurrency ?? 'INR'),
+            salaryMin: Number(row.salary_min ?? row.salaryMin) > 0 ? Number(row.salary_min ?? row.salaryMin) : null,
+            salaryMax: Number(row.salary_max ?? row.salaryMax) > 0 ? Number(row.salary_max ?? row.salaryMax) : null,
+            salaryCurrency: /^[A-Z]{3}$/.test(String(row.salary_currency ?? row.salaryCurrency ?? '').trim().toUpperCase())
+                ? String(row.salary_currency ?? row.salaryCurrency).trim().toUpperCase()
+                : null,
         })),
     };
 }
@@ -164,6 +196,7 @@ module.exports = {
     buildLocationMatch,
     isCanonicalSlug,
     listCanonicalRegions,
+    projectRegionLocation,
     resolveRegion,
     summarizeRegion,
 };

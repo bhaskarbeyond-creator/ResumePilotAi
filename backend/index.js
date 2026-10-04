@@ -42,7 +42,7 @@ const { getPool } = require('./database/mysql');
 const paymentActivation = require('./services/paymentActivation');
 const { reconcileStripeChargeRefund } = require('./services/refundReferences');
 const { executeOrReconcileProviderRefund, refundFlowError } = require('./services/providerRefunds');
-const { normalizeLlmDiscoverySettings } = require('./services/discoveryMetadata');
+const { normalizeLlmDiscoverySettings, normalizeGeoSeoSettings } = require('./services/discoveryMetadata');
 const { publishDueBlogPosts } = require('./services/cmsScheduler');
 // DIR-022 / AC-3: the subscription reconciler worker and its operator-facing
 // single-account entry point (AC-5).
@@ -75,6 +75,8 @@ const { supportUserRouter, supportAdminRouter } = require('./routes/support');
 const indianGatewayActivation = require('./services/indianGatewayActivation');
 const { maybeQueueReadyzAlert } = require('./services/readyzAlerts');
 const { jobsDataRouter } = require('./routes/jobsData');
+const { publicDiscoveryRouter } = require('./routes/publicDiscovery');
+const { buildPublicSitemapXml } = require('./services/publicSitemap');
 const { blogDataRouter } = require('./routes/blogData');
 const { notificationsDataRouter } = require('./routes/notificationsData');
 const { usersDataRouter } = require('./routes/usersData');
@@ -391,6 +393,7 @@ const publicApiPaths = new Set([
     '/auth/github', '/auth/github/callback', '/auth/oauth/exchange', '/auth/preview-login',
     '/public/custom-pages', '/public/custom-pages.json',
     '/public/trusted-by', '/public/trusted-by.json', '/public/featured-companies',
+    '/public/geo/regions',
     '/custom-pages', '/custom-pages.json',
     '/trusted-by', '/trusted-by.json',
     '/blog-data', '/blog-data/categories', '/jobs-data',
@@ -407,7 +410,10 @@ function isPublicApiPath(pathname) {
         || /^\/jobs-data\/[a-z0-9](?:[a-z0-9_-]{0,127})$/i.test(pathname)
         || /^\/phrases\/[a-z0-9](?:[a-z0-9_-]{0,127})$/i.test(pathname)
         || /^\/portfolios\/public\/[a-z0-9](?:[a-z0-9-]{0,178}[a-z0-9])?$/.test(pathname)
-        || /^\/public\/custom-pages\/[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/.test(pathname);
+        || /^\/public\/custom-pages\/[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/.test(pathname)
+        || /^\/public\/geo\/regions\/(?:city|in)\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/.test(pathname)
+        || /^\/public\/jobs\/[a-z0-9_-]{1,128}\/og\.png$/.test(pathname)
+        || /^\/public\/blog\/[a-z0-9](?:[a-z0-9-]{0,178}[a-z0-9])?\/og\.png$/.test(pathname);
 }
 // Enterprise API authentication accepts exactly one credential kind per request:
 // a Firebase bearer token (tenant member or support elevation) or an x-api-key
@@ -443,6 +449,7 @@ app.use('/api/portfolios', portfoliosRouter);
 app.use('/api/covers', coversRouter);
 app.use('/api/support', supportUserRouter);
 app.use('/api/jobs-data', jobsDataRouter);
+app.use('/api/public', publicDiscoveryRouter);
 app.use('/api/blog-data', blogDataRouter);
 app.use('/api/notifications-data', notificationsDataRouter);
 app.use('/api/users-data', usersDataRouter);
@@ -2897,6 +2904,15 @@ function requiresRecentGenericSettingAuth(category, data, clearSecrets) {
 
 function publicAdminSettings(category, data) {
     if (category === 'codeInjection') return {};
+    if (category === 'llmGeo') {
+        const source = data && typeof data === 'object' && !Array.isArray(data) ? data : {};
+        return {
+            enableLlmGeo: source.enableLlmGeo === true,
+            llmsTxtContent: String(source.llmsTxtContent || ''),
+            llmsFullTxtContent: String(source.llmsFullTxtContent || ''),
+        };
+    }
+    if (category === 'geoSeo') return normalizeGeoSeoSettings(data);
     if (['smtp', 'fallbackSmtp', 'imap'].includes(category)) return { enabled: data.enabled === true };
     const redact = value => {
         if (Array.isArray(value)) return value.map(redact);
@@ -3016,6 +3032,7 @@ app.post('/api/admin/settings/:category', async (req, res) => {
         let normalized = normalizeAdminSettingValue(req.body.data);
         if (category === 'landingMarketing') normalized = normalizeLandingMarketingSettings(normalized);
         if (category === 'llmGeo') normalized = normalizeLlmDiscoverySettings(normalized);
+        if (category === 'geoSeo') normalized = normalizeGeoSeoSettings(normalized);
         let publicSettings;
         const expectedRevision = Number(req.body?.expectedRevision);
         if (!Number.isInteger(expectedRevision) || expectedRevision < 0) {
@@ -3052,7 +3069,7 @@ app.post('/api/admin/settings/:category', async (req, res) => {
             }
             revision = currentRevision + 1;
             const currentCategory = currentAdmin[category] ?? currentPublic[category];
-            const mergedInput = category === 'landingMarketing'
+            const mergedInput = ['landingMarketing', 'llmGeo', 'geoSeo'].includes(category)
                 ? normalized
                 : mergeAdminSettingCategory(currentCategory, normalized);
             const withClears = applyExplicitAdminSecretClears(category, currentCategory, mergedInput, req.body?.clearSecrets);
@@ -4006,23 +4023,56 @@ app.post('/api/send-sms', requireRecentAdminAuthentication, async (req, res) => 
     }
 });
 
-// MariaDB-authoritative, explicitly enabled discovery metadata. An outage or
-// incomplete configuration never falls back to promotional copy.
-app.get('/llms.txt', async (_req, res) => {
+// MariaDB-authoritative, explicitly enabled discovery metadata. The two
+// public documents share the same enable switch and strict validator. Invalid
+// stored content fails closed as unpublished; only a genuine repository outage
+// returns 503.
+async function serveLlmDiscoveryDocument(res, field, label) {
     res.setHeader('Cache-Control', 'no-store');
     try {
         const publicConfig = await getRepository().getSetting('public_config');
         const llmGeo = normalizeLlmDiscoverySettings(publicConfig?.llmGeo || {});
-        if (!llmGeo.enableLlmGeo || !llmGeo.llmsTxtContent) {
-            return res.status(404).type('text/plain').send('LLM discovery metadata is not published.\n');
+        const content = llmGeo.enableLlmGeo ? llmGeo[field] : '';
+        if (!content) {
+            return res.status(404).type('text/plain').send(`${label} is not published.\n`);
         }
-        return res.type('text/plain').send(`${llmGeo.llmsTxtContent}\n`);
+        return res.status(200).type('text/plain').send(`${content}\n`);
     } catch (error) {
+        // Stored invalid drafts are configuration, not a database outage. They
+        // remain undiscoverable until an operator repairs and republishes them.
         if (error.status === 400) {
-            return res.status(503).type('text/plain').send('LLM discovery metadata is unavailable.\n');
+            return res.status(404).type('text/plain').send(`${label} is not published.\n`);
         }
-        console.error('[llms.txt]', { code: error.code, requestId: res.locals.requestId });
-        return res.status(503).type('text/plain').send('LLM discovery metadata is unavailable.\n');
+        console.error(`[${label}]`, { code: error.code || 'DISCOVERY_DOCUMENT_UNAVAILABLE', requestId: res.locals.requestId });
+        return res.status(503).type('text/plain').send(`${label} is temporarily unavailable.\n`);
+    }
+}
+
+app.get('/llms.txt', (_req, res) => serveLlmDiscoveryDocument(res, 'llmsTxtContent', 'llms.txt'));
+app.get('/llms-full.txt', (_req, res) => serveLlmDiscoveryDocument(res, 'llmsFullTxtContent', 'llms-full.txt'));
+
+// The sitemap keeps the seven stable public routes and adds regional hubs only
+// when Geo-SEO is enabled AND the authoritative jobs table contains a current
+// active, unexpired posting for that exact canonical region. No empty/noindex
+// regional page is advertised to crawlers.
+app.get('/sitemap.xml', async (_req, res) => {
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    try {
+        const repository = getRepository();
+        const publicConfig = await repository.getSetting('public_config');
+        const geoSeo = normalizeGeoSeoSettings(publicConfig?.geoSeo || {});
+        const canonicalOrigin = geoSeo.canonicalUrl || `${protocol}://${websiteName}`;
+        const xml = await buildPublicSitemapXml({
+            repository,
+            geoSeoEnabled: geoSeo.enableGeoSeo,
+            canonicalOrigin,
+        });
+        return res.status(200).type('application/xml').send(xml);
+    } catch (error) {
+        res.setHeader('Cache-Control', 'no-store');
+        console.error('[public sitemap]', { code: error.code || 'SITEMAP_UNAVAILABLE', requestId: res.locals.requestId });
+        return res.status(503).type('text/plain').send('The public sitemap is temporarily unavailable.\n');
     }
 });
 

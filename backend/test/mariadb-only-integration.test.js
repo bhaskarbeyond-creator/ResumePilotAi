@@ -99,6 +99,7 @@ mariaTest('CERTIFICATION: public configuration loads from MariaDB only', async (
 
 mariaTest('CERTIFICATION: llms.txt is default-off, claim-validated, audited, and MariaDB-backed', async () => {
     await request(app).get('/llms.txt').expect(404);
+    await request(app).get('/llms-full.txt').expect(404);
     const settings = await request(app).get('/api/admin/settings').set(bearer('super-admin')).expect(200);
     const expectedRevision = Number(settings.body.revisions?.llmGeo || 0);
 
@@ -113,17 +114,21 @@ mariaTest('CERTIFICATION: llms.txt is default-off, claim-validated, audited, and
     assert.equal(rejected.body.code, 'LLMS_UNSUPPORTED_CLAIM');
 
     const document = '# ResumePilot AI\nBrowser-based tools for editing and exporting resumes and cover letters.';
+    const fullDocument = `${document}\n\n## Application data\nFirebase Authentication verifies identity and MariaDB stores application data.`;
     const published = await request(app)
         .post('/api/admin/settings/llmGeo')
         .set(bearer('super-admin'))
-        .send({ expectedRevision, data: { enableLlmGeo: true, llmsTxtContent: document } })
+        .send({ expectedRevision, data: { enableLlmGeo: true, llmsTxtContent: document, llmsFullTxtContent: fullDocument } })
         .expect(200);
     assert.equal(published.body.settings.enableLlmGeo, true);
-    assert.deepEqual(Object.keys(published.body.settings).sort(), ['enableLlmGeo', 'llmsTxtContent']);
+    assert.deepEqual(Object.keys(published.body.settings).sort(), ['enableLlmGeo', 'llmsFullTxtContent', 'llmsTxtContent']);
 
     const publicDocument = await request(app).get('/llms.txt').expect(200);
     assert.match(publicDocument.headers['content-type'], /^text\/plain/);
     assert.equal(publicDocument.text.trim().replace(/\s+/g, ' '), document.replace(/\s+/g, ' '));
+    const publicFullDocument = await request(app).get('/llms-full.txt').expect(200);
+    assert.match(publicFullDocument.headers['content-type'], /^text\/plain/);
+    assert.equal(publicFullDocument.text.trim().replace(/\s+/g, ' '), fullDocument.replace(/\s+/g, ' '));
 
     await request(app)
         .post('/api/admin/settings/llmGeo')

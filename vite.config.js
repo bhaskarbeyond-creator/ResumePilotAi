@@ -54,6 +54,9 @@ function firebaseAuthOnlyBundlePlugin() {
 export default defineConfig({
     plugins: [tailwindcss(), react(), buildIdentityPlugin(), firebaseAuthOnlyBundlePlugin()],
     build: {
+        // Gzip-size reporting adds a post-build pass over the multi-entry bundle;
+        // omit that diagnostic work without changing emitted production assets.
+        reportCompressedSize: false,
         rollupOptions: {
             input: {
                 main: 'index.html',
@@ -106,6 +109,21 @@ export default defineConfig({
         },
         proxy: {
             '/api': {
+                target: process.env.VITE_DEV_BACKEND_URL || 'http://localhost:8080',
+                changeOrigin: false,
+            },
+            // These discovery resources are backend-owned and MariaDB-backed;
+            // keeping the browser URL same-origin lets live Playwright/preview
+            // traffic exercise the same endpoints without localhost calls.
+            '/llms.txt': {
+                target: process.env.VITE_DEV_BACKEND_URL || 'http://localhost:8080',
+                changeOrigin: false,
+            },
+            '/llms-full.txt': {
+                target: process.env.VITE_DEV_BACKEND_URL || 'http://localhost:8080',
+                changeOrigin: false,
+            },
+            '/sitemap.xml': {
                 target: process.env.VITE_DEV_BACKEND_URL || 'http://localhost:8080',
                 changeOrigin: false,
             },

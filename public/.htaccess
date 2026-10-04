@@ -27,7 +27,7 @@
   # api/index.php: the VirtualHost's "ProxyPass /api" is evaluated before
   # .htaccess rewriting, so a rewrite targeting api/index.php is re-proxied to
   # the backend as /api/index.php and never executes the PHP proxy.
-  RewriteRule ^(healthz|readyz|llms\.txt|public/.*\.json)$ http://127.0.0.1:8080/$1 [P,L,QSA]
+  RewriteRule ^(healthz|readyz|llms\.txt|llms-full\.txt|sitemap\.xml|public/.*\.json)$ http://127.0.0.1:8080/$1 [P,L,QSA]
 
   # Route all non-file/directory requests to SPA index.html
   RewriteCond %{REQUEST_FILENAME} !-f

@@ -2,13 +2,14 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { sanitizeBlogHtml, sanitizeImageUrl } from '../../../utils/sanitizeHtml';
-import { getBlogPostBySlug, listBlogPosts } from '../../../services/api/platform';
+import { fetchPublicConfig, getBlogPostBySlug, listBlogPosts } from '../../../services/api/platform';
 import { AuthContext } from '../../../context/AuthContext';
 import Spinner from '../../Spinner/Spinner';
 import HomepageNavbar from '../../Marketing/elements/HomepageNavbar';
 import HomepageFooter from '../../Marketing/elements/HomepageFooter';
 import '../../Marketing/public-site.css';
 import fire from '../../../conf/fire';
+import { safeJsonLd, schemaDate, schemaText, safeSchemaUrl } from '../../../services/seo/structuredData';
 import { 
   FaArrowLeft, 
   FaCalendarAlt, 
@@ -19,6 +20,42 @@ import {
   FaArrowRight,
   FaUser
 } from 'react-icons/fa';
+
+function setHeadMeta(selector, attributes) {
+  let element = document.head.querySelector(selector);
+  if (!element) {
+    element = document.createElement('meta');
+    document.head.appendChild(element);
+  }
+  Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, String(value)));
+  element.removeAttribute('data-route-seo-owner');
+  return element;
+}
+
+function canonicalOriginFor(config, currentOrigin) {
+  if (config?._settingsSource !== 'mariadb') return currentOrigin;
+  try {
+    const candidate = new URL(String(config?.geoSeo?.canonicalUrl || '').trim());
+    if (candidate.protocol === 'https:' && !candidate.username && !candidate.password
+      && !candidate.search && !candidate.hash && (!candidate.pathname || candidate.pathname === '/')) {
+      return candidate.origin;
+    }
+  } catch { /* use the current origin when MariaDB has no canonical base */ }
+  return currentOrigin;
+}
+
+function clearArticleMetadata() {
+  document.title = 'Article unavailable — IME365';
+  setHeadMeta('meta[name="robots"]', { name: 'robots', content: 'noindex,nofollow' });
+  setHeadMeta('meta[name="description"]', { name: 'description', content: 'This article is currently unavailable.' });
+  document.head.querySelector('link[rel="canonical"]')?.remove();
+  [
+    'meta[property="og:title"]', 'meta[property="og:description"]', 'meta[property="og:type"]',
+    'meta[property="og:url"]', 'meta[property="og:site_name"]', 'meta[property="og:image"]',
+    'meta[property="og:image:alt"]', 'meta[property="og:image:type"]', 'meta[name="twitter:card"]',
+    'meta[name="twitter:title"]', 'meta[name="twitter:description"]', 'meta[name="twitter:image"]',
+  ].forEach(selector => document.head.querySelector(selector)?.remove());
+}
 
 export default function BlogPost() {
   const { t } = useTranslation('common');
@@ -31,6 +68,9 @@ export default function BlogPost() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [canonicalOrigin, setCanonicalOrigin] = useState(
+    typeof window !== 'undefined' ? window.location.origin : 'https://ime365.com',
+  );
 
   const authBtnHandler = () => {
     navigate('/');
@@ -51,23 +91,69 @@ export default function BlogPost() {
     setError(null);
     setPost(null);
 
+    clearArticleMetadata();
+    document.title = 'Loading article — IME365';
+
     getBlogPostBySlug(slug)
       .then(async (postData) => {
         if (!active) return;
         if (!postData) {
+          clearArticleMetadata();
           setError('Article not found.');
           setLoading(false);
           return;
         }
 
-        setPost(postData);
-        document.title = `${postData.title} — IME365`;
+        const isPublished = postData.published === true || Number(postData.published) === 1;
+        let config = null;
+        try { config = await fetchPublicConfig(); } catch { /* retain the current origin */ }
+        if (!active) return;
 
-        // Update robots meta tag
-        const robotsMeta = document.querySelector('meta[name="robots"]') || document.createElement('meta');
-        robotsMeta.setAttribute('name', 'robots');
-        robotsMeta.setAttribute('content', postData.published ? 'index,follow' : 'noindex,nofollow');
-        if (!robotsMeta.parentNode) document.head.appendChild(robotsMeta);
+        const canonicalBase = canonicalOriginFor(config, window.location.origin);
+        setCanonicalOrigin(canonicalBase);
+        const articleSlug = postData.slug || slug;
+        const canonicalUrl = isPublished
+          ? new URL(`/blog/${encodeURIComponent(articleSlug)}`, canonicalBase).href
+          : '';
+        const rawCover = sanitizeImageUrl(postData.featuredImage || postData.coverImage || postData.cover_image);
+        const safeCover = rawCover ? safeSchemaUrl(rawCover, canonicalBase) : '';
+        const socialImage = safeCover || (isPublished
+          ? new URL(`/api/public/blog/${encodeURIComponent(articleSlug)}/og.png`, canonicalBase).href
+          : '');
+        const title = schemaText(postData.title, 255) || 'Career article';
+        const description = schemaText(postData.seoDescription || postData.metaDescription || postData.excerpt || title, 300);
+
+        setPost(postData);
+        document.title = `${title} — IME365`;
+        setHeadMeta('meta[name="robots"]', {
+          name: 'robots', content: isPublished ? 'index,follow' : 'noindex,nofollow',
+        });
+        setHeadMeta('meta[name="description"]', { name: 'description', content: description });
+        if (isPublished) {
+          let canonical = document.head.querySelector('link[rel="canonical"]');
+          if (!canonical) { canonical = document.createElement('link'); document.head.appendChild(canonical); }
+          canonical.setAttribute('rel', 'canonical');
+          canonical.setAttribute('href', canonicalUrl);
+          canonical.removeAttribute('data-route-seo-owner');
+          setHeadMeta('meta[property="og:title"]', { property: 'og:title', content: `${title} — IME365` });
+          setHeadMeta('meta[property="og:description"]', { property: 'og:description', content: description });
+          setHeadMeta('meta[property="og:type"]', { property: 'og:type', content: 'article' });
+          setHeadMeta('meta[property="og:url"]', { property: 'og:url', content: canonicalUrl });
+          setHeadMeta('meta[property="og:site_name"]', { property: 'og:site_name', content: 'IME365' });
+          setHeadMeta('meta[property="og:image"]', { property: 'og:image', content: socialImage });
+          setHeadMeta('meta[property="og:image:alt"]', { property: 'og:image:alt', content: title });
+          if (safeCover) document.head.querySelector('meta[property="og:image:type"]')?.remove();
+          else setHeadMeta('meta[property="og:image:type"]', { property: 'og:image:type', content: 'image/png' });
+          setHeadMeta('meta[name="twitter:card"]', { name: 'twitter:card', content: 'summary_large_image' });
+          setHeadMeta('meta[name="twitter:title"]', { name: 'twitter:title', content: `${title} — IME365` });
+          setHeadMeta('meta[name="twitter:description"]', { name: 'twitter:description', content: description });
+          setHeadMeta('meta[name="twitter:image"]', { name: 'twitter:image', content: socialImage });
+        } else {
+          clearArticleMetadata();
+          document.title = `${title} — IME365`;
+          setHeadMeta('meta[name="robots"]', { name: 'robots', content: 'noindex,nofollow' });
+          setHeadMeta('meta[name="description"]', { name: 'description', content: description });
+        }
 
         // Fetch related articles
         try {
@@ -82,6 +168,7 @@ export default function BlogPost() {
       })
       .catch((err) => {
         if (active) {
+          clearArticleMetadata();
           setError(err.message || 'Unable to load article.');
           setLoading(false);
         }
@@ -113,19 +200,20 @@ export default function BlogPost() {
   };
 
   const calculateReadingTime = (content) => {
-    if (!content) return '3 min read';
+    if (!content) return '';
     const words = content.replace(/<[^>]*>/g, '').split(/\s+/).filter(Boolean).length;
     const mins = Math.max(1, Math.ceil(words / 200));
     return `${mins} min read`;
   };
 
   const formatDate = (val) => {
-    if (!val) return 'Recent';
+    if (!val) return 'Publication date not provided';
     try {
       const d = new Date(val);
+      if (!Number.isFinite(d.getTime())) return 'Publication date unavailable';
       return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
     } catch (_) {
-      return 'Recent';
+      return 'Publication date unavailable';
     }
   };
 
@@ -166,8 +254,18 @@ export default function BlogPost() {
   }
 
   const cover = sanitizeImageUrl(post.featuredImage || post.coverImage || post.cover_image);
-  const categoryName = post.category || post.categoryName || 'Career Guide';
+  const isPublished = post.published === true || Number(post.published) === 1;
+  const articleSlug = post.slug || slug;
+  const articleCanonical = isPublished
+    ? new URL(`/blog/${encodeURIComponent(articleSlug)}`, canonicalOrigin).href
+    : '';
+  const categoryName = post.category || post.categoryName || '';
   const cleanHtml = sanitizeBlogHtml(post.content || '');
+  const articleImage = cover
+    ? (safeSchemaUrl(cover, canonicalOrigin) || undefined)
+    : (isPublished ? safeSchemaUrl(`/api/public/blog/${encodeURIComponent(articleSlug)}/og.png`, canonicalOrigin) || undefined : undefined);
+  const authorName = [post.authorName, post.author_name, post.author]
+    .find(value => typeof value === 'string' && value.trim());
 
   return (
     <div className="rp-public-site">
@@ -197,29 +295,30 @@ export default function BlogPost() {
       )}
 
       {/* JSON-LD Structured Data */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'BlogPosting',
-            headline: post.title,
-            description: post.excerpt || post.seoDescription || post.title,
-            image: cover || undefined,
-            datePublished: post.publishedAt || post.createdAt,
-            dateModified: post.updatedAt || post.publishedAt || post.createdAt,
-            author: {
-              '@type': 'Person',
-              name: post.authorName || 'IME365 Editorial Team'
-            },
-            publisher: {
-              '@type': 'Organization',
-              name: 'IME365',
-              url: 'https://ime365.com'
-            }
-          })
-        }}
-      />
+      {isPublished && (
+        <script
+          id="blog-post-structured-data"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: safeJsonLd({
+              '@context': 'https://schema.org',
+              '@type': 'BlogPosting',
+              headline: schemaText(post.title, 255),
+              description: schemaText(post.seoDescription || post.metaDescription || post.excerpt || post.title, 1000),
+              ...(articleImage ? { image: articleImage } : {}),
+              ...(articleCanonical ? { mainEntityOfPage: { '@type': 'WebPage', '@id': articleCanonical } } : {}),
+              datePublished: schemaDate(post.publishedAt || post.published_at || post.createdAt || post.created_at),
+              dateModified: schemaDate(post.updatedAt || post.updated_at || post.publishedAt || post.published_at || post.createdAt || post.created_at),
+              ...(authorName ? { author: { '@type': 'Person', name: schemaText(authorName, 160) } } : {}),
+              publisher: {
+                '@type': 'Organization',
+                name: 'IME365',
+                url: canonicalOrigin,
+              },
+            })
+          }}
+        />
+      )}
 
       {/* Article Wrap */}
       <article className="rp-article-wrap">
@@ -233,9 +332,11 @@ export default function BlogPost() {
 
           {/* Article Header */}
           <header className="rp-article-header">
-            <span className="rp-blog-badge" style={{ fontSize: '12px', padding: '4px 12px' }}>
-              {categoryName}
-            </span>
+            {categoryName && (
+              <span className="rp-blog-badge" style={{ fontSize: '12px', padding: '4px 12px' }}>
+                {categoryName}
+              </span>
+            )}
 
             <h1 className="rp-article-title">
               {post.title}
@@ -250,20 +351,24 @@ export default function BlogPost() {
             {/* Meta Row */}
             <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '16px', padding: '16px 0', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', fontSize: '13.5px', color: '#64748b' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                {authorName && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <FaUser aria-hidden="true" style={{ color: 'var(--rp-blue)', fontSize: '12px' }} />
+                    {authorName}
+                  </span>
+                )}
+                {authorName && <span aria-hidden="true">•</span>}
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                  <FaUser style={{ color: 'var(--rp-blue)', fontSize: '12px' }} />
-                  {post.author || 'IME365 Editorial'}
+                  <FaCalendarAlt aria-hidden="true" style={{ fontSize: '12px' }} />
+                  {formatDate(post.publishedAt || post.published_at || post.createdAt || post.created_at)}
                 </span>
-                <span>•</span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                  <FaCalendarAlt style={{ fontSize: '12px' }} />
-                  {formatDate(post.publishedAt || post.createdAt)}
-                </span>
-                <span>•</span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                  <FaClock style={{ fontSize: '12px' }} />
-                  {calculateReadingTime(post.content)}
-                </span>
+                {calculateReadingTime(post.content) && <span aria-hidden="true">•</span>}
+                {calculateReadingTime(post.content) && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <FaClock aria-hidden="true" style={{ fontSize: '12px' }} />
+                    {calculateReadingTime(post.content)}
+                  </span>
+                )}
               </div>
 
               <button
@@ -313,7 +418,7 @@ export default function BlogPost() {
               Ready to apply these strategies to your resume?
             </h3>
             <p style={{ fontSize: '14.5px', color: '#475569', maxWidth: '520px', margin: '0 auto 20px auto' }}>
-              Generate ATS-optimized bullets and test against real recruiter screening algorithms in seconds.
+              Organize your experience in a structured resume and review it with the tools currently available in the editor.
             </p>
             <Link to="/build-resume/heading" className="rp-btn-primary" style={{ textDecoration: 'none' }}>
               Open Resume Studio
@@ -332,7 +437,8 @@ export default function BlogPost() {
             <div className="rp-blog-grid">
               {relatedPosts.map(rel => {
                 const relCover = sanitizeImageUrl(rel.featuredImage || rel.coverImage || rel.cover_image);
-                const relCat = rel.category || rel.categoryName || 'Strategy';
+                const relCat = rel.category || rel.categoryName || '';
+                const relReadingTime = calculateReadingTime(rel.content);
                 return (
                   <article key={rel.id || rel.slug} className="rp-blog-card">
                     <Link to={`/blog/${rel.slug || rel.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -352,11 +458,13 @@ export default function BlogPost() {
                         )}
                       </div>
                       <div className="rp-blog-card-body">
-                        <div className="rp-blog-card-meta">
-                          <span className="rp-blog-badge">{relCat}</span>
-                          <span>•</span>
-                          <span>{calculateReadingTime(rel.content)}</span>
-                        </div>
+                        {(relCat || relReadingTime) && (
+                          <div className="rp-blog-card-meta">
+                            {relCat && <span className="rp-blog-badge">{relCat}</span>}
+                            {relCat && relReadingTime && <span aria-hidden="true">•</span>}
+                            {relReadingTime && <span>{relReadingTime}</span>}
+                          </div>
+                        )}
                         <h3 className="rp-blog-card-title">{rel.title}</h3>
                         <p className="rp-blog-card-excerpt">
                           {rel.excerpt || (rel.content ? rel.content.replace(/<[^>]*>/g, '').slice(0, 100) + '...' : '')}

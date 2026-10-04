@@ -793,30 +793,27 @@ export async function createJobPosting(employerId, jobData) {
 }
 
 export async function getActiveJobs(page = 1, itemsPerPage = 10, filters = {}) {
-    try {
-        const params = new URLSearchParams({ page: String(page), limit: String(itemsPerPage), status: 'active' });
-        const keyword = filters.keyword || filters.searchTerm || filters.q;
-        const location = filters.location || filters.locationFilter;
-        if (keyword) params.set('q', String(keyword));
-        if (location) params.set('location', String(location));
-        if (filters.category) params.set('category', String(filters.category));
-        const data = await apiJson(`/api/jobs-data?${params.toString()}`);
-        const jobs = Array.isArray(data.jobs) ? data.jobs : [];
-        return {
-            success: true,
-            jobs,
-            allJobs: jobs,
-            pagination: data.pagination || {
-                totalItems: jobs.length,
-                totalPages: Math.max(1, Math.ceil(jobs.length / (itemsPerPage || 10))),
-                currentPage: Number(page) || 1,
-                hasNextPage: false,
-                hasPreviousPage: (Number(page) || 1) > 1,
-            },
-        };
-    } catch {
-        return { success: true, jobs: [], allJobs: [], pagination: { totalItems: 0, totalPages: 1, currentPage: Number(page) || 1, hasNextPage: false, hasPreviousPage: false } };
-    }
+    const params = new URLSearchParams({ page: String(page), limit: String(itemsPerPage), status: 'active' });
+    const keyword = filters.keyword || filters.searchTerm || filters.q;
+    const location = filters.location || filters.locationFilter;
+    if (keyword) params.set('q', String(keyword));
+    if (location) params.set('location', String(location));
+    if (filters.category) params.set('category', String(filters.category));
+    const data = await apiJson(`/api/jobs-data?${params.toString()}`);
+    if (!Array.isArray(data.jobs)) throw new Error('The public job response is invalid.');
+    const jobs = data.jobs;
+    return {
+        success: true,
+        jobs,
+        allJobs: jobs,
+        pagination: data.pagination || {
+            totalItems: jobs.length,
+            totalPages: Math.max(1, Math.ceil(jobs.length / (itemsPerPage || 10))),
+            currentPage: Number(page) || 1,
+            hasNextPage: false,
+            hasPreviousPage: (Number(page) || 1) > 1,
+        },
+    };
 }
 
 export async function getEmployerJobs(_employerId) {
@@ -2246,7 +2243,7 @@ export async function getSystemSettings({ admin = false } = {}) {
             metaKeywords: '', canonicalUrl: '',
             enableJobPostingSchema: false, enableOrganizationSchema: false,
         },
-        llmGeo: { enableLlmGeo: false, llmsTxtContent: '' },
+        llmGeo: { enableLlmGeo: false, llmsTxtContent: '', llmsFullTxtContent: '' },
         modules: {
             // Presentation-only outage values are deliberately fail-closed. A
             // successful MariaDB response replaces this entire object.

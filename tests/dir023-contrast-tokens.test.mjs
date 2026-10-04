@@ -16,10 +16,35 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const TOKENS = path.join(process.cwd(), 'src', 'styles', 'cuba-tokens.css');
-const PUBLIC_SITE = path.join(process.cwd(), 'src', 'components', 'Marketing', 'public-site.css');
+const SOURCE_ROOT = path.join(process.cwd(), 'src');
+const TOKENS = path.join(SOURCE_ROOT, 'styles', 'cuba-tokens.css');
+const PUBLIC_SITE = path.join(SOURCE_ROOT, 'components', 'Marketing', 'public-site.css');
 const css = fs.readFileSync(TOKENS, 'utf8');
 const publicSiteCss = fs.readFileSync(PUBLIC_SITE, 'utf8');
+
+// Build the opacity census from the checked-out source instead of relying on a
+// generated file under the ignored `.bridge/tmp/` directory. A clean clone and
+// CI run must exercise the same source-derived contract without a warm workspace.
+const OPACITY_UTILITY = /(?:[a-z][a-z0-9-]*:)*(?:bg|text|border|ring|divide|from|to|via|placeholder|outline)-[a-z]+(?:-\d{1,3})?\/\d{1,3}\b/g;
+const SOURCE_EXTENSIONS = new Set(['.css', '.html', '.js', '.jsx', '.mjs', '.ts', '.tsx']);
+
+function collectOpacityClasses(directory = SOURCE_ROOT, found = new Set()) {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+        const filename = path.join(directory, entry.name);
+        if (entry.isDirectory()) {
+            collectOpacityClasses(filename, found);
+            continue;
+        }
+        if (!SOURCE_EXTENSIONS.has(path.extname(entry.name))) continue;
+        const source = fs.readFileSync(filename, 'utf8')
+            .replace(/\/\*[\s\S]*?\*\//g, ' ')
+            .replace(/^\s*\/\/.*$/gm, ' ');
+        for (const match of source.matchAll(OPACITY_UTILITY)) found.add(match[0]);
+    }
+    return [...found].sort();
+}
+
+const allOpacityClasses = collectOpacityClasses();
 
 /* ---------------- W3C contrast maths (single sRGB transfer) --------------- */
 
@@ -133,12 +158,7 @@ test('DIR-023: opacity-modifier surfaces are mapped, not just the bare utility',
  * These assertions are derived from a census of src/, so they cannot be
  * satisfied by adding a selector for a class the app never renders.
  */
-const census = JSON.parse(
-    fs.readFileSync(path.join(process.cwd(), '.bridge', 'tmp', 'opacity-census.json'), 'utf8'),
-);
-const allOpacityClasses = Object.values(census).flatMap((o) => Object.keys(o));
-
-test('DIR-023: the opacity-modifier census exists and is non-trivial', () => {
+test('DIR-023: a reproducible source-derived opacity census is non-trivial', () => {
     assert.ok(
         allOpacityClasses.length > 100,
         `expected a real census, got ${allOpacityClasses.length} classes`,
@@ -178,7 +198,8 @@ test('DIR-023: EVERY light-shade chromatic opacity class in src/ is mapped', () 
         if (!m) continue;
         const [, prop, fam, shade] = m;
         if (shade !== undefined && +shade > 300) continue;  // dark shades are fine
-        if (fam === 'black') continue;                      // dark scrim on dark
+        if (fam === 'black' && ['bg', 'ring', 'from', 'via', 'to'].includes(prop)) continue; // dark scrim / shadow
+        if (['current', 'inherit', 'transparent'].includes(fam)) continue; // context-driven, not a palette hue
         if (fam === 'white' && !['bg', 'border', 'ring', 'divide', 'outline'].includes(prop)) continue;
         if (NEUTRAL.includes(fam)) continue;                // themed NEUTRAL block
         if (!flat.includes(`.${full}.${full}`)) missing.push(cls);

@@ -197,16 +197,26 @@ const localAuth = localAuthEnabled ? createLocalAuth(previewToken) : null;
 
 function createNullAuth() {
     const noop = () => undefined;
+    const subscribeUnauthenticated = (callback) => {
+        let active = true;
+        const timer = setTimeout(() => {
+            if (active && typeof callback === 'function') callback(null);
+        }, 0);
+        return () => {
+            active = false;
+            clearTimeout(timer);
+        };
+    };
     return {
         currentUser: null,
-        onAuthStateChanged: () => noop,
-        onIdTokenChanged: () => noop,
+        onAuthStateChanged: subscribeUnauthenticated,
+        onIdTokenChanged: subscribeUnauthenticated,
         signInWithEmailAndPassword: () => notConfigured('signInWithEmailAndPassword'),
         createUserWithEmailAndPassword: () => notConfigured('createUserWithEmailAndPassword'),
         sendPasswordResetEmail: () => notConfigured('sendPasswordResetEmail'),
         signInWithPopup: () => notConfigured('signInWithPopup'),
         signInWithRedirect: () => notConfigured('signInWithRedirect'),
-        getRedirectResult: () => notConfigured('getRedirectResult'),
+        getRedirectResult: () => Promise.resolve(null),
         signOut: () => Promise.resolve(),
         updateProfile: () => notConfigured('updateProfile'),
         sendEmailVerification: () => notConfigured('sendEmailVerification'),

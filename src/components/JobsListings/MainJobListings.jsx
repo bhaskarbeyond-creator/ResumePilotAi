@@ -7,562 +7,76 @@ import HomepageFooter from '../Marketing/elements/HomepageFooter';
 import JobSearchBar from './JobSearchBar';
 import JobFilters from './JobFilters';
 import JobCard from './JobCard';
+import RegionalHubsSection from './RegionalHubsSection';
 import JobDetailsModal from './JobDetailsModal';
 import JobApplicationModal from './JobApplicationModal';
 import CreateJobModal from './CreateJobModal';
 import FavoritesModal from './FavoritesModal';
 import { AuthContext } from '../../context/AuthContext';
 import fire from '../../conf/fire';
+import { SALARY_FILTER_BANDS, formatSalaryBandLabel, salaryRowMatchesBand } from '../../services/jobs/salaryFilters';
 import AuthWrapper from '../auth/authWrapper/AuthWrapper';
 import { getActiveJobs, getJobFavourites, toggleJobFavourite, getJobById, getSubscriptionStatus, checkIsEmployer } from '../../services/api/platform';
 
-// High-quality showcase dataset displayed when database has 0 active postings
-export const DEFAULT_SHOWCASE_JOBS = [
-    {
-        id: 'job-str-01',
-        title: 'Senior Full-Stack Engineer (Payments Engine)',
-        company: 'Stripe',
-        companyImage: '',
-        location: 'San Francisco, CA',
-        country: 'United States',
-        description: 'Design and build high-reliability payment APIs and developer infrastructure. Work across modern React frontends and distributed Node.js/Go services processing hundreds of billions in global commerce volume.',
-        type: 'Full-time',
-        jobType: 'full-time',
-        workMode: 'Remote',
-        experienceLevel: 'Senior Level',
-        salary: '$155k - $195k',
-        minSalary: 155000,
-        maxSalary: 195000,
-        requirements: ['React', 'TypeScript', 'Node.js', 'Distributed Systems', 'PostgreSQL', 'API Design'],
-        postedDate: '2 days ago',
-        applicants: 42,
-        featured: true,
-    },
-    {
-        id: 'job-ant-02',
-        title: 'AI & LLM Systems Infrastructure Architect',
-        company: 'Anthropic',
-        companyImage: '',
-        location: 'San Francisco, CA',
-        country: 'United States',
-        description: 'Lead the architecture of low-latency inference serving and scalable model evaluation pipelines for frontier generative models. Collaborate with safety research and core product engineering teams.',
-        type: 'Full-time',
-        jobType: 'full-time',
-        workMode: 'Hybrid',
-        experienceLevel: 'Senior Level',
-        salary: '$190k - $250k',
-        minSalary: 190000,
-        maxSalary: 250000,
-        requirements: ['Python', 'PyTorch', 'CUDA', 'FastAPI', 'Kubernetes', 'LLM Serving'],
-        postedDate: '1 day ago',
-        applicants: 67,
-        featured: true,
-    },
-    {
-        id: 'job-fig-03',
-        title: 'Staff Product Designer (Design Systems)',
-        company: 'Figma',
-        companyImage: '',
-        location: 'New York, NY',
-        country: 'United States',
-        description: 'Craft the next generation of collaborative canvas tools and design token specifications used by millions of designers and developers worldwide. Define design patterns and micro-interactions.',
-        type: 'Full-time',
-        jobType: 'full-time',
-        workMode: 'Remote',
-        experienceLevel: 'Lead / Executive',
-        salary: '$145k - $180k',
-        minSalary: 145000,
-        maxSalary: 180000,
-        requirements: ['Figma', 'Design Systems', 'Design Tokens', 'Prototyping', 'User Research', 'UI/UX'],
-        postedDate: '3 days ago',
-        applicants: 31,
-        featured: true,
-    },
-    {
-        id: 'job-ver-04',
-        title: 'Lead Frontend Infrastructure Engineer (Next.js)',
-        company: 'Vercel',
-        companyImage: '',
-        location: 'San Francisco, CA',
-        country: 'United States',
-        description: 'Push the frontier of web performance, edge server rendering, and compiler optimizations for Next.js and the Vercel Edge Network. Drive Core Web Vitals tooling and hydration efficiency.',
-        type: 'Full-time',
-        jobType: 'full-time',
-        workMode: 'Remote',
-        experienceLevel: 'Senior Level',
-        salary: '$160k - $210k',
-        minSalary: 160000,
-        maxSalary: 210000,
-        requirements: ['Next.js', 'React', 'Turbopack', 'Rust', 'TypeScript', 'Web Performance'],
-        postedDate: '4 days ago',
-        applicants: 53,
-        featured: true,
-    },
-    {
-        id: 'job-lin-05',
-        title: 'Senior Frontend & Interactions Engineer',
-        company: 'Linear',
-        companyImage: '',
-        location: 'London',
-        country: 'United Kingdom',
-        description: 'Build lightning-fast, keyboard-first desktop and web software. Obsess over 120fps animations, client-side sync engines, and flawless craftsmanship in project planning and issue tracking.',
-        type: 'Full-time',
-        jobType: 'full-time',
-        workMode: 'Remote',
-        experienceLevel: 'Senior Level',
-        salary: '$135k - $175k',
-        minSalary: 135000,
-        maxSalary: 175000,
-        requirements: ['TypeScript', 'React', 'WebGL', 'State Synchronization', 'IndexedDB', 'TailwindCSS'],
-        postedDate: '5 days ago',
-        applicants: 48,
-        featured: true,
-    },
-    {
-        id: 'job-raz-06',
-        title: 'Principal Backend Architect (Banking Platform)',
-        company: 'Razorpay',
-        companyImage: '',
-        location: 'Bengaluru',
-        country: 'India',
-        description: 'Scale banking rails, merchant settlements, and UPI transaction processing across millions of businesses. Lead architectural decisions for fault-tolerant, double-entry financial ledgers.',
-        type: 'Full-time',
-        jobType: 'full-time',
-        workMode: 'Hybrid',
-        experienceLevel: 'Lead / Executive',
-        salary: '$120k - $160k',
-        minSalary: 120000,
-        maxSalary: 160000,
-        requirements: ['Golang', 'Java', 'MariaDB', 'Kafka', 'Redis', 'High Concurrency'],
-        postedDate: '2 days ago',
-        applicants: 89,
-        featured: true,
-    },
-    {
-        id: 'job-can-07',
-        title: 'Senior UX / UI Product Designer',
-        company: 'Canva',
-        companyImage: '',
-        location: 'Sydney',
-        country: 'Australia',
-        description: 'Design intuitive, accessible graphic creation tools for enterprise teams. Work on collaborative templates, asset management, and AI-assisted generation workflows.',
-        type: 'Full-time',
-        jobType: 'full-time',
-        workMode: 'Remote',
-        experienceLevel: 'Senior Level',
-        salary: '$125k - $155k',
-        minSalary: 125000,
-        maxSalary: 155000,
-        requirements: ['Figma', 'Visual Design', 'Design Systems', 'Micro-interactions', 'Information Architecture'],
-        postedDate: '1 week ago',
-        applicants: 27,
-        featured: false,
-    },
-    {
-        id: 'job-rev-08',
-        title: 'DevOps & Cloud Site Reliability Engineer',
-        company: 'Revolut',
-        companyImage: '',
-        location: 'London',
-        country: 'United Kingdom',
-        description: 'Maintain 99.999% availability for multi-region financial infrastructure on AWS and GCP. Manage Terraform GitOps, Kubernetes clusters, and automated chaos engineering drills.',
-        type: 'Full-time',
-        jobType: 'full-time',
-        workMode: 'Hybrid',
-        experienceLevel: 'Senior Level',
-        salary: '$115k - $150k',
-        minSalary: 115000,
-        maxSalary: 150000,
-        requirements: ['Kubernetes', 'Terraform', 'AWS', 'Docker', 'Prometheus', 'CI/CD Pipelines'],
-        postedDate: '3 days ago',
-        applicants: 36,
-        featured: false,
-    },
-    {
-        id: 'job-dat-09',
-        title: 'Senior Data Engineer (Distributed Telemetry)',
-        company: 'Datadog',
-        companyImage: '',
-        location: 'Boston, MA',
-        country: 'United States',
-        description: 'Construct real-time streaming analytics pipelines processing petabytes of log, trace, and metric events every second. Optimize ClickHouse, Kafka, and Apache Flink consumers.',
-        type: 'Full-time',
-        jobType: 'full-time',
-        workMode: 'Remote',
-        experienceLevel: 'Senior Level',
-        salary: '$140k - $185k',
-        minSalary: 140000,
-        maxSalary: 185000,
-        requirements: ['Golang', 'Python', 'Kafka', 'ClickHouse', 'Flink', 'Distributed Systems'],
-        postedDate: '4 days ago',
-        applicants: 22,
-        featured: false,
-    },
-    {
-        id: 'job-not-10',
-        title: 'Full-Stack Software Engineer (AI Experiences)',
-        company: 'Notion',
-        companyImage: '',
-        location: 'San Francisco, CA',
-        country: 'United States',
-        description: 'Build next-generation knowledge management and AI-augmented workspace features. Work seamlessly across React client editors and backend search indexing services.',
-        type: 'Full-time',
-        jobType: 'full-time',
-        workMode: 'Hybrid',
-        experienceLevel: 'Mid Level',
-        salary: '$140k - $180k',
-        minSalary: 140000,
-        maxSalary: 180000,
-        requirements: ['React', 'TypeScript', 'Node.js', 'PostgreSQL', 'Elasticsearch', 'Vector Search'],
-        postedDate: '2 days ago',
-        applicants: 58,
-        featured: false,
-    },
-    {
-        id: 'job-spo-11',
-        title: 'Mobile Application Engineer (iOS & React Native)',
-        company: 'Spotify',
-        companyImage: '',
-        location: 'Stockholm',
-        country: 'Sweden',
-        description: 'Develop audio playback and offline synchronization capabilities for over 500 million active listeners. Optimize memory footprint and battery efficiency.',
-        type: 'Full-time',
-        jobType: 'full-time',
-        workMode: 'Hybrid',
-        experienceLevel: 'Mid Level',
-        salary: '$105k - $140k',
-        minSalary: 105000,
-        maxSalary: 140000,
-        requirements: ['Swift', 'iOS SDK', 'React Native', 'TypeScript', 'Audio Core', 'GraphQL'],
-        postedDate: '6 days ago',
-        applicants: 45,
-        featured: false,
-    },
-    {
-        id: 'job-air-12',
-        title: 'Senior Security Operations & AppSec Engineer',
-        company: 'Airbnb',
-        companyImage: '',
-        location: 'San Francisco, CA',
-        country: 'United States',
-        description: 'Safeguard candidate and guest data. Conduct threat modeling, penetration testing, and automate continuous security code analysis in high-velocity deployment pipelines.',
-        type: 'Full-time',
-        jobType: 'full-time',
-        workMode: 'Remote',
-        experienceLevel: 'Senior Level',
-        salary: '$150k - $190k',
-        minSalary: 150000,
-        maxSalary: 190000,
-        requirements: ['AppSec', 'Threat Modeling', 'OAuth / OIDC', 'Cloud Security', 'SAST/DAST', 'Python'],
-        postedDate: '3 days ago',
-        applicants: 19,
-        featured: false,
-    },
-    {
-        id: 'job-goo-13',
-        title: 'Solutions Architect (Enterprise Cloud Migration)',
-        company: 'Google Cloud',
-        companyImage: '',
-        location: 'Chicago, IL',
-        country: 'United States',
-        description: 'Partner with Fortune 500 engineering leaders to architect scalable cloud-native migrations on Google Kubernetes Engine, BigQuery, and Anthos multi-cloud.',
-        type: 'Full-time',
-        jobType: 'full-time',
-        workMode: 'Remote',
-        experienceLevel: 'Lead / Executive',
-        salary: '$165k - $215k',
-        minSalary: 165000,
-        maxSalary: 215000,
-        requirements: ['Cloud Architecture', 'GCP', 'Kubernetes', 'Terraform', 'Technical Consulting', 'DevOps'],
-        postedDate: '1 day ago',
-        applicants: 38,
-        featured: true,
-    },
-    {
-        id: 'job-sho-14',
-        title: 'Frontend Developer (Merchant Admin Experiences)',
-        company: 'Shopify',
-        companyImage: '',
-        location: 'Toronto',
-        country: 'Canada',
-        description: 'Build high-converting storefront analytics and store administration dashboards used by millions of merchants. Utilize React, Polaris design system, and GraphQL.',
-        type: 'Full-time',
-        jobType: 'full-time',
-        workMode: 'Remote',
-        experienceLevel: 'Mid Level',
-        salary: '$110k - $145k',
-        minSalary: 110000,
-        maxSalary: 145000,
-        requirements: ['React', 'TypeScript', 'GraphQL', 'CSS Modules', 'Design Systems', 'Web Standards'],
-        postedDate: '4 days ago',
-        applicants: 61,
-        featured: false,
-    },
-    {
-        id: 'job-swi-15',
-        title: 'Staff Machine Learning Engineer (Dispatch & Routing)',
-        company: 'Swiggy',
-        companyImage: '',
-        location: 'Bengaluru',
-        country: 'India',
-        description: 'Optimize real-time hyperlocal dispatch, ETA prediction, and fleet routing algorithms handling millions of daily on-demand delivery orders.',
-        type: 'Full-time',
-        jobType: 'full-time',
-        workMode: 'On-site',
-        experienceLevel: 'Senior Level',
-        salary: '$95k - $135k',
-        minSalary: 95000,
-        maxSalary: 135000,
-        requirements: ['Python', 'Machine Learning', 'Reinforcement Learning', 'Spark', 'Kafka', 'FastAPI'],
-        postedDate: '2 days ago',
-        applicants: 73,
-        featured: false,
-    },
-    {
-        id: 'job-git-16',
-        title: 'Technical Writer & Developer Documentation Lead',
-        company: 'GitHub',
-        companyImage: '',
-        location: 'Remote',
-        country: 'United States',
-        description: 'Author authoritative guides, interactive code samples, and comprehensive API specifications for GitHub Actions, Copilot extensibility, and security tooling.',
-        type: 'Contract',
-        jobType: 'contract',
-        workMode: 'Remote',
-        experienceLevel: 'Mid Level',
-        salary: '$85k - $115k',
-        minSalary: 85000,
-        maxSalary: 115000,
-        requirements: ['Technical Writing', 'Markdown', 'API Documentation', 'Git & GitHub', 'JavaScript', 'Developer Tools'],
-        postedDate: '5 days ago',
-        applicants: 29,
-        featured: false,
-    },
-    {
-        id: 'job-atl-17',
-        title: 'Junior Software Engineer (Cloud Core)',
-        company: 'Atlassian',
-        companyImage: '',
-        location: 'Bengaluru',
-        country: 'India',
-        description: 'Join the Core Cloud Platform team. Contribute to high-scale microservices, automated unit/integration test suites, and internal developer experience tooling.',
-        type: 'Full-time',
-        jobType: 'full-time',
-        workMode: 'Hybrid',
-        experienceLevel: 'Entry Level',
-        salary: '$45k - $65k',
-        minSalary: 45000,
-        maxSalary: 65000,
-        requirements: ['Java', 'Python', 'Git', 'Data Structures', 'REST APIs', 'Spring Boot'],
-        postedDate: '1 week ago',
-        applicants: 114,
-        featured: false,
-    },
-    {
-        id: 'job-fre-18',
-        title: 'Prompt Engineering & Benchmark Specialist',
-        company: 'Frontier AI Labs',
-        companyImage: '',
-        location: 'Remote Worldwide',
-        country: 'Global',
-        description: 'Design comprehensive reasoning evaluation datasets, write adversarial validation prompts, and benchmark frontier language models against coding benchmarks.',
-        type: 'Freelance',
-        jobType: 'freelance',
-        workMode: 'Remote',
-        experienceLevel: 'Mid Level',
-        salary: '$60k - $85k',
-        minSalary: 60000,
-        maxSalary: 85000,
-        requirements: ['Python', 'Prompt Engineering', 'LLM Evaluation', 'JSON Schema', 'Quality Assurance'],
-        postedDate: '3 days ago',
-        applicants: 39,
-        featured: false,
-    },
-    {
-        id: 'job-msf-19',
-        title: 'Senior Cloud Security Architect (Azure Sentinel)',
-        company: 'Microsoft',
-        companyImage: '',
-        location: 'Redmond, WA',
-        country: 'United States',
-        description: 'Design zero-trust telemetry and automated threat hunting workflows for global enterprise clients. Implement modern SIEM event correlation and compliance governance.',
-        type: 'Full-time',
-        jobType: 'full-time',
-        workMode: 'Hybrid',
-        experienceLevel: 'Senior Level',
-        salary: '$160k - $210k',
-        minSalary: 160000,
-        maxSalary: 210000,
-        requirements: ['Azure', 'Cloud Security', 'SIEM', 'Threat Hunting', 'PowerShell', 'Python'],
-        postedDate: '2 days ago',
-        applicants: 51,
-        featured: true,
-    },
-    {
-        id: 'job-ube-20',
-        title: 'Distributed Systems Platform Engineer',
-        company: 'Uber',
-        companyImage: '',
-        location: 'Seattle, WA',
-        country: 'United States',
-        description: 'Scale real-time messaging, geo-indexing, and dynamic matching infrastructure handling tens of thousands of requests per second with sub-10ms response times.',
-        type: 'Full-time',
-        jobType: 'full-time',
-        workMode: 'Remote',
-        experienceLevel: 'Senior Level',
-        salary: '$155k - $195k',
-        minSalary: 155000,
-        maxSalary: 195000,
-        requirements: ['Golang', 'Kafka', 'Redis', 'Cassandra', 'Distributed Systems', 'gRPC'],
-        postedDate: '4 days ago',
-        applicants: 62,
-        featured: false,
-    },
-    {
-        id: 'job-sno-21',
-        title: 'Database Kernel & Query Optimization Engineer',
-        company: 'Snowflake',
-        companyImage: '',
-        location: 'San Mateo, CA',
-        country: 'United States',
-        description: 'Work on vectorized query execution, cost-based optimizer heuristics, and metadata storage partitioning in next-generation cloud database engines.',
-        type: 'Full-time',
-        jobType: 'full-time',
-        workMode: 'Hybrid',
-        experienceLevel: 'Senior Level',
-        salary: '$175k - $235k',
-        minSalary: 175000,
-        maxSalary: 235000,
-        requirements: ['C++', 'Rust', 'Database Internals', 'Query Optimization', 'Memory Management'],
-        postedDate: '3 days ago',
-        applicants: 24,
-        featured: true,
-    },
-    {
-        id: 'job-fli-22',
-        title: 'Senior Frontend Engineer (Mobile Web Performance)',
-        company: 'Flipkart',
-        companyImage: '',
-        location: 'Bengaluru',
-        country: 'India',
-        description: 'Drive ultra-low bandwidth mobile web performance and headless PWA experiences for millions of shoppers during festive peak sales.',
-        type: 'Full-time',
-        jobType: 'full-time',
-        workMode: 'On-site',
-        experienceLevel: 'Senior Level',
-        salary: '$80k - $110k',
-        minSalary: 80000,
-        maxSalary: 110000,
-        requirements: ['React', 'TypeScript', 'PWA', 'Web Performance', 'Service Workers', 'Webpack'],
-        postedDate: '5 days ago',
-        applicants: 85,
-        featured: false,
-    },
-    {
-        id: 'job-air-23',
-        title: 'Research Engineer (Model Evaluation & Benchmarking)',
-        company: 'OpenAI',
-        companyImage: '',
-        location: 'San Francisco, CA',
-        country: 'United States',
-        description: 'Design scalable inference evaluation harnesses, multi-turn reasoning assessments, and human feedback scoring pipelines for next-generation intelligence models.',
-        type: 'Full-time',
-        jobType: 'full-time',
-        workMode: 'On-site',
-        experienceLevel: 'Lead / Executive',
-        salary: '$210k - $280k',
-        minSalary: 210000,
-        maxSalary: 280000,
-        requirements: ['Python', 'PyTorch', 'Distributed Computing', 'LLM Fine-Tuning', 'Statistics'],
-        postedDate: '1 day ago',
-        applicants: 98,
-        featured: true,
-    },
-    {
-        id: 'job-par-24',
-        title: 'Part-Time UI / Visual Designer',
-        company: 'TechFlow Studio',
-        companyImage: '',
-        location: 'Remote',
-        country: 'United States',
-        description: 'Create high-fidelity marketing illustrations, interactive landing page prototypes, and branded asset packages for fast-growing B2B software products.',
-        type: 'Part-time',
-        jobType: 'part-time',
-        workMode: 'Remote',
-        experienceLevel: 'Mid Level',
-        salary: '$40k - $55k',
-        minSalary: 40000,
-        maxSalary: 55000,
-        requirements: ['Figma', 'Visual Design', 'Illustration', 'Prototyping', 'Brand Identity'],
-        postedDate: '2 days ago',
-        applicants: 41,
-        featured: false,
-    },
-    {
-        id: 'job-con-25',
-        title: 'Contract Terraform & AWS Automation Consultant',
-        company: 'CloudScale Consulting',
-        companyImage: '',
-        location: 'Remote',
-        country: 'United States',
-        description: 'Execute infrastructure-as-code refactoring project. Migrate legacy VPC and EC2 environments to ECS Fargate and multi-account AWS Organizations.',
-        type: 'Contract',
-        jobType: 'contract',
-        workMode: 'Remote',
-        experienceLevel: 'Senior Level',
-        salary: '$90k - $130k',
-        minSalary: 90000,
-        maxSalary: 130000,
-        requirements: ['Terraform', 'AWS', 'Docker', 'ECS Fargate', 'CI/CD', 'Bash'],
-        postedDate: '1 week ago',
-        applicants: 33,
-        featured: false,
-    },
-];
-
-// Helper to normalize database rows to uniform JobCard schema with dynamic currency support
-export function normalizeJobRecord(job, currency = 'INR', currencySymbol = '₹') {
-    if (!job) return job;
-    const minSal = job.salary_min || job.minSalary;
-    const maxSal = job.salary_max || job.maxSalary;
-    let salaryDisplay = job.salary;
-
-    // If salaryDisplay has hardcoded '$' but active system currency is different, adapt it
-    if (salaryDisplay && currencySymbol && currencySymbol !== '$' && salaryDisplay.includes('$')) {
-        salaryDisplay = salaryDisplay.replace(/\$/g, currencySymbol);
-    }
-
-    if (!salaryDisplay && (minSal || maxSal)) {
-        if (minSal && maxSal) {
-            salaryDisplay = `${currencySymbol}${Math.round(minSal / 1000)}k - ${currencySymbol}${Math.round(maxSal / 1000)}k`;
-        } else if (minSal) {
-            salaryDisplay = `${currencySymbol}${Math.round(minSal / 1000)}k+`;
-        } else if (maxSal) {
-            salaryDisplay = `Up to ${currencySymbol}${Math.round(maxSal / 1000)}k`;
+// Vacancy cards and counts are sourced only from public, active API results.
+// Normalize only facts returned by the public job API. Missing salary, company,
+// location, workplace, and engagement fields stay missing instead of acquiring
+// demo defaults that would misrepresent a real requisition.
+export function normalizeJobRecord(job) {
+    if (!job || typeof job !== 'object') return null;
+    const numeric = value => {
+        const result = Number(value);
+        return Number.isFinite(result) && result > 0 ? result : null;
+    };
+    const minSalary = numeric(job.salary_min ?? job.minSalary);
+    const maxSalary = numeric(job.salary_max ?? job.maxSalary);
+    const salaryCurrency = String(job.salary_currency ?? job.salaryCurrency ?? '').toUpperCase();
+    let salary = typeof job.salary === 'string' ? job.salary.trim() : '';
+    if (!salary && /^[A-Z]{3}$/.test(salaryCurrency) && (minSalary !== null || maxSalary !== null)) {
+        try {
+            const formatter = new Intl.NumberFormat(undefined, { style: 'currency', currency: salaryCurrency, maximumFractionDigits: 0 });
+            if (minSalary !== null && maxSalary !== null) salary = `${formatter.format(minSalary)} – ${formatter.format(maxSalary)}`;
+            else if (minSalary !== null) salary = `${formatter.format(minSalary)}+`;
+            else salary = `Up to ${formatter.format(maxSalary)}`;
+        } catch {
+            salary = '';
         }
     }
+    let requirements = [];
+    if (Array.isArray(job.requirements)) requirements = job.requirements;
+    else if (typeof job.requirements === 'string') {
+        try {
+            const parsed = JSON.parse(job.requirements);
+            if (Array.isArray(parsed)) requirements = parsed;
+        } catch { /* malformed optional data is omitted */ }
+    }
+    const createdAt = job.created_at || job.createdAt || null;
+    const postedDate = job.postedDate || (createdAt && Number.isFinite(new Date(createdAt).getTime()) ? createdAt : '');
+    const applicantsValue = job.applicants_count ?? job.applicants ?? job.applicationsCount;
+    const applicants = applicantsValue === null || applicantsValue === undefined || applicantsValue === ''
+        ? null
+        : Number.isFinite(Number(applicantsValue)) ? Number(applicantsValue) : null;
 
     return {
         ...job,
-        id: String(job.id),
-        title: job.title || 'Open Position',
-        company: job.company || job.company_name || 'Hiring Company',
-        companyImage: job.companyImage || job.company_logo || '',
-        location: job.location || 'Remote',
-        country: job.country || '',
-        description: job.description || '',
-        type: job.type || job.job_type || job.jobType || 'Full-time',
-        jobType: String(job.type || job.job_type || job.jobType || 'full-time').toLowerCase(),
-        workMode: job.workMode || job.workplace_type || 'Remote',
-        experienceLevel: job.experienceLevel || job.experience_level || 'Mid Level',
-        salary: salaryDisplay || `${currencySymbol}80k - ${currencySymbol}120k`,
-        minSalary: minSal || 80000,
-        maxSalary: maxSal || 120000,
-        requirements: Array.isArray(job.requirements)
-            ? job.requirements
-            : (typeof job.requirements === 'string' ? JSON.parse(job.requirements || '[]') : []),
-        postedDate: job.postedDate || (job.created_at ? new Date(job.created_at).toLocaleDateString() : '2 days ago'),
-        applicants: typeof job.applicants === 'number' ? job.applicants : (job.applicants_count || 12),
+        id: String(job.id || ''),
+        title: String(job.title || ''),
+        company: String(job.company || job.company_name || job.companyName || ''),
+        companyImage: String(job.companyImage || job.company_logo || job.companyLogo || ''),
+        location: String(job.location || ''),
+        country: String(job.country || ''),
+        description: String(job.description || ''),
+        type: String(job.type || job.job_type || job.jobType || ''),
+        jobType: String(job.type || job.job_type || job.jobType || '').toLowerCase(),
+        workMode: String(job.workMode || job.workplace_type || job.workplaceType || ''),
+        experienceLevel: String(job.experienceLevel || job.experience_level || ''),
+        salary,
+        salary_currency: /^[A-Z]{3}$/.test(salaryCurrency) ? salaryCurrency : '',
+        minSalary,
+        maxSalary,
+        requirements,
+        postedDate,
+        applicants,
     };
 }
 
@@ -616,6 +130,7 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
     const [savedJobs, setSavedJobs] = useState(new Set());
     const [jobs, setJobs] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [jobsError, setJobsError] = useState(false);
     const [expandedFilter, setExpandedFilter] = useState(null);
     const [selectedJob, setSelectedJob] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -704,7 +219,7 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
             jobType: ['full-time', 'part-time', 'contract', 'freelance'],
             experienceLevel: ['entry-level', 'junior', 'mid-level', 'senior', 'senior-level', 'executive'],
             workMode: ['remote', 'on-site', 'hybrid'],
-            salaryRange: ['$40k - $60k', '$60k - $80k', '$80k - $120k', '$120k+'],
+            salaryRange: SALARY_FILTER_BANDS.map(band => band.key),
         };
 
         Object.keys(filterOptions).forEach((filterType) => {
@@ -735,141 +250,98 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
                 counts.workMode['on-site']++;
             }
 
-            const jobMinSalary = job.minSalary || job.salary_min || 0;
-            const jobMaxSalary = job.maxSalary || job.salary_max || 0;
+            const salaryCurrency = String(job.salary_currency || job.salaryCurrency || '').toUpperCase();
+            const jobMinSalary = Number(job.minSalary ?? job.salary_min) || 0;
+            const jobMaxSalary = Number(job.maxSalary ?? job.salary_max) || 0;
 
-            if (jobMinSalary > 0 || jobMaxSalary > 0) {
-                if (jobMinSalary >= 120000 || jobMaxSalary >= 120000) {
-                    counts.salaryRange['$120k+']++;
-                } else if ((jobMinSalary >= 80000 && jobMinSalary < 120000) || (jobMaxSalary >= 80000 && jobMaxSalary < 120000)) {
-                    counts.salaryRange['$80k - $120k']++;
-                } else if ((jobMinSalary >= 60000 && jobMinSalary < 80000) || (jobMaxSalary >= 60000 && jobMaxSalary < 80000)) {
-                    counts.salaryRange['$60k - $80k']++;
-                } else if ((jobMinSalary >= 40000 && jobMinSalary < 60000) || (jobMaxSalary >= 40000 && jobMaxSalary < 60000)) {
-                    counts.salaryRange['$40k - $60k']++;
-                }
+            // Salary ranges compare like-for-like numeric amounts only. Never
+            // mix rows denominated in another currency or without a currency.
+            if (salaryCurrency === String(currencyConfig.currency).toUpperCase()) {
+                SALARY_FILTER_BANDS.forEach(band => {
+                    if (salaryRowMatchesBand(jobMinSalary, jobMaxSalary, band)) counts.salaryRange[band.key]++;
+                });
             }
         });
 
         return counts;
     };
 
-    // Load jobs function with resilient authentic showcase fallback
+    // Only authoritative API rows become job cards. Empty results and
+    // unavailable data have separate, truthful UI states; no local showcase is
+    // substituted for a MariaDB read.
     const loadJobs = async (page = 1) => {
+        setLoading(true);
+        setJobsError(false);
         try {
-            setLoading(true);
-
             const filters = {
-                searchTerm: searchTerm,
-                locationFilter: locationFilter,
+                searchTerm,
+                locationFilter,
                 jobType: selectedFilters.jobType,
                 workMode: selectedFilters.workMode,
                 experienceLevel: selectedFilters.experienceLevel,
                 salaryRange: selectedFilters.salaryRange,
             };
-
-            // Request up to 100 jobs to fetch complete active catalog from MariaDB
             const result = await getActiveJobs(1, 100, filters);
-
-            let activeJobPool = [];
-            if (result.success && Array.isArray(result.allJobs) && result.allJobs.length > 0) {
-                activeJobPool = result.allJobs.map((j) => normalizeJobRecord(j, currencyConfig.currency, currencyConfig.currencySymbol));
-            } else if (result.success && Array.isArray(result.jobs) && result.jobs.length > 0) {
-                activeJobPool = result.jobs.map((j) => normalizeJobRecord(j, currencyConfig.currency, currencyConfig.currencySymbol));
-            } else {
-                // Fallback to verified authentic showcase jobs when database is empty
-                activeJobPool = DEFAULT_SHOWCASE_JOBS.map((j) => normalizeJobRecord(j, currencyConfig.currency, currencyConfig.currencySymbol));
+            if (!result?.success || !Array.isArray(result.allJobs || result.jobs)) {
+                throw new Error('Invalid public job response.');
             }
 
-            // Compute filter counts from full job pool
-            const counts = calculateFilterCounts(activeJobPool);
-            setFilterCounts(counts);
+            const sourceRows = Array.isArray(result.allJobs) ? result.allJobs : result.jobs;
+            const activeJobPool = sourceRows
+                .map(row => normalizeJobRecord(row))
+                .filter(job => job && job.id && job.title);
+            setFilterCounts(calculateFilterCounts(activeJobPool));
 
-            // Apply search and filter criteria
             let filtered = activeJobPool;
-
             if (searchTerm.trim()) {
-                const q = searchTerm.toLowerCase().trim();
-                filtered = filtered.filter((j) => 
-                    (j.title && j.title.toLowerCase().includes(q)) ||
-                    (j.company && j.company.toLowerCase().includes(q)) ||
-                    (j.description && j.description.toLowerCase().includes(q)) ||
-                    (Array.isArray(j.requirements) && j.requirements.some((r) => r.toLowerCase().includes(q)))
+                const query = searchTerm.toLowerCase().trim();
+                filtered = filtered.filter(job =>
+                    job.title.toLowerCase().includes(query)
+                    || job.company.toLowerCase().includes(query)
+                    || job.description.toLowerCase().includes(query)
+                    || job.requirements.some(requirement => String(requirement).toLowerCase().includes(query))
                 );
             }
-
             if (locationFilter.trim()) {
-                const loc = locationFilter.toLowerCase().trim();
-                filtered = filtered.filter((j) => 
-                    (j.location && j.location.toLowerCase().includes(loc)) ||
-                    (j.country && j.country.toLowerCase().includes(loc))
-                );
+                const location = locationFilter.toLowerCase().trim();
+                filtered = filtered.filter(job => job.location.toLowerCase().includes(location)
+                    || job.country.toLowerCase().includes(location));
             }
-
             if (selectedFilters.jobType.length > 0) {
-                filtered = filtered.filter((j) => 
-                    selectedFilters.jobType.some((t) => 
-                        (j.jobType && j.jobType.toLowerCase().includes(t.toLowerCase())) ||
-                        (j.type && j.type.toLowerCase().includes(t.toLowerCase()))
-                    )
-                );
+                filtered = filtered.filter(job => selectedFilters.jobType.some(type =>
+                    job.jobType.includes(type.toLowerCase()) || job.type.toLowerCase().includes(type.toLowerCase())));
             }
-
             if (selectedFilters.workMode.length > 0) {
-                filtered = filtered.filter((j) => 
-                    selectedFilters.workMode.some((m) => 
-                        j.workMode && j.workMode.toLowerCase().includes(m.toLowerCase())
-                    )
-                );
+                filtered = filtered.filter(job => selectedFilters.workMode.some(mode =>
+                    job.workMode.toLowerCase().includes(mode.toLowerCase())));
             }
-
             if (selectedFilters.experienceLevel.length > 0) {
-                filtered = filtered.filter((j) => 
-                    selectedFilters.experienceLevel.some((lvl) => 
-                        j.experienceLevel && j.experienceLevel.toLowerCase().includes(lvl.toLowerCase())
-                    )
-                );
+                filtered = filtered.filter(job => selectedFilters.experienceLevel.some(level =>
+                    job.experienceLevel.toLowerCase().includes(level.toLowerCase())));
             }
-
             if (selectedFilters.salaryRange.length > 0) {
-                filtered = filtered.filter((j) => {
-                    const min = j.minSalary || 0;
-                    const max = j.maxSalary || 0;
-                    return selectedFilters.salaryRange.some((range) => {
-                        if (range === '$120k+') return min >= 120000 || max >= 120000;
-                        if (range === '$80k - $120k') return (min >= 80000 && min < 120000) || (max >= 80000 && max < 120000);
-                        if (range === '$60k - $80k') return (min >= 60000 && min < 80000) || (max >= 60000 && max < 80000);
-                        if (range === '$40k - $60k') return (min >= 40000 && min < 60000) || (max >= 40000 && max < 60000);
-                        return true;
+                filtered = filtered.filter(job => {
+                    if (job.salary_currency !== String(currencyConfig.currency).toUpperCase()) return false;
+                    return selectedFilters.salaryRange.some(key => {
+                        const band = SALARY_FILTER_BANDS.find(item => item.key === key);
+                        return band && salaryRowMatchesBand(job.minSalary, job.maxSalary, band);
                     });
                 });
             }
 
             const totalItems = filtered.length;
             const totalPages = Math.max(1, Math.ceil(totalItems / jobsPerPage));
-            const paginatedSlice = filtered.slice((page - 1) * jobsPerPage, page * jobsPerPage);
-
-            setJobs(paginatedSlice);
-            setPagination({
-                totalItems,
-                totalPages,
-                hasNextPage: page < totalPages,
-                hasPreviousPage: page > 1,
-            });
+            setJobs(filtered.slice((page - 1) * jobsPerPage, page * jobsPerPage));
+            setPagination({ totalItems, totalPages, hasNextPage: page < totalPages, hasPreviousPage: page > 1 });
             setCurrentPage(page);
         } catch (error) {
-            console.error('Error loading jobs:', error);
-            const normalizedShowcase = DEFAULT_SHOWCASE_JOBS.map((j) => normalizeJobRecord(j, currencyConfig.currency, currencyConfig.currencySymbol));
-            const counts = calculateFilterCounts(normalizedShowcase);
-            setFilterCounts(counts);
-            setJobs(normalizedShowcase.slice((page - 1) * jobsPerPage, page * jobsPerPage));
-            setPagination({
-                totalItems: normalizedShowcase.length,
-                totalPages: Math.max(1, Math.ceil(normalizedShowcase.length / jobsPerPage)),
-                hasNextPage: page < Math.ceil(normalizedShowcase.length / jobsPerPage),
-                hasPreviousPage: page > 1,
-            });
-            setCurrentPage(page);
+            // Keep database/provider details out of the browser and logs.
+            console.error('[job listings]', { code: error?.code || 'JOB_LISTINGS_UNAVAILABLE' });
+            setJobsError(true);
+            setFilterCounts(calculateFilterCounts([]));
+            setJobs([]);
+            setPagination({ totalItems: 0, totalPages: 1, hasNextPage: false, hasPreviousPage: false });
+            setCurrentPage(1);
         } finally {
             setLoading(false);
         }
@@ -1046,17 +518,23 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
     // Client-side display sorting
     const displayedJobs = useMemo(() => {
         const list = [...jobs];
-        if (sortBy === 'salary-high') {
-            return list.sort((a, b) => (b.maxSalary || 0) - (a.maxSalary || 0));
-        }
-        if (sortBy === 'salary-low') {
-            return list.sort((a, b) => (a.minSalary || 0) - (b.minSalary || 0));
+        if (sortBy === 'salary-high' || sortBy === 'salary-low') {
+            const direction = sortBy === 'salary-high' ? -1 : 1;
+            const activeCurrency = String(currencyConfig.currency).toUpperCase();
+            return list.sort((a, b) => {
+                const aMatchesCurrency = a.salary_currency === activeCurrency;
+                const bMatchesCurrency = b.salary_currency === activeCurrency;
+                if (aMatchesCurrency !== bMatchesCurrency) return aMatchesCurrency ? -1 : 1;
+                const aAmount = sortBy === 'salary-high' ? (a.maxSalary || 0) : (a.minSalary || 0);
+                const bAmount = sortBy === 'salary-high' ? (b.maxSalary || 0) : (b.minSalary || 0);
+                return (aAmount - bAmount) * direction;
+            });
         }
         if (sortBy === 'company') {
             return list.sort((a, b) => (a.company || '').localeCompare(b.company || ''));
         }
         return list;
-    }, [jobs, sortBy]);
+    }, [jobs, sortBy, currencyConfig.currency]);
 
     // Check if any filters are active
     const hasActiveFilters = Boolean(
@@ -1066,11 +544,12 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
     );
 
     return (
-        <div className={`${isInsideDashboard ? 'w-full' : 'rp-public-site'} min-h-screen flex flex-col bg-slate-50/50`}>
+        <div className={`${isInsideDashboard ? 'w-full' : 'rp-public-site'} min-h-screen flex flex-col bg-cuba-canvas text-cuba-ink`}>
             {/* Top Navigation Bar with active public-site styling and auth modal hook */}
             {!isInsideDashboard && <HomepageNavbar onOpenAuthModal={authBtnHandler} />}
 
             <main className={`flex-1 w-full ${isInsideDashboard ? 'max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'} ${isInsideDashboard ? 'py-6 sm:py-8 max-lg:pt-16' : 'pt-[110px] pb-12'}`}>
+                {!isInsideDashboard && <RegionalHubsSection />}
                 <JobSearchBar
                     searchTerm={searchTerm}
                     setSearchTerm={setSearchTerm}
@@ -1087,7 +566,6 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
                     onQuickFilter={handleQuickFilter}
                     onSearch={() => loadJobs(1)}
                     currency={currencyConfig.currency}
-                    currencySymbol={currencyConfig.currencySymbol}
                     selectedFilters={selectedFilters}
                 />
 
@@ -1103,7 +581,6 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
                         showFilters={showFilters}
                         filterCounts={filterCounts}
                         currency={currencyConfig.currency}
-                        currencySymbol={currencyConfig.currencySymbol}
                     />
 
                     {/* Right Content - Results & Listings */}
@@ -1170,8 +647,11 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
                                 )}
                                 {Object.entries(selectedFilters).map(([category, values]) =>
                                     values.map((val) => {
-                                        const displayLabel = category === 'salaryRange' && currencyConfig.currencySymbol !== '$'
-                                            ? val.replace(/\$/g, currencyConfig.currencySymbol)
+                                        const salaryBand = category === 'salaryRange'
+                                            ? SALARY_FILTER_BANDS.find(band => band.key === val)
+                                            : null;
+                                        const displayLabel = salaryBand
+                                            ? formatSalaryBandLabel(salaryBand, currencyConfig.currency)
                                             : val;
                                         return (
                                             <span
@@ -1218,16 +698,26 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
                                     </div>
                                 ))}
                             </div>
+                        ) : jobsError ? (
+                            <div className="rounded-cuba-xl border border-cuba-line bg-cuba-card p-10 text-center text-cuba-ink shadow-cuba-sm" role="alert">
+                                <h3 className="text-xl font-bold">Job listings are temporarily unavailable</h3>
+                                <p className="mx-auto mt-2 max-w-md text-sm text-cuba-ink-muted">The live job service could not return current listings. Please try again shortly.</p>
+                                <button type="button" onClick={() => loadJobs(1)} className="cuba-btn-primary mt-5 rounded-xl px-5 py-2.5 text-sm font-semibold">Try again</button>
+                            </div>
                         ) : displayedJobs.length === 0 ? (
                             <div className="bg-white border border-slate-200/90 rounded-2xl p-10 sm:p-14 text-center shadow-xs">
                                 <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-inner">
                                     <FaSearch className="w-7 h-7" />
                                 </div>
                                 <h3 className="text-xl font-bold text-slate-900 mb-2">
-                                    {t('JobsUpdate.MainJobListings.noJobsFound', 'No jobs found matching your criteria')}
+                                    {hasActiveFilters
+                                        ? t('JobsUpdate.MainJobListings.noJobsFound', 'No jobs found matching your criteria')
+                                        : 'No active job listings are currently available.'}
                                 </h3>
                                 <p className="text-slate-600 mb-6 text-sm max-w-md mx-auto leading-relaxed">
-                                    {t('JobsUpdate.MainJobListings.tryAdjusting', 'Try broadening your search keywords, resetting your filters, or browsing all available roles.')}
+                                    {hasActiveFilters
+                                        ? t('JobsUpdate.MainJobListings.tryAdjusting', 'Try broadening your search keywords, resetting your filters, or browsing all available roles.')
+                                        : 'Check back later for newly published openings.'}
                                 </p>
                                 <button
                                     onClick={clearAllFilters}
@@ -1327,8 +817,6 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
                 isSaved={selectedJob ? savedJobs.has(selectedJob.id) : false} 
                 onToggleSaved={toggleSavedJob}
                 onApplyNow={handleOpenJobApplication}
-                currency={currencyConfig.currency}
-                currencySymbol={currencyConfig.currencySymbol}
             />
 
             {/* Job Application Modal */}

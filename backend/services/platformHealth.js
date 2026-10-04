@@ -506,6 +506,9 @@ async function buildServices(app) {
 }
 
 const MOUNTED_ROUTERS = Object.freeze([
+  { prefix: '/api/jobs-data', module: () => require('../routes/jobsData').jobsDataRouter },
+  { prefix: '/api/public', module: () => require('../routes/publicDiscovery').publicDiscoveryRouter },
+  { prefix: '/api/blog-data', module: () => require('../routes/blogData').blogDataRouter },
   { prefix: '/api', module: () => require('../routes/ai') },
   { prefix: '/api', module: () => require('../routes/email') },
   { prefix: '/api/email', module: () => require('../routes/email') },
@@ -521,6 +524,11 @@ const PUBLIC_API_PATHS = new Set([
   '/api/auth/linkedin', '/api/auth/linkedin/callback', '/api/auth/github', '/api/auth/github/callback',
   '/api/auth/oauth/exchange', '/api/service-availability',
 ]);
+const PUBLIC_READ_PATHS = new Set([
+  '/api/platform/public-config', '/api/jobs-data', '/api/blog-data', '/api/blog-data/categories',
+  '/api/public/geo/regions', '/llms.txt', '/llms-full.txt', '/sitemap.xml',
+  '/public/custom-pages.json', '/public/trusted-by.json',
+]);
 const DEPENDENCY_RULES = Object.freeze([
   [/^\/api\/paypal\//, 'payments-paypal'], [/^\/api\/paytm\//, 'payments-paytm'],
   [/^\/api\/phonepe\//, 'payments-phonepe'], [/^\/api\/razorpay\//, 'payments-razorpay'],
@@ -533,6 +541,10 @@ const DEPENDENCY_RULES = Object.freeze([
 ]);
 
 function moduleForPath(pathname) {
+  if (pathname === '/llms.txt' || pathname === '/llms-full.txt' || pathname === '/sitemap.xml') return 'discovery';
+  if (pathname.startsWith('/api/public/')) return 'public-discovery';
+  if (pathname.startsWith('/api/jobs-data')) return 'jobs';
+  if (pathname.startsWith('/api/blog-data')) return 'content';
   if (pathname.startsWith('/api/platform')) return 'platform';
   if (pathname.startsWith('/api/admin')) return 'admin';
   if (pathname.startsWith('/api/enterprise')) return 'enterprise';
@@ -547,8 +559,15 @@ function moduleForPath(pathname) {
   if (pathname.startsWith('/api/account') || pathname.startsWith('/api/profile')) return 'account';
   return 'core';
 }
-function authRequirementFor(pathname) {
+function authRequirementFor(pathname, method = 'GET') {
   if (PUBLIC_API_PATHS.has(pathname)) return 'PUBLIC';
+  if (['GET', 'HEAD'].includes(String(method).toUpperCase()) && (
+    PUBLIC_READ_PATHS.has(pathname)
+    || pathname.startsWith('/api/public/')
+    || pathname === '/api/jobs-data/:id'
+    || pathname === '/api/blog-data/slug/:slug'
+    || pathname === '/api/blog-data/:id'
+  )) return 'PUBLIC';
   if (pathname.startsWith('/api/platform') || pathname.startsWith('/api/admin')) return 'ADMIN';
   if (pathname.startsWith('/api/enterprise/m2m')) return 'SERVICE_KEY';
   if (pathname.startsWith('/api/enterprise')) return 'TENANT_MEMBER';
@@ -588,7 +607,7 @@ function buildApiMatrix(app, servicesById) {
     const explicit = dependencyId ? servicesById.get(dependencyId) : null;
     const database = servicesById.get('database');
     const authentication = servicesById.get('authentication');
-    const requirement = authRequirementFor(endpoint.path);
+    const requirement = authRequirementFor(endpoint.path, endpoint.method);
     const dependencies = explicit ? [explicit] : requirement === 'PUBLIC' ? [servicesById.get('backend-api')] : [database, authentication];
     const states = dependencies.filter(Boolean).map(item => item.state);
     const state = states.length ? worstState(states) : STATE.UNKNOWN;

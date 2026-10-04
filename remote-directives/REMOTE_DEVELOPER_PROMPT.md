@@ -75,11 +75,15 @@ cp backend/.env.example backend/.env
 
 ### 1.4 Database & Migrations
 The authoritative database is **MariaDB** (MySQL-compatible).
-- Database migrations are located in: `backend/database/migrations/` (migrations `001` through `020`).
+- Database migrations are located in: `backend/database/migrations/` (migrations `001` through `023`).
+  - *New in this release*:
+    - `021_llms_full_document.sql`
+    - `022_geo_delhi_region_alias.sql`
+    - `023_llms_default_documents.sql`
 - Ensure MariaDB is running and migrations are applied:
 ```bash
 cd backend
-npm run migrate # or apply SQL scripts 001-020 sequentially
+npm run migrate # or apply SQL scripts 001-023 sequentially
 cd ..
 ```
 
@@ -188,10 +192,10 @@ Every directive JSON is located in `remote-directives/DIR-XXX.json` and mirrored
 
 ### ⚡ GROUP 2: ACTIVE CORE DIRECTIVES (DIR-024 → DIR-034) — IMPLEMENT & CERTIFY
 
-| ID | Priority | Rating | Directive Title | File Path | Implementation Focus |
+| ID | Priority | Status | Directive Title | File Path | Focus / Action |
 |:---|:---:|:---:|:---|:---|:---|
-| **DIR-024** | **P1** | **10/10** | Autonomous Geo-SEO Engine & Schema.org JSON-LD Career Landing System | `remote-directives/DIR-024.json` | Regional hubs (`/jobs/in/:state`, `/jobs/city/:city`), Schema.org JSON-LD, `/llms.txt`. |
-| **DIR-025** | **P0** | **10/10** | Universal Link Crawler, Route Completeness & Zero-404 Navigation Freeze | `remote-directives/DIR-025.json` | Deep crawl of all routes, mount missing sub-routes, zero broken links, 404 fallback. |
+| **DIR-024** | **P1** | **APPROVED_FROZEN (10/10)** | Autonomous Geo-SEO Engine & Schema.org JSON-LD Career Landing System | `remote-directives/DIR-024.json` | ✅ Certified, verified 861 tests, frozen on main. |
+| **DIR-025** | **P0** | **🚀 ACTIVE NOW — START HERE** | Universal Link Crawler, Route Completeness & Zero-404 Navigation Freeze | `remote-directives/DIR-025.json` | Deep crawl of all routes, mount missing sub-routes, zero broken links, 404 fallback. |
 | **DIR-026** | **P1** | **10/10** | Real-Time In-App Candidate & Recruiter Messaging 10/10 Overhaul | `remote-directives/DIR-026.json` | Candidate ↔ Recruiter messaging, `enableMessagesModule` gating, unread badges. |
 | **DIR-027** | **P1** | **10/10** | Job Portal Clean Architecture & External Scraper Deprecation | `remote-directives/DIR-027.json` | Purge Naukri scraper; rebrand admin modules; pure direct-hiring board. |
 | **DIR-028** | **P2** | **10/10** | Platform-Wide Orphaned Code, Dead Tests & File Hygiene 10/10 Overhaul | `remote-directives/DIR-028.json` | Dry-run quarantine, remove dead code/files, verify zero runtime regressions. |

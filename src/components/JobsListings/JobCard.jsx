@@ -251,7 +251,7 @@ const JobCard = ({ job, isSaved, onToggleSaved, onViewDetails, onAuthRequired, o
                         {sanitizeImageUrl(job.companyImage) && !imageError ? (
                             <img
                                 src={sanitizeImageUrl(job.companyImage)}
-                                alt={`${job.company} logo`}
+                                alt={`${job.company || 'Employer'} logo`}
                                 className="w-full h-full object-contain rounded-xl p-1"
                                 onError={() => setImageError(true)}
                                 onLoad={() => setImageError(false)}
@@ -266,19 +266,19 @@ const JobCard = ({ job, isSaved, onToggleSaved, onViewDetails, onAuthRequired, o
                     {/* Job Details Header */}
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                            <h3
-                                onClick={() => onViewDetails && onViewDetails(job)}
-                                className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors cursor-pointer truncate leading-snug tracking-tight">
-                                {job.title}
+                            <h3 className="min-w-0">
+                                <button
+                                    type="button"
+                                    onClick={() => onViewDetails && onViewDetails(job)}
+                                    className="text-left text-base sm:text-lg font-bold text-slate-900 group-hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-600 transition-colors truncate leading-snug tracking-tight"
+                                >
+                                    {job.title || 'Untitled listing'}
+                                </button>
                             </h3>
                         </div>
 
-                        {/* Company Name with Verified Employer Badge */}
                         <div className="flex items-center gap-1.5 mb-2">
-                            <span className="text-slate-800 font-semibold text-sm truncate">{job.company}</span>
-                            <span className="inline-flex items-center text-blue-500 shrink-0" title="Verified Employer">
-                                <FaCheckCircle className="w-3.5 h-3.5" />
-                            </span>
+                            <span className="text-slate-800 font-semibold text-sm truncate">{job.company || 'Employer not listed'}</span>
                         </div>
 
                         {/* Metadata Row (Cleaned up: No duplicate date display) */}
@@ -288,7 +288,7 @@ const JobCard = ({ job, isSaved, onToggleSaved, onViewDetails, onAuthRequired, o
                                 <span className="font-medium text-slate-600 truncate max-w-[220px]">
                                     {job.location && job.country
                                         ? `${job.location}, ${job.country}`
-                                        : job.location || job.country || t('JobsUpdate.JobCard2.jobInfo.locationTBD', 'Location TBD')}
+                                        : job.location || job.country || 'Location not specified'}
                                 </span>
                             </div>
                             {typeof job.applicants === 'number' && (
@@ -299,9 +299,9 @@ const JobCard = ({ job, isSaved, onToggleSaved, onViewDetails, onAuthRequired, o
                                     </span>
                                 </div>
                             )}
-                            <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50/80 px-2 py-0.5 rounded-md border border-emerald-200/60">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                <span>Actively Hiring</span>
+                            <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" aria-hidden="true" />
+                                <span>Active listing</span>
                             </div>
                         </div>
                     </div>
@@ -415,10 +415,12 @@ const JobCard = ({ job, isSaved, onToggleSaved, onViewDetails, onAuthRequired, o
                     </button>
                 </div>
 
-                <div className="inline-flex items-center gap-1.5 text-xs text-slate-500 font-medium bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200/70 self-start sm:self-auto">
-                    <FaClock className="w-3 h-3 text-slate-400 shrink-0" />
-                    <span>{t('JobsUpdate.JobCard2.jobInfo.posted', 'Posted {{postedDate}}', { postedDate: formatPostedDate(job.postedDate) })}</span>
-                </div>
+                {job.postedDate && (
+                    <div className="inline-flex items-center gap-1.5 text-xs text-slate-600 font-medium bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 self-start sm:self-auto">
+                        <FaClock aria-hidden="true" className="w-3 h-3 text-slate-500 shrink-0" />
+                        <span>{t('JobsUpdate.JobCard2.jobInfo.posted', 'Posted {{postedDate}}', { postedDate: formatPostedDate(job.postedDate) })}</span>
+                    </div>
+                )}
             </div>
 
 

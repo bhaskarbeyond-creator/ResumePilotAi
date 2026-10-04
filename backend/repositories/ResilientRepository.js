@@ -24,7 +24,7 @@ const READ_METHODS = new Set([
     'getLiveInterviewSession',
     'getPortfolio', 'getPortfolios', 'getPublishedPortfolioBySlug', 'getPublishedPortfolios', 'isPortfolioSlugAvailable',
     'getCover', 'getCovers',
-    'getJob', 'getJobs', 'getApplications',
+    'getJob', 'getJobs', 'getRegionalJobs', 'getRegionalJobStats', 'getApplications',
     'getBlogPosts', 'getBlogPostBySlug', 'getBlogPostById',
     'getCustomPages', 'getCustomPageBySlug',
     'getTrustedBy',

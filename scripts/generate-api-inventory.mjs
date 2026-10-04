@@ -8,7 +8,19 @@ import { collectRoutes } from '../backend/services/platformHealth.js';
 const require = createRequire(import.meta.url);
 const app = require('../backend/index.js');
 const routes = collectRoutes(app);
-const publicPaths = new Set(['/healthz', '/readyz', '/api/healthz', '/api/readyz', '/api/health', '/api/service-availability', '/api/platform/version', '/llms.txt', '/public/custom-pages.json', '/public/trusted-by.json']);
+const publicPaths = new Set([
+  '/healthz', '/readyz', '/api/healthz', '/api/readyz', '/api/health', '/api/service-availability',
+  '/api/platform/version', '/api/platform/public-config', '/api/public/geo/regions',
+  '/api/public/custom-pages', '/api/public/trusted-by', '/api/public/featured-companies',
+  '/api/jobs-data', '/api/blog-data', '/api/blog-data/categories', '/api/enterprise/status',
+  '/llms.txt', '/llms-full.txt', '/sitemap.xml', '/public/custom-pages.json', '/public/trusted-by.json',
+]);
+const isPublicPath = (method, path) => publicPaths.has(path) || (['GET', 'HEAD'].includes(method) && (
+  path.startsWith('/api/public/')
+  || path === '/api/jobs-data/:id'
+  || path === '/api/blog-data/:id'
+  || path === '/api/blog-data/slug/:slug'
+));
 const superAdmin = new Set([
   'GET /api/admin/firebase-service-account', 'POST /api/admin/ai-settings', 'POST /api/admin/ai/test-provider', 'POST /api/admin/ai/fetch-models',
   'POST /api/admin/payment-settings', 'POST /api/admin/payment/test-provider', 'POST /api/admin/system-health-settings',
@@ -20,8 +32,8 @@ const moduleFor = path => path.startsWith('/api/enterprise') ? 'enterprise' : pa
 const uiFor = path => path.startsWith('/api/platform') ? 'src/components/admin' : path.startsWith('/api/admin') || path.startsWith('/api/email/admin') ? 'src/components/admin' : path.startsWith('/api/enterprise') ? 'src/enterprise' : 'consumer/runtime';
 const adminControlPaths = new Set(['/api/auth/purge-orphaned-auth', '/api/auth/github/test-credentials', '/api/auth/linkedin/test-credentials', '/api/send-sms', '/api/email/logs', '/api/email/resend', '/api/email/templates', '/api/logs', '/api/resend', '/api/templates', '/api/send-email']);
 const isAdminControlPath = path => path.startsWith('/api/platform') || path.startsWith('/api/admin') || path.startsWith('/api/email/admin') || adminControlPaths.has(path);
-const authFor = path => publicPaths.has(path) ? 'PUBLIC' : isAdminControlPath(path) ? 'BEARER_ADMIN' : path.startsWith('/api/enterprise/m2m') ? 'SERVICE_KEY' : 'BEARER_USER';
-const roleFor = (method, path) => publicPaths.has(path) ? 'PUBLIC' : superAdmin.has(`${method} ${path}`) || platformSuper.test(`${method} ${path}`) ? 'SUPER_ADMIN' : path.startsWith('/api/enterprise/m2m') ? 'SERVICE_KEY' : isAdminControlPath(path) ? 'ADMIN+' : path.startsWith('/api/enterprise') ? 'TENANT_POLICY' : 'AUTHENTICATED';
+const authFor = (method, path) => isPublicPath(method, path) ? 'PUBLIC' : isAdminControlPath(path) ? 'BEARER_ADMIN' : path.startsWith('/api/enterprise/m2m') ? 'SERVICE_KEY' : 'BEARER_USER';
+const roleFor = (method, path) => isPublicPath(method, path) ? 'PUBLIC' : superAdmin.has(`${method} ${path}`) || platformSuper.test(`${method} ${path}`) ? 'SUPER_ADMIN' : path.startsWith('/api/enterprise/m2m') ? 'SERVICE_KEY' : isAdminControlPath(path) ? 'ADMIN+' : path.startsWith('/api/enterprise') ? 'TENANT_POLICY' : 'AUTHENTICATED';
 const auditFor = (method, path) => ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method) || path.includes('/audit') || path.includes('/firebase-service-account') ? 'YES' : 'NO';
 const okFor = method => method === 'POST' ? '200/201/202/204' : method === 'DELETE' ? '200/204' : '200';
 const failFor = () => '400/401/403/404/409/429/500/501/502/503';
@@ -82,7 +94,7 @@ const lines = [
 ];
 for (const route of routes) {
   const key = `${route.method} ${route.path}`;
-  lines.push(`| ${route.method} | \`${route.path}\` | ${authFor(route.path)} | ${roleFor(route.method, route.path)} | ${route.path.startsWith('/api/enterprise') ? 'TENANT/PLATFORM' : route.path.startsWith('/api/admin') || route.path.startsWith('/api/platform') ? 'PLATFORM' : '-'} | ${roleFor(route.method, route.path) === 'SUPER_ADMIN' ? 'YES' : '-'} | ${okFor(route.method)} | ${failFor(route.method)} | ${route.path.startsWith('/api/') && !route.path.startsWith('/api/health') ? 'SEE HEALTH' : '-'} | NOT MEASURED | NOT MEASURED | NOT VERIFIED | ${uiFor(route.path)} | ${auditFor(route.method, route.path)} | NOT VERIFIED |`);
+  lines.push(`| ${route.method} | \`${route.path}\` | ${authFor(route.method, route.path)} | ${roleFor(route.method, route.path)} | ${route.path.startsWith('/api/enterprise') ? 'TENANT/PLATFORM' : route.path.startsWith('/api/admin') || route.path.startsWith('/api/platform') ? 'PLATFORM' : '-'} | ${roleFor(route.method, route.path) === 'SUPER_ADMIN' ? 'YES' : '-'} | ${okFor(route.method)} | ${failFor(route.method)} | ${route.path.startsWith('/api/') && !route.path.startsWith('/api/health') ? 'SEE HEALTH' : '-'} | NOT MEASURED | NOT MEASURED | NOT VERIFIED | ${uiFor(route.path)} | ${auditFor(route.method, route.path)} | NOT VERIFIED |`);
 }
 lines.push('', '## 6. Change log', '', '- Added source-generated `/api/platform/version` deployment identity.', '- Added authoritative Admin user, collection, payment-ledger, tenant-detail, and tenant-rename routes.', '- Added explicit machine-readable disabled/unavailable states for Enterprise and provider integrations.');
 fs.writeFileSync('docs/FINAL_API_INVENTORY.md', `${lines.join('\n')}\n`);

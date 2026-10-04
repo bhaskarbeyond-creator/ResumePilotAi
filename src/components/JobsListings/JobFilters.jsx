@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FaChevronDown, FaChevronUp, FaBriefcase, FaGraduationCap, FaLaptop, FaDollarSign, FaFilter, FaTrashAlt } from 'react-icons/fa';
 import { withTranslation } from 'react-i18next';
+import { SALARY_FILTER_BANDS, formatSalaryBandLabel } from '../../services/jobs/salaryFilters';
 
 const JobFilters = ({
     selectedFilters,
@@ -10,8 +11,7 @@ const JobFilters = ({
     setExpandedFilter,
     showFilters,
     filterCounts = {},
-    currency = 'USD',
-    currencySymbol = '$',
+    currency = 'INR',
     t,
 }) => {
     // Multi-section expanded state - open Job Type and Work Mode by default for immediate discoverability
@@ -42,12 +42,10 @@ const JobFilters = ({
             { value: 'senior-level', label: t('JobsUpdate.JobFilters.experienceLevel.seniorLevel', 'Senior Level') },
             { value: 'executive', label: t('JobsUpdate.JobFilters.experienceLevel.executive', 'Executive / Director') },
         ],
-        salaryRange: [
-            { value: '$40k - $60k', label: currencySymbol && currencySymbol !== '$' ? `${currencySymbol}40k - ${currencySymbol}60k` : t('JobsUpdate.JobFilters.salaryRange.range1', '$40k - $60k') },
-            { value: '$60k - $80k', label: currencySymbol && currencySymbol !== '$' ? `${currencySymbol}60k - ${currencySymbol}80k` : t('JobsUpdate.JobFilters.salaryRange.range2', '$60k - $80k') },
-            { value: '$80k - $120k', label: currencySymbol && currencySymbol !== '$' ? `${currencySymbol}80k - ${currencySymbol}120k` : t('JobsUpdate.JobFilters.salaryRange.range3', '$80k - $120k') },
-            { value: '$120k+', label: currencySymbol && currencySymbol !== '$' ? `${currencySymbol}120k+` : t('JobsUpdate.JobFilters.salaryRange.range4', '$120k+') },
-        ],
+        salaryRange: SALARY_FILTER_BANDS.map(band => ({
+            value: band.key,
+            label: formatSalaryBandLabel(band, currency),
+        })),
     };
 
     const sectionIcons = {

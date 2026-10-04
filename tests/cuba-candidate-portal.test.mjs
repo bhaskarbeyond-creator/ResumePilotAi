@@ -108,7 +108,9 @@ describe('Candidate navigation integrity (§16, zero dead links)', () => {
         }
         assert.match(SHELL, /buildCommands/);
         assert.match(SHELL, /CANDIDATE_NAVIGATION/);
-describe('Candidate active-state resolution', () => {
+    });
+
+    describe('Candidate active-state resolution', () => {
     it('marks the exact match active', () => {
         assert.equal(resolveActiveItem('/dashboard/interview', CANDIDATE_NAVIGATION)?.id, 'interview');
     });
@@ -203,30 +205,28 @@ describe('AI Career Briefing truthfulness (§23, §46)', () => {
     });
 });
 
-describe('Candidate rollout safety (§49)', () => {
-    it('defaults to the legacy shell so no user is opted in silently', () => {
-        assert.match(APP_SHELL, /useState\(\(\) => isCubaShellEnabled\(\)\)/, 'the Cuba shell reads persisted preference (defaults to legacy/off)');
-        assert.match(APP_SHELL, /setCubaShell\(isCubaShellEnabled\(\)\)/);
-    });
+    describe('Candidate rollout safety (§49)', () => {
+        it('defaults to the legacy shell so no user is opted in silently', () => {
+            assert.match(APP_SHELL, /useState\(\(\) => isCubaShellEnabled\(\)\)/, 'the Cuba shell reads persisted preference (defaults to legacy/off)');
+            assert.match(APP_SHELL, /setCubaShell\(isCubaShellEnabled\(\)\)/);
+        });
 
-    it('keeps the legacy candidate chrome fully intact and reachable', () => {
-        // §47: the proven shell is superseded behind a flag, never removed.
-        assert.match(APP_SHELL, /<ProfileDisplay/);
-        assert.match(APP_SHELL, /dashboardContentWrapper/);
-        assert.match(APP_SHELL, /data-shell-variant="legacy"/);
-        assert.match(APP_SHELL, /data-shell-variant="cuba"/);
-    });
+        it('keeps the legacy candidate chrome fully intact and reachable', () => {
+            // §47: the proven shell is superseded behind a flag, never removed.
+            assert.match(APP_SHELL, /<ProfileDisplay/);
+            assert.match(APP_SHELL, /dashboardContentWrapper/);
+            assert.match(APP_SHELL, /data-shell-variant="legacy"/);
+            assert.match(APP_SHELL, /data-shell-variant="cuba"/);
+        });
 
-    it('lazy-loads the opt-in shell so the default path never downloads it', () => {
-        assert.match(APP_SHELL, /React\.lazy\(\(\) => import\('\.\.\/Candidate\/CubaCandidateShell'\)\)/);
-        assert.match(APP_SHELL, /<Suspense/);
-    });
+        it('lazy-loads the opt-in shell so the default path never downloads it', () => {
+            assert.match(APP_SHELL, /React\.lazy\(\(\) => import\('\.\.\/Candidate\/CubaCandidateShell'\)\)/);
+            assert.match(APP_SHELL, /<Suspense/);
+        });
 
-    it('adds no authorization logic to the candidate shell', () => {
-        const code = SHELL.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
-        assert.doesNotMatch(code, /permissionsFor|isSuperAdmin|role\s*===|checkIfAdmin/);
-    });
-});
-
+        it('adds no authorization logic to the candidate shell', () => {
+            const code = SHELL.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+            assert.doesNotMatch(code, /permissionsFor|isSuperAdmin|role\s*===|checkIfAdmin/);
+        });
     });
 });

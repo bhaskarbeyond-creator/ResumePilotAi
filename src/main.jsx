@@ -143,6 +143,7 @@ const EmployerPortal = lazy(() => import('./components/EmployerPortal/EmployerPo
 const Features = lazy(() => import('./components/Features/Features'));
 const JobsLanding = lazy(() => import('./components/JobsLanding/JobsLanding'));
 const MainJobListings = lazy(() => import('./components/JobsListings/MainJobListings'));
+const RegionalJobsPage = lazy(() => import('./components/JobsListings/RegionalJobsPage'));
 const BlogList = lazy(() => import('./components/Blog/BlogList/BlogList'));
 const BlogPost = lazy(() => import('./components/Blog/BlogPost/BlogPost'));
 const BlogEditor = lazy(() => import('./components/Blog/BlogEditor/BlogEditor'));
@@ -452,7 +453,16 @@ const AuthWrapper = () => {
         || window.location.pathname.startsWith('/adm')
         || window.location.pathname.startsWith('/export/');
     if (maintenance.enabled && !maintenance.admin && !emergencyPath) {
-        return <main className="flex min-h-screen items-center justify-center bg-slate-950 p-6 text-white"><div className="max-w-lg rounded-2xl border border-slate-700 bg-slate-900 p-8 text-center shadow-2xl" role="status"><h1 className="text-2xl font-bold">{maintenance.title || 'Scheduled maintenance'}</h1><p className="mt-4 text-slate-300">{maintenance.message}</p><p className="mt-6 text-sm text-slate-400">Administrators can use the protected console during maintenance.</p><a href="/login" className="mt-5 inline-block rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900">Administrator sign in</a></div></main>;
+        return (
+            <main className="flex min-h-screen items-center justify-center bg-cuba-canvas p-6 text-cuba-ink">
+                <div className="max-w-lg rounded-2xl border border-cuba-line bg-cuba-card p-8 text-center shadow-2xl" role="status">
+                    <h1 className="text-2xl font-bold">{maintenance.title || 'Scheduled maintenance'}</h1>
+                    <p className="mt-4 text-cuba-ink-muted">{maintenance.message}</p>
+                    <p className="mt-6 text-sm text-cuba-ink-subtle">Administrators can use the protected console during maintenance.</p>
+                    <a href="/login" className="mt-5 inline-block rounded-lg bg-cuba-primary-fill px-4 py-2 text-sm font-semibold text-cuba-on-primary">Administrator sign in</a>
+                </div>
+            </main>
+        );
     }
 
     return (
@@ -559,6 +569,8 @@ const AuthWrapper = () => {
                             <Route path="/about" element={<Navigate to="/p/about-us" replace />} />
                             <Route path="/about-us" element={<Navigate to="/p/about-us" replace />} />
                             <Route path="/jobs" element={<JobsLanding />} />
+                            <Route path="/jobs/city/:slug" element={<RegionalJobsPage kind="city" />} />
+                            <Route path="/jobs/in/:slug" element={<RegionalJobsPage kind="state" />} />
                             <Route path="/jobs/portal" element={<JobsPortalRoute user={user} />} />
                             <Route path="/jobs/portal/:jobId" element={<JobsPortalRoute user={user} />} />
                             <Route path="/jobs/browse" element={<JobsBrowseRoute user={user} />} />

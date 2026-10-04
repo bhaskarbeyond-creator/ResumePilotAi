@@ -19,6 +19,7 @@
  */
 
 const crypto = require('crypto');
+const { projectRegionLocation, summarizeRegion } = require('../services/geoRegionalService');
 
 function _uid(prefix) {
     return `${prefix}_${crypto.randomBytes(9).toString('hex')}`;
@@ -380,12 +381,46 @@ class InMemoryRepository {
         if (employerId) rows = rows.filter(j => j.employerId === employerId);
         return rows.slice(0, limit);
     }
+    async getRegionalJobs({ likeBinds = [], limit = 100 } = {}) {
+        const now = Date.now();
+        const aliases = (Array.isArray(likeBinds) ? likeBinds : [])
+            .map(value => String(value || '').replace(/^%|%$/g, '').toLowerCase())
+            .filter(Boolean);
+        if (!aliases.length) return [];
+        return Array.from(this._jobs.values())
+            .filter(job => {
+                const status = String(job.status || '').trim().toLowerCase();
+                const expiry = job.expires_at || job.expiresAt;
+                const expiryTime = expiry ? new Date(expiry).getTime() : null;
+                const expired = expiry ? !Number.isFinite(expiryTime) || expiryTime <= now : false;
+                const deleted = Boolean(job.deleted_at || job.deletedAt || job.tombstoned || job.is_deleted || job.isDeleted);
+                const location = String(job.location || '').toLowerCase();
+                return status === 'active' && !deleted && !expired && aliases.some(alias => location.includes(alias));
+            })
+            .slice(0, Math.max(1, Math.min(Number.parseInt(limit, 10) || 100, 200)));
+    }
+    async getRegionalJobStats({ kind = 'city', slug = '', likeBinds = [] } = {}) {
+        const rows = await this.getRegionalJobs({ likeBinds, limit: 200 });
+        const summary = summarizeRegion({ kind, slug, name: '', stateSlug: '', stateName: '' }, rows);
+        return {
+            vacancyCount: summary.vacancyCount,
+            companyCount: summary.companyCount,
+            topCompanies: summary.topCompanies,
+            salaryRanges: summary.salaryRanges,
+        };
+    }
     async getJob(jobId) {
         return this._jobs.get(jobId) || null;
     }
     async saveJob(jobId, data = {}) {
         const existing = this._jobs.get(jobId);
-        const saved = { id: jobId, createdAt: existing?.createdAt || new Date().toISOString(), ...existing, ...data };
+        const saved = {
+            id: jobId,
+            createdAt: existing?.createdAt || new Date().toISOString(),
+            ...existing,
+            ...data,
+            ...projectRegionLocation(data.location ?? existing?.location),
+        };
         this._jobs.set(jobId, saved);
         return saved;
     }

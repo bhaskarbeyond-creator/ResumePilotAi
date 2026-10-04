@@ -20,11 +20,31 @@ Website: ${domain}
 ## Accuracy note
 Features, payment providers, pricing, and regional availability depend on current runtime configuration. Consult the website for current details. This document does not assert rankings, ratings, employment outcomes, or crawler endorsement.`;
 
+const buildFactualFullDocument = (domain) => `# IME365 — detailed product information
+
+Website: ${domain}
+
+## Service overview
+IME365 is a browser-based resume and career-document application. People can use the product to create and edit resumes and cover letters, preview documents, and use supported export workflows.
+
+## Product areas
+- Resume editing and registered resume layouts.
+- Cover-letter editing and registered cover-letter layouts.
+- Portfolio and job-search tools where those modules are available.
+- Optional AI-assisted writing and job tools only when enabled in the current runtime configuration.
+
+## Identity and application data
+Firebase Authentication is used for identity. MariaDB is the authoritative store for application data. Availability and access depend on the current service configuration.
+
+## Current information
+Consult the website and its live settings for current feature availability, plans, billing providers, and regional support. This document is operator-maintained reference material; it does not promise rankings, reviews, user totals, hiring outcomes, or crawler citations.`;
+
 const LlmGeoSettings = () => {
     const activeDomain = getActiveDomainUrl();
     const [llmGeoConfig, setLlmGeoConfig] = useState({
         enableLlmGeo: false,
         llmsTxtContent: buildFactualLlmsDocument(activeDomain),
+        llmsFullTxtContent: buildFactualFullDocument(activeDomain),
     });
     const [loading, setLoading] = useState(true);
     const [authoritativeLoaded, setAuthoritativeLoaded] = useState(false);
@@ -60,8 +80,9 @@ const LlmGeoSettings = () => {
         setLlmGeoConfig((prev) => ({
             ...prev,
             enableLlmGeo: false,
-                llmsTxtContent: buildFactualLlmsDocument(activeDomain),
-                                    }));
+            llmsTxtContent: buildFactualLlmsDocument(activeDomain),
+            llmsFullTxtContent: buildFactualFullDocument(activeDomain),
+        }));
         setStatusMessage({ type: 'success', text: 'Loaded the factual default-off discovery preset. Review the document before publishing.' });
         setTimeout(() => setStatusMessage(null), 3000);
     };
@@ -179,8 +200,34 @@ const LlmGeoSettings = () => {
                         placeholder="# IME365..."
                         className="w-full px-4 py-3 text-xs font-mono border border-slate-700 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none bg-slate-950 text-purple-300 leading-relaxed"
                     ></textarea>
+                    <p className="mt-1 text-[11px] text-slate-500">
+                        {llmGeoConfig.llmsTxtContent.length.toLocaleString()} / 20,000 characters. Publication validates unsupported claims on the server.
+                    </p>
                 </div>
 
+                <div>
+                    <div className="flex items-center justify-between mb-2">
+                        <label htmlFor="llmsFullTxtContent" className="block text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                            <FaFileAlt className="text-indigo-600" /> Optional detailed /llms-full.txt document
+                        </label>
+                        <span className="text-[11px] text-slate-400 font-mono">Plain-text Markdown</span>
+                    </div>
+                    <textarea
+                        id="llmsFullTxtContent"
+                        name="llmsFullTxtContent"
+                        rows={14}
+                        maxLength={60000}
+                        value={llmGeoConfig.llmsFullTxtContent || ''}
+                        onChange={handleChange}
+                        disabled={!authoritativeLoaded}
+                        placeholder="# Detailed, verified product information…"
+                        aria-describedby="llmsFullTxtHelp"
+                        className="w-full px-4 py-3 text-xs font-mono border border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-950 text-indigo-100 leading-relaxed"
+                    />
+                    <p id="llmsFullTxtHelp" className="mt-1 text-[11px] text-slate-500">
+                        {String(llmGeoConfig.llmsFullTxtContent || '').length.toLocaleString()} / 60,000 characters. This optional companion shares the same publication switch and server-side factual-claims checks.
+                    </p>
+                </div>
             </div>
 
             {/* Submit Bar */}

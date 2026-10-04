@@ -82,7 +82,7 @@ function normalizeGeoSeoSettings(value = {}) {
             // Only absolute HTTPS origins may be advertised as canonical; a
             // relative or javascript: value would poison the sitemap and the
             // JSON-LD `url` fields that consume this setting.
-            if (parsed.protocol !== 'https:' || parsed.username || parsed.password || parsed.search || parsed.hash) canonicalUrl = '';
+            if (parsed.protocol !== 'https:' || parsed.username || parsed.password || parsed.search || parsed.hash || (parsed.pathname && parsed.pathname !== '/')) canonicalUrl = '';
         } catch {
             canonicalUrl = '';
         }

@@ -26,6 +26,7 @@
     "nodemon": "3.1.14",
     "paytmchecksum": "1.5.1",
     "playwright": "^1.62.1",
+    "sharp": "^0.35.5",
     "stripe": "^22.5.0"
   },
   "overrides": {

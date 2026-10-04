@@ -1,7 +1,8 @@
 import React from 'react';
-import { FaSearch, FaFilter, FaPlus, FaBriefcase, FaHeart, FaTimes, FaFire, FaLaptop, FaBolt, FaStar, FaDollarSign, FaHandshake, FaCoins, FaRupeeSign } from 'react-icons/fa';
+import { FaSearch, FaFilter, FaPlus, FaBriefcase, FaHeart, FaTimes, FaFire, FaLaptop, FaBolt, FaStar, FaHandshake, FaCoins } from 'react-icons/fa';
 import CustomLocationAutocomplete from './CustomLocationAutocomplete';
 import { withTranslation } from 'react-i18next';
+import { SALARY_FILTER_BANDS, formatSalaryBandLabel } from '../../services/jobs/salaryFilters';
 
 const JobSearchBar = ({
     searchTerm,
@@ -19,7 +20,6 @@ const JobSearchBar = ({
     onQuickFilter,
     onSearch,
     currency = 'INR',
-    currencySymbol = '₹',
     selectedFilters = {},
     t,
 }) => {
@@ -45,7 +45,7 @@ const JobSearchBar = ({
         { id: 'remote', label: 'Remote', icon: FaLaptop, category: 'workMode', value: 'remote' },
         { id: 'full-time', label: 'Full-time', icon: FaBolt, category: 'jobType', value: 'full-time' },
         { id: 'senior', label: 'Senior Level', icon: FaStar, category: 'experienceLevel', value: 'senior' },
-        { id: 'salary100k', label: currencySymbol && currencySymbol !== '$' ? `${currencySymbol}120k+` : '$120k+', icon: FaCoins, category: 'salaryRange', value: '$120k+' },
+        { id: 'salary-highest-band', label: formatSalaryBandLabel(SALARY_FILTER_BANDS[3], currency), icon: FaCoins, category: 'salaryRange', value: SALARY_FILTER_BANDS[3].key },
         { id: 'contract', label: 'Contract', icon: FaHandshake, category: 'jobType', value: 'contract' },
     ];
 
@@ -80,7 +80,7 @@ const JobSearchBar = ({
                 <div>
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border border-blue-200/80 mb-3 shadow-xs">
                         <span className="flex h-2 w-2 rounded-full bg-blue-600 animate-pulse"></span>
-                        <span>{t('JobsUpdate.JobSearchBar.badge', 'Verified Opportunities • 10,000+ Active Roles')}</span>
+                        <span>{t('JobsUpdate.JobSearchBar.badge', 'Current public job listings')}</span>
                     </div>
                     <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
                         {t('JobsUpdate.JobSearchBar.headingPrefix', 'Find Your Next')}{' '}
@@ -89,7 +89,7 @@ const JobSearchBar = ({
                         </span>
                     </h1>
                     <p className="text-sm sm:text-base text-slate-600 mt-1.5 max-w-2xl font-normal">
-                        {t('JobsUpdate.JobSearchBar.subheading', 'Connect with vetted employers, discover competitive compensation, and land your ideal role worldwide.')}
+                        {t('JobsUpdate.JobSearchBar.subheading', 'Search currently published postings by role, location, work mode, and employer-provided details. Availability and application terms are set by each employer.')}
                     </p>
                 </div>
 

@@ -160,6 +160,16 @@ test('clean MariaDB 11.4 ownership, concurrency, outbox, payment, and deletion i
     assert.deepEqual(status.pending, []);
     assert.deepEqual(status.mismatches, []);
     assert.deepEqual(status.unknownApplied, []);
+
+    const [settingRows] = await pool.query(
+      "SELECT data FROM system_settings WHERE category = 'public_config' LIMIT 1"
+    );
+    assert.ok(settingRows[0], 'the clean migration chain must install authoritative public settings');
+    const publicConfig = typeof settingRows[0].data === 'string' ? JSON.parse(settingRows[0].data) : settingRows[0].data;
+    const { normalizeLlmDiscoverySettings } = require('../services/discoveryMetadata');
+    const llmGeo = normalizeLlmDiscoverySettings(publicConfig.llmGeo);
+    assert.ok(llmGeo.llmsTxtContent.length >= 40, 'the migration must provide a factual concise crawler document');
+    assert.ok(llmGeo.llmsFullTxtContent.length >= 40, 'the migration must provide a factual long-form crawler document');
   });
 
   await t.test('persists owner-scoped live interview state with optimistic revision guards', async () => {
@@ -213,7 +223,9 @@ test('clean MariaDB 11.4 ownership, concurrency, outbox, payment, and deletion i
     ];
     for (const flag of optionalFlags) assert.notEqual(publicConfig.modules?.[flag], true, `${flag} must not boot enabled`);
     assert.notEqual(publicConfig.geoSeo?.enableGeoSeo, true);
-    assert.deepEqual(publicConfig.llmGeo, { enableLlmGeo: false, llmsTxtContent: '' });
+    assert.equal(publicConfig.llmGeo?.enableLlmGeo, false);
+    assert.ok(typeof publicConfig.llmGeo?.llmsTxtContent === 'string' && publicConfig.llmGeo.llmsTxtContent.length >= 40);
+    assert.ok(typeof publicConfig.llmGeo?.llmsFullTxtContent === 'string' && publicConfig.llmGeo.llmsFullTxtContent.length >= 40);
     const websiteMeta = await repo.getSetting('website_meta');
     assert.equal(Object.hasOwn(websiteMeta, 'rating'), false);
   });

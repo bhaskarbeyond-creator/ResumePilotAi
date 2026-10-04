@@ -7,7 +7,7 @@ export async function getJobs(params = {}) {
 }
 
 export async function getJob(jobId) {
-    const data = await apiFetch(`/api/jobs-data/${jobId}`);
+    const data = await apiFetch(`/api/jobs-data/${encodeURIComponent(jobId)}`);
     return data.job;
 }
 

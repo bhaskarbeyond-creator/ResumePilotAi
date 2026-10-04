@@ -1956,6 +1956,10 @@
     background-color: rgba(129, 140, 248, 0.172) !important;
   }
 
+  [data-theme='dark'] .focus-within\:bg-indigo-50\/20.focus-within\:bg-indigo-50\/20:focus-within {
+    background-color: var(--cuba-primary-soft) !important;
+  }
+
   [data-theme='dark'] .hover\:bg-indigo-50\/40.hover\:bg-indigo-50\/40:hover {
     background-color: rgba(129, 140, 248, 0.204) !important;
   }

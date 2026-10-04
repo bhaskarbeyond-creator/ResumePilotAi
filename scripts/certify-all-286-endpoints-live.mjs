@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 /**
- * Authoritative 286-Endpoint Authenticated Production Certification Harness
+ * Authenticated API endpoint certification harness.
  *
- * This harness connects to live production (https://airesume.projectdemo.guru)
- * and executes semantic authenticated verification across all 286 production
- * endpoints collected from the Express runtime routing table.
+ * This harness targets PROD_BASE_URL (the production host by default) and
+ * derives its route count from the Express runtime routing table. The generated
+ * inventory may change as routes are added; no fixed endpoint count is treated
+ * as live production evidence.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -101,22 +102,27 @@ async function probeEndpoint(method, urlPath, { token, body, headers = {} } = {}
 const PUBLIC_EXPLICIT_PATHS = new Set([
   '/healthz', '/readyz', '/api/healthz', '/api/readyz', '/api/health',
   '/api/health/databases', '/api/service-availability', '/api/platform/version',
-  '/api/platform/public-config', '/llms.txt', '/public/custom-pages.json',
+  '/api/platform/public-config', '/api/jobs-data', '/api/blog-data', '/api/blog-data/categories',
+  '/api/public/geo/regions', '/llms.txt', '/llms-full.txt', '/sitemap.xml', '/public/custom-pages.json',
   '/public/trusted-by.json', '/custom-pages.json', '/trusted-by.json',
   '/api/custom-pages.json', '/api/trusted-by.json', '/api/enterprise/status',
   '/api/public/custom-pages', '/api/public/featured-companies', '/api/public/trusted-by',
-  '/api/auth/custom-password-reset'
 ]);
+const PUBLIC_MUTATION_PATHS = new Set(['/api/auth/custom-password-reset']);
 
-function isPublicEndpoint(routePath) {
-  if (PUBLIC_EXPLICIT_PATHS.has(routePath)) return true;
-  if (routePath.startsWith('/public/') || routePath.startsWith('/api/public/')) return true;
-  return false;
+function isPublicEndpoint(routePath, method = 'GET') {
+  const verb = String(method).toUpperCase();
+  if (PUBLIC_MUTATION_PATHS.has(routePath)) return verb === 'POST';
+  if (!['GET', 'HEAD'].includes(verb)) return false;
+  if (PUBLIC_EXPLICIT_PATHS.has(routePath) || routePath.startsWith('/public/') || routePath.startsWith('/api/public/')) return true;
+  return routePath === '/api/jobs-data/:id'
+    || routePath === '/api/blog-data/:id'
+    || routePath === '/api/blog-data/slug/:slug';
 }
 
 // Classification Helper
 function classifyEndpoint(method, routePath) {
-  if (isPublicEndpoint(routePath)) {
+  if (isPublicEndpoint(routePath, method)) {
     return 'PUBLIC_ACCESS';
   }
   if (routePath.startsWith('/api/auth/github') || routePath.startsWith('/api/auth/linkedin')) {
@@ -203,7 +209,7 @@ function generateSafePayload(method, routePath) {
 
 async function main() {
   console.log('================================================================');
-  console.log('ResumePilot AI — Authenticated 286-Endpoint Certification');
+  console.log('ResumePilot AI — Authenticated API Endpoint Certification');
   console.log(`Target Host: ${BASE_URL}`);
   console.log(`Timestamp:   ${new Date().toISOString()}`);
   console.log('================================================================\n');
@@ -253,7 +259,7 @@ async function main() {
 
   for (let i = 0; i < routes.length; i++) {
     const route = routes[i];
-    const isPublic = isPublicEndpoint(route.path);
+    const isPublic = isPublicEndpoint(route.path, route.method);
     const classification = classifyEndpoint(route.method, route.path);
     const resolvedPath = resolveFixturePath(route.path);
     const payload = generateSafePayload(route.method, route.path);
@@ -352,7 +358,7 @@ async function main() {
 
   // 5. Final Report & Artifact Generation
   const report = {
-    title: 'Authenticated 286-Endpoint Live Production Certification',
+    title: `Authenticated ${routes.length}-Endpoint Live Production Certification`,
     timestamp: new Date().toISOString(),
     host: BASE_URL,
     totalEndpoints: routes.length,
@@ -371,7 +377,7 @@ async function main() {
     endpoints: results,
   };
 
-  const artifactPath = path.join(root, 'test-results/AUTHENTICATED_286_ENDPOINT_CERTIFICATION.json');
+  const artifactPath = path.join(root, 'test-results/AUTHENTICATED_API_ENDPOINT_CERTIFICATION.json');
   fs.mkdirSync(path.dirname(artifactPath), { recursive: true });
   fs.writeFileSync(artifactPath, JSON.stringify(report, null, 2));
 

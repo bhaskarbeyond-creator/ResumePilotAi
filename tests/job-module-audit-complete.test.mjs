@@ -51,10 +51,13 @@ test.describe('Complete Job Module Audit & 10/10 Logic Verification Suite', () =
         const createJobModalCode = fs.readFileSync(path.join(rootPath, 'src/components/JobsListings/CreateJobModal.jsx'), 'utf8');
         const editJobModalCode = fs.readFileSync(path.join(rootPath, 'src/components/Dashboard/EmployerDashboard/EditJobModal.jsx'), 'utf8');
 
-        // JobDetailsModal accepts currency props and defaults to INR
-        assert.match(detailsModalCode, /currency = 'INR'/, 'JobDetailsModal currency prop defaults to INR');
-        assert.match(detailsModalCode, /currencySymbol = '₹'/, 'JobDetailsModal currencySymbol prop defaults to ₹');
-        assert.match(detailsModalCode, /currency:\s*job\?\.salary_currency \|\| job\?\.currency \|\| currency \|\| 'INR'/, 'JobDetailsModal resolves dynamic currency');
+        // JobDetailsModal displays the salary string normalized from the authoritative job API;
+        // listing filters use shared currency-aware bands and exclude other currencies.
+        const mainListingsCode = fs.readFileSync(path.join(rootPath, 'src/components/JobsListings/MainJobListings.jsx'), 'utf8');
+        assert.match(detailsModalCode, /enhancedJob\.salary/, 'JobDetailsModal displays only an employer-supplied salary');
+        assert.doesNotMatch(detailsModalCode, /companyRating|companyReviews|Fast-Track Application|Competitive/, 'JobDetailsModal does not invent employer or compensation claims');
+        assert.match(mainListingsCode, /job\.salary_currency !== String\(currencyConfig\.currency\)\.toUpperCase\(\)/, 'Salary filters only compare the active platform currency');
+        assert.match(mainListingsCode, /salaryRowMatchesBand/, 'Salary filter ranges use the shared range matcher');
 
         // EmployerDashboard formatSalaryDisplay uses rupee symbol
         assert.match(employerDashboardCode, /const formatSalaryDisplay = \(minSalary, maxSalary, currencySymbol = '₹'\)/, 'EmployerDashboard formats with rupee default');
