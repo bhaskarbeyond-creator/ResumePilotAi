@@ -130,7 +130,7 @@ async function handleResponseFailure(response, data, context) {
 }
 
 async function executeAttempt(context) {
-  const { path, method, isGet, body, serializedBody, signal, maxAttempts, attempt } = context;
+  const { path, method, isGet, serializedBody, signal, maxAttempts, attempt } = context;
   const reqHeaders = await buildEnterpriseHeaders(context);
 
   try {
