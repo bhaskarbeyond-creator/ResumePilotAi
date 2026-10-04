@@ -2164,19 +2164,6 @@ a.enterprise-button-danger:hover {
   margin: 18px 0;
 }
 
-.enterprise-role-card {
-  padding: 18px;
-  border: 1px solid var(--enterprise-border);
-  border-radius: 12px;
-  background: var(--ep-slate-25);
-  transition: var(--enterprise-transition);
-}
-
-.enterprise-role-card:hover {
-  box-shadow: var(--enterprise-shadow);
-  border-color: var(--ep-slate-300);
-}
-
 .enterprise-role-card-custom {
   border-left: 3px solid var(--enterprise-primary);
 }
@@ -3132,7 +3119,7 @@ details.enterprise-disclosure[open] > summary::before { content: '▾ '; }
 
 .enterprise-app-admin-icon {
   background: #fef2f2;
-  color: #ef4444;
+  color: #b91c1c;
 }
 
 .enterprise-app-item strong {
@@ -3362,7 +3349,8 @@ details.enterprise-disclosure[open] > summary::before { content: '▾ '; }
   outline-offset: 2px;
 }
 
-.enterprise-context-copy {
+.enterprise-context-button--cuba .enterprise-context-copy,
+.enterprise-workspace-switcher--cuba .enterprise-context-copy {
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -3370,13 +3358,15 @@ details.enterprise-disclosure[open] > summary::before { content: '▾ '; }
   text-align: left;
 }
 
-.enterprise-context-copy strong {
+.enterprise-context-button--cuba .enterprise-context-copy strong,
+.enterprise-workspace-switcher--cuba .enterprise-context-copy strong {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.enterprise-context-copy small {
+.enterprise-context-button--cuba .enterprise-context-copy small,
+.enterprise-workspace-switcher--cuba .enterprise-context-copy small {
   color: var(--cuba-ink-muted);
   font-weight: 500;
 }
