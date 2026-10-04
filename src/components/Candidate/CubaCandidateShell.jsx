@@ -5,6 +5,7 @@ import {
     FiSettings, FiUser, FiShield, FiLifeBuoy, FiClipboard,
 } from 'react-icons/fi';
 import CubaAppShell from '../cuba/CubaAppShell';
+import { ACCOUNT_PORTALS, accountLinksFor } from '../cuba/accountLinks';
 import AiEngineStatus from '../cuba/AiEngineStatus';
 import AiCareerBriefing from './AiCareerBriefing';
 import CubaCandidateHero from './CubaCandidateHero';
@@ -187,13 +188,17 @@ const CubaCandidateShell = ({ children, copilotResume = null }) => {
         ).trim();
 
         if (!fullName && !email) return null;
+        // DIR-025: resolved from the shared `accountLinks` table rather than
+        // re-spelled here, so the candidate targets can never drift from the
+        // table the crawler and the unit tests assert against.
+        const account = accountLinksFor(ACCOUNT_PORTALS.CANDIDATE);
         return {
             name: fullName || displayName,
             email,
             role,
-            profileHref: '/dashboard/settings?tab=profile',
-            settingsHref: '/dashboard/settings',
-            securityHref: '/dashboard/settings?tab=security',
+            profileHref: account.profile,
+            settingsHref: account.settings,
+            securityHref: account.security,
         };
     }, [user, displayName]);
 

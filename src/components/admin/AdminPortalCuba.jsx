@@ -1,6 +1,7 @@
 import React from 'react';
 import CubaPortalShell from '../cuba/CubaPortalShell';
 import { ADMIN_PORTAL_NAVIGATION } from '../cuba/portalNavigation';
+import { ACCOUNT_PORTALS } from '../cuba/accountLinks';
 import { searchAdminEntities } from './command/adminEntitySearch';
 
 /**
@@ -40,6 +41,11 @@ const AdminPortalCuba = ({ children }) => (
     title="Command Center"
     navigation={ADMIN_PORTAL_NAVIGATION}
     user={{ name: 'Control Plane' }}
+    // DIR-025: the platform-admin account menu targets the admin console
+    // (`/admin/settings`, `/admin/security`). It previously fell through to the
+    // candidate `/dashboard/*` table, so an operator's "Security & MFA" silently
+    // navigated out of the control plane into a candidate workspace.
+    portal={ACCOUNT_PORTALS.ADMIN}
     commandSearchProvider={searchAdminEntities}
     // DIR-021: the admin copilot surfaces "Search user or tenant" and the
     // security audit shortcut, resolved from the live route. It carries NO

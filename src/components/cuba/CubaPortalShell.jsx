@@ -15,6 +15,7 @@ import { AuthContext } from '../../context/AuthContext';
 import fire from '../../conf/fire';
 import { resolveActiveItem } from '../Candidate/navigationState';
 import { buildPortalCommands } from './portalCommands';
+import { ACCOUNT_PORTALS, accountLinksFor } from './accountLinks';
 
 /**
  * Modern icon map for recruiter, enterprise, and platform admin navigation items.
@@ -82,6 +83,14 @@ const CubaPortalShell = ({
     user,
     title,
     toolbar = null,
+    // DIR-025: which portal's console this shell is wrapping. It selects the
+    // account-menu target table in `accountLinks.js` — WITHOUT it this shell would
+    // send an admin's "Security & MFA" into the candidate workspace. Defaults to
+    // the candidate table, which is the only value that was correct before DIR-025.
+    portal = ACCOUNT_PORTALS.CANDIDATE,
+    // DIR-025: the server-resolved tenant slug, used only by the enterprise portal
+    // to build its canonical `/org/<slug>/<tab>` targets.
+    tenantSlug = '',
     // DIR-012: optional async entity-search provider for the shared palette.
     // Returns raw hits ({ id, label, group, to, ... }); the shell attaches the
     // router-aware `run` handler so navigation stays SPA-internal and consistent
@@ -237,15 +246,24 @@ const CubaPortalShell = ({
         const email = explicitEmail || sessionEmail;
 
         if (!name && !email) return null;
+        // DIR-025: the account-menu targets are ROLE-SCOPED.
+        //
+        // This shell is the chrome behind the recruiter, organization AND platform
+        // admin consoles, so defaulting all three to the candidate `/dashboard/*`
+        // paths made an admin's "Security & MFA" navigate into a candidate
+        // workspace. `accountLinksFor` is the single table that keeps every portal
+        // on a route that is actually mounted, and it is the same table the
+        // crawler and the unit tests assert against.
+        const defaults = accountLinksFor(portal, { slug: tenantSlug });
         return {
             name,
             email,
             role,
-            profileHref: user?.profileHref || '/dashboard/settings?tab=profile',
-            settingsHref: user?.settingsHref || '/dashboard/settings',
-            securityHref: user?.securityHref || '/dashboard/settings?tab=security',
+            profileHref: user?.profileHref || defaults.profile,
+            settingsHref: user?.settingsHref || defaults.settings,
+            securityHref: user?.securityHref || defaults.security,
         };
-    }, [user, session]);
+    }, [user, session, portal, tenantSlug]);
 
     /** Sign-out delegates to the existing Firebase session; nothing is re-invented. */
     const onSignOut = useCallback(async () => {

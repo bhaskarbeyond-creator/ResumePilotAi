@@ -4,6 +4,7 @@ import DashboardToast from '../Dashboard/DashboardToast/DashboardToast';
 import CubaPortalShell from '../cuba/CubaPortalShell';
 import { COPILOT_PORTALS } from '../cuba/copilotActions';
 import { EMPLOYER_PORTAL_NAVIGATION } from '../cuba/portalNavigation';
+import { ACCOUNT_PORTALS } from '../cuba/accountLinks';
 import Spinner from '../Spinner/Spinner';
 
 /**
@@ -66,6 +67,10 @@ const EmployerPortalCuba = () => {
             persona="Recruiter & Hiring"
             title="Recruiter Overview"
             navigation={NAV}
+            // DIR-025: a recruiter's account menu must land on recruiter routes.
+            // Without this the shared shell defaulted to the candidate
+            // `/dashboard/*` table, so "Security & MFA" left the console entirely.
+            portal={ACCOUNT_PORTALS.RECRUITER}
             // DIR-021: recruiter-context chips (candidate pool, scorecard,
             // outreach). Navigation-owned work routes to the applicants module
             // rather than pretending to generate a pipeline summary.

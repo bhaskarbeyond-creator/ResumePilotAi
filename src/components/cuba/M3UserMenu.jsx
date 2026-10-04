@@ -3,6 +3,7 @@ import {
     FiUser, FiSettings, FiShield, FiLogOut, FiSun, FiMoon, FiChevronDown, FiMail,
 } from 'react-icons/fi';
 import { useHeaderPopover } from './useHeaderPopover';
+import { ACCOUNT_PORTALS, accountLinksFor } from './accountLinks';
 
 const cx = (...parts) => parts.filter(Boolean).join(' ');
 
@@ -83,10 +84,16 @@ const M3UserMenu = ({ user, theme = 'light', onToggleTheme, onNavigate, onSignOu
         items[next]?.focus();
     };
 
+    // DIR-025: the three targets are ROLE-SCOPED and resolved by the shared
+    // `accountLinks` table upstream (the candidate shell and `CubaPortalShell`,
+    // which backs the recruiter, enterprise and admin consoles). The literals
+    // below are only the last-resort fallback for a shell that supplies no
+    // `user` object at all, and they are the CANDIDATE paths, so they can never
+    // send an admin into a candidate workspace.
     const menuItems = [
-        { key: 'profile', label: 'Your profile', href: user?.profileHref || '/dashboard/settings?tab=profile', Icon: FiUser },
-        { key: 'settings', label: 'Settings', href: user?.settingsHref || '/dashboard/settings', Icon: FiSettings },
-        { key: 'security', label: 'Security & MFA', href: user?.securityHref || '/dashboard/settings?tab=security', Icon: FiShield },
+        { key: 'profile', label: 'Your profile', href: user?.profileHref || accountLinksFor(ACCOUNT_PORTALS.CANDIDATE).profile, Icon: FiUser },
+        { key: 'settings', label: 'Settings', href: user?.settingsHref || accountLinksFor(ACCOUNT_PORTALS.CANDIDATE).settings, Icon: FiSettings },
+        { key: 'security', label: 'Security & MFA', href: user?.securityHref || accountLinksFor(ACCOUNT_PORTALS.CANDIDATE).security, Icon: FiShield },
     ];
 
     return (

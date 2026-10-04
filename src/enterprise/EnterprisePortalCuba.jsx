@@ -3,6 +3,7 @@ import { useLocation, useParams } from 'react-router-dom';
 import CubaPortalShell from '../components/cuba/CubaPortalShell';
 import { COPILOT_PORTALS } from '../components/cuba/copilotActions';
 import { enterpriseNavigationFor, filterByPermissions } from '../components/cuba/portalNavigation';
+import { ACCOUNT_PORTALS } from '../components/cuba/accountLinks';
 import { useEnterpriseTenant } from './EnterpriseContext';
 import { TenantSwitcher, WorkspaceBadge, EnterpriseRoleSimulationBanner } from './EnterpriseContextSwitchers';
 import { resolveOrgRoute } from './orgRouteState';
@@ -73,6 +74,11 @@ const EnterprisePortalCuba = ({ children }) => {
             title={activeLabel}
             navigation={navigation}
             user={{ name: tenantLabel }}
+            // DIR-025: the organization console's account menu targets its OWN
+            // canonical `/org/<slug>/<tab>` paths (built by the same `orgPathFor`
+            // the sidebar uses), not the candidate `/dashboard/*` table.
+            portal={ACCOUNT_PORTALS.ENTERPRISE}
+            tenantSlug={slug}
             // DIR-021: enterprise-context chip (tenant quota usage), which routes
             // to the live Usage & Quotas module. Quota figures are read, never
             // generated, so this action dispatches no AI request at all.
