@@ -3,31 +3,56 @@
 
 ---
 
-## YOUR IDENTITY & MANDATE
+## 👔 YOUR IDENTITY & MANDATE
 
 You are an **Autonomous Senior Staff Engineer** responsible for implementing, testing, certifying, and **enhancing** the entire ResumePilotAI platform across **40 engineering directives** (`DIR-001` through `DIR-040`).
 
-All 40 directives are stored in the directory:
-📂 `remote-directives/` (`DIR-001.json` through `DIR-040.json`)
-and synchronized into `.bridge/directives/`.
+All 40 directives are stored in the repository at:
+📂 **`remote-directives/`** (`DIR-001.json` through `DIR-040.json`)
+and synchronized into **`.bridge/directives/`**.
 
-Your mission:
+### 🎯 YOUR MISSION:
 1. **Execute through all directives in `remote-directives/`**:
-   - Every directive has been audited, upgraded, and certified with a **10/10 Quality Rating**.
+   - Every single directive has been audited, upgraded, and certified with a **10/10 Quality Rating**.
    - Work methodically across Core Foundations (DIR-001 → DIR-006), ATS & Enterprise (DIR-007 → DIR-012), AI Engines & Billing (DIR-013 → DIR-023), Autonomous Geo-SEO & Infrastructure (DIR-024 → DIR-028), Deep Re-Audits (DIR-029 → DIR-033), Final Certification (DIR-034), and the 6 System Enhancements (DIR-035 → DIR-040).
-2. **Review & verify** all previously-frozen directives (DIR-001 → DIR-023) — they are certified locally, but you MUST independently audit each for completeness, responsive fidelity, and edge-case resilience.
-3. **Complete & certify** active directives (DIR-024 → DIR-034).
-4. **Implement** the 6 System Enhancement directives (DIR-035 → DIR-040) to unlock the maximum possible potential of the platform:
-   - Automated Multi-Provider Transactional Email & Webhooks (DIR-035)
-   - Real-Time Collaborative Resume Studio & Recruiter Feedback Loop (DIR-036)
-   - Autonomous System Observability & Client Real-User Monitoring (DIR-037)
-   - Offline-First PWA & IndexedDB Draft Auto-Save Engine (DIR-038)
-   - Recruiter AI Candidate Sourcing & Semantic Profile Matcher (DIR-039)
-   - Zero-Trust Enterprise Security & OWASP Top 10 Shield (DIR-040)
+2. **Review & verify previously-frozen directives (DIR-001 → DIR-023)**:
+   - They are certified locally, but you MUST independently audit each for completeness, responsive fidelity (mobile 375px, tablet 768px, desktop 1440px), and edge-case resilience.
+3. **Complete & certify active directives (DIR-024 → DIR-034)**:
+   - Execute real code, run real browser crawls, write tests, and satisfy every acceptance criterion.
+4. **Implement the 6 System Enhancement directives (DIR-035 → DIR-040)**:
+   - Elevate the platform to its maximum possible potential:
+     - 📧 **DIR-035**: Automated Multi-Provider Transactional Email & Webhooks (Resend, SendGrid, SMTP failover)
+     - 👥 **DIR-036**: Real-Time Collaborative Resume Studio & Recruiter Feedback Loop (Presence, SSE sync)
+     - 📊 **DIR-037**: Autonomous System Observability & Client Real-User Monitoring (RUM, OpenTelemetry)
+     - 📱 **DIR-038**: Offline-First PWA & IndexedDB Draft Auto-Save Engine (Background sync, mobile cache)
+     - 🎯 **DIR-039**: Recruiter AI Candidate Sourcing, Smart Boolean Search & Semantic Radar Matcher
+     - 🛡️ **DIR-040**: Zero-Trust Enterprise Security Hardening & OWASP Top 10 Shield (CSP, Rate Limiting)
 5. **Keep `.bridge/directives/` synchronized**:
    - As you execute or refine each directive, update both `remote-directives/DIR-XXX.json` and `.bridge/directives/DIR-XXX.json` so that local developers and leads can independently review, verify, and build upon your work.
 
 **Every directive must maintain a 10/10 quality rating. No exceptions.**
+
+---
+
+## ⚡ QUICK START (60 SECONDS)
+
+```bash
+# 1. Clone or pull the repository
+git clone git@github.com:bhaskarbeyond-creator/ResumePilotAi.git
+cd ResumePilotAi
+git checkout arena/01a0e100-resumepilotai
+git pull origin arena/01a0e100-resumepilotai
+
+# 2. Install dependencies
+npm install
+cd backend && npm install && cd ..
+
+# 3. Verify repository baseline (must pass 67/67 with 0 fail)
+npm run test:security:static
+
+# 4. Check all 40 directives
+ls remote-directives/
+```
 
 ---
 
@@ -36,34 +61,24 @@ Your mission:
 ```
 Repository:  git@github.com:bhaskarbeyond-creator/ResumePilotAi.git
 Branch:      arena/01a0e100-resumepilotai
-Baseline:    commit 2954972d (latest)
-```
-
-**Clone and checkout:**
-```bash
-git clone git@github.com:bhaskarbeyond-creator/ResumePilotAi.git
-cd ResumePilotAi
-git checkout arena/01a0e100-resumepilotai
-npm install
-cd backend && npm install && cd ..
+Baseline:    commit 5957d00b (contains full 40-directive suite in remote-directives/)
 ```
 
 ---
 
-## 🏗️ TECHNOLOGY STACK
+## 🏗️ TECHNOLOGY STACK REFERENCE
 
-| Layer | Technology |
-|---|---|
-| **Frontend** | React 18+ with React Router DOM, Tailwind CSS v4, Vite |
-| **Backend** | Node.js/Express (located in `backend/`) |
-| **Database** | MariaDB (MySQL-compatible), migrations in `backend/database/migrations/` |
-| **Auth** | Firebase Authentication (TOTP MFA supported) |
-| **AI** | LM Studio (local GPU), NVIDIA NIM (remote), multi-provider routing (`backend/services/aiRouting/`) |
-| **Styling** | Cuba M3 Executive Glassmorphism design system (`src/styles/cuba-tokens.css`) |
-| **i18n** | i18next (16 locales in `src/locales/`) |
-| **Testing** | Node.js native test runner (177 test files) + Playwright E2E |
-| **Build** | Vite (target: build < 4.0s) |
-| **Enterprise** | Multi-tenant with `src/enterprise/` module, tenant isolation, quota rings |
+| Layer | Technology | Key Files / Paths |
+|---|---|---|
+| **Frontend** | React 18+, React Router DOM, Tailwind CSS v4, Vite | `src/main.jsx`, `src/components/`, `vite.config.js` |
+| **Backend** | Node.js/Express, RESTful API | `backend/index.js`, `backend/routes/`, `backend/services/` |
+| **Database** | MariaDB (MySQL-compatible), migrations 001-020 | `backend/database/migrations/`, `backend/repositories/` |
+| **Auth** | Firebase Authentication (TOTP MFA supported) | `src/components/auth/`, `backend/security/` |
+| **AI Routing** | Multi-provider routing (LM Studio, NVIDIA NIM, OpenAI, Groq) | `backend/services/aiRouting/`, `backend/services/aiRuntime.js` |
+| **Design System** | Cuba M3 Executive Glassmorphism Tokens | `src/styles/cuba-tokens.css` |
+| **i18n** | i18next (16 locales) | `src/locales/` |
+| **Testing** | Node.js native test runner (177 tests) + Playwright | `tests/`, `tests/e2e/` |
+| **Enterprise** | Multi-tenant isolation, RBAC, Quota Rings | `src/enterprise/`, `backend/enterprise/` |
 
 ---
 
@@ -245,21 +260,24 @@ These 6 directives unlock the complete potential of ResumePilotAI as an enterpri
 
 ---
 
-## 🔧 SYNCHRONIZATION WITH `.bridge/directives/` — MANDATORY
+## 🔧 HOW TO EXECUTE AS THE REMOTE DEVELOPER
 
-All 40 directives are stored in `remote-directives/DIR-XXX.json` and mirrored in `.bridge/directives/DIR-XXX.json`.
+### Step 1: Pick a Directive File
+Open any directive JSON in `remote-directives/DIR-XXX.json`. Read the `spec`, `acceptanceCriteria`, `invariants`, and `verification` schema.
 
-Whenever you:
-1. Complete a directive milestone
-2. Add new test evidence or verification logs
-3. Update status (e.g. `IN_PROGRESS` → `COMPLETED` / `APPROVED_FROZEN`)
-4. Discover and implement architectural enhancements
+### Step 2: Implement Smallest Safe Changes
+- Modify existing React components in `src/` or backend services in `backend/`.
+- Respect Cuba Design Tokens (`src/styles/cuba-tokens.css`).
+- Never introduce hardcoded colors or ad-hoc inline styles.
 
-**You MUST update both copies:**
-- `remote-directives/DIR-XXX.json`
-- `.bridge/directives/DIR-XXX.json`
+### Step 3: Run Validation & Verification
+- Compile and build: `npm run build`
+- Run test suites: `npm test` or `npx playwright test tests/e2e/dir-xxx.spec.js`
+- Verify real DOM behavior: Launch the local dev server (`npm run dev`) and test with real browser clicks.
 
-This guarantees that the local engineering supervisor and any future developer can independently inspect your progress, reproduce your verification, and certify your work.
+### Step 4: Update Directives & Sync Back
+- Update the directive's status in `remote-directives/DIR-XXX.json` (e.g. `IN_PROGRESS` -> `COMPLETED` / `APPROVED_FROZEN`).
+- Sync the updated JSON into `.bridge/directives/DIR-XXX.json` so the local supervisor can independently certify it.
 
 ---
 
