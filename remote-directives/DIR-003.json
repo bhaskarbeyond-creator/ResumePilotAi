@@ -1,0 +1,32 @@
+{
+  "id": "DIR-003",
+  "title": "Public Secondary Pages & Marketing Header Harmonization",
+  "priority": "P1",
+  "category": "Public Web & Marketing",
+  "qualityRating": "10/10",
+  "status": "APPROVED_FROZEN",
+  "leadAuthor": "Antigravity (Lead Supervisor)",
+  "assignedTo": "Cline (Staff Developer)",
+  "createdAt": "2026-10-02T07:47:42.956Z",
+  "updatedAt": "2026-10-04T06:52:56.879Z",
+  "spec": "# DIR-003: Public Secondary Pages & Marketing Header Harmonization\n\n## 1. Executive Context & Objectives\nPublic-facing secondary pages (About Us, Pricing, Features, FAQ, Contact, Privacy Policy, Terms of Service) represent critical conversion funnels and legal compliance surfaces for ResumePilotAI. Previous audits identified minor visual regressions, including inconsistent marketing header heights, mismatched mobile hamburger menu animations, and missing Cuba executive glassmorphic card treatments on secondary pages.\n\nThis directive enforces a 10/10 harmonization of all public secondary pages and marketing navigation surfaces to deliver a unified, premium SaaS aesthetic aligned with Google M3 and Cuba design systems.\n\n## 2. Architectural Directives\n1. **Universal Marketing Header**:\n   - Sticky, blurred glassmorphic header (backdrop-filter: blur(12px), background: var(--cuba-bg-glass)).\n   - Unified navigation links: Features, Templates, Pricing, Enterprise, About, Login, Get Started CTA.\n   - Mobile responsive drawer with smooth slide-in, accessible focus trap, and keyboard dismissal.\n   - Active route indicator with subtle animated underline.\n\n2. **Secondary Pages Harmonization**:\n   - **About Us**: Hero section with company mission, executive leadership badges, stats counter grid, and tech stack highlight.\n   - **Pricing**: Transparent tier comparison (Free, Pro Candidate, Recruiter Starter, Enterprise) with toggle for Monthly/Annual billing, GST breakdown, and clear CTA buttons.\n   - **Features & Templates Showcase**: Interactive preview cards with category filters (Tech, Finance, Healthcare, Creative), hover zoom micro-interactions, and 1-click template selection.\n   - **Contact & Support**: Multi-channel support form with real-time validation, FAQ accordion with accessible disclosure widgets (aria-expanded), and response SLA notices.\n   - **Legal (Privacy & Terms)**: Clean typographic layout with sticky table-of-contents navigation, scroll-spy highlights, and printable styling.\n\n3. **Footer Unification**:\n   - Universal 5-column marketing footer across all public routes with newsletter subscription, social links, regional currency indicator, and copyright notice.\n\n## 3. Acceptance Criteria\n1. Universal marketing header maintains exact height (64px) and blur effect across all public pages.\n2. Mobile hamburger menu functions smoothly with accessible keyboard navigation (Esc to close, Tab trapping).\n3. Pricing page reflects accurate INR ₹ pricing tiers, GST computation, and links to checkout flows.\n4. All secondary pages adhere to Cuba M3 typography, tokenized spacing, and responsive breakpoints.\n5. All legal pages render responsive sticky table-of-contents with active section highlighting on scroll.\n6. Zero console errors, broken images, or dead links across any public secondary route.\n\n## 4. Strict Invariants\n1. Do not modify public SEO metadata or canonical URLs without updating sitemap.xml.\n2. Preserve existing analytics tags and UTM parameter capture on CTAs.\n3. Maintain zero layout shift (CLS = 0) during header sticky scroll transition.\n4. WCAG 2.1 AA compliance for all text contrasts and interactive controls.",
+  "invariants": [
+    "Preserve public canonical URLs, open-graph tags, and sitemap alignments",
+    "Zero layout shift (CLS = 0) on sticky header scroll transitions",
+    "Ensure strict WCAG 2.1 AA compliance across all public typography",
+    "Retain existing conversion tracking and analytics event handlers"
+  ],
+  "acceptanceCriteria": [
+    "Universal marketing header is consistent in height, glassmorphic styling, and behavior",
+    "Mobile drawer operates smoothly with keyboard accessibility and focus trap",
+    "Pricing tiers reflect INR currency, GST breakdown, and working CTAs",
+    "Secondary pages (About, Features, FAQ, Legal) match Cuba M3 executive standards",
+    "Sticky scroll-spy table of contents on legal pages functions correctly",
+    "All links, images, and buttons verified working with zero 404s"
+  ],
+  "verification": {
+    "browserCrawlRequired": true,
+    "playwrightSuite": "tests/e2e/dir-003.spec.js",
+    "minScore": "10/10"
+  }
+}

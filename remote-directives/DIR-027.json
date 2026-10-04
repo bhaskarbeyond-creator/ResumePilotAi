@@ -2,6 +2,11 @@
   "id": "DIR-027",
   "title": "Job Portal Clean Architecture & External Scraper Deprecation (Naukri Scraper Purge, Admin Module Rebranding & Pure Direct-Hiring Board Freeze)",
   "priority": "P1",
+  "status": "ISSUED",
+  "leadAuthor": "Antigravity (Lead Supervisor)",
+  "assignedTo": "Cline (Remote Developer)",
+  "createdAt": "2026-10-03T21:44:04.604Z",
+  "specFile": null,
   "spec": "# DIR-027: Job Portal Clean Architecture & External Scraper Deprecation\n\n## 1. Executive Context & Objectives\nFollowing architectural audit and executive review, the fragile third-party **Naukri Scraper** is formally scheduled for complete deprecation and removal, while the core **Job Portal & Direct Hiring Marketplace** is preserved, rebranded, and hardened.\n\nLegacy code contained `/api/jobs/naukri` (returning 501 Degraded) and admin settings promising automated scraping from Naukri/LinkedIn. In reality, commercial web scraping against third parties violates anti-scraping terms of service, poses IP blocking risks, and creates maintenance overhead. Meanwhile, IME365's authentic first-party Job Portal (where real employers post jobs and candidates apply with their resumes) is already certified (commit `b57656b6`) and provides high business value.\n\nThis directive mandates:\n1. Complete excision of the dead `/api/jobs/naukri` endpoint and scraper settings.\n2. Rebranding `enableJobScraperModule` in `ModulesSettings.jsx` to **'Job Portal & Direct Career Board'**.\n3. Ensuring the module toggle cleanly gates the Job Portal across Candidate and Public views.\n4. Comprehensive Playwright E2E verification of the clean Direct Hiring Job Portal with zero scraper residue.\n\n## 2. Key Architecture Directives\n1. **Scraper Code Excision**:\n   - Remove `/api/jobs/naukri` from `backend/index.js`.\n   - Update `backend/test/degraded-endpoint-semantics.test.js` to assert the legacy scraper endpoint is completely gone or returns 404/410.\n   - Remove or deprecate `JobScraperSettings.jsx` from SuperAdmin settings navigation.\n\n2. **Admin Module Rebranding (`ModulesSettings.jsx`)**:\n   - Rename card to: `Job Portal & Direct Career Board`.\n   - Subtitle: `Recruitment & Direct Hiring`.\n   - Description: `Enables public and candidate job listings, keyword search, INR salary filtering, direct employer hiring, and in-modal resume applications.`\n\n3. **Toggle Gating & Clean Fallback**:\n   - When `enableJobScraperModule` (or `enableJobsModule`) is disabled by admin, `/jobs` and `/dashboard/jobs` gracefully show a maintenance/disabled card rather than failing or leaking routes.\n\n4. **Dedicated Playwright E2E Verification**:\n   - Author `playwright.dir027.config.js` targeting `tests/e2e/dir027-job-portal-clean.spec.js`.\n   - Verify Job Portal operates flawlessly as a direct hiring board with zero scraper errors or broken endpoints.\n",
   "invariants": [
     "INV-1: Frozen Baseline Integrity: git diff e314f715 -- src/cv-templates/ backend/services/aiRuntime.js must remain STRICTLY 0 bytes (57 CV templates + AI runtime frozen).",
@@ -18,5 +23,18 @@
     "AC-5: Preserved Job Portal Operations: Verify all certified Job Portal workflows remain 100% functional: search, filters, INR salary display, JobDetailsModal, JobApplicationModal with multi-page preview and 1-click AI Quick Pitch.",
     "AC-6: Dedicated Playwright E2E Suite (playwright.dir027.config.js & tests/e2e/dir027-job-portal-clean.spec.js): 100% passing tests against live dev server verifying clean direct job search, application modal, and zero scraper errors.",
     "AC-7: Quality Gates Pass: vite build < 4.0s, eslint 0 errors, npm test zero regressions."
-  ]
+  ],
+  "plan": null,
+  "heartbeats": [],
+  "evidence": null,
+  "reviews": [],
+  "freezeHash": null,
+  "qualityRating": "10/10",
+  "category": "Platform Engineering",
+  "updatedAt": "2026-10-04T06:52:56.884Z",
+  "verification": {
+    "browserCrawlRequired": true,
+    "playwrightSuite": "tests/e2e/dir-027.spec.js",
+    "minScore": "10/10"
+  }
 }

@@ -1,0 +1,32 @@
+{
+  "id": "DIR-002",
+  "title": "Candidate Sub-Surfaces, ContextSwitcher & Command Palette Deep Polish",
+  "priority": "P1",
+  "category": "Candidate Workspace & UX",
+  "qualityRating": "10/10",
+  "status": "APPROVED_FROZEN",
+  "leadAuthor": "Antigravity (Lead Supervisor)",
+  "assignedTo": "Cline (Staff Developer)",
+  "createdAt": "2026-10-02T07:23:23.972Z",
+  "updatedAt": "2026-10-04T06:52:56.879Z",
+  "spec": "# DIR-002: Candidate Sub-Surfaces, ContextSwitcher & Command Palette Deep Polish\n\n## 1. Executive Context & Objectives\nThe Candidate Workspace is the core candidate touchpoint in ResumePilotAI. While main routes (/candidate/dashboard, /candidate/resumes) are operational, several sub-surfaces (profile edit tabs, career goal trackers, quick resume preview drawer, and the ContextSwitcher dropdown) suffer from inconsistent styling, missing Cuba M3 tokens, or broken keyboard navigation.\n\nThis directive mandates a 10/10 comprehensive overhaul of all candidate sub-surfaces, the global ContextSwitcher, and the universal Command Palette (⌘K / Ctrl+K) integration, ensuring fluid transitions, keyboard accessibility, and cohesive design token usage.\n\n## 2. Architectural Directives\n1. **ContextSwitcher Polish**:\n   - Ensure the organization/profile switcher in the candidate header smoothly switches contexts without page reload.\n   - Display active candidate tier (Free, Pro, Enterprise Candidate), with badges styled using Cuba tokens.\n   - Provide instant keyboard navigation (Arrow Up/Down, Enter, Esc) with aria-haspopup=\"listbox\" and role=\"option\".\n\n2. **Candidate Sub-Surfaces Refinement**:\n   - **Profile Edit Sub-Tabs**: Personal Info, Social Links, Work Preferences, Career Objectives, Privacy. Ensure each tab maintains state, validates inputs with live feedback, and provides clear save/cancel actions.\n   - **Resume Quick Drawer**: Provide a slide-over preview pane for any resume directly from the dashboard or resumes list without full page navigation.\n   - **Activity Feed & Goal Tracker**: Align all timeline cards with Cuba M3 executive glassmorphic card styling, featuring micro-interactions and status badges.\n\n3. **Command Palette Integration**:\n   - Register all candidate actions in the universal ⌘K command palette: 'Create New Resume', 'Browse Jobs', 'Open AI Interview Coach', 'Edit Profile', 'Toggle Theme', 'View Applications'.\n   - Include fuzzy search matching, recent action history, and keyboard shortcuts display.\n\n## 3. Acceptance Criteria\n1. ContextSwitcher supports keyboard navigation (Arrow keys, Esc, Enter) with full ARIA attributes.\n2. All Candidate sub-tabs load and persist changes cleanly to MariaDB/Firestore without full page reloads.\n3. Quick Resume Drawer opens smoothly via CSS transform, traps focus properly, and closes on Esc or backdrop click.\n4. Command Palette (⌘K) triggers candidate-specific actions instantly and navigates to the respective sub-surfaces.\n5. All elements strictly use Cuba CSS variables (var(--cuba-bg-surface), var(--cuba-border-default), etc.) with zero hardcoded ad-hoc styles.\n6. Responsive behavior verified across desktop (1440px), tablet (768px), and mobile (375px).\n\n## 4. Strict Invariants\n1. Do not break existing candidate auth state or JWT tokens in localStorage.\n2. Ensure backward compatibility with existing resume IDs and profile schemas.\n3. No layout shift (CLS < 0.05) when toggling drawers or switching tabs.\n4. WCAG 2.1 AA minimum contrast (4.5:1 for text, 3:1 for UI controls) in both light and dark modes.",
+  "invariants": [
+    "Preserve existing candidate profile schema and data contracts",
+    "Zero layout shift (CLS < 0.05) on drawer/tab transitions",
+    "Maintain strict WCAG 2.1 AA contrast ratios across light and dark themes",
+    "Do not alter authentication state handling or token refresh cycles"
+  ],
+  "acceptanceCriteria": [
+    "ContextSwitcher handles keyboard navigation with full ARIA compliance",
+    "All Candidate sub-tabs persist data smoothly without layout jump or reload",
+    "Quick Resume Drawer provides fast preview with proper focus trapping",
+    "Command Palette exposes all candidate actions with fuzzy search",
+    "Complete Cuba M3 tokenization across all sub-surfaces",
+    "Responsive verification passes on 1440px, 768px, and 375px viewports"
+  ],
+  "verification": {
+    "browserCrawlRequired": true,
+    "playwrightSuite": "tests/e2e/dir-002.spec.js",
+    "minScore": "10/10"
+  }
+}

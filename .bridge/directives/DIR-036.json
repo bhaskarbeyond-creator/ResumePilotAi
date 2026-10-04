@@ -1,0 +1,31 @@
+{
+  "id": "DIR-036",
+  "title": "Real-Time Collaborative Resume Editing & Live Recruiter Feedback Loop (Presence Indicators, WebSocket/SSE Delta Sync, In-Line Annotations)",
+  "priority": "P1",
+  "category": "System Enhancement & Career Studio",
+  "qualityRating": "10/10",
+  "status": "ISSUED",
+  "leadAuthor": "Antigravity (Lead Supervisor)",
+  "assignedTo": "Cline (Remote Developer)",
+  "createdAt": "2026-10-04T06:52:56.885Z",
+  "updatedAt": "2026-10-04T06:52:56.885Z",
+  "spec": "# DIR-036: Real-Time Collaborative Resume Editing & Live Recruiter Feedback Loop\n\n## 1. Executive Context & Objectives (Enhancement Mandate)\nModern career platforms empower candidates by allowing trusted mentors, career coaches, and enterprise recruiters to review and suggest real-time improvements on resumes. Currently, resume feedback is asynchronous or disjointed.\n\nThis directive introduces a 10/10 **Real-Time Collaborative Resume Studio & Live Recruiter Feedback Loop**, enabling live cursor presence, shared viewing sessions via secure vanity links, in-line comment annotations with resolve/accept suggestions, and seamless Server-Sent Events (SSE) or WebSocket state synchronization.\n\n## 2. Architecture Directives\n1. **Collaborative Session Engine**:\n   - Route: /candidate/resume/:id/collaborate and /review/:shareToken.\n   - Real-time communication via Server-Sent Events (SSE) or WebSocket connection with JWT authentication.\n   - Transmit user presence: active viewers list, cursor position indicator, and active section highlight.\n\n2. **In-Line Annotation & Suggestion System**:\n   - Highlight any text in the resume editor to attach an annotation: Comment, Suggested Replacement, or Praise.\n   - Candidate can click 'Accept Suggestion' to automatically apply the edit directly into the resume JSON data model with full undo/redo history.\n   - Threaded comment replies with timestamps, author avatar, and resolved state toggle.\n\n3. **Secure Mentor & Recruiter Share Links**:\n   - Generate time-limited, role-restricted share links (View Only, Suggestion Mode, Edit Mode).\n   - Password protection and expiration date options for confidential enterprise candidate reviews.\n\n4. **Audit Trail & Version Snapshotting**:\n   - Automatically create named revision snapshots (e.g. 'Pre-Coach Review', 'Post-Feedback Polish') allowing 1-click rollbacks.\n\n## 3. Acceptance Criteria\n1. Multiple users can open the same resume simultaneously and see live presence indicators.\n2. Reviewers can highlight text and leave comments or suggestions that appear instantly on candidate screen.\n3. Candidate can accept suggestions with a single click, updating the resume without formatting loss.\n4. Share links support permission levels (View, Suggest, Edit) and optional passcode protection.\n5. Revision history records snapshots and supports instantaneous preview and rollback.\n6. Clean Cuba M3 styling with zero UI collisions or editor canvas flickering.\n\n## 4. Strict Invariants\n1. Reviewer share links must never expose candidate account credentials or payment details.\n2. Edit access must be strictly validated server-side on every patch payload.\n3. Concurrent edits must resolve cleanly using last-write-wins or operational transform without data corruption.\n4. Ensure full keyboard accessibility for adding and navigating comments (WCAG 2.1 AA).",
+  "invariants": [
+    "Strict server-side authorization on all collaborative patch operations",
+    "Share links must be cryptographically unguessable and scoped to target resume only",
+    "Concurrent updates must never corrupt resume JSON data structure",
+    "Full keyboard accessibility and ARIA roles on comment threads and presence badges"
+  ],
+  "acceptanceCriteria": [
+    "Live presence indicators show active reviewers in real-time",
+    "In-line annotations and suggestions render smoothly on editor canvas",
+    "1-click suggestion acceptance applies changes directly to resume data model",
+    "Share links support permissions, expiration, and optional passcode locks",
+    "Version snapshotting allows effortless preview and rollback of prior versions"
+  ],
+  "verification": {
+    "browserCrawlRequired": true,
+    "playwrightSuite": "tests/e2e/dir-036.spec.js",
+    "minScore": "10/10"
+  }
+}

@@ -2,6 +2,11 @@
   "id": "DIR-033",
   "title": "Phase 2 Second Review & v10.0 Protocol Re-Audit — AI Engines, Billing & Career Intelligence (Re-evaluating DIR-013, DIR-014, DIR-018, DIR-019, DIR-020)",
   "priority": "P0",
+  "status": "ISSUED",
+  "leadAuthor": "Antigravity (Lead Supervisor)",
+  "assignedTo": "Cline (Remote Developer)",
+  "createdAt": "2026-10-04T01:49:34.919Z",
+  "specFile": null,
   "spec": "# Phase 2 Second Review Directive: AI Engines, Billing & Career Intelligence (DIR-033)\n**Governing Protocol:** SKILL.md v10.0 (AI Bridge Supervisor Master Edition)\n**Execution Schedule:** Sequenced in the Post-DIR-028 Second Review Pipeline.\n**Target Directives for Re-Audit:** DIR-013, DIR-014, DIR-018, DIR-019, DIR-020.\n\n## 1. Objective & Scope\nRe-evaluate AI Interview Coach, AI Cover Letter Builder, Global Billing & Invoices, Digital Portfolio CV Studio, and Job Application Kanban Tracker against v10.0 rules, with a **Major Feature Enhancement Pass on the AI Interview Coach & Audio/Voice CBT Simulator (DIR-013 Upgrade)**:\n\n### Critical Enhancement Requirements (User Mandate):\n1. **Legacy Media Device Access Engine (Mic & Camera)**:\n   - Resolve camera and microphone access failures on older systems and legacy browsers.\n   - Implement universal fallback adapter supporting `navigator.mediaDevices.getUserMedia` with fallback to legacy `navigator.getUserMedia`, `webkitGetUserMedia`, and `mozGetUserMedia`.\n   - Implement relaxed constraint auto-downgrade (e.g. ideal resolution -> basic `{ audio: true, video: true }` -> audio-only -> text-mode practice) with non-blocking diagnostic guidance.\n   - Include optional webcam video preview stream with Camera On/Off and Mic Mute/Unmute toggles.\n\n2. **Ultra-Natural Human Voice Engine & Accent Switcher**:\n   - **Default Accent**: Natural Indian English (`en-IN`) with randomized selection on start between **Indian Male** (e.g. *Arjun/Rohan*) and **Indian Female** (e.g. *Ananya/Pooja*).\n   - **Accent Switcher UI**: Sleek, Cuba M3 styled in-session accent selector allowing candidates to switch on-the-fly between:\n     - 🇮🇳 Indian English (Default: Random Male / Female)\n     - 🇺🇸 US Accent (Male: Alex Vance / Female: Sarah Jenkins)\n     - 🇬🇧 UK Accent (Male: Marcus Sterling / Female: Emma)\n   - **High Conversational Naturalness**: Human-grade conversational cadence with clause-level micro-pauses (120-250ms), calibrated rate (0.92-0.97x) and pitch modulation, conversational bridging phrases (\"Understood\", \"Let's dive into...\", \"Could you tell me more about...\"), eliminating robotic mono-pitch delivery.\n\n## 2. Mandatory Verification Gates\n1. **§9 Baseline Invariant INV-1:** Strictly 0-byte diff on protected resume template surfaces.\n2. **§27 AI Model Governance:** Calibrated hybrid GPU offload on RTX 3060, sub-21s response time, honest error states.\n3. **§21.1 Design Token Residual Purge:** JobTracker and Billing surfaces 100% tokenized.\n4. **§2 Level 5 Playwright Tests:** Automated pass against live MariaDB and live server.",
   "invariants": [
     "INV-1: Resume Templates & ATS Engine strictly 0-byte diff (git diff e314f715 -- src/cv-templates/ backend/services/aiRuntime.js == 0).",
@@ -19,5 +24,18 @@
     "AC-21.1: Billing & Job Tracker Token Audit: INR ₹ currency formatting, GST invoice history table, and Job Application Kanban Tracker (5-stage Cuba board) 100% tokenized with 0 legacy color residue.",
     "AC-19: Web CV Studio: Live customizer, vanity slug routing, and responsive theme switcher verified with real DOM Playwright tests.",
     "AC-2: Level 5 Playwright Test Pass: Consecutive green test execution across all 5 intelligence modules against live MariaDB."
-  ]
+  ],
+  "plan": null,
+  "heartbeats": [],
+  "evidence": null,
+  "reviews": [],
+  "freezeHash": null,
+  "qualityRating": "10/10",
+  "category": "Platform Engineering",
+  "updatedAt": "2026-10-04T06:52:56.884Z",
+  "verification": {
+    "browserCrawlRequired": true,
+    "playwrightSuite": "tests/e2e/dir-033.spec.js",
+    "minScore": "10/10"
+  }
 }

@@ -4,7 +4,7 @@
   "priority": "P1",
   "status": "APPROVED_FROZEN",
   "leadAuthor": "Antigravity (Lead Supervisor)",
-  "assignedTo": "Cline (Staff Developer)",
+  "assignedTo": "Cline (Remote Developer)",
   "createdAt": "2026-10-03T14:27:42.944Z",
   "specFile": null,
   "spec": "# DIR-014: AI Cover Letter Builder & Multi-Format Generator 10/10 Overhaul\n\n## 1. Executive Context & Objectives\nThe AI Cover Letter Builder (`src/components/CoverLetter/CoverLetter.jsx` and `src/components/CoverLetter/CoverLetter.scss`) is a core candidate workspace feature that lets job seekers generate, customize, format, preview, and export targeted cover letters across 4 distinct visual templates with multi-tone AI synthesis and real-time ATS keyword matching.\n\nCurrently, `CoverLetter.jsx` (1,663 lines) uses legacy Tailwind utility classes (`bg-white`, `bg-slate-50`, `border-slate-200`, `text-indigo-600`), raw hex colors in `CoverLetter.scss`, has duplicate header branding when viewed in `/dashboard/cover-letters` within `CubaCandidateShell`, and lacks full Cuba Executive dark mode support and dedicated E2E verification.\n\nThis directive mandates a complete 10/10 architectural overhaul of `CoverLetter.jsx` and `CoverLetter.scss`, integrating seamlessly with the Cuba Executive design system (`--cuba-*`), harmonizing with `CubaCandidateShell`, enhancing ATS keyword matching, and locking quality with a dedicated Playwright E2E suite (`playwright.dir014.config.js`).\n\n## 2. Key Architecture Directives\n1. **Design System & Token Harmonization**:\n   - Replace all legacy `bg-slate-50`, `bg-white`, `border-slate-200`, `text-indigo-600`, etc. with standard Cuba Executive CSS variables:\n     - Backgrounds: `var(--cuba-bg-primary)`, `var(--cuba-card-bg)`, `var(--cuba-surface)`\n     - Borders: `var(--cuba-border)`, `var(--cuba-border-subtle)`\n     - Typography: `var(--cuba-ink-primary)`, `var(--cuba-ink-secondary)`, `var(--cuba-ink-muted)`\n     - Accents & Buttons: `.cuba-btn-primary`, `.cuba-btn-secondary`, `.cuba-btn-outline`, `.cuba-fill-pill`\n     - Inputs: Themed input fields with `--cuba-focus-ring` focus indicators.\n   - Ensure full dark mode responsiveness without text-contrast inversion issues.\n\n2. **Shell Encapsulation & Header De-duplication**:\n   - Detect whether component is mounted inside `CubaCandidateShell` (e.g. pathname `/dashboard/cover-letters` or via prop).\n   - When inside the candidate shell, suppress redundant header banner/logo (`logo.png`) and \"Back to Dashboard\" button, aligning with the standard page title and breadcrumb pattern used in other candidate modules.\n   - When accessed standalone via `/coverletter`, provide a clean Cuba header card.\n\n3. **Template Renderer & Zoomable In-Modal Preview**:\n   - Retain full functionality for all 4 cover letter templates (`Cover1`, `Cover2`, `Cover3`, `Cover4`).\n   - Elevate the visual preview frame and in-modal zoom controls (0.5x, 0.75x, 1.0x, 1.25x) with smooth CSS transforms and Escape-key dismiss.\n   - Preserve A4 print media query isolation in `CoverLetter.scss`.\n\n4. **Interactive ATS Keyword Match Meter**:\n   - Polish the ATS match calculation with a prominent Cuba-styled circular or linear score indicator:\n     - >= 80%: Emerald / Success tier\n     - 60-79%: Amber / Warning tier\n     - < 60%: Red / Critical tier\n   - Render matched keyword badges in emerald pills and missing keyword badges in amber/slate pills.\n   - Add 1-click action to copy or insert missing keywords into the editor.\n\n5. **Cloud Persistence & Job Tracker Integration**:\n   - Preserve authentic MariaDB CRUD via `saveCoverLetter`, `getUserCoverLetters`, `deleteCoverLetter`, and `createTrackedJob`.\n   - Never inject mock data or synthetic local fallback arrays.\n\n6. **Dedicated Playwright E2E Suite**:\n   - Create `playwright.dir014.config.js` targeting `tests/e2e/dir014-cover-letter.spec.js`.\n   - Execute against the live running stack (`http://localhost:3000`).\n   - Validate token resolution, step navigation, template selection, ATS computation, and modal preview.\n",
@@ -54,13 +54,21 @@
     "status": "SCHEDULED_POST_DIR028",
     "scheduledExecutionOrder": "AFTER_DIR028",
     "targetDirectiveId": "DIR-033",
-    "phaseName": "Phase 2 Second Review \u2014 AI Engines, Billing & Career Intelligence",
+    "phaseName": "Phase 2 Second Review — AI Engines, Billing & Career Intelligence",
     "governingProtocol": "SKILL.md v10.0 (AI Bridge Supervisor Master Edition)",
     "mandatoryAuditRules": [
-      "\u00a79 Invariant INV-1 diff strictly 0 bytes",
-      "\u00a721.1 Cover letter generator Cuba executive tokens",
-      "\u00a72 Level 5 Playwright test against live LM Studio / NVIDIA NIM endpoints"
+      "§9 Invariant INV-1 diff strictly 0 bytes",
+      "§21.1 Cover letter generator Cuba executive tokens",
+      "§2 Level 5 Playwright test against live LM Studio / NVIDIA NIM endpoints"
     ],
     "scheduledAt": "2026-10-04T01:50:00Z"
+  },
+  "qualityRating": "10/10",
+  "category": "Platform Engineering",
+  "updatedAt": "2026-10-04T06:52:56.882Z",
+  "verification": {
+    "browserCrawlRequired": true,
+    "playwrightSuite": "tests/e2e/dir-014.spec.js",
+    "minScore": "10/10"
   }
 }

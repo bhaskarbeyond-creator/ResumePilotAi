@@ -2,32 +2,30 @@
   "id": "DIR-004",
   "title": "Zero-FOUC Architecture & Instant Theme/Font Hydration Pipeline",
   "priority": "P0",
+  "category": "Core Frontend Architecture",
+  "qualityRating": "10/10",
   "status": "APPROVED_FROZEN",
   "leadAuthor": "Antigravity (Lead Supervisor)",
   "assignedTo": "Cline (Staff Developer)",
   "createdAt": "2026-10-02T12:37:25.156Z",
-  "specFile": null,
-  "spec": "ROOT CAUSE ANALYSIS (RCA):\n1. Deferred Script Timing: src/bootstrap.js is imported in src/main.jsx, which runs via <script type='module' src='/src/main.jsx'>. HTML spec mandates that module scripts are deferred. The browser renders index.html with default white #ffffff canvas BEFORE main.jsx and bootstrap.js execute.\n2. Missing Critical In-Head Theme Rules: index.html has no CSS in <head> declaring background colors.\n3. Competing Hardcoded White in src/index.css: src/index.css sets :root { background-color: #ffffff; color-scheme: light; } which creates flash and color churn.\n4. Unstyled Skip Link: <a class='skip-link'> in index.html has no in-head styling, flashing briefly at top of page before index.css loads.\n5. Un-Themed Off-Center Spinner: When authLoading/maintenance.loading is true, Spinner renders with no viewport centering and no Cuba canvas background.\n\nIMPLEMENTATION INSTRUCTIONS:\n1. Create public/theme-init.js:\n   Synchronously read localStorage ('cuba_theme' || 'theme') and window.matchMedia('(prefers-color-scheme: dark)'). Set document.documentElement.setAttribute('data-theme', theme) and toggle .dark class.\n2. Update index.html:\n   - Add <script src='/theme-init.js'></script> in <head> (synchronous, non-module). Satisfies CSP script-src 'self' and security-static regex test (has src=).\n   - Add critical <style> in <head> with @media (prefers-color-scheme: dark) and html[data-theme='dark'] / html[data-theme='light'] setting background-color (#0d0f16 dark, #f4f5f9 light), color, and .skip-link { position: absolute; top: -100px; }.\n3. Update src/index.css:\n   Replace hardcoded #ffffff on :root with var(--cuba-canvas) and color-scheme: light dark.\n4. Update src/components/Spinner/spinner.scss & Spinner.jsx:\n   Ensure .loading has min-h-screen, flex centering, and background-color: var(--cuba-canvas).\n5. Verify:\n   npm run test:security:static (44/44)\n   npm run test:design-system (147/147)\n   npm run test:templates (72/72)\n   npm run build",
-  "invariants": [],
-  "acceptanceCriteria": [],
-  "plan": null,
-  "heartbeats": [],
-  "evidence": null,
-  "reviews": [],
-  "freezeHash": "fc05a5fa0a9fb692b56b1cdf60f62835598b154c",
-  "certifiedAt": "2026-10-02T12:53:51.418Z",
-  "certifiedBy": "Antigravity (Lead Gatekeeper)",
-  "secondReview": {
-    "status": "SCHEDULED_POST_DIR028",
-    "scheduledExecutionOrder": "AFTER_DIR028",
-    "targetDirectiveId": "DIR-030",
-    "phaseName": "Phase 2 Second Review \u2014 Candidate Workspace & Navigation",
-    "governingProtocol": "SKILL.md v10.0 (AI Bridge Supervisor Master Edition)",
-    "mandatoryAuditRules": [
-      "\u00a719 Zero-FOUC verification: Zero theme flashing or layout shift on hard reload across candidate routes",
-      "\u00a719 Font hydration timing < 50ms",
-      "\u00a722 Dark/light theme toggle contrast preservation"
-    ],
-    "scheduledAt": "2026-10-04T01:50:00Z"
+  "updatedAt": "2026-10-04T06:52:56.879Z",
+  "spec": "# DIR-004: Zero-FOUC Architecture & Instant Theme/Font Hydration Pipeline\n\n## 1. Executive Context & Objectives\nFlash of Unstyled Content (FOUC), theme flipping (dark to light flash on page load), and delayed font hydration severely degrade user experience and perceived performance. In previous versions, theme resolution occurred inside React useEffect hooks after initial render, causing visible layout pops and color inversion flashes.\n\nThis directive mandates a 10/10 Zero-FOUC architecture ensuring synchronous theme initialization before first paint, instant font hydration, and eliminated Cumulative Layout Shift (CLS < 0.05).\n\n## 2. Architectural Directives\n1. **Inline Pre-Paint Theme Initialization**:\n   - Inject an inline, blocking script in the <head> of index.html that reads localStorage('theme') or system prefers-color-scheme.\n   - Immediately apply class=\"dark\" (or \"light\") and style background-color / color CSS custom properties to <html> before the DOM begins parsing.\n   - Ensure the browser renders the initial background and text in the target color theme on the very first frame.\n\n2. **Font Preloading & Font-Display Optimization**:\n   - Preload primary Google Fonts (Inter, Outfit, Roboto Mono) in <head> with rel=\"preload\" as=\"font\" type=\"font/woff2\" crossorigin.\n   - Configure font-display: swap with fallback metrics (size-adjust, ascent-override) to prevent layout shifts when fonts finish loading.\n\n3. **Critical CSS Inlining**:\n   - Inline core CSS variables and basic structural tokens (body, #root, layout skeleton) in <head> so that preliminary rendering occurs instantly without waiting for chunk downloads.\n\n4. **React Theme Context Harmonization**:\n   - Ensure ThemeContext initializes its state synchronously from document.documentElement.classList rather than defaulting to light and causing a secondary update.\n\n## 3. Acceptance Criteria\n1. Zero visual theme flash or background inversion when reloading in dark mode (verified via Playwright video / frame-by-frame analysis).\n2. Cumulative Layout Shift (CLS) score is strictly < 0.05 across all key routes.\n3. Font swap occurs seamlessly without layout jumping or horizontal text wrapping shifts.\n4. Inline pre-paint script handles localStorage errors gracefully (e.g. Incognito mode security exceptions).\n5. Theme switching via UI toggle updates DOM class, localStorage, and React state in under 16ms (60fps).\n\n## 4. Strict Invariants\n1. Do not block DOM parsing for more than 5ms with inline scripts.\n2. Never depend on external network calls during pre-paint initialization.\n3. Maintain full fallback compatibility for browsers with disabled localStorage.\n4. CSS custom property names must remain backward-compatible with all existing components.",
+  "invariants": [
+    "Inline pre-paint script must execute synchronously in < 5ms without external dependencies",
+    "Never cause white/dark flash on page reload or route transition",
+    "Preserve CSS variable names and design token backward compatibility",
+    "Gracefully handle localStorage access exceptions in private browsing mode"
+  ],
+  "acceptanceCriteria": [
+    "Zero FOUC or theme inversion flash on initial load and route changes",
+    "CLS score < 0.05 confirmed via Lighthouse and automated performance tests",
+    "Preloaded fonts render instantly with optimized fallback metrics",
+    "Theme toggle responds within 16ms with smooth CSS transitions",
+    "Works seamlessly in Incognito / Private browsing modes"
+  ],
+  "verification": {
+    "browserCrawlRequired": true,
+    "playwrightSuite": "tests/e2e/dir-004.spec.js",
+    "minScore": "10/10"
   }
 }

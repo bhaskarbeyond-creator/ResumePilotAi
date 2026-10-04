@@ -4,7 +4,7 @@
   "priority": "P1",
   "status": "APPROVED_FROZEN",
   "leadAuthor": "Antigravity (Lead Supervisor)",
-  "assignedTo": "Cline (Staff Developer)",
+  "assignedTo": "Cline (Remote Developer)",
   "createdAt": "2026-10-03T15:46:50.069Z",
   "specFile": null,
   "spec": "# DIR-021: Omnipresent ⌘K AI Career Copilot & Universal Command Surface 10/10 Overhaul\n\n## 1. Executive Context & Objectives (Opportunity Fix)\nThe Cuba Command Palette (`src/components/cuba/CubaCommandPalette.jsx`) is currently a basic navigation search bar. While it can jump to routes, it does not leverage the platform's dynamic multi-model AI routing engine (DIR-013, DIR-014) to provide an interactive, context-aware AI assistant.\n\nThis directive mandates a 10/10 transformation of the Cuba Command Palette into a unified **AI Career Copilot & Command Surface**, inspired by Linear/Raycast/Superhuman, available across all 4 dashboards (Candidate, Recruiter, Enterprise, Admin) with instant prompt execution, context-aware quick actions, and dedicated Playwright E2E verification.\n\n## 2. Key Architecture Directives\n1. **Dual-Mode Command Surface (Navigation + AI Copilot)**:\n   - Provide a seamless mode switcher at the top of the palette:\n     - `Navigation (Tab / Slash)`: Instant fuzzy search across all portal routes, settings tabs, resume documents, and jobs.\n     - `AI Copilot (Tab / Space)`: Natural language prompt input with AI action chips.\n   - Global keyboard trigger: `Ctrl+K` (Windows/Linux) / `Cmd+K` (macOS).\n\n2. **Context-Aware Action Chips**:\n   - Dynamically adapt suggested action pills based on the user's active portal and current route:\n     - Candidate on `/dashboard`: \"⚡ Optimize resume for ATS\", \"✍️ Generate cover letter for target role\", \"🎙️ Start mock interview practice\".\n     - Candidate on `/build-resume`: \"🪄 Polish active step descriptions\", \"🎯 Add quantifiable metric bullet points\".\n     - Recruiter on `/employer/pipeline`: \"📊 Summarize candidate pool\", \"✉️ Draft interview invite email\".\n     - Admin on `/admin`: \"🔍 Search user or tenant\", \"🛡️ View recent security audit logs\".\n\n3. **In-Palette Result Card & 1-Click Application**:\n   - When an AI prompt is submitted, display a smooth progress indicator with rotating tips.\n   - Render the formatted response in an elevated Cuba card inside the palette viewport.\n   - Provide quick action buttons: \"Copy to Clipboard\", \"Insert into Editor\", \"Open in Full Screen\".\n\n4. **Dedicated Playwright E2E Verification**:\n   - Author `playwright.dir021.config.js` targeting `tests/e2e/dir021-command-copilot.spec.js`.\n   - Test Ctrl+K hotkey, mode switching, fuzzy query ranking, AI prompt simulation, and Escape-key dismiss against the live dev server without mocks.\n",
@@ -55,5 +55,13 @@
   ],
   "freezeHash": "e314f7157af451b32e7c5163eb40ce9198f94869",
   "certifiedAt": "2026-10-04T02:02:09.069Z",
-  "certifiedBy": "Antigravity (Lead Gatekeeper)"
+  "certifiedBy": "Antigravity (Lead Gatekeeper)",
+  "qualityRating": "10/10",
+  "category": "Platform Engineering",
+  "updatedAt": "2026-10-04T06:52:56.883Z",
+  "verification": {
+    "browserCrawlRequired": true,
+    "playwrightSuite": "tests/e2e/dir-021.spec.js",
+    "minScore": "10/10"
+  }
 }

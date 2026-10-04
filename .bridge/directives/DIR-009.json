@@ -4,7 +4,7 @@
   "priority": "P0",
   "status": "APPROVED_FROZEN",
   "leadAuthor": "Antigravity (Lead Supervisor & Systems Architect)",
-  "assignedTo": "Cline (Staff Developer)",
+  "assignedTo": "Cline (Remote Developer)",
   "createdAt": "2026-10-03T03:26:00.000Z",
   "specFile": null,
   "spec": "1. CONTEXT & PROBLEM:\n- In the Candidate Portal (/dashboard/user), CubaCandidateHero renders at the top of the content area. Below it, DashboardHomepage renders a second redundant hero welcome banner, creating double-banner clutter that degrades the executive visual standard.\n- Action buttons across candidate tabs (Resumes, Applications, Skills, Interview Coach) use fragmented and inconsistent color gradients (plain purple, legacy blues, mismatched borders).\n- Candidate views must reflect 10/10 Google Material 3 / Cuba Executive standards: unified #7366ff primary gradient, consistent glassmorphic cards, clear typography, and sub-100ms render performance.\n\n2. REQUIRED ARCHITECTURAL CHANGES:\n- Identify and suppress the redundant inner hero banner in DashboardHomepage.jsx when rendered within the Cuba Candidate shell, ensuring CubaCandidateHero is the single authoritative hero surface.\n- Harmonize all primary and secondary action buttons across Candidate sub-surfaces to the canonical Cuba primary design tokens (.cuba-btn-primary and linear-gradient(135deg, #7366ff 0%, #5949d6 100%)).\n- Audit all candidate sub-tabs: Resumes, Saved Jobs, Applications, Interview Simulator, Analytics, Settings to ensure seamless single-chrome rendering.\n- Verify keyboard navigation, ARIA landmarks, and focus rings.\n\n3. VERIFICATION & ACCEPTANCE CRITERIA:\n- Author Playwright E2E suite tests/e2e/dir009-candidate-dashboard.spec.js running against live Vite (:3000) and MariaDB.\n- Assert exactly ONE hero banner renders in Candidate Dashboard.\n- Assert all primary CTAs across candidate sub-tabs carry Cuba primary token styles.\n- Assert zero console errors, zero page errors, and zero failed API requests.\n- Verify 51 CV templates and DOCX export pipeline remain 100% frozen (diff = 0).",
@@ -42,7 +42,7 @@
   "heartbeats": [],
   "evidence": {
     "submittedAt": "2026-10-03T04:50:11.540Z",
-    "summary": "DIR-009 6/6 GREEN against live Vite:3000 + MariaDB (36.1s, zero mocks). Stage1 one CubaCandidateHero, 0 duplicate greetings. Stage2 15 CTAs across 10 routes, 0 offenders. Stage3 one Cuba sidebar + unique nav landmarks + focus rings on all 10 routes. Stage4 contrast 6.27:1 AA, focus ring solid 3px. Stage5 frozen paths diff=0 vs e314f715, 51/51 Cv<N>.jsx present. Stage6 0 console/0 page/0 failed-API. IMPORTANT: both Lead-proposed harness fixes were corrected after empirical verification. (1) Stage3 root cause CONFIRMED (DashboardSettings L5298 renders its own aside), but the proposed selector .cuba-sidebar DOES NOT EXIST in src/ \u2014 the shell identifies its aside via data-testid=cuba-sidebar only, so the proposed locator would have matched 0 elements and failed. Applied aside[data-testid=\" cuba-sidebar\\].",
+    "summary": "DIR-009 6/6 GREEN against live Vite:3000 + MariaDB (36.1s, zero mocks). Stage1 one CubaCandidateHero, 0 duplicate greetings. Stage2 15 CTAs across 10 routes, 0 offenders. Stage3 one Cuba sidebar + unique nav landmarks + focus rings on all 10 routes. Stage4 contrast 6.27:1 AA, focus ring solid 3px. Stage5 frozen paths diff=0 vs e314f715, 51/51 Cv<N>.jsx present. Stage6 0 console/0 page/0 failed-API. IMPORTANT: both Lead-proposed harness fixes were corrected after empirical verification. (1) Stage3 root cause CONFIRMED (DashboardSettings L5298 renders its own aside), but the proposed selector .cuba-sidebar DOES NOT EXIST in src/ — the shell identifies its aside via data-testid=cuba-sidebar only, so the proposed locator would have matched 0 elements and failed. Applied aside[data-testid=\" cuba-sidebar\\].",
     "testsOutput": null,
     "domCrawl": null,
     "artifacts": []
@@ -61,13 +61,21 @@
     "status": "SCHEDULED_POST_DIR028",
     "scheduledExecutionOrder": "AFTER_DIR028",
     "targetDirectiveId": "DIR-030",
-    "phaseName": "Phase 2 Second Review \u2014 Candidate Workspace & Navigation",
+    "phaseName": "Phase 2 Second Review — Candidate Workspace & Navigation",
     "governingProtocol": "SKILL.md v10.0 (AI Bridge Supervisor Master Edition)",
     "mandatoryAuditRules": [
-      "\u00a721.1 Candidate hero card, analog clock widget, and quick actions token audit",
-      "\u00a722 Accessibility landmarks and contrast >= 4.5:1",
-      "\u00a72 Level 5 Playwright E2E verification"
+      "§21.1 Candidate hero card, analog clock widget, and quick actions token audit",
+      "§22 Accessibility landmarks and contrast >= 4.5:1",
+      "§2 Level 5 Playwright E2E verification"
     ],
     "scheduledAt": "2026-10-04T01:50:00Z"
+  },
+  "qualityRating": "10/10",
+  "category": "Platform Engineering",
+  "updatedAt": "2026-10-04T06:52:56.880Z",
+  "verification": {
+    "browserCrawlRequired": true,
+    "playwrightSuite": "tests/e2e/dir-009.spec.js",
+    "minScore": "10/10"
   }
 }

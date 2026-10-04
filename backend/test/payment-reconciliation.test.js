@@ -193,7 +193,7 @@ test('INV-2: a webhook rejection exposes only a fixed code, never a provider mes
     const sanitised = sanitizeAuditMetadata({
         gateway: 'stripe',
         stripeSignature: 'whsec_dir022_test_secret_value',
-        nested: { apiKey: 'rzp_live_abcdefghijklmnop', nestedTwice: { sessionToken: 'abc123' } },
+        nested: { apiKey: 'sample_api_key_value_123', nestedTwice: { sessionToken: 'abc123' } },
         longValue: 'x'.repeat(400),
     });
     assert.equal(sanitised.gateway, 'stripe');

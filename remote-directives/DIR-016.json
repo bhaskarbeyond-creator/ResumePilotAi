@@ -1,0 +1,31 @@
+{
+  "id": "DIR-016",
+  "title": "Omitted Cross-Portal Surfaces & Navigation Completeness Freeze (Enterprise Platform Provisioner Tab, Candidate Favorites Restoration & Bi-Directional Parity Tests)",
+  "priority": "P1",
+  "category": "Cross-Portal Navigation & Feature Completeness",
+  "qualityRating": "10/10",
+  "status": "APPROVED_FROZEN",
+  "leadAuthor": "Antigravity (Lead Supervisor)",
+  "assignedTo": "Cline (Staff Developer)",
+  "createdAt": "2026-10-03T14:54:09.486Z",
+  "updatedAt": "2026-10-04T06:52:56.882Z",
+  "spec": "# DIR-016: Omitted Cross-Portal Surfaces & Navigation Completeness Freeze\n\n## 1. Executive Context & Objectives\nDuring cross-portal audits, certain secondary features and sub-navigation links were observed to be omitted or partially unmounted. Specifically:\n- The Enterprise Organization console was missing an interactive Platform Provisioner / Tenant Settings sub-tab for configuring white-label branding, custom domains, and AI quota overrides.\n- Candidate Job Portal was missing the Favorites / Saved Jobs quick-access modal and persistent bookmark sync.\n- Several breadcrumbs and back-navigation links across deep routes (/recruiter/jobs/:id/applicants, /enterprise/departments/:id) lacked bi-directional parity, causing users to get stuck or bounce to root dashboards.\n\nThis directive mandates a 10/10 freeze on all omitted cross-portal surfaces, restoring missing UI controls, mounting verified sub-routes, and establishing automated bi-directional parity tests.\n\n## 2. Architectural Directives\n1. **Enterprise Platform Provisioner Tab**:\n   - Mount /enterprise/provisioner or sub-tab inside Enterprise Organization Console.\n   - Allow enterprise admins to configure: Organization Name, Logo Upload with live preview, Vanity Domain/Subdomain, Custom Primary Color theme picker, and AI Quota allocations.\n   - Connect to backend /api/enterprise/settings with validation and role guards (owner/admin only).\n\n2. **Candidate Saved Jobs & Favorites Modal**:\n   - Restore FavoritesModal component in Candidate Job Portal.\n   - Connect bookmark button on JobCard to toggle favorite state in MariaDB user_favorites / localStorage fallback.\n   - Provide saved jobs drawer / modal showing all bookmarked jobs with 1-click apply, remove, and export.\n\n3. **Bi-Directional Deep Navigation Parity**:\n   - Standardize breadcrumbs across all multi-level pages: Root > Portal > Section > Item Details.\n   - Ensure every detail page has an accessible, visible Back button with predictable history navigation.\n   - Verify that deep-linking directly to sub-routes retains parent navigation context and active sidebar states.\n\n## 3. Acceptance Criteria\n1. Enterprise Platform Provisioner tab is fully accessible to Enterprise Admins and persists branding configurations.\n2. Candidate Favorites button bookmarks jobs and reflects accurately in the Favorites modal and badge counter.\n3. Breadcrumb navigation is present and clickable on all nested pages across Candidate, Recruiter, and Enterprise portals.\n4. Deep link URLs can be refreshed without losing route context, user permissions, or throwing 404/blank pages.\n5. All newly mounted surfaces strictly adhere to Cuba M3 executive glassmorphic design tokens.\n\n## 4. Strict Invariants\n1. Do not alter existing RBAC permission models or grant unprivileged users access to provisioner settings.\n2. Bookmark/favorites state must be scoped per authenticated candidate ID.\n3. Breadcrumb back navigation must never trap users in infinite redirect loops.\n4. Maintain full responsive layout support down to 375px mobile viewports.",
+  "invariants": [
+    "Preserve strict RBAC isolation; provisioner settings restricted to Enterprise Admins",
+    "Candidate favorites state must be user-isolated and durable",
+    "No navigation loops or broken history states in breadcrumb controls",
+    "All newly mounted components must pass WCAG 2.1 AA and responsive standards"
+  ],
+  "acceptanceCriteria": [
+    "Enterprise Platform Provisioner is mounted, styled with Cuba M3, and saves settings",
+    "Candidate Favorites modal and toggle buttons are functional and synchronized",
+    "Clickable breadcrumbs and Back buttons present on all deep routes",
+    "Direct URL refresh on nested routes preserves context and layout",
+    "Zero console warnings or unhandled exceptions across all tested surfaces"
+  ],
+  "verification": {
+    "browserCrawlRequired": true,
+    "playwrightSuite": "tests/e2e/dir-016.spec.js",
+    "minScore": "10/10"
+  }
+}

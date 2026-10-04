@@ -129,7 +129,7 @@
         "maxTestFailures": 0,
         "maxAccessibilityViolations": 0,
         "minContrastRatio": 4.5,
-        "maxBuildTimeSeconds": 4.0
+        "maxBuildTimeSeconds": 4
       }
     },
     "security": {
@@ -273,15 +273,17 @@
     "stallAlertMinutes": 5,
     "autoRestartOnReboot": true,
     "multiProjectSupervision": true,
-    "wakeUri": "antigravity-ide://saoudrizwan.claude-dev/task"
+    "wakeUri": "antigravity-ide://saoudrizwan.claude-dev/task",
+    "enabled": false,
+    "paused": true
   },
   "qualityGates": {
-    "buildBudgetSeconds": 4.0,
+    "buildBudgetSeconds": 4,
     "eslintMaxErrors": 0,
     "keystrokeFilterBudgetMs": 50,
     "paletteMountBudgetMs": 100,
     "wcagContrastRatioNormal": 4.5,
-    "wcagContrastRatioLarge": 3.0,
+    "wcagContrastRatioLarge": 3,
     "enforceFrozenPathsDiffZero": true,
     "zeroSyntheticData": true
   },

@@ -4,7 +4,7 @@
   "priority": "P0",
   "status": "APPROVED_FROZEN",
   "leadAuthor": "Antigravity (Lead Supervisor)",
-  "assignedTo": "Cline (Staff Developer)",
+  "assignedTo": "Cline (Remote Developer)",
   "createdAt": "2026-10-03T15:47:02.319Z",
   "specFile": null,
   "spec": "# DIR-022: Payment Webhook Reconciler, Multi-Gateway Ledger & Entitlement Sentinel 10/10 Overhaul\n\n## 1. Executive Context & Objectives (Threat Defense)\nPayment gateway webhooks (Razorpay and Stripe) are prone to real-world edge cases: dropped HTTP packets, out-of-order delivery, transient timeouts, and replay attacks. Without an idempotent reconciliation ledger, candidates who have successfully paid could face delayed entitlements or service interruption, creating customer support churn.\n\nThis directive mandates a complete 10/10 hardening of the platform's payment ingestion pipeline, establishing cryptographic HMAC-SHA256 signature enforcement, an idempotent `processed_webhooks` ledger, an autonomous background reconciliation daemon, a 3-day renewal grace period, and comprehensive automated test coverage.\n\n## 2. Key Architecture Directives\n1. **Idempotent Webhook Processing Engine**:\n   - Table `processed_webhooks` (`event_id`, `gateway`, `event_type`, `payload_hash`, `processed_at`, `status`).\n   - Every incoming webhook checks if `event_id` exists before processing. If already processed, respond immediately with `HTTP 200 { status: 'already_processed' }`.\n   - Wrap state updates in MariaDB database transactions: credit quota, update `user_subscriptions`, create `orders` record, and record in `subscription_audit_log`.\n\n2. **Cryptographic Signature Verification & Replay Guard**:\n   - Razorpay: Validate `X-Razorpay-Signature` using `crypto.createHmac('sha256', secret)`.\n   - Stripe: Validate `Stripe-Signature` header with tolerance check ($\\le 300\\text{s}$).\n   - Any signature mismatch immediately halts execution and logs an alert to `security_events`.\n\n3. **Autonomous Background Reconciliation Daemon**:\n   - Dedicated worker `backend/services/subscriptionReconciler.js`.\n   - Polls hourly for subscriptions in `pending` or `grace_period` state.\n   - Directly probes Razorpay / Stripe API to verify real payment status and auto-resolves discrepancies without manual human intervention.\n\n4. **Candidate Grace Period & Recovery Banner**:\n   - If recurring billing fails, flag subscription as `PAST_DUE` with a 3-day grace period.\n   - Render a gentle Cuba-styled warning banner in the Candidate Dashboard: \"Your subscription renewal failed. Please update your payment method within 3 days to maintain uninterrupted Pro features.\"\n\n5. **Automated Test Coverage**:\n   - Author `backend/test/payment-reconciliation.test.js` validating signature rejection, duplicate event suppression, and state transition invariants.\n",
@@ -61,5 +61,13 @@
   ],
   "freezeHash": "e314f7157af451b32e7c5163eb40ce9198f94869",
   "certifiedAt": "2026-10-04T03:05:26.268Z",
-  "certifiedBy": "Antigravity (Lead Gatekeeper)"
+  "certifiedBy": "Antigravity (Lead Gatekeeper)",
+  "qualityRating": "10/10",
+  "category": "Platform Engineering",
+  "updatedAt": "2026-10-04T06:52:56.883Z",
+  "verification": {
+    "browserCrawlRequired": true,
+    "playwrightSuite": "tests/e2e/dir-022.spec.js",
+    "minScore": "10/10"
+  }
 }

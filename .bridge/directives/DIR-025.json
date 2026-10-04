@@ -4,7 +4,7 @@
   "priority": "P0",
   "status": "ISSUED",
   "leadAuthor": "Antigravity (Lead Supervisor)",
-  "assignedTo": "Cline (Staff Developer)",
+  "assignedTo": "Cline (Remote Developer)",
   "createdAt": "2026-10-03T15:53:20.310Z",
   "specFile": null,
   "spec": "# DIR-025: Universal Link Crawler, Route Completeness & Zero-404 Navigation Freeze\n\n## 1. Executive Context & Objectives\nUsers and automated testers navigating the platform have reported broken links across core surfaces. A prominent example is the Google M3 Header User Menu (`src/components/cuba/M3UserMenu.jsx`), which points \"Your profile\" to `/dashboard/profile` and \"Security & MFA\" to `/dashboard/security`. Neither of these paths is mounted in `DashboardMain.jsx`, resulting in a blank viewport or unhandled route fallthrough.\n\nThis directive mandates a comprehensive **Universal Link & Route Audit** across the entire platform. Cline will crawl all internal navigation targets, mount missing route handlers and redirects in `DashboardMain.jsx`, verify all dropdown menu targets in `M3UserMenu.jsx` and `CubaCandidateShell.jsx`, author an automated crawler (`.bridge/evidence/link-crawl-audit.mjs`), and seal the system with a dedicated Playwright E2E suite (`playwright.dir025.config.js`).\n\n## 2. Key Architecture Directives\n1. **Mount Missing Sub-Routes in `DashboardMain.jsx`**:\n   - Add explicit routes under `/dashboard/*`:\n     - `<Route path=\"profile\" element={<Navigate to=\"/dashboard/settings?tab=profile\" replace />} />`\n     - `<Route path=\"security\" element={<Navigate to=\"/dashboard/settings?tab=security\" replace />} />`\n     - `<Route path=\"account\" element={<Navigate to=\"/dashboard/settings\" replace />} />`\n     - `<Route path=\"billing\" element={<Navigate to=\"/dashboard/plans\" replace />} />`\n     - `<Route path=\"my-resumes\" element={<Navigate to=\"/dashboard\" replace />} />`\n     - `<Route path=\"cv\" element={<Navigate to=\"/dashboard/cover-letters\" replace />} />`\n\n2. **Harmonize `M3UserMenu.jsx` & `CubaCandidateShell.jsx`**:\n   - Ensure `user?.profileHref` and `user?.securityHref` are consistently wired across Candidate, Recruiter, Enterprise, and Admin contexts.\n   - For Candidate: `profileHref: '/dashboard/settings?tab=profile'`, `securityHref: '/dashboard/settings?tab=security'`.\n   - For Enterprise: `profileHref: '/org/:slug/settings'`, `securityHref: '/org/:slug/security'`.\n   - For Admin: `profileHref: '/admin/settings'`, `securityHref: '/admin/security'`.\n\n3. **Automated Link Crawler (`link-crawl-audit.mjs`)**:\n   - Author a Playwright crawler that authenticates and visits:\n     - Candidate Dashboard, Header User Menu, Command Palette, Sidebar Navigation.\n     - Recruiter Portal, Header User Menu, Navigation Tabs.\n     - Enterprise Console, Header User Menu, 12 Console Tabs.\n     - Admin System Console, Settings Tree, Navigation Links.\n     - Public Marketing Homepage, Footer Links, Secondary Pages.\n   - For every link discovered, assert:\n     - `page.goto(url)` does NOT produce 404 or maintenance error.\n     - `main#main-content` contains rendered child elements (not an empty DOM container).\n     - No uncaught JavaScript runtime errors or console error exceptions.\n\n4. **Dedicated Playwright E2E Verification**:\n   - Author `playwright.dir025.config.js` targeting `tests/e2e/dir025-link-crawler.spec.js`.\n   - Physically click through the header avatar dropdown, verifying that clicking \"Your profile\", \"Settings\", and \"Security & MFA\" navigates cleanly to the intended live views.\n",
@@ -28,5 +28,13 @@
   "heartbeats": [],
   "evidence": null,
   "reviews": [],
-  "freezeHash": null
+  "freezeHash": null,
+  "qualityRating": "10/10",
+  "category": "Platform Engineering",
+  "updatedAt": "2026-10-04T06:52:56.884Z",
+  "verification": {
+    "browserCrawlRequired": true,
+    "playwrightSuite": "tests/e2e/dir-025.spec.js",
+    "minScore": "10/10"
+  }
 }

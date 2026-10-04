@@ -4,7 +4,7 @@
   "priority": "P1",
   "status": "APPROVED_FROZEN",
   "leadAuthor": "Antigravity (Lead Supervisor)",
-  "assignedTo": "Cline (Staff Developer)",
+  "assignedTo": "Cline (Remote Developer)",
   "createdAt": "2026-10-03T15:47:13.315Z",
   "specFile": null,
   "spec": "# DIR-023: Universal Dark Mode Contrast Auditor & Real-DOM WCAG 2.1 AA Anti-Inversion Scanner\n\n## 1. Executive Context & Objectives (Threat Defense)\nAs the platform expands to cover Candidate, Recruiter, Enterprise, and Admin dashboards, dark mode support must be mathematically proven rather than assumed. Untokenized legacy utility classes (e.g. hardcoded `text-slate-900`, `bg-white`, or light utility tints like `bg-emerald-50`, `bg-indigo-50`, `border-slate-200`) can inadvertently survive reviews, causing unreadable dark-on-dark text in dark mode, washed-out light-on-light text in light mode, or glaring 'pastel island inversions' where bright white/mint badges and buttons sit on dark backgrounds.\n\nThis directive mandates:\n1. An automated, full-system **Universal Dark Mode Contrast Auditor** that physically crawls all 74 canonical routes in Playwright, composites multi-layered semi-transparent glassmorphic backgrounds down to opaque canvases, computes exact WCAG 2.1 relative luminance ratios, fixes any contrast breaches with Cuba tokens, and seals the results in `.bridge/evidence/UNIVERSAL_CONTRAST_CENSUS.json`.\n2. **MANDATORY ROOT CAUSE ANALYSIS (RCA) ON DARK MODE RESIDUE**:\n   - Conduct a systematic audit of all inner dashboard and workspace components (e.g. `/build-resume`, `/dashboard/*`, `/employer/*`, `/admin/*`, `/org/*`) to identify where light-mode utility classes (`bg-emerald-50`, `bg-indigo-50`, `bg-amber-50`, `bg-slate-100`, `border-slate-200`, `bg-white/95`) remain un-themed.\n   - Eliminate all 'pastel islands' (such as completed step pills, action buttons, info boxes, and guide cards glowing bright white in dark mode).\n   - Ensure all tinted elements in dark mode seamlessly adopt executive Cuba dark tokens (`--cuba-card`, `--cuba-elevated`, `--cuba-line`, `--cuba-dark-success-soft`, etc.) with contrast >= 4.5:1.\n\n## 2. Key Architecture Directives\n1. **Real-DOM Ancestor Alpha Compositing Engine**:\n   - For every element, traverse parent DOM nodes, parse `getComputedStyle(node).backgroundColor`, and composite alpha channels ($A_{\\text{fg}} \\times C_{\\text{fg}} + (1 - A_{\\text{fg}}) \\times C_{\\text{bg}}$) down to `:root` `--cuba-canvas`.\n   - Calculate relative luminance: $L = 0.2126R + 0.7152G + 0.0722B$ (sRGB to linear space).\n   - Evaluate contrast ratio: $(L_{\\text{bright}} + 0.05) / (L_{\\text{dark}} + 0.05)$.\n\n2. **Full-Route Crawler Across 4 Authenticated Portals**:\n   - Authenticate with valid Firebase test credentials across all 4 roles:\n     - Candidate: `/dashboard`, `/dashboard/cover-letters`, `/dashboard/interview`, `/dashboard/job-tracker`, `/dashboard/settings`, `/build-resume`, `/portfolio/builder`.\n     - Recruiter: `/employer`, `/employer/applicants`, `/employer/jobs`, `/employer/company`, `/employer/messages`, `/employer/settings`.\n     - Enterprise: 14 `/org/:slug/*` routes.\n     - Admin: 22 `/admin/*` routes.\n     - Public: 13 canonical routes.\n\n3. **Defect Remediation & Token Harmonization**:\n   - For any probe failing $4.5:1$ (normal) or $3.0:1$ (large text), surgically update the component using `--cuba-ink`, `--cuba-ink-muted`, `--cuba-card`, `--cuba-line`, or centralized token layers.\n   - Zero raw hex colors introduced.\n\n4. **Continuous Quality Gate Integration**:\n   - Provide npm script `npm run audit:contrast`.\n   - Enforce zero violations ($0$ errors allowed).\n",
@@ -67,5 +67,13 @@
   ],
   "freezeHash": "e314f7157af451b32e7c5163eb40ce9198f94869",
   "certifiedAt": "2026-10-04T05:58:56.251Z",
-  "certifiedBy": "Antigravity (Lead Gatekeeper)"
+  "certifiedBy": "Antigravity (Lead Gatekeeper)",
+  "qualityRating": "10/10",
+  "category": "Platform Engineering",
+  "updatedAt": "2026-10-04T06:52:56.883Z",
+  "verification": {
+    "browserCrawlRequired": true,
+    "playwrightSuite": "tests/e2e/dir-023.spec.js",
+    "minScore": "10/10"
+  }
 }

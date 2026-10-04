@@ -1,16 +1,31 @@
 {
   "id": "DIR-032",
   "title": "Phase 2 Second Review & v10.0 Protocol Re-Audit — Admin Console, Settings & Security (Re-evaluating DIR-012, DIR-015, DIR-016, DIR-017)",
-  "priority": "P0",
-  "spec": "# Phase 2 Second Review Directive: Admin Console, Settings & Security (DIR-032)\n**Governing Protocol:** SKILL.md v10.0 (AI Bridge Supervisor Master Edition)\n**Execution Schedule:** Sequenced in the Post-DIR-028 Second Review Pipeline.\n**Target Directives for Re-Audit:** DIR-012, DIR-015, DIR-016, DIR-017.\n\n## 1. Objective & Scope\nRe-evaluate Platform Admin Console, SuperAdmin Settings, Security Command Center, and Cross-Portal Navigation Completeness against v10.0 rules.\n\n## 2. Mandatory Verification Gates\n1. **§24 Zero Secret Leakage:** Proof that API keys are strictly server-side.\n2. **§24 RBAC & Negative Auth:** Verify 401/403 guards across all sensitive administrative endpoints.\n3. **§24 TOTP MFA & Session Revocation:** Live MariaDB verification.\n4. **§21.1 Design Tokens:** Admin tree navigation and settings controls adhere to Cuba tokens.",
+  "priority": "P1",
+  "category": "Production Audit & Hardening",
+  "qualityRating": "10/10",
+  "status": "ISSUED",
+  "leadAuthor": "Antigravity (Lead Supervisor)",
+  "assignedTo": "Cline (Staff Developer)",
+  "createdAt": "2026-10-04T01:49:30.703Z",
+  "updatedAt": "2026-10-04T06:52:56.884Z",
+  "spec": "# DIR-032: Phase 2 Second Review & v10.0 Protocol Re-Audit — Admin Console, Settings & Security\n\n## 1. Executive Context & Objectives\nPlatform administration, system settings, and candidate security form the operational backbone of ResumePilotAI. This directive conducts the v10.0 Second Review of DIR-012 (Platform Admin System Console), DIR-015 (SuperAdmin Platform Settings & Control Center), DIR-016 (Omitted Cross-Portal Surfaces), and DIR-017 (Candidate Account & Security Command Center).\n\nThe objective is to verify bulletproof role-based access control (RBAC), multi-tenant policy enforcement, TOTP two-factor authentication, session governance, and system diagnostic telemetry.\n\n## 2. Re-Audit Scope & Architectural Verification\n1. **Platform Admin System Console & SuperAdmin Settings (DIR-012 & DIR-015 Re-Audit)**:\n   - Audit SuperAdmin settings: AI Provider Orchestration, LLM Model Routing, SWOT Optimization, Payment Gateway Credentials, System Maintenance Mode.\n   - Verify SuperAdmin Role Simulator (impersonate candidate/recruiter/enterprise) with safe audit trail logging and instant return-to-admin bar.\n   - Test System Diagnostics: Database connection pool status, Redis/Cache health, AI Provider latency matrix, and storage quotas.\n\n2. **Candidate Account & Security Command Center (DIR-017 Re-Audit)**:\n   - Audit Google Account-inspired security center: Profile details, Password change, TOTP MFA setup with QR code, active session list, and security events log.\n   - Test session revocation: terminate specific devices or all other sessions.\n   - Test account deletion flow with confirmation safeguard and data retention compliance.\n\n3. **Omitted Cross-Portal Surfaces (DIR-016 Re-Audit)**:\n   - Confirm Enterprise Platform Provisioner tab and Candidate Favorites modal remain active and stable.\n\n## 3. Acceptance Criteria\n1. SuperAdmin console securely controls all platform settings with instant save and rollback.\n2. Role Simulator allows safe impersonation with clear persistent banner and one-click exit.\n3. TOTP MFA setup, verification, and recovery code generation operate flawlessly.\n4. Active session governance accurately lists IP addresses, browsers, and allows revocation.\n5. All Admin API endpoints strictly enforce superadmin / admin role authorization checks.\n6. Zero sensitive credentials (API keys, secret tokens) leaked in responses or client state.\n\n## 4. Strict Invariants\n1. Secrets and API keys must remain masked on the client; never return plaintext in GET responses.\n2. SuperAdmin impersonation must never allow altering the target account's root password or security credentials.\n3. All administrative configuration changes must be recorded in the immutable audit log.\n4. Enforce re-authentication for destructive actions (e.g. account deletion, master system reset).",
   "invariants": [
-    "INV-1: Zero Plaintext Secret Leakage: NVIDIA, Gemini, OpenAI, Groq, and OpenRouter API keys must never be returned in API payloads, browser localStorage, or DOM.",
-    "INV-2: Multi-Tenant Authorization & RBAC: SuperAdmin role simulator, system settings, and candidate security centers must enforce strict RBAC and negative authorization guards."
+    "Zero plaintext API keys or credentials exposed in client-side state or API payloads",
+    "SuperAdmin role simulator must strictly log all impersonated actions to audit store",
+    "Enforce re-authentication on destructive administrative actions",
+    "TOTP secrets must be encrypted at rest and never transmitted in plaintext"
   ],
   "acceptanceCriteria": [
-    "§24 Security Audit & Secret Scanner: Automated scan proving zero unmasked API keys in client-accessible assets; negative authorization test proving unauthorized users receive HTTP 401/403 on /api/admin/*.",
-    "§24 Account & Security Command Center: TOTP MFA enrollment, active session revocation, and security audit log tested against live MariaDB.",
-    "§21.1 Admin Console & SuperAdmin Settings Token Audit: Cuba executive tree navigation, SWOT configuration panels, and platform provisioner tabs use 100% Cuba design tokens.",
-    "§16 Navigation Completeness: Verify Enterprise Platform Provisioner tab and Candidate Favorites restoration remain 100% operational with 0 regression."
-  ]
+    "SuperAdmin settings update dynamically with validation and audit logging",
+    "Role Simulator allows seamless impersonation and 1-click return to admin",
+    "TOTP MFA enrollment and verification pass end-to-end tests",
+    "Session governance correctly tracks and terminates remote sessions",
+    "All security and RBAC barriers verified via automated penetration checks"
+  ],
+  "verification": {
+    "browserCrawlRequired": true,
+    "playwrightSuite": "tests/e2e/dir-032.spec.js",
+    "minScore": "10/10"
+  }
 }

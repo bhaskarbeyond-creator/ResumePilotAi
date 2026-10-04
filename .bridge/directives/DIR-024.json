@@ -4,7 +4,7 @@
   "priority": "P1",
   "status": "IN_PROGRESS",
   "leadAuthor": "Antigravity (Lead Supervisor)",
-  "assignedTo": "Cline (Staff Developer)",
+  "assignedTo": "Cline (Remote Developer)",
   "createdAt": "2026-10-03T15:47:23.194Z",
   "specFile": null,
   "spec": "# DIR-024: Autonomous Geo-SEO Engine & Schema.org JSON-LD Career Landing System\n\n## 1. Executive Context & Objectives (Opportunity Fix)\nOrganic candidate and recruiter acquisition in India requires strong regional and programmatic SEO. While the platform backend has `geoSeoSettings` and `llmGeoSettings` in MariaDB, the frontend has not yet exposed dynamic Indian city/state career hubs or structured `llms.txt` endpoints for modern AI-driven search engines (Perplexity, ChatGPT, Gemini, Copilot).\n\nThis directive mandates a 10/10 implementation of an **Autonomous Geo-SEO & AI Search Engine**, introducing regional career hubs for major Indian tech clusters, automated Schema.org JSON-LD structured data injection, standardized `/llms.txt` crawler indexation, and dedicated Playwright E2E verification.\n\n## 2. Key Architecture Directives\n1. **Dynamic Regional Career Hubs**:\n   - Routes: `/jobs/in/:state` and `/jobs/city/:cityName` (e.g. `/jobs/city/bengaluru`, `/jobs/city/hyderabad`, `/jobs/city/pune`, `/jobs/city/delhi-ncr`).\n   - Dynamically filter MariaDB jobs matching the city, render a localized Cuba M3 hero (\"Explore Top Software & Tech Jobs in Bengaluru\"), display current active vacancies, average salary ranges in INR (₹ LPA), and top hiring companies.\n\n2. **Automated Schema.org JSON-LD Structured Data**:\n   - `RouteSeo.jsx`: Programmatically inject W3C/Google compliant JSON-LD `<script type=\"application/ld+json\">` schemas:\n     - `JobPosting`: title, description, hiringOrganization, jobLocation, baseSalary (currency: INR), datePosted, validThrough, employmentType.\n     - `Organization`: name, url, logo, contactPoint, sameAs (social links).\n     - `BreadcrumbList`: itemListElement reflecting current portal path hierarchy.\n     - `FAQPage`: mainEntity with question and acceptedAnswer.\n\n3. **High-Fidelity `/llms.txt` & AI Crawler Optimization**:\n   - Serve `/llms.txt` and `/llms-full.txt` from backend or public route based on `llmGeoSettings` in MariaDB.\n   - Format: Concise Markdown index outlining IME365 capabilities (AI Resume Builder with 51 templates, Audio Interview Coach, ATS Keyword Matcher, Digital Portfolios, Job Board).\n\n4. **Dedicated Playwright E2E Verification**:\n   - Author `playwright.dir024.config.js` targeting `tests/e2e/dir024-geo-seo.spec.js`.\n   - Validate JSON-LD script presence, regional route filtering, `/llms.txt` HTTP 200 response, and canonical meta tags against the live stack with zero mocks.\n",
@@ -53,5 +53,13 @@
       "feedback": "[LEAD SUPERVISOR ARCHITECTURAL PLAN APPROVAL: DIR-024]\nYour 15-step execution plan for DIR-024 is thoroughly analyzed and officially APPROVED.\n\nKey Architectural Mandates:\n1. Fix /llms.txt status code: Return 404 when unconfigured, reserving 503 for genuine DB failure. Expose /llms-full.txt beside it.\n2. Regional Routes: Mount /jobs/city/:cityName and /jobs/in/:state in main.jsx, using RegionalJobHub.jsx with honest empty states for 0-row cities per Blocker 1 ruling.\n3. Schema.org JSON-LD in RouteSeo.jsx: Support Organization, BreadcrumbList, JobPosting, and FAQPage with safe script serialization (INV-3).\n4. Sitemaps & OpenGraph: Update public/sitemap.xml and meta tags without leaking og:image on private portfolios.\n5. Invariants: Maintain INV-1 (git diff e314f715 -- src/cv-templates/ backend/services/aiRuntime.js == 0).\n\nProceed immediately in ACT mode in Antigravity IDE."
     }
   ],
-  "freezeHash": null
+  "freezeHash": null,
+  "qualityRating": "10/10",
+  "category": "Platform Engineering",
+  "updatedAt": "2026-10-04T06:52:56.884Z",
+  "verification": {
+    "browserCrawlRequired": true,
+    "playwrightSuite": "tests/e2e/dir-024.spec.js",
+    "minScore": "10/10"
+  }
 }

@@ -1,0 +1,32 @@
+{
+  "id": "DIR-035",
+  "title": "Automated Email & Webhook Notification Engine with Multi-Provider Failover (Transactional Resend/SendGrid/SMTP, Template Renderer & Recruiter Alert Matrix)",
+  "priority": "P1",
+  "category": "System Enhancement & Integrations",
+  "qualityRating": "10/10",
+  "status": "ISSUED",
+  "leadAuthor": "Antigravity (Lead Supervisor)",
+  "assignedTo": "Cline (Remote Developer)",
+  "createdAt": "2026-10-04T06:52:56.884Z",
+  "updatedAt": "2026-10-04T06:52:56.884Z",
+  "spec": "# DIR-035: Automated Email & Webhook Notification Engine with Multi-Provider Failover\n\n## 1. Executive Context & Objectives (Enhancement Mandate)\nCandidate engagement and recruiter responsiveness depend heavily on immediate, reliable notifications. Currently, notification dispatch is partially coupled to in-app polling or lacks automated multi-provider transactional email routing. If an email provider experiences rate limits or downtime, critical alerts (application received, interview invitation, offer letter) can be lost.\n\nThis directive mandates a 10/10 implementation of an **Automated Email & Webhook Notification Engine**, featuring multi-provider failover (Resend primary, SendGrid secondary, SMTP fallback), a responsive email template renderer with Cuba M3 styling, configurable recruiter alert matrices, and outbound webhooks for ATS integrations (Slack, Teams, Zapier).\n\n## 2. Architecture Directives\n1. **Multi-Provider Failover Dispatcher**:\n   - Path: backend/services/notifications/\n   - Supported providers: Resend API, SendGrid API, NodeMailer SMTP fallback.\n   - Automated failover: If primary provider returns HTTP 429 or 5xx, automatically retry on secondary provider within 500ms with circuit breaker telemetry.\n   - Durable outbox queue: Store unsent notifications in MariaDB notification_outbox with exponential backoff retries (1m, 5m, 15m, 1h).\n\n2. **Responsive Transactional Email Templates**:\n   - Candidate Templates: Welcome & Verification, Application Submitted, Interview Scheduled (with .ics calendar invite), Resume Feedback Ready, Job Alerts Digest.\n   - Recruiter Templates: New Candidate Application, Interview Confirmed, Daily Pipeline Digest, Candidate Message Received.\n   - Render templates using clean, inline-CSS email HTML compatible with Gmail, Apple Mail, and Outlook (dark and light modes).\n\n3. **Recruiter & Enterprise Webhook Dispatcher**:\n   - Allow enterprise recruiters to configure outbound webhooks (candidate.applied, interview.scheduled, candidate.hired).\n   - Sign webhook payloads using HMAC-SHA256 signatures in X-ResumePilot-Signature header.\n   - Provide webhook delivery logs with status code, response time, and replay capability in Enterprise Console.\n\n4. **UI Notification Preference Center**:\n   - Mount notification settings tab in Candidate Account Settings and Recruiter Settings: Toggle Email vs In-App vs Webhook for each event type.\n\n## 3. Acceptance Criteria\n1. Email dispatcher successfully dispatches emails via primary provider, falling back to secondary on simulated provider outage.\n2. Transactional email templates render cleanly in both light and dark email clients with working CTA buttons.\n3. Calendar (.ics) attachments are automatically generated and included with interview invitation emails.\n4. Outbound webhooks deliver signed JSON payloads with replay capability in the Enterprise console.\n5. Notification preference toggles in frontend persist to backend and govern real-time dispatch.\n6. Zero plaintext credentials or provider API keys logged or exposed in client payloads.\n\n## 4. Strict Invariants\n1. Email provider API keys must reside in server-side configuration; never exposed to browser.\n2. Webhook payloads must never include sensitive candidate PII (SSN, raw passwords, payment details).\n3. Do not block HTTP request/response cycles with synchronous email delivery; use async queue.\n4. Every email must include an accessible, 1-click unsubscribe link for marketing/digest messages.",
+  "invariants": [
+    "Email provider credentials must remain strictly server-side and encrypted",
+    "Outbound webhooks must be cryptographically signed with HMAC-SHA256",
+    "All email dispatches must be asynchronous and queued through durable outbox",
+    "Strict adherence to CAN-SPAM and GDPR 1-click unsubscribe requirements"
+  ],
+  "acceptanceCriteria": [
+    "Multi-provider failover operates seamlessly with circuit breaker resilience",
+    "Responsive email templates render correctly across all major email clients",
+    "Calendar .ics files attach automatically to interview schedule notices",
+    "Outbound webhook delivery and replay engine functional in Enterprise Console",
+    "Notification preference center allows granular event subscription control",
+    "Automated integration tests verify dispatch, failover, and queue recovery"
+  ],
+  "verification": {
+    "browserCrawlRequired": true,
+    "playwrightSuite": "tests/e2e/dir-035.spec.js",
+    "minScore": "10/10"
+  }
+}

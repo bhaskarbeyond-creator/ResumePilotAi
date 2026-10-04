@@ -1,0 +1,31 @@
+{
+  "id": "DIR-039",
+  "title": "Recruiter AI Candidate Sourcing, Smart Boolean Search & Semantic Profile Matcher (Vector Embeddings, Skill Gap Radar, 1-Click Candidate Shortlisting)",
+  "priority": "P1",
+  "category": "System Enhancement & Recruiter Intelligence",
+  "qualityRating": "10/10",
+  "status": "ISSUED",
+  "leadAuthor": "Antigravity (Lead Supervisor)",
+  "assignedTo": "Cline (Remote Developer)",
+  "createdAt": "2026-10-04T06:52:56.885Z",
+  "updatedAt": "2026-10-04T06:52:56.885Z",
+  "spec": "# DIR-039: Recruiter AI Candidate Sourcing, Smart Boolean Search & Semantic Profile Matcher\n\n## 1. Executive Context & Objectives (Enhancement Mandate)\nRecruiters spend considerable time manually screening hundreds of candidate resumes to find qualified matches for open requisitions. Basic keyword search frequently misses strong candidates who use alternate terminology (e.g. 'React developer' vs 'Frontend engineer specializing in component architecture').\n\nThis directive mandates a 10/10 implementation of an **AI-Powered Candidate Sourcing & Semantic Profile Matcher**, integrating smart Boolean search, semantic skill matching, interactive Skill Gap Radar visualizers, and 1-click candidate shortlisting.\n\n## 2. Architecture Directives\n1. **Semantic Candidate Search Engine**:\n   - Backend route: /api/recruiter/candidates/search.\n   - Support both traditional Boolean query syntax (AND, OR, NOT, quotes, salary ranges) and natural language semantic queries (e.g. 'Senior Python engineer with AWS and high-scale microservices experience in Bengaluru').\n   - Rank candidates using composite scoring: Skill Match (40%), Experience Level (30%), Education/Certifications (15%), Location/Salary Alignment (15%).\n\n2. **Skill Gap Radar Visualizer**:\n   - Render an interactive SVG/Canvas Radar Chart in candidate preview modal comparing Job Requisition requirements against Candidate Profile skills.\n   - Clearly highlight: Matched Skills (Green), Missing Core Skills (Red), and Adjacent/Transferable Skills (Amber).\n\n3. **Recruiter Talent Pool & Smart Shortlists**:\n   - Create and manage custom talent pools (e.g. 'Q4 Backend Leads', 'Top AI Researchers').\n   - 1-click 'Add to Shortlist' or 'Invite to Apply' with customizable email template.\n   - Bulk action toolbar: Export shortlisted candidates to CSV, send batch message, or transition stage.\n\n4. **Candidate Anonymization & Bias-Free Sourcing Mode**:\n   - Recruiter toggle for 'Blind Screening Mode': Redacts candidate photo, name, gender, and age, highlighting purely verified skills, project achievements, and experience metrics to eliminate unconscious bias.\n\n## 3. Acceptance Criteria\n1. Recruiter search returns relevant candidates using both Boolean syntax and semantic natural language.\n2. Skill Gap Radar chart renders dynamically, accurately displaying matched vs missing skills.\n3. 1-click shortlisting moves candidates into custom talent pools with instant UI feedback.\n4. Blind screening toggle successfully masks candidate PII while preserving technical assessment data.\n5. Search execution completes in under 300ms for talent pools up to 10,000 candidates.\n6. Clean Cuba M3 executive styling across all search filters, candidate cards, and modal dialogs.\n\n## 4. Strict Invariants\n1. Candidate profile visibility must strictly respect candidate privacy settings ('Allow Recruiter Discovery').\n2. Blind screening mode must never leak masked PII in DOM attributes, tooltips, or network payloads.\n3. Recruiter searches must be scoped to candidate pools authorized under recruiter enterprise plan.\n4. Adhere to strict non-discrimination and ethical AI sourcing standards.",
+  "invariants": [
+    "Respect candidate discovery privacy flags; hide private profiles from recruiter search",
+    "Blind screening mode must scrub PII from network responses, not merely hide via CSS",
+    "Recruiter talent pool access must enforce enterprise tenancy and role permissions",
+    "Search latency must remain sub-300ms under standard operational workloads"
+  ],
+  "acceptanceCriteria": [
+    "Semantic and Boolean search delivers ranked candidate matches with high precision",
+    "Interactive Skill Gap Radar chart visualizes candidate fit against job requirements",
+    "Talent pools and 1-click shortlisting operate smoothly with bulk actions",
+    "Blind screening mode completely redacts candidate PII for unbiased evaluation",
+    "Search filters, pagination, and sorting operate without full page reload"
+  ],
+  "verification": {
+    "browserCrawlRequired": true,
+    "playwrightSuite": "tests/e2e/dir-039.spec.js",
+    "minScore": "10/10"
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "id": "DIR-011",
+  "title": "Google M3 Universal AppHeader & Command Surface across All Dashboards (Candidate, Recruiter, Enterprise, Admin)",
+  "priority": "P1",
+  "status": "APPROVED_FROZEN",
+  "leadAuthor": "Antigravity (Lead Supervisor)",
+  "assignedTo": "Cline (Remote Developer)",
+  "createdAt": "2026-10-03T07:27:17.925Z",
+  "specFile": null,
+  "spec": "1. CONTEXT & PROBLEM:\n- The top header navigation across all 4 dashboards (Candidate, Recruiter, Enterprise, Admin) in CubaAppShell.jsx is currently basic and lacks Google Workspace / Material 3 executive polish.\n- The search trigger is small and placed on the right, instead of a prominent, centered, pill-shaped command search bar.\n- User identity is a static div with initials, lacking an interactive Google Account-style menu with account details, quick navigation, security settings, and sign-out.\n- Notification bell and dynamic breadcrumbs need unified elevation and real MariaDB integration.\n- These enhancements must be applied system-wide to elevate every dashboard to 10/10 Google Material 3 standards without disrupting underlying business logic or certified frozen baselines.\n\n2. REQUIRED ARCHITECTURAL CHANGES:\n- Material 3 Centered Command Search Bar:\n  - Create a prominent centered pill search container in CubaAppShell.jsx (max-w-xl w-full mx-auto) with subtle glass elevation.\n  - Include search icon, descriptive placeholder, and Ctrl+K / ⌘K keyboard shortcut badge.\n  - Clicking opens CubaCommandPalette with keyboard navigation and autofocus.\n  - Collapse smoothly on mobile (<768px) into an accessible icon button triggering the command search overlay.\n- Interactive Google Account Profile Menu (M3UserMenu):\n  - Clickable avatar chip with gradient background, user initials, elevation shadow, and active presence dot.\n  - Dropdown menu containing: User full name, email, role badge, quick links (Profile, Settings, Security/MFA), Theme toggle, and Sign Out action.\n  - Full keyboard accessibility, ESC key dismissal, click-outside dismissal, and focus trap.\n- Notification Center Drawer (M3NotificationCenter):\n  - Bell icon button with live unread counter badge from MariaDB.\n  - Popover dropdown rendering real notifications (application updates, interviews, system notices).\n  - Empty state with clean M3 iconography when all notifications are read.\n- Dynamic Semantic Breadcrumbs:\n  - Semantic <nav aria-label=\"Breadcrumb\"> with <ol> and <li> items.\n  - Clickable ancestor links navigating via React Router without page reload, and active page in bold text with aria-current=\"page\".\n- Full Responsive Scaling:\n  - Header maintains a clean single-row layout across all viewports (320px to 4K) using flex-wrap and responsive visibility classes.\n\n3. VERIFICATION & ACCEPTANCE CRITERIA:\n- Author Playwright E2E suite tests/e2e/dir011-appheader.spec.js and playwright.dir011.config.js driving live Vite (:3000) and MariaDB (:8080).\n- Assert centered M3 search bar, Ctrl+K shortcut, and command palette across Candidate, Recruiter, and Enterprise portals.\n- Assert interactive M3 user profile menu opens and contains live user email and sign-out.\n- Assert dynamic breadcrumbs resolve correctly.\n- Assert WCAG 2.1 AA text contrast and focus indicators across all header controls.\n- Assert 0 console errors, 0 page errors, and 0 failed API requests.\n- Verify 51 CV templates and DOCX export pipeline remain 100% frozen (diff = 0 vs e314f715).",
+  "invariants": [
+    "51 CV templates (Cv1-Cv51) remain 100% frozen (git diff = 0 vs e314f715).",
+    "DOCX export pipeline and MariaDB ATS scoring engine remain 100% frozen.",
+    "Dual-database MariaDB authoritative persistence maintained (no synthetic mock data).",
+    "WCAG 2.1 AA compliance: text contrast >= 4.5:1, visible keyboard focus rings >= 3:1.",
+    "Single AppShell chrome per authenticated route with unique landmark nav naming.",
+    "Production build Vite bundles in < 4s with 0 errors."
+  ],
+  "acceptanceCriteria": [
+    "Universal Google Material 3 AppHeader implemented in src/components/cuba/CubaAppShell.jsx and deployed across Candidate, Employer, Enterprise, and Admin portals",
+    "Centered Material 3 pill search bar with interactive Ctrl+K trigger and responsive mobile collapse",
+    "Interactive Google Account-style profile menu with live user identity, role badge, quick links, theme toggle, and secure sign-out",
+    "Notification Center bell with live unread badge from MariaDB and accessible activity dropdown",
+    "Semantic breadcrumb navigation with clickable parent links and WCAG AA contrast",
+    "Playwright E2E suite tests/e2e/dir011-appheader.spec.js passes 100% with 0 console errors, 0 page errors, 0 failed API calls",
+    "Frozen surfaces diff = 0 against baseline commit e314f715 (51 CV templates + DOCX export)",
+    "Production build completes in <4s with 0 errors"
+  ],
+  "plan": {
+    "submittedAt": "2026-10-03T07:50:36.033Z",
+    "summary": "Universal Google M3 AppHeader in CubaAppShell.jsx: (1) NEW M3UserMenu.jsx + M3NotificationCenter.jsx + M3Breadcrumbs.jsx primitives, all routed through existing useDialogA11y contract; (2) rewrite header row in CubaAppShell with centered max-w-xl pill command search (Ctrl+K badge) collapsing to an a11y icon button under 768px, semantic <nav aria-label=Breadcrumb><ol>, M3UserMenu with role badge/quick links/theme toggle/sign-out, bell with live unread badge; (3) real MariaDB read via existing GET /api/notifications-data - no mock data; (4) thread live identity (email/role) from AuthContext through CubaCandidateShell + CubaPortalShell user prop; (5) new cuba-header tokens only - zero random colors; (6) tests/e2e/dir011-appheader.spec.js + playwright.dir011.config.js driving live Vite:3000 -> MariaDB:8080; (7) freeze verification diff=0 vs e314f715 for 51 CV templates + DOCX export",
+    "steps": [
+      "1. Audit CubaAppShell/CubaPortalShell/CubaCandidateShell + AuthContext + notifications API",
+      "2. Add header tokens to cuba-tokens.css",
+      "3. Build M3UserMenu, M3NotificationCenter, M3Breadcrumbs primitives",
+      "4. Wire universal header in CubaAppShell",
+      "5. Thread live identity from both shells",
+      "6. Static product tests + lint + build<4s",
+      "7. Playwright dir011 E2E live",
+      "8. Freeze diff proof + evidence submission"
+    ]
+  },
+  "heartbeats": [],
+  "evidence": {
+    "submittedAt": "2026-10-03T08:52:33.125Z",
+    "summary": "DIR-011 green. Fixed 2 real defects. (1) Stage 0 401: the health probe is RBAC-gated (router.use(requireAuth) precedes the route at backend/routes/platform.js:261) but the spec called it unauthenticated; it now sends the minted Bearer token, and asserts body.subsystems.database.provider ('MariaDB') instead of the non-existent body.database. (2) Stage 1 /admin rendered 2 banner landmarks: CubaAppShell's universal M3 header plus the legacy AdminHeader's own <header> nested inside it. AdminHeader now takes an 'embedded' prop and degrades to role=group when the universal chrome is mounted, suppressing the breadcrumbs nav/ContextSwitcher/command palette the shell already owns while KEEPING the health pill, Super Admin role-view switcher and sign-out. Legacy flag-off mode unchanged. Playwright 2/2 pass (console=0 pageErrors=0 api=0); DOM census headers=1 with uniquely-named nav landmarks on all four portals; 210/210 static regression + 22 security/CSS guard pass; ESLint 0 errors; build 3.20s < 4s; frozen surfaces diff = 0 vs e314f715.",
+    "testsOutput": "﻿DIR-011 EVIDENCE PACK — Google M3 Universal AppHeader\n=====================================================\nDate: 2026-10-03T14:21:44.1503796+05:30\n\nDEFECTS FIXED THIS PASS\n-----------------------\n1) Stage 0 returned 401. Root cause was in the TEST, not the product:\n   backend/routes/platform.js:261 places \router.use(requireAuth) BEFORE\n   \router.get('/health') (line 263), so the probe is an AUTHENTICATED\n   diagnostics endpoint. The spec called it with no Authorization header,\n   so it only re-asserted RBAC instead of measuring the live system.\n   Fix: the probe now sends Bearer \\.idToken.\n   Second latent bug: the spec asserted body.database, but the payload\n   nests the engine at body.subsystems.database.provider ('MariaDB').\n   Reading body.database yielded undefined and could never match /maria/i.\n   Fix: assert body.subsystems.database.provider.\n\n2) Stage 1: /admin rendered TWO <header> landmarks (expected 1, got 2).\n   Root cause: CubaAppShell renders the universal M3 <header> (line 180),\n   and AdminConsoleInner still rendered the legacy AdminHeader's own\n   <header> (line 133) nested inside it -> two competing banner regions.\n   Fix (src/components/admin/Admin.jsx): AdminHeader now takes embedded.\n   When the universal chrome is mounted it degrades from a landmark <header>\n   to \role=group aria-label='Platform admin session controls', and the\n   controls CubaAppShell already owns (breadcrumbs nav, ContextSwitcher,\n   command palette, mobile-nav toggle) are suppressed. Retained because the\n   shell has no equivalent: backend health pill, Super Admin role-view\n   switcher, sign-out. Legacy (flag-off) mode is UNCHANGED and still emits a\n   real <header> with every original control.\n   No authorization logic moved: RequireTabPerm + backend policy untouched.\n\nVERIFIED RESULTS\n----------------\nPlaywright tests/e2e/dir011-appheader.spec.js (live Vite:3000 -> API:8080)\n  2 passed (11.1s)   [stage 0 + stage 1]\n  stage 0: status=HEALTHY database=MariaDB\n  stage 1: portals verified: candidate, recruiter, enterprise, admin\n  stage 1 defects: console=0 pageErrors=0 api=0\n\nDOM census (.bridge/evidence/dir011-chrome-census.json) — headers=1 on ALL four:\n  /dashboard candidate  headers=1  navs=[Breadcrumb, Candidate workspace navigation]\n  /employer  recruiter  headers=1  navs=[Breadcrumb, Employer navigation]\n  /org       enterprise headers=1  navs=[Breadcrumb, Organization navigation]\n  /admin     admin      headers=1  navs=[Breadcrumb, Platform admin navigation]\n  command search / user menu / notification bell = true on every portal\n  nav landmarks uniquely named on every portal\n\nStatic regression (11 suites): 210 tests, 210 pass, 0 fail\nSecurity + CSS guard: 22 pass, 0 fail\nESLint Admin.jsx: 0 errors\nProduction build: built in 3.20s (< 4.0s budget), 0 errors\n\nFROZEN SURFACES\n---------------\ngit diff --stat e314f715 -- src/cv-templates TemplateRenderer.jsx atsScore.js\n  docxDownload.js backend/services  =>  EMPTY (diff = 0)\n51 CV templates, DOCX export pipeline and MariaDB ATS scoring engine are\nbyte-identical to the e314f715 baseline.\r\n",
+    "domCrawl": "[\n  {\n    \"name\": \"candidate\",\n    \"path\": \"/dashboard\",\n    \"headers\": 1,\n    \"navLabels\": [\n      \"Breadcrumb\",\n      \"Candidate workspace navigation\"\n    ],\n    \"breadcrumbNavs\": 1,\n    \"hasCommandSearch\": true,\n    \"hasUserMenu\": true,\n    \"hasNotificationBell\": true\n  },\n  {\n    \"name\": \"recruiter\",\n    \"path\": \"/employer\",\n    \"headers\": 1,\n    \"navLabels\": [\n      \"Breadcrumb\",\n      \"Employer navigation\"\n    ],\n    \"breadcrumbNavs\": 1,\n    \"hasCommandSearch\": true,\n    \"hasUserMenu\": true,\n    \"hasNotificationBell\": true\n  },\n  {\n    \"name\": \"enterprise\",\n    \"path\": \"/org\",\n    \"headers\": 1,\n    \"navLabels\": [\n      \"Breadcrumb\",\n      \"Organization navigation\"\n    ],\n    \"breadcrumbNavs\": 1,\n    \"hasCommandSearch\": true,\n    \"hasUserMenu\": true,\n    \"hasNotificationBell\": true\n  },\n  {\n    \"name\": \"admin\",\n    \"path\": \"/admin\",\n    \"headers\": 1,\n    \"navLabels\": [\n      \"Breadcrumb\",\n      \"Platform admin navigation\"\n    ],\n    \"breadcrumbNavs\": 1,\n    \"hasCommandSearch\": true,\n    \"hasUserMenu\": true,\n    \"hasNotificationBell\": true\n  }\n]\n",
+    "artifacts": []
+  },
+  "reviews": [
+    {
+      "timestamp": "2026-10-03T09:07:31.126Z",
+      "verdict": "APPROVED",
+      "feedback": "Universal Google M3 AppHeader verified across all four portals (Candidate, Recruiter, Enterprise, Admin). Real-DOM census proves 1 header landmark per view. E2E tests 2/2 pass. Static regression 210/210 pass. Frozen baselines diff = 0 vs e314f715."
+    }
+  ],
+  "freezeHash": "e314f7157af451b32e7c5163eb40ce9198f94869",
+  "certifiedAt": "2026-10-03T09:07:35.759Z",
+  "certifiedBy": "Antigravity (Lead Gatekeeper)",
+  "secondReview": {
+    "status": "SCHEDULED_POST_DIR028",
+    "scheduledExecutionOrder": "AFTER_DIR028",
+    "targetDirectiveId": "DIR-030",
+    "phaseName": "Phase 2 Second Review — Candidate Workspace & Navigation",
+    "governingProtocol": "SKILL.md v10.0 (AI Bridge Supervisor Master Edition)",
+    "mandatoryAuditRules": [
+      "§21.1 Universal AppHeader tokenization across all 4 portal shells",
+      "§22 Unique aria-label navigation landmarks per portal",
+      "§23 Sub-100ms command surface activation"
+    ],
+    "scheduledAt": "2026-10-04T01:50:00Z"
+  },
+  "qualityRating": "10/10",
+  "category": "Platform Engineering",
+  "updatedAt": "2026-10-04T06:52:56.880Z",
+  "verification": {
+    "browserCrawlRequired": true,
+    "playwrightSuite": "tests/e2e/dir-011.spec.js",
+    "minScore": "10/10"
+  }
+}

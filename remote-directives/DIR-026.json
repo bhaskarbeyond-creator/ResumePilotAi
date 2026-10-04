@@ -2,6 +2,11 @@
   "id": "DIR-026",
   "title": "Real-Time In-App Candidate & Recruiter Messaging 10/10 Overhaul (enableMessagesModule Gating, Candidate Surface Mounting & Live Unread Badging)",
   "priority": "P1",
+  "status": "ISSUED",
+  "leadAuthor": "Antigravity (Lead Supervisor)",
+  "assignedTo": "Cline (Remote Developer)",
+  "createdAt": "2026-10-03T21:43:55.805Z",
+  "specFile": null,
   "spec": "# DIR-026: Real-Time In-App Candidate & Recruiter Messaging 10/10 Overhaul\n\n## 1. Executive Context & Objectives\nIn `System Settings > Addon & Feature Modules Manager`, the **Messages & Chat Module** (`enableMessagesModule`) is defined as:\n> \"Allows job seekers, recruiters, and employers to communicate via real-time direct messaging with unread badges.\"\n\nCurrently, while `src/components/Dashboard/DashboardMessages/DashboardMessages.jsx` exists and `/employer/messages` is mounted in the Employer Portal, the Candidate side is completely broken:\n1. `/dashboard/messages` is **NOT mounted** in `DashboardMain.jsx`.\n2. Candidates have no navigation link or unread counter badge in the Google M3 Header or sidebar.\n3. When an administrator toggles `enableMessagesModule: false`, the backend `/api/messages/*` endpoints still accept requests, and `/employer/messages` remains visible.\n\nThis directive mandates a complete 10/10 overhaul of the Messaging workflow across both Candidate and Recruiter portals, establishing clean route mounting, Cuba design tokens, real-time unread badging, strict admin toggle enforcement across frontend and backend, and dedicated Playwright E2E verification.\n\n## 2. Key Architecture Directives\n1. **Candidate Messages Surface (`/dashboard/messages`)**:\n   - Mount `<Route path=\"messages\" element={<DashboardMessages showToast={showToast} />} />` in `DashboardMain.jsx`.\n   - Wrap in Cuba design tokens (`--cuba-card`, `--cuba-line`, `--cuba-ink`, `--cuba-primary-fill`).\n\n2. **Google M3 AppHeader & Sidebar Unread Badging**:\n   - Add a Chat/Messages icon in `CubaCandidateShell.jsx` and `EmployerSidebar.jsx` showing a live unread count badge.\n   - Sync unread counts periodically via `/api/messages/conversations` (3-query bounded MariaDB pattern).\n\n3. **Admin Module Toggle Enforcement**:\n   - Frontend: If `enableMessagesModule === false`, suppress messages links from navigation shells and gracefully redirect direct route visits to `/dashboard` with an info toast.\n   - Backend: In `backend/index.js` messaging middleware, check `modules.enableMessagesModule`. If disabled, return `HTTP 403 { code: 'MODULE_DISABLED' }`.\n\n4. **Dedicated Playwright E2E Verification**:\n   - Author `playwright.dir026.config.js` targeting `tests/e2e/dir026-messaging.spec.js`.\n   - Verify candidate sends message, recruiter receives message, unread badge increments, and toggle-off hides surface.\n",
   "invariants": [
     "INV-1: Frozen Baseline Integrity: git diff e314f715 -- src/cv-templates/ backend/services/aiRuntime.js must remain STRICTLY 0 bytes (57 CV templates + AI runtime frozen).",
@@ -18,5 +23,18 @@
     "AC-5: Real-Time Conversation Sync & Error Recovery: Verify getConversations and sendMessage reliably exchange messages between candidate and recruiter across MariaDB tables conversations, conversation_participants, and messages with zero Firebase Firestore reliance.",
     "AC-6: Dedicated Playwright E2E Suite (playwright.dir026.config.js & tests/e2e/dir026-messaging.spec.js): 100% passing tests against live dev server verifying candidate-recruiter messaging thread, message send, unread counter update, and toggle disabling behavior.",
     "AC-7: Quality Gates Pass: vite build < 4.0s, eslint 0 errors, npm test zero regressions."
-  ]
+  ],
+  "plan": null,
+  "heartbeats": [],
+  "evidence": null,
+  "reviews": [],
+  "freezeHash": null,
+  "qualityRating": "10/10",
+  "category": "Platform Engineering",
+  "updatedAt": "2026-10-04T06:52:56.884Z",
+  "verification": {
+    "browserCrawlRequired": true,
+    "playwrightSuite": "tests/e2e/dir-026.spec.js",
+    "minScore": "10/10"
+  }
 }

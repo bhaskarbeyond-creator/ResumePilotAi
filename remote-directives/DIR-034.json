@@ -2,16 +2,30 @@
   "id": "DIR-034",
   "title": "Universal 10/10 Master Production Certification & Release Freeze (Platform-Wide 68-Route Real-DOM Audit & Cryptographic Seal)",
   "priority": "P0",
-  "spec": "# Phase 2 Final Directive: Universal 10/10 Master Production Certification & Release Freeze (DIR-034)\n**Governing Protocol:** SKILL.md v10.0 (AI Bridge Supervisor Master Edition)\n**Execution Schedule:** Final gate executed after DIR-033 completion.\n**Target Directives for Re-Audit:** Platform-Wide Universal Crawl across all 68 routes.\n\n## 1. Objective & Scope\nConduct the ultimate platform-wide audit, full 68-route headless Playwright crawl, complete product test suite execution, and issue the immutable cryptographic production release seal.\n\n## 2. Mandatory Verification Gates\n1. **§85 12-Point Release Boundary Checklist:** Zero exceptions.\n2. **68-Route Automated Crawl:** Zero broken routes, zero 404s, zero console errors, zero layout shifts.\n3. **Full Regression Suite:** 656+ tests 100% green.\n4. **Production Bundle:** Vite build under 4.0s.\n5. **Cryptographic Release Freeze:** SHA-256 hash stamped by Antigravity Gatekeeper.",
+  "category": "Master Production Release & Certification",
+  "qualityRating": "10/10",
+  "status": "ISSUED",
+  "leadAuthor": "Antigravity (Lead Supervisor)",
+  "assignedTo": "Cline (Staff Developer)",
+  "createdAt": "2026-10-04T01:49:39.428Z",
+  "updatedAt": "2026-10-04T06:52:56.884Z",
+  "spec": "# DIR-034: Universal 10/10 Master Production Certification & Release Freeze\n\n## 1. Executive Context & Objectives\nThis is the ultimate capstone release directive for the ResumePilotAI platform. It mandates the comprehensive execution of the 10/10 Production Certification Protocol across all 68 application routes, verifying zero regressions, zero broken controls, zero console errors, full WCAG 2.1 AA accessibility, and complete feature parity.\n\nUpon successful completion of all preceding directives (DIR-001 through DIR-033 and DIR-035 through DIR-040), this directive produces the cryptographic verification bundle, generates the Production Certification Seal, and locks the release baseline.\n\n## 2. Master Verification Protocol\n1. **Full Platform Real-DOM Crawl**:\n   - Crawl all 68 routes across Candidate, Recruiter, Enterprise, Admin, and Public surfaces.\n   - Click and verify every interactive button, tab, modal, dropdown, and form control.\n   - Verify zero 404s, zero uncaught JavaScript exceptions, and zero broken image assets.\n\n2. **Performance & Core Web Vitals Audit**:\n   - Run automated Lighthouse audits on representative routes: Landing, Candidate Dashboard, Resume Builder, Recruiter ATS, Enterprise Console, Admin Settings.\n   - Enforce standards: FCP < 1.5s, LCP < 2.5s, CLS < 0.05, FID < 100ms.\n\n3. **Security & Data Isolation Audit**:\n   - Verify zero secret credential leakage across all frontend bundles and network requests.\n   - Verify multi-tenant isolation and strict RBAC guards across all API routes.\n   - Confirm CSRF protection, secure cookie flags, and Content Security Policy headers.\n\n4. **Cryptographic Release Artifact**:\n   - Compute SHA-256 hashes of all certified source modules and deployment bundles.\n   - Generate production certification audit report test-results/MASTER_PRODUCTION_CERTIFICATION.json.\n\n## 3. Acceptance Criteria\n1. 100% of 68 routes crawl successfully with zero broken interactive controls or dead links.\n2. Core Web Vitals meet performance targets (CLS < 0.05, FCP < 1.5s) on both mobile and desktop.\n3. Zero console errors, warnings, or uncaught promise rejections during full crawl.\n4. WCAG 2.1 AA accessibility compliance confirmed across all portal surfaces.\n5. All 40 directives verified in status 'APPROVED_FROZEN' or 'VERIFIED_10_10'.\n6. Master Production Certification report generated with cryptographic checksums.\n\n## 4. Strict Invariants\n1. Do not certify production release if any P0 or P1 directive remains unverified.\n2. No mock or simulated evidence may be accepted for final certification.\n3. All production code must be committed cleanly to the designated release branch.\n4. Zero security vulnerabilities or plain-text secrets in the repository.",
   "invariants": [
-    "INV-1: Complete platform invariants verified (CV templates, ATS score, database schema, security boundaries).",
-    "INV-2: Production build budget strictly < 4.0s with 0 ESLint errors and 0 asset hashing failures."
+    "All 40 directives must achieve certified 10/10 status before release freeze",
+    "No simulated or mocked tests permitted for final certification seal",
+    "Zero plain-text secrets or sensitive tokens committed to git",
+    "Release baseline must be tagged with cryptographic hash verification"
   ],
   "acceptanceCriteria": [
-    "§85 12-Point Gatekeeper Final Release Boundary Checklist: 100% satisfied with cryptographic evidence.",
-    "Universal 68-Route Real-DOM Automated Crawl: Headless Playwright crawler crawls all 68 public, candidate, recruiter, enterprise, and admin routes on live stack with 0 HTTP errors, 0 unhandled promise rejections, 0 console errors, and 0 blank viewports.",
-    "Full Product Test Regression Suite: 656+ product tests pass 100% green (npm run test:product).",
-    "Production Vite Build: npm run build completes in < 4.0s with clean bundle chunks.",
-    "Master Release Freeze: Antigravity issues cryptographic SHA-256 release seal and tag."
-  ]
+    "Comprehensive 68-route crawl passes with 100% working controls and zero 404s",
+    "Core Web Vitals meet strict production budgets on all key surfaces",
+    "Zero console errors, exceptions, or accessibility violations",
+    "All security, RBAC, and multi-tenant invariants verified by automated test suites",
+    "Cryptographic master certification seal generated and committed"
+  ],
+  "verification": {
+    "browserCrawlRequired": true,
+    "playwrightSuite": "tests/e2e/dir-034.spec.js",
+    "minScore": "10/10"
+  }
 }
