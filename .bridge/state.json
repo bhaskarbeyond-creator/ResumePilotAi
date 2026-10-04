@@ -1,15 +1,15 @@
 {
-  "updatedAt": "2026-10-04T08:27:49.952Z",
-  "eventCount": 1372,
+  "updatedAt": "2026-10-04T10:10:13.405Z",
+  "eventCount": 1378,
   "activeDirectiveId": "DIR-025",
   "activeDirectiveTitle": "Universal Link Crawler, Route Completeness & Zero-404 Navigation Freeze (Deep Link Crawl, Sub-Route Mounting & Header Dropdown Fixes)",
   "activeDirectiveStatus": "ISSUED",
-  "unreadForLead": 433,
-  "unreadForDev": 689,
+  "unreadForLead": 435,
+  "unreadForDev": 691,
   "pendingBlockers": 1,
   "latestHeartbeat": {
-    "timestamp": "2026-10-04T06:13:17.904Z",
-    "status": "AUDIT COMPLETE: F1/F5/F7 re-proven live (llms.txt=503, 4 India jobs all Bengaluru, no city column). Both blockers ruled Option(A). Beginning Step 1-7 backend implementation",
-    "percent": 5
+    "timestamp": "2026-10-04T09:58:32.072Z",
+    "status": "DIR-024 all-green: duplicate main landmark + first-paint flash fixed, Playwright 4/4, build 3.86s, INV-1=0. Evidence submitted, awaiting Gatekeeper verdict.",
+    "percent": 100
   }
 }

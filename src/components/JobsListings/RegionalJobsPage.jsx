@@ -49,9 +49,14 @@ export default function RegionalJobsPage({ kind }) {
     const region = state.region;
     const canonicalHref = useMemo(() => kind === 'state' ? `/jobs/in/${slug}` : `/jobs/city/${slug}`, [kind, slug]);
 
+    // LANDMARK CONTRACT: the document-level <main id="main-content"> is owned by
+    // src/main.jsx and wraps every route. This page therefore renders a plain
+    // <div> wrapper. Emitting a second <main> here produced a duplicate main
+    // landmark (axe landmark-no-duplicate-main) and left the real main
+    // transparent, so the first-paint sample read rgba(0, 0, 0, 0).
     if (state.loading) {
         return (
-            <main className="min-h-screen bg-cuba-canvas px-4 pb-16 pt-28 text-cuba-ink sm:px-6" style={{ backgroundColor: 'var(--cuba-canvas)' }} aria-busy="true">
+            <div className="min-h-screen bg-cuba-canvas px-4 pb-16 pt-28 text-cuba-ink sm:px-6" style={{ backgroundColor: 'var(--cuba-canvas)' }} aria-busy="true">
                 <div className="mx-auto max-w-6xl">
                     <div className="h-5 w-36 animate-pulse rounded bg-cuba-line" />
                     <div className="mt-6 h-12 max-w-2xl animate-pulse rounded bg-cuba-line" />
@@ -61,14 +66,14 @@ export default function RegionalJobsPage({ kind }) {
                         <div className="h-36 animate-pulse rounded-cuba-xl bg-cuba-card" />
                     </div>
                 </div>
-            </main>
+            </div>
         );
     }
 
     if (!region || state.error) {
         const notFound = Number(state.error?.status) === 404;
         return (
-            <main className="min-h-screen bg-cuba-canvas px-4 pb-16 pt-28 text-cuba-ink sm:px-6" style={{ backgroundColor: 'var(--cuba-canvas)' }}>
+            <div className="min-h-screen bg-cuba-canvas px-4 pb-16 pt-28 text-cuba-ink sm:px-6" style={{ backgroundColor: 'var(--cuba-canvas)' }}>
                 <div className="mx-auto max-w-3xl rounded-cuba-xl border border-cuba-line bg-cuba-card p-8 shadow-cuba-sm" role={notFound ? 'status' : 'alert'}>
                     <h1 className="text-2xl font-bold">{notFound ? 'Regional job hub unavailable' : 'Regional job data is temporarily unavailable'}</h1>
                     <p className="mt-3 text-cuba-ink-muted">{notFound
@@ -78,7 +83,7 @@ export default function RegionalJobsPage({ kind }) {
                         <FaArrowLeft aria-hidden="true" /> Browse jobs
                     </Link>
                 </div>
-            </main>
+            </div>
         );
     }
 
@@ -88,7 +93,7 @@ export default function RegionalJobsPage({ kind }) {
     const area = kind === 'city' && region.stateName ? `${region.name}, ${region.stateName}` : region.name;
 
     return (
-        <main className="min-h-screen bg-cuba-canvas px-4 pb-16 pt-28 text-cuba-ink sm:px-6" style={{ backgroundColor: 'var(--cuba-canvas)' }} data-canonical-path={canonicalHref}>
+        <div className="min-h-screen bg-cuba-canvas px-4 pb-16 pt-28 text-cuba-ink sm:px-6" style={{ backgroundColor: 'var(--cuba-canvas)' }} data-canonical-path={canonicalHref}>
             <div className="mx-auto max-w-6xl">
                 <nav aria-label="Breadcrumb" className="mb-6 text-sm text-cuba-ink-muted">
                     <ol className="flex flex-wrap items-center gap-2">
@@ -101,7 +106,7 @@ export default function RegionalJobsPage({ kind }) {
                 </nav>
 
                 <header className="rounded-cuba-xl border border-cuba-line bg-cuba-card p-6 shadow-cuba-sm sm:p-9">
-                    <p className="text-sm font-semibold uppercase tracking-[0.15em] text-cuba-primary">India · Regional careers</p>
+                    <p className="text-sm font-semibold uppercase tracking-[0.15em] text-cuba-primary-ink-strong">India · Regional careers</p>
                     <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">Technology jobs in {region.name}</h1>
                     <p className="mt-3 max-w-3xl text-base leading-relaxed text-cuba-ink-muted">
                         Browse active job listings currently published for {area}. Counts, employer names and salary information below are derived from live listings; no example vacancies are inserted.
@@ -200,6 +205,6 @@ export default function RegionalJobsPage({ kind }) {
 
                 <p className="mt-8 text-sm text-cuba-ink-subtle">Regional pages use only active, unexpired public job records. Salary ranges are grouped by the currency recorded with each posting; no currency conversion or market-wide estimate is implied.</p>
             </div>
-        </main>
+        </div>
     );
 }

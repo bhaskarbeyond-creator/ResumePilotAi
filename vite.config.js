@@ -50,9 +50,37 @@ function firebaseAuthOnlyBundlePlugin() {
     };
 }
 
+function discoveryProxyPlugin() {
+    return {
+        name: 'dynamic-discovery-proxy',
+        configureServer(server) {
+            server.middlewares.use(async (req, res, next) => {
+                const url = req.url?.split('?')[0];
+                if (url === '/sitemap.xml' || url === '/llms.txt' || url === '/llms-full.txt') {
+                    try {
+                        const backendUrl = (process.env.VITE_DEV_BACKEND_URL || 'http://localhost:8080') + req.url;
+                        const backendRes = await fetch(backendUrl);
+                        res.statusCode = backendRes.status;
+                        backendRes.headers.forEach((val, key) => {
+                            res.setHeader(key, val);
+                        });
+                        const body = await backendRes.arrayBuffer();
+                        res.end(Buffer.from(body));
+                        return;
+                    } catch (_) {
+                        next();
+                    }
+                } else {
+                    next();
+                }
+            });
+        },
+    };
+}
+
 // https://vite.dev/config/
 export default defineConfig({
-    plugins: [tailwindcss(), react(), buildIdentityPlugin(), firebaseAuthOnlyBundlePlugin()],
+    plugins: [tailwindcss(), react(), buildIdentityPlugin(), firebaseAuthOnlyBundlePlugin(), discoveryProxyPlugin()],
     build: {
         // Gzip-size reporting adds a post-build pass over the multi-entry bundle;
         // omit that diagnostic work without changing emitted production assets.

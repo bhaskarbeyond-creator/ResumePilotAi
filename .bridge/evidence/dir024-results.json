@@ -4,7 +4,8 @@
       "C:\\Program Files\\nodejs\\node.exe",
       "D:\\xampp\\htdocs\\IME365\\node_modules\\@playwright\\test\\cli.js",
       "test",
-      "--config=playwright.dir024.config.js"
+      "-c",
+      "playwright.dir024.config.js"
     ],
     "configFile": "D:\\xampp\\htdocs\\IME365\\playwright.dir024.config.js",
     "rootDir": "D:/xampp/htdocs/IME365/tests/e2e",
@@ -87,12 +88,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 244,
+                  "duration": 217,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-04T09:04:47.750Z",
+                  "startTime": "2026-10-04T09:52:12.608Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -121,16 +122,16 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 51,
+                  "duration": 97,
                   "errors": [],
                   "stdout": [
                     {
-                      "text": "DIR-024 /llms.txt warm response max: 5.31ms\n"
+                      "text": "DIR-024 /llms.txt warm response max: 15.47ms\n"
                     }
                   ],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-04T09:04:48.020Z",
+                  "startTime": "2026-10-04T09:52:12.852Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -159,12 +160,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 6831,
+                  "duration": 16083,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-04T09:04:48.077Z",
+                  "startTime": "2026-10-04T09:52:12.956Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -179,7 +180,7 @@
         },
         {
           "title": "regional page paints Cuba tokens immediately, renders honest empty state, and meets WCAG 2.1 AA",
-          "ok": false,
+          "ok": true,
           "tags": [],
           "tests": [
             {
@@ -192,53 +193,18 @@
                 {
                   "workerIndex": 0,
                   "parallelIndex": 0,
-                  "status": "failed",
-                  "duration": 1698,
-                  "error": {
-                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m",
-                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n    at D:\\xampp\\htdocs\\IME365\\tests\\e2e\\dir024-geo-seo.spec.js:237:71",
-                    "location": {
-                      "file": "D:\\xampp\\htdocs\\IME365\\tests\\e2e\\dir024-geo-seo.spec.js",
-                      "column": 71,
-                      "line": 237
-                    },
-                    "snippet": "\u001b[0m \u001b[90m 235 |\u001b[39m     \u001b[36mconst\u001b[39m paintSamples \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mevaluate(() \u001b[33m=>\u001b[39m window\u001b[33m.\u001b[39m__dir024PaintSamples \u001b[33m||\u001b[39m [])\u001b[33m;\u001b[39m\n \u001b[90m 236 |\u001b[39m     expect(paintSamples\u001b[33m.\u001b[39mlength)\u001b[33m.\u001b[39mtoBeGreaterThan(\u001b[35m0\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 237 |\u001b[39m     expect(paintSamples\u001b[33m.\u001b[39mevery(color \u001b[33m=>\u001b[39m color \u001b[33m!==\u001b[39m \u001b[32m'rgba(0, 0, 0, 0)'\u001b[39m))\u001b[33m.\u001b[39mtoBe(\u001b[36mtrue\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                                                       \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 238 |\u001b[39m\n \u001b[90m 239 |\u001b[39m     \u001b[36mconst\u001b[39m contrast \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'main'\u001b[39m)\u001b[33m.\u001b[39mevaluate(main \u001b[33m=>\u001b[39m {\n \u001b[90m 240 |\u001b[39m         \u001b[36mconst\u001b[39m token \u001b[33m=\u001b[39m document\u001b[33m.\u001b[39mcreateElement(\u001b[32m'div'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m"
-                  },
-                  "errors": [
-                    {
-                      "location": {
-                        "file": "D:\\xampp\\htdocs\\IME365\\tests\\e2e\\dir024-geo-seo.spec.js",
-                        "column": 71,
-                        "line": 237
-                      },
-                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\n  235 |     const paintSamples = await page.evaluate(() => window.__dir024PaintSamples || []);\n  236 |     expect(paintSamples.length).toBeGreaterThan(0);\n> 237 |     expect(paintSamples.every(color => color !== 'rgba(0, 0, 0, 0)')).toBe(true);\n      |                                                                       ^\n  238 |\n  239 |     const contrast = await page.locator('main').evaluate(main => {\n  240 |         const token = document.createElement('div');\n    at D:\\xampp\\htdocs\\IME365\\tests\\e2e\\dir024-geo-seo.spec.js:237:71"
-                    }
-                  ],
+                  "status": "passed",
+                  "duration": 1892,
+                  "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-04T09:04:55.259Z",
+                  "startTime": "2026-10-04T09:52:29.331Z",
                   "annotations": [],
-                  "attachments": [
-                    {
-                      "name": "screenshot",
-                      "contentType": "image/png",
-                      "path": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir024-artifacts\\dir024-geo-seo-regional-pa-8085a-state-and-meets-WCAG-2-1-AA-dir024-live-mariadb-desktop\\test-failed-1.png"
-                    },
-                    {
-                      "name": "error-context",
-                      "contentType": "text/markdown",
-                      "path": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir024-artifacts\\dir024-geo-seo-regional-pa-8085a-state-and-meets-WCAG-2-1-AA-dir024-live-mariadb-desktop\\error-context.md"
-                    }
-                  ],
-                  "errorLocation": {
-                    "file": "D:\\xampp\\htdocs\\IME365\\tests\\e2e\\dir024-geo-seo.spec.js",
-                    "column": 71,
-                    "line": 237
-                  }
+                  "attachments": []
                 }
               ],
-              "status": "unexpected"
+              "status": "expected"
             }
           ],
           "id": "b82f258df4a7e266006f-561f5fae39d0aa2469c5",
@@ -251,11 +217,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-10-04T09:04:47.193Z",
-    "duration": 9901.528,
-    "expected": 3,
+    "startTime": "2026-10-04T09:52:12.046Z",
+    "duration": 19422.700999999997,
+    "expected": 4,
     "skipped": 0,
-    "unexpected": 1,
+    "unexpected": 0,
     "flaky": 0
   }
 }

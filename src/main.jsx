@@ -516,7 +516,12 @@ const AuthWrapper = () => {
                 <GA4Provider>
                     <RouteSeo />
                     <RouteFocus />
-                    <main id="main-content" tabIndex={-1}>
+                    {/* The single document-level main landmark. It paints the Cuba
+                        canvas token inline (with the same fallback src/index.css
+                        uses) so the very first animation frame is already opaque
+                        instead of flashing rgba(0, 0, 0, 0) while the lazy route
+                        chunk resolves. bg-cuba-canvas keeps it token-driven. */}
+                    <main id="main-content" tabIndex={-1} className="min-h-screen bg-cuba-canvas" style={{ backgroundColor: 'var(--cuba-canvas, #f4f5f9)' }}>
                     <RouteErrorBoundary>
                     <Suspense fallback={<Spinner />}>
                         <Routes>
