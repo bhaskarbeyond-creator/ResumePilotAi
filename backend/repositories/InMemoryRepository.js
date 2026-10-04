@@ -337,6 +337,16 @@ class InMemoryRepository {
         if (!p || p.userId !== userId) return null;
         return p;
     }
+    async isPortfolioSlugAvailable(slug, portfolioId = null) {
+        const candidate = String(slug || '').trim().toLowerCase();
+        if (!candidate) return false;
+        for (const p of this._portfolios.values()) {
+            if (p.slug !== candidate) continue;
+            if (portfolioId && p.id === portfolioId) continue;
+            return false;
+        }
+        return true;
+    }
     async getPublishedPortfolioBySlug(slug) {
         for (const p of this._portfolios.values()) if (p.slug === slug && p.isPublished) return p;
         return null;
@@ -428,8 +438,21 @@ class InMemoryRepository {
         return Array.from(this._trackedJobs.values()).filter(j => j.userId === userId);
     }
     async createTrackedJob(userId, trackerId, data = {}) {
-        this._trackedJobs.set(trackerId, { id: trackerId, userId, ...data });
-        return this._trackedJobs.get(trackerId);
+        // DIR-020: mirror the MySQL contract exactly. `revision` and the
+        // timestamps must exist on the in-memory row too, otherwise the very first
+        // revision-guarded PATCH (expectedRevision) is rejected with
+        // JOB_TRACKER_REVISION_REQUIRED on the fallback repository.
+        const now = new Date();
+        const row = {
+            id: trackerId,
+            userId,
+            ...data,
+            revision: 1,
+            createdAt: now,
+            updatedAt: now,
+        };
+        this._trackedJobs.set(trackerId, row);
+        return row;
     }
     async updateTrackedJob(userId, trackerId, data = {}) {
         const t = this._trackedJobs.get(trackerId);

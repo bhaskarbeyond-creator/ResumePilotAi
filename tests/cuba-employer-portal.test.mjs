@@ -72,6 +72,17 @@ describe('Employer navigation integrity (§16, zero dead links)', () => {
         for (const item of ALL_ITEMS) {
             assert.ok(!seen.has(item.to), `duplicate recruiter target: ${item.to}`);
             seen.add(item.to);
+        }
+    });
+
+    it('generates palette commands from the recruiter navigation itself', () => {
+        const commands = buildPortalCommands(EMPLOYER_PORTAL_NAVIGATION, 'Job Postings');
+        assert.equal(commands.length, ALL_ITEMS.length);
+        assert.ok(commands.every((c) => ALL_ITEMS.some((i) => i.to === c.to)));
+        assert.equal(commands.find((c) => c.label === 'Job Postings').isActive, true);
+    });
+});
+
 describe('Recruiter shell preserves existing capability (§47)', () => {
     it('mounts every recruiter route the existing portal mounts', () => {
         for (const p of ['jobs', 'applicants', 'company', 'messages', 'settings']) {
@@ -122,16 +133,5 @@ describe('Recruiter role isolation and security (§7, §16)', () => {
     it('ships the recruiter shell as its own lazy chunk', () => {
         assert.match(CUBA_EMPLOYER, /lazy\(\(\) => import\('\.\/[A-Za-z]+'\)\)/);
         assert.match(CUBA_EMPLOYER, /<Suspense/);
-    });
-});
-
-        }
-    });
-
-    it('generates palette commands from the recruiter navigation itself', () => {
-        const commands = buildPortalCommands(EMPLOYER_PORTAL_NAVIGATION, 'Job Postings');
-        assert.equal(commands.length, ALL_ITEMS.length);
-        assert.ok(commands.every((c) => ALL_ITEMS.some((i) => i.to === c.to)));
-        assert.equal(commands.find((c) => c.label === 'Job Postings').isActive, true);
     });
 });

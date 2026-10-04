@@ -84,6 +84,20 @@ describe('Candidate navigation integrity (§16, zero dead links)', () => {
         }
     });
 
+    it('mounts critical user menu targets and aliases (profile, security, billing, cv, account)', () => {
+        const requiredSubroutes = [
+            '/dashboard/profile',
+            '/dashboard/security',
+            '/dashboard/account',
+            '/dashboard/billing',
+            '/dashboard/my-resumes',
+            '/dashboard/cv',
+        ];
+        for (const req of requiredSubroutes) {
+            assert.ok(routes.includes(req), `Critical route ${req} is not mounted in DashboardMain.jsx`);
+        }
+    });
+
     it('builds palette commands from the same navigation model', () => {
         // §25: a command is a real destination, not a second list that can drift.
         assert.equal(CANDIDATE_COMMAND_INDEX.length, ALL_ITEMS.length);

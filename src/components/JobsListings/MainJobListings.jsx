@@ -1231,7 +1231,13 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
                                 </p>
                                 <button
                                     onClick={clearAllFilters}
-                                    className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all duration-200 text-sm shadow-sm hover:shadow-md active:scale-95">
+                                    // DIR-009: this empty-state recovery CTA was the last
+                                    // legacy `from-blue-600 to-indigo-600` gradient on the
+                                    // candidate surface. .cuba-btn-primary owns the
+                                    // gradient, white label, glow and easing, so the
+                                    // hardcoded ramp and its hover:* overrides are
+                                    // dropped rather than fought by specificity.
+                                    className="cuba-btn-primary inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm active:scale-95">
                                     {t('JobsUpdate.MainJobListings.clearAllFilters', 'Clear All Filters')}
                                 </button>
                             </div>
@@ -1281,7 +1287,14 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
                                                         disabled={loading}
                                                         className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-200 text-sm font-bold ${
                                                             pageNum === currentPage
-                                                                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm'
+                                                                // DIR-009: a dense 36px pagination cell is the
+                                                                // small-control case, so it takes the SOLID
+                                                                // .cuba-fill-pill (--cuba-primary-fill #5949d6,
+                                                                // 6.27:1 w/ white) rather than the 135deg
+                                                                // gradient, whose leading stop would drop to
+                                                                // 4.14:1 under a single digit. Selected state
+                                                                // only; inactive pages keep the white surface.
+                                                                ? 'cuba-fill-pill'
                                                                 : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
                                                         }`}>
                                                         {pageNum}

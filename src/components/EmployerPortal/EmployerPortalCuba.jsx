@@ -2,6 +2,7 @@ import React, { Suspense, lazy, useCallback, useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import DashboardToast from '../Dashboard/DashboardToast/DashboardToast';
 import CubaPortalShell from '../cuba/CubaPortalShell';
+import { COPILOT_PORTALS } from '../cuba/copilotActions';
 import { EMPLOYER_PORTAL_NAVIGATION } from '../cuba/portalNavigation';
 import Spinner from '../Spinner/Spinner';
 
@@ -65,7 +66,10 @@ const EmployerPortalCuba = () => {
             persona="Recruiter & Hiring"
             title="Recruiter Overview"
             navigation={NAV}
-            user={{ name: 'Recruiter' }}
+            // DIR-021: recruiter-context chips (candidate pool, scorecard,
+            // outreach). Navigation-owned work routes to the applicants module
+            // rather than pretending to generate a pipeline summary.
+            copilotPortal={COPILOT_PORTALS.RECRUITER}
         >
             <DashboardToast
                 isShowed={toast.isShowed}

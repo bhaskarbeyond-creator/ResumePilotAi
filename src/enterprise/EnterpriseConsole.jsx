@@ -9,6 +9,8 @@ import { FiActivity, FiBarChart2, FiChevronRight, FiCommand, FiFileText, FiHelpC
 import { AuthContext } from '../context/AuthContext';
 import { signOutUser } from '../utils/signOut';
 import { EnterpriseTenantProvider, useEnterpriseTenant } from './EnterpriseContext';
+import { resolveOrgRoute, orgPathFor, buildOrgSearch } from './orgRouteState';
+import { TenantSwitcher, WorkspaceBadge, EnterpriseRoleSimulationBanner } from './EnterpriseContextSwitchers';
 import EnterpriseOverviewTab from './components/EnterpriseOverviewTab';
 import EnterpriseUsersTab from './components/EnterpriseUsersTab';
 import EnterpriseTeamsTab from './components/EnterpriseTeamsTab';
@@ -36,14 +38,14 @@ const NAVIGATION = [
   { id: 'members', label: 'Users & IAM', icon: FiUsers, permission: 'tenant.members.read', group: 'Organization', description: 'Manage enterprise memberships, invitations, roles, and identity access', keywords: 'people invitations identity access membership' },
   { id: 'teams', label: 'Teams', icon: FiUsers, permission: 'workspace.read', group: 'Organization', description: 'Organize members into functional teams and assign workspace leads', keywords: 'groups squads' },
   { id: 'workspaces', label: 'Workspaces', icon: FiSliders, permission: 'workspace.read', group: 'Organization', description: 'Configure isolated departmental workspaces and default landing zones', keywords: 'departments business units' },
-  { id: 'access', label: 'Roles & permissions', icon: FiShield, permission: 'tenant.roles.manage', group: 'Governance', description: 'Inspect role hierarchy, fine-grained capabilities, and custom roles', keywords: 'rbac matrix custom role' },
-  { id: 'ai', label: 'AI workspace', icon: FiZap, permission: 'tenant.ai.manage', group: 'Governance', description: 'Configure LLM provider models, token quota limits, and AI governance', keywords: 'models providers llm policy quota' },
+  { id: 'access', label: 'Roles & Permissions', icon: FiShield, permission: 'tenant.roles.manage', group: 'Governance', description: 'Inspect role hierarchy, fine-grained capabilities, and custom roles', keywords: 'rbac matrix custom role' },
+  { id: 'ai', label: 'AI Workspace', icon: FiZap, permission: 'tenant.ai.manage', group: 'Governance', description: 'Configure LLM provider models, token quota limits, and AI governance', keywords: 'models providers llm policy quota' },
   { id: 'security', label: 'Security & M2M', icon: FiLock, permission: 'tenant.security.read', group: 'Governance', description: 'Manage service accounts, secret key rotation, DLQ, and security posture', keywords: 'service accounts api keys mfa posture jobs dlq' },
   { id: 'usage', label: 'Usage & Quotas', icon: FiBarChart2, permission: 'tenant.usage.read', group: 'Governance', description: 'Track token consumption, compute credits, and plan capacity limits', keywords: 'analytics consumption tokens cost' },
   { id: 'email', label: 'Email & Notifications', icon: FiFileText, permission: 'tenant.settings.write', group: 'Governance', description: 'Enterprise invitation templates, access change alerts, and notification branding', keywords: 'email templates invitations notifications alerts' },
-  { id: 'audit', label: 'Audit logs', icon: FiFileText, permission: 'tenant.audit.read', group: 'Governance', description: 'Immutable forensic event trail, actor actions, and compliance records', keywords: 'trail events investigation forensics' },
-  { id: 'support', label: 'Support access', icon: FiHelpCircle, permission: 'tenant.settings.write', group: 'Administration', description: 'Time-bound break-glass support grants and authorization audit', keywords: 'break-glass grants' },
-  { id: 'settings', label: 'Organization settings', icon: FiSettings, permission: 'tenant.settings.write', group: 'Administration', description: 'Manage tenant identity policy, SSO configuration, and data retention', keywords: 'configuration retention identity sso danger' },
+  { id: 'audit', label: 'Audit Logs', icon: FiFileText, permission: 'tenant.audit.read', group: 'Governance', description: 'Immutable forensic event trail, actor actions, and compliance records', keywords: 'trail events investigation forensics' },
+  { id: 'support', label: 'Support Access', icon: FiHelpCircle, permission: 'tenant.settings.write', group: 'Administration', description: 'Time-bound break-glass support grants and authorization audit', keywords: 'break-glass grants' },
+  { id: 'settings', label: 'Organization Settings', icon: FiSettings, permission: 'tenant.settings.write', group: 'Administration', description: 'Manage tenant identity policy, SSO configuration, and data retention', keywords: 'configuration retention identity sso danger' },
   // Platform administration is a separate administrative layer over the tenant
   // registry. It is visible only when the server-derived platform capability is
   // true — never decided by the client.
@@ -88,114 +90,6 @@ function pushRecentTab(tabId) {
     const next = [tabId, ...readRecentTabs().filter(id => id !== tabId)].slice(0, 5);
     sessionStorage.setItem(RECENT_TABS_KEY, JSON.stringify(next));
   } catch { /* browser-state only */ }
-}
-
-function TenantSwitcher() {
-  const { tenant, tenants, selectTenant, loading } = useEnterpriseTenant();
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState('');
-  const filtered = tenants.filter(item => `${item.displayName} ${item.slug}`.toLowerCase().includes(query.toLowerCase()));
-
-  return (
-    <div className="enterprise-switcher">
-      <button
-        type="button"
-        className="enterprise-context-button"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        onClick={() => setOpen(value => !value)}
-        disabled={loading}
-      >
-        <span className="enterprise-avatar" aria-hidden="true">
-          {String(tenant?.displayName || 'R').slice(0, 1).toUpperCase()}
-        </span>
-        <span className="enterprise-context-copy">
-          <strong>{tenant?.displayName || 'Enterprise Workspace'}</strong>
-          <small>{tenant?.isolationTier || 'STANDARD'} · Active</small>
-        </span>
-        <span aria-hidden="true" style={{ marginLeft: 'auto', fontSize: '0.75rem' }}>▾</span>
-      </button>
-      {open && (
-        <div className="enterprise-popover" role="dialog" aria-label="Switch organization">
-          <label className="enterprise-search">
-            <FiSearch aria-hidden="true" />
-            <span className="sr-only">Search organizations</span>
-            <input
-              autoFocus
-              value={query}
-              onChange={event => setQuery(event.target.value)}
-              placeholder="Search organizations…"
-            />
-          </label>
-          <div role="listbox" aria-label="Available organizations" className="enterprise-switcher-list">
-            {filtered.map(item => (
-              <button
-                key={item.id}
-                type="button"
-                role="option"
-                aria-selected={item.id === tenant?.id}
-                className={item.id === tenant?.id ? 'selected' : ''}
-                onClick={() => { setOpen(false); selectTenant(item.id).catch(() => {}); }}
-              >
-                <span className="enterprise-avatar" aria-hidden="true">
-                  {String(item.displayName).slice(0, 1).toUpperCase()}
-                </span>
-                <span>
-                  <strong>{item.displayName}</strong>
-                  <small>{item.roles?.join(', ') || 'Member'} · {item.personalTenant ? 'Personal' : item.isolationTier}</small>
-                </span>
-                {item.id === tenant?.id && <span aria-label="Active organization">✓</span>}
-              </button>
-            ))}
-            {filtered.length === 0 && <p className="enterprise-empty">No organization matches this search.</p>}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function WorkspaceBadge() {
-  const { workspace, workspaces, selectWorkspace, loading } = useEnterpriseTenant();
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="enterprise-workspace-switcher">
-      <button
-        type="button"
-        className="enterprise-workspace"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        onClick={() => setOpen(value => !value)}
-        disabled={loading}
-      >
-        <FiSliders aria-hidden="true" /> <span className="enterprise-workspace-name">{workspace?.name || 'Default workspace'}</span> <span aria-hidden="true" style={{ marginLeft: '0.25rem', fontSize: '0.75rem' }}>▾</span>
-      </button>
-      {open && (
-        <div className="enterprise-popover enterprise-workspace-popover" role="dialog" aria-label="Switch workspace">
-          <div role="listbox" aria-label="Available workspaces" className="enterprise-switcher-list">
-            {workspaces.map(item => (
-              <button
-                key={item.id}
-                type="button"
-                role="option"
-                aria-selected={item.id === workspace?.id}
-                className={item.id === workspace?.id ? 'selected' : ''}
-                onClick={() => { setOpen(false); selectWorkspace(item.id).catch(() => {}); }}
-              >
-                <FiSliders aria-hidden="true" />
-                <span>
-                  <strong>{item.name}</strong>
-                  <small>{item.isDefault ? 'Default workspace' : 'Workspace'}</small>
-                </span>
-                {item.id === workspace?.id && <span aria-label="Active workspace">✓</span>}
-              </button>
-            ))}
-            {!workspaces.length && <p className="enterprise-empty">No workspace is available.</p>}
-          </div>
-        </div>
-      )}
-    </div>
-  );
 }
 
 /**
@@ -399,9 +293,15 @@ function CommandPalette({ open, onClose, navigation, actions, recents, onSelect 
   );
 }
 
-function EnterpriseConsoleInner() {
+/**
+ * @param {object} props
+ * @param {boolean} [props.isCubaChrome] True when the Cuba shell already renders
+ *   the top bar and the module navigation. In that mode the legacy chrome is
+ *   suppressed so the operator never sees two headers or two sidebars (DIR-008).
+ */
+function EnterpriseConsoleInner({ isCubaChrome = false }) {
   const user = useContext(AuthContext);
-  const { tenant, workspace, workspaces, selectWorkspace, enabled, loading, context, error, reload, platformAdmin, simulatedRole, isSimulating } = useEnterpriseTenant();
+  const { tenant, tenants, workspace, workspaces, selectTenant, selectWorkspace, enabled, loading, context, error, reload, platformAdmin, simulatedRole, isSimulating } = useEnterpriseTenant();
   const permissions = useMemo(
     () => (Array.isArray(context?.permissions) ? context.permissions : []),
     [context?.permissions],
@@ -415,22 +315,6 @@ function EnterpriseConsoleInner() {
   // Cross-tab investigation handoff (e.g. "view member activity" jumps to the
   // audit log with the actor filter pre-applied). Consumed once by the audit tab.
   const [auditPreset, setAuditPreset] = useState(null);
-
-  const handleExitEnterpriseSimulation = useCallback(async () => {
-    try {
-      sessionStorage.removeItem('superadmin_role_view');
-      sessionStorage.removeItem('superadmin_enterprise_tenant');
-      const token = await fire?.auth?.().currentUser?.getIdToken();
-      if (token) {
-        await fetch('/api/platform/role-view-audit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ targetRole: 'SUPER_ADMIN' })
-        });
-      }
-    } catch (_) {}
-    navigate('/admin/dashboard');
-  }, [navigate]);
 
   const visibleNav = useMemo(() => {
     return NAVIGATION.filter(item => canSee(item, permissions, platformAdmin));
@@ -446,40 +330,77 @@ function EnterpriseConsoleInner() {
 
   const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
 
-  const requestedTab = useMemo(() => {
-    return searchParams.get('tab') || new URLSearchParams(location.hash.replace(/^#/, '')).get('tab') || 'overview';
-  }, [location.hash, searchParams]);
+  // DIR-008: the pathname is the authoritative source of truth. The Cuba chrome
+  // navigates with real PATHS (`/org/:slug/:tabId`); `?tab=` is only a mirrored
+  // contract kept for deep links and shared URLs. Resolving the last path segment
+  // against the VISIBLE ids (rather than the whole tab list) means a slug that
+  // collides with a tab id, or a module this role may not see, can never be
+  // rendered. Authorization itself remains entirely server-side.
+  const visibleIds = useMemo(() => visibleNav.map(item => item.id), [visibleNav]);
+  const route = useMemo(
+    () => resolveOrgRoute({
+      pathname: location.pathname,
+      search: location.search,
+      hash: location.hash,
+      visibleIds,
+      slug: tenant?.slug || '',
+    }),
+    [location.hash, location.pathname, location.search, tenant?.slug, visibleIds],
+  );
 
-  const activeTab = useMemo(() => normalizeTab(requestedTab, visibleNav), [requestedTab, visibleNav]);
+  const activeTab = useMemo(() => normalizeTab(route.tabId, visibleNav), [route.tabId, visibleNav]);
   const activeNavItem = useMemo(() => visibleNav.find(item => item.id === activeTab) || null, [activeTab, visibleNav]);
 
-  // Deep-linkable module state: ?tab=members&status=INVITED etc. Selecting a
+  // Deep-linkable module state: /org/:slug/members?status=INVITED etc. Selecting a
   // tab replaces the previous module's parameters so filters never leak across
-  // modules; refresh and shared links reproduce the exact same screen.
+  // modules, while `tenant`/`workspace` are carried forward so the server-resolved
+  // context survives the transition.
   const selectTab = useCallback((tabId, params = null) => {
     const nextTab = normalizeTab(tabId, visibleNav);
-    const search = new URLSearchParams();
-    search.set('tab', nextTab);
-    if (params && typeof params === 'object') {
-      for (const [key, value] of Object.entries(params)) {
-        if (value !== undefined && value !== null && value !== '') search.set(key, String(value));
-      }
-    }
-    navigate({ pathname: location.pathname, search: `?${search.toString()}` }, { replace: nextTab === activeTab && !params });
+    navigate({
+      pathname: orgPathFor(nextTab, tenant?.slug || ''),
+      search: buildOrgSearch({ currentSearch: location.search, tabId: nextTab, params }),
+    }, { replace: nextTab === activeTab && !params });
     pushRecentTab(nextTab);
     setRecentTabs(readRecentTabs());
     setMobileMenuOpen(false);
-  }, [activeTab, location.pathname, navigate, visibleNav]);
+  }, [activeTab, location.search, navigate, tenant?.slug, visibleNav]);
+
+  const pathSlug = useMemo(() => {
+    const segments = location.pathname.split('/').filter(Boolean);
+    if (segments[0] === 'org' && segments[1]) {
+      const candidate = decodeURIComponent(segments[1]);
+      if (!visibleIds.includes(candidate)) return candidate;
+    }
+    return '';
+  }, [location.pathname, visibleIds]);
 
   useEffect(() => {
-    if (loading || !visibleNav.length) return undefined;
-    if (requestedTab !== activeTab) {
-      const search = new URLSearchParams(location.search);
-      search.set('tab', activeTab);
-      navigate({ pathname: location.pathname, search: `?${search.toString()}` }, { replace: true });
+    if (!pathSlug || !tenants?.length || loading) return;
+    if (tenant?.slug !== pathSlug && tenant?.id !== pathSlug) {
+      const match = tenants.find(t => t.slug === pathSlug || t.id === pathSlug);
+      if (match && match.id !== tenant?.id) {
+        selectTenant(match.id).catch(() => {});
+      }
     }
+  }, [pathSlug, tenants, tenant?.slug, tenant?.id, selectTenant, loading]);
+
+  // Normalize the address bar onto the canonical module path. This REPLACES the
+  // old effect that rewrote the URL to `?tab=overview` and thereby erased the
+  // module the user had actually clicked. It also redirects a bare `/org/:slug`
+  // to `/org/:slug/overview` instead of clobbering the query in place, and
+  // re-mirrors `?tab=` so legacy deep links keep resolving.
+  useEffect(() => {
+    if (loading || !visibleNav.length) return undefined;
+    const currentSlug = pathSlug || tenant?.slug || '';
+    const canonicalPath = orgPathFor(activeTab, currentSlug);
+    const mirror = searchParams.get('tab');
+    if (location.pathname === canonicalPath && mirror === activeTab) return undefined;
+    const search = new URLSearchParams(location.search);
+    search.set('tab', activeTab);
+    navigate({ pathname: canonicalPath, search: `?${search.toString()}` }, { replace: true });
     return undefined;
-  }, [activeTab, loading, location.pathname, location.search, navigate, requestedTab, visibleNav]);
+  }, [activeTab, loading, location.pathname, location.search, navigate, searchParams, tenant?.slug, pathSlug, visibleNav]);
 
   useEffect(() => {
     function onKeyDown(event) {
@@ -652,8 +573,11 @@ function EnterpriseConsoleInner() {
     .filter(section => section.items.length > 0);
 
   return (
-    <div className="enterprise-shell">
-      {/* Top Application Bar */}
+    <div className={`enterprise-shell ${isCubaChrome ? 'enterprise-shell-cuba' : ''}`.trim()}>
+      {/* Top Application Bar. Suppressed in Cuba mode: CubaPortalShell already
+          renders the single authoritative top bar, and two banners plus two
+          sidebars is the duplication DIR-008 removes. */}
+      {!isCubaChrome && (
       <header className="enterprise-topbar" role="banner">
         <div className="enterprise-topbar-left">
           <button
@@ -701,59 +625,18 @@ function EnterpriseConsoleInner() {
           </button>
         </div>
       </header>
-
-      {/* Super Admin Enterprise Role Simulation Banner */}
-      {isSimulating && (
-        <aside
-          role="status"
-          aria-live="polite"
-          data-testid="enterprise-role-simulation-banner"
-          style={{
-            backgroundColor: '#fef3c7',
-            borderBottom: '1px solid #fcd34d',
-            padding: '0.625rem 1.25rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '1rem',
-            fontSize: '0.8125rem',
-            color: '#78350f',
-            fontWeight: '600',
-            position: 'sticky',
-            top: '64px',
-            zIndex: 35,
-            boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '1.1rem' }} aria-hidden="true">🛡️</span>
-            <span>
-              <strong>Enterprise Role Simulation:</strong> Viewing console as <span style={{ textDecoration: 'underline', fontWeight: '800' }}>{simulatedRole?.replace('ENTERPRISE_', '')}</span> for organization <strong>{tenant?.displayName || 'Active Workspace'}</strong>. Super Admin credentials remain active.
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={handleExitEnterpriseSimulation}
-            data-testid="exit-enterprise-role-view"
-            style={{
-              padding: '0.35rem 0.85rem',
-              backgroundColor: '#b45309',
-              color: '#ffffff',
-              borderRadius: '0.5rem',
-              fontSize: '0.75rem',
-              fontWeight: '700',
-              border: 'none',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            Exit Enterprise Role View
-          </button>
-        </aside>
       )}
 
-      {/* Mobile Horizontal Quick-Navigation Pill Bar */}
+      {/* Super Admin Enterprise Role Simulation Banner. In Cuba mode the banner
+          is rendered once by the elevated Cuba context band instead, so the
+          warning is never duplicated. */}
+      {!isCubaChrome && (
+        <EnterpriseRoleSimulationBanner tenant={tenant} simulatedRole={isSimulating ? simulatedRole : null} />
+      )}
+
+      {/* Mobile Horizontal Quick-Navigation Pill Bar. Suppressed in Cuba mode so the
+          Cuba sidebar is the only module navigation landmark. */}
+      {!isCubaChrome && (
       <nav className="enterprise-mobile-pill-strip" aria-label="Quick module navigation">
         <div className="enterprise-mobile-pill-track">
           {visibleNav.map(item => {
@@ -774,6 +657,7 @@ function EnterpriseConsoleInner() {
           })}
         </div>
       </nav>
+      )}
 
       {/* Mobile Drawer Backdrop */}
       {mobileMenuOpen && (
@@ -786,7 +670,10 @@ function EnterpriseConsoleInner() {
 
       {/* Main Grid: Sidebar + Content */}
       <div className="enterprise-layout">
-        {/* Navigation Sidebar */}
+        {/* Navigation Sidebar. Suppressed in Cuba mode: the Cuba portal shell
+            already owns the module navigation, and two navigation landmarks
+            with the same options is both a WCAG and a UX defect. */}
+        {!isCubaChrome && (
         <aside className={`enterprise-sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`} role="navigation" aria-label="Enterprise Navigation">
           <div className="enterprise-mobile-sidebar-header">
             <div className="enterprise-brand-link">
@@ -839,6 +726,7 @@ function EnterpriseConsoleInner() {
             platformAdmin={platformAdmin}
           />
         </aside>
+        )}
 
         {/* Dynamic Main Workspace */}
         <main className="enterprise-main" role="main">
@@ -961,14 +849,22 @@ function EnterpriseConsoleInner() {
         </main>
       </div>
 
-      <CommandPalette
-        open={commandPaletteOpen}
-        onClose={() => setCommandPaletteOpen(false)}
-        navigation={visibleNav}
-        actions={visibleActions}
-        recents={recentTabs}
-        onSelect={selectTab}
-      />
+      {/* Legacy command palette. Suppressed in Cuba mode because CubaPortalShell
+          already owns a ⌘K palette built from the same navigation: leaving both
+          mounted opens TWO modal dialogs that share the accessible name
+          "Command palette", which is both a WCAG 2.1 AA ambiguity and the same
+          double-chrome defect DIR-008 removes for the top bar, sidebar and pill
+          strip. Cuba's palette is the elevated host in this mode. */}
+      {!isCubaChrome && (
+        <CommandPalette
+          open={commandPaletteOpen}
+          onClose={() => setCommandPaletteOpen(false)}
+          navigation={visibleNav}
+          actions={visibleActions}
+          recents={recentTabs}
+          onSelect={selectTab}
+        />
+      )}
     </div>
   );
 }
@@ -995,7 +891,7 @@ export default function EnterpriseConsole() {
       {cubaChrome ? (
         <Suspense fallback={<div className="min-h-screen bg-cuba-canvas" aria-busy="true" />}>
           <EnterprisePortalCuba>
-            <EnterpriseConsoleInner />
+            <EnterpriseConsoleInner isCubaChrome />
           </EnterprisePortalCuba>
         </Suspense>
       ) : (

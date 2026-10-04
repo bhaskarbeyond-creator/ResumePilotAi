@@ -99,7 +99,7 @@ export default function HomepageFooter() {
           <div>
             © {new Date().getFullYear()} {brandTitle}. All rights reserved.
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '20px', color: '#94a3b8' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '20px', color: '#475569' }}>
             <span style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>SECURED BY</span>
             <FaCcVisa title="Visa" />
             <FaCcMastercard title="Mastercard" />

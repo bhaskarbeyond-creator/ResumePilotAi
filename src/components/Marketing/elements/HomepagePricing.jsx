@@ -224,7 +224,7 @@ export default function HomepagePricing({ onOpenAuthModal, nextStep }) {
             }}
           >
             <span>Quarterly</span>
-            <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '9999px', background: billingCycle === 'quartarly' ? '#10b981' : '#ecfdf5', color: billingCycle === 'quartarly' ? '#ffffff' : '#059669', fontWeight: '800' }}>
+            <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '9999px', background: billingCycle === 'quartarly' ? '#047857' : '#ecfdf5', color: billingCycle === 'quartarly' ? '#ffffff' : '#047857', fontWeight: '800' }}>
               {pricingData.quarterlyBadgeText}
             </span>
           </button>
@@ -249,7 +249,7 @@ export default function HomepagePricing({ onOpenAuthModal, nextStep }) {
             }}
           >
             <span>Annual Pass</span>
-            <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '9999px', background: billingCycle === 'yearly' ? '#f59e0b' : '#fef3c7', color: billingCycle === 'yearly' ? '#ffffff' : '#b45309', fontWeight: '900', textTransform: 'uppercase' }}>
+            <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '9999px', background: billingCycle === 'yearly' ? '#fbbf24' : '#fef3c7', color: billingCycle === 'yearly' ? '#78350f' : '#78350f', fontWeight: '900', textTransform: 'uppercase' }}>
               {pricingData.yearlyBadgeText}
             </span>
           </button>

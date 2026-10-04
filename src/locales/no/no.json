@@ -1854,6 +1854,7 @@
     },
     "actions": {
       "view": "Vis",
+      "openStudio": "Åpne i Studio",
       "edit": "Rediger",
       "delete": "Slett",
       "viewPreview": "Vis Forhåndsvisning"

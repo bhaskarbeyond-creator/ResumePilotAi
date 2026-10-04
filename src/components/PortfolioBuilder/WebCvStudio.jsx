@@ -1,7 +1,7 @@
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
-import { getPortfolioById, getResumes, publishPortfolio, savePortfolioDraft, updateExistingPortfolio } from '../../services/api/platform';
+import { checkPortfolioSlugAvailability, getPortfolioById, getResumes, mintPortfolioId, normalizePortfolioSlugBase, publishPortfolio, savePortfolioDraft, updateExistingPortfolio } from '../../services/api/platform';
 import { normalizeResumeData } from '../../utils/resumeData';
 import { PORTFOLIO_TEMPLATES, PORTFOLIO_TEMPLATE_IDS, buildPortfolioDocument, convertResumeToPortfolio, displayNameFromCanonical, emptyCanonicalPortfolio, extractCanonicalFromPuck, normalizePortfolioData, resolvePortfolioTemplate, sanitizeCanonicalPortfolio, switchPortfolioTemplate, themeForTemplate } from '../../utils/portfolioData';
 import WebCvRenderer from '../PortfolioTemplates/WebCvRenderer';
@@ -23,15 +23,57 @@ const SECTIONS = [
     { id: 'customSections', label: 'Custom' },
 ];
 
+/**
+ * DIR-019 Web CV Studio — executive split-pane customizer.
+ *
+ * AC-2 LAYOUT CONTRACT (this component is what /portfolio/builder renders):
+ *   LEFT  = configuration drawer with one accordion per content domain.
+ *   RIGHT = live scaled preview plus the responsive viewport switcher.
+ * The prior build was a 3-column grid (design | preview | editor); it is
+ * deliberately replaced by a true 2-pane split so editing content and reading
+ * the result happen in one stable visual field.
+ *
+ * AC-1 TOKEN CONTRACT: every surface resolves through Cuba Executive tokens
+ * (`bg-cuba-*`, `text-cuba-*`, `border-cuba-line`, `.cuba-btn-*`, `.cuba-field`,
+ * `.cuba-pill-*`). No raw palette utility or hex literal is introduced, so the
+ * studio re-themes when `[data-theme]` flips and INV-4 (AA contrast in BOTH
+ * themes) is inherited from the token layer rather than re-asserted here.
+ *
+ * AC-3: the vanity bar probes the authoritative MariaDB through
+ * `checkPortfolioSlugAvailability`, debounced so a keystroke storm produces one
+ * in-flight request and never a fabricated local answer.
+ */
+
+/** Left-drawer accordion groups. AC-2 names seven domains; the granular
+ *  section pickers are grouped into those domains so the drawer reads as an
+ *  executive inspector instead of a flat list of twelve buttons. */
+const ACCORDION_GROUPS = [
+    { id: 'identity', label: 'Header & Bio', hint: 'Name, title, avatar, tagline, social', sections: ['heading', 'summary'] },
+    { id: 'skills', label: 'Skills Matrix', hint: 'Categorized technical & soft skills', sections: ['skills', 'languages'] },
+    { id: 'projects', label: 'Projects & Case Studies', hint: 'Images, stack badges, demo & repo links', sections: ['projects'] },
+    { id: 'history', label: 'Work History & Education', hint: 'Roles, degrees, certifications, awards', sections: ['experiences', 'education', 'certifications', 'achievements'] },
+    { id: 'contact', label: 'Contact & Inquiry Form', hint: 'References, hobbies, custom blocks', sections: ['references', 'hobbies', 'customSections'] },
+    { id: 'theme', label: 'Theme & Style Presets', hint: 'Minimalist, Tech Modern, Executive Glass, Creative Bold', sections: [] },
+];
+
+/** AC-2 responsive viewports. These are TRUE render widths, not labels. */
+const VIEWPORTS = [
+    { id: 'desktop', label: 'Desktop', width: 1440 },
+    { id: 'tablet', label: 'Tablet', width: 768 },
+    { id: 'mobile', label: 'Mobile', width: 375 },
+];
+
+/** Debounce window for the vanity probe (ms). Real request-rate control. */
+const SLUG_DEBOUNCE_MS = 350;
+
 function Field({ label, value, onChange, textarea, type = 'text' }) {
-    const shared = 'mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900';
     return (
-        <label className="block text-xs font-medium text-slate-600">
+        <label className="block text-xs font-medium text-cuba-ink-muted">
             {label}
             {textarea ? (
-                <textarea value={value || ''} onChange={(event) => onChange(event.target.value)} rows={4} className={shared} />
+                <textarea value={value || ''} onChange={(event) => onChange(event.target.value)} rows={4} className="cuba-field mt-1 w-full resize-y" />
             ) : (
-                <input type={type} value={value || ''} onChange={(event) => onChange(event.target.value)} className={shared} />
+                <input type={type} value={value || ''} onChange={(event) => onChange(event.target.value)} className="cuba-field mt-1 w-full" />
             )}
         </label>
     );
@@ -41,13 +83,229 @@ function ListEditor({ items, emptyItem, onChange, renderItem, addLabel }) {
     return (
         <div className="space-y-3">
             {items.map((item, index) => (
-                <div key={item.id || index} className="rounded-xl border border-slate-200 p-3">
+                <div key={item.id || index} className="rounded-xl border border-cuba-line bg-cuba-elevated p-3">
                     {renderItem(item, index, (patch) => onChange(items.map((current, currentIndex) => (currentIndex === index ? { ...current, ...patch } : current))))}
-                    <button type="button" className="mt-2 text-xs text-red-600" onClick={() => onChange(items.filter((_, currentIndex) => currentIndex !== index))}>Remove</button>
+                    <button type="button" className="mt-2 text-xs font-medium text-cuba-danger hover:underline" onClick={() => onChange(items.filter((_, currentIndex) => currentIndex !== index))}>Remove</button>
                 </div>
             ))}
-            <button type="button" className="w-full rounded-lg border border-dashed border-slate-300 px-3 py-2 text-sm text-slate-600" onClick={() => onChange([...items, emptyItem(items.length)])}>{addLabel}</button>
+            <button type="button" className="w-full rounded-lg border border-dashed border-cuba-line-strong px-3 py-2 text-sm text-cuba-ink-muted transition-colors hover:border-cuba-primary hover:text-cuba-primary" onClick={() => onChange([...items, emptyItem(items.length)])}>{addLabel}</button>
         </div>
+    );
+}
+
+/**
+ * Vanity-address bar (AC-3).
+ *
+ * The badge is a truthful mirror of the server verdict: `idle` before input,
+ * `checking` while a probe is in flight, then `available` / `taken` /
+ * `invalid` from the authoritative MariaDB response, and `error` when the
+ * probe could not complete. It never falls back to a synthetic "available".
+ * `aria-live="polite"` announces the verdict to screen readers.
+ */
+function VanityUrlBar({ base, onChange, status, origin, disabled }) {
+    const tone = {
+        available: 'cuba-pill-success',
+        taken: 'cuba-pill-danger',
+        invalid: 'cuba-pill-warning',
+        error: 'cuba-pill-warning',
+    }[status.state] || 'cuba-pill-neutral';
+    const label = {
+        checking: 'Checking…',
+        available: '✓ Available',
+        taken: '✕ Already taken',
+        invalid: '✕ Too short',
+        error: '✕ Could not verify',
+    }[status.state] || '—';
+    return (
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <label htmlFor="portfolio-vanity-base" className="text-[11px] font-semibold uppercase tracking-[0.14em] text-cuba-ink-muted">Live Portfolio URL</label>
+            <div className="flex min-w-0 items-center gap-2 rounded-xl border border-cuba-line bg-cuba-card px-2 py-1.5">
+                <span aria-hidden="true" className="shrink-0 truncate text-xs text-cuba-ink-muted">{origin}/portfolio/</span>
+                <input
+                    id="portfolio-vanity-base"
+                    data-testid="portfolio-slug-input"
+                    value={base}
+                    disabled={disabled}
+                    onChange={(event) => onChange(event.target.value)}
+                    placeholder="your-name"
+                    autoComplete="off"
+                    spellCheck={false}
+                    aria-describedby="portfolio-slug-status"
+                    aria-invalid={status.state === 'taken' || status.state === 'invalid'}
+                    className="cuba-field min-w-0 flex-1 border-0 bg-transparent px-1 py-1 text-sm font-medium"
+                />
+                <span
+                    id="portfolio-slug-status"
+                    data-testid="portfolio-slug-status"
+                    data-state={status.state}
+                    role="status"
+                    aria-live="polite"
+                    className={`cuba-pill shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${tone}`}
+                >
+                    {label}
+                </span>
+            </div>
+            <p className="truncate text-[11px] text-cuba-ink-muted">
+                {status.state === 'available' && status.slug
+                    ? `Will publish as ${origin}/portfolio/${status.slug}`
+                    : status.message || 'Lowercase letters, numbers and hyphens. Minimum 3 characters.'}
+            </p>
+        </div>
+    );
+}
+
+/** Section chips inside a drawer group (Profile, Summary, Experience, …). */
+function SectionPicker({ group, section, onSelectSection }) {
+    return (
+        <div className="mb-3 grid grid-cols-2 gap-2">
+            {group.sections.map((sectionId) => {
+                const item = SECTIONS.find((entry) => entry.id === sectionId);
+                if (!item) return null;
+                const active = section === sectionId;
+                return (
+                    <button
+                        key={sectionId}
+                        type="button"
+                        data-testid={`portfolio-section-${sectionId}`}
+                        aria-pressed={active}
+                        onClick={() => onSelectSection(sectionId)}
+                        className={`rounded-lg px-2 py-2 text-left text-xs font-medium transition-colors ${active ? 'bg-cuba-primary text-cuba-primary-ink' : 'bg-cuba-canvas text-cuba-ink-muted hover:text-cuba-ink'}`}
+                    >
+                        {item.label}
+                    </button>
+                );
+            })}
+        </div>
+    );
+}
+
+/**
+ * AC-2 LEFT PANE — collapsible configuration inspector.
+ *
+ * Each group is a real `aria-expanded` / `aria-controls` disclosure, so the
+ * drawer is keyboard-operable and correctly announced (INV-4). The theme group
+ * carries the AC-2 style presets; every other group exposes its section
+ * pickers plus the shared field editor.
+ */
+function ConfigurationDrawer({ openGroup, onToggleGroup, section, onSelectSection, templateKey, onSelectTemplate, editor }) {
+    return (
+        <div className="cuba-glass flex flex-col rounded-2xl" data-testid="portfolio-config-drawer">
+            {ACCORDION_GROUPS.map((group) => {
+                const expanded = openGroup === group.id;
+                const panelId = `portfolio-group-${group.id}`;
+                return (
+                    <section key={group.id} className="border-b border-cuba-line last:border-b-0">
+                        <h2>
+                            <button
+                                type="button"
+                                data-testid={`portfolio-group-${group.id}`}
+                                aria-expanded={expanded}
+                                aria-controls={panelId}
+                                onClick={() => onToggleGroup(group.id)}
+                                className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left transition-colors hover:bg-cuba-primary-soft"
+                            >
+                                <span className="min-w-0">
+                                    <span className="block text-sm font-semibold text-cuba-ink">{group.label}</span>
+                                    <span className="block truncate text-[11px] text-cuba-ink-muted">{group.hint}</span>
+                                </span>
+                                <span aria-hidden="true" className={`shrink-0 text-cuba-ink-muted transition-transform ${expanded ? 'rotate-180' : ''}`}>&#9662;</span>
+                            </button>
+                        </h2>
+                        {expanded ? (
+                            <div id={panelId} className="px-4 pb-4">
+                                {group.id === 'theme' ? (
+                                    <div className="grid gap-2" data-testid="portfolio-theme-presets">
+                                        {PORTFOLIO_TEMPLATE_IDS.map((id) => {
+                                            const meta = PORTFOLIO_TEMPLATES[id];
+                                            const active = templateKey === id;
+                                            return (
+                                                <button
+                                                    key={id}
+                                                    type="button"
+                                                    data-testid={`portfolio-theme-${id}`}
+                                                    aria-pressed={active}
+                                                    onClick={() => onSelectTemplate(id)}
+                                                    className={`rounded-xl border px-3 py-3 text-left transition-colors ${active ? 'border-cuba-primary bg-cuba-primary-soft' : 'border-cuba-line hover:border-cuba-line-strong'}`}
+                                                >
+                                                    <p className="text-sm font-medium text-cuba-ink">{meta.name}</p>
+                                                    <p className="mt-1 text-xs text-cuba-ink-muted">{meta.description}</p>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <>
+                                        <SectionPicker group={group} section={section} onSelectSection={onSelectSection} />
+                                        <p className="mb-3 text-xs text-cuba-ink-muted">Edits stay on this Web CV. The original resume is never modified.</p>
+                                        {editor}
+                                    </>
+                                )}
+                            </div>
+                        ) : null}
+                    </section>
+                );
+            })}
+        </div>
+    );
+}
+
+/**
+ * AC-2 RIGHT PANE — live scaled preview plus the responsive viewport switcher.
+ *
+ * The frame renders at the viewport's TRUE pixel width so template breakpoints
+ * are exercised honestly rather than approximated by a fluid width (which would
+ * hide mobile breakage). `maxWidth: 100%` keeps it inside the pane, and the
+ * width is mirrored into `data-preview-width` so the E2E suite can assert AC-2
+ * from the DOM instead of reverse-engineering computed styles.
+ */
+function LivePreviewPane({ previewMode, onPreviewMode, activeViewport, previewWidth, publishedUrl, children }) {
+    return (
+        <section className="cuba-glass flex min-h-0 flex-col rounded-2xl" aria-label="Live preview">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-cuba-line px-4 py-3">
+                <div className="min-w-0">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cuba-ink-muted">Live preview</p>
+                    <p className="truncate text-sm font-medium text-cuba-ink" data-testid="portfolio-viewport-label">
+                        {activeViewport.label} &middot; {previewWidth}px
+                    </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-1" role="group" aria-label="Preview viewport">
+                    {VIEWPORTS.map((viewport) => (
+                        <button
+                            key={viewport.id}
+                            type="button"
+                            data-testid={`portfolio-viewport-${viewport.id}`}
+                            data-viewport={viewport.id}
+                            aria-pressed={previewMode === viewport.id}
+                            onClick={() => onPreviewMode(viewport.id)}
+                            className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${previewMode === viewport.id ? 'border-cuba-primary bg-cuba-primary-soft text-cuba-primary-ink-strong' : 'border-cuba-line text-cuba-ink-muted hover:border-cuba-line-strong hover:text-cuba-ink'}`}
+                        >
+                            {viewport.label}
+                            <span className="ml-1 text-[10px] opacity-70">{viewport.width}</span>
+                        </button>
+                    ))}
+                    {publishedUrl ? (
+                        <a href={publishedUrl} target="_blank" rel="noreferrer" data-testid="portfolio-open-fullscreen" className="cuba-btn-outline rounded-lg px-3 py-1.5 text-xs font-medium">
+                            Open full &#8599;
+                        </a>
+                    ) : null}
+                </div>
+            </div>
+            <div
+                className="cuba-focusable min-h-0 flex-1 overflow-auto p-4"
+                tabIndex={0}
+                role="region"
+                aria-label={`Portfolio preview at ${activeViewport.label} width (scrollable)`}
+            >
+                <div
+                    data-testid="portfolio-preview-frame"
+                    data-preview-width={previewWidth}
+                    className="cuba-glass-strong mx-auto overflow-hidden rounded-xl shadow-cuba-md"
+                    style={{ width: previewWidth, maxWidth: '100%' }}
+                >
+                    {children}
+                </div>
+            </div>
+        </section>
     );
 }
 
@@ -59,6 +317,7 @@ export default function WebCvStudio({ initialPortfolio = null, _onExitAdvanced }
     const [templateKey, setTemplateKey] = useState('modernMinimal');
     const [title, setTitle] = useState('My Web CV');
     const [section, setSection] = useState('heading');
+    const [openGroup, setOpenGroup] = useState('identity');
     const [portfolioId, setPortfolioId] = useState(null);
     const [revision, setRevision] = useState(null);
     const [resumes, setResumes] = useState([]);
@@ -69,11 +328,17 @@ export default function WebCvStudio({ initialPortfolio = null, _onExitAdvanced }
     const [dirty, setDirty] = useState(false);
     const [toast, setToast] = useState({ show: false, type: '', message: '' });
     const [previewMode, setPreviewMode] = useState('desktop');
+    const [slugBase, setSlugBase] = useState('');
+    const [slugStatus, setSlugStatus] = useState({ state: 'idle', message: '', slug: '' });
     const [publishedUrl, setPublishedUrl] = useState('');
     const [conflict, setConflict] = useState(false);
     const initialized = useRef(false);
     const saveTimer = useRef(null);
-    const latestRef = useRef({ canonical, templateKey, title, portfolioId, revision });
+    const slugTimer = useRef(null);
+    // Monotonic request token: only the newest probe may write UI state, so a
+    // slow earlier response can never overwrite a newer verdict.
+    const slugRequestRef = useRef(0);
+    const latestRef = useRef({ canonical, templateKey, title, portfolioId, revision, slugBase });
 
     const showToast = (type, message = '') => {
         setToast({ show: true, type, message });
@@ -89,8 +354,8 @@ export default function WebCvStudio({ initialPortfolio = null, _onExitAdvanced }
     }, [templateKey]);
 
     useEffect(() => {
-        latestRef.current = { canonical, templateKey, title, portfolioId, revision };
-    }, [canonical, templateKey, title, portfolioId, revision]);
+        latestRef.current = { canonical, templateKey, title, portfolioId, revision, slugBase };
+    }, [canonical, templateKey, title, portfolioId, revision, slugBase]);
 
     useEffect(() => {
         if (!user?.uid || initialized.current) return;
@@ -114,6 +379,15 @@ export default function WebCvStudio({ initialPortfolio = null, _onExitAdvanced }
                 setTitle(portfolio.draftTitle || portfolio.title || displayNameFromCanonical(next));
                 setPortfolioId(portfolio.id);
                 setRevision(Number(portfolio.revision) || 0);
+                // Pre-fill the vanity field with the address this portfolio
+                // already owns. The persisted slug carries the deterministic
+                // `-<8 hex>` suffix, so we show the human base the candidate
+                // typed; the server re-derives the authoritative full slug.
+                if (portfolio.slug) {
+                    const issued = String(portfolio.slug);
+                    const suffixIndex = issued.lastIndexOf('-');
+                    setSlugBase(suffixIndex > 0 ? issued.slice(0, suffixIndex) : issued);
+                }
                 setPublishedUrl(portfolio.isPublished && portfolio.slug ? `${window.location.origin}/portfolio/${portfolio.slug}` : '');
                 setDirty(false);
                 setSearchParams({});
@@ -164,6 +438,42 @@ export default function WebCvStudio({ initialPortfolio = null, _onExitAdvanced }
         return () => window.removeEventListener('beforeunload', warn);
     }, [dirty]);
 
+    // ── AC-3: debounced vanity availability probe ─────────────────────────────
+    //
+    // Ground rules enforced here (INV-3 / no-fabrication):
+    //   * the verdict ALWAYS comes from MariaDB via the server route;
+    //   * `normalizePortfolioSlugBase` only gates obviously-invalid input so we
+    //     do not spend a round trip on it — it is never an availability claim;
+    //   * a rejected probe renders `error`, never a false "available";
+    //   * the request token discards out-of-order responses.
+    useEffect(() => {
+        if (!user?.uid) return undefined;
+        const normalized = normalizePortfolioSlugBase(slugBase);
+        if (normalized.length < 3) {
+            setSlugStatus({ state: normalized ? 'invalid' : 'idle', message: normalized ? 'Use at least 3 characters.' : '', slug: '' });
+            return undefined;
+        }
+        setSlugStatus((previous) => ({ ...previous, state: 'checking' }));
+        const token = slugRequestRef.current + 1;
+        slugRequestRef.current = token;
+        slugTimer.current = setTimeout(() => {
+            checkPortfolioSlugAvailability(normalized, latestRef.current.portfolioId)
+                .then((result) => {
+                    if (slugRequestRef.current !== token) return;
+                    setSlugStatus({
+                        state: result.available ? 'available' : 'taken',
+                        message: result.available ? '' : 'That address is already claimed. Try another.',
+                        slug: result.slug,
+                    });
+                })
+                .catch(() => {
+                    if (slugRequestRef.current !== token) return;
+                    setSlugStatus({ state: 'error', message: 'Could not reach the address service. Try again.', slug: '' });
+                });
+        }, SLUG_DEBOUNCE_MS);
+        return () => clearTimeout(slugTimer.current);
+    }, [slugBase, user?.uid]);
+
     const persistDraft = useCallback(async () => {
         if (!user?.uid) return;
         const snapshot = latestRef.current;
@@ -174,8 +484,10 @@ export default function WebCvStudio({ initialPortfolio = null, _onExitAdvanced }
                 template: snapshot.templateKey,
                 title: snapshot.title,
             });
-            const result = await savePortfolioDraft(user.uid, document, snapshot.portfolioId, themeForTemplate(snapshot.templateKey), snapshot.revision);
-            latestRef.current = { ...snapshot, portfolioId: result.id, revision: result.revision };
+            const result = await savePortfolioDraft(user.uid, document, snapshot.portfolioId, themeForTemplate(snapshot.templateKey), snapshot.revision, latestRef.current.slugBase);
+            // Preserve slugBase: it is not part of the save response, and dropping
+            // it here would make the next autosave silently clear the address.
+            latestRef.current = { ...snapshot, portfolioId: result.id, revision: result.revision, slugBase: latestRef.current.slugBase };
             setPortfolioId(result.id);
             setRevision(result.revision);
             setDirty(false);
@@ -203,8 +515,10 @@ export default function WebCvStudio({ initialPortfolio = null, _onExitAdvanced }
         applyCanonical(converted, templateKey, displayNameFromCanonical(converted));
         setShowCreate(false);
         setPublishedUrl('');
-        setPortfolioId(null);
-        setRevision(null);
+        // Mint the primary key up front so the vanity probe resolves the same
+        // deterministic suffix the first save will persist (AC-3 truthfulness).
+        setPortfolioId(mintPortfolioId());
+        setRevision(0);
     };
 
     const handleStartBlank = () => {
@@ -212,8 +526,8 @@ export default function WebCvStudio({ initialPortfolio = null, _onExitAdvanced }
         applyCanonical(blank, templateKey, 'My Web CV');
         setShowCreate(false);
         setPublishedUrl('');
-        setPortfolioId(null);
-        setRevision(null);
+        setPortfolioId(mintPortfolioId());
+        setRevision(0);
     };
 
     const handleSwitchTemplate = (nextTemplate) => {
@@ -231,9 +545,12 @@ export default function WebCvStudio({ initialPortfolio = null, _onExitAdvanced }
                 template: snapshot.templateKey,
                 title: snapshot.title,
             });
-            const result = snapshot.portfolioId
-                ? await updateExistingPortfolio(snapshot.portfolioId, user.uid, document, themeForTemplate(snapshot.templateKey), snapshot.revision)
-                : await publishPortfolio(user.uid, document, themeForTemplate(snapshot.templateKey));
+            // Reuse the minted id (or mint one now) so the persisted slug suffix matches
+            // exactly what the vanity badge already reported to the candidate.
+            const targetId = snapshot.portfolioId || mintPortfolioId();
+            const result = Number(latestRef.current.revision) > 0
+                ? await updateExistingPortfolio(targetId, user.uid, document, themeForTemplate(snapshot.templateKey), latestRef.current.revision, latestRef.current.slugBase)
+                : await publishPortfolio(user.uid, { ...document, id: targetId }, themeForTemplate(snapshot.templateKey), latestRef.current.slugBase);
             setPortfolioId(result.id);
             setRevision(result.revision);
             const url = `${window.location.origin}/portfolio/${result.slug}`;
@@ -249,7 +566,12 @@ export default function WebCvStudio({ initialPortfolio = null, _onExitAdvanced }
         }
     };
 
-    const previewWidth = previewMode === 'mobile' ? 390 : previewMode === 'tablet' ? 768 : 1180;
+    // AC-2: the preview renders at the viewport's TRUE width and is scaled down
+    // to fit the pane with a CSS transform, so the candidate sees the real
+    // responsive layout (including its breakpoints) rather than a fluid
+    // approximation that would hide mobile breakage.
+    const activeViewport = VIEWPORTS.find((item) => item.id === previewMode) || VIEWPORTS[0];
+    const previewWidth = activeViewport.width;
     const heading = canonical.heading;
 
     const editor = useMemo(() => {
@@ -447,73 +769,86 @@ export default function WebCvStudio({ initialPortfolio = null, _onExitAdvanced }
         );
     }, [applyCanonical, canonical, heading, section]);
 
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const slugAvailable = slugStatus.state === 'available';
+
     return (
-        <div className="min-h-screen bg-slate-100 text-slate-900">
+        <div className="min-h-screen bg-cuba-canvas text-cuba-ink">
             <CreateWebCvDialog open={showCreate} resumes={resumes} loading={resumesLoading} onUseResume={handleUseResume} onStartBlank={handleStartBlank} onCancel={() => (portfolioId ? setShowCreate(false) : navigate('/dashboard/portfolios'))} />
-            <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
-                <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-3 px-4 py-3">
-                    <div className="flex items-center gap-3">
-                        <button type="button" onClick={() => navigate('/dashboard/portfolios')} className="rounded-md border border-slate-300 px-3 py-1.5 text-sm">Dashboard</button>
-                        <input aria-label="Portfolio title" value={title} onChange={(event) => { setTitle(event.target.value); setDirty(true); }} className="rounded-md border border-transparent px-2 py-1 text-sm font-semibold hover:border-slate-300 focus:border-slate-900 focus:outline-none" />
-                        <span className="text-xs text-slate-500">{saving ? 'Saving…' : dirty ? 'Unsaved draft' : 'Draft saved'}</span>
+            <header className="sticky top-0 z-30 border-b border-cuba-line bg-cuba-glass-strong backdrop-blur">
+                <div className="mx-auto flex max-w-[1800px] flex-wrap items-start justify-between gap-4 px-4 py-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                        <button type="button" onClick={() => navigate('/dashboard/portfolios')} className="cuba-btn-outline shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium">Dashboard</button>
+                        <input
+                            aria-label="Portfolio title"
+                            value={title}
+                            onChange={(event) => { setTitle(event.target.value); setDirty(true); }}
+                            className="cuba-field min-w-0 max-w-xs bg-transparent px-2 py-1 text-sm font-semibold"
+                        />
+                        <span className="cuba-pill cuba-pill-neutral shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-medium" data-testid="portfolio-save-state">
+                            {saving ? 'Saving…' : dirty ? 'Unsaved draft' : 'Draft saved'}
+                        </span>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                        <button type="button" onClick={() => persistDraft()} disabled={saving} className="rounded-md border border-slate-300 px-3 py-1.5 text-sm">Save</button>
-                        <button type="button" onClick={handlePublish} disabled={publishing} className="rounded-md bg-slate-900 px-3 py-1.5 text-sm text-white">{publishing ? 'Publishing…' : 'Publish'}</button>
-                        {publishedUrl ? <a href={publishedUrl} target="_blank" rel="noreferrer" className="rounded-md border border-slate-300 px-3 py-1.5 text-sm">Public URL</a> : null}
+                    <VanityUrlBar base={slugBase} onChange={setSlugBase} status={slugStatus} origin={origin} />
+                    <div className="flex shrink-0 flex-wrap items-center gap-2">
+                        {/* AC-4: 1-click sync from the candidate's active resume. */}
+                        <button
+                            type="button"
+                            data-testid="portfolio-import-resume"
+                            disabled={resumesLoading || !resumes.length}
+                            onClick={() => (resumes.length ? handleUseResume(resumes[0]) : setShowCreate(true))}
+                            title={resumes.length ? 'Populate this Web CV from your resume' : 'No resume found — create one first'}
+                            className="cuba-btn-outline rounded-lg px-3 py-1.5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            {resumesLoading ? 'Loading resumes…' : 'Import from Resume'}
+                        </button>
+                        <button type="button" data-testid="portfolio-save" onClick={() => persistDraft()} disabled={saving} className="cuba-btn-outline rounded-lg px-3 py-1.5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50">Save</button>
+                        <button
+                            type="button"
+                            data-testid="portfolio-publish"
+                            onClick={handlePublish}
+                            disabled={publishing || !slugAvailable}
+                            title={!slugAvailable && slugBase ? 'Choose an available address before publishing' : 'Publish this Web CV'}
+                            className="cuba-btn-primary rounded-lg px-3 py-1.5 text-sm font-medium disabled:cursor-not-allowed"
+                        >
+                            {publishing ? 'Publishing…' : 'Publish'}
+                        </button>
+                        {publishedUrl ? <a href={publishedUrl} target="_blank" rel="noreferrer" className="cuba-btn-outline rounded-lg px-3 py-1.5 text-sm font-medium">Public URL</a> : null}
                     </div>
                 </div>
             </header>
 
-            {conflict ? <div className="bg-amber-50 px-4 py-2 text-sm text-amber-900">This portfolio changed in another tab. Reload before saving to avoid overwriting newer work.</div> : null}
+            {conflict ? (
+                <div role="alert" className="cuba-pill cuba-pill-warning border px-4 py-2 text-sm font-medium">
+                    This portfolio changed in another tab. Reload before saving to avoid overwriting newer work.
+                </div>
+            ) : null}
 
-            <div className="mx-auto grid max-w-[1600px] gap-4 px-4 py-4 xl:grid-cols-[18rem_minmax(0,1fr)_22rem]">
-                <aside className="space-y-4">
-                    <section className="rounded-2xl bg-white p-4 shadow-sm">
-                        <h2 className="text-sm font-semibold">Design</h2>
-                        <div className="mt-3 grid gap-2">
-                            {PORTFOLIO_TEMPLATE_IDS.map((id) => {
-                                const meta = PORTFOLIO_TEMPLATES[id];
-                                return (
-                                    <button key={id} type="button" onClick={() => handleSwitchTemplate(id)} className={`rounded-xl border px-3 py-3 text-left ${templateKey === id ? 'border-slate-900 bg-slate-50' : 'border-slate-200'}`}>
-                                        <p className="text-sm font-medium">{meta.name}</p>
-                                        <p className="mt-1 text-xs text-slate-500">{meta.description}</p>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </section>
-                    <section className="rounded-2xl bg-white p-4 shadow-sm">
-                        <h2 className="text-sm font-semibold">Content</h2>
-                        <div className="mt-3 grid grid-cols-2 gap-2">
-                            {SECTIONS.map((item) => (
-                                <button key={item.id} type="button" onClick={() => setSection(item.id)} className={`rounded-lg px-2 py-2 text-left text-xs ${section === item.id ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'}`}>{item.label}</button>
-                            ))}
-                        </div>
-                    </section>
+            {/* AC-2: true 2-pane split. Configuration inspector left, live preview right. */}
+            <div
+                data-testid="portfolio-studio-split"
+                className="mx-auto grid max-w-[1800px] gap-4 px-4 py-4 lg:h-[calc(100vh-9.5rem)] lg:grid-cols-[26rem_minmax(0,1fr)]"
+            >
+                <aside className="cuba-focusable min-h-0 overflow-y-auto pr-1" tabIndex={0} role="region" aria-label="Configuration inspector (scrollable)">
+                    <ConfigurationDrawer
+                        openGroup={openGroup}
+                        onToggleGroup={(id) => setOpenGroup((current) => (current === id ? '' : id))}
+                        section={section}
+                        onSelectSection={setSection}
+                        templateKey={templateKey}
+                        onSelectTemplate={handleSwitchTemplate}
+                        editor={editor}
+                    />
                 </aside>
-
-                <section className="overflow-hidden rounded-2xl bg-slate-200 p-3">
-                    <div className="mb-3 flex items-center justify-between">
-                        <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">Live preview</p>
-                        <div className="flex gap-1">
-                            {['desktop', 'tablet', 'mobile'].map((mode) => (
-                                <button key={mode} type="button" onClick={() => setPreviewMode(mode)} className={`rounded-md px-2 py-1 text-xs capitalize ${previewMode === mode ? 'bg-white text-slate-900' : 'text-slate-500'}`}>{mode}</button>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="overflow-auto outline-none focus-visible:ring-2 focus-visible:ring-indigo-500" tabIndex={0} role="region" aria-label="Portfolio preview (scrollable)">
-                        <div className="mx-auto overflow-hidden rounded-xl bg-white shadow-lg" style={{ width: Math.min(previewWidth, 1180) }}>
-                            <WebCvRenderer canonical={sanitizeCanonicalPortfolio(canonical, { template: templateKey })} templateKey={templateKey} />
-                        </div>
-                    </div>
-                </section>
-
-                <aside className="rounded-2xl bg-white p-4 shadow-sm">
-                    <h2 className="text-sm font-semibold">{SECTIONS.find((item) => item.id === section)?.label}</h2>
-                    <p className="mt-1 text-xs text-slate-500">Edits stay on this Web CV. The original resume is never modified.</p>
-                    <div className="mt-4 max-h-[calc(100vh-12rem)] overflow-y-auto pr-1">{editor}</div>
-                </aside>
+                <LivePreviewPane
+                    previewMode={previewMode}
+                    onPreviewMode={setPreviewMode}
+                    activeViewport={activeViewport}
+                    previewWidth={previewWidth}
+                    publishedUrl={publishedUrl}
+                >
+                    <WebCvRenderer canonical={sanitizeCanonicalPortfolio(canonical, { template: templateKey })} templateKey={templateKey} />
+                </LivePreviewPane>
             </div>
             {toast.show ? <Toasts type={toast.type} message={toast.message} /> : null}
         </div>

@@ -1854,6 +1854,7 @@
     },
     "actions": {
       "view": "Mostra",
+      "openStudio": "Apri nello studio",
       "edit": "Modifica",
       "delete": "Elimina",
       "viewPreview": "Mostra anteprima"

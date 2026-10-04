@@ -5,10 +5,22 @@ const crypto = require('crypto');
 const { getRepository } = require('../repositories');
 const router = express.Router();
 
+// DIR-020: shared allow-lists for the Kanban card metadata and interview
+// scheduler. Kept in sync with MySQLRepository so a value rejected at the edge
+// can never reach the typed columns.
+const WORK_MODES = new Set(['Remote', 'Hybrid', 'On-site']);
+const INTERVIEW_ROUNDS = new Set([
+    'Recruiter Screen', 'Technical', 'System Design', 'Behavioral', 'Hiring Manager',
+]);
+const INTERVIEW_FORMATS = new Set(['Video', 'In-Person', 'Phone']);
+
 function normalizeTrackerInput(input = {}, { partial = false } = {}) {
     const text = (value, maximum) => String(value || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, maximum);
     const has = key => Object.prototype.hasOwnProperty.call(input, key);
     const statuses = new Set(['wishlist', 'applied', 'interview', 'offer', 'rejected']);
+    const workModes = WORK_MODES;
+    const interviewRounds = INTERVIEW_ROUNDS;
+    const interviewFormats = INTERVIEW_FORMATS;
     const normalized = {};
 
     if (!partial || has('title')) normalized.title = text(input.title, 160);
@@ -39,6 +51,66 @@ function normalizeTrackerInput(input = {}, { partial = false } = {}) {
         }
         normalized.url = url;
     }
+
+    // ---- DIR-020: executive Kanban card metadata + interview scheduling ----
+    if (!partial || has('salary')) normalized.salary = text(input.salary, 100);
+    if (!partial || has('dateApplied')) {
+        const dateApplied = text(input.dateApplied, 32);
+        if (dateApplied && !/^\d{4}-\d{2}-\d{2}/.test(dateApplied)) {
+            throw Object.assign(new Error('Use a valid applied date.'), { code: 'JOB_TRACKER_VALIDATION_ERROR', status: 400 });
+        }
+        normalized.dateApplied = dateApplied;
+    }
+    if (!partial || has('contactPerson')) normalized.contactPerson = text(input.contactPerson, 255);
+    if (!partial || has('contactEmail')) {
+        const email = text(input.contactEmail, 255);
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            throw Object.assign(new Error('Use a valid contact email address.'), { code: 'JOB_TRACKER_VALIDATION_ERROR', status: 400 });
+        }
+        normalized.contactEmail = email;
+    }
+    if (!partial || has('workMode')) {
+        const workMode = text(input.workMode, 32);
+        if (workMode && !workModes.has(workMode)) {
+            throw Object.assign(new Error('Use Remote, Hybrid or On-site.'), { code: 'JOB_TRACKER_VALIDATION_ERROR', status: 400 });
+        }
+        normalized.workMode = workMode;
+    }
+    if (!partial || has('interviewRound')) {
+        const round = text(input.interviewRound, 64);
+        if (round && !interviewRounds.has(round)) {
+            throw Object.assign(new Error('Use a valid interview round.'), { code: 'JOB_TRACKER_VALIDATION_ERROR', status: 400 });
+        }
+        normalized.interviewRound = round;
+    }
+    if (!partial || has('interviewFormat')) {
+        const format = text(input.interviewFormat, 32);
+        if (format && !interviewFormats.has(format)) {
+            throw Object.assign(new Error('Use Video, In-Person or Phone.'), { code: 'JOB_TRACKER_VALIDATION_ERROR', status: 400 });
+        }
+        normalized.interviewFormat = format;
+    }
+    if (!partial || has('interviewAt')) {
+        const at = text(input.interviewAt, 32);
+        if (at && Number.isNaN(new Date(at).getTime())) {
+            throw Object.assign(new Error('Use a valid interview date and time.'), { code: 'JOB_TRACKER_VALIDATION_ERROR', status: 400 });
+        }
+        normalized.interviewAt = at;
+    }
+    if (!partial || has('interviewLink')) {
+        let link = text(input.interviewLink, 1024);
+        if (link) {
+            try {
+                const parsed = new URL(link);
+                if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('unsupported scheme');
+                link = parsed.href;
+            } catch {
+                throw Object.assign(new Error('Use a valid HTTP or HTTPS meeting link.'), { code: 'JOB_TRACKER_VALIDATION_ERROR', status: 400 });
+            }
+        }
+        normalized.interviewLink = link;
+    }
+
     if ((!partial && (!normalized.title || !normalized.company))
         || (has('title') && !normalized.title)
         || (has('company') && !normalized.company)

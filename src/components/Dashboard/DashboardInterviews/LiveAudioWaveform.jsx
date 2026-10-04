@@ -2,7 +2,47 @@
 // High-performance HTML5 Canvas component providing:
 // 1. Fluid multi-harmonic sine waves when the interviewer is speaking (Siri/Gemini Live style)
 // 2. Real-time FFT audio spectrum frequency bars when candidate's microphone is active
-import React, { useEffect, useRef } from 'react';
+//
+// DIR-013 tokenisation: every colour is read from the Cuba design tokens
+// (`src/styles/cuba-tokens.css`) via the computed-style bridge below. A 2D
+// canvas cannot consume `var(--cuba-*)` directly, so the tokens are resolved
+// once through getComputedStyle and cached per mount. Hard-coded hex values
+// are deliberately absent from this file.
+import React, { useEffect, useMemo, useRef } from 'react';
+
+/** Families the `color` prop accepts, mapped to their token triples. */
+const WAVE_FAMILIES = {
+    indigo: ['--cuba-wave-indigo-1', '--cuba-wave-indigo-2', '--cuba-wave-indigo-3'],
+    emerald: ['--cuba-wave-emerald-1', '--cuba-wave-emerald-2', '--cuba-wave-emerald-3'],
+    cyan: ['--cuba-wave-cyan-1', '--cuba-wave-cyan-2', '--cuba-wave-cyan-3'],
+    rose: ['--cuba-wave-rose-1', '--cuba-wave-rose-2', '--cuba-wave-rose-3'],
+};
+
+/**
+ * Resolve the wave palette from the active document's computed styles.
+ * Returns null while there is no DOM (SSR/JSDOM) so the caller can fall back
+ * to an inert render rather than painting invented colours.
+ */
+function resolveWavePalette(el, color) {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return null;
+    const cs = window.getComputedStyle(el || document.documentElement);
+    const read = (name) => cs.getPropertyValue(name).trim();
+    const family = WAVE_FAMILIES[color] || WAVE_FAMILIES.indigo;
+
+    const palette = {
+        idle: read('--cuba-wave-idle'),
+        barFrom: read('--cuba-wave-bar-from'),
+        barTo: read('--cuba-wave-bar-to'),
+        waves: family.map(read),
+    };
+
+    // A missing token means the stylesheet is not loaded; refuse to paint
+    // rather than silently substituting a hard-coded colour.
+    const complete =
+        palette.idle && palette.barFrom && palette.barTo &&
+        palette.waves.every(Boolean);
+    return complete ? palette : null;
+}
 
 export default function LiveAudioWaveform({
     active = false,
@@ -18,6 +58,17 @@ export default function LiveAudioWaveform({
     const analyserRef = useRef(null);
     const sourceRef = useRef(null);
     const stepRef = useRef(0);
+    const paletteRef = useRef(null);
+
+    const isJSDOM = typeof window !== 'undefined' &&
+        (/jsdom/i.test(window.navigator?.userAgent || '') ||
+            typeof window.HTMLCanvasElement === 'undefined');
+
+    // Reduced motion is honoured by freezing the wave rather than animating it.
+    const reducedMotion = useMemo(() => {
+        if (typeof window === 'undefined' || !window.matchMedia) return false;
+        return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    }, []);
 
     // Setup live Web Audio Analyser if mediaStream is provided
     useEffect(() => {
@@ -57,7 +108,6 @@ export default function LiveAudioWaveform({
 
     // Render loop
     useEffect(() => {
-        const isJSDOM = typeof window !== 'undefined' && (/jsdom/i.test(window.navigator?.userAgent || '') || typeof window.HTMLCanvasElement === 'undefined');
         if (isJSDOM) return;
 
         const canvas = canvasRef.current;
@@ -69,6 +119,9 @@ export default function LiveAudioWaveform({
             return;
         }
         if (!ctx) return;
+
+        const palette = resolveWavePalette(canvas, color);
+        paletteRef.current = palette;
 
         let running = true;
 
@@ -101,13 +154,28 @@ export default function LiveAudioWaveform({
 
             if (!active && !mediaStream) {
                 // Subtle flat idle line
-                ctx.beginPath();
-                ctx.moveTo(0, centerY);
-                ctx.lineTo(width, centerY);
-                ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
-                ctx.lineWidth = 2;
-                ctx.stroke();
+                if (palette) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, centerY);
+                    ctx.lineTo(width, centerY);
+                    ctx.strokeStyle = palette.idle;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
                 animationFrameRef.current = requestAnimationFrame(render);
+                return;
+            }
+
+            if (reducedMotion) {
+                // INV-5: reduced motion gets a static level bar, not a
+                // suppressed-but-still-running rAF loop.
+                if (palette) {
+                    const level = active ? Math.max(4, h * 0.34) : 4;
+                    ctx.fillStyle = palette.barFrom;
+                    ctx.beginPath();
+                    ctx.roundRect(0, centerY - level / 2, width, level, level / 2);
+                    ctx.fill();
+                }
                 return;
             }
 
@@ -124,27 +192,30 @@ export default function LiveAudioWaveform({
                     const x = i * (barWidth + 3);
                     const y = centerY - (barHeight / 2);
 
-                    const grad = ctx.createLinearGradient(0, y, 0, y + barHeight);
-                    grad.addColorStop(0, '#818cf8');
-                    grad.addColorStop(1, '#4f46e5');
+                    if (palette) {
+                        const grad = ctx.createLinearGradient(0, y, 0, y + barHeight);
+                        grad.addColorStop(0, palette.barFrom);
+                        grad.addColorStop(1, palette.barTo);
 
-                    ctx.fillStyle = grad;
-                    ctx.beginPath();
-                    ctx.roundRect(x, y, barWidth, barHeight, 3);
-                    ctx.fill();
+                        ctx.fillStyle = grad;
+                        ctx.beginPath();
+                        ctx.roundRect(x, y, barWidth, barHeight, 3);
+                        ctx.fill();
+                    }
                 }
             } else {
                 // Fluid multi-sine waves (Siri/Gemini style)
                 const waves = [
-                    { amplitude: active ? 16 * realAmplitude : 3, frequency: 0.025, speed: 1.0, color: 'rgba(99, 102, 241, 0.85)', width: 2.5 },
-                    { amplitude: active ? 12 * realAmplitude : 2, frequency: 0.035, speed: -1.2, color: 'rgba(168, 85, 247, 0.75)', width: 2 },
-                    { amplitude: active ? 8 * realAmplitude : 1.5, frequency: 0.02, speed: 0.8, color: 'rgba(56, 189, 248, 0.65)', width: 1.5 },
+                    { amplitude: active ? 16 * realAmplitude : 3, frequency: 0.025, speed: 1.0, tone: 0, width: 2.5 },
+                    { amplitude: active ? 12 * realAmplitude : 2, frequency: 0.035, speed: -1.2, tone: 1, width: 2 },
+                    { amplitude: active ? 8 * realAmplitude : 1.5, frequency: 0.02, speed: 0.8, tone: 2, width: 1.5 },
                 ];
 
                 waves.forEach(wave => {
                     ctx.beginPath();
                     ctx.lineWidth = wave.width;
-                    ctx.strokeStyle = wave.color;
+                    ctx.strokeStyle = palette ? palette.waves[wave.tone] : null;
+                    if (!ctx.strokeStyle) return;
 
                     for (let x = 0; x < width; x += 3) {
                         // Taper edges to zero at both sides
@@ -175,7 +246,7 @@ export default function LiveAudioWaveform({
             running = false;
             if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
         };
-    }, [active, color, height, mediaStream, mode]);
+    }, [active, color, height, isJSDOM, mediaStream, mode, reducedMotion]);
 
     return (
         <div className={`relative overflow-hidden w-full flex items-center justify-center ${className}`} style={{ height: `${height}px` }}>

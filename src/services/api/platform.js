@@ -17,6 +17,10 @@ import fire from '../../conf/fire';
 import config from '../../conf/configuration';
 import { validateTrackedJob } from '../../utils/jobTracker';
 import { blogPostFitsStorageLimit, normalizeBlogPost } from '../../utils/blogData';
+// Imported (not only re-exported) so the vanity-base helpers below can normalize
+// the candidate's input. `export { ... } from` does NOT bind a local name, so
+// this separate import is required for `withVanityBase` to resolve.
+import { normalizePortfolioSlugBase } from './portfolios.js';
 import { normalizeProfileData } from '../../utils/profileData';
 import { fetchAdminWithReauth } from '../adminReauth';
 
@@ -1134,6 +1138,28 @@ export async function replayPaymentWebhook(eventId) {
     return data;
 }
 
+/**
+ * DIR-022 / AC-5 — one-click entitlement reconciliation for SuperAdmin.
+ *
+ * The caller gets the GATEWAY's verified answer, never an optimistic "done".
+ * When the gateway cannot be reached the endpoint returns success with
+ * `reconciled: false`, so this function deliberately does NOT throw in that
+ * case: "we asked and there was nothing to change" is a valid, non-error
+ * outcome the operator needs to see, not an exception to swallow blindly.
+ */
+export async function reconcileUserSubscriptionAdmin(userId) {
+    const uid = String(userId || '').trim();
+    if (!uid) throw new Error('A user id is required to reconcile a subscription.');
+    const { response, data } = await fetchAdminWithReauth(
+        `/api/admin/subscriptions/${encodeURIComponent(uid)}/reconcile`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' } },
+    );
+    if (!response.ok || !data?.success) {
+        throw new Error(data?.error?.message || data?.error || 'Subscription reconciliation failed.');
+    }
+    return data;
+}
+
 export async function grantProSubscriptionAdmin(userId, _planType = 'yearly', _durationMonths = 12) {
     return editUser(userId, null, 'Premium', null, null, null, { membershipEnds: null });
 }
@@ -2000,27 +2026,61 @@ export async function removePhraseFromCategory(category, phrase) {
     return addCategoryToData(category, list);
 }
 
-export async function publishPortfolio(userId, portfolioData, theme = 'default') {
+// ── DIR-019 AC-3: vanity address ─────────────────────────────────────────────
+//
+// The persisted slug is `<normalized base>-<8 hex of sha256(portfolioId)>`, so
+// the address a candidate will be issued is only knowable once the primary key
+// is fixed. The studio therefore mints its OWN id up front via
+// `mintPortfolioId()` and passes it to both the availability probe and the
+// first save, which keeps the badge truthful without changing (or freezing)
+// server-side slug derivation. Re-exported here so the studio imports from the
+// single platform facade it already uses.
+export { checkPortfolioSlugAvailability, normalizePortfolioSlugBase } from './portfolios.js';
+
+/**
+ * Mints the stable portfolio primary key used by the studio before its first
+ * save. Uses the identical construction as `savePortfolioDraft`/`publishPortfolio`
+ * so the id the availability badge resolves against is byte-for-byte the id
+ * that later lands in MariaDB.
+ */
+export function mintPortfolioId() {
+    return `portfolio_${globalThis.crypto?.randomUUID?.() || Date.now()}`.replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 128);
+}
+
+/**
+ * Normalizes a candidate-supplied vanity base into the `slug` field the
+ * repository derives from. Left deliberately thin: the authoritative
+ * normalization and the availability verdict both live server-side
+ * (`backend/repositories/portfolioSlug.js`), so the client can never grant
+ * itself an address by sending a crafted payload.
+ */
+function withVanityBase(portfolioData, slugBase) {
+    const base = normalizePortfolioSlugBase(slugBase);
+    if (!base) return portfolioData;
+    return { ...portfolioData, slug: base };
+}
+
+export async function publishPortfolio(userId, portfolioData, theme = 'default', slugBase = '') {
     const { default: portfoliosApi } = await import('./portfolios.js');
     const id = String(portfolioData?.id || `portfolio_${globalThis.crypto?.randomUUID?.() || Date.now()}`).replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 128);
     return portfoliosApi.savePortfolio(id, {
-        ...(portfolioData || {}), userId, theme, isPublished: true,
+        ...withVanityBase(portfolioData || {}, slugBase), userId, theme, isPublished: true,
     }, { expectedRevision: 0 });
 }
 
-export async function updateExistingPortfolio(portfolioId, userId, portfolioData, theme = 'default', expectedRevision) {
+export async function updateExistingPortfolio(portfolioId, userId, portfolioData, theme = 'default', expectedRevision, slugBase = '') {
     const { default: portfoliosApi } = await import('./portfolios.js');
     return portfoliosApi.savePortfolio(portfolioId, {
-        ...(portfolioData || {}), userId, theme, isPublished: true,
+        ...withVanityBase(portfolioData || {}, slugBase), userId, theme, isPublished: true,
     }, { expectedRevision });
 }
 
-export async function savePortfolioDraft(userId, draftData, portfolioId = null, theme = 'default', expectedRevision = null) {
+export async function savePortfolioDraft(userId, draftData, portfolioId = null, theme = 'default', expectedRevision = null, slugBase = '') {
     const { default: portfoliosApi } = await import('./portfolios.js');
     const id = String(portfolioId || `portfolio_${globalThis.crypto?.randomUUID?.() || Date.now()}`).replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 128);
     const revision = portfolioId ? Number(expectedRevision) : 0;
     return portfoliosApi.savePortfolio(id, {
-        ...(draftData || {}), userId, theme, isPublished: false,
+        ...withVanityBase(draftData || {}, slugBase), userId, theme, isPublished: false,
     }, { expectedRevision: Number.isSafeInteger(revision) && revision >= 0 ? revision : 0 });
 }
 

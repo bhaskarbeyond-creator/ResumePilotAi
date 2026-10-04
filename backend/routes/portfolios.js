@@ -1,6 +1,8 @@
+const crypto = require('crypto');
 const express = require('express');
 const { getRepository } = require('../repositories');
 const { replyRepoError } = require('./errorResponder');
+const { normalizeSlugBase } = require('../repositories/portfolioSlug');
 const router = express.Router();
 
 const VALID_ID = /^[A-Za-z0-9_-]{4,128}$/;
@@ -64,6 +66,38 @@ router.get('/', async (req, res) => {
         return res.json({ success: true, portfolios });
     } catch (error) {
         return replyRepoError(res, error, 'Failed to fetch portfolios');
+    }
+});
+
+// Vanity-address availability probe (DIR-019 AC-3).
+//
+// Authenticated owner route: it is intentionally NOT part of the public
+// allowlist, because enumerating which addresses exist is an enumeration
+// oracle for unpublished drafts if it were.
+//
+// The response reports availability for the EXACT slug the save path will
+// persist, which the repository derives as `<normalized base>-<8 hex of
+// sha256(portfolioId)>`. We therefore return both the normalized base the
+// candidate typed and the concrete address that will be issued.
+router.get('/slug-availability', async (req, res) => {
+    const base = normalizeSlugBase(req.query.base);
+    if (!base || base.length < 3) {
+        return res.status(400).json({
+            success: false,
+            code: 'INVALID_PORTFOLIO_SLUG_BASE',
+            error: 'Portfolio addresses must be at least 3 characters long.',
+        });
+    }
+    const portfolioId = VALID_ID.test(String(req.query.portfolioId || '')) ? String(req.query.portfolioId) : null;
+    // The client mints the primary key before its first save, so it can send the
+    // id it intends to use and we can resolve the deterministic suffix here.
+    const suffix = crypto.createHash('sha256').update(String(portfolioId || req.user.uid)).digest('hex').slice(0, 8);
+    const candidateSlug = `${base}-${suffix}`;
+    try {
+        const available = await req.repository.isPortfolioSlugAvailable(candidateSlug, portfolioId);
+        return res.json({ success: true, base, slug: candidateSlug, available });
+    } catch (error) {
+        return replyRepoError(res, error, 'Failed to check portfolio address availability');
     }
 });
 

@@ -1,0 +1,54 @@
+[
+  {
+    "name": "candidate",
+    "path": "/dashboard",
+    "headers": 1,
+    "navLabels": [
+      "Breadcrumb",
+      "Candidate workspace navigation"
+    ],
+    "breadcrumbNavs": 1,
+    "hasCommandSearch": true,
+    "hasUserMenu": true,
+    "hasNotificationBell": true
+  },
+  {
+    "name": "recruiter",
+    "path": "/employer",
+    "headers": 1,
+    "navLabels": [
+      "Breadcrumb",
+      "Employer navigation"
+    ],
+    "breadcrumbNavs": 1,
+    "hasCommandSearch": true,
+    "hasUserMenu": true,
+    "hasNotificationBell": true
+  },
+  {
+    "name": "enterprise",
+    "path": "/org",
+    "headers": 1,
+    "navLabels": [
+      "Breadcrumb",
+      "Organization navigation"
+    ],
+    "breadcrumbNavs": 1,
+    "hasCommandSearch": true,
+    "hasUserMenu": true,
+    "hasNotificationBell": true
+  },
+  {
+    "name": "admin",
+    "path": "/admin",
+    "headers": 1,
+    "navLabels": [
+      "Breadcrumb",
+      "Platform admin navigation"
+    ],
+    "breadcrumbNavs": 1,
+    "hasCommandSearch": true,
+    "hasUserMenu": true,
+    "hasNotificationBell": true
+  }
+]

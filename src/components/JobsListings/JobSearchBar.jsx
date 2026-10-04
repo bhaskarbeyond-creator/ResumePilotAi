@@ -175,7 +175,10 @@ const JobSearchBar = ({
                     <button
                         onClick={onSearch}
                         type="button"
-                        className="px-7 py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:via-indigo-700 hover:to-blue-800 text-white font-bold rounded-xl shadow-sm hover:shadow-md transition-all duration-200 text-sm flex items-center justify-center gap-2 whitespace-nowrap active:scale-[0.98]">
+                        // DIR-009: .cuba-btn-primary supplies the gradient, white label, glow and
+                        // easing. Only the geometry/typography utilities that the
+                        // token class does not own are kept here.
+                        className="cuba-btn-primary px-7 py-3 text-sm font-bold rounded-xl flex items-center justify-center gap-2 whitespace-nowrap active:scale-[0.98]">
                         <FaSearch className="w-3.5 h-3.5" />
                         <span>{t('JobsUpdate.JobSearchBar.searchButton', 'Search Jobs')}</span>
                     </button>

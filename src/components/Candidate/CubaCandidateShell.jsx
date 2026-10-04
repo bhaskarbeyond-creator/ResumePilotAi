@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
     FiGrid, FiFileText, FiSearch, FiList, FiMessageSquare, FiAward,
@@ -8,10 +8,20 @@ import CubaAppShell from '../cuba/CubaAppShell';
 import AiEngineStatus from '../cuba/AiEngineStatus';
 import AiCareerBriefing from './AiCareerBriefing';
 import CubaCandidateHero from './CubaCandidateHero';
+// DIR-022 / AC-4: the renewal-recovery banner. It reads the candidate's own
+// server-authoritative profile, so the deadline it shows is the same value
+// `isMembershipActive` used to decide access — the banner and the entitlement
+// gate can never disagree.
+import PaymentGraceBanner from './PaymentGraceBanner';
+import { getCurrentUserProfile } from '../../services/api/users';
 import { resolveActiveItem } from './navigationState';
 import { CANDIDATE_NAVIGATION } from '../cuba/candidateNavigation';
 import { useAiEngineStatus } from '../../hooks/useAiEngineStatus';
 import { AuthContext } from '../../context/AuthContext';
+import { generateUserAiContent } from '../../services/aiService';
+import { COPILOT_PORTALS } from '../cuba/copilotActions';
+import { buildCopilotPayload } from '../cuba/copilotPrompt';
+import fire from '../../conf/fire';
 import logo from '../../assets/logo/logo.png';
 
 /**
@@ -59,7 +69,55 @@ export const buildCommands = (groups, navigate) =>
         run: () => navigate(item.to),
     })));
 
-const CubaCandidateShell = ({ children }) => {
+/**
+ * DIR-021: projects a REAL saved resume into the grounding fields the copilot
+ * operations read.
+ *
+ * Pure and framework-free so it can be asserted in Node. It performs NO
+ * defaulting: a field the resume does not contain becomes '' or [], never a
+ * plausible-looking placeholder, so `buildCopilotPayload` can correctly report
+ * the context as missing and the palette can fail closed.
+ */
+export function buildCopilotContext(resume) {
+    if (!resume || typeof resume !== 'object') return null;
+    const source = (resume.data && typeof resume.data === 'object') ? resume.data : resume;
+
+    const skills = Array.isArray(source.skills)
+        ? source.skills
+            .map((entry) => (typeof entry === 'string' ? entry : entry?.skillName || entry?.name || entry?.skill || ''))
+            .filter((value) => typeof value === 'string' && value.trim())
+        : [];
+
+    const roles = Array.isArray(source.employments)
+        ? source.employments
+        : (Array.isArray(source.workExperiences) ? source.workExperiences : []);
+
+    return {
+        targetRole: String(source.targetRole || source.targetTitle || source.occupation || '').trim(),
+        experience: String(source.summary || source.experience || '').trim(),
+        existingSummary: String(source.summary || '').trim(),
+        workHistory: roles
+            .map((role) => {
+                const title = role?.title || role?.jobTitle || role?.position || '';
+                const employer = role?.employer || role?.company || '';
+                return title && employer ? `${title} at ${employer}` : (title || employer);
+            })
+            .filter(Boolean)
+            .join('; '),
+        education: (Array.isArray(source.educations) ? source.educations : [])
+            .map((entry) => {
+                const degree = entry?.degree || entry?.qualification || '';
+                const school = entry?.school || entry?.institution || entry?.university || '';
+                return degree && school ? `${degree} from ${school}` : (degree || school);
+            })
+            .filter(Boolean)
+            .join('; '),
+        skills,
+        existingSkills: skills,
+    };
+}
+
+const CubaCandidateShell = ({ children, copilotResume = null }) => {
     const user = useContext(AuthContext);
     const routerNavigate = useNavigate();
     const navigate = useCallback((target) => {
@@ -106,6 +164,138 @@ const CubaCandidateShell = ({ children }) => {
         return raw.split(' ')[0];
     }, [user]);
 
+    /**
+     * DIR-011: the header identity must be the REAL authenticated account.
+     *
+     * Previously this shell passed `user={{ name: displayName }}` — a first name
+     * and nothing else — so the account menu had no email and no role to show.
+     * These fields are read straight off the session object AuthContext already
+     * publishes (`displayName`, `email`, `role`, `customClaims`); nothing is
+     * synthesised, and a field the session does not carry is simply omitted so the
+     * menu renders nothing rather than a placeholder.
+     */
+    const headerUser = useMemo(() => {
+        const fullName = String(user?.displayName || '').trim();
+        const email = String(user?.email || '').trim();
+        // Prefer an explicit role claim over the coarse account kind, because it
+        // is the value the server actually authorises on.
+        const role = String(
+            user?.role
+            || user?.customClaims?.role
+            || user?.customClaims?.accountType
+            || '',
+        ).trim();
+
+        if (!fullName && !email) return null;
+        return {
+            name: fullName || displayName,
+            email,
+            role,
+            profileHref: '/dashboard/settings?tab=profile',
+            settingsHref: '/dashboard/settings',
+            securityHref: '/dashboard/settings?tab=security',
+        };
+    }, [user, displayName]);
+
+    /**
+     * DIR-021: real grounding context for the copilot payloads.
+     *
+     * The resume is loaded LAZILY, and only the first time a copilot action
+     * actually needs it. Two reasons this is not done eagerly in an effect:
+     *   - the dashboard already fetches `/api/resumes` several times during its
+     *     own hydration, and a chrome component adding an unconditional fourth
+     *     request would be a real performance regression on the default page;
+     *   - most sessions never open the copilot, so most sessions should never
+     *     pay for it.
+     *
+     * Only fields the candidate has actually saved are forwarded. Nothing is
+     * defaulted to a placeholder: when the resume is absent or genuinely empty
+     * the copilot fails closed with a clear message instead of asking a provider
+     * to invent a career history.
+     */
+    const copilotContextRef = useRef(null);
+
+    const loadCopilotContext = useCallback(async () => {
+        // Supplied by the caller (the route already holding the saved resume).
+        if (copilotResume && typeof copilotResume === 'object') {
+            return buildCopilotContext(copilotResume);
+        }
+        if (copilotContextRef.current) return copilotContextRef.current;
+        try {
+            const { getResumeById } = await import('../../services/api/platform.js');
+            const { getResumes } = await import('../../services/api/resumes.js');
+            // Prefer the resume the candidate is actually working in; fall back
+            // to the most recently updated one. Both are REAL server records.
+            const currentId = (() => {
+                try { return localStorage.getItem('currentResumeId'); } catch { return null; }
+            })();
+            let resume = null;
+            if (currentId) {
+                resume = await getResumeById(currentId).catch(() => null);
+            }
+            if (!resume) {
+                const list = await getResumes().catch(() => []);
+                const candidates = Array.isArray(list) ? list : [];
+                const latest = candidates
+                    .slice()
+                    .sort((a, b) => String(b?.updatedAt || b?.updated_at || '').localeCompare(String(a?.updatedAt || a?.updated_at || '')));
+                resume = latest[0]?.data || latest[0] || null;
+            }
+            const context = resume ? buildCopilotContext(resume) : null;
+            copilotContextRef.current = context;
+            return context;
+        } catch {
+            // A resume outage must degrade to "no context", never to a crash and
+            // never to invented data.
+            return null;
+        }
+    }, [copilotResume]);
+
+    /**
+     * The dispatcher the palette calls.
+     *
+     * It owns the whole grounding decision, because it is the only layer that
+     * holds the candidate's real resume facts:
+     *   1. resolve the REAL context (lazily, once per session);
+     *   2. build the operation's payload from that context ONLY;
+     *   3. fail CLOSED with a specific, actionable message when the context this
+     *      operation genuinely requires is absent — never send a half-empty
+     *      request and never invent a value to fill the hole;
+     *   4. otherwise reach the AI runtime through the authenticated wrapper.
+     *
+     * INV-2: `generateUserAiContent` is the same authenticated, same-origin
+     * wrapper every other AI surface uses, so the prompt travels only in the
+     * POST body — never a URL query, storage key or third-party endpoint.
+     * INV-3: quota is not reimplemented here; the server counts against this
+     * authenticated user's MariaDB daily allowance and answers 429
+     * `AI_DAILY_QUOTA_EXCEEDED`, which propagates untouched to the palette.
+     */
+    const copilotDispatch = useCallback(async (operation, { prompt } = {}) => {
+        const context = (await loadCopilotContext()) || {};
+        const { payload, missing } = buildCopilotPayload(operation, { ...context, prompt });
+        if (missing.length) {
+            const error = new Error(
+                `Add ${missing.join(' and ')} to your resume first, then run this again.`,
+            );
+            error.code = 'COPILOT_CONTEXT_REQUIRED';
+            throw error;
+        }
+        return generateUserAiContent(operation, payload);
+    }, [loadCopilotContext]);
+
+    /** Sign-out is delegated to the existing Firebase session, never re-implemented. */
+    const signOut = useCallback(async () => {
+        try {
+            await fire.auth().signOut();
+        } catch (error) {
+            // Surface the real failure rather than pretending the user signed out;
+            // a false "signed out" is worse than a visible error.
+            console.error('Sign out failed', error);
+            return;
+        }
+        navigate('/');
+    }, [navigate]);
+
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
         if (theme === 'dark') {
@@ -130,19 +320,56 @@ const CubaCandidateShell = ({ children }) => {
         return () => window.removeEventListener('cubaShellFlagChanged', onChange);
     }, []);
 
+    /**
+     * DIR-022 / AC-4: load the candidate's own billing entitlement ONCE per
+     * mount, lazily, and only to decide whether the recovery banner is needed.
+     *
+     * Why not on every render: this is chrome, and the dashboard already fetches
+     * profile data during its own hydration.
+     * Why a silent failure: if this read fails we show NO banner. Warning a
+     * customer that their renewal failed when the platform could not actually
+     * confirm that would be a fabricated claim about someone's money.
+     */
+    const [entitlementProfile, setEntitlementProfile] = useState(null);
+
+    useEffect(() => {
+        let mounted = true;
+        getCurrentUserProfile()
+            .then((profile) => {
+                if (mounted) setEntitlementProfile(profile || null);
+            })
+            .catch(() => {
+                // Fail silent: absence of evidence is not evidence of a problem.
+                if (mounted) setEntitlementProfile(null);
+            });
+        return () => { mounted = false; };
+    }, []);
+
     return (
         <CubaAppShell
             navigation={groups}
             navigationLabel="Candidate workspace navigation"
             onNavigate={navigate}
-            breadcrumb={<>Candidate Workspace <span aria-hidden="true">/</span> {activeItem?.label || 'Overview'}</>}
+            breadcrumbs={[
+                { label: 'Candidate Workspace' },
+                { label: activeItem?.label || 'Overview' },
+            ]}
             theme={theme}
             onToggleTheme={() => setTheme((value) => (value === 'dark' ? 'light' : 'dark'))}
             aiStatus={aiStatus}
             commands={commands}
-            user={{ name: displayName }}
+            user={headerUser}
+            onSignOut={signOut}
+            // DIR-021: the candidate copilot. The dispatcher resolves this
+            // candidate's REAL saved resume lazily and fails closed when the
+            // grounding an operation needs is genuinely absent.
+            copilotPortal={COPILOT_PORTALS.CANDIDATE}
+            copilotDispatch={copilotDispatch}
         >
             <div className="space-y-6">
+                {/* DIR-022 / AC-4: renewal recovery. Renders only when the
+                    server reports PAST_DUE with a live grace deadline. */}
+                <PaymentGraceBanner profile={entitlementProfile} />
                 {(location.pathname === '/dashboard' || location.pathname === '/dashboard/') && (
                     <>
                         <CubaCandidateHero displayName={displayName} />

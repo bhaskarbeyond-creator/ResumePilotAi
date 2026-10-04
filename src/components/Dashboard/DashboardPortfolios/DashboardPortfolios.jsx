@@ -15,6 +15,30 @@ import executivePreview from '../../../assets/portfolioPreview/executive.png';
 import creativeDarkPreview from '../../../assets/portfolioPreview/creative-dark.png';
 import premiumTechPreview from '../../../assets/portfolioPreview/premium-tech.png';
 
+/**
+ * DIR-019 DEFECT 2 — resolve the PUBLIC portfolio address, or `null`.
+ *
+ * WHY THIS EXISTS: both the grid and the list view used to render
+ * `<Link to={`/portfolio/${portfolio.slug}`}>` unconditionally. MariaDB stores
+ * `slug = NULL` for unpublished drafts (no vanity address has been issued yet),
+ * so the template string interpolated the literal text "null" and produced
+ * `href="/portfolio/null"`, which 404s against
+ * `/api/portfolios/public/null`.
+ *
+ * A public address is only real when the row is BOTH published AND actually
+ * carries a non-placeholder slug, so this returns `null` in every other case and
+ * the caller renders a "Open in Studio" action instead. The guard is
+ * deliberately strict about the string sentinels too: `'null'`, `'undefined'`
+ * and `''` are all treated as "no address", because a NULL column that has
+ * already been coerced to a string once must not leak back into the DOM.
+ */
+function getPublicPortfolioHref(portfolio) {
+    if (!portfolio || portfolio.isPublished !== true) return null;
+    const slug = typeof portfolio.slug === 'string' ? portfolio.slug.trim() : '';
+    if (!slug || slug === 'null' || slug === 'undefined') return null;
+    return `/portfolio/${slug}`;
+}
+
 // eslint-disable-next-line react-refresh/only-export-components
 const DashboardPortfolios = ({ t, showToast }) => {
     const [portfolios, setPortfolios] = useState([]);
@@ -200,12 +224,30 @@ const DashboardPortfolios = ({ t, showToast }) => {
 
                         {/* Actions */}
                         <div className="space-y-2">
-                            <Link
-                                to={`/portfolio/${portfolio.slug}`}
-                                className="cuba-btn-primary w-full inline-flex items-center justify-center px-3 py-2 text-white text-sm font-bold rounded-lg shadow-xs">
-                                <FiEye className="w-3.5 h-3.5 mr-2" />
-                                {t('DashboardPortfolios.actions.view')}
-                            </Link>
+                            {/* DIR-019 DEFECT 2: only a genuinely published,
+                                slug-bearing portfolio has a public address. A
+                                draft (slug IS NULL in MariaDB) gets a distinct
+                                "Open in Studio" action, so href="/portfolio/null"
+                                is NEVER rendered. */}
+                            {(() => {
+                                const publicHref = getPublicPortfolioHref(portfolio);
+                                return publicHref ? (
+                                    <Link
+                                        to={publicHref}
+                                        className="cuba-btn-primary w-full inline-flex items-center justify-center px-3 py-2 text-white text-sm font-bold rounded-lg shadow-xs">
+                                        <FiEye className="w-3.5 h-3.5 mr-2" />
+                                        {t('DashboardPortfolios.actions.view')}
+                                    </Link>
+                                ) : (
+                                    <Link
+                                        to={`/portfolio/builder?edit=${portfolio.id}`}
+                                        data-testid="portfolio-open-draft"
+                                        className="cuba-btn-outline w-full inline-flex items-center justify-center px-3 py-2 text-sm font-bold rounded-lg">
+                                        <FiEdit3 className="w-3.5 h-3.5 mr-2" />
+                                        {t('DashboardPortfolios.actions.openStudio')}
+                                    </Link>
+                                );
+                            })()}
                             <div className="flex items-center gap-2">
                                 <Link to={`/portfolio/builder?edit=${portfolio.id}`} className="flex-1 px-2.5 py-1.5 bg-slate-50 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors text-xs font-medium border border-slate-200 text-center">
                                     <FiEdit3 className="w-3.5 h-3.5 inline mr-1" />
@@ -268,12 +310,17 @@ const DashboardPortfolios = ({ t, showToast }) => {
                             <div className="col-span-2 text-xs text-slate-500">{portfolio.updatedAt ? (typeof portfolio.updatedAt?.toDate === 'function' ? portfolio.updatedAt.toDate() : new Date(portfolio.updatedAt)).toLocaleDateString?.() || 'N/A' : 'N/A'}</div>
                             <div className="col-span-2">
                                 <div className="flex items-center gap-2">
-                                    <Link
-                                        to={`/portfolio/${portfolio.slug}`}
-                                        className="p-2 text-slate-600 hover:bg-slate-100 rounded transition-colors"
-                                        title={t('DashboardPortfolios.tooltips.viewPortfolio')}>
-                                        <FiEye className="w-4 h-4" />
-                                    </Link>
+                                    {/* DIR-019 DEFECT 2: same guard as the grid view —
+                                        the eye (public) link is omitted entirely for a
+                                        draft rather than rendered as href="/portfolio/null". */}
+                                    {getPublicPortfolioHref(portfolio) && (
+                                        <Link
+                                            to={getPublicPortfolioHref(portfolio)}
+                                            className="p-2 text-slate-600 hover:bg-slate-100 rounded transition-colors"
+                                            title={t('DashboardPortfolios.tooltips.viewPortfolio')}>
+                                            <FiEye className="w-4 h-4" />
+                                        </Link>
+                                    )}
                                     <Link
                                         to={`/portfolio/builder?edit=${portfolio.id}`}
                                         className="p-2 text-slate-600 hover:bg-slate-100 rounded transition-colors"

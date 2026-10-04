@@ -47,8 +47,12 @@ test('tenant context selection is feature-gated, server-resolved and cleared wit
 test('enterprise shell makes tenant/workspace context, role-aware navigation and security states visible', async () => {
   const view = await source('console');
   for (const fragment of [
-    'TenantSwitcher', 'WorkspaceBadge', 'Roles & permissions',
-    'AI workspace', 'Usage & Quotas', 'Audit logs',
+    // Module labels are title-cased to match the canonical Cuba navigation
+    // (`ENTERPRISE_TABS` in portalNavigation.js), which is the single mirror the
+    // sidebar, toolbar and breadcrumb all render from. A drifted casing here
+    // would show the operator two different names for the same module.
+    'TenantSwitcher', 'WorkspaceBadge', 'Roles & Permissions',
+    'AI Workspace', 'Usage & Quotas', 'Audit Logs',
     'CommandPalette', 'useLocation', 'useNavigate', 'normalizeTab'
   ]) assert.match(view, new RegExp(fragment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(view, /context\?\.permissions/);

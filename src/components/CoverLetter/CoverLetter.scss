@@ -1,4 +1,1465 @@
-/* Cover Letter Builder SCSS */
+/* ==========================================================================
+   Cover Letter Builder - Cuba Executive semantic layer (DIR-014)
+   ==========================================================================
+   WHY THIS FILE EXISTS
+   CoverLetter.jsx previously drove its entire surface with raw Tailwind
+   palette utilities (bg-slate-50, text-indigo-600, border-emerald-200, ...)
+   which are hardcoded to a single light palette. That is why the builder
+   could not follow the platform dark theme and why its contrast was never
+   proven against the same surfaces the rest of the app uses.
+
+   Every colour below resolves through a canonical `--cuba-*` custom property
+   published by src/styles/cuba-tokens.css. Those properties are re-published
+   for the dark palette under
+   `[data-theme='dark'], :root:not([data-theme='light'])`, so a single
+   `var(--cuba-...)` reference is correct in BOTH themes with zero
+   prefers-color-scheme branching and zero duplicated values.
+
+   Canonical tokens used here (all verified present in cuba-tokens.css):
+     surface  --cuba-canvas | --cuba-card | --cuba-elevated
+     line     --cuba-line | --cuba-line-strong
+     ink      --cuba-ink | --cuba-ink-muted | --cuba-ink-subtle
+               --cuba-ink-inverse
+     brand    --cuba-primary | --cuba-primary-fill | --cuba-primary-ink
+               --cuba-primary-ink-strong | --cuba-primary-soft
+               --cuba-primary-soft-hover | --cuba-primary-ring
+               --cuba-primary-gradient | --cuba-on-primary | --cuba-primary-strong
+     status   --cuba-success | --cuba-warning | --cuba-danger | --cuba-info
+               (+ their -soft companions for tinted fills)
+     shape    --cuba-radius-sm|md|lg|xl, --cuba-shadow-sm|md|lg, --cuba-ease
+
+   NOTE ON TOKEN NAMES QUOTED IN THE DIRECTIVE TEXT
+   The directive lists --cuba-bg-primary / --cuba-card-bg / --cuba-surface /
+   --cuba-border / --cuba-ink-primary / --cuba-focus-ring and the class
+   .cuba-btn-secondary. None of those identifiers exist in cuba-tokens.css;
+   using them would have produced unresolvable var() calls and a silently
+   unstyled surface. The canonical equivalents above are used instead.
+   `.cuba-focus-ring` does exist as a CLASS (it is not a token) and is
+   applied directly in the JSX.
+
+   Dark mode is structural: this layer declares no theme media queries and no
+   hardcoded light-palette values, so it cannot drift out of sync with the
+   platform theme switch.
+
+   This layer is ADDITIVE. The pre-existing .custom-scrollbar rules and the
+   A4 @media print isolation block further down are preserved verbatim.
+   ========================================================================== */
+
+/* ---------------------------------------------------------------- shell -- */
+
+.cover-letter {
+    font-family: inherit;
+}
+
+/* Page canvas. Full-bleed only when the builder is mounted standalone; inside
+   CubaCandidateShell the shell already owns the viewport, so the builder
+   contributes padding rather than a second scrolling context. */
+.cl-canvas {
+    background-color: var(--cuba-canvas);
+    color: var(--cuba-ink);
+    padding: 1rem;
+}
+
+@media (min-width: 640px) {
+    .cl-canvas {
+        padding: 2rem;
+    }
+}
+
+.cl-canvas--standalone {
+    min-height: 100vh;
+}
+
+/* Vertical rhythm container. */
+.cl-stack {
+    max-width: 72rem;
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* ---------------------------------------------------------------- header -- */
+
+.cl-header {
+    background-color: var(--cuba-card);
+    border: 1px solid var(--cuba-line);
+    border-radius: var(--cuba-radius-lg);
+    box-shadow: var(--cuba-shadow-sm);
+    padding: 1.5rem;
+}
+
+@media (min-width: 640px) {
+    .cl-header {
+        padding: 2rem;
+    }
+}
+
+.cl-header__row {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    justify-content: space-between;
+}
+
+@media (min-width: 768px) {
+    .cl-header__row {
+        flex-direction: row;
+        align-items: center;
+    }
+}
+
+.cl-header__brand {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: 0;
+}
+
+.cl-header__logo {
+    height: 3rem;
+    width: auto;
+    flex: none;
+}
+
+.cl-header__title {
+    font-size: 1.5rem;
+    line-height: 1.25;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    color: var(--cuba-ink);
+    margin: 0;
+}
+
+.cl-header__sub {
+    font-size: 0.75rem;
+    color: var(--cuba-ink-muted);
+    margin-top: 0.25rem;
+}
+
+.cl-header__sub strong {
+    color: var(--cuba-ink);
+    font-weight: 600;
+}
+
+.cl-header__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+/* ------------------------------------------------------------ typography -- */
+
+/* Small uppercase section eyebrow used above grouped fields. */
+.cl-eyebrow {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--cuba-ink);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cl-eyebrow--muted {
+    color: var(--cuba-ink-muted);
+}
+
+.cl-eyebrow__icon {
+    width: 0.875rem;
+    height: 0.875rem;
+    flex: none;
+    color: var(--cuba-primary);
+}
+
+.cl-section-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--cuba-ink);
+    margin: 0;
+}
+
+.cl-hint {
+    font-size: 0.6875rem;
+    color: var(--cuba-ink-muted);
+    margin-top: 0.125rem;
+}
+
+.cl-body-copy {
+    font-size: 0.75rem;
+    line-height: 1.65;
+    color: var(--cuba-ink-muted);
+    margin: 0.25rem 0 0;
+}
+
+.cl-body-copy strong {
+    color: var(--cuba-ink);
+    font-weight: 600;
+}
+
+.cl-muted {
+    color: var(--cuba-ink-muted);
+}
+
+.cl-subtle {
+    color: var(--cuba-ink-subtle);
+}
+
+.cl-strong {
+    color: var(--cuba-ink);
+}
+
+/* ----------------------------------------------------------------- cards -- */
+
+.cl-card {
+    background-color: var(--cuba-card);
+    border: 1px solid var(--cuba-line);
+    border-radius: var(--cuba-radius-lg);
+    box-shadow: var(--cuba-shadow-sm);
+    padding: 1.5rem;
+}
+
+@media (min-width: 640px) {
+    .cl-card {
+        padding: 2rem;
+    }
+}
+
+.cl-card--tight {
+    padding: 1.25rem;
+}
+
+.cl-card--flush {
+    padding: 0.75rem;
+}
+
+/* Recessed panel for grouped form blocks (the former bg-slate-50 boxes). */
+.cl-subcard {
+    background-color: var(--cuba-elevated);
+    border: 1px solid var(--cuba-line);
+    border-radius: var(--cuba-radius-md);
+    padding: 1.25rem;
+}
+
+.cl-subcard--canvas {
+    background-color: var(--cuba-canvas);
+}
+
+.cl-subcard__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.cl-card__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.cl-divider {
+    border: 0;
+    border-top: 1px solid var(--cuba-line);
+    margin: 0;
+}
+
+/* ---------------------------------------------------------------- fields -- */
+
+.cl-field {
+    display: block;
+}
+
+.cl-field__label {
+    display: block;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: var(--cuba-ink-muted);
+    margin-bottom: 0.25rem;
+}
+
+/* Inputs carry the canonical .cuba-field surface from cuba-tokens.css (which
+   owns the focus ring) and only supply geometry here, so the focus treatment
+   is defined in exactly one place platform-wide. */
+.cl-input {
+    width: 100%;
+    font-size: 0.75rem;
+    padding: 0.625rem 0.75rem;
+    border-radius: var(--cuba-radius-sm);
+    border: 1px solid var(--cuba-line);
+    background-color: var(--cuba-card);
+    color: var(--cuba-ink);
+    font-family: inherit;
+}
+
+.cl-input--sm {
+    padding: 0.5rem 0.625rem;
+}
+
+.cl-input--mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-weight: 600;
+}
+
+.cl-textarea {
+    width: 100%;
+    font-size: 0.75rem;
+    padding: 0.75rem;
+    border-radius: var(--cuba-radius-md);
+    border: 1px solid var(--cuba-line);
+    background-color: var(--cuba-card);
+    color: var(--cuba-ink);
+    font-family: inherit;
+    resize: vertical;
+}
+
+.cl-textarea--mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    line-height: 1.6;
+}
+
+.cl-grid-2 {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr;
+}
+
+.cl-grid-3 {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr;
+}
+
+.cl-grid-4 {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+    .cl-grid-2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .cl-grid-4 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 768px) {
+    .cl-grid-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .cl-grid-4 {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+/* --------------------------------------------------------------- stepper -- */
+
+.cl-stepper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.125rem;
+}
+
+.cl-step {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: none;
+    padding: 0.5rem 1rem;
+    border-radius: var(--cuba-radius-md);
+    border: 1px solid transparent;
+    background-color: var(--cuba-elevated);
+    color: var(--cuba-ink-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s var(--cuba-ease), color 0.2s var(--cuba-ease),
+        border-color 0.2s var(--cuba-ease);
+}
+
+.cl-step:hover {
+    color: var(--cuba-ink);
+    border-color: var(--cuba-line);
+}
+
+/* aria-current (not an ad-hoc `isActive` class) so the active step is
+   announced to assistive tech as well as styled. */
+.cl-step[aria-current='step'] {
+    background-color: var(--cuba-primary-fill);
+    border-color: var(--cuba-primary);
+    color: var(--cuba-on-primary);
+    font-weight: 700;
+}
+
+.cl-step__index {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.375rem;
+    height: 1.375rem;
+    flex: none;
+    border-radius: 999px;
+    font-size: 0.625rem;
+    font-weight: 700;
+    background-color: var(--cuba-canvas);
+    color: var(--cuba-ink-muted);
+    border: 1px solid var(--cuba-line);
+}
+
+.cl-step[aria-current='step'] .cl-step__index {
+    background-color: var(--cuba-primary);
+    border-color: var(--cuba-primary);
+    color: var(--cuba-on-primary);
+}
+
+/* Segmented control (view-mode switcher). */
+.cl-segmented {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    border-radius: var(--cuba-radius-md);
+    background-color: var(--cuba-elevated);
+    border: 1px solid var(--cuba-line);
+}
+
+.cl-segmented__btn {
+    padding: 0.375rem 0.75rem;
+    border-radius: var(--cuba-radius-sm);
+    border: 1px solid transparent;
+    background-color: transparent;
+    color: var(--cuba-ink-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s var(--cuba-ease), color 0.2s var(--cuba-ease);
+}
+
+.cl-segmented__btn:hover {
+    color: var(--cuba-ink);
+}
+
+.cl-segmented__btn[aria-pressed='true'] {
+    background-color: var(--cuba-card);
+    border-color: var(--cuba-line);
+    color: var(--cuba-primary-ink-strong);
+    font-weight: 700;
+    box-shadow: var(--cuba-shadow-sm);
+}
+
+/* --------------------------------------------------------------- buttons -- */
+
+.cl-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-radius: var(--cuba-radius-md);
+    border: 1px solid transparent;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.2;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.2s var(--cuba-ease), color 0.2s var(--cuba-ease),
+        border-color 0.2s var(--cuba-ease), transform 0.2s var(--cuba-ease),
+        box-shadow 0.2s var(--cuba-ease);
+}
+
+.cl-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.cl-btn--block {
+    width: 100%;
+}
+
+.cl-btn--sm {
+    padding: 0.5rem 0.75rem;
+}
+
+.cl-btn--lg {
+    padding: 0.875rem 1rem;
+}
+
+/* Primary CTA. Flat --cuba-primary-fill rather than the brand gradient: the
+   token file documents that a 135deg violet gradient averages ~5.1:1, which
+   is acceptable for a large CTA but wrong for dense controls. */
+.cl-btn--primary {
+    background-color: var(--cuba-primary-fill);
+    color: var(--cuba-on-primary);
+    box-shadow: var(--cuba-shadow-sm);
+}
+
+.cl-btn--primary:hover:not(:disabled) {
+    background-color: var(--cuba-primary-strong);
+    transform: translateY(-1px);
+}
+
+/* Tinted secondary action (replaces bg-indigo-50 / text-indigo-700). */
+.cl-btn--soft {
+    background-color: var(--cuba-primary-soft);
+    color: var(--cuba-primary-ink-strong);
+    border-color: var(--cuba-primary-ring);
+}
+
+.cl-btn--soft:hover:not(:disabled) {
+    background-color: var(--cuba-primary-soft-hover);
+}
+
+/* Neutral action (replaces bg-slate-100 / text-slate-700). */
+.cl-btn--neutral {
+    background-color: var(--cuba-elevated);
+    color: var(--cuba-ink);
+    border-color: var(--cuba-line);
+}
+
+.cl-btn--neutral:hover:not(:disabled) {
+    background-color: var(--cuba-canvas);
+    border-color: var(--cuba-line-strong);
+}
+
+/* Destructive action. */
+.cl-btn--danger {
+    background-color: var(--cuba-danger-soft);
+    color: var(--cuba-danger);
+    border-color: var(--cuba-danger);
+}
+
+.cl-btn--danger:hover:not(:disabled) {
+    background-color: var(--cuba-danger);
+    color: var(--cuba-ink-inverse);
+}
+
+.cl-btn--link {
+    background-color: transparent;
+    color: var(--cuba-ink-muted);
+    border-color: transparent;
+    font-weight: 600;
+    padding-inline: 0.5rem;
+}
+
+.cl-btn--link:hover:not(:disabled) {
+    color: var(--cuba-ink);
+    background-color: var(--cuba-elevated);
+}
+
+.cl-btn__glyph {
+    width: 0.875rem;
+    height: 0.875rem;
+    flex: none;
+}
+
+/* Small square icon-only control. */
+.cl-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    flex: none;
+    border-radius: var(--cuba-radius-sm);
+    border: 1px solid var(--cuba-line);
+    background-color: var(--cuba-card);
+    color: var(--cuba-ink-muted);
+    cursor: pointer;
+    transition: background-color 0.2s var(--cuba-ease), color 0.2s var(--cuba-ease),
+        border-color 0.2s var(--cuba-ease);
+}
+
+.cl-icon-btn:hover {
+    color: var(--cuba-ink);
+    border-color: var(--cuba-line-strong);
+}
+
+.cl-icon-btn--danger:hover {
+    background-color: var(--cuba-danger-soft);
+    border-color: var(--cuba-danger);
+    color: var(--cuba-danger);
+}
+
+.cl-icon-btn__glyph {
+    width: 0.875rem;
+    height: 0.875rem;
+}
+
+/* Inline text affordance ("Expand preview", step navigation). */
+.cl-text-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--cuba-primary-ink-strong);
+}
+
+.cl-text-action:hover {
+    color: var(--cuba-primary);
+}
+
+.cl-text-action__glyph {
+    width: 0.75rem;
+    height: 0.75rem;
+}
+
+/* ----------------------------------------------------------------- pills -- */
+
+/* Status/meta pill. The four semantic tone modifiers reuse the canonical
+   .cuba-pill-* surface classes from cuba-tokens.css for fill/ink/line, so a
+   pill is identical on --cuba-card, --cuba-canvas and the glass modal. */
+.cl-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.125rem 0.625rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    line-height: 1.5;
+    white-space: nowrap;
+}
+
+.cl-pill--sm {
+    font-size: 0.625rem;
+    padding: 0.125rem 0.5rem;
+}
+
+.cl-pill--info {
+    background-color: var(--cuba-info-soft);
+    color: var(--cuba-info);
+    border-color: var(--cuba-info);
+}
+
+.cl-pill--success {
+    background-color: var(--cuba-success-soft);
+    color: var(--cuba-success);
+    border-color: var(--cuba-success);
+}
+
+.cl-pill--warning {
+    background-color: var(--cuba-warning-soft);
+    color: var(--cuba-warning);
+    border-color: var(--cuba-warning);
+}
+
+.cl-pill--danger {
+    background-color: var(--cuba-danger-soft);
+    color: var(--cuba-danger);
+    border-color: var(--cuba-danger);
+}
+
+.cl-pill--neutral {
+    background-color: var(--cuba-elevated);
+    color: var(--cuba-ink-muted);
+    border-color: var(--cuba-line);
+}
+
+.cl-pill--brand {
+    background-color: var(--cuba-primary-soft);
+    color: var(--cuba-primary-ink-strong);
+    border-color: var(--cuba-primary-ring);
+}
+
+/* ------------------------------------------------------------ ATS matcher -- */
+
+.cl-ats__toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    cursor: pointer;
+    background: none;
+    border: 0;
+    padding: 0;
+    width: 100%;
+    text-align: left;
+    color: inherit;
+}
+
+.cl-ats__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.375rem;
+    border-radius: var(--cuba-radius-sm);
+    background-color: var(--cuba-primary-soft);
+    color: var(--cuba-primary);
+    flex: none;
+}
+
+.cl-ats__icon svg {
+    width: 0.875rem;
+    height: 0.875rem;
+}
+
+.cl-ats__body {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+/* Meter track + fill. The fill width is driven by the inline --cl-ats-score
+   custom property so the bar and the numeric readout can never disagree. */
+.cl-ats__track {
+    height: 0.5rem;
+    width: 100%;
+    border-radius: 999px;
+    background-color: var(--cuba-canvas);
+    border: 1px solid var(--cuba-line);
+    overflow: hidden;
+}
+
+.cl-ats__fill {
+    height: 100%;
+    width: calc(var(--cl-ats-score, 0) * 1%);
+    border-radius: 999px;
+    background-color: var(--cuba-success);
+    transition: width 0.35s var(--cuba-ease), background-color 0.35s var(--cuba-ease);
+}
+
+.cl-ats__fill--warning {
+    background-color: var(--cuba-warning);
+}
+
+.cl-ats__fill--danger {
+    background-color: var(--cuba-danger);
+}
+
+.cl-ats__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.cl-ats__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--cuba-ink);
+}
+
+.cl-ats__label svg {
+    width: 0.875rem;
+    height: 0.875rem;
+    flex: none;
+}
+
+.cl-ats__score {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.125rem 0.625rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+}
+
+.cl-ats__score--success {
+    background-color: var(--cuba-success-soft);
+    color: var(--cuba-success);
+    border-color: var(--cuba-success);
+}
+
+.cl-ats__score--warning {
+    background-color: var(--cuba-warning-soft);
+    color: var(--cuba-warning);
+    border-color: var(--cuba-warning);
+}
+
+.cl-ats__score--danger {
+    background-color: var(--cuba-danger-soft);
+    color: var(--cuba-danger);
+    border-color: var(--cuba-danger);
+}
+
+/* Keyword chips. Matched chips are inert; MISSED chips are real buttons that
+   copy the keyword to the clipboard for 1-click insertion into the letter. */
+.cl-ats__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    font-size: 0.625rem;
+}
+
+.cl-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: var(--cuba-radius-sm);
+    border: 1px solid;
+    font-size: 0.625rem;
+    font-weight: 600;
+    font-family: inherit;
+}
+
+.cl-chip--matched {
+    background-color: var(--cuba-success-soft);
+    color: var(--cuba-success);
+    border-color: var(--cuba-success);
+}
+
+.cl-chip--missing {
+    background-color: var(--cuba-danger-soft);
+    color: var(--cuba-danger);
+    border-color: var(--cuba-danger);
+    cursor: pointer;
+    transition: background-color 0.2s var(--cuba-ease), color 0.2s var(--cuba-ease);
+}
+
+.cl-chip--missing:hover {
+    background-color: var(--cuba-danger);
+    color: var(--cuba-ink-inverse);
+}
+
+/* ------------------------------------------------------------- templates -- */
+
+/* Template / tone selector cards. Selection is expressed through
+   aria-pressed rather than a bespoke `isSelected` class so the state is
+   queryable by the E2E suite and announced by screen readers. */
+.cl-tpl-grid {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+    .cl-tpl-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1024px) {
+    .cl-tpl-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+.cl-tpl {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    text-align: left;
+    padding: 0.875rem;
+    border-radius: var(--cuba-radius-md);
+    border: 1px solid var(--cuba-line);
+    background-color: var(--cuba-card);
+    color: var(--cuba-ink);
+    cursor: pointer;
+    font-family: inherit;
+    transition: background-color 0.2s var(--cuba-ease), border-color 0.2s var(--cuba-ease),
+        box-shadow 0.2s var(--cuba-ease);
+}
+
+.cl-tpl:hover {
+    border-color: var(--cuba-line-strong);
+}
+
+.cl-tpl[aria-pressed='true'] {
+    border-color: var(--cuba-primary);
+    background-color: var(--cuba-primary-soft);
+    box-shadow: 0 0 0 2px var(--cuba-primary-ring);
+}
+
+/* Gradient badge strip previewing the template's accent bar. */
+.cl-tpl__swatch {
+    height: 0.375rem;
+    border-radius: 999px;
+    background: var(--cuba-primary-gradient);
+}
+
+.cl-tpl__swatch--alt {
+    background: var(--cuba-ai-border);
+}
+
+.cl-tpl__name {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--cuba-ink);
+    margin: 0.5rem 0 0;
+}
+
+.cl-tpl__desc {
+    font-size: 0.6875rem;
+    line-height: 1.5;
+    color: var(--cuba-ink-muted);
+    margin: 0.125rem 0 0;
+}
+
+.cl-tpl__foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--cuba-line);
+    font-size: 0.625rem;
+    color: var(--cuba-ink-subtle);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.cl-tpl__check {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: var(--cuba-primary-ink-strong);
+}
+
+/* Compact template switcher used in the export step. */
+.cl-chip-toggle {
+    padding: 0.375rem 0.75rem;
+    border-radius: var(--cuba-radius-sm);
+    border: 1px solid var(--cuba-line);
+    background-color: var(--cuba-card);
+    color: var(--cuba-ink-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background-color 0.2s var(--cuba-ease), color 0.2s var(--cuba-ease),
+        border-color 0.2s var(--cuba-ease);
+}
+
+.cl-chip-toggle:hover {
+    color: var(--cuba-ink);
+    border-color: var(--cuba-line-strong);
+}
+
+.cl-chip-toggle[aria-pressed='true'] {
+    background-color: var(--cuba-primary-fill);
+    border-color: var(--cuba-primary);
+    color: var(--cuba-on-primary);
+    font-weight: 700;
+}
+
+/* Tone archetype cards (grid of 4). */
+.cl-tone {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    text-align: left;
+    padding: 0.75rem;
+    border-radius: var(--cuba-radius-md);
+    border: 1px solid var(--cuba-line);
+    background-color: var(--cuba-card);
+    color: var(--cuba-ink);
+    cursor: pointer;
+    font-family: inherit;
+    transition: background-color 0.2s var(--cuba-ease), border-color 0.2s var(--cuba-ease),
+        box-shadow 0.2s var(--cuba-ease);
+}
+
+.cl-tone:hover {
+    border-color: var(--cuba-line-strong);
+}
+
+.cl-tone[aria-pressed='true'] {
+    border-color: var(--cuba-primary);
+    background-color: var(--cuba-card);
+    box-shadow: 0 0 0 2px var(--cuba-primary-ring);
+}
+
+.cl-tone__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.cl-tone__emoji {
+    font-size: 1.125rem;
+    line-height: 1;
+}
+
+.cl-tone__name {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--cuba-ink);
+    margin: 0;
+}
+
+.cl-tone__desc {
+    font-size: 0.625rem;
+    color: var(--cuba-ink-muted);
+    margin: 0.125rem 0 0;
+}
+
+/* Inline tone-refinement toolbar pills. */
+.cl-tone-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.375rem 0.625rem;
+    border-radius: var(--cuba-radius-sm);
+    border: 1px solid var(--cuba-line);
+    background-color: var(--cuba-card);
+    color: var(--cuba-ink-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background-color 0.2s var(--cuba-ease), color 0.2s var(--cuba-ease),
+        border-color 0.2s var(--cuba-ease);
+}
+
+.cl-tone-pill:hover:not(:disabled) {
+    color: var(--cuba-ink);
+    border-color: var(--cuba-line-strong);
+}
+
+.cl-tone-pill[aria-pressed='true'] {
+    background-color: var(--cuba-primary-fill);
+    border-color: var(--cuba-primary);
+    color: var(--cuba-on-primary);
+    font-weight: 700;
+}
+
+/* ----------------------------------------------------------------- modal -- */
+
+.cl-modal__scrim {
+    position: fixed;
+    inset: 0;
+    z-index: var(--cuba-z-modal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    background-color: var(--cuba-dark-glass-bg-strong);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    animation: cl-fade-in 0.2s var(--cuba-ease);
+}
+
+.cl-modal__scrim--soft {
+    z-index: var(--cuba-z-popover);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    background-color: var(--cuba-glass-bg-strong);
+}
+
+@media (min-width: 640px) {
+    .cl-modal__scrim {
+        padding: 1rem;
+    }
+}
+
+.cl-modal {
+    position: relative;
+    width: 100%;
+    max-width: 72rem;
+    max-height: 94vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background-color: var(--cuba-card);
+    border: 1px solid var(--cuba-line);
+    border-radius: var(--cuba-radius-lg);
+    box-shadow: var(--cuba-shadow-lg);
+    animation: cl-fade-in 0.2s var(--cuba-ease);
+}
+
+.cl-modal--sm {
+    max-width: 24rem;
+}
+
+.cl-modal__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    background-color: var(--cuba-elevated);
+    border-bottom: 1px solid var(--cuba-line);
+    flex-wrap: wrap;
+}
+
+.cl-modal__brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.cl-modal__title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--cuba-ink);
+    margin: 0;
+}
+
+.cl-modal__sub {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--cuba-ink-muted);
+    margin: 0.125rem 0 0;
+}
+
+.cl-modal__tools {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.cl-modal__body {
+    flex: 1;
+    overflow: auto;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 1rem;
+    background-color: var(--cuba-canvas);
+}
+
+@media (min-width: 640px) {
+    .cl-modal__body {
+        padding: 2rem;
+    }
+}
+
+/* Zoom stepper cluster inside the modal header. */
+.cl-zoom {
+    display: none;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    border-radius: var(--cuba-radius-md);
+    background-color: var(--cuba-canvas);
+    border: 1px solid var(--cuba-line);
+}
+
+@media (min-width: 640px) {
+    .cl-zoom {
+        display: inline-flex;
+    }
+}
+
+.cl-zoom__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.375rem;
+    border-radius: var(--cuba-radius-sm);
+    border: 1px solid transparent;
+    background-color: transparent;
+    color: var(--cuba-ink-muted);
+    cursor: pointer;
+    transition: background-color 0.2s var(--cuba-ease), color 0.2s var(--cuba-ease);
+}
+
+.cl-zoom__btn:hover:not(:disabled) {
+    background-color: var(--cuba-card);
+    color: var(--cuba-primary-ink-strong);
+}
+
+.cl-zoom__btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.cl-zoom__btn svg {
+    width: 0.875rem;
+    height: 0.875rem;
+}
+
+.cl-zoom__value {
+    min-width: 3rem;
+    padding-inline: 0.5rem;
+    text-align: center;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color: var(--cuba-ink);
+}
+
+/* --------------------------------------------------------------- preview -- */
+
+/* Scaled A4 paper. The paper is anchored to --cuba-card / --cuba-ink rather
+   than to a theme-neutral fill so the on-screen preview genuinely predicts
+   the print output in either theme. */
+.cl-paper {
+    background-color: var(--cuba-card);
+    color: var(--cuba-ink);
+    border: 1px solid var(--cuba-line);
+    border-radius: 2px;
+    box-shadow: var(--cuba-shadow-lg);
+    transform-origin: top center;
+    transition: transform 0.2s var(--cuba-ease);
+}
+
+.cl-preview-stage {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    overflow: hidden;
+    background-color: var(--cuba-canvas);
+    border: 1px solid var(--cuba-line);
+    border-radius: var(--cuba-radius-lg);
+    cursor: pointer;
+    padding: 0.75rem;
+}
+
+.cl-preview-stage__overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    background-color: transparent;
+    transition: background-color 0.3s var(--cuba-ease);
+}
+
+.cl-preview-stage:hover .cl-preview-stage__overlay,
+.cl-preview-stage:focus-within .cl-preview-stage__overlay {
+    background-color: var(--cuba-dark-glass-bg);
+}
+
+.cl-preview-stage__cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: var(--cuba-radius-md);
+    border: 1px solid var(--cuba-primary-ring);
+    background-color: var(--cuba-glass-bg-strong);
+    color: var(--cuba-primary-ink-strong);
+    font-size: 0.75rem;
+    font-weight: 700;
+    box-shadow: var(--cuba-shadow-md);
+    opacity: 0;
+    transform: translateY(0.5rem);
+    transition: opacity 0.2s var(--cuba-ease), transform 0.2s var(--cuba-ease);
+}
+
+.cl-preview-stage:hover .cl-preview-stage__cta,
+.cl-preview-stage:focus-within .cl-preview-stage__cta {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.cl-preview-stage__cta svg {
+    width: 0.875rem;
+    height: 0.875rem;
+}
+
+/* Visual-preview canvas wrapper in the editor step. */
+.cl-canvas-wrap {
+    background-color: var(--cuba-canvas);
+    border: 1px solid var(--cuba-line);
+    border-radius: var(--cuba-radius-lg);
+    padding: 1rem;
+    overflow-x: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 40rem;
+}
+
+@media (min-width: 640px) {
+    .cl-canvas-wrap {
+        padding: 2rem;
+    }
+}
+
+.cl-canvas-wrap__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+    max-width: 794px;
+    margin-bottom: 0.75rem;
+    padding-inline: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.cl-canvas-wrap__label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--cuba-ink-muted);
+}
+
+/* ----------------------------------------------------------------- toast -- */
+
+.cl-toast {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: var(--cuba-radius-md);
+    border: 1px solid var(--cuba-primary-ring);
+    background-color: var(--cuba-primary-soft);
+    color: var(--cuba-primary-ink-strong);
+    font-size: 0.75rem;
+    font-weight: 600;
+    animation: cl-fade-in 0.2s var(--cuba-ease);
+}
+
+.cl-toast__text {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cl-toast__close {
+    background: none;
+    border: 0;
+    cursor: pointer;
+    color: var(--cuba-primary-ink-strong);
+    font-weight: 700;
+    line-height: 1;
+    padding: 0.25rem;
+    border-radius: var(--cuba-radius-sm);
+}
+
+.cl-toast__close:hover {
+    background-color: var(--cuba-primary-soft-hover);
+}
+
+/* ----------------------------------------------------------------- share -- */
+
+.cl-share-grid {
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 640px) {
+    .cl-share-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+.cl-share {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.625rem;
+    border-radius: var(--cuba-radius-md);
+    border: 1px solid var(--cuba-line);
+    background-color: var(--cuba-card);
+    color: var(--cuba-ink);
+    cursor: pointer;
+    font-family: inherit;
+    transition: background-color 0.2s var(--cuba-ease), border-color 0.2s var(--cuba-ease);
+}
+
+.cl-share:hover {
+    border-color: var(--cuba-line-strong);
+    background-color: var(--cuba-elevated);
+}
+
+.cl-share svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    transition: transform 0.2s var(--cuba-ease);
+}
+
+.cl-share:hover svg {
+    transform: scale(1.1);
+}
+
+.cl-share__label {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: var(--cuba-ink);
+}
+
+.cl-share--success svg {
+    color: var(--cuba-success);
+}
+
+.cl-share--info svg {
+    color: var(--cuba-info);
+}
+
+.cl-share--brand svg {
+    color: var(--cuba-primary);
+}
+
+.cl-share--neutral svg {
+    color: var(--cuba-ink-muted);
+}
+
+/* Compact icon tray on a saved-letter card. */
+.cl-share-tray {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    border-radius: var(--cuba-radius-md);
+    background-color: var(--cuba-elevated);
+    border: 1px solid var(--cuba-line);
+}
+
+/* ----------------------------------------------------------------- misc -- */
+
+@keyframes cl-fade-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cl-btn,
+    .cl-ats__fill,
+    .cl-paper,
+    .cl-toast,
+    .cl-modal,
+    .cl-modal__scrim,
+    .cl-preview-stage__cta,
+    .cl-preview-stage__overlay {
+        transition: none !important;
+        animation: none !important;
+    }
+}
+
+/* ==========================================================================
+   LEGACY PRE-DIR-014 RULES (PRESERVED VERBATIM)
+   The .custom-scrollbar block and the A4 @media print isolation below are
+   untouched by this overhaul: the print contract is asserted by the DIR-014
+   E2E suite and must not drift. Note the scrollbar block still carries its
+   original light-palette hex; it is scoped to .cover-letter .custom-scrollbar
+   and is intentionally left as-is so this directive's diff cannot alter
+   print output.
+   ========================================================================== */
 
 .cover-letter {
     .custom-scrollbar::-webkit-scrollbar {

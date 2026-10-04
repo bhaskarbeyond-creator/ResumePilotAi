@@ -1,6 +1,7 @@
 import { isAuthoritativeCreditNote, isAuthoritativeInvoice, printAuthoritativeCreditNote, printAuthoritativeInvoice } from '../../../utils/authoritativeInvoice';
 import React, { Component } from 'react';
-import { setSubscriptionsData, getAllCouponsAdmin, saveCoupon, deleteCoupon, getAdminSystemSettings, saveSystemSettings, getAllAdminTransactions, refundOrderTransaction, getAdminPaymentSettings, testAdminPaymentProvider, getPaymentWebhooks, replayPaymentWebhook } from '../../../services/api/platform';
+import { setSubscriptionsData, getAllCouponsAdmin, saveCoupon, deleteCoupon, getAdminSystemSettings, saveSystemSettings, getAllAdminTransactions, refundOrderTransaction, getAdminPaymentSettings, testAdminPaymentProvider, getPaymentWebhooks,
+        replayPaymentWebhook, reconcileUserSubscriptionAdmin } from '../../../services/api/platform';
 import { FaCheck, FaTimes, FaCreditCard, FaRupeeSign, FaDollarSign, FaToggleOn, FaToggleOff, FaPaypal, FaStripe, FaFlask, FaShieldAlt, FaTag, FaPlus, FaTrash, FaEdit, FaCalendarAlt, FaPercent, FaEye, FaEyeSlash, FaDownload, FaSearch, FaFileInvoice, FaPrint, FaListAlt, FaCog, FaUndo, FaExclamationCircle, FaSyncAlt, FaBolt, FaCode } from 'react-icons/fa';
 import { useAdminSession } from '../AdminContext';
 
@@ -92,6 +93,14 @@ class SubscriptionSetting extends Component {
             selectedWebhookPayload: null,
             replayingWebhookId: null,
             webhookSuccessNotice: null,
+
+            // DIR-022 / AC-5: entitlement reconciliation state. `reconcilingUid`
+            // identifies the row in flight so the operator sees WHICH account is
+            // being verified rather than a global spinner.
+            reconcilingUid: null,
+            reconcileResult: null,
+            reconcileError: '',
+            reconcileEmail: '',
 
             // Sales Tax & GST Config State
             enableTax: false,
@@ -355,6 +364,27 @@ class SubscriptionSetting extends Component {
             this.fetchWebhooks();
         } catch (err) {
             this.setState({ webhookError: err.message || 'Replay operation failed.', replayingWebhookId: null });
+        }
+    }
+
+    /**
+     * DIR-022 / AC-5 — reconcile one candidate's entitlement against the gateway.
+     *
+     * The operator is shown the GATEWAY's verified observation, including the
+     * honest "could not verify" cases. A reconciliation that changed nothing
+     * still reports `changed: false` rather than claiming a fix, because a tool
+     * that always says "done" is worse than no tool at all during a billing
+     * incident.
+     */
+    async handleReconcileSubscription(uid) {
+        if (!uid) return;
+        this.setState({ reconcilingUid: uid, reconcileError: '', reconcileResult: null });
+        try {
+            const result = await reconcileUserSubscriptionAdmin(uid);
+            this.setState({ reconcilingUid: null, reconcileResult: result });
+            if (typeof this.fetchInvoices === 'function') this.fetchInvoices();
+        } catch (err) {
+            this.setState({ reconcilingUid: null, reconcileError: err.message || 'Subscription reconciliation failed.' });
         }
     }
 
@@ -1111,6 +1141,61 @@ class SubscriptionSetting extends Component {
                 {/* --- TAB 6: INBOUND PAYMENT WEBHOOK TELEMETRY & DIAGNOSTICS --- */}
                 {this.state.adminTab === 'webhooks' && (
                     <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs space-y-6">
+                        {/* DIR-022 / AC-5: the one-click entitlement auditor. It is
+                            deliberately separated from the telemetry stream below:
+                            this control CHANGES entitlement state, the table only
+                            reports deliveries. */}
+                        {this.props.isSuperAdmin && (
+                            <div className="rounded-xl border border-indigo-200 bg-indigo-50/50 p-4 space-y-3">
+                                <div className="flex items-center gap-2">
+                                    <FaSyncAlt className="text-indigo-600" aria-hidden="true" />
+                                    <h4 className="text-sm font-bold text-slate-900">Reconcile User Entitlements</h4>
+                                </div>
+                                <p className="text-xs text-slate-600">
+                                    Verify a candidate&apos;s plan state directly against the Razorpay/Stripe API. A reconciliation only
+                                    writes when the gateway proves a correction is needed; an unreachable gateway changes nothing.
+                                </p>
+                                <div className="flex flex-col sm:flex-row gap-2">
+                                    <input
+                                        type="text"
+                                        value={this.state.reconcileEmail}
+                                        onChange={(e) => this.setState({ reconcileEmail: e.target.value })}
+                                        placeholder="Candidate email or user id"
+                                        aria-label="Candidate email or user id to reconcile"
+                                        className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-2 focus:outline-offset-2 focus:outline-indigo-600"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => this.handleReconcileSubscription(this.state.reconcileEmail.trim())}
+                                        disabled={!this.state.reconcileEmail.trim() || Boolean(this.state.reconcilingUid)}
+                                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <FaSyncAlt className={this.state.reconcilingUid ? 'animate-spin' : ''} aria-hidden="true" />
+                                        {this.state.reconcilingUid ? 'Reconciling…' : 'Reconcile now'}
+                                    </button>
+                                </div>
+                                {this.state.reconcileError && (
+                                    <p role="alert" className="text-xs font-semibold text-red-700">{this.state.reconcileError}</p>
+                                )}
+                                {this.state.reconcileResult && (
+                                    <div role="status" aria-live="polite" className="text-xs text-slate-700 space-y-1">
+                                        <p>
+                                            <span className="font-semibold">Gateway observation:</span> {this.state.reconcileResult.observation}
+                                        </p>
+                                        <p>
+                                            <span className="font-semibold">Plan state:</span> {this.state.reconcileResult.fromStatus || 'UNKNOWN'}
+                                            {' → '}
+                                            {this.state.reconcileResult.toStatus || 'unchanged'}
+                                        </p>
+                                        <p>
+                                            {this.state.reconcileResult.changed
+                                                ? 'A correction was applied and recorded in the immutable subscription audit log.'
+                                                : 'No correction was required; the recorded entitlement already matches the gateway.'}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                             <div>
                                 <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">

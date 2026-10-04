@@ -25,5 +25,18 @@
   "reviews": [],
   "freezeHash": "c1a13301a5e7ec9ba6915f082e66fcb498f395b2",
   "certifiedAt": "2026-10-02T16:36:34.547Z",
-  "certifiedBy": "Antigravity (Lead Gatekeeper)"
+  "certifiedBy": "Antigravity (Lead Gatekeeper)",
+  "secondReview": {
+    "status": "SCHEDULED_POST_DIR028",
+    "scheduledExecutionOrder": "AFTER_DIR028",
+    "targetDirectiveId": "DIR-031",
+    "phaseName": "Phase 2 Second Review \u2014 Public Marketing, Secondary Pages & Funnels",
+    "governingProtocol": "SKILL.md v10.0 (AI Bridge Supervisor Master Edition)",
+    "mandatoryAuditRules": [
+      "\u00a721.1 Public header, marketing navigation, and secondary pages token audit",
+      "\u00a722 WCAG AA contrast on public typography and testimonial cards",
+      "\u00a725 Zero-404 link audit across all public footer and header links"
+    ],
+    "scheduledAt": "2026-10-04T01:50:00Z"
+  }
 }

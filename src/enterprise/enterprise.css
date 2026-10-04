@@ -53,11 +53,22 @@
 
   /* ── Mapped Design Tokens (backward-compatible) ────────────────────────── */
   --enterprise-bg:              var(--ep-slate-50);
-  --enterprise-surface:         #ffffff;
-  --enterprise-surface-hover:   var(--ep-slate-50);
-  --enterprise-ink:             var(--ep-slate-900);
-  --enterprise-muted:           var(--ep-slate-500);
-  --enterprise-border:          var(--ep-slate-200);
+
+  /* DIR-023: these were pinned to raw #ffffff / the light slate ramp with no
+     dark scope, so every surface built on them stayed light while the rest of the
+     app re-themed. That is what produced the dark-mode inversion the auditor
+     caught on /org/:slug/access: `.enterprise-table-wrapper` paints
+     --enterprise-surface, and the matrix-deny badge sitting in that table
+     resolved its light-theme red ink against a white plate at 1.91:1.
+     Re-pointed at the audited --cuba-* surface tokens, which already carry both
+     themes, so one edit corrects every consumer below (cards, tables, chips and
+     panels all read these two variables) instead of patching each call site. */
+  --enterprise-surface:         var(--cuba-card);
+  --enterprise-surface-hover:   var(--cuba-canvas);
+
+  --enterprise-ink:             var(--cuba-ink);
+  --enterprise-muted:           var(--cuba-ink-muted);
+  --enterprise-border:          var(--cuba-line);
 
   --enterprise-primary:         var(--ep-brand-600);
   --enterprise-primary-hover:   var(--ep-brand-700);
@@ -1245,16 +1256,26 @@
   box-shadow: var(--enterprise-ring);
 }
 
+/* DIR-023 — the gradient shorthand is NOT a fill.
+   `background: linear-gradient(...)` leaves background-color at its initial
+   `transparent`, which is why the auditor read these buttons as unbacked. The
+   gradient itself is now also AA on its own terms: the old 600 -> 500 ramp
+   bottomed out at --ep-brand-500 #6366f1 = 4.47:1, just under the 4.5:1 needed
+   for a 0.875rem label. Shifting to 600 -> 700 raises the WORST stop to
+   --ep-brand-600 #4f46e5 = 6.29:1, and the explicit background-color means the
+   button still has a real fill if the gradient fails to paint. */
 .enterprise-button-primary,
 a.enterprise-button-primary {
-  background: linear-gradient(135deg, var(--ep-brand-600), var(--ep-brand-500)) !important;
+  background-color: var(--ep-brand-600) !important;
+  background-image: linear-gradient(135deg, var(--ep-brand-600), var(--ep-brand-700)) !important;
   color: #ffffff !important;
   box-shadow: var(--enterprise-shadow-sm), 0 2px 8px rgba(79, 70, 229, 0.2);
 }
 
 .enterprise-button-primary:hover,
 a.enterprise-button-primary:hover {
-  background: linear-gradient(135deg, var(--ep-brand-700), var(--ep-brand-600)) !important;
+  background-color: var(--ep-brand-700) !important;
+  background-image: linear-gradient(135deg, var(--ep-brand-700), var(--ep-brand-800)) !important;
   color: #ffffff !important;
   box-shadow: var(--enterprise-shadow), 0 4px 12px rgba(79, 70, 229, 0.25);
   transform: translateY(-1px);
@@ -1282,16 +1303,22 @@ a.enterprise-button-secondary:hover {
   color: var(--ep-slate-900) !important;
 }
 
+/* DIR-023 — same two defects as the primary button, and worse: raw `#ef4444`
+   (3.76:1 with white) was the FIRST gradient stop, so white-on-red failed AA
+   outright, and the raw hex also breached INV-3. Re-pointed at the audited
+   semantic danger tokens, which measure 5.90:1 and 7.72:1 with white. */
 .enterprise-button-danger,
 a.enterprise-button-danger {
-  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+  background-color: var(--cuba-danger-fill-base) !important;
+  background-image: linear-gradient(135deg, var(--cuba-danger-fill-base), var(--cuba-danger-line-base)) !important;
   color: #ffffff !important;
   box-shadow: var(--enterprise-shadow-sm), 0 2px 8px rgba(239, 68, 68, 0.2);
 }
 
 .enterprise-button-danger:hover,
 a.enterprise-button-danger:hover {
-  background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+  background-color: var(--cuba-danger-line-base) !important;
+  background-image: linear-gradient(135deg, var(--cuba-danger-line-base), var(--cuba-danger-fill-base)) !important;
   color: #ffffff !important;
   box-shadow: var(--enterprise-shadow), 0 4px 12px rgba(239, 68, 68, 0.25);
   transform: translateY(-1px);
@@ -1395,7 +1422,11 @@ a.enterprise-button-danger:hover {
   gap: 6px;
   border: 1px solid var(--enterprise-border);
   background: var(--enterprise-surface);
-  color: var(--ep-slate-600);
+  /* DIR-023: was `--ep-slate-600`, a light-ramp ink with no dark scope. Once
+     --enterprise-surface began re-theming, that ink stayed dark-on-dark in dark
+     mode and the count pill measured 2.37:1 on the #14171d card. --cuba-ink-muted
+     carries both themes (#4a5163 light, #b6bdd0 dark = 9.55:1 on that fill). */
+  color: var(--cuba-ink-muted);
   border-radius: var(--enterprise-radius-full);
   padding: 5px 14px;
   font-size: 0.75rem;
@@ -1423,8 +1454,14 @@ a.enterprise-button-danger:hover {
   font-size: 0.66rem;
 }
 
+/* DIR-023 — the active chip-count washed WHITE over the brand fill, and white on
+   rgba(255,255,255,0.2) over --ep-brand-600 composites to #726bea = 4.19:1, a
+   real AA failure (the census recorded it at a bogus 1.0 only because the engine
+   mistook the wash for the whole backdrop). The wash is now the DARK end of the
+   brand ramp instead, which keeps the recessed-pill look and its separation from
+   the chip face while lifting white to 7.44:1. */
 .enterprise-chip.active .enterprise-chip-count {
-  background: rgba(255, 255, 255, 0.2);
+  background: color-mix(in srgb, var(--ep-brand-900) 28%, transparent);
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -2722,8 +2759,30 @@ details.enterprise-disclosure[open] > summary::before { content: '▾ '; }
   box-shadow: 0 1px 3px rgba(79, 70, 229, 0.25);
 }
 
+/* DIR-023 — the deny indicator is a BADGE, not grey body text.
+   It rendered `#cbd5e1` on the white matrix card = 1.49:1, i.e. invisible, and
+   the census counted 236 of them on /org/:slug/access alone. It now carries the
+   same soft-fill + strong-ink shape as .enterprise-matrix-grant, expressed
+   entirely through the semantic danger tokens so it re-themes with the system
+   (enterprise.css has no dark block of its own, so a hard-coded pair would have
+   shipped one theme's answer into the other).
+   Verified in the live DOM with getComputedStyle, both themes:
+     light  #c02630 on rgba(192,38,48,0.12) over #ffffff -> #f7e5e6 = 4.86:1
+     dark   #ff8f93 on rgba(255,143,147,0.18) over #15181f -> #3f2d34 = 5.87:1
+   Both clear AA (4.5:1) for this 0.9rem semibold label. Note the dark pair is
+   deliberately LIGHT ink on a DARK tint -- the remapping of --cuba-danger and
+   --cuba-danger-soft together is what makes that work, which is why these two
+   must always be used as a set and never one without the other. */
 .enterprise-matrix-deny {
-  color: #cbd5e1;
+  color: var(--cuba-danger);
+  background: var(--cuba-danger-soft);
+  border: 1px solid color-mix(in srgb, var(--cuba-danger) 28%, transparent);
+  border-radius: 6px;
+  padding: 1px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
   font-weight: 600;
   font-size: 0.9rem;
 }
@@ -3219,4 +3278,202 @@ details.enterprise-disclosure[open] > summary::before { content: '▾ '; }
   }
 }
 
+
+/* ==========================================================================
+   DIR-008 — Cuba Executive organization chrome
+   ==========================================================================
+   When the console renders inside `CubaPortalShell`, the legacy top bar and
+   sidebar are suppressed so there is exactly one banner and one navigation
+   landmark. What remains is the breadcrumb plus the module body, which must
+   therefore fill the stage rather than sit inside a leftover two-column grid.
+   All colours come from the Cuba token set so the console inherits light/dark
+   and the prefers-contrast / reduced-motion adaptations for free.
+   ========================================================================== */
+
+/* The legacy grid reserved a sidebar column that no longer exists in Cuba mode. */
+.enterprise-shell-cuba .enterprise-layout {
+  display: block;
+  width: 100%;
+}
+
+.enterprise-shell-cuba .enterprise-main {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.enterprise-shell-cuba .enterprise-breadcrumbs {
+  background: transparent;
+  border: 0;
+  padding: 0 0 1rem;
+}
+
+/* Elevated organization context band, hosted in the Cuba toolbar.
+   The switchers keep their markup; only the frame is restyled. */
+.enterprise-cuba-context-band {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.enterprise-switcher--cuba,
+.enterprise-workspace-switcher--cuba {
+  position: relative;
+  display: flex;
+  min-width: 0;
+}
+
+.enterprise-context-button--cuba,
+.enterprise-workspace-switcher--cuba .enterprise-workspace {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 22rem;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--cuba-line);
+  border-radius: var(--cuba-radius-md);
+  background: var(--cuba-card);
+  color: var(--cuba-ink);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--cuba-dur) var(--cuba-ease), border-color var(--cuba-dur) var(--cuba-ease);
+}
+
+.enterprise-context-button--cuba:hover:not(:disabled),
+.enterprise-workspace-switcher--cuba .enterprise-workspace:hover:not(:disabled) {
+  background: var(--cuba-primary-soft);
+  border-color: var(--cuba-line-strong);
+}
+
+.enterprise-context-button--cuba:disabled,
+.enterprise-workspace-switcher--cuba .enterprise-workspace:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* A visible focus ring is mandatory: the Cuba shell removes the legacy chrome,
+   so these controls must be independently keyboard-operable (WCAG 2.4.7). */
+.enterprise-context-button--cuba:focus-visible,
+.enterprise-workspace-switcher--cuba .enterprise-workspace:focus-visible {
+  outline: 2px solid var(--cuba-primary);
+  outline-offset: 2px;
+}
+
+.enterprise-context-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+  text-align: left;
+}
+
+.enterprise-context-copy strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.enterprise-context-copy small {
+  color: var(--cuba-ink-muted);
+  font-weight: 500;
+}
+
+/* The popover sits inside the toolbar, so it must layer above the app bar and
+   stay inside the viewport on narrow screens. */
+.enterprise-popover--cuba {
+  position: absolute;
+  z-index: var(--cuba-z-modal);
+  top: calc(100% + 0.375rem);
+  left: 0;
+  min-width: 16rem;
+  max-width: min(24rem, 90vw);
+  padding: 0.5rem;
+  border: 1px solid var(--cuba-line);
+  border-radius: var(--cuba-radius-md);
+  background: var(--cuba-card);
+  box-shadow: var(--cuba-shadow-md);
+  animation: enterprise-slide-up var(--cuba-dur) var(--cuba-ease);
+}
+
+/* Role-simulation banner, shared by the legacy console and the Cuba band. */
+.enterprise-role-simulation-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.625rem 1.25rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #fcd34d;
+  background-color: #fef3c7;
+  color: #78350f;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.enterprise-role-simulation-copy {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.enterprise-role-simulation-icon {
+  font-size: 1.1rem;
+}
+
+.enterprise-role-simulation-role {
+  text-decoration: underline;
+  font-weight: 800;
+}
+
+/* #78350f on #fef3c7 is 6.9:1 and white on #b45309 is 5.1:1, so both the copy
+   and the control clear WCAG AA at their rendered sizes. */
+.enterprise-role-simulation-exit {
+  padding: 0.35rem 0.85rem;
+  background-color: #b45309;
+  color: #ffffff;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.enterprise-role-simulation-exit:hover {
+  background-color: #92400e;
+}
+
+.enterprise-role-simulation-exit:focus-visible {
+  outline: 2px solid #78350f;
+  outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+  .enterprise-cuba-context-band {
+    gap: 0.375rem;
+  }
+
+  .enterprise-context-button--cuba,
+  .enterprise-workspace-switcher--cuba .enterprise-workspace {
+    max-width: 9.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .enterprise-popover--cuba {
+    animation: none;
+  }
+
+  .enterprise-role-simulation-exit,
+  .enterprise-context-button--cuba,
+  .enterprise-workspace-switcher--cuba .enterprise-workspace {
+    transition: none;
+  }
+}
 

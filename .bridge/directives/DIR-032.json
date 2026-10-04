@@ -1,0 +1,26 @@
+{
+  "id": "DIR-032",
+  "title": "Phase 2 Second Review & v10.0 Protocol Re-Audit — Admin Console, Settings & Security (Re-evaluating DIR-012, DIR-015, DIR-016, DIR-017)",
+  "priority": "P0",
+  "status": "ISSUED",
+  "leadAuthor": "Antigravity (Lead Supervisor)",
+  "assignedTo": "Cline (Staff Developer)",
+  "createdAt": "2026-10-04T01:49:30.703Z",
+  "specFile": null,
+  "spec": "# Phase 2 Second Review Directive: Admin Console, Settings & Security (DIR-032)\n**Governing Protocol:** SKILL.md v10.0 (AI Bridge Supervisor Master Edition)\n**Execution Schedule:** Sequenced in the Post-DIR-028 Second Review Pipeline.\n**Target Directives for Re-Audit:** DIR-012, DIR-015, DIR-016, DIR-017.\n\n## 1. Objective & Scope\nRe-evaluate Platform Admin Console, SuperAdmin Settings, Security Command Center, and Cross-Portal Navigation Completeness against v10.0 rules.\n\n## 2. Mandatory Verification Gates\n1. **§24 Zero Secret Leakage:** Proof that API keys are strictly server-side.\n2. **§24 RBAC & Negative Auth:** Verify 401/403 guards across all sensitive administrative endpoints.\n3. **§24 TOTP MFA & Session Revocation:** Live MariaDB verification.\n4. **§21.1 Design Tokens:** Admin tree navigation and settings controls adhere to Cuba tokens.",
+  "invariants": [
+    "INV-1: Zero Plaintext Secret Leakage: NVIDIA, Gemini, OpenAI, Groq, and OpenRouter API keys must never be returned in API payloads, browser localStorage, or DOM.",
+    "INV-2: Multi-Tenant Authorization & RBAC: SuperAdmin role simulator, system settings, and candidate security centers must enforce strict RBAC and negative authorization guards."
+  ],
+  "acceptanceCriteria": [
+    "§24 Security Audit & Secret Scanner: Automated scan proving zero unmasked API keys in client-accessible assets; negative authorization test proving unauthorized users receive HTTP 401/403 on /api/admin/*.",
+    "§24 Account & Security Command Center: TOTP MFA enrollment, active session revocation, and security audit log tested against live MariaDB.",
+    "§21.1 Admin Console & SuperAdmin Settings Token Audit: Cuba executive tree navigation, SWOT configuration panels, and platform provisioner tabs use 100% Cuba design tokens.",
+    "§16 Navigation Completeness: Verify Enterprise Platform Provisioner tab and Candidate Favorites restoration remain 100% operational with 0 regression."
+  ],
+  "plan": null,
+  "heartbeats": [],
+  "evidence": null,
+  "reviews": [],
+  "freezeHash": null
+}

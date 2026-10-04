@@ -321,7 +321,7 @@ const EditJobModal = ({ isOpen, onClose, job, onJobUpdated, showToast, t }) => {
                 >
                     <div className="flex flex-col h-full">
                         {/* Header */}
-                        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+                        <div className="cuba-header-band text-white">
                             <div className="flex items-center justify-between px-6 py-4">
                                 <div className="flex items-center gap-3">
                                     <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
@@ -671,7 +671,7 @@ const EditJobModal = ({ isOpen, onClose, job, onJobUpdated, showToast, t }) => {
                                         form="edit-job-form"
                                         type="submit"
                                         disabled={isSubmitting}
-                                        className="bg-blue-600 text-white py-2 px-6 rounded-md font-semibold text-sm hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="cuba-btn-primary text-white py-2 px-6 rounded-md font-semibold text-sm flex items-center gap-2"
                                     >
                                         {isSubmitting ? (
                                             <>

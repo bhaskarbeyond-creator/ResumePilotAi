@@ -2381,7 +2381,7 @@ const DashboardInterviews = () => {
                             type="button"
                             disabled={!state.occupation.trim() || state.isLoading}
                             onClick={fetchInterviewQuestions}
-                            className="w-full sm:w-auto px-8 py-4 rounded-2xl font-bold text-sm sm:text-base text-white bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg shadow-indigo-600/25 hover:shadow-indigo-600/40 hover:-translate-y-0.5 disabled:opacity-50 disabled:pointer-events-none disabled:hover:translate-y-0 transition-all duration-200 flex items-center justify-center gap-3 cursor-pointer motion-reduce:transition-none">
+                            className="cuba-btn-primary w-full sm:w-auto px-8 py-4 rounded-2xl font-bold text-sm sm:text-base disabled:opacity-50 disabled:pointer-events-none disabled:hover:translate-y-0 flex items-center justify-center gap-3 cursor-pointer motion-reduce:transition-none">
                             {state.isLoading ? (
                                 <>
                                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin motion-reduce:animate-none" aria-hidden="true"></span>

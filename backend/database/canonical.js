@@ -18,7 +18,48 @@ const MEMBERSHIP_TIERS = Object.freeze(['FREE', 'BASIC', 'PREMIUM', 'PRO', 'ENTE
 const PAYMENT_STATUSES = Object.freeze([
     'NONE', 'INACTIVE', 'PENDING', 'ACTIVE', 'ADMIN_GRANTED',
     'CANCELLED', 'CANCELED', 'EXPIRED', 'REFUNDED', 'CHARGEBACK',
+    // DIR-022 / INV-5: a recurring renewal the gateway declined. The account is
+    // NOT locked out immediately; it enters a bounded recovery window. See
+    // PAYMENT_GRACE_PERIOD_MS and isWithinPaymentGrace.
+    'PAST_DUE',
 ]);
+
+/**
+ * DIR-022 / AC-4: how long a PAST_DUE account keeps its entitlements while the
+ * customer updates their payment method. Three days is long enough to cover a
+ * weekend or an expired card reissue and short enough that an abandoned
+ * subscription does not stay free indefinitely.
+ *
+ * Configurable per deployment via PAYMENT_GRACE_PERIOD_DAYS, but HARD-BOUNDED
+ * below: an operator mistake (or a hostile env value) must never turn a payment
+ * failure into an indefinite free tier.
+ */
+const PAYMENT_GRACE_PERIOD_MS = (() => {
+    const requestedDays = Number(process.env.PAYMENT_GRACE_PERIOD_DAYS);
+    if (!Number.isFinite(requestedDays) || requestedDays <= 0) return 3 * 24 * 60 * 60 * 1000;
+    return Math.min(Math.round(requestedDays), 30) * 24 * 60 * 60 * 1000;
+})();
+
+/** Statuses that mean "the customer owes money but is inside the grace window". */
+const GRACE_PERIOD_STATUSES = Object.freeze(['PAST_DUE']);
+
+/**
+ * DIR-022 / INV-5: is a PAST_DUE account still inside its recovery window?
+ *
+ * Fail-CLOSED on an absent deadline. If a PAST_DUE flag exists but no
+ * `paymentGraceUntil` was ever written, treating it as "still in grace" would
+ * grant indefinite free access from a partially-written row; treating it as
+ * expired is the safe direction because the reconciler re-opens the window on
+ * the next pass once it can prove a real renewal failure.
+ */
+function isWithinPaymentGrace(user, now = Date.now()) {
+    if (!user) return false;
+    const status = String(user.paymentStatus || '').toUpperCase();
+    if (!GRACE_PERIOD_STATUSES.includes(status)) return false;
+    const deadline = toEpochMs(user.paymentGraceUntil);
+    if (deadline === null) return false;
+    return deadline > now;
+}
 
 const DATE_FIELD_NAMES = Object.freeze([
     'membershipEnds', 'membershipStarts', 'membership_ends', 'membership_starts',
@@ -30,6 +71,9 @@ const DATE_FIELD_NAMES = Object.freeze([
     'scheduledAt', 'deadline', 'appliedAt', 'usedAt', 'used_at',
     'cancellationDate', 'reviewedAt', 'submittedAt',
     'lastLoginAt', 'verifiedAt', 'consumedAt',
+    // DIR-022: renewal recovery timestamps must canonicalise to ISO strings so
+    // the client banner never receives a raw MariaDB Date object.
+    'paymentGraceUntil', 'paymentGraceStartedAt', 'renewalFailedAt',
 ]);
 
 function isPlainObject(value) {
@@ -253,6 +297,9 @@ module.exports = {
     PAID_MEMBERSHIP_TIERS,
     MEMBERSHIP_TIERS,
     PAYMENT_STATUSES,
+    PAYMENT_GRACE_PERIOD_MS,
+    GRACE_PERIOD_STATUSES,
+    isWithinPaymentGrace,
     DATE_FIELD_NAMES,
     toEpochMs,
     toCanonicalDate,

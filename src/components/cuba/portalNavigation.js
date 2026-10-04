@@ -63,6 +63,18 @@ export const ENTERPRISE_TABS = Object.freeze([
     { id: 'audit', label: 'Audit Logs', permission: 'tenant.audit.read' },
     { id: 'support', label: 'Support Access', permission: 'tenant.settings.write' },
     { id: 'settings', label: 'Organization Settings', permission: 'tenant.settings.write' },
+    // DIR-016: the Platform Administration & Tenant Provisioning console is a real,
+    // mounted tab (`EnterpriseConsole.jsx` renders `<EnterprisePlatformTab />` under
+    // `activeTab === 'platform'`, and `tests/enterprise-e2e.spec.js:335` drives it),
+    // but it was absent from this mirror. Because the Cuba shell is the DEFAULT chrome,
+    // the whole tenant-provisioning surface had NO navigation entry and NO command
+    // palette command for any operator — a silent omission, not a deliberate removal.
+    //
+    // It carries NO tenant permission tag on purpose: its authority is the
+    // server-derived `platformAdmin` capability from `/api/enterprise/context`
+    // (backend/routes/enterprise.js:337), never a permission the tenant grants.
+    // `platformOnly` mirrors EnterpriseConsole's own `canSee()` gate exactly.
+    { id: 'platform', label: 'Platform Administration & Tenant Provisioning', permission: null, platformOnly: true },
 ]);
 
 export const ENTERPRISE_BASE = '/org';
@@ -71,7 +83,7 @@ const ENTERPRISE_GROUPS = [
     { id: 'home', label: 'Home', tabs: ['overview', 'resumes'] },
     { id: 'organization', label: 'Organization', tabs: ['members', 'teams', 'workspaces'] },
     { id: 'governance', label: 'Governance', tabs: ['access', 'ai', 'security', 'usage', 'email', 'audit'] },
-    { id: 'administration', label: 'Administration', tabs: ['support', 'settings'] },
+    { id: 'administration', label: 'Administration', tabs: ['support', 'settings', 'platform'] },
 ];
 
 /** Builds the enterprise navigation for a server-resolved tenant slug. */
@@ -85,7 +97,17 @@ export const enterpriseNavigationFor = (slug) => {
             // `permission` MUST be carried through. Dropping it here made
             // filterByPermissions a no-op that showed every gated tab to every
             // tenant member; the tag is copied verbatim from ENTERPRISE_TABS.
-            return { id: tab.id, label: tab.label, to: `${base}/${tab.id}`, permission: tab.permission };
+            //
+            // DIR-016: `platformOnly` is carried for the same reason. It is copied
+            // verbatim too, and it is the ONLY thing that decides the provisioning
+            // console's visibility — see filterByPermissions below.
+            return {
+                id: tab.id,
+                label: tab.label,
+                to: `${base}/${tab.id}`,
+                permission: tab.permission,
+                platformOnly: tab.platformOnly === true,
+            };
         }),
     }));
 };
@@ -142,13 +164,36 @@ export const ADMIN_PORTAL_NAVIGATION = Object.freeze([
             { id: 'admin-phrases', label: 'Localization & Phrases', to: '/admin/phrases', permission: 'system.config.write' },
         ],
     },
+    // DIR-012: `/admin/settings` was absent from BOTH `PATH_PERMS` and this nav, so
+    // Cuba chrome offered no link and `buildPortalCommands` produced no command for it.
+    // The legacy sidebar reached it through a separate `SETTINGS_GROUPS` array, and
+    // Cuba is the DEFAULT shell (cubaShellFlag.js:47-51) — meaning the whole System
+    // Configuration surface (database, Firebase, social auth, AI providers, branding,
+    // feature flags, orders) was unreachable for every operator.
+    //
+    // It is mounted at Admin.jsx behind `<RequireTabPerm required="*">`, i.e. Super
+    // Admin only, so the mirrored permission tag is `'*'`. Adding the ENTRY does not
+    // widen access: the gate still decides, and the backend still decides (§7).
+    {
+        id: 'configuration',
+        label: 'System Configuration',
+        items: [
+            { id: 'admin-settings', label: 'System Settings', to: '/admin/settings', permission: '*' },
+        ],
+    },
 ]);
 
-/** Every admin path present in PATH_PERMS, including /admin/settings. */
-export const ADMIN_ALL_PATHS = Object.freeze([
-    ...ADMIN_PORTAL_NAVIGATION.flatMap((g) => g.items.map((i) => i.to)),
-    '/admin/settings',
-]);
+/**
+ * Every admin path present in PATH_PERMS, including /admin/settings.
+ *
+ * DIR-012: the settings entry is now a real navigation item, so it is no longer
+ * appended by hand below — doing both would list the same route twice and let the
+ * two definitions drift apart. `ADMIN_ALL_PATHS` is derived from the nav alone and
+ * de-duplicated, so it can never disagree with what the sidebar renders.
+ */
+export const ADMIN_ALL_PATHS = Object.freeze(
+    Array.from(new Set(ADMIN_PORTAL_NAVIGATION.flatMap((g) => g.items.map((i) => i.to)))),
+);
 
 /* â”€â”€ Role isolation (Phase 5â€“7) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
@@ -159,8 +204,23 @@ export const ADMIN_ALL_PATHS = Object.freeze([
  * ungated items rather than hiding everything (so a permissions outage cannot
  * silently hide the whole console from an authorised operator).
  */
-export function filterByPermissions(groups, granted) {
-    const has = (required) => {
+export function filterByPermissions(groups, granted, options = {}) {
+    // DIR-016 / INV-3: the platform administration surface is gated by the
+    // SERVER-DERIVED `platformAdmin` capability, never by a tenant permission
+    // list. A `'*'` wildcard grant deliberately does NOT unlock it: `*` is a
+    // tenant-scoped wildcard and the provisioning console spans tenants, so
+    // treating them as equivalent would widen access (DIR-012 precedent: a
+    // mirrored tag must never decide anything the real gate does not).
+    //
+    // The default is `false` and only an explicit `=== true` passes. That is
+    // fail-closed on purpose: a permissions outage, an older caller, or a new
+    // call site that forgets the flag all hide the surface rather than reveal
+    // it. Mirrors EnterpriseConsole.jsx `canSee()` exactly:
+    //   if (item.platformOnly) return platformAdmin === true;
+    const { platformAdmin = false } = options || {};
+    const has = (item) => {
+        if (item.platformOnly) return platformAdmin === true;
+        const required = item.permission;
         if (!required) return true;
         if (Array.isArray(granted) && granted.includes('*')) return true;
         if (Array.isArray(granted) && granted.includes(required)) return true;
@@ -170,7 +230,7 @@ export function filterByPermissions(groups, granted) {
         return false;
     };
     return groups
-        .map((group) => ({ ...group, items: group.items.filter((item) => has(item.permission)) }))
+        .map((group) => ({ ...group, items: group.items.filter((item) => has(item)) }))
         .filter((group) => group.items.length > 0);
 }
 

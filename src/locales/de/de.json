@@ -1854,6 +1854,7 @@
     },
     "actions": {
       "view": "Ansehen",
+      "openStudio": "Im Studio öffnen",
       "edit": "Bearbeiten",
       "delete": "Löschen",
       "viewPreview": "Vorschau anzeigen"

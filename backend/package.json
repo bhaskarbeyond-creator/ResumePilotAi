@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "node scripts/run-tests-with-annotations.js",
+    "test:payments": "node --test --test-concurrency=1 --test-force-exit test/payment-reconciliation.test.js test/payments.test.js test/payment-activation.test.js",
     "start": "node index.js",
     "dev": "nodemon index.js",
     "test:enterprise": "node --test --test-concurrency=1 --test-force-exit enterprise-test/*.test.js"

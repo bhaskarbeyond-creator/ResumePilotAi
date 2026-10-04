@@ -57,7 +57,7 @@ const EmployerHiringPreferences = ({ showToast }) => {
                     action={(
                         <Link
                             to="/employer/company"
-                            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                            className="cuba-btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold"
                         >
                             <FaBuilding className="h-4 w-4" aria-hidden="true" />
                             Register Company Profile
@@ -122,7 +122,7 @@ const EmployerHiringPreferences = ({ showToast }) => {
                 <div className="mt-5 flex flex-wrap items-center gap-2">
                     <Link
                         to="/employer/company"
-                        className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                        className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 cuba-focusable"
                     >
                         <FaBuilding className="h-4 w-4" aria-hidden="true" />
                         Manage company registry
@@ -130,7 +130,7 @@ const EmployerHiringPreferences = ({ showToast }) => {
                     <button
                         type="button"
                         onClick={() => setNotice('New requisitions use the company and location shown above. Job-level overrides remain available per posting.')}
-                        className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                        className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 cuba-focusable"
                     >
                         How defaults are applied
                     </button>

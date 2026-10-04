@@ -1,0 +1,472 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "D:\\xampp\\htdocs\\IME365\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--config=playwright.dir009.config.js"
+    ],
+    "configFile": "D:\\xampp\\htdocs\\IME365\\playwright.dir009.config.js",
+    "rootDir": "D:/xampp/htdocs/IME365/tests/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/xampp/htdocs/IME365/.bridge/evidence/dir009-artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "dir009-live-candidate-dashboard",
+        "name": "dir009-live-candidate-dashboard",
+        "testDir": "D:/xampp/htdocs/IME365/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "/dir009-candidate-dashboard\\.spec\\.js/"
+        ],
+        "timeout": 180000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": ".bridge/evidence/dir009-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "dir009-candidate-dashboard.spec.js",
+      "file": "dir009-candidate-dashboard.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "DIR-009 candidate dashboard — single hero + Cuba token harmonization",
+          "file": "dir009-candidate-dashboard.spec.js",
+          "line": 286,
+          "column": 6,
+          "specs": [
+            {
+              "title": "stage 1: exactly one authoritative CubaCandidateHero renders on /dashboard",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir009-live-candidate-dashboard",
+                  "projectName": "dir009-live-candidate-dashboard",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2622,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[2026-10-03T04:41:30.843Z] DIR-009 suite starting against http://localhost:3000 as bhaskar.beyond@gmail.com (uid OhZdiSIFL7ePA1TMkfu9bnR935D3)\n"
+                        },
+                        {
+                          "text": "[2026-10-03T04:41:30.844Z] canonical Cuba primary gradient = linear-gradient(135deg, rgb(115, 102, 255) 0%, rgb(89, 73, 214) 100%)\n"
+                        },
+                        {
+                          "text": "[2026-10-03T04:41:33.343Z] stage 1 hero background: linear-gradient(103.75deg, rgb(51, 177, 238) -13.9%, rgb(115, 102, 255) 79.68%)\n"
+                        },
+                        {
+                          "text": "[2026-10-03T04:41:33.351Z] stage 1 duplicate greetings outside the hero: []\n"
+                        },
+                        {
+                          "text": "[2026-10-03T04:41:33.355Z] stage 1 defects: console=0 pageErrors=0 api=0\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-03T04:41:30.810Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0c966d318b81654f4b75-95f35a97ee35487488f2",
+              "file": "dir009-candidate-dashboard.spec.js",
+              "line": 296,
+              "column": 5
+            },
+            {
+              "title": "stage 2: all candidate CTAs use canonical Cuba primary tokens",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir009-live-candidate-dashboard",
+                  "projectName": "dir009-live-candidate-dashboard",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 20038,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[2026-10-03T04:41:36.072Z] stage 2 /dashboard: 3 token/gradient CTAs\n"
+                        },
+                        {
+                          "text": "[2026-10-03T04:41:37.273Z] stage 2 /dashboard/applied-jobs: 1 token/gradient CTAs\n"
+                        },
+                        {
+                          "text": "[2026-10-03T04:41:38.327Z] stage 2 /dashboard/job-tracker: 1 token/gradient CTAs\n"
+                        },
+                        {
+                          "text": "[2026-10-03T04:41:42.464Z] stage 2 /dashboard/interview: 2 token/gradient CTAs\n"
+                        },
+                        {
+                          "text": "[2026-10-03T04:41:46.738Z] stage 2 /dashboard/favorites: 1 token/gradient CTAs\n"
+                        },
+                        {
+                          "text": "[2026-10-03T04:41:47.974Z] stage 2 /dashboard/settings: 1 token/gradient CTAs\n"
+                        },
+                        {
+                          "text": "[2026-10-03T04:41:49.010Z] stage 2 /dashboard/jobs: 3 token/gradient CTAs\n"
+                        },
+                        {
+                          "text": "[2026-10-03T04:41:50.991Z] stage 2 /dashboard/cover-letters: 1 token/gradient CTAs\n"
+                        },
+                        {
+                          "text": "[2026-10-03T04:41:51.957Z] stage 2 /dashboard/portfolios: 1 token/gradient CTAs\n"
+                        },
+                        {
+                          "text": "[2026-10-03T04:41:53.562Z] stage 2 /dashboard/analytics: 1 token/gradient CTAs\n"
+                        },
+                        {
+                          "text": "[2026-10-03T04:41:53.562Z] stage 2 inspected 15 CTAs across 10 routes; offenders=0\n"
+                        },
+                        {
+                          "text": "[2026-10-03T04:41:53.564Z] stage 2 defects: console=0 pageErrors=0 api=0\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-03T04:41:33.581Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0c966d318b81654f4b75-557d02cf6595e7162dc0",
+              "file": "dir009-candidate-dashboard.spec.js",
+              "line": 339,
+              "column": 5
+            },
+            {
+              "title": "stage 3: single chrome, unique landmarks and visible focus ring on every candidate tab",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir009-live-candidate-dashboard",
+                  "projectName": "dir009-live-candidate-dashboard",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 8886,
+                      "error": {
+                        "message": "Error: /dashboard/settings must render exactly one Cuba sidebar\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m1\u001b[39m\nReceived: \u001b[31m2\u001b[39m",
+                        "stack": "Error: /dashboard/settings must render exactly one Cuba sidebar\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m1\u001b[39m\nReceived: \u001b[31m2\u001b[39m\n    at D:\\xampp\\htdocs\\IME365\\tests\\e2e\\dir009-candidate-dashboard.spec.js:398:77",
+                        "location": {
+                          "file": "D:\\xampp\\htdocs\\IME365\\tests\\e2e\\dir009-candidate-dashboard.spec.js",
+                          "column": 77,
+                          "line": 398
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 396 |\u001b[39m             \u001b[90m// chrome is the exact class of clutter DIR-009 asked to purge.\u001b[39m\n \u001b[90m 397 |\u001b[39m             \u001b[36mconst\u001b[39m asides \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'aside'\u001b[39m)\u001b[33m.\u001b[39mcount()\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 398 |\u001b[39m             expect(asides\u001b[33m,\u001b[39m \u001b[32m`${route} must render exactly one Cuba sidebar`\u001b[39m)\u001b[33m.\u001b[39mtoBe(\u001b[35m1\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                                                             \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 399 |\u001b[39m\n \u001b[90m 400 |\u001b[39m             \u001b[90m// Every landmark must be uniquely and explicitly named.\u001b[39m\n \u001b[90m 401 |\u001b[39m             \u001b[36mconst\u001b[39m unnamedNavs \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mevaluate(() \u001b[33m=>\u001b[39m [\u001b[33m...\u001b[39mdocument\u001b[33m.\u001b[39mquerySelectorAll(\u001b[32m'nav'\u001b[39m)]\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\xampp\\htdocs\\IME365\\tests\\e2e\\dir009-candidate-dashboard.spec.js",
+                            "column": 77,
+                            "line": 398
+                          },
+                          "message": "Error: /dashboard/settings must render exactly one Cuba sidebar\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m1\u001b[39m\nReceived: \u001b[31m2\u001b[39m\n\n\u001b[0m \u001b[90m 396 |\u001b[39m             \u001b[90m// chrome is the exact class of clutter DIR-009 asked to purge.\u001b[39m\n \u001b[90m 397 |\u001b[39m             \u001b[36mconst\u001b[39m asides \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'aside'\u001b[39m)\u001b[33m.\u001b[39mcount()\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 398 |\u001b[39m             expect(asides\u001b[33m,\u001b[39m \u001b[32m`${route} must render exactly one Cuba sidebar`\u001b[39m)\u001b[33m.\u001b[39mtoBe(\u001b[35m1\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                                                             \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 399 |\u001b[39m\n \u001b[90m 400 |\u001b[39m             \u001b[90m// Every landmark must be uniquely and explicitly named.\u001b[39m\n \u001b[90m 401 |\u001b[39m             \u001b[36mconst\u001b[39m unnamedNavs \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mevaluate(() \u001b[33m=>\u001b[39m [\u001b[33m...\u001b[39mdocument\u001b[33m.\u001b[39mquerySelectorAll(\u001b[32m'nav'\u001b[39m)]\u001b[0m\n\u001b[2m    at D:\\xampp\\htdocs\\IME365\\tests\\e2e\\dir009-candidate-dashboard.spec.js:398:77\u001b[22m"
+                        }
+                      ],
+                      "stdout": [
+                        {
+                          "text": "[2026-10-03T04:41:55.938Z] stage 3 /dashboard focus: {\"isActive\":true,\"outlineStyle\":\"solid\",\"outlineWidth\":\"3px\",\"outlineColor\":\"rgb(255, 255, 255)\",\"boxShadow\":\"rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(115, 102, 255, 0.35) 0px 4px 14px 0px\"}\n"
+                        },
+                        {
+                          "text": "[2026-10-03T04:41:57.326Z] stage 3 /dashboard/applied-jobs focus: {\"isActive\":true,\"outlineStyle\":\"solid\",\"outlineWidth\":\"3px\",\"outlineColor\":\"rgb(69, 85, 108)\",\"boxShadow\":\"none\"}\n"
+                        },
+                        {
+                          "text": "[2026-10-03T04:41:58.561Z] stage 3 /dashboard/job-tracker focus: {\"isActive\":true,\"outlineStyle\":\"solid\",\"outlineWidth\":\"2px\",\"outlineColor\":\"rgb(69, 85, 110)\",\"boxShadow\":\"none\"}\n"
+                        },
+                        {
+                          "text": "[2026-10-03T04:41:59.876Z] stage 3 /dashboard/interview focus: {\"isActive\":true,\"outlineStyle\":\"solid\",\"outlineWidth\":\"3px\",\"outlineColor\":\"rgb(69, 85, 108)\",\"boxShadow\":\"none\"}\n"
+                        },
+                        {
+                          "text": "[2026-10-03T04:42:01.091Z] stage 3 /dashboard/favorites focus: {\"isActive\":true,\"outlineStyle\":\"solid\",\"outlineWidth\":\"2px\",\"outlineColor\":\"rgb(243, 242, 255)\",\"boxShadow\":\"rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(115, 102, 255, 0.35) 0px 4px 14px 0px\"}\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-03T04:41:53.630Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir009-artifacts\\dir009-candidate-dashboard-5609a-ring-on-every-candidate-tab-dir009-live-candidate-dashboard\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir009-artifacts\\dir009-candidate-dashboard-5609a-ring-on-every-candidate-tab-dir009-live-candidate-dashboard\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\xampp\\htdocs\\IME365\\tests\\e2e\\dir009-candidate-dashboard.spec.js",
+                        "column": 77,
+                        "line": 398
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "0c966d318b81654f4b75-a139c6df0fd93d959a30",
+              "file": "dir009-candidate-dashboard.spec.js",
+              "line": 385,
+              "column": 5
+            },
+            {
+              "title": "stage 4: Cuba primary CTA and focus indicator meet WCAG 2.1 AA",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir009-live-candidate-dashboard",
+                  "projectName": "dir009-live-candidate-dashboard",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3286,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[2026-10-03T04:42:05.561Z] DIR-009 suite starting against http://localhost:3000 as bhaskar.beyond@gmail.com (uid OhZdiSIFL7ePA1TMkfu9bnR935D3)\n"
+                        },
+                        {
+                          "text": "[2026-10-03T04:42:05.562Z] canonical Cuba primary gradient = linear-gradient(135deg, rgb(115, 102, 255) 0%, rgb(89, 73, 214) 100%)\n"
+                        },
+                        {
+                          "text": "[2026-10-03T04:42:08.726Z] stage 4 sampled 3 Cuba primary controls\n"
+                        },
+                        {
+                          "text": "[2026-10-03T04:42:08.728Z] stage 4 contrast primary-gradient \"Create Resume\" = 6.27:1\n"
+                        },
+                        {
+                          "text": "[2026-10-03T04:42:08.729Z] stage 4 contrast primary-fill \"Overview\" = 6.27:1\n"
+                        },
+                        {
+                          "text": "[2026-10-03T04:42:08.729Z] stage 4 contrast primary-fill \"All Resumes (0)\" = 6.27:1\n"
+                        },
+                        {
+                          "text": "[2026-10-03T04:42:08.760Z] stage 4 focus ring: {\"outlineStyle\":\"solid\",\"outlineWidth\":\"3px\",\"outlineColor\":\"rgb(255, 255, 255)\"}\n"
+                        },
+                        {
+                          "text": "[2026-10-03T04:42:08.762Z] stage 4 defects: console=0 pageErrors=0 api=0\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-03T04:42:05.528Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0c966d318b81654f4b75-d42f0114ba304aaf8075",
+              "file": "dir009-candidate-dashboard.spec.js",
+              "line": 438,
+              "column": 5
+            },
+            {
+              "title": "stage 5: 51 CV templates + DOCX export + ATS engine are byte-identical to the freeze",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir009-live-candidate-dashboard",
+                  "projectName": "dir009-live-candidate-dashboard",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 199,
+                      "error": {
+                        "message": "Error: ENOENT: no such file or directory, scandir 'D:\\xampp\\htdocs\\IME365\\src\\components\\templates'",
+                        "stack": "Error: ENOENT: no such file or directory, scandir 'D:\\xampp\\htdocs\\IME365\\src\\components\\templates'\n    at D:\\xampp\\htdocs\\IME365\\tests\\e2e\\dir009-candidate-dashboard.spec.js:513:30",
+                        "location": {
+                          "file": "D:\\xampp\\htdocs\\IME365\\tests\\e2e\\dir009-candidate-dashboard.spec.js",
+                          "column": 30,
+                          "line": 513
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 511 |\u001b[39m         \u001b[90m// Also assert the 51 templates themselves are present, so a deleted\u001b[39m\n \u001b[90m 512 |\u001b[39m         \u001b[90m// template cannot make an empty diff look like a pass.\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 513 |\u001b[39m         \u001b[36mconst\u001b[39m templates \u001b[33m=\u001b[39m fs\u001b[33m.\u001b[39mreaddirSync(path\u001b[33m.\u001b[39mjoin(process\u001b[33m.\u001b[39mcwd()\u001b[33m,\u001b[39m \u001b[32m'src'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'components'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'templates'\u001b[39m))\n \u001b[90m     |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 514 |\u001b[39m             \u001b[33m.\u001b[39mfilter((f) \u001b[33m=>\u001b[39m \u001b[35m/^Cv\\d+\\.jsx$/\u001b[39m\u001b[33m.\u001b[39mtest(f))\u001b[33m;\u001b[39m\n \u001b[90m 515 |\u001b[39m         record(\u001b[32m`stage 5 CV templates present on disk: ${templates.length}`\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 516 |\u001b[39m         expect(templates\u001b[33m.\u001b[39mlength\u001b[33m,\u001b[39m \u001b[32m'all 51 CV templates must still exist'\u001b[39m)\u001b[33m.\u001b[39mtoBe(\u001b[35m51\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\xampp\\htdocs\\IME365\\tests\\e2e\\dir009-candidate-dashboard.spec.js",
+                            "column": 30,
+                            "line": 513
+                          },
+                          "message": "Error: ENOENT: no such file or directory, scandir 'D:\\xampp\\htdocs\\IME365\\src\\components\\templates'\n\n\u001b[0m \u001b[90m 511 |\u001b[39m         \u001b[90m// Also assert the 51 templates themselves are present, so a deleted\u001b[39m\n \u001b[90m 512 |\u001b[39m         \u001b[90m// template cannot make an empty diff look like a pass.\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 513 |\u001b[39m         \u001b[36mconst\u001b[39m templates \u001b[33m=\u001b[39m fs\u001b[33m.\u001b[39mreaddirSync(path\u001b[33m.\u001b[39mjoin(process\u001b[33m.\u001b[39mcwd()\u001b[33m,\u001b[39m \u001b[32m'src'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'components'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'templates'\u001b[39m))\n \u001b[90m     |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 514 |\u001b[39m             \u001b[33m.\u001b[39mfilter((f) \u001b[33m=>\u001b[39m \u001b[35m/^Cv\\d+\\.jsx$/\u001b[39m\u001b[33m.\u001b[39mtest(f))\u001b[33m;\u001b[39m\n \u001b[90m 515 |\u001b[39m         record(\u001b[32m`stage 5 CV templates present on disk: ${templates.length}`\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 516 |\u001b[39m         expect(templates\u001b[33m.\u001b[39mlength\u001b[33m,\u001b[39m \u001b[32m'all 51 CV templates must still exist'\u001b[39m)\u001b[33m.\u001b[39mtoBe(\u001b[35m51\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at D:\\xampp\\htdocs\\IME365\\tests\\e2e\\dir009-candidate-dashboard.spec.js:513:30\u001b[22m"
+                        }
+                      ],
+                      "stdout": [
+                        {
+                          "text": "[2026-10-03T04:42:09.135Z] stage 5 git diff --stat e314f715 -- src/components/templates src/components/Resume backend/services: (empty — zero diff)\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-03T04:42:08.930Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir009-artifacts\\dir009-candidate-dashboard-c4cf8-yte-identical-to-the-freeze-dir009-live-candidate-dashboard\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\xampp\\htdocs\\IME365\\tests\\e2e\\dir009-candidate-dashboard.spec.js",
+                        "column": 30,
+                        "line": 513
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "0c966d318b81654f4b75-2cddc6f68a2df84b4ea2",
+              "file": "dir009-candidate-dashboard.spec.js",
+              "line": 506,
+              "column": 5
+            },
+            {
+              "title": "stage 6: zero console errors, zero page errors, zero failed API calls",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir009-live-candidate-dashboard",
+                  "projectName": "dir009-live-candidate-dashboard",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 8,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[2026-10-03T04:42:11.838Z] DIR-009 suite starting against http://localhost:3000 as bhaskar.beyond@gmail.com (uid OhZdiSIFL7ePA1TMkfu9bnR935D3)\n"
+                        },
+                        {
+                          "text": "[2026-10-03T04:42:11.839Z] canonical Cuba primary gradient = linear-gradient(135deg, rgb(115, 102, 255) 0%, rgb(89, 73, 214) 100%)\n"
+                        },
+                        {
+                          "text": "[2026-10-03T04:42:11.852Z] stage 6 accumulated defects: console=0 pageErrors=0 api=0\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-03T04:42:11.808Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0c966d318b81654f4b75-60d9baf3a86ad20dfdef",
+              "file": "dir009-candidate-dashboard.spec.js",
+              "line": 528,
+              "column": 5
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-03T04:41:27.504Z",
+    "duration": 44380.265,
+    "expected": 4,
+    "skipped": 0,
+    "unexpected": 2,
+    "flaky": 0
+  }
+}

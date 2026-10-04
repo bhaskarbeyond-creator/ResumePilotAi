@@ -1,15 +1,15 @@
 {
-  "updatedAt": "2026-10-03T02:24:15.407Z",
-  "eventCount": 424,
-  "activeDirectiveId": "DIR-008",
-  "activeDirectiveTitle": "Candidate Career Intelligence & Full-Funnel Application Engine (Google M3 / Cuba Executive 10/10)",
-  "activeDirectiveStatus": "QUEUED",
-  "unreadForLead": 138,
-  "unreadForDev": 193,
-  "pendingBlockers": 14,
+  "updatedAt": "2026-10-04T06:23:29.582Z",
+  "eventCount": 1372,
+  "activeDirectiveId": "DIR-024",
+  "activeDirectiveTitle": "Autonomous Geo-SEO Engine & Schema.org JSON-LD Career Landing System (Dynamic Regional Hubs, llms.txt Crawler Indexation & Rich Search Snippets)",
+  "activeDirectiveStatus": "IN_PROGRESS",
+  "unreadForLead": 433,
+  "unreadForDev": 689,
+  "pendingBlockers": 1,
   "latestHeartbeat": {
-    "timestamp": "2026-10-03T02:01:15.549Z",
-    "status": "Implementation complete: RBAC resume endpoint, pipeline Resume column + in-modal TemplateRenderer (zoom/print/download), stage transitions, real-data E2E spec. Running live Playwright.",
-    "percent": 75
+    "timestamp": "2026-10-04T06:13:17.904Z",
+    "status": "AUDIT COMPLETE: F1/F5/F7 re-proven live (llms.txt=503, 4 India jobs all Bengaluru, no city column). Both blockers ruled Option(A). Beginning Step 1-7 backend implementation",
+    "percent": 5
   }
 }

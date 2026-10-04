@@ -57,7 +57,7 @@ const EmployerNavList = ({ isActive, onNavigate, label }) => {
                                         onClick={onNavigate}
                                         aria-current={active ? 'page' : undefined}
                                     >
-                                        <div className={`flex items-center text-xs transition-all duration-150 rounded-xl ${active ? 'bg-indigo-50 text-indigo-700 font-bold border-l-3 border-indigo-600 shadow-2xs pl-2.5' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium'} px-2.5 py-2`}>
+                                        <div className={`flex items-center text-xs transition-all duration-150 rounded-xl ${active ? 'cuba-fill-pill cuba-focusable font-bold border-l-3 border-indigo-600 shadow-2xs pl-2.5' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium'} px-2.5 py-2`}>
                                             <Icon className="text-base min-w-[18px] mr-2.5" aria-hidden="true" />
                                             <span className="flex-1 truncate">{item.label}</span>
                                         </div>
@@ -138,7 +138,7 @@ const EmployerSidebar = ({ sidebarCollapsed, onSidebarToggle, mobileMenuOpen, on
         <>
             <aside
                 className={`employerSidebar employerDesktopSidebar hidden lg:flex flex-col bg-white border-r border-slate-200 transition-all duration-300 shrink-0 ${sidebarCollapsed ? 'w-16' : 'w-60'}`}
-                aria-label="Employer navigation"
+                aria-label="Employer sidebar"
             >
                 <div className="flex items-center gap-2 px-3 py-4 border-b border-slate-100">
                     <Link to="/employer" className="flex items-center gap-2 min-w-0 flex-1">
@@ -171,7 +171,7 @@ const EmployerSidebar = ({ sidebarCollapsed, onSidebarToggle, mobileMenuOpen, on
                                 return (
                                     <li key={item.path}>
                                         <Link to={item.path} title={item.label} aria-label={item.label} aria-current={active ? 'page' : undefined}>
-                                            <span className={`flex items-center justify-center p-2.5 rounded-xl transition-all ${active ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-100'}`}>
+                                            <span className={`flex items-center justify-center p-2.5 rounded-xl transition-all ${active ? 'cuba-fill-pill' : 'text-slate-500 hover:bg-slate-100'}`}>
                                                 <Icon className="text-base" aria-hidden="true" />
                                             </span>
                                         </Link>
@@ -205,7 +205,7 @@ const EmployerSidebar = ({ sidebarCollapsed, onSidebarToggle, mobileMenuOpen, on
             )}
             <aside
                 className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 shadow-xl transform transition-transform duration-300 lg:hidden ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
-                aria-label="Mobile employer navigation"
+                aria-label="Mobile employer sidebar"
                 aria-hidden={mobileMenuOpen ? undefined : 'true'}
             >
                 <div className="flex items-center justify-between px-3 py-3 border-b border-slate-100">

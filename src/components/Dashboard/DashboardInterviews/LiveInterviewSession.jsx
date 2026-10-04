@@ -52,9 +52,16 @@ function InterviewerVideo({ session, busy, speaking, persona, showCaptions, curr
     const p = persona || INTERVIEWER_PERSONAS[0];
     return (
         <section className="relative rounded-2xl overflow-hidden h-[180px] sm:h-[195px] xl:h-[210px] bg-slate-950 border border-slate-800 shadow-md flex flex-col justify-between" aria-label="AI interviewer panel">
-            {/* Studio Ambient Lighting */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_15%,rgba(99,102,241,.35),transparent_48%),linear-gradient(135deg,#090d16,#0f172a_55%,#1e1b4b)]" />
-            <div className="absolute inset-0 opacity-20 bg-[linear-gradient(110deg,transparent_0%,rgba(255,255,255,.10)_46%,transparent_52%)] animate-[pulse_4s_ease-in-out_infinite]" />
+            {/* Studio Ambient Lighting — driven by the DIR-013 surface-anchored
+                --cuba-studio-* tokens so the whole studio re-themes from the
+                design system instead of literal Tailwind hex values. */}
+            <div
+                className="absolute inset-0"
+                style={{
+                    background: 'radial-gradient(circle at 50% 15%, var(--cuba-studio-glow), transparent 48%), linear-gradient(135deg, var(--cuba-studio-from), var(--cuba-studio-via) 55%, var(--cuba-studio-to))',
+                }}
+            />
+            <div className="absolute inset-0 opacity-20 bg-[linear-gradient(110deg,transparent_0%,var(--cuba-studio-sheen)_46%,transparent_52%)] animate-[pulse_4s_ease-in-out_infinite]" />
 
             {/* Top Bar inside Video: HD + Persona info */}
             <div className="relative z-10 p-2 flex items-center justify-between">
@@ -138,7 +145,7 @@ function CandidateVideo({ media, dictating }) {
             </div>
 
             {/* Fallback when video is off, audio-only, or text mode */}
-            <div className={`absolute inset-0 flex flex-col items-center justify-center p-3 text-center text-slate-200 ${active && media.videoEnabled ? 'pointer-events-none' : 'bg-[radial-gradient(circle_at_50%_20%,rgba(71,85,105,.5),transparent_50%)]'}`}>
+            <div className={`absolute inset-0 flex flex-col items-center justify-center p-3 text-center text-slate-200 ${active && media.videoEnabled ? 'pointer-events-none' : ''}`} style={!(active && media.videoEnabled) ? { background: 'radial-gradient(circle at 50% 20%, var(--cuba-studio-scrim), transparent 50%)' } : undefined}>
                 {!(active && media.videoEnabled) && (
                     <>
                         {isTextMode ? (

@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import './CoverLetter.scss';
 import logo from '../../assets/logo/logo.png';
 import { withTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { saveCoverLetter, getUserCoverLetters, deleteCoverLetter, getProfileOfUser, createTrackedJob, getSystemSettings } from '../../services/api/platform';
 import { resolveAtsScoreVisibility } from '../../utils/moduleFlags';
 import { generateUserAiContent } from '../../services/aiService';
@@ -43,30 +43,41 @@ const COVER_TEMPLATES = [
         name: 'Executive Classic',
         badge: 'Classic',
         description: 'Centered executive letterhead with blue gradient accent bar.',
-        color: 'from-blue-600 to-indigo-700',
     },
     {
         id: 'Cover2',
         name: 'Modern Left-Aligned',
         badge: 'Modern',
         description: 'Crisp, left-aligned layout with dark horizontal divider.',
-        color: 'from-slate-700 to-slate-900',
     },
     {
         id: 'Cover3',
         name: 'Split Sidebar',
         badge: 'Two-Column',
         description: 'Side-by-side recipient card and sender contact pane.',
-        color: 'from-indigo-600 to-blue-500',
     },
     {
         id: 'Cover4',
         name: 'Accent Icons',
         badge: 'Creative',
         description: 'Modern header with contact icons and job title accent.',
-        color: 'from-blue-700 to-amber-500',
     },
 ];
+
+/* Zoom ladder for the in-modal A4 preview. The scale is applied through a
+   CSS transform on .cl-paper rather than by re-rendering the template, so
+   zooming never costs a TemplateRenderer pass (INV-5 render budget). */
+const ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5];
+
+/* Single source of truth for ATS tiering so the meter fill, the numeric
+   readout and the chip colours can never disagree (AC-5):
+     >= 80 strong, 60-79 warning, < 60 critical.
+   Returns the token suffix appended to .cl-ats__* modifier classes. */
+const atsTier = (score) => {
+    if (score >= 80) return 'success';
+    if (score >= 60) return 'warning';
+    return 'danger';
+};
 
 class CoverLetter extends Component {
     constructor(props) {
@@ -83,8 +94,11 @@ class CoverLetter extends Component {
             candidateCity: '',
             candidatePostalCode: '',
             // Recipient & Job Details
-            jobTitle: '',
-            companyName: '',
+            // DIR-020 AC-11 (5): seeded from the job tracker's role context so
+            // "View linked cover letter" opens with the real role already filled
+            // in. Empty strings are the honest default when no context is passed.
+            jobTitle: props.jobTitle || '',
+            companyName: props.companyName || '',
             recipientName: '',
             companyAddress: '',
             companyCity: '',
@@ -681,12 +695,37 @@ class CoverLetter extends Component {
     };
 
     getTemplateInfo = (templateId) => {
-        return COVER_TEMPLATES.find(t => t.id === templateId) || {
-            id: templateId || 'Cover1',
-            name: templateId === 'Cover4' ? 'Accent Icons' : templateId === 'Cover2' ? 'Modern Left-Aligned' : templateId === 'Cover3' ? 'Split Sidebar' : 'Executive Classic',
-            badge: 'Classic',
-            color: 'from-blue-600 to-indigo-700'
-        };
+        return COVER_TEMPLATES.find(t => t.id === templateId) || COVER_TEMPLATES[0];
+    };
+
+    /* Zoom steps walk the ZOOM_STEPS ladder rather than nudging an arbitrary
+       float, so the control always lands on a legible scale. */
+    zoomBy = (direction) => {
+        this.setState(prev => {
+            const current = ZOOM_STEPS.findIndex(step => Math.abs(step - prev.modalZoom) < 0.001);
+            const base = current === -1 ? ZOOM_STEPS.indexOf(1) : current;
+            const nextIndex = Math.min(ZOOM_STEPS.length - 1, Math.max(0, base + direction));
+            return { modalZoom: ZOOM_STEPS[nextIndex] };
+        });
+    };
+
+    canZoomIn = () => this.state.modalZoom < ZOOM_STEPS[ZOOM_STEPS.length - 1];
+
+    canZoomOut = () => this.state.modalZoom > ZOOM_STEPS[0];
+
+    /* AC-5: a missed keyword chip copies that keyword to the clipboard so it
+       can be pasted into the letter. It never mutates the stored letter body
+       on the candidate's behalf - the text stays exactly what they typed. */
+    handleCopyKeyword = async (keyword) => {
+        try {
+            await navigator.clipboard.writeText(keyword);
+            this.setState({ notificationMessage: `Copied "${keyword}" - paste it into your letter to close the ATS gap.` });
+            setTimeout(() => this.setState({ notificationMessage: null }), 4000);
+        } catch (err) {
+            console.error('Keyword copy error:', err);
+            this.setState({ notificationMessage: `Could not copy "${keyword}" to the clipboard.` });
+            setTimeout(() => this.setState({ notificationMessage: null }), 4000);
+        }
     };
 
     handlePrintCoverLetter = () => {
@@ -787,13 +826,26 @@ class CoverLetter extends Component {
     };
 
     render() {
+        /* AC-2: header de-duplication. When the builder is mounted inside the
+           candidate shell (/dashboard/cover-letters) the shell already renders
+           the product logo, the workspace title and a dashboard link, so this
+           component suppresses its own duplicate chrome and only contributes
+           the workspace header. Standalone (/coverletter) keeps the full card
+           including the logo and the "Back to Dashboard" affordance. */
+        const isEmbeddedInShell = typeof this.props.pathname === 'string'
+            && this.props.pathname.startsWith('/dashboard');
+
         if (this.state.isCoverLetterEnabled === false) {
             return (
-                <div className="cover-letter min-h-screen bg-slate-50 p-8">
-                    <div className="max-w-lg mx-auto bg-white border border-slate-200 rounded-2xl p-8 text-center">
-                        <h1 className="text-lg font-bold text-slate-900">Cover letters are unavailable</h1>
-                        <p className="text-sm text-slate-600 mt-2">This workspace has the cover letter module turned off.</p>
-                        <Link to="/dashboard" className="inline-block mt-5 px-4 py-2 bg-slate-900 text-white text-xs font-semibold rounded-xl">Back to Dashboard</Link>
+                <div className={`cover-letter cl-canvas${isEmbeddedInShell ? '' : ' cl-canvas--standalone'}`}>
+                    <div className="cl-stack">
+                        <div className="cl-card cl-card--tight">
+                            <h1 className="cl-section-title">Cover letters are unavailable</h1>
+                            <p className="cl-body-copy">This workspace has the cover letter module turned off.</p>
+                            <Link to="/dashboard" className="cl-btn cl-btn--primary cl-btn--sm" style={{ marginTop: '1.25rem' }}>
+                                Back to Dashboard
+                            </Link>
+                        </div>
                     </div>
                 </div>
             );
@@ -844,78 +896,90 @@ class CoverLetter extends Component {
                 </div>
 
                 {/* On-Screen Interactive UI (Suppressed in Print) */}
-                <div className="cover-letter-ui no-print min-h-screen bg-slate-50 text-slate-900 p-4 sm:p-8 font-sans">
+                <div className={`cover-letter-ui no-print cl-canvas${isEmbeddedInShell ? '' : ' cl-canvas--standalone'}`}>
                 {/* Fullscreen Preview Modal (Same as Resume Preview Modal) */}
                 {this.state.showPreviewModal && (
-                    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
+                    <div
+                        className="cl-modal__scrim"
+                        role="presentation"
+                        onMouseDown={(e) => {
+                            // Click on the scrim itself (not the dialog) dismisses.
+                            if (e.target === e.currentTarget) this.setState({ showPreviewModal: false });
+                        }}
+                    >
                         <div
                             role="dialog"
                             aria-modal="true"
-                            className="relative w-full max-w-6xl max-h-[94vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
+                            aria-label={`Cover letter preview, ${activeTemplate.name}`}
+                            className="cl-modal"
+                        >
                             {/* Modal Header */}
-                            <div className="bg-slate-50 border-b border-slate-200 px-6 py-4 flex items-center justify-between gap-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100">
-                                        <FaExpand className="w-4 h-4" />
+                            <div className="cl-modal__head">
+                                <div className="cl-modal__brand">
+                                    <div className="cl-ats__icon">
+                                        <FaExpand />
                                     </div>
                                     <div>
-                                        <h2 className="text-base font-bold text-slate-900">Cover Letter Preview</h2>
-                                        <p className="text-xs text-slate-500 font-medium">
-                                            {activeTemplate.name} ({activeTemplate.id}) • A4 Print Ready
+                                        <h2 className="cl-modal__title">Cover Letter Preview</h2>
+                                        <p className="cl-modal__sub">
+                                            {activeTemplate.name} ({activeTemplate.id}) &bull; A4 Print Ready
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-2">
+                                <div className="cl-modal__tools">
                                     {/* Zoom Controls */}
-                                    <div className="hidden sm:flex items-center gap-1 bg-slate-200/70 p-1 rounded-xl">
+                                    <div className="cl-zoom">
                                         <button
                                             type="button"
-                                            onClick={() => this.setState(prev => ({ modalZoom: Math.max(0.4, prev.modalZoom - 0.1) }))}
-                                            className="p-1.5 text-slate-700 hover:text-indigo-600 hover:bg-white rounded-lg transition-all"
-                                            title="Zoom Out">
-                                            <FaSearchMinus className="w-3.5 h-3.5" />
+                                            onClick={() => this.zoomBy(-1)}
+                                            disabled={!this.canZoomOut()}
+                                            className="cl-zoom__btn cuba-focus-ring"
+                                            title="Zoom Out"
+                                            aria-label="Zoom out">
+                                            <FaSearchMinus />
                                         </button>
-                                        <span className="text-[11px] font-mono font-bold px-2 text-slate-700 min-w-[45px] text-center">
+                                        <span className="cl-zoom__value" aria-live="polite">
                                             {Math.round(this.state.modalZoom * 100)}%
                                         </span>
                                         <button
                                             type="button"
-                                            onClick={() => this.setState(prev => ({ modalZoom: Math.min(1.0, prev.modalZoom + 0.1) }))}
-                                            className="p-1.5 text-slate-700 hover:text-indigo-600 hover:bg-white rounded-lg transition-all"
-                                            title="Zoom In">
-                                            <FaSearchPlus className="w-3.5 h-3.5" />
+                                            onClick={() => this.zoomBy(1)}
+                                            disabled={!this.canZoomIn()}
+                                            className="cl-zoom__btn cuba-focus-ring"
+                                            title="Zoom In"
+                                            aria-label="Zoom in">
+                                            <FaSearchPlus />
                                         </button>
                                     </div>
 
                                     {/* Print / Save PDF in Modal */}
                                     <button
                                         onClick={this.handlePrintCoverLetter}
-                                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-2">
-                                        <FaPrint className="w-3.5 h-3.5" />
+                                        className="cl-btn cl-btn--primary cl-btn--sm">
+                                        <FaPrint className="cl-btn__glyph" />
                                         <span>Print / PDF</span>
                                     </button>
 
                                     {/* Close Button */}
                                     <button
                                         onClick={() => this.setState({ showPreviewModal: false })}
-                                        className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-all"
+                                        className="cl-icon-btn cuba-focus-ring"
                                         aria-label="Close Preview">
-                                        <FaTimes className="w-4 h-4" />
+                                        <FaTimes className="cl-icon-btn__glyph" />
                                     </button>
                                 </div>
                             </div>
 
                             {/* Modal Canvas Body */}
-                            <div className="flex-1 overflow-auto bg-slate-100/90 p-4 sm:p-8 flex justify-center items-start custom-scrollbar">
+                            <div className="cl-modal__body custom-scrollbar">
                                 <div
-                                    className="bg-white text-slate-900 rounded-sm shadow-2xl transition-transform duration-200 border border-slate-200"
+                                    className="cl-paper"
                                     style={{
                                         transform: `scale(${this.state.modalZoom})`,
-                                        transformOrigin: 'top center',
                                         width: '794px',
                                         minHeight: '1122px',
-                                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.2)',
+                                        flex: 'none',
                                     }}>
                                     <TemplateRenderer
                                         templateId={this.state.templateId || 'Cover1'}
@@ -930,21 +994,23 @@ class CoverLetter extends Component {
 
                 {/* Delete Confirmation Modal Overlay */}
                 {this.state.letterToDelete && (
-                    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-200 animate-in fade-in duration-200">
-                            <h3 className="text-base font-bold text-slate-900 mb-2">Delete Cover Letter?</h3>
-                            <p className="text-xs text-slate-500 mb-6">
-                                Are you sure you want to delete <strong className="text-slate-700">{this.state.letterToDelete.jobTitle || 'this cover letter'}</strong>? This action cannot be undone.
-                            </p>
-                            <div className="flex items-center gap-3">
+                    <div className="cl-modal__scrim cl-modal__scrim--soft">
+                        <div className="cl-modal cl-modal--sm" role="dialog" aria-modal="true" aria-label="Confirm delete cover letter">
+                            <div className="cl-card cl-card--tight">
+                                <h3 className="cl-section-title">Delete Cover Letter?</h3>
+                                <p className="cl-body-copy">
+                                    Are you sure you want to delete <strong>{this.state.letterToDelete.jobTitle || 'this cover letter'}</strong>? This action cannot be undone.
+                                </p>
+                            </div>
+                            <div className="cl-modal__foot">
                                 <button
                                     onClick={() => this.setState({ letterToDelete: null })}
-                                    className="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-all">
+                                    className="cl-btn cl-btn--neutral cl-btn--sm">
                                     Cancel
                                 </button>
                                 <button
                                     onClick={this.handleConfirmDeleteCoverLetter}
-                                    className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all">
+                                    className="cl-btn cl-btn--danger cl-btn--sm">
                                     Delete
                                 </button>
                             </div>
@@ -952,156 +1018,180 @@ class CoverLetter extends Component {
                     </div>
                 )}
 
-                <div className="max-w-6xl mx-auto space-y-6">
-                    {/* Header Card */}
-                    <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                            <div className="flex items-center gap-4">
-                                <img className="h-12 w-auto" src={logo} alt="IME365.com" />
+                <div className="cl-stack">
+                    {/* Workspace Header.
+                        Standalone mount keeps the logo + "Back to Dashboard".
+                        Embedded in CubaCandidateShell both are suppressed: the
+                        shell already renders that chrome, so repeating it here
+                        produced the duplicate-branding defect (AC-2). */}
+                    <header className="cl-header">
+                        <div className="cl-header__row">
+                            <div className="cl-header__brand">
+                                {!isEmbeddedInShell && (
+                                    <img className="cl-header__logo" src={logo} alt="IME365.com" />
+                                )}
                                 <div>
-                                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Cover Letter Builder & AI Generator</h1>
-                                    <p className="text-xs text-slate-500 mt-1">
-                                        Candidate Profile: <strong className="text-slate-800 font-semibold">{candidateFullName || 'Not Set'}</strong> {this.state.candidateEmail ? `(${this.state.candidateEmail})` : ''}
+                                    <h1 className="cl-header__title">Cover Letter Builder &amp; AI Generator</h1>
+                                    <p className="cl-header__sub">
+                                        Candidate Profile: <strong>{candidateFullName || 'Not Set'}</strong> {this.state.candidateEmail ? `(${this.state.candidateEmail})` : ''}
                                     </p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <button onClick={this.handleResetForm} className="text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-4 py-2.5 rounded-xl transition-all border border-indigo-200">
+                            <div className="cl-header__actions">
+                                <button onClick={this.handleResetForm} className="cl-btn cl-btn--soft cl-btn--sm cuba-focus-ring">
                                     + Create New Cover Letter
                                 </button>
-                                <Link to="/dashboard" className="text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-4 py-2.5 rounded-xl transition-all border border-slate-200">
-                                    Back to Dashboard
-                                </Link>
+                                {!isEmbeddedInShell && (
+                                    <Link to="/dashboard" className="cl-btn cl-btn--neutral cl-btn--sm">
+                                        Back to Dashboard
+                                    </Link>
+                                )}
                             </div>
                         </div>
-                    </div>
+                    </header>
 
                     {/* Inline Notification Banner */}
                     {this.state.notificationMessage && (
-                        <div className="bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs font-semibold p-4 rounded-xl flex items-center justify-between shadow-xs animate-in fade-in duration-200">
-                            <span className="flex items-center gap-2">
-                                <span className="text-base">✨</span>
+                        <div className="cl-toast" role="status" aria-live="polite">
+                            <span className="cl-toast__text">
+                                <span aria-hidden="true">&#10024;</span>
                                 {this.state.notificationMessage}
                             </span>
-                            <button onClick={() => this.setState({ notificationMessage: null })} className="text-indigo-600 hover:text-indigo-900 font-bold ml-4">✕</button>
+                            <button onClick={() => this.setState({ notificationMessage: null })} className="cl-toast__close" aria-label="Dismiss notification">
+                                &#10005;
+                            </button>
                         </div>
                     )}
 
                     {/* Stepper Indicator & View Switcher */}
-                    <div className="bg-white border border-slate-200 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-sm">
-                        <div className="flex items-center gap-2 text-xs font-semibold overflow-x-auto">
-                            <button onClick={() => this.setState({ step: 1 })} className={`px-4 py-2 rounded-xl transition-all ${this.state.step === 1 ? 'bg-indigo-600 text-white font-bold shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
-                                Step 1: Candidate & Role Details
-                            </button>
-                            <button onClick={() => this.setState({ step: 2 })} className={`px-4 py-2 rounded-xl transition-all ${this.state.step === 2 ? 'bg-indigo-600 text-white font-bold shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
-                                Step 2: AI Generator & Template Selection
-                            </button>
-                            <button onClick={() => this.setState({ step: 3 })} className={`px-4 py-2 rounded-xl transition-all ${this.state.step === 3 ? 'bg-indigo-600 text-white font-bold shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
-                                Step 3: Export & Share Package
-                            </button>
+                    <nav className="cl-card cl-card--flush" aria-label="Cover letter builder steps">
+                        <div className="cl-stepper">
+                            {[
+                                { step: 1, label: 'Candidate & Role Details' },
+                                { step: 2, label: 'AI Generator & Template Selection' },
+                                { step: 3, label: 'Export & Share Package' },
+                            ].map(({ step, label }) => (
+                                <button
+                                    key={step}
+                                    type="button"
+                                    onClick={() => this.setState({ step })}
+                                    aria-current={this.state.step === step ? 'step' : undefined}
+                                    className="cl-step cuba-focus-ring">
+                                    <span className="cl-step__index" aria-hidden="true">{step}</span>
+                                    <span>Step {step}: {label}</span>
+                                </button>
+                            ))}
                         </div>
 
                         {/* View Mode Switcher */}
                         {this.state.step > 1 && (
-                            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
-                                <button onClick={() => this.setState({ viewMode: 'visual' })} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${this.state.viewMode === 'visual' ? 'bg-white text-indigo-700 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'}`}>
-                                    🎨 Visual Preview ({activeTemplate.name})
+                            <div className="cl-segmented" style={{ marginTop: '0.75rem' }} role="group" aria-label="Preview mode">
+                                <button
+                                    type="button"
+                                    onClick={() => this.setState({ viewMode: 'visual' })}
+                                    aria-pressed={this.state.viewMode === 'visual'}
+                                    className="cl-segmented__btn cuba-focus-ring">
+                                    <span aria-hidden="true">&#127912;</span> Visual Preview ({activeTemplate.name})
                                 </button>
-                                <button onClick={() => this.setState({ viewMode: 'text' })} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${this.state.viewMode === 'text' ? 'bg-white text-indigo-700 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'}`}>
-                                    📝 Text Editor
+                                <button
+                                    type="button"
+                                    onClick={() => this.setState({ viewMode: 'text' })}
+                                    aria-pressed={this.state.viewMode === 'text'}
+                                    className="cl-segmented__btn cuba-focus-ring">
+                                    <span aria-hidden="true">&#128221;</span> Text Editor
                                 </button>
                             </div>
                         )}
-                    </div>
+                    </nav>
 
                     {/* Step 1: Candidate Profile + Job Target Details */}
                     {this.state.step === 1 && (
-                        <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-6 shadow-sm">
+                        <div className="cl-card">
                             {/* Candidate Profile Information */}
-                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Candidate Profile Information (Synced with System)</h3>
-                                    <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-full font-bold">Dynamic Profile Data</span>
+                            <div className="cl-subcard">
+                                <div className="cl-subcard__head">
+                                    <h2 className="cl-eyebrow">Candidate Profile Information (Synced with System)</h2>
+                                    <span className="cl-pill cl-pill--success">Dynamic Profile Data</span>
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                                    <div>
-                                        <label className="block text-[11px] font-bold text-slate-700 mb-1">First Name</label>
-                                        <input type="text" value={this.state.candidateFirstname} onChange={(e) => this.setState({ candidateFirstname: e.target.value })} placeholder="Enter first name" className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 font-semibold focus:border-indigo-600 focus:outline-hidden" />
+                                <div className="cl-grid-4">
+                                    <div className="cl-field">
+                                        <label className="cl-field__label" htmlFor="cl-firstname">First Name</label>
+                                        <input id="cl-firstname" type="text" value={this.state.candidateFirstname} onChange={(e) => this.setState({ candidateFirstname: e.target.value })} placeholder="Enter first name" className="cl-input cl-input--sm cuba-field" />
                                     </div>
-                                    <div>
-                                        <label className="block text-[11px] font-bold text-slate-700 mb-1">Last Name</label>
-                                        <input type="text" value={this.state.candidateLastname} onChange={(e) => this.setState({ candidateLastname: e.target.value })} placeholder="Enter last name" className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 font-semibold focus:border-indigo-600 focus:outline-hidden" />
+                                    <div className="cl-field">
+                                        <label className="cl-field__label" htmlFor="cl-lastname">Last Name</label>
+                                        <input id="cl-lastname" type="text" value={this.state.candidateLastname} onChange={(e) => this.setState({ candidateLastname: e.target.value })} placeholder="Enter last name" className="cl-input cl-input--sm cl-input--mono cuba-field" />
                                     </div>
-                                    <div>
-                                        <label className="block text-[11px] font-bold text-slate-700 mb-1">Email Address</label>
-                                        <input type="email" value={this.state.candidateEmail} onChange={(e) => this.setState({ candidateEmail: e.target.value })} placeholder="Enter email address" className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-600 focus:outline-hidden" />
+                                    <div className="cl-field">
+                                        <label className="cl-field__label" htmlFor="cl-email">Email Address</label>
+                                        <input id="cl-email" type="email" value={this.state.candidateEmail} onChange={(e) => this.setState({ candidateEmail: e.target.value })} placeholder="Enter email address" className="cl-input cl-input--sm cuba-field" />
                                     </div>
-                                    <div>
-                                        <label className="block text-[11px] font-bold text-slate-700 mb-1">Phone Number</label>
-                                        <input type="text" value={this.state.candidatePhone} onChange={(e) => this.setState({ candidatePhone: e.target.value })} placeholder="Enter phone number" className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-600 focus:outline-hidden" />
+                                    <div className="cl-field">
+                                        <label className="cl-field__label" htmlFor="cl-phone">Phone Number</label>
+                                        <input id="cl-phone" type="text" value={this.state.candidatePhone} onChange={(e) => this.setState({ candidatePhone: e.target.value })} placeholder="Enter phone number" className="cl-input cl-input--sm cuba-field" />
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
-                                    <div>
-                                        <label className="block text-[11px] font-bold text-slate-700 mb-1">Street Address</label>
-                                        <input type="text" value={this.state.candidateAddress} onChange={(e) => this.setState({ candidateAddress: e.target.value })} placeholder="e.g. 123 Innovation Way" className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-600 focus:outline-hidden" />
+                                <div className="cl-grid-3" style={{ marginTop: '1rem' }}>
+                                    <div className="cl-field">
+                                        <label className="cl-field__label" htmlFor="cl-address">Street Address</label>
+                                        <input id="cl-address" type="text" value={this.state.candidateAddress} onChange={(e) => this.setState({ candidateAddress: e.target.value })} placeholder="e.g. 123 Innovation Way" className="cl-input cl-input--sm cuba-field" />
                                     </div>
-                                    <div>
-                                        <label className="block text-[11px] font-bold text-slate-700 mb-1">City / Region</label>
-                                        <input type="text" value={this.state.candidateCity} onChange={(e) => this.setState({ candidateCity: e.target.value })} placeholder="e.g. San Francisco, CA" className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-600 focus:outline-hidden" />
+                                    <div className="cl-field">
+                                        <label className="cl-field__label" htmlFor="cl-city">City / Region</label>
+                                        <input id="cl-city" type="text" value={this.state.candidateCity} onChange={(e) => this.setState({ candidateCity: e.target.value })} placeholder="e.g. San Francisco, CA" className="cl-input cl-input--sm cuba-field" />
                                     </div>
-                                    <div>
-                                        <label className="block text-[11px] font-bold text-slate-700 mb-1">Postal Code</label>
-                                        <input type="text" value={this.state.candidatePostalCode} onChange={(e) => this.setState({ candidatePostalCode: e.target.value })} placeholder="e.g. 94105" className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-600 focus:outline-hidden" />
+                                    <div className="cl-field">
+                                        <label className="cl-field__label" htmlFor="cl-postal">Postal Code</label>
+                                        <input id="cl-postal" type="text" value={this.state.candidatePostalCode} onChange={(e) => this.setState({ candidatePostalCode: e.target.value })} placeholder="e.g. 94105" className="cl-input cl-input--sm cuba-field" />
                                     </div>
                                 </div>
                             </div>
 
                             {/* Target Job Details */}
-                            <div className="space-y-4">
-                                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Target Job Position & Recipient Information</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1">Target Job Title *</label>
-                                        <input type="text" value={this.state.jobTitle} onChange={(e) => this.setState({ jobTitle: e.target.value })} placeholder="e.g. Senior Software Engineer" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-600 focus:outline-hidden" />
+                            <div style={{ marginTop: '1.5rem' }}>
+                                <h2 className="cl-eyebrow">Target Job Position &amp; Recipient Information</h2>
+                                <div className="cl-grid-3" style={{ marginTop: '1rem' }}>
+                                    <div className="cl-field">
+                                        <label className="cl-field__label" htmlFor="cl-jobtitle">Target Job Title *</label>
+                                        <input id="cl-jobtitle" type="text" value={this.state.jobTitle} onChange={(e) => this.setState({ jobTitle: e.target.value })} placeholder="e.g. Senior Software Engineer" className="cl-input cuba-field" />
                                     </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1">Target Company Name *</label>
-                                        <input type="text" value={this.state.companyName} onChange={(e) => this.setState({ companyName: e.target.value })} placeholder="e.g. TechCorp Inc." className="w-full text-xs p-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-600 focus:outline-hidden" />
+                                    <div className="cl-field">
+                                        <label className="cl-field__label" htmlFor="cl-company">Target Company Name *</label>
+                                        <input id="cl-company" type="text" value={this.state.companyName} onChange={(e) => this.setState({ companyName: e.target.value })} placeholder="e.g. TechCorp Inc." className="cl-input cuba-field" />
                                     </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1">Hiring Manager / Recipient</label>
-                                        <input type="text" value={this.state.recipientName} onChange={(e) => this.setState({ recipientName: e.target.value })} placeholder="e.g. Sarah Jenkins" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-600 focus:outline-hidden" />
+                                    <div className="cl-field">
+                                        <label className="cl-field__label" htmlFor="cl-recipient">Hiring Manager / Recipient</label>
+                                        <input id="cl-recipient" type="text" value={this.state.recipientName} onChange={(e) => this.setState({ recipientName: e.target.value })} placeholder="e.g. Sarah Jenkins" className="cl-input cuba-field" />
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1">Company Street Address</label>
-                                        <input type="text" value={this.state.companyAddress} onChange={(e) => this.setState({ companyAddress: e.target.value })} placeholder="e.g. 500 Market St" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-600 focus:outline-hidden" />
+                                <div className="cl-grid-3" style={{ marginTop: '1rem' }}>
+                                    <div className="cl-field">
+                                        <label className="cl-field__label" htmlFor="cl-caddr">Company Street Address</label>
+                                        <input id="cl-caddr" type="text" value={this.state.companyAddress} onChange={(e) => this.setState({ companyAddress: e.target.value })} placeholder="e.g. 500 Market St" className="cl-input cuba-field" />
                                     </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1">Company City</label>
-                                        <input type="text" value={this.state.companyCity} onChange={(e) => this.setState({ companyCity: e.target.value })} placeholder="e.g. San Francisco, CA" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-600 focus:outline-hidden" />
+                                    <div className="cl-field">
+                                        <label className="cl-field__label" htmlFor="cl-ccity">Company City</label>
+                                        <input id="cl-ccity" type="text" value={this.state.companyCity} onChange={(e) => this.setState({ companyCity: e.target.value })} placeholder="e.g. San Francisco, CA" className="cl-input cuba-field" />
                                     </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1">Company Postal Code</label>
-                                        <input type="text" value={this.state.companyPostalCode} onChange={(e) => this.setState({ companyPostalCode: e.target.value })} placeholder="e.g. 94105" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-600 focus:outline-hidden" />
+                                    <div className="cl-field">
+                                        <label className="cl-field__label" htmlFor="cl-cpostal">Company Postal Code</label>
+                                        <input id="cl-cpostal" type="text" value={this.state.companyPostalCode} onChange={(e) => this.setState({ companyPostalCode: e.target.value })} placeholder="e.g. 94105" className="cl-input cuba-field" />
                                     </div>
                                 </div>
                             </div>
 
                             {/* AI Tone Archetype Selector */}
-                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                                        <FaSlidersH className="text-indigo-600 w-3.5 h-3.5" />
+                            <div className="cl-subcard" style={{ marginTop: '1.5rem' }}>
+                                <div className="cl-subcard__head">
+                                    <h2 className="cl-eyebrow">
+                                        <FaSlidersH className="cl-eyebrow__icon" />
                                         <span>Select AI Tone Archetype</span>
-                                    </h3>
-                                    <span className="text-[11px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full">
+                                    </h2>
+                                    <span className="cl-pill cl-pill--brand">
                                         Active: {AI_TONES.find(t => t.id === this.state.aiTone)?.name || 'Modern Professional'}
                                     </span>
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                <div className="cl-tpl-grid">
                                     {AI_TONES.map(t => {
                                         const isToneSelected = (this.state.aiTone || 'modern') === t.id;
                                         return (
@@ -1109,17 +1199,14 @@ class CoverLetter extends Component {
                                                 key={t.id}
                                                 type="button"
                                                 onClick={() => this.setState({ aiTone: t.id })}
-                                                className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between ${
-                                                    isToneSelected
-                                                        ? 'border-indigo-600 bg-white ring-2 ring-indigo-500/20 shadow-xs'
-                                                        : 'border-slate-200 bg-white hover:border-slate-300'
-                                                }`}>
-                                                <div className="flex items-center justify-between mb-1">
-                                                    <span className="text-lg">{t.icon}</span>
-                                                    {isToneSelected && <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-sm">Selected</span>}
+                                                aria-pressed={isToneSelected}
+                                                className="cl-tone cuba-focus-ring">
+                                                <div className="cl-tone__head">
+                                                    <span className="cl-tone__emoji" aria-hidden="true">{t.icon}</span>
+                                                    {isToneSelected && <span className="cl-pill cl-pill--brand cl-pill--sm">Selected</span>}
                                                 </div>
-                                                <h5 className="text-xs font-bold text-slate-900">{t.name}</h5>
-                                                <p className="text-[10px] text-slate-500 mt-0.5">{t.desc}</p>
+                                                <h3 className="cl-tone__name">{t.name}</h3>
+                                                <p className="cl-tone__desc">{t.desc}</p>
                                             </button>
                                         );
                                     })}
@@ -1127,59 +1214,92 @@ class CoverLetter extends Component {
                             </div>
 
                             {/* Target Job Description. ATS matcher/score only when admin module is ON. */}
-                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-3">
+                            <div className="cl-subcard" style={{ marginTop: '1.5rem' }}>
                                 {this.state.isAtsEnabled === true ? (
                                     <>
-                                        <div className="flex items-center justify-between cursor-pointer" onClick={() => this.setState(prev => ({ showAtsSection: !prev.showAtsSection }))}>
-                                            <div className="flex items-center gap-2">
-                                                <div className="p-1.5 bg-indigo-100 text-indigo-700 rounded-lg">
-                                                    <FaBullseye className="w-3.5 h-3.5" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                                                        Target Job Description & ATS Keyword Matcher (Optional)
-                                                    </h3>
-                                                    <p className="text-[11px] text-slate-500">
+                                        <button
+                                            type="button"
+                                            className="cl-ats__toggle cuba-focus-ring"
+                                            aria-expanded={this.state.showAtsSection}
+                                            aria-controls="cl-ats-panel"
+                                            onClick={() => this.setState(prev => ({ showAtsSection: !prev.showAtsSection }))}
+                                        >
+                                            <span className="cl-ats__body">
+                                                <span className="cl-ats__icon" aria-hidden="true">
+                                                    <FaBullseye />
+                                                </span>
+                                                <span>
+                                                    <span className="cl-eyebrow">Target Job Description &amp; ATS Keyword Matcher (Optional)</span>
+                                                    <span className="cl-hint" style={{ display: 'block' }}>
                                                         Paste the job description to optimize keywords and compute your real-time ATS match score.
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <button type="button" className="text-xs font-bold text-indigo-600 hover:text-indigo-800">
-                                                {this.state.showAtsSection ? '▲ Hide ATS Drawer' : '▼ Expand ATS Drawer'}
-                                            </button>
-                                        </div>
+                                                    </span>
+                                                </span>
+                                            </span>
+                                            <span className="cl-text-action">
+                                                {this.state.showAtsSection ? 'Hide ATS Drawer' : 'Expand ATS Drawer'}
+                                            </span>
+                                        </button>
 
                                         {this.state.showAtsSection && (
-                                            <div className="space-y-3 pt-2">
+                                            <div id="cl-ats-panel" className="cl-card cl-card--tight" style={{ marginTop: '0.75rem' }}>
+                                                <label className="cl-field__label" htmlFor="cl-jobdesc">Job description</label>
                                                 <textarea
+                                                    id="cl-jobdesc"
                                                     value={this.state.jobDescription}
                                                     onChange={(e) => this.setState({ jobDescription: e.target.value })}
                                                     placeholder="Paste the target job description or core requirements here (e.g. 'Looking for a Senior Software Engineer experienced in React, TypeScript, Cloud Architecture, GraphQL, micro-services, and agile team delivery...')..."
-                                                    className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900 focus:border-indigo-600 focus:outline-hidden min-h-[90px] font-sans"
+                                                    className="cl-textarea cuba-field"
+                                                    style={{ minHeight: '90px' }}
                                                 />
 
                                                 {atsMetrics && (
-                                                    <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-2.5">
-                                                        <div className="flex items-center justify-between">
-                                                            <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                                                                <FaCheckCircle className={atsMetrics.score >= 80 ? 'text-emerald-500' : 'text-amber-500'} />
+                                                    <div style={{ marginTop: '0.875rem' }}>
+                                                        <div className="cl-ats__row">
+                                                            <span className="cl-ats__label">
+                                                                {atsMetrics.score >= 80
+                                                                    ? <FaCheckCircle style={{ color: 'var(--cuba-success)' }} />
+                                                                    : <FaExclamationCircle style={{ color: atsTier(atsMetrics.score) === 'warning' ? 'var(--cuba-warning)' : 'var(--cuba-danger)' }} />}
                                                                 <span>Estimated ATS Compatibility Score:</span>
                                                             </span>
-                                                            <span className={`text-xs font-mono font-bold px-2.5 py-0.5 rounded-full ${atsMetrics.score >= 80 ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'}`}>
+                                                            <span className={`cl-ats__score cl-ats__score--${atsTier(atsMetrics.score)}`}>
                                                                 {atsMetrics.score}% Match
                                                             </span>
                                                         </div>
 
-                                                        <div className="flex flex-wrap gap-1.5 text-[10px]">
+                                                        {/* The meter fill width is driven by the same value the
+                                                            readout renders, so bar and number cannot diverge. */}
+                                                        <div
+                                                            className="cl-ats__track"
+                                                            style={{ marginTop: '0.5rem' }}
+                                                            role="meter"
+                                                            aria-valuenow={atsMetrics.score}
+                                                            aria-valuemin={0}
+                                                            aria-valuemax={100}
+                                                            aria-label="ATS compatibility score"
+                                                        >
+                                                            <div
+                                                                className={`cl-ats__fill${atsTier(atsMetrics.score) === 'success' ? '' : ` cl-ats__fill--${atsTier(atsMetrics.score)}`}`}
+                                                                style={{ '--cl-ats-score': atsMetrics.score }}
+                                                            />
+                                                        </div>
+
+                                                        <div className="cl-ats__chips" style={{ marginTop: '0.625rem' }}>
                                                             {atsMetrics.matched.map(kw => (
-                                                                <span key={kw} className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md font-semibold">
-                                                                    ✓ {kw}
+                                                                <span key={`matched-${kw}`} className="cl-chip cl-chip--matched">
+                                                                    <span aria-hidden="true">&#10003;</span> {kw}
                                                                 </span>
                                                             ))}
                                                             {atsMetrics.missing.map(kw => (
-                                                                <span key={kw} className="px-2 py-0.5 bg-rose-50 text-rose-700 border border-rose-200 rounded-md font-semibold">
-                                                                    + {kw}
-                                                                </span>
+                                                                <button
+                                                                    key={`missing-${kw}`}
+                                                                    type="button"
+                                                                    className="cl-chip cl-chip--missing cuba-focus-ring"
+                                                                    onClick={() => this.handleCopyKeyword(kw)}
+                                                                    title={`Copy "${kw}" to the clipboard to paste into your letter`}
+                                                                    aria-label={`Copy missing keyword ${kw} to clipboard`}
+                                                                >
+                                                                    <span aria-hidden="true">+</span> {kw}
+                                                                </button>
                                                             ))}
                                                         </div>
                                                     </div>
@@ -1189,50 +1309,55 @@ class CoverLetter extends Component {
                                     </>
                                 ) : (
                                     <>
-                                        <div className="flex items-center gap-2">
-                                            <div className="p-1.5 bg-indigo-100 text-indigo-700 rounded-lg">
-                                                <FaBullseye className="w-3.5 h-3.5" />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                                                    Target Job Description (Optional)
-                                                </h3>
-                                                <p className="text-[11px] text-slate-500">
+                                        <div className="cl-ats__body">
+                                            <span className="cl-ats__icon" aria-hidden="true">
+                                                <FaBullseye />
+                                            </span>
+                                            <span>
+                                                <span className="cl-eyebrow">Target Job Description (Optional)</span>
+                                                <span className="cl-hint" style={{ display: 'block' }}>
                                                     Paste the job description so AI can tailor the letter. This is not an ATS score.
-                                                </p>
-                                            </div>
+                                                </span>
+                                            </span>
                                         </div>
+                                        <label className="cl-field__label" htmlFor="cl-jobdesc-plain" style={{ marginTop: '0.75rem' }}>Job description</label>
                                         <textarea
+                                            id="cl-jobdesc-plain"
                                             value={this.state.jobDescription}
                                             onChange={(e) => this.setState({ jobDescription: e.target.value })}
                                             placeholder="Paste the target job description or core requirements here..."
-                                            className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900 focus:border-indigo-600 focus:outline-hidden min-h-[90px] font-sans"
+                                            className="cl-textarea cuba-field"
+                                            style={{ minHeight: '90px', marginTop: '0.25rem' }}
                                         />
                                     </>
                                 )}
                             </div>
 
-                            <button onClick={() => this.generateAiCoverLetter()} disabled={this.state.isAiGenerating} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-2">
-                                {this.state.isAiGenerating ? '⚡ Generating AI Cover Letter...' : `⚡ Generate AI Cover Letter (${AI_TONES.find(t => t.id === this.state.aiTone)?.name || 'Modern Professional'})`}
+                            <button
+                                onClick={() => this.generateAiCoverLetter()}
+                                disabled={this.state.isAiGenerating}
+                                className="cl-btn cl-btn--primary cl-btn--block cl-btn--lg"
+                                style={{ marginTop: '1.5rem' }}
+                            >
+                                <FaMagic className="cl-btn__glyph" />
+                                <span>{this.state.isAiGenerating ? '⚡ Generating AI Cover Letter...' : `⚡ Generate AI Cover Letter (${AI_TONES.find(t => t.id === this.state.aiTone)?.name || 'Modern Professional'})`}</span>
                             </button>
                         </div>
                     )}
 
                     {/* Step 2: 4-Template Selection & Live Visual Preview */}
                     {this.state.step === 2 && (
-                        <div className="space-y-6">
+                        <div className="cl-card">
                             {/* 4 Cover Templates Selector Cards */}
-                            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                                        Choose From 4 Available Cover Letter Templates
-                                    </h3>
-                                    <span className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
+                            <div className="cl-subcard">
+                                <div className="cl-subcard__head">
+                                    <h2 className="cl-eyebrow">Choose From 4 Available Cover Letter Templates</h2>
+                                    <span className="cl-pill cl-pill--brand">
                                         Active: {activeTemplate.name} ({activeTemplate.id})
                                     </span>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                <div className="cl-tpl-grid">
                                     {COVER_TEMPLATES.map(tpl => {
                                         const isSelected = (this.state.templateId || 'Cover1') === tpl.id;
                                         return (
@@ -1240,29 +1365,22 @@ class CoverLetter extends Component {
                                                 key={tpl.id}
                                                 type="button"
                                                 onClick={() => this.setState({ templateId: tpl.id })}
-                                                className={`text-left p-3.5 rounded-xl border-2 transition-all flex flex-col justify-between relative ${
-                                                    isSelected
-                                                        ? 'border-indigo-600 bg-indigo-50/60 shadow-xs'
-                                                        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
-                                                }`}>
-                                                <div className="space-y-1.5">
-                                                    <div className="flex items-center justify-between">
-                                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full text-white bg-gradient-to-r ${tpl.color}`}>
-                                                            {tpl.badge}
-                                                        </span>
-                                                        {isSelected && (
-                                                            <span className="text-xs font-bold text-indigo-600 flex items-center gap-1">
-                                                                ✓ Selected
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <h4 className="text-xs font-bold text-slate-900">{tpl.name}</h4>
-                                                    <p className="text-[11px] text-slate-500 leading-snug">{tpl.description}</p>
-                                                </div>
-                                                <div className="mt-3 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                                                aria-pressed={isSelected}
+                                                className="cl-tpl cuba-focus-ring"
+                                            >
+                                                <span className="cl-tpl__swatch" aria-hidden="true" />
+                                                <span className="cl-pill cl-pill--neutral cl-pill--sm">{tpl.badge}</span>
+                                                {isSelected && (
+                                                    <span className="cl-tpl__check">
+                                                        <span aria-hidden="true">&#10003;</span> Selected
+                                                    </span>
+                                                )}
+                                                <h3 className="cl-tpl__name">{tpl.name}</h3>
+                                                <p className="cl-tpl__desc">{tpl.description}</p>
+                                                <span className="cl-tpl__foot">
                                                     <span>{tpl.id}</span>
                                                     <span>{isSelected ? 'Active Preview' : 'Click to Apply'}</span>
-                                                </div>
+                                                </span>
                                             </button>
                                         );
                                     })}
@@ -1270,89 +1388,95 @@ class CoverLetter extends Component {
                             </div>
 
                             {/* Visual Render or Text Editor */}
-                            <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-6 shadow-sm">
-                                {this.state.viewMode === 'visual' ? (
-                                    <div className="bg-slate-100/80 p-4 sm:p-8 rounded-2xl border border-slate-200 overflow-x-auto shadow-inner flex flex-col items-center min-h-[650px]">
-                                        <div className="w-full max-w-[794px] flex items-center justify-between mb-3 px-2">
-                                            <span className="text-xs font-semibold text-slate-500">A4 Letter Canvas Preview</span>
-                                            <button
-                                                type="button"
-                                                onClick={() => this.setState({ showPreviewModal: true })}
-                                                className="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-white hover:bg-indigo-50 border border-slate-200 px-3 py-1.5 rounded-lg shadow-2xs transition-all flex items-center gap-1.5">
-                                                <FaExpand className="w-3 h-3" />
-                                                <span>Open Fullscreen Modal</span>
-                                            </button>
-                                        </div>
-                                        {/* Authentic A4 Paper Canvas */}
-                                        <div
-                                            className="bg-white text-slate-900 rounded-sm shadow-xl border border-slate-200/80 overflow-hidden"
-                                            style={{
-                                                width: '100%',
-                                                maxWidth: '794px',
-                                                minHeight: '1000px',
-                                                boxShadow: '0 20px 40px -12px rgba(0, 0, 0, 0.15), 0 8px 32px -8px rgba(0, 0, 0, 0.1)',
-                                            }}>
-                                            <TemplateRenderer
-                                                templateId={this.state.templateId || 'Cover1'}
-                                                values={templateValues}
-                                                language={this.props.i18n?.language || 'en'}
-                                            />
-                                        </div>
+                            {this.state.viewMode === 'visual' ? (
+                                <div className="cl-canvas-wrap" style={{ marginTop: '1.5rem' }}>
+                                    <div className="cl-canvas-wrap__head">
+                                        <span className="cl-canvas-wrap__label">A4 Letter Canvas Preview</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => this.setState({ showPreviewModal: true })}
+                                            className="cl-btn cl-btn--soft cl-btn--sm cuba-focus-ring">
+                                            <FaExpand className="cl-btn__glyph" />
+                                            <span>Open Fullscreen Modal</span>
+                                        </button>
                                     </div>
-                                ) : (
-                                    <div className="space-y-2">
-                                        <label className="block text-xs font-bold text-slate-700">Cover Letter Body Content (Editable)</label>
-                                        <textarea
-                                            value={effectiveBody}
-                                            onChange={(e) => this.setState({ letterBody: e.target.value })}
-                                            className="w-full h-72 text-xs p-4 bg-white border border-slate-300 rounded-xl text-slate-900 font-mono leading-relaxed focus:border-indigo-600 focus:outline-hidden"
+                                    {/* Authentic A4 Paper Canvas */}
+                                    <div className="cl-paper" style={{ width: '100%', maxWidth: '794px', minHeight: '1000px' }}>
+                                        <TemplateRenderer
+                                            templateId={this.state.templateId || 'Cover1'}
+                                            values={templateValues}
+                                            language={this.props.i18n?.language || 'en'}
                                         />
                                     </div>
-                                )}
+                                </div>
+                            ) : (
+                                <div className="cl-field" style={{ marginTop: '1.5rem' }}>
+                                    <label className="cl-field__label" htmlFor="cl-letterbody">Cover Letter Body Content (Editable)</label>
+                                    <textarea
+                                        id="cl-letterbody"
+                                        value={effectiveBody}
+                                        onChange={(e) => this.setState({ letterBody: e.target.value })}
+                                        className="cl-textarea cl-textarea--mono cuba-field"
+                                        style={{ height: '18rem' }}
+                                    />
+                                </div>
+                            )}
 
                                 {/* 1-Click Tone Refinement Toolbar */}
-                                <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                                    <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                                        <FaMagic className="text-indigo-600 w-3.5 h-3.5" />
+                            <div className="cl-subcard" style={{ marginTop: '1.5rem' }}>
+                                <div className="cl-subcard__head">
+                                    <h2 className="cl-eyebrow">
+                                        <FaMagic className="cl-eyebrow__icon" />
                                         <span>1-Click Tone Transformation:</span>
-                                    </span>
-                                    <div className="flex flex-wrap items-center gap-1.5">
-                                        {AI_TONES.map(t => (
-                                            <button
-                                                key={t.id}
-                                                type="button"
-                                                disabled={this.state.isAiGenerating}
-                                                onClick={() => this.generateAiCoverLetter(t.id)}
-                                                className={`text-xs px-2.5 py-1.5 rounded-lg border font-semibold transition-all flex items-center gap-1 ${
-                                                    this.state.aiTone === t.id
-                                                        ? 'bg-indigo-600 text-white border-indigo-600 font-bold shadow-2xs'
-                                                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                                                }`}>
-                                                <span>{t.icon}</span>
-                                                <span>{t.name}</span>
-                                            </button>
-                                        ))}
-                                    </div>
+                                    </h2>
                                 </div>
-
-                                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-                                    <button onClick={() => this.setState({ step: 1 })} className="w-full sm:w-auto px-5 py-2.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">
-                                        Back to Role Details
-                                    </button>
-                                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+                                <div className="cl-share-tray" style={{ flexWrap: 'wrap' }}>
+                                    {AI_TONES.map(t => (
                                         <button
-                                            onClick={() => this.generateAiCoverLetter()}
+                                            key={t.id}
+                                            type="button"
                                             disabled={this.state.isAiGenerating}
-                                            className="px-4 py-2.5 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl transition-all flex items-center gap-2 shadow-2xs">
-                                            {this.state.isAiGenerating ? '⚡ Regenerating...' : '⚡ 🔄 Regenerate AI Variation'}
+                                            onClick={() => this.generateAiCoverLetter(t.id)}
+                                            aria-pressed={this.state.aiTone === t.id}
+                                            className="cl-tone-pill cuba-focus-ring"
+                                        >
+                                            <span aria-hidden="true">{t.icon}</span>
+                                            <span>{t.name}</span>
                                         </button>
-                                        <button onClick={this.handleSaveCoverLetter} disabled={this.state.isSaving} className="px-4 py-2.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">
-                                            {this.state.isSaving ? 'Saving...' : '💾 Save to Dashboard'}
-                                        </button>
-                                        <button onClick={() => this.setState({ step: 3 })} className="px-5 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-all">
-                                            Next: Export & Share Package
-                                        </button>
-                                    </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="cl-card__head" style={{ marginTop: '1.5rem' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => this.setState({ step: 1 })}
+                                    className="cl-btn cl-btn--neutral cl-btn--sm cuba-focus-ring">
+                                    Back to Role Details
+                                </button>
+                                <div className="cl-modal__tools">
+                                    <button
+                                        type="button"
+                                        onClick={() => this.generateAiCoverLetter()}
+                                        disabled={this.state.isAiGenerating}
+                                        className="cl-btn cl-btn--soft cl-btn--sm cuba-focus-ring">
+                                        <FaSyncAlt className="cl-btn__glyph" />
+                                        <span>{this.state.isAiGenerating ? '⚡ Regenerating...' : '⚡ 🔄 Regenerate AI Variation'}</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={this.handleSaveCoverLetter}
+                                        disabled={this.state.isSaving}
+                                        className="cl-btn cl-btn--neutral cl-btn--sm cuba-focus-ring">
+                                        <FaBookmark className="cl-btn__glyph" />
+                                        <span>{this.state.isSaving ? 'Saving...' : 'Save to Dashboard'}</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => this.setState({ step: 3 })}
+                                        className="cl-btn cl-btn--primary cl-btn--sm cuba-focus-ring">
+                                        Next: Export &amp; Share Package
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -1360,50 +1484,59 @@ class CoverLetter extends Component {
 
                     {/* Step 3: Final Export, Fullscreen Modal & Omni-Channel Share Package */}
                     {this.state.step === 3 && (
-                        <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-6 shadow-sm">
+                        <div className="cl-card">
                             {/* Template Switcher Bar */}
-                            <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                                <span className="text-xs font-bold text-slate-700">Cover Letter Style:</span>
-                                <div className="flex flex-wrap items-center gap-2">
+                            <div className="cl-subcard">
+                                <h2 className="cl-section-title" style={{ marginBottom: '0.75rem' }}>Cover Letter Style:</h2>
+                                <div className="cl-share-tray" style={{ flexWrap: 'wrap' }}>
                                     {COVER_TEMPLATES.map(tpl => (
                                         <button
                                             key={tpl.id}
                                             type="button"
                                             onClick={() => this.setState({ templateId: tpl.id })}
-                                            className={`px-3 py-1.5 text-xs rounded-lg font-semibold transition-all ${
-                                                (this.state.templateId || 'Cover1') === tpl.id
-                                                    ? 'bg-indigo-600 text-white shadow-xs font-bold'
-                                                    : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
-                                            }`}>
+                                            aria-pressed={(this.state.templateId || 'Cover1') === tpl.id}
+                                            className="cl-chip-toggle cuba-focus-ring"
+                                        >
                                             {tpl.name}
                                         </button>
                                     ))}
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                            <div className="cl-grid-2" style={{ marginTop: '1.5rem', gridTemplateColumns: '1fr' }}>
                                 {/* Proportional Live Preview Card with Modal Trigger */}
-                                <div className="lg:col-span-6 space-y-2">
+                                <div>
                                     <div
                                         onClick={() => this.setState({ showPreviewModal: true })}
-                                        className="relative h-[490px] bg-slate-100/90 rounded-2xl border border-slate-200 overflow-hidden flex items-start justify-center cursor-pointer group hover:border-indigo-300 transition-all shadow-inner p-3">
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.preventDefault();
+                                                this.setState({ showPreviewModal: true });
+                                            }
+                                        }}
+                                        role="button"
+                                        tabIndex={0}
+                                        aria-label="Open fullscreen cover letter preview"
+                                        className="cl-preview-stage"
+                                        style={{ height: '490px' }}
+                                    >
                                         {/* Hover Overlay */}
-                                        <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/20 backdrop-blur-none group-hover:backdrop-blur-2xs transition-all duration-300 z-10 flex items-center justify-center pointer-events-none">
-                                            <div className="opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-200 bg-white/95 text-indigo-700 px-4 py-2 rounded-xl text-xs font-bold shadow-lg flex items-center gap-2 border border-indigo-100">
-                                                <FaExpand className="w-3.5 h-3.5" />
+                                        <div className="cl-preview-stage__overlay">
+                                            <span className="cl-preview-stage__cta">
+                                                <FaExpand />
                                                 <span>Click to Open Fullscreen Preview</span>
-                                            </div>
+                                            </span>
                                         </div>
 
                                         {/* Scaled A4 Preview Board */}
                                         <div
-                                            className="bg-white text-slate-900 rounded-sm shadow-md border border-slate-200 pointer-events-none"
+                                            className="cl-paper"
                                             style={{
                                                 width: '794px',
                                                 minHeight: '1122px',
                                                 transform: 'scale(0.40)',
-                                                transformOrigin: 'top center',
                                                 marginBottom: '-580px',
+                                                flex: 'none',
                                             }}>
                                             <TemplateRenderer
                                                 templateId={this.state.templateId || 'Cover1'}
@@ -1412,105 +1545,86 @@ class CoverLetter extends Component {
                                             />
                                         </div>
                                     </div>
-                                    <div className="flex items-center justify-between px-1">
-                                        <span className="text-[11px] text-slate-400">Click preview card to open modal</span>
+                                    <div className="cl-card__head" style={{ marginTop: '0.5rem', paddingInline: '0.25rem' }}>
+                                        <span className="cl-hint">Click preview card to open modal</span>
                                         <button
                                             type="button"
                                             onClick={() => this.setState({ showPreviewModal: true })}
-                                            className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1.5">
-                                            <FaExpand className="w-3 h-3" />
+                                            className="cl-text-action cuba-focus-ring">
+                                            <FaExpand className="cl-text-action__glyph" />
                                             <span>Expand Preview</span>
                                         </button>
                                     </div>
                                 </div>
 
                                 {/* Download & Omni-Channel Share Actions */}
-                                <div className="lg:col-span-6 space-y-6">
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-                                                Ready for Submission
-                                            </span>
-                                            <span className="text-[10px] font-mono text-slate-400">{activeTemplate.id}</span>
-                                        </div>
-                                        <h3 className="text-xl font-bold text-slate-900">Your Styled Cover Letter is Ready!</h3>
-                                        <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                                            Formatted using the <strong className="text-slate-800 font-semibold">{activeTemplate.name}</strong> template with dynamic candidate details.
-                                        </p>
+                                <div>
+                                    <div className="cl-card__head">
+                                        <span className="cl-pill cl-pill--success">Ready for Submission</span>
+                                        <span className="cl-subtle" style={{ fontSize: '0.625rem', fontFamily: 'ui-monospace, monospace' }}>{activeTemplate.id}</span>
                                     </div>
+                                    <h2 className="cl-section-title" style={{ marginTop: '0.5rem', fontSize: '1.25rem' }}>Your Styled Cover Letter is Ready!</h2>
+                                    <p className="cl-body-copy">
+                                        Formatted using the <strong>{activeTemplate.name}</strong> template with dynamic candidate details.
+                                    </p>
 
                                     {/* Primary Export Actions */}
-                                    <div className="space-y-2.5">
+                                    <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
                                         <button
+                                            type="button"
                                             onClick={this.handlePrintCoverLetter}
-                                            className="w-full py-3.5 px-4 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2">
-                                            <FaPrint className="w-3.5 h-3.5" />
+                                            className="cl-btn cl-btn--primary cl-btn--block cuba-focus-ring">
+                                            <FaPrint className="cl-btn__glyph" />
                                             <span>Print / Save as PDF ({activeTemplate.name})</span>
                                         </button>
                                         <button
                                             type="button"
                                             disabled={this.state.isSyncingTracker}
                                             onClick={() => this.handleSyncToJobTracker()}
-                                            className="w-full py-3 px-4 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80 rounded-xl transition-all flex items-center justify-center gap-2 shadow-2xs">
-                                            <FaBriefcase className="w-3.5 h-3.5 text-indigo-600" />
+                                            className="cl-btn cl-btn--soft cl-btn--block cuba-focus-ring">
+                                            <FaBriefcase className="cl-btn__glyph" />
                                             <span>{this.state.isSyncingTracker ? 'Syncing to Job Tracker...' : '📌 Sync & Attach to Job Tracker'}</span>
                                         </button>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                        <div className="cl-grid-2">
                                             <button
+                                                type="button"
                                                 onClick={this.exportCoverLetterTxt}
-                                                className="py-2.5 px-3 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl transition-all flex items-center justify-center gap-2">
-                                                <FaFileDownload className="w-3.5 h-3.5 text-slate-500" />
+                                                className="cl-btn cl-btn--neutral cuba-focus-ring">
+                                                <FaFileDownload className="cl-btn__glyph" />
                                                 <span>Download Plain Text (.txt)</span>
                                             </button>
                                             <button
+                                                type="button"
                                                 onClick={this.handleCopyFormattedText}
-                                                className="py-2.5 px-3 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl transition-all flex items-center justify-center gap-2">
-                                                <FaCopy className="w-3.5 h-3.5 text-indigo-600" />
+                                                className="cl-btn cl-btn--soft cuba-focus-ring">
+                                                <FaCopy className="cl-btn__glyph" />
                                                 <span>Copy Formatted Text</span>
                                             </button>
                                         </div>
                                     </div>
 
                                     {/* Omni-Channel Social & Messaging Share Suite */}
-                                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
-                                        <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                                            <span>🚀 Share Cover Letter with Recruiter</span>
-                                        </h4>
-                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                            {/* WhatsApp */}
-                                            <button
-                                                type="button"
-                                                onClick={this.handleShareWhatsApp}
-                                                className="p-2.5 bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 rounded-xl text-center transition-all group flex flex-col items-center gap-1.5 shadow-2xs">
-                                                <FaWhatsapp className="w-5 h-5 text-emerald-500 group-hover:scale-110 transition-transform" />
-                                                <span className="text-[11px] font-bold text-slate-700 group-hover:text-emerald-700">WhatsApp</span>
+                                    <div className="cl-subcard" style={{ marginTop: '1.5rem' }}>
+                                        <h3 className="cl-eyebrow">
+                                            <span aria-hidden="true">&#128640;</span>
+                                            <span>Share Cover Letter with Recruiter</span>
+                                        </h3>
+                                        <div className="cl-share-grid" style={{ marginTop: '0.75rem' }}>
+                                            <button type="button" onClick={this.handleShareWhatsApp} className="cl-share cl-share--success cuba-focus-ring" aria-label="Share cover letter on WhatsApp">
+                                                <FaWhatsapp />
+                                                <span className="cl-share__label">WhatsApp</span>
                                             </button>
-
-                                            {/* Email / Gmail */}
-                                            <button
-                                                type="button"
-                                                onClick={this.handleShareEmail}
-                                                className="p-2.5 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-xl text-center transition-all group flex flex-col items-center gap-1.5 shadow-2xs">
-                                                <FaEnvelope className="w-5 h-5 text-blue-500 group-hover:scale-110 transition-transform" />
-                                                <span className="text-[11px] font-bold text-slate-700 group-hover:text-blue-700">Email</span>
+                                            <button type="button" onClick={this.handleShareEmail} className="cl-share cl-share--info cuba-focus-ring" aria-label="Share cover letter by email">
+                                                <FaEnvelope />
+                                                <span className="cl-share__label">Email</span>
                                             </button>
-
-                                            {/* Telegram */}
-                                            <button
-                                                type="button"
-                                                onClick={this.handleShareTelegram}
-                                                className="p-2.5 bg-white hover:bg-sky-50 border border-slate-200 hover:border-sky-300 rounded-xl text-center transition-all group flex flex-col items-center gap-1.5 shadow-2xs">
-                                                <FaTelegramPlane className="w-5 h-5 text-sky-500 group-hover:scale-110 transition-transform" />
-                                                <span className="text-[11px] font-bold text-slate-700 group-hover:text-sky-700">Telegram</span>
+                                            <button type="button" onClick={this.handleShareTelegram} className="cl-share cl-share--info cuba-focus-ring" aria-label="Share cover letter on Telegram">
+                                                <FaTelegramPlane />
+                                                <span className="cl-share__label">Telegram</span>
                                             </button>
-
-                                            {/* LinkedIn */}
-                                            <button
-                                                type="button"
-                                                onClick={this.handleShareLinkedIn}
-                                                className="p-2.5 bg-white hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 rounded-xl text-center transition-all group flex flex-col items-center gap-1.5 shadow-2xs">
-                                                <FaLinkedin className="w-5 h-5 text-indigo-600 group-hover:scale-110 transition-transform" />
-                                                <span className="text-[11px] font-bold text-slate-700 group-hover:text-indigo-700">LinkedIn</span>
+                                            <button type="button" onClick={this.handleShareLinkedIn} className="cl-share cl-share--brand cuba-focus-ring" aria-label="Share cover letter on LinkedIn">
+                                                <FaLinkedin />
+                                                <span className="cl-share__label">LinkedIn</span>
                                             </button>
                                         </div>
                                     </div>
@@ -1521,29 +1635,31 @@ class CoverLetter extends Component {
 
                     {/* Saved Cover Letters Gallery with Full CRUD */}
                     {this.state.savedLetters && this.state.savedLetters.length > 0 && (
-                        <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-4 shadow-sm">
-                            <h3 className="text-sm font-bold text-slate-900 mb-2">Saved Cover Letters ({this.state.savedLetters.length})</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="cl-card">
+                            <h2 className="cl-section-title" style={{ marginBottom: '0.5rem' }}>
+                                Saved Cover Letters ({this.state.savedLetters.length})
+                            </h2>
+                            <div className="cl-grid-2">
                                 {this.state.savedLetters.map(letter => {
                                     const tplInfo = this.getTemplateInfo(letter.templateId);
                                     return (
-                                        <div key={letter.id} className="bg-white border border-slate-200/90 hover:border-indigo-300 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between space-y-4 group">
+                                        <div key={letter.id} className="cl-subcard">
                                             {/* Card Top Row: Title, Template Badge, and View Popup Icon */}
-                                            <div className="flex items-start justify-between gap-3">
-                                                <div className="space-y-1 min-w-0 flex-1">
-                                                    <div className="flex items-center gap-2 flex-wrap">
-                                                        <h4 className="text-sm font-bold text-slate-900 tracking-tight truncate">
+                                            <div className="cl-card__head" style={{ alignItems: 'flex-start' }}>
+                                                <div style={{ minWidth: 0, flex: 1 }}>
+                                                    <div className="cl-card__head" style={{ justifyContent: 'flex-start' }}>
+                                                        <h3 className="cl-section-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                             {letter.jobTitle || 'Target Position'}
-                                                        </h4>
-                                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full text-white bg-gradient-to-r ${tplInfo.color} shadow-2xs`}>
+                                                        </h3>
+                                                        <span className="cl-pill cl-pill--neutral cl-pill--sm">
                                                             {tplInfo.name}
                                                         </span>
                                                     </div>
-                                                    <p className="text-xs text-slate-600 font-medium truncate">
+                                                    <p className="cl-hint">
                                                         {letter.companyName ? `🏢 ${letter.companyName}` : 'Company Not Specified'}
                                                     </p>
-                                                    <p className="text-[11px] text-slate-400">
-                                                        Candidate: <span className="font-semibold text-slate-700">{letter.candidateFirstname ? `${letter.candidateFirstname} ${letter.candidateLastname || ''}` : (candidateFullName || 'User Profile')}</span>
+                                                    <p className="cl-hint">
+                                                        Candidate: <strong className="cl-strong">{letter.candidateFirstname ? `${letter.candidateFirstname} ${letter.candidateLastname || ''}` : (candidateFullName || 'User Profile')}</strong>
                                                     </p>
                                                 </div>
 
@@ -1552,63 +1668,73 @@ class CoverLetter extends Component {
                                                     type="button"
                                                     title="Preview Cover Letter (Fullscreen A4)"
                                                     onClick={() => this.handleViewSavedLetter(letter)}
-                                                    className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 rounded-xl transition-all shadow-2xs flex items-center gap-1.5 text-xs font-bold shrink-0">
-                                                    <FaEye className="w-3.5 h-3.5" />
+                                                    className="cl-btn cl-btn--soft cl-btn--sm cuba-focus-ring"
+                                                    style={{ flex: 'none' }}
+                                                >
+                                                    <FaEye className="cl-btn__glyph" />
                                                     <span>View</span>
                                                 </button>
                                             </div>
 
                                             {/* Card Bottom Row: Share Icons & Primary Actions */}
-                                            <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                                            <hr className="cl-divider" style={{ margin: '0.75rem 0' }} />
+                                            <div className="cl-card__head">
                                                 {/* Quick Share Icons */}
-                                                <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-xl border border-slate-200/70">
+                                                <div className="cl-share-tray">
                                                     <button
                                                         type="button"
                                                         title="Share via WhatsApp"
+                                                        aria-label={`Share ${letter.jobTitle || 'cover letter'} via WhatsApp`}
                                                         onClick={() => this.handleShareLetterWhatsApp(letter)}
-                                                        className="w-7 h-7 bg-white hover:bg-emerald-500 hover:text-white text-emerald-600 border border-slate-200/80 rounded-lg flex items-center justify-center transition-all shadow-2xs">
-                                                        <FaWhatsapp className="w-3.5 h-3.5" />
+                                                        className="cl-icon-btn cuba-focus-ring">
+                                                        <FaWhatsapp className="cl-icon-btn__glyph" style={{ color: 'var(--cuba-success)' }} />
                                                     </button>
                                                     <button
                                                         type="button"
                                                         title="Share via Email"
+                                                        aria-label={`Share ${letter.jobTitle || 'cover letter'} via email`}
                                                         onClick={() => this.handleShareLetterEmail(letter)}
-                                                        className="w-7 h-7 bg-white hover:bg-blue-500 hover:text-white text-blue-600 border border-slate-200/80 rounded-lg flex items-center justify-center transition-all shadow-2xs">
-                                                        <FaEnvelope className="w-3 h-3" />
+                                                        className="cl-icon-btn cuba-focus-ring">
+                                                        <FaEnvelope className="cl-icon-btn__glyph" style={{ color: 'var(--cuba-info)' }} />
                                                     </button>
                                                     <button
                                                         type="button"
                                                         title="Share via Telegram"
+                                                        aria-label={`Share ${letter.jobTitle || 'cover letter'} via Telegram`}
                                                         onClick={() => this.handleShareLetterTelegram(letter)}
-                                                        className="w-7 h-7 bg-white hover:bg-sky-500 hover:text-white text-sky-500 border border-slate-200/80 rounded-lg flex items-center justify-center transition-all shadow-2xs">
-                                                        <FaTelegramPlane className="w-3.5 h-3.5" />
+                                                        className="cl-icon-btn cuba-focus-ring">
+                                                        <FaTelegramPlane className="cl-icon-btn__glyph" style={{ color: 'var(--cuba-info)' }} />
                                                     </button>
                                                     <button
                                                         type="button"
                                                         title="Share via LinkedIn"
+                                                        aria-label={`Share ${letter.jobTitle || 'cover letter'} via LinkedIn`}
                                                         onClick={() => this.handleShareLetterLinkedIn(letter)}
-                                                        className="w-7 h-7 bg-white hover:bg-indigo-600 hover:text-white text-indigo-600 border border-slate-200/80 rounded-lg flex items-center justify-center transition-all shadow-2xs">
-                                                        <FaLinkedin className="w-3.5 h-3.5" />
+                                                        className="cl-icon-btn cuba-focus-ring">
+                                                        <FaLinkedin className="cl-icon-btn__glyph" style={{ color: 'var(--cuba-primary)' }} />
                                                     </button>
                                                     <button
                                                         type="button"
                                                         title="Copy Cover Letter Text"
+                                                        aria-label={`Copy ${letter.jobTitle || 'cover letter'} text`}
                                                         onClick={() => this.handleCopyLetterText(letter)}
-                                                        className="w-7 h-7 bg-white hover:bg-slate-700 hover:text-white text-slate-600 border border-slate-200/80 rounded-lg flex items-center justify-center transition-all shadow-2xs">
-                                                        <FaCopy className="w-3 h-3" />
+                                                        className="cl-icon-btn cuba-focus-ring">
+                                                        <FaCopy className="cl-icon-btn__glyph" />
                                                     </button>
                                                     <button
                                                         type="button"
                                                         title="Sync & Attach to Job Tracker"
+                                                        aria-label={`Sync ${letter.jobTitle || 'cover letter'} to the job tracker`}
                                                         onClick={() => this.handleSyncToJobTracker(letter)}
-                                                        className="w-7 h-7 bg-white hover:bg-indigo-600 hover:text-white text-indigo-600 border border-slate-200/80 rounded-lg flex items-center justify-center transition-all shadow-2xs">
-                                                        <FaBriefcase className="w-3 h-3" />
+                                                        className="cl-icon-btn cuba-focus-ring">
+                                                        <FaBriefcase className="cl-icon-btn__glyph" />
                                                     </button>
                                                 </div>
 
                                                 {/* Action Buttons: Edit, Duplicate, Delete */}
-                                                <div className="flex items-center gap-1.5">
+                                                <div className="cl-share-tray" style={{ gap: '0.375rem' }}>
                                                     <button
+                                                        type="button"
                                                         onClick={() => this.setState({
                                                             currentId: letter.id,
                                                             candidateFirstname: letter.candidateFirstname || this.state.candidateFirstname,
@@ -1628,20 +1754,22 @@ class CoverLetter extends Component {
                                                             templateId: letter.templateId || 'Cover1',
                                                             step: 2
                                                         })}
-                                                        className="text-xs font-bold text-indigo-700 hover:text-indigo-900 bg-indigo-50/80 hover:bg-indigo-100 px-3 py-1.5 rounded-xl border border-indigo-200/80 shadow-2xs transition-all flex items-center gap-1">
-                                                        <FaEdit className="w-3 h-3" />
+                                                        className="cl-btn cl-btn--soft cl-btn--sm cuba-focus-ring">
+                                                        <FaEdit className="cl-btn__glyph" />
                                                         <span>Edit</span>
                                                     </button>
                                                     <button
+                                                        type="button"
                                                         onClick={() => this.handleDuplicateCoverLetter(letter)}
-                                                        className="text-xs font-semibold text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs transition-all flex items-center gap-1">
-                                                        <FaClone className="w-3 h-3" />
+                                                        className="cl-btn cl-btn--neutral cl-btn--sm cuba-focus-ring">
+                                                        <FaClone className="cl-btn__glyph" />
                                                         <span>Duplicate</span>
                                                     </button>
                                                     <button
+                                                        type="button"
                                                         onClick={() => this.setState({ letterToDelete: letter })}
-                                                        className="text-xs font-semibold text-red-600 hover:text-red-800 bg-white hover:bg-red-50 px-3 py-1.5 rounded-xl border border-slate-200 hover:border-red-200 shadow-2xs transition-all flex items-center gap-1">
-                                                        <FaTrashAlt className="w-3 h-3" />
+                                                        className="cl-btn cl-btn--danger cl-btn--sm cuba-focus-ring">
+                                                        <FaTrashAlt className="cl-btn__glyph" />
                                                         <span>Delete</span>
                                                     </button>
                                                 </div>
@@ -1660,4 +1788,25 @@ class CoverLetter extends Component {
 }
 
 const MyComponent = withTranslation('common')(CoverLetter);
-export default MyComponent;
+
+/* react-router-dom v7 removed `withRouter`, so the route location is injected
+   by a thin function wrapper instead of a HOC. This is what makes the AC-2
+   shell gate possible: `pathname` tells the builder whether it is mounted
+   inside CubaCandidateShell (/dashboard/cover-letters, where the shell already
+   renders the logo and a dashboard link) or standalone (/coverletter, where
+   it must supply that chrome itself). */
+function CoverLetterRoute(props) {
+    const location = useLocation();
+    const [searchParams] = useSearchParams();
+    // DIR-020 AC-11 (5): the job tracker's "View linked cover letter" action
+    // navigates here with the tracked role/company as query params. They are
+    // forwarded as real props so the builder opens with genuine job context
+    // instead of a blank form. Absent params simply stay undefined.
+    const roleContext = {
+        jobTitle: searchParams.get('role') || '',
+        companyName: searchParams.get('company') || '',
+    };
+    return <MyComponent {...props} {...roleContext} pathname={location.pathname} />;
+}
+
+export default CoverLetterRoute;

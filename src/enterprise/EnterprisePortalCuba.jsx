@@ -1,8 +1,11 @@
 ﻿import React from 'react';
-import { useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import CubaPortalShell from '../components/cuba/CubaPortalShell';
-import { enterpriseNavigationFor } from '../components/cuba/portalNavigation';
+import { COPILOT_PORTALS } from '../components/cuba/copilotActions';
+import { enterpriseNavigationFor, filterByPermissions } from '../components/cuba/portalNavigation';
 import { useEnterpriseTenant } from './EnterpriseContext';
+import { TenantSwitcher, WorkspaceBadge, EnterpriseRoleSimulationBanner } from './EnterpriseContextSwitchers';
+import { resolveOrgRoute } from './orgRouteState';
 
 /**
  * Cuba organization console â€” Phase 6 wrapper.
@@ -23,24 +26,73 @@ import { useEnterpriseTenant } from './EnterpriseContext';
  */
 const EnterprisePortalCuba = ({ children }) => {
     const params = useParams();
+    const location = useLocation();
     // Read through the existing public hook rather than reaching into the
     // context object, so EnterpriseContext.jsx needs no modification at all.
-    const { tenant, workspace } = useEnterpriseTenant();
+    const { tenant, workspace, simulatedRole, isSimulating, platformAdmin } = useEnterpriseTenant();
 
     // Prefer the server-resolved tenant slug; the URL slug is only a fallback so
     // a direct deep link still renders navigation rather than an empty shell.
     const slug = tenant?.slug || params.slug || '';
 
-    const navigation = enterpriseNavigationFor(slug);
+    // DIR-016: the sidebar must list exactly the tabs the console can actually
+    // render, which now includes the platform provisioning tab. It is gated by
+    // `platformAdmin` ONLY — the server-derived capability from
+    // `/api/enterprise/context` (set in EnterpriseContext.jsx from
+    // `active.platformAdmin === true`), never by anything computed here.
+    //
+    // The `['*']` grant is deliberate: it leaves every pre-existing tab's
+    // visibility byte-identical to the unfiltered list this wrapper always
+    // passed, so the ONLY behavioural change in this file is that `platform`
+    // now appears for a platform administrator and stays hidden otherwise.
+    // The console below re-checks the same capability for rendering, so this
+    // narrows what is LINKED, never what is reachable (§7).
+    const navigation = filterByPermissions(
+        enterpriseNavigationFor(slug),
+        ['*'],
+        { platformAdmin: platformAdmin === true },
+    );
     const tenantLabel = tenant?.name || tenant?.id || 'Organization';
+
+    // The Cuba toolbar title must track the module the operator is actually in.
+    // This is pure display resolution over the shared navigation mirror; the
+    // console itself remains the single authority on what is rendered.
+    const activeModule = resolveOrgRoute({
+        pathname: location.pathname,
+        search: location.search,
+        visibleIds: navigation.flatMap((group) => group.items.map((item) => item.id)),
+        slug,
+    });
+    const activeLabel = navigation
+        .flatMap((group) => group.items)
+        .find((item) => item.id === activeModule.tabId)?.label || 'Overview';
 
     return (
         <CubaPortalShell
             persona="Organization"
-            title="Overview"
+            title={activeLabel}
             navigation={navigation}
             user={{ name: tenantLabel }}
+            // DIR-021: enterprise-context chip (tenant quota usage), which routes
+            // to the live Usage & Quotas module. Quota figures are read, never
+            // generated, so this action dispatches no AI request at all.
+            copilotPortal={COPILOT_PORTALS.ENTERPRISE}
+            toolbar={(
+                /* Elevated organization context band (DIR-008). Hosting the
+                   Organization and Workspace switchers here is what makes the
+                   tenant scope obvious at all times instead of hiding it inside a
+                   second, redundant legacy top bar. Values are rendered from the
+                   server-resolved context, so this band can never display another
+                   tenant's data, and it adds no permission logic of its own. */
+                <div className="enterprise-cuba-context-band">
+                    <TenantSwitcher variant="cuba" />
+                    <WorkspaceBadge variant="cuba" />
+                </div>
+            )}
         >
+            {isSimulating && (
+                <EnterpriseRoleSimulationBanner tenant={tenant} simulatedRole={simulatedRole} />
+            )}
             <div className="space-y-6">
                 {/* Tenant identity strip. Values come from the server-resolved
                     context, so this can never display another tenant's data. */}

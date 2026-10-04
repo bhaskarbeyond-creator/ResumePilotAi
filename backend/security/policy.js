@@ -81,6 +81,10 @@ function resolveAdminMutationPermission(pathname) {
   // payment/test-provider, /admin/payments/*); the elevated-permission
   // check earlier in enforceApiPolicy already gates these.
   if (pathname.startsWith('/admin/payments/') || pathname === '/admin/payment-settings' || pathname === '/admin/payment/test-provider') return 'payments.manage';
+  // DIR-022 / AC-5: POST /admin/subscriptions/:uid/reconcile WRITES entitlement
+  // state, so it must not fall through to the generic system.config.write
+  // default and must never be reachable with read-only payments access.
+  if (pathname.startsWith('/admin/subscriptions')) return 'payments.manage';
   // Users endpoint mutations (role change, entitlement change, revoke,
   // etc.) require users.update — enforced per-router.
   if (pathname.startsWith('/admin/users/')) return 'users.update';

@@ -1,0 +1,11 @@
+
+Running 4 tests using 1 worker
+
+  ✓  1 [dir021-live-command-copilot] › tests\e2e\dir021-command-copilot.spec.js:123:1 › AC-1/AC-4: Ctrl+K opens exactly ONE dual-mode palette with Navigation selected by default (3.5s)
+  ✓  2 [dir021-live-command-copilot] › tests\e2e\dir021-command-copilot.spec.js:157:1 › AC-2: the copilot surface lists context-aware actions for the live route (2.5s)
+[dir021] terminal = ERROR: AI request timed out Try again
+[dir021] aiRequests = 1 ["/api/generate-ai-cover-letter"]
+  ✓  3 [dir021-live-command-copilot] › tests\e2e\dir021-command-copilot.spec.js:190:1 › AC-3/INV-3: a submitted prompt reaches the live AI endpoint and the palette reports the truth (48.6s)
+  ✓  4 [dir021-live-command-copilot] › tests\e2e\dir021-command-copilot.spec.js:268:1 › AC-4: the palette is fully operable from the keyboard and closes on Escape (2.3s)
+
+  4 passed (1.0m)

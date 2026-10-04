@@ -563,7 +563,7 @@ const AddCompanyModal = ({ isOpen, onClose, showToast, t }) => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 rounded-lg transition-all duration-200 disabled:opacity-50 flex items-center space-x-2 shadow-md hover:shadow-lg"
+                            className="cuba-btn-primary px-6 py-3 text-sm font-medium rounded-lg flex items-center space-x-2"
                         >
                             {loading ? (
                                 <>

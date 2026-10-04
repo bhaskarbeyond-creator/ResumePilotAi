@@ -10,7 +10,7 @@ import RejectionReasonModal from './RejectionReasonModal';
 import { FaTimes, FaUser, FaEnvelope, FaCalendar, FaFileAlt, FaDownload, FaCheckCircle, FaTimesCircle, FaUsers, FaClock, FaEye, FaChevronDown, FaChevronUp, FaSearch, FaFilter, FaExpand, FaCompress, FaCommentAlt } from 'react-icons/fa';
 
 // eslint-disable-next-line react-refresh/only-export-components
-const JobApplicationsModal = ({ isOpen, onClose, job, applications, onUpdateStatus, showToast, t }) => {
+const JobApplicationsModal = ({ isOpen, onClose, job, applications, isLoadingApplications = false, onUpdateStatus, showToast, t }) => {
     const [filteredApplications, setFilteredApplications] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
@@ -106,23 +106,34 @@ const [selectedApplication, setSelectedApplication] = useState(null);
     };
 
     const getStatusBadge = (status) => {
-        const statusConfig = {
-            pending: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', icon: FaClock, label: t('JobsUpdate.JobApplicationsModal.status.pending', 'Pending') },
-            interview: { bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-300', icon: FaUsers, label: t('JobsUpdate.JobApplicationsModal.status.interview', 'Interview') },
-            accepted: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', icon: FaCheckCircle, label: t('JobsUpdate.JobApplicationsModal.status.accepted', 'Accepted') },
-            rejected: { bg: 'bg-slate-100', text: 'text-slate-600', border: 'border-slate-200', icon: FaTimesCircle, label: t('JobsUpdate.JobApplicationsModal.status.rejected', 'Rejected') },
-        };
-
-        const config = statusConfig[status] || statusConfig.pending;
-        const IconComponent = config.icon;
-
-        return (
-            <span className={`inline-flex items-center px-2 py-1 rounded border text-xs font-medium ${config.bg} ${config.text} ${config.border}`}>
-                <IconComponent className="w-2.5 h-2.5 mr-1" />
-                {config.label}
-            </span>
-        );
+        /**
+     * DIR-010 §2: status pills resolve to the canonical OPAQUE `.cuba-pill-*` tokens.
+     *
+     * The previous `bg-amber-50 text-amber-700 border-amber-200` recipe only cleared
+     * 4.5:1 against the single light surface it was tuned for; inside this glass modal
+     * the same pair fell below WCAG AA. The opaque token set is surface-independent, so
+     * it holds over the modal, over --cuba-canvas and in dark mode alike.
+     *
+     * The tone map mirrors STAGE_TONE in EmployerApplicantPipeline.jsx so the ATS
+     * pipeline card and this modal render the SAME stage in the SAME token.
+     */
+    const statusConfig = {
+        pending: { tone: 'cuba-pill-warning', icon: FaClock, label: t('JobsUpdate.JobApplicationsModal.status.pending', 'Pending') },
+        interview: { tone: 'cuba-pill-info', icon: FaUsers, label: t('JobsUpdate.JobApplicationsModal.status.interview', 'Interview') },
+        accepted: { tone: 'cuba-pill-success', icon: FaCheckCircle, label: t('JobsUpdate.JobApplicationsModal.status.accepted', 'Accepted') },
+        rejected: { tone: 'cuba-pill-danger', icon: FaTimesCircle, label: t('JobsUpdate.JobApplicationsModal.status.rejected', 'Rejected') },
     };
+
+    const config = statusConfig[status] || statusConfig.pending;
+    const IconComponent = config.icon;
+
+    return (
+        <span className={`cuba-pill-${config.tone.replace('cuba-pill-', '')} px-2 py-1 text-xs font-medium`}>
+            <IconComponent className="w-2.5 h-2.5 mr-1" />
+            {config.label}
+        </span>
+    );
+};
 
     const formatDate = (dateString) => {
         return new Date(dateString).toLocaleDateString('en-US', {
@@ -157,13 +168,30 @@ const [selectedApplication, setSelectedApplication] = useState(null);
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="bg-white rounded-lg shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden border border-slate-200"
+                    // `flex flex-col` + `min-h-0` on the scrolling body below is what
+                    // makes `max-h-[90vh]` behave: the panel caps its height, the
+                    // applicant list scrolls INSIDE it, and the header/filter chrome
+                    // stays pinned. Without the column the `overflow-hidden` panel
+                    // simply clipped tall applicant cards (DIR-010 §2, unclipped
+                    // in-modal candidate review).
+                    className="bg-white rounded-lg shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden border border-slate-200 flex flex-col"
                     onClick={(e) => e.stopPropagation()}>
                     {/* Header */}
                     <div className="flex items-center justify-between p-4 border-b border-slate-200">
                         <div>
                             <h2 id="job-applications-title" className="text-lg font-semibold text-slate-900">{t('JobsUpdate.JobApplicationsModal.header.title', 'Applications for')} {job?.title}</h2>
-                            <p className="text-slate-600 text-sm mt-0.5">{applications?.length || 0} {t('JobsUpdate.JobApplicationsModal.header.totalApplications', 'total applications')}</p>
+                            <p className="text-slate-600 text-sm mt-0.5" id="job-applications-total">
+                                {/* While the pipeline is still being fetched, `applications`
+                                     * is legitimately empty. Reporting "0 total applications"
+                                     * here is what made a genuine 1-applicant requisition
+                                     * render as an empty pipeline: the modal opens on the same
+                                     * tick the fetch starts, so the count was read before the
+                                     * response landed. Announce the load instead of a count we
+                                     * do not yet have. */}
+                                {isLoadingApplications
+                                    ? t('JobsUpdate.JobApplicationsModal.header.loading', 'Loading applicants…')
+                                    : `${applications?.length || 0} ${t('JobsUpdate.JobApplicationsModal.header.totalApplications', 'total applications')}`}
+                            </p>
                         </div>
                         <button type="button" onClick={onClose} disabled={Boolean(updatingStatus)} aria-label="Close applications dialog" className="p-2 hover:bg-slate-100 rounded-md transition-colors disabled:opacity-50">
                             <FaTimes className="w-4 h-4 text-slate-500" />
@@ -208,8 +236,26 @@ const [selectedApplication, setSelectedApplication] = useState(null);
                     </div>
 
                     {/* Applications List */}
-                    <div className="flex-1 overflow-y-auto p-4">
-                        {filteredApplications.length === 0 ? (
+                    {/* `min-h-0` is REQUIRED here, not cosmetic. In a column flex
+                     * container a scroll item keeps `min-height: auto`, so it refuses
+                     * to shrink below its content and pushes the panel past max-h,
+                     * which is exactly how the applicant rows ended up clipped behind
+                     * the panel's own `overflow-hidden`. min-h-0 lets the item shrink so
+                     * `flex-1 overflow-y-auto` can actually scroll INSIDE the panel. */}
+                    <div className="flex-1 min-h-0 overflow-y-auto p-4" aria-busy={isLoadingApplications}>
+                        {/* The empty state is only truthful AFTER the fetch settles. Rendering
+                             * it during the load is what produced a false "No one has applied
+                             * to this job yet" for a requisition that genuinely holds an
+                             * applicant. `role="status"` announces the transition to assistive
+                             * tech instead of silently swapping content. */}
+                        {isLoadingApplications ? (
+                            <div className="flex flex-col items-center justify-center py-10 text-center" role="status" aria-live="polite">
+                                <FaClock className="w-8 h-8 text-slate-400 mb-3 animate-pulse" />
+                                <p className="text-sm text-slate-600">
+                                    {t('JobsUpdate.JobApplicationsModal.loading.body', 'Loading applicants…')}
+                                </p>
+                            </div>
+                        ) : filteredApplications.length === 0 ? (
                             <div className="text-center py-8">
                                 <FaUsers className="w-10 h-10 text-slate-400 mx-auto mb-3" />
                                 <h3 className="text-base font-medium text-slate-900 mb-2">{t('JobsUpdate.JobApplicationsModal.emptyState.title', 'No applications found')}</h3>
@@ -273,7 +319,7 @@ const [selectedApplication, setSelectedApplication] = useState(null);
                                                 {/* Send Message Button */}
                                                 <button
                                                     onClick={() => handleSendMessage(application)}
-                                                    className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-md transition-colors disabled:opacity-50 flex items-center gap-1"
+                                                    className="cuba-btn-primary px-2.5 py-1.5 rounded-md text-xs font-medium disabled:opacity-50 flex items-center gap-1"
                                                     title="Send Message">
                                                     <FaCommentAlt className="w-3 h-3" />
                                                     {t('JobsUpdate.JobApplicationsModal.buttons.message', 'Message')}
@@ -302,7 +348,7 @@ const [selectedApplication, setSelectedApplication] = useState(null);
                                                         <button
                                                             onClick={() => handleStatusUpdate(application.id, 'accepted')}
                                                             disabled={updatingStatus === application.id}
-                                                            className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-md transition-colors disabled:opacity-50">
+                                                            className="cuba-btn-primary px-2.5 py-1.5 rounded-md text-xs font-medium disabled:opacity-50">
                                                             {t('JobsUpdate.JobApplicationsModal.buttons.accept', 'Accept')}
                                                         </button>
                                                         <button

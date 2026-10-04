@@ -1854,6 +1854,7 @@
     },
     "actions": {
       "view": "Visa",
+      "openStudio": "Openne in Studio",
       "edit": "Redigera",
       "delete": "Ta Bort",
       "viewPreview": "Visa Förhandsgranskning"

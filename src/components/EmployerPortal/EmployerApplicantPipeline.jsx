@@ -9,18 +9,37 @@ import TemplateRenderer from '../TemplateRenderer';
 import { normalizeResumeData } from '../../utils/resumeData';
 import { sanitizeRichText } from '../../utils/sanitizeHtml';
 
+/**
+ * ATS stage -> Cuba status-pill tone (DIR-010).
+ *
+ * TONE MAPPING (semantic, not decorative):
+ *   pending   -> warning  awaiting recruiter action
+ *   shortlisted -> primary brand beat, the recruiter's positive gate
+ *   interview -> info     scheduled/active conversation
+ *   offer     -> success  extended, still reversible
+ *   accepted  -> success
+ *   hired     -> success-hi the terminal win, a deeper green so it outranks offer
+ *   rejected  -> danger   terminal loss
+ *   withdrawn -> neutral  candidate-initiated exit, deliberately de-emphasised
+ *
+ * The previous values were Tailwind `bg-*-50 text-*-700 border-*-200` tints. Those
+ * were tuned against a single surface: as soon as the same pill sat on
+ * --cuba-canvas or inside the glass resume modal the composited text dropped
+ * below 4.5:1. These opaque tones are surface-independent - see the note above
+ * the token block in cuba-tokens.css and the probe that proves it.
+ */
 const STAGE_TONE = {
-    pending: 'bg-amber-50 text-amber-700 border-amber-200',
-    shortlisted: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-    interview: 'bg-violet-50 text-violet-700 border-violet-200',
-    offer: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    hired: 'bg-emerald-100 text-emerald-800 border-emerald-300',
-    accepted: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    rejected: 'bg-rose-50 text-rose-700 border-rose-200',
-    withdrawn: 'bg-slate-100 text-slate-600 border-slate-200',
+    pending: 'cuba-pill-warning',
+    shortlisted: 'cuba-pill-primary',
+    interview: 'cuba-pill-info',
+    offer: 'cuba-pill-success',
+    hired: 'cuba-pill-success-hi',
+    accepted: 'cuba-pill-success',
+    rejected: 'cuba-pill-danger',
+    withdrawn: 'cuba-pill-neutral',
 };
 
-const stageClass = (status) => STAGE_TONE[String(status || '').toLowerCase()] || 'bg-slate-100 text-slate-600 border-slate-200';
+const stageClass = (status) => `${STAGE_TONE[String(status || '').toLowerCase()] || 'cuba-pill-neutral'} px-2.5 py-1 text-xs`;
 
 /**
  * The hiring stages a recruiter can drive an application through. `apiStatus`
@@ -308,7 +327,7 @@ const EmployerApplicantPipeline = ({ showToast }) => {
             type="button"
             onClick={() => { reload().then(() => loadPipeline(jobs)).catch(() => {}); }}
             disabled={loadingApplicants}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 cuba-focusable"
         >
             <FiRefreshCw className="h-4 w-4" aria-hidden="true" />
             {loadingApplicants ? 'Refreshing…' : 'Refresh'}
@@ -328,7 +347,7 @@ const EmployerApplicantPipeline = ({ showToast }) => {
             {stageCounts.length > 0 && (
                 <ul className="mb-4 flex flex-wrap gap-2" aria-label="Pipeline stage summary">
                     {stageCounts.map(([stage, count]) => (
-                        <li key={stage} className={`rounded-full border px-3 py-1 text-xs font-bold capitalize ${stageClass(stage)}`}>
+                        <li key={stage} className={`capitalize ${stageClass(stage)}`}>
                             {stage}: {count}
                         </li>
                     ))}
@@ -345,7 +364,7 @@ const EmployerApplicantPipeline = ({ showToast }) => {
                         value={search}
                         onChange={(event) => setSearch(event.target.value)}
                         placeholder="Search by candidate, email, or role"
-                        className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-9 pr-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                        className="cuba-field w-full rounded-xl py-2.5 pl-9 pr-3 text-sm placeholder:text-slate-400"
                     />
                 </div>
 
@@ -395,7 +414,7 @@ const EmployerApplicantPipeline = ({ showToast }) => {
                                                 <button
                                                     type="button"
                                                     onClick={() => handleViewResume(row)}
-                                                    className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 text-xs font-bold text-indigo-700 transition-colors hover:bg-indigo-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                                                    className="cuba-btn-primary inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold"
                                                 >
                                                     <FiFileText className="h-3.5 w-3.5" aria-hidden="true" />
                                                     View Resume
@@ -405,7 +424,7 @@ const EmployerApplicantPipeline = ({ showToast }) => {
                                             )}
                                         </td>
                                         <td className="py-3 pr-4">
-                                            <span className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-bold capitalize ${stageClass(row.status)}`}>
+                                            <span className={`capitalize ${stageClass(row.status)}`}>
                                                 {row.status}
                                             </span>
                                             <label className="sr-only" htmlFor={`stage-${row.jobId}-${row.id}`}>
@@ -416,7 +435,7 @@ const EmployerApplicantPipeline = ({ showToast }) => {
                                                 value=""
                                                 disabled={stageBusyId === row.id || availableStages(row.status).length === 0}
                                                 onChange={(event) => handleStageChange(row, event.target.value)}
-                                                className="mt-1.5 block w-full max-w-[9.5rem] rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 focus:border-indigo-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+                                                className="cuba-field mt-1.5 block w-full max-w-[9.5rem] rounded-lg px-2 py-1 text-xs disabled:cursor-not-allowed disabled:opacity-60"
                                             >
                                                 <option value="">Move stage…</option>
                                                 {availableStages(row.status).map(option => (
@@ -433,7 +452,7 @@ const EmployerApplicantPipeline = ({ showToast }) => {
                                             <button
                                                 type="button"
                                                 onClick={() => setMessageTarget(row)}
-                                                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                                                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 cuba-focusable"
                                             >
                                                 <FiMail className="h-3.5 w-3.5" aria-hidden="true" />
                                                 Message
@@ -492,7 +511,7 @@ const EmployerApplicantPipeline = ({ showToast }) => {
                                     onClick={() => setZoom(current => Math.max(ZOOM_MIN, current - ZOOM_STEP))}
                                     disabled={!resumeValues || zoom <= ZOOM_MIN}
                                     aria-label="Zoom out resume preview"
-                                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 cuba-focusable"
                                 >
                                     <FiZoomOut className="h-4 w-4" aria-hidden="true" />
                                 </button>
@@ -502,7 +521,7 @@ const EmployerApplicantPipeline = ({ showToast }) => {
                                     onClick={() => setZoom(current => Math.min(ZOOM_MAX, current + ZOOM_STEP))}
                                     disabled={!resumeValues || zoom >= ZOOM_MAX}
                                     aria-label="Zoom in resume preview"
-                                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 cuba-focusable"
                                 >
                                     <FiZoomIn className="h-4 w-4" aria-hidden="true" />
                                 </button>
@@ -510,7 +529,7 @@ const EmployerApplicantPipeline = ({ showToast }) => {
                                     type="button"
                                     onClick={handlePrint}
                                     disabled={!resumeValues}
-                                    className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                                    className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 cuba-focusable"
                                 >
                                     <FiPrinter className="h-4 w-4" aria-hidden="true" />
                                     Print
@@ -519,7 +538,7 @@ const EmployerApplicantPipeline = ({ showToast }) => {
                                     type="button"
                                     onClick={handleDownload}
                                     disabled={!resumeValues}
-                                    className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                                    className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 cuba-focusable"
                                 >
                                     <FiDownload className="h-4 w-4" aria-hidden="true" />
                                     Download
@@ -528,7 +547,7 @@ const EmployerApplicantPipeline = ({ showToast }) => {
                                     type="button"
                                     onClick={closeResume}
                                     aria-label="Close resume preview"
-                                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 text-slate-700 transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 text-slate-700 transition-colors hover:bg-slate-50 cuba-focusable"
                                 >
                                     <FiX className="h-4 w-4" aria-hidden="true" />
                                 </button>

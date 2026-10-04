@@ -10,6 +10,12 @@ import { useServiceAvailability, resolveUsable } from '../../../hooks/useService
 import { getUserMembership } from '../../../data/entitlements';
 import { parseSafeDate, isUserPremium } from '../../../utils/subscriptionUtils';
 import { printAuthoritativeCreditNote, printAuthoritativeInvoice } from '../../../utils/authoritativeInvoice';
+import {
+    formatCurrencyAmount,
+    formatPlanPrice,
+    resolveCurrencyCode,
+    resolveCurrencySymbol,
+} from '../../../utils/currencyFormat';
 import fire from '../../../conf/fire';
 import HomepageNavbar from '../../Marketing/elements/HomepageNavbar';
 import HomepageFooter from '../../Marketing/elements/HomepageFooter';
@@ -261,14 +267,17 @@ const PlansPage = (props) => {
                 }));
                 return;
             }
-            const baseCurr = String(data.currency || '').toUpperCase();
-            const symbols = { INR: '₹', EUR: '€', GBP: '£', USD: '$', JPY: '¥' };
+            // DIR-018 AC-3: the base currency now resolves through the single
+            // shared helper instead of a local, drifting symbol map. A blank or
+            // unrecognised code falls back to the platform base currency (INR)
+            // rather than to an unlabelled code string.
+            const baseCurr = resolveCurrencyCode(data.currency);
             setSubscriptionConfig({
                 monthlyPrice: Number.isFinite(Number(data.monthlyPrice)) ? Number(data.monthlyPrice) : null,
                 quartarlyPrice: Number.isFinite(Number(data.quartarlyPrice)) ? Number(data.quartarlyPrice) : null,
                 yearlyPrice: Number.isFinite(Number(data.yearlyPrice)) ? Number(data.yearlyPrice) : null,
                 currency: baseCurr,
-                symbol: data.currencySymbol || symbols[baseCurr] || baseCurr,
+                symbol: resolveCurrencySymbol(baseCurr),
                 state: data.state === true,
                 onlyPP: data.onlyPP === true,
                 razorpayUPI: data.razorpayUPI === true,
@@ -398,7 +407,17 @@ const PlansPage = (props) => {
     };
 
     const paypalClientId = (conf.paypalClientID || import.meta.env.VITE_PAYPAL_CLIENT_ID || '').trim();
-    const currencyCode = subscriptionConfig.currency || 'USD';
+    // DIR-018 AC-3: this used to fall back to the literal 'USD', so any billing
+    // configuration that had not yet resolved rendered a US dollar code to an
+    // Indian storefront and sent the gateway a USD currency. The fallback is now
+    // the platform's authoritative base currency (INR) via resolveCurrencyCode.
+    const currencyCode = resolveCurrencyCode(subscriptionConfig.currency);
+    // DIR-018 AC-3: every price on this page renders through the shared
+    // formatter, so Indian grouping ("₹1,499") is identical on the cards, in
+    // the summary and in checkout. `plan` uses whole units (subscription prices
+    // are whole rupees in practice); `amount` keeps paise for tax/discount lines.
+    const money = (value) => formatPlanPrice(value, { currency: currencyCode });
+    const amount = (value) => formatCurrencyAmount(value, { currency: currencyCode });
     const paypalOptions = {
         'client-id': paypalClientId,
         currency: currencyCode,
@@ -479,64 +498,64 @@ const PlansPage = (props) => {
             <Elements stripe={stripePromise}>
                 <div className="p-4 sm:p-8 space-y-6 max-w-7xl mx-auto">
                     {!subscriptionConfig.isLoading && !subscriptionConfig.configurationAvailable && (
-                        <div role="alert" className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm font-semibold text-amber-950">
+                        <div role="alert" className="rounded-2xl border border-cuba-warning-soft bg-cuba-warning-soft p-4 text-sm font-semibold text-cuba-warning">
                             {subscriptionConfig.configurationError || 'Verified billing configuration is unavailable. Purchases are disabled.'}
                         </div>
                     )}
                     {!subscriptionConfig.isLoading && subscriptionConfig.configurationAvailable && subscriptionConfig.state !== true && (
-                        <div role="status" className="rounded-2xl border border-slate-300 bg-slate-50 p-4 text-sm font-semibold text-slate-800">
+                        <div role="status" className="rounded-2xl border border-cuba-line-strong bg-cuba-canvas p-4 text-sm font-semibold text-cuba-ink">
                             Paid subscriptions are currently disabled by the platform operator.
                         </div>
                     )}
                     
                     {/* Dashboard Header Bar */}
-                    <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+                    <div className="bg-cuba-card rounded-2xl border border-cuba-line p-6 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 font-extrabold text-xl shrink-0">
-                                <FaCrown className="w-6 h-6 text-amber-500" />
+                            <div className="w-12 h-12 rounded-2xl bg-cuba-primary-soft border border-cuba-primary-soft flex items-center justify-center text-cuba-primary-ink-strong font-extrabold text-xl shrink-0">
+                                <FaCrown className="w-6 h-6 text-cuba-warning" />
                             </div>
                             <div>
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <h1 className="text-xl font-extrabold text-slate-900">PRO Membership &amp; Subscription Plans</h1>
+                                    <h1 className="text-xl font-extrabold text-cuba-ink">PRO Membership &amp; Subscription Plans</h1>
                                     <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border uppercase ${
                                         userCurrentMembership.includes('Enterprise')
                                             ? (userCurrentMembership.includes('Suspended')
-                                                ? 'bg-red-50 text-red-700 border-red-300'
-                                                : 'bg-violet-50 text-violet-800 border-violet-300')
+                                                ? 'bg-cuba-danger-soft text-cuba-danger border-cuba-danger-soft'
+                                                : 'bg-cuba-primary-soft text-cuba-primary-ink-strong border-cuba-primary-soft')
                                             : (userCurrentMembership.includes('Premium')
                                                 ? (userCurrentMembership.includes('Expired')
-                                                    ? 'bg-red-50 text-red-700 border-red-300'
-                                                    : 'bg-amber-50 text-amber-800 border-amber-300')
-                                                : 'bg-emerald-50 text-emerald-700 border-emerald-200')
+                                                    ? 'bg-cuba-danger-soft text-cuba-danger border-cuba-danger-soft'
+                                                    : 'bg-cuba-warning-soft text-cuba-warning border-cuba-warning-soft')
+                                                : 'bg-cuba-success-soft text-cuba-success border-cuba-success-soft')
                                     }`}>
                                         Active Tier: {userCurrentMembership}
                                     </span>
                                     {membershipExpiry && (
-                                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200 flex items-center gap-1">
-                                            <FaCalendarAlt className="w-2.5 h-2.5 text-slate-400" />
+                                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-cuba-elevated text-cuba-ink-muted border border-cuba-line flex items-center gap-1">
+                                            <FaCalendarAlt className="w-2.5 h-2.5 text-cuba-ink-subtle" />
                                             Expires: {membershipExpiry}
                                         </span>
                                     )}
                                 </div>
-                                <p className="text-xs text-slate-500 mt-0.5">Upgrade your account to unlock unlimited AI resumes, cover letters, and priority export tools.</p>
+                                <p className="text-xs text-cuba-ink-muted mt-0.5">Upgrade your account to unlock unlimited AI resumes, cover letters, and priority export tools.</p>
                             </div>
                         </div>
 
-                        <a href="/dashboard/settings" className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all flex items-center gap-2 self-start md:self-auto shrink-0">
+                        <a href="/dashboard/settings" className="px-4 py-2.5 bg-cuba-elevated hover:bg-cuba-line text-cuba-ink text-xs font-bold rounded-xl transition-all flex items-center gap-2 self-start md:self-auto shrink-0">
                             <FaArrowLeft className="w-3 h-3" />
                             <span>Back to Account Settings</span>
                         </a>
                     </div>
 
                     {/* Dashboard Navigation Tabs */}
-                    <div className="flex items-center gap-2 border-b border-slate-200 pb-1 flex-wrap">
+                    <div className="flex items-center gap-2 border-b border-cuba-line pb-1 flex-wrap">
                         <button
                             type="button"
                             onClick={() => setActiveTab('plans')}
                             className={`px-4 py-2.5 text-xs font-extrabold rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
                                 activeTab === 'plans'
-                                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                                    : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                                    ? 'bg-cuba-primary-fill text-cuba-on-primary shadow-md shadow-cuba-primary/20'
+                                    : 'bg-cuba-card text-cuba-ink-muted hover:bg-cuba-elevated border border-cuba-line'
                             }`}>
                             <FaCrown className="w-3.5 h-3.5" />
                             <span>Plans &amp; Upgrades</span>
@@ -546,8 +565,8 @@ const PlansPage = (props) => {
                             onClick={() => setActiveTab('invoices')}
                             className={`px-4 py-2.5 text-xs font-extrabold rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
                                 activeTab === 'invoices'
-                                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                                    : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                                    ? 'bg-cuba-primary-fill text-cuba-on-primary shadow-md shadow-cuba-primary/20'
+                                    : 'bg-cuba-card text-cuba-ink-muted hover:bg-cuba-elevated border border-cuba-line'
                             }`}>
                             <FaFileInvoice className="w-3.5 h-3.5" />
                             <span>Billing History &amp; PDF Invoices ({transactionsList.length})</span>
@@ -557,8 +576,8 @@ const PlansPage = (props) => {
                             onClick={() => setActiveTab('manage')}
                             className={`px-4 py-2.5 text-xs font-extrabold rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
                                 activeTab === 'manage'
-                                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                                    : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                                    ? 'bg-cuba-primary-fill text-cuba-on-primary shadow-md shadow-cuba-primary/20'
+                                    : 'bg-cuba-card text-cuba-ink-muted hover:bg-cuba-elevated border border-cuba-line'
                             }`}>
                             <FaShieldAlt className="w-3.5 h-3.5" />
                             <span>Subscription Controls</span>
@@ -573,25 +592,25 @@ const PlansPage = (props) => {
                                 <div className="space-y-8">
                                     
                                     {/* Current Plan vs PRO Upgrade Hero Comparison Card */}
-                                    <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-6 text-white border border-indigo-500/30 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-6 shadow-md">
+                                    <div className="bg-gradient-to-r from-cuba-night-surface-from via-cuba-night-surface-mid to-cuba-night-surface-to rounded-2xl p-6 text-cuba-on-primary border border-cuba-primary/30 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-6 shadow-md">
                                         <div className="space-y-2 min-w-0">
                                             <div className="flex items-center gap-2 flex-wrap">
-                                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-800 text-slate-300 border border-slate-700 uppercase">
+                                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-cuba-ink text-cuba-ink-subtle border border-cuba-line-strong uppercase">
                                                     Account: {candidateName ? `${candidateName} (${userEmail})` : userEmail || 'Candidate'}
                                                 </span>
-                                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase">
+                                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-cuba-success/20 text-cuba-night-success border border-cuba-success/30 uppercase">
                                                     INSTANT ACTIVATION
                                                 </span>
                                             </div>
-                                            <h3 className="text-xl font-extrabold text-white tracking-tight">
+                                            <h3 className="text-xl font-extrabold text-cuba-on-primary tracking-tight">
                                                 {userCurrentMembership === 'Enterprise'
-                                                    ? <>Manage <strong className="text-violet-400">Enterprise Organization Plan</strong></>
+                                                    ? <>Manage <strong className="text-cuba-night-primary">Enterprise Organization Plan</strong></>
                                                     : userCurrentMembership && userCurrentMembership !== 'Free' && userCurrentMembership !== 'Free Basic' && userCurrentMembership !== 'Loading Tier...'
-                                                        ? <>Renew or Extend <strong className="text-amber-400">PRO Membership</strong></>
-                                                        : <>Unlock <strong className="text-amber-400">AI Resume Builder PRO</strong> — Full Power Access</>
+                                                        ? <>Renew or Extend <strong className="text-cuba-night-warning">PRO Membership</strong></>
+                                                        : <>Unlock <strong className="text-cuba-night-warning">AI Resume Builder PRO</strong> — Full Power Access</>
                                                 }
                                             </h3>
-                                            <p className="text-xs text-slate-300">
+                                            <p className="text-xs text-cuba-ink-subtle">
                                                 {userCurrentMembership === 'Enterprise'
                                                     ? 'Your organization workspace includes team governance, institutional AI limits, and all career features.'
                                                     : 'Unlock full STAR AI synthesizer, watermark-free vector PDF, Word DocX export, and priority candidate support.'}
@@ -599,10 +618,10 @@ const PlansPage = (props) => {
                                         </div>
 
                                         {/* Unlocked Features Checklist */}
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-200 shrink-0">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-cuba-ink-subtle shrink-0">
                                             {PRO_UNLOCKED_FEATURES.map((feat, i) => (
-                                                <div key={i} className="flex items-center gap-2 bg-white/10 px-3.5 py-2 rounded-xl border border-white/10">
-                                                    <FaCheckCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                                <div key={i} className="flex items-center gap-2 bg-cuba-night-line px-3.5 py-2 rounded-xl border border-cuba-night-line">
+                                                    <FaCheckCircle className="w-3.5 h-3.5 text-cuba-night-success shrink-0" />
                                                     <span className="font-semibold">{feat}</span>
                                                 </div>
                                             ))}
@@ -611,12 +630,12 @@ const PlansPage = (props) => {
 
                                     {/* Duration Options Header */}
                                     <div className="text-center max-w-2xl mx-auto space-y-2 pt-2">
-                                        <span className="px-3.5 py-1 text-xs font-extrabold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-full inline-flex items-center gap-1.5 shadow-2xs">
-                                            <FaCrown className="w-3.5 h-3.5 text-amber-500" />
+                                        <span className="px-3.5 py-1 text-xs font-extrabold text-cuba-primary-ink-strong bg-cuba-primary-soft border border-cuba-primary-soft rounded-full inline-flex items-center gap-1.5 shadow-2xs">
+                                            <FaCrown className="w-3.5 h-3.5 text-cuba-warning" />
                                             Select Duration &amp; Maximize Savings
                                         </span>
-                                        <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Choose your subscription billing cycle</h2>
-                                        <p className="text-xs sm:text-sm text-slate-500">
+                                        <h2 className="text-2xl sm:text-3xl font-extrabold text-cuba-ink tracking-tight">Choose your subscription billing cycle</h2>
+                                        <p className="text-xs sm:text-sm text-cuba-ink-muted">
                                             Longer billing terms grant deeper discount savings plus 3 extra months free on annual plans.
                                         </p>
                                     </div>
@@ -629,25 +648,25 @@ const PlansPage = (props) => {
                                             onClick={() => setSelectedDuration('1')}
                                             className={`relative rounded-2xl p-6 border-2 transition-all cursor-pointer flex flex-col justify-between ${
                                                 selectedDuration === '1'
-                                                    ? 'bg-white border-indigo-600 shadow-xl ring-2 ring-indigo-600/20'
-                                                    : 'bg-white border-slate-200 hover:border-slate-300'
+                                                    ? 'bg-cuba-card border-cuba-primary shadow-xl ring-2 ring-cuba-primary/20'
+                                                    : 'bg-cuba-card border-cuba-line hover:border-cuba-line-strong'
                                             }`}>
                                             <div>
                                                 <div className="flex justify-between items-center mb-3">
-                                                    <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wider">1 Month</h4>
-                                                    <span className="text-[10px] font-extrabold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">Standard</span>
+                                                    <h4 className="text-sm font-bold text-cuba-ink uppercase tracking-wider">1 Month</h4>
+                                                    <span className="text-[10px] font-extrabold text-cuba-ink-muted bg-cuba-elevated px-2 py-0.5 rounded-full border border-cuba-line">Standard</span>
                                                 </div>
                                                 <div className="mb-4">
-                                                    <span className="text-3xl font-extrabold text-slate-900">{subscriptionConfig.symbol}{subscriptionConfig.monthlyPrice}</span>
-                                                    <span className="text-xs text-slate-500"> / month</span>
+                                                    <span className="text-3xl font-extrabold text-cuba-ink">{money(subscriptionConfig.monthlyPrice)}</span>
+                                                    <span className="text-xs text-cuba-ink-muted"> / month</span>
                                                 </div>
-                                                <p className="text-xs text-slate-500">Flexible monthly plan. Cancel anytime with 1 click.</p>
+                                                <p className="text-xs text-cuba-ink-muted">Flexible monthly plan. Cancel anytime with 1 click.</p>
                                             </div>
 
-                                            <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-                                                <span className="text-xs text-slate-500">Renews monthly</span>
-                                                <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${selectedDuration === '1' ? 'border-indigo-600 bg-indigo-600' : 'border-slate-300'}`}>
-                                                    {selectedDuration === '1' && <FaCheck className="w-2.5 h-2.5 text-white" />}
+                                            <div className="mt-6 pt-4 border-t border-cuba-line flex items-center justify-between">
+                                                <span className="text-xs text-cuba-ink-muted">Renews monthly</span>
+                                                <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${selectedDuration === '1' ? 'border-cuba-primary bg-cuba-primary-fill' : 'border-cuba-line-strong'}`}>
+                                                    {selectedDuration === '1' && <FaCheck className="w-2.5 h-2.5 text-cuba-on-primary" />}
                                                 </div>
                                             </div>
                                         </div>
@@ -657,33 +676,33 @@ const PlansPage = (props) => {
                                             onClick={() => setSelectedDuration('6')}
                                             className={`relative rounded-2xl p-6 border-2 transition-all cursor-pointer flex flex-col justify-between ${
                                                 selectedDuration === '6'
-                                                    ? 'bg-white border-indigo-600 shadow-xl ring-2 ring-indigo-600/20'
-                                                    : 'bg-white border-slate-200 hover:border-slate-300'
+                                                    ? 'bg-cuba-card border-cuba-primary shadow-xl ring-2 ring-cuba-primary/20'
+                                                    : 'bg-cuba-card border-cuba-line hover:border-cuba-line-strong'
                                             }`}>
                                             <div className="absolute -top-3 right-4">
-                                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-gradient-to-r from-purple-600 to-indigo-600 text-white uppercase shadow-sm">
+                                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-gradient-to-r from-cuba-primary-fill to-cuba-primary-fill text-cuba-on-primary uppercase shadow-sm">
                                                     Save 35%
                                                 </span>
                                             </div>
                                             <div>
                                                 <div className="flex justify-between items-center mb-3">
-                                                    <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wider">6 Months</h4>
-                                                    <span className="text-[10px] font-extrabold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200">Popular</span>
+                                                    <h4 className="text-sm font-bold text-cuba-ink uppercase tracking-wider">6 Months</h4>
+                                                    <span className="text-[10px] font-extrabold text-cuba-primary-ink-strong bg-cuba-primary-soft px-2 py-0.5 rounded-full border border-cuba-primary-soft">Popular</span>
                                                 </div>
                                                 <div className="mb-1">
-                                                    <span className="text-3xl font-extrabold text-slate-900">{subscriptionConfig.symbol}{Math.round(subscriptionConfig.quartarlyPrice / 6)}</span>
-                                                    <span className="text-xs text-slate-500"> / month</span>
+                                                    <span className="text-3xl font-extrabold text-cuba-ink">{money(Math.round(subscriptionConfig.quartarlyPrice / 6))}</span>
+                                                    <span className="text-xs text-cuba-ink-muted"> / month</span>
                                                 </div>
-                                                <div className="text-xs text-slate-400 line-through">
-                                                    {subscriptionConfig.symbol}{subscriptionConfig.monthlyPrice * 6} total
+                                                <div className="text-xs text-cuba-ink-subtle line-through">
+                                                    {money(subscriptionConfig.monthlyPrice * 6)} total
                                                 </div>
-                                                <p className="text-xs text-indigo-700 font-semibold mt-2">Billed as {subscriptionConfig.symbol}{subscriptionConfig.quartarlyPrice} every 6 months</p>
+                                                <p className="text-xs text-cuba-primary-ink-strong font-semibold mt-2">Billed as {money(subscriptionConfig.quartarlyPrice)} every 6 months</p>
                                             </div>
 
-                                            <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-                                                <span className="text-xs text-emerald-600 font-bold">Save {subscriptionConfig.symbol}{subscriptionConfig.monthlyPrice * 6 - subscriptionConfig.quartarlyPrice}</span>
-                                                <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${selectedDuration === '6' ? 'border-indigo-600 bg-indigo-600' : 'border-slate-300'}`}>
-                                                    {selectedDuration === '6' && <FaCheck className="w-2.5 h-2.5 text-white" />}
+                                            <div className="mt-6 pt-4 border-t border-cuba-line flex items-center justify-between">
+                                                <span className="text-xs text-cuba-success font-bold">Save {money(subscriptionConfig.monthlyPrice * 6 - subscriptionConfig.quartarlyPrice)}</span>
+                                                <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${selectedDuration === '6' ? 'border-cuba-primary bg-cuba-primary-fill' : 'border-cuba-line-strong'}`}>
+                                                    {selectedDuration === '6' && <FaCheck className="w-2.5 h-2.5 text-cuba-on-primary" />}
                                                 </div>
                                             </div>
                                         </div>
@@ -693,48 +712,48 @@ const PlansPage = (props) => {
                                             onClick={() => setSelectedDuration('12')}
                                             className={`relative rounded-2xl p-6 border-2 transition-all cursor-pointer flex flex-col justify-between ${
                                                 selectedDuration === '12'
-                                                    ? 'bg-gradient-to-b from-amber-50/50 via-white to-indigo-50/30 border-amber-500 shadow-xl ring-2 ring-amber-500/20 scale-[1.02]'
-                                                    : 'bg-white border-slate-200 hover:border-slate-300'
+                                                    ? 'bg-gradient-to-b from-cuba-warning-soft/50 via-cuba-card to-cuba-primary-soft/30 border-cuba-warning shadow-xl ring-2 ring-cuba-warning/20 scale-[1.02]'
+                                                    : 'bg-cuba-card border-cuba-line hover:border-cuba-line-strong'
                                             }`}>
                                             <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                                                <span className="px-3 py-0.5 rounded-full text-[10px] font-extrabold bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 uppercase tracking-wider shadow-sm flex items-center gap-1">
-                                                    <FaCrown className="w-2.5 h-2.5 text-slate-950" /> BEST VALUE • SAVE 50%
+                                                <span className="px-3 py-0.5 rounded-full text-[10px] font-extrabold bg-gradient-to-r from-cuba-warning to-cuba-warning text-cuba-ink uppercase tracking-wider shadow-sm flex items-center gap-1">
+                                                    <FaCrown className="w-2.5 h-2.5 text-cuba-ink" /> BEST VALUE • SAVE 50%
                                                 </span>
                                             </div>
                                             <div>
                                                 <div className="flex justify-between items-center mb-3 mt-1">
-                                                    <h4 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">12 Months</h4>
-                                                    <span className="text-[10px] font-extrabold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300">+3 Months Free</span>
+                                                    <h4 className="text-sm font-extrabold text-cuba-ink uppercase tracking-wider">12 Months</h4>
+                                                    <span className="text-[10px] font-extrabold text-cuba-warning bg-cuba-warning-soft px-2 py-0.5 rounded-full border border-cuba-warning-soft">+3 Months Free</span>
                                                 </div>
                                                 <div className="mb-1">
-                                                    <span className="text-3xl font-extrabold text-indigo-900">{subscriptionConfig.symbol}{Math.round(subscriptionConfig.yearlyPrice / 12)}</span>
-                                                    <span className="text-xs text-slate-500"> / month</span>
+                                                    <span className="text-3xl font-extrabold text-cuba-primary-ink-strong">{money(Math.round(subscriptionConfig.yearlyPrice / 12))}</span>
+                                                    <span className="text-xs text-cuba-ink-muted"> / month</span>
                                                 </div>
-                                                <div className="text-xs text-slate-400 line-through">
-                                                    {subscriptionConfig.symbol}{subscriptionConfig.monthlyPrice * 12} total
+                                                <div className="text-xs text-cuba-ink-subtle line-through">
+                                                    {money(subscriptionConfig.monthlyPrice * 12)} total
                                                 </div>
-                                                <p className="text-xs text-indigo-700 font-semibold mt-2">Billed as {subscriptionConfig.symbol}{subscriptionConfig.yearlyPrice} annually</p>
+                                                <p className="text-xs text-cuba-primary-ink-strong font-semibold mt-2">Billed as {money(subscriptionConfig.yearlyPrice)} annually</p>
                                             </div>
 
-                                            <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-                                                <span className="text-xs text-amber-800 font-extrabold">Save {subscriptionConfig.symbol}{subscriptionConfig.monthlyPrice * 12 - subscriptionConfig.yearlyPrice}</span>
-                                                <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${selectedDuration === '12' ? 'border-amber-500 bg-amber-500 text-slate-950' : 'border-slate-300'}`}>
-                                                    {selectedDuration === '12' && <FaCheck className="w-2.5 h-2.5 text-slate-950 font-bold" />}
+                                            <div className="mt-6 pt-4 border-t border-cuba-line flex items-center justify-between">
+                                                <span className="text-xs text-cuba-warning font-extrabold">Save {money(subscriptionConfig.monthlyPrice * 12 - subscriptionConfig.yearlyPrice)}</span>
+                                                <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${selectedDuration === '12' ? 'border-cuba-warning bg-cuba-warning text-cuba-ink' : 'border-cuba-line-strong'}`}>
+                                                    {selectedDuration === '12' && <FaCheck className="w-2.5 h-2.5 text-cuba-ink font-bold" />}
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* Order Summary & 1-Click Coupon Code Box */}
-                                    <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-6">
+                                    <div className="bg-cuba-card rounded-2xl p-6 border border-cuba-line shadow-sm space-y-6">
                                         {enableCouponsModule && (
                                             <>
-                                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-cuba-line">
                                                     <div>
-                                                        <h3 className="text-sm font-extrabold uppercase tracking-wider text-slate-900 flex items-center gap-2">
-                                                            <FaTag className="text-indigo-600" /> Apply Promo Coupon Discount
+                                                        <h3 className="text-sm font-extrabold uppercase tracking-wider text-cuba-ink flex items-center gap-2">
+                                                            <FaTag className="text-cuba-primary-ink-strong" /> Apply Promo Coupon Discount
                                                         </h3>
-                                                        <p className="text-xs text-slate-500 mt-0.5">Click a quick coupon pill below or enter your promo code manually</p>
+                                                        <p className="text-xs text-cuba-ink-muted mt-0.5">Click a quick coupon pill below or enter your promo code manually</p>
                                                     </div>
 
                                                     {/* Coupon Form */}
@@ -745,12 +764,12 @@ const PlansPage = (props) => {
                                                                 value={couponInput}
                                                                 onChange={(e) => setCouponInput(e.target.value)}
                                                                 placeholder="Enter coupon code"
-                                                                className="px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 uppercase focus:border-indigo-600 outline-none w-48"
+                                                                className="px-3.5 py-2 bg-cuba-canvas border border-cuba-line-strong rounded-xl text-xs font-mono font-bold text-cuba-ink uppercase focus:border-cuba-primary outline-none w-48"
                                                             />
                                                         </div>
                                                         <button
                                                             type="submit"
-                                                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-all shadow-xs cursor-pointer shrink-0">
+                                                            className="px-4 py-2 bg-cuba-primary-fill hover:bg-cuba-primary-strong text-cuba-on-primary font-bold text-xs rounded-xl transition-all shadow-xs cursor-pointer shrink-0">
                                                             Apply Coupon
                                                         </button>
                                                     </form>
@@ -759,7 +778,7 @@ const PlansPage = (props) => {
                                                 {/* 1-Click Quick Coupon Pills */}
                                                 {(Array.isArray(availableCoupons) ? availableCoupons : Object.values(availableCoupons)).length > 0 && (
                                                     <div className="flex items-center gap-2 flex-wrap">
-                                                        <span className="text-xs text-slate-500 font-semibold mr-1">Available Promo Coupons:</span>
+                                                        <span className="text-xs text-cuba-ink-muted font-semibold mr-1">Available Promo Coupons:</span>
                                                         {(Array.isArray(availableCoupons) ? availableCoupons : Object.values(availableCoupons)).map((couponItem) => {
                                                             const code = couponItem.code;
                                                             return (
@@ -769,10 +788,10 @@ const PlansPage = (props) => {
                                                                     onClick={(e) => handleApplyCoupon(e, code)}
                                                                     className={`px-3 py-1 rounded-xl text-xs font-mono font-bold border transition-all flex items-center gap-1 cursor-pointer ${
                                                                         appliedCoupon?.code === code
-                                                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                                                                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-indigo-600 hover:text-indigo-700'
+                                                                            ? 'bg-cuba-success-soft text-cuba-success border-cuba-success-soft'
+                                                                            : 'bg-cuba-canvas text-cuba-ink border-cuba-line hover:border-cuba-primary hover:text-cuba-primary-ink-strong'
                                                                     }`}>
-                                                                    <FaTag className="w-2.5 h-2.5 text-indigo-500" />
+                                                                    <FaTag className="w-2.5 h-2.5 text-cuba-primary-ink-strong" />
                                                                     <span>{code} (-{couponItem.discount}%)</span>
                                                                 </button>
                                                             );
@@ -782,17 +801,17 @@ const PlansPage = (props) => {
 
                                                 {/* Coupon Error Notice */}
                                                 {couponError && (
-                                                    <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs flex items-center gap-2">
-                                                        <FaExclamationTriangle className="w-3.5 h-3.5 shrink-0 text-red-500" />
+                                                    <div className="p-3 bg-cuba-danger-soft border border-cuba-danger-soft rounded-xl text-cuba-danger text-xs flex items-center gap-2">
+                                                        <FaExclamationTriangle className="w-3.5 h-3.5 shrink-0 text-cuba-danger" />
                                                         <span>{couponError}</span>
                                                     </div>
                                                 )}
 
                                                 {/* Coupon Applied Badge */}
                                                 {appliedCoupon && (
-                                                    <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs flex items-center justify-between">
+                                                    <div className="p-3.5 bg-cuba-success-soft border border-cuba-success-soft rounded-xl text-cuba-success text-xs flex items-center justify-between">
                                                         <div className="flex items-center gap-2">
-                                                            <FaCheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                                                            <FaCheckCircle className="w-4 h-4 text-cuba-success shrink-0" />
                                                             <div>
                                                                 <span className="font-extrabold uppercase">{appliedCoupon.code}</span> — {appliedCoupon.description}
                                                             </div>
@@ -800,7 +819,7 @@ const PlansPage = (props) => {
                                                         <button
                                                             type="button"
                                                             onClick={handleRemoveCoupon}
-                                                            className="text-xs text-red-600 hover:text-red-800 underline font-bold cursor-pointer">
+                                                            className="text-xs text-cuba-danger hover:text-cuba-danger underline font-bold cursor-pointer">
                                                             Remove
                                                         </button>
                                                     </div>
@@ -809,44 +828,44 @@ const PlansPage = (props) => {
                                         )}
 
                                         {/* Cart Calculations Table */}
-                                        <div className="space-y-2.5 text-xs text-slate-600 pt-2">
+                                        <div className="space-y-2.5 text-xs text-cuba-ink-muted pt-2">
                                             <div className="flex justify-between items-center">
                                                 <span>Standard Plan Rate ({selectedDuration} Months)</span>
-                                                <span className="font-semibold text-slate-900">{subscriptionConfig.symbol}{getOriginalPriceBeforeDiscount()}</span>
+                                                <span className="font-semibold text-cuba-ink">{amount(getOriginalPriceBeforeDiscount())}</span>
                                             </div>
 
                                             {getDurationSavings() > 0 && (
-                                                <div className="flex justify-between items-center text-emerald-600 font-semibold">
+                                                <div className="flex justify-between items-center text-cuba-success font-semibold">
                                                     <span>Duration Savings Discount</span>
-                                                    <span>-{subscriptionConfig.symbol}{getDurationSavings()}</span>
+                                                    <span>-{amount(getDurationSavings())}</span>
                                                 </div>
                                             )}
 
                                             {enableCouponsModule && appliedCoupon && (
-                                                <div className="flex justify-between items-center text-emerald-600 font-bold">
+                                                <div className="flex justify-between items-center text-cuba-success font-bold">
                                                     <span>Coupon ({appliedCoupon.code} -{appliedCoupon.discount}%)</span>
-                                                    <span>-{subscriptionConfig.symbol}{getCouponDiscountAmount()}</span>
+                                                    <span>-{amount(getCouponDiscountAmount())}</span>
                                                 </div>
                                             )}
 
                                             {getProRatedCredit() > 0 && (
-                                                <div className="flex justify-between items-center text-emerald-600 font-bold">
+                                                <div className="flex justify-between items-center text-cuba-success font-bold">
                                                     <span className="flex items-center gap-1">
-                                                        <FaExchangeAlt className="w-3 h-3 text-emerald-600" />
+                                                        <FaExchangeAlt className="w-3 h-3 text-cuba-success" />
                                                         Pro-Rated Unused Membership Credit
                                                     </span>
-                                                    <span>-{subscriptionConfig.symbol}{getProRatedCredit()}</span>
+                                                    <span>-{amount(getProRatedCredit())}</span>
                                                 </div>
                                             )}
 
                                             <div className="flex justify-between items-center">
                                                 <span>Sales Tax / GST</span>
-                                                <span className="text-slate-400">Included ($0.00)</span>
+                                                <span className="text-cuba-ink-subtle">Included ($0.00)</span>
                                             </div>
 
-                                            <div className="pt-3 border-t border-slate-100 flex justify-between items-center text-base font-extrabold text-slate-900">
+                                            <div className="pt-3 border-t border-cuba-line flex justify-between items-center text-base font-extrabold text-cuba-ink">
                                                 <span>Total Due Today</span>
-                                                <span className="text-2xl text-indigo-700">{subscriptionConfig.symbol}{getFinalTotal()}</span>
+                                                <span className="text-2xl text-cuba-primary-ink-strong">{amount(getFinalTotal())}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -856,7 +875,7 @@ const PlansPage = (props) => {
                                         <button
                                             type="button"
                                             onClick={() => setStep(2)}
-                                            className="px-8 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-extrabold uppercase tracking-wider rounded-2xl shadow-lg shadow-indigo-600/20 flex items-center gap-2 cursor-pointer transition-all hover:scale-[1.02]">
+                                            className="px-8 py-3.5 bg-gradient-to-r from-cuba-primary-fill to-cuba-primary-fill hover:from-cuba-primary-strong hover:to-cuba-primary-strong text-cuba-on-primary text-xs font-extrabold uppercase tracking-wider rounded-2xl shadow-lg shadow-cuba-primary/20 flex items-center gap-2 cursor-pointer transition-all hover:scale-[1.02]">
                                             <span>Proceed to Secure Checkout</span>
                                             <FaArrowRight className="w-3.5 h-3.5" />
                                         </button>
@@ -869,24 +888,24 @@ const PlansPage = (props) => {
                                 <div className="space-y-6">
                                     
                                     {/* Cart Review Banner */}
-                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-cuba-card p-5 rounded-2xl border border-cuba-line shadow-xs">
                                         <button
                                             type="button"
                                             onClick={() => setStep(1)}
-                                            className="px-4 py-2 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer self-start sm:self-auto">
+                                            className="px-4 py-2 text-xs font-bold text-cuba-primary-ink-strong bg-cuba-primary-soft hover:bg-cuba-primary-soft border border-cuba-primary-soft rounded-xl transition-all flex items-center gap-1.5 cursor-pointer self-start sm:self-auto">
                                             ← Edit Cart &amp; Duration
                                         </button>
                                         <div className="text-right">
-                                            <span className="text-xs text-slate-500">Order Summary Total:</span>
-                                            <div className="text-base font-extrabold text-indigo-700 uppercase tracking-wider">
-                                                {selectedDuration} Months • {subscriptionConfig.symbol}{getFinalTotal()} {subscriptionConfig.currency}
-                                                {appliedCoupon && <span className="ml-2 px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded text-[10px] border border-emerald-300 font-bold">{appliedCoupon.code}</span>}
+                                            <span className="text-xs text-cuba-ink-muted">Order Summary Total:</span>
+                                            <div className="text-base font-extrabold text-cuba-primary-ink-strong uppercase tracking-wider">
+                                                {selectedDuration} Months • {amount(getFinalTotal())} {subscriptionConfig.currency}
+                                                {appliedCoupon && <span className="ml-2 px-2 py-0.5 bg-cuba-success-soft text-cuba-success rounded text-[10px] border border-cuba-success-soft font-bold">{appliedCoupon.code}</span>}
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* Native Embedded Checkout Gateway */}
-                                    <div className="bg-white rounded-2xl p-6 text-slate-900 shadow-sm border border-slate-200">
+                                    <div className="bg-cuba-card rounded-2xl p-6 text-cuba-ink shadow-sm border border-cuba-line">
                                         <ElementsConsumer>
                                             {({ stripe, elements }) => (
                                                 <Checkout
@@ -928,36 +947,36 @@ const PlansPage = (props) => {
 
                     {/* TAB 2: BILLING HISTORY & PDF INVOICES */}
                     {activeTab === 'invoices' && (
-                        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-6">
-                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                        <div className="bg-cuba-card rounded-2xl p-6 border border-cuba-line shadow-sm space-y-6">
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border-b border-cuba-line pb-4">
                                 <div>
-                                    <h3 className="text-lg font-bold text-slate-900">Billing History &amp; Payment Records</h3>
-                                    <p className="text-xs text-slate-500">Verified tax invoices are generated and delivered during completed checkout.</p>
+                                    <h3 className="text-lg font-bold text-cuba-ink">Billing History &amp; Payment Records</h3>
+                                    <p className="text-xs text-cuba-ink-muted">Verified tax invoices are generated and delivered during completed checkout.</p>
                                 </div>
-                                <span className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 self-start sm:self-auto">
+                                <span className="text-xs font-bold text-cuba-ink-muted bg-cuba-elevated px-3 py-1.5 rounded-xl border border-cuba-line self-start sm:self-auto">
                                     {transactionsError ? 'Transaction total unavailable' : `Total Transactions: ${transactionsList.length}`}
                                 </span>
                             </div>
 
                             {loadingTransactions ? (
-                                <div className="text-center py-12 text-slate-400">
-                                    <FaClock className="w-8 h-8 animate-spin mx-auto mb-2 text-indigo-600" />
+                                <div className="text-center py-12 text-cuba-ink-subtle">
+                                    <FaClock className="w-8 h-8 animate-spin mx-auto mb-2 text-cuba-primary-ink-strong" />
                                     <p className="text-xs">Fetching payment history...</p>
                                 </div>
                             ) : transactionsError ? (
-                                <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800">
+                                <div role="alert" className="rounded-xl border border-cuba-danger-soft bg-cuba-danger-soft p-5 text-sm text-cuba-danger">
                                     {transactionsError}
                                 </div>
                             ) : transactionsList.length === 0 ? (
-                                <div className="text-center py-12 text-slate-400 space-y-2">
-                                    <FaFileInvoice className="w-12 h-12 mx-auto text-slate-300" />
-                                    <p className="text-sm font-bold text-slate-700">No Payment Records Found</p>
-                                    <p className="text-xs text-slate-500 max-w-sm mx-auto">Provider-confirmed payment orders will appear here after checkout.</p>
+                                <div className="text-center py-12 text-cuba-ink-subtle space-y-2">
+                                    <FaFileInvoice className="w-12 h-12 mx-auto text-cuba-ink-subtle" />
+                                    <p className="text-sm font-bold text-cuba-ink">No Payment Records Found</p>
+                                    <p className="text-xs text-cuba-ink-muted max-w-sm mx-auto">Provider-confirmed payment orders will appear here after checkout.</p>
                                 </div>
                             ) : (
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left text-xs">
-                                        <thead className="bg-slate-50 text-slate-500 font-extrabold uppercase border-b border-slate-200">
+                                        <thead className="bg-cuba-canvas text-cuba-ink-muted font-extrabold uppercase border-b border-cuba-line">
                                             <tr>
                                                 <th className="p-3">Payment Reference</th>
                                                 <th className="p-3">Date</th>
@@ -966,15 +985,15 @@ const PlansPage = (props) => {
                                                 <th className="p-3">Status</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-100">
+                                        <tbody className="divide-y divide-cuba-line">
                                             {transactionsList.map((txn) => (
-                                                <tr key={txn.id} className="hover:bg-slate-50/80 transition-all">
-                                                    <td className="p-3 font-mono font-bold text-indigo-700">{txn.txnId || txn.id}</td>
-                                                    <td className="p-3 text-slate-600">{txn.createdDateString || '—'}</td>
-                                                    <td className="p-3 font-bold text-slate-900">{txn.planName || '—'}{txn.durationMonths ? ` (${txn.durationMonths}M)` : ''}</td>
-                                                    <td className="p-3 font-extrabold text-slate-900">{txn.amount === null ? '—' : `${txn.currency || '—'} ${txn.amount}`}</td>
+                                                <tr key={txn.id} className="hover:bg-cuba-canvas/80 transition-all">
+                                                    <td className="p-3 font-mono font-bold text-cuba-primary-ink-strong">{txn.txnId || txn.id}</td>
+                                                    <td className="p-3 text-cuba-ink-muted">{txn.createdDateString || '—'}</td>
+                                                    <td className="p-3 font-bold text-cuba-ink">{txn.planName || '—'}{txn.durationMonths ? ` (${txn.durationMonths}M)` : ''}</td>
+                                                    <td className="p-3 font-extrabold text-cuba-ink">{txn.amount === null ? '—' : `${txn.currency || '—'} ${txn.amount}`}</td>
                                                     <td className="p-3">
-                                                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${['ACTIVE', 'COMPLETED', 'PAID'].includes(String(txn.status).toUpperCase()) ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-slate-100 text-slate-700 border-slate-300'}`}>
+                                                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${['ACTIVE', 'COMPLETED', 'PAID'].includes(String(txn.status).toUpperCase()) ? 'bg-cuba-success-soft text-cuba-success border-cuba-success-soft' : 'bg-cuba-elevated text-cuba-ink border-cuba-line-strong'}`}>
                                                             {txn.status || 'UNKNOWN'}
                                                         </span>
                                                     </td>
@@ -985,27 +1004,27 @@ const PlansPage = (props) => {
                                 </div>
                             )}
 
-                            <div className="border-t border-slate-200 pt-6 space-y-4">
+                            <div className="border-t border-cuba-line pt-6 space-y-4">
                                 <div>
-                                    <h4 className="text-sm font-extrabold text-slate-900">Issued Tax Invoices</h4>
-                                    <p className="text-xs text-slate-500">These documents render immutable supplier and customer snapshots stored when the invoice was issued.</p>
+                                    <h4 className="text-sm font-extrabold text-cuba-ink">Issued Tax Invoices</h4>
+                                    <p className="text-xs text-cuba-ink-muted">These documents render immutable supplier and customer snapshots stored when the invoice was issued.</p>
                                 </div>
                                 {invoicesLoading ? (
-                                    <p className="text-xs text-slate-500">Loading issued invoices…</p>
+                                    <p className="text-xs text-cuba-ink-muted">Loading issued invoices…</p>
                                 ) : invoicesError ? (
-                                    <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-800">{invoicesError}</div>
+                                    <div role="alert" className="rounded-xl border border-cuba-danger-soft bg-cuba-danger-soft p-4 text-xs text-cuba-danger">{invoicesError}</div>
                                 ) : invoicesList.length === 0 ? (
-                                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600">
+                                    <div className="rounded-xl border border-cuba-line bg-cuba-canvas p-4 text-xs text-cuba-ink-muted">
                                         No immutable invoice has been issued for this account. A payment record above is not itself a tax invoice.
                                     </div>
                                 ) : (
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                                         {invoicesList.map(invoice => (
-                                            <article key={invoice.paymentOrderId} className="rounded-xl border border-slate-200 p-4 flex items-center justify-between gap-4">
+                                            <article key={invoice.paymentOrderId} className="rounded-xl border border-cuba-line p-4 flex items-center justify-between gap-4">
                                                 <div className="min-w-0">
-                                                    <div className="font-mono text-xs font-extrabold text-indigo-700 truncate">{invoice.invoiceNumber}</div>
-                                                    <div className="text-xs text-slate-500 mt-1">{invoice.formattedDate || 'Date unavailable'} · {invoice.currency} {Number(invoice.grandTotal).toFixed(2)}</div>
-                                                    <div className="text-[10px] uppercase font-bold text-slate-500 mt-1">{invoice.paymentStatus}</div>
+                                                    <div className="font-mono text-xs font-extrabold text-cuba-primary-ink-strong truncate">{invoice.invoiceNumber}</div>
+                                                    <div className="text-xs text-cuba-ink-muted mt-1">{invoice.formattedDate || 'Date unavailable'} · {invoice.currency} {Number(invoice.grandTotal).toFixed(2)}</div>
+                                                    <div className="text-[10px] uppercase font-bold text-cuba-ink-muted mt-1">{invoice.paymentStatus}</div>
                                                 </div>
                                                 <div className="shrink-0 flex flex-col gap-2">
                                                     <button
@@ -1018,7 +1037,7 @@ const PlansPage = (props) => {
                                                                 setInvoicesError(error.message || 'Invoice document could not be opened.');
                                                             }
                                                         }}
-                                                        className="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700">
+                                                        className="px-3 py-2 rounded-lg bg-cuba-primary-fill text-cuba-on-primary text-xs font-bold hover:bg-cuba-primary-strong">
                                                         Print invoice
                                                     </button>
                                                     {invoice.creditNote && (
@@ -1032,7 +1051,7 @@ const PlansPage = (props) => {
                                                                     setInvoicesError(error.message || 'Credit note could not be opened.');
                                                                 }
                                                             }}
-                                                            className="px-3 py-2 rounded-lg bg-purple-700 text-white text-xs font-bold hover:bg-purple-800">
+                                                            className="px-3 py-2 rounded-lg bg-cuba-primary-strong text-cuba-on-primary text-xs font-bold hover:bg-cuba-primary-strong">
                                                             Credit note {invoice.creditNote.creditNoteNumber}
                                                         </button>
                                                     )}
@@ -1047,52 +1066,52 @@ const PlansPage = (props) => {
 
                     {/* TAB 3: PLAN TERM & BILLING MODEL */}
                     {activeTab === 'manage' && (
-                        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-6">
-                            <div className="border-b border-slate-100 pb-4">
-                                <h3 className="text-lg font-bold text-slate-900">Plan Term &amp; Renewal</h3>
-                                <p className="text-xs text-slate-500">IME365 purchases are fixed-term, one-time payments. No payment method is stored or charged automatically.</p>
+                        <div className="bg-cuba-card rounded-2xl p-6 border border-cuba-line shadow-sm space-y-6">
+                            <div className="border-b border-cuba-line pb-4">
+                                <h3 className="text-lg font-bold text-cuba-ink">Plan Term &amp; Renewal</h3>
+                                <p className="text-xs text-cuba-ink-muted">IME365 purchases are fixed-term, one-time payments. No payment method is stored or charged automatically.</p>
                             </div>
 
-                            <div className="bg-gradient-to-r from-indigo-900 via-slate-900 to-purple-950 rounded-2xl p-5 border border-indigo-500/30 text-white flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 shadow-md">
+                            <div className="bg-gradient-to-r from-cuba-night-surface-from via-cuba-night-surface-mid to-cuba-night-surface-to rounded-2xl p-5 border border-cuba-primary/30 text-cuba-on-primary flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 shadow-md">
                                 <div className="space-y-1">
                                     <div className="flex flex-wrap items-center gap-2">
-                                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-400 text-slate-950 uppercase tracking-wider">
+                                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-cuba-warning text-cuba-ink uppercase tracking-wider">
                                             MEMBERSHIP: {userCurrentMembership}
                                         </span>
                                         {membershipActive && (
-                                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border bg-indigo-500/20 text-indigo-200 border-indigo-400/30">
+                                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border bg-cuba-primary-fill/20 text-cuba-night-ink border-cuba-primary/30">
                                                 MANUAL RENEWAL
                                             </span>
                                         )}
                                     </div>
-                                    <h4 className="text-base font-bold text-white">
-                                        Candidate Account: <span className="text-indigo-300">{userEmail || candidateName || 'Unavailable'}</span>
+                                    <h4 className="text-base font-bold text-cuba-on-primary">
+                                        Candidate Account: <span className="text-cuba-night-primary">{userEmail || candidateName || 'Unavailable'}</span>
                                     </h4>
-                                    <p className="text-xs text-slate-300">
-                                        Access valid until: <strong className="text-amber-300">{membershipExpiry || (membershipActive ? 'No expiry date recorded' : 'Not applicable')}</strong>
+                                    <p className="text-xs text-cuba-ink-subtle">
+                                        Access valid until: <strong className="text-cuba-night-warning">{membershipExpiry || (membershipActive ? 'No expiry date recorded' : 'Not applicable')}</strong>
                                     </p>
                                 </div>
                                 <div className="text-right shrink-0">
-                                    <span className="text-xs font-bold text-slate-400 block">Status:</span>
-                                    <span className={`text-sm font-extrabold ${membershipActive ? 'text-emerald-400' : 'text-amber-300'}`}>
+                                    <span className="text-xs font-bold text-cuba-ink-subtle block">Status:</span>
+                                    <span className={`text-sm font-extrabold ${membershipActive ? 'text-cuba-night-success' : 'text-cuba-night-warning'}`}>
                                         {membershipActive ? 'ACTIVE PAID MEMBERSHIP' : (membershipKnown ? 'NO ACTIVE PAID MEMBERSHIP' : 'STATUS UNAVAILABLE')}
                                     </span>
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="p-5 rounded-2xl border border-emerald-200 bg-emerald-50/50 space-y-3">
-                                    <span className="text-xs font-bold text-emerald-900 uppercase tracking-wider">No Automatic Charge</span>
-                                    <p className="text-xs text-emerald-800">
+                                <div className="p-5 rounded-2xl border border-cuba-success-soft bg-cuba-success-soft/50 space-y-3">
+                                    <span className="text-xs font-bold text-cuba-success uppercase tracking-wider">No Automatic Charge</span>
+                                    <p className="text-xs text-cuba-success">
                                         Your current term ends on the date above. To continue after that date, return to Plans and complete a new provider-confirmed payment.
                                     </p>
                                 </div>
-                                <div className="p-5 rounded-2xl border border-slate-200 bg-slate-50 space-y-3">
-                                    <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">Refund or Billing Help</span>
-                                    <p className="text-xs text-slate-600">
+                                <div className="p-5 rounded-2xl border border-cuba-line bg-cuba-canvas space-y-3">
+                                    <span className="text-xs font-bold text-cuba-ink uppercase tracking-wider">Refund or Billing Help</span>
+                                    <p className="text-xs text-cuba-ink-muted">
                                         Fixed-term access cannot be “cancelled” as a recurring mandate because no recurring mandate exists. For a refund review or an invoice issue, contact support with the payment reference shown in Billing History.
                                     </p>
-                                    <a href="/contact" className="inline-flex px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl transition-all">
+                                    <a href="/contact" className="inline-flex px-3 py-2 bg-cuba-primary-fill hover:bg-cuba-primary-strong text-cuba-on-primary font-extrabold text-xs rounded-xl transition-all">
                                         Contact Billing Support
                                     </a>
                                 </div>

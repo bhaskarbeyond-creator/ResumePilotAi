@@ -1,6 +1,7 @@
 import React from 'react';
 import CubaPortalShell from '../cuba/CubaPortalShell';
 import { ADMIN_PORTAL_NAVIGATION } from '../cuba/portalNavigation';
+import { searchAdminEntities } from './command/adminEntitySearch';
 
 /**
  * Cuba platform admin chrome — Phase 7 wrapper.
@@ -23,13 +24,28 @@ import { ADMIN_PORTAL_NAVIGATION } from '../cuba/portalNavigation';
  *     inside the untouched settings components.
  *   - It never asserts an identity. The label is a static section name, not a
  *     claim about who is signed in.
+ *   - DIR-012: it now HANDS OVER a search provider, which is not a decision. The
+ *     wrapper still makes no permission call and still issues no request of its
+ *     own: `searchAdminEntities` lives in `./command/adminEntitySearch` and reaches
+ *     the role-projected platform search endpoint, which strips server-side every
+ *     category the caller is not entitled to. Passing the function by reference is
+ *     what keeps `tests/cuba-admin-console.test.mjs` (no `fetch(`, no `/api/` in
+ *     this file) true while restoring the live search that Cuba chrome lost.
  */
+import { COPILOT_PORTALS } from '../cuba/copilotActions';
+
 const AdminPortalCuba = ({ children }) => (
   <CubaPortalShell
     persona="Platform Admin"
     title="Command Center"
     navigation={ADMIN_PORTAL_NAVIGATION}
     user={{ name: 'Control Plane' }}
+    commandSearchProvider={searchAdminEntities}
+    // DIR-021: the admin copilot surfaces "Search user or tenant" and the
+    // security audit shortcut, resolved from the live route. It carries NO
+    // candidate context on purpose: no AI operation here needs one, so there is
+    // nothing for the payloads to invent.
+    copilotPortal={COPILOT_PORTALS.ADMIN}
   >
     {children}
   </CubaPortalShell>

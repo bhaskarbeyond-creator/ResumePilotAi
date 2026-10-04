@@ -84,6 +84,26 @@ export default defineConfig({
         port: 3000,
         strictPort: false,   // Allow fallback to other ports if 5173 is busy
         historyApiFallback: true,
+        // Live-stack Playwright suites (e.g. playwright.dir013.config.js) write
+        // their artifacts and reporter output INSIDE the project root. The dev
+        // watcher treated every one of those writes as a source change and issued
+        // a full `page reload`, which reset the running app mid-test (DIR-013
+        // proved it: the interview mode silently reverted to its default, so the
+        // canvas never mounted and the session assertion could not be reached).
+        // These directories hold test output only and are never part of the
+        // application module graph, so excluding them from the watcher is
+        // behaviour-preserving for the app and removes the flake for every
+        // live-stack suite.
+        watch: {
+            ignored: [
+                '**/.bridge/**',
+                '**/test-results/**',
+                '**/crawl-artifacts/**',
+                '**/artifacts/**',
+                '**/playwright-report/**',
+                '**/backups/**',
+            ],
+        },
         proxy: {
             '/api': {
                 target: process.env.VITE_DEV_BACKEND_URL || 'http://localhost:8080',

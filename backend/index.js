@@ -20,7 +20,21 @@ const { loadAiAdminSettings, saveAiAdminSettings, testAiProvider, fetchProviderM
 const { getGlobalAiDashboardData, setGlobalAiQuotaLimits, resetUserAiQuota, resetAllAiQuota } = require('./services/adminAiEntitlement');
 const { mergeAdminSettingCategory } = require('./services/adminSettingsMerge');
 const { PAYMENT_PROVIDERS, resolveWriteOnlySecret, getPaymentSettingsProjection } = require('./services/paymentAdmin');
-const { resolveEffectiveEntitlement, isPaidMembershipTier } = require('./security/entitlements');
+// DIR-022 removed the local `isPaidMembershipTier(...) || ['ACTIVE', ...]` gates
+// from /api/check and the PDF export wall; both now delegate to
+// isMembershipActive, the single INV-5-aware entitlement definition.
+const { resolveEffectiveEntitlement } = require('./security/entitlements');
+// DIR-022: cryptographic webhook verification + replay defence. The guard runs
+// BEFORE Stripe's own constructEvent so the replay window is enforced
+// explicitly, and so a rejection never becomes a provider string in the body.
+const {
+    REPLAY_WINDOW_SECONDS,
+    verifyStripeSignature,
+    verifyRazorpaySignature,
+    toWebhookRejection,
+    webhookRejectionBody,
+    recordWebhookRejection,
+} = require('./security/webhookGuard');
 const { toCanonicalDate } = require('./database/canonical');
 const { isMembershipActive, toCanonicalUser } = require('./database/domain');
 const databaseAuthority = require('./database/authority');
@@ -30,6 +44,9 @@ const { reconcileStripeChargeRefund } = require('./services/refundReferences');
 const { executeOrReconcileProviderRefund, refundFlowError } = require('./services/providerRefunds');
 const { normalizeLlmDiscoverySettings } = require('./services/discoveryMetadata');
 const { publishDueBlogPosts } = require('./services/cmsScheduler');
+// DIR-022 / AC-3: the subscription reconciler worker and its operator-facing
+// single-account entry point (AC-5).
+const { reconcileSubscriptionsOnce, reconcileUserSubscription } = require('./services/subscriptionReconciler');
 const {
     billingSnapshotHash,
     generateInvoice,
@@ -74,7 +91,6 @@ const {
     assertInternalOrder,
     validateStripePaymentIntent,
     validatePayPalOrder,
-    validateRazorpaySignature,
     validateRazorpayPayment,
     validatePaytmPayment,
     validatePhonePePayment,
@@ -712,13 +728,38 @@ app.get('/api/payment-orders/:orderId', async (req, res) => {
 // Stripe webhook — verified, idempotent MariaDB subscription activation
 app.post('/api/stripe-webhook', async (req, res) => {
     const sig = req.headers['stripe-signature'];
+    // DIR-022 / AC-2: the signature is verified by webhookGuard with an
+    // EXPLICIT 300s replay tolerance. Two things changed here versus the
+    // previous implementation, both required:
+    //   1. The response body no longer echoes `err.message`. Stripe's SDK error
+    //      strings describe the expected signature material, so returning them
+    //      to an anonymous caller violated INV-2. The client now receives a
+    //      fixed code and the request id, nothing else.
+    //   2. Every rejection is persisted to `security_audit_logs`, so a forgery or
+    //      replay attempt is an auditable security event rather than a
+    //      console line nobody sees.
     let event;
     try {
-        if (!process.env.STRIPE_WEBHOOK_SECRET) throw new Error('Stripe webhook is not configured');
-        event = stripeWebhookVerifier.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+        verifyStripeSignature({
+            rawBody: req.body,
+            header: sig,
+            secret: process.env.STRIPE_WEBHOOK_SECRET,
+        });
+        event = stripeWebhookVerifier.webhooks.constructEvent(
+            req.body,
+            sig,
+            process.env.STRIPE_WEBHOOK_SECRET,
+            REPLAY_WINDOW_SECONDS,
+        );
     } catch (err) {
-        console.error('[Stripe Webhook] Signature error:', err.message);
-        return res.status(400).send(`Webhook Error: ${err.message}`);
+        const rejection = toWebhookRejection(err);
+        await recordWebhookRejection({
+            gateway: 'stripe',
+            code: rejection.code,
+            reason: rejection.reason,
+            requestId: res.locals?.requestId,
+        });
+        return res.status(rejection.status).json(webhookRejectionBody(rejection.code, res.locals?.requestId));
     }
 
     if (event.type === 'payment_intent.succeeded') {
@@ -1070,10 +1111,21 @@ app.post('/api/razorpay/verify-payment', async (req, res) => {
         }
         const { keyId, keySecret } = await getRazorpayKeys();
         if (!keyId || !keySecret) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
+        // DIR-022 / AC-2: the shared timing-safe verifier is used here too, so
+        // checkout verification and webhook verification can never drift apart
+        // into two different (and separately auditable) HMAC implementations.
         try {
-            validateRazorpaySignature(keySecret, providerOrderId, paymentId, signature);
-        } catch (_) {
-            return res.status(400).json({ verified: false, error: 'Payment signature verification failed' });
+            verifyRazorpaySignature({ secret: keySecret, orderId: providerOrderId, paymentId, signature });
+        } catch (error) {
+            const rejection = toWebhookRejection(error);
+            await recordWebhookRejection({
+                gateway: 'razorpay',
+                code: rejection.code,
+                reason: rejection.reason,
+                orderId: paymentOrderId,
+                requestId: res.locals?.requestId,
+            });
+            return res.status(rejection.status).json({ verified: false, ...webhookRejectionBody(rejection.code, res.locals?.requestId) });
         }
         // A valid callback signature alone is not proof of capture. Confirm provider state and amount.
         const paymentRes = await fetch(`https://api.razorpay.com/v1/payments/${encodeURIComponent(paymentId)}`, {
@@ -1429,12 +1481,18 @@ app.post('/api/check', async (req, res) => {
             return res.json({ status: 'false', membershipEnds: null });
         }
         const canonical = toCanonicalUser(user);
-        const entitled = isMembershipActive(canonical) || (
-            isPaidMembershipTier(canonical.membership)
-            && ['ACTIVE', 'ADMIN_GRANTED'].includes(String(canonical.paymentStatus || '').toUpperCase())
-            && (!canonical.membershipEnds || new Date(canonical.membershipEnds) > new Date())
-        );
-        return res.json({ status: entitled ? 'true' : 'false', membershipEnds: entitled ? (canonical.membershipEnds || null) : null });
+        // DIR-022 / INV-5: delegate to the single entitlement gate. The previous
+        // inline `['ACTIVE','ADMIN_GRANTED']` list silently excluded PAST_DUE, so
+        // a paying user whose renewal was retried lost access during their grace
+        // window — exactly the false-positive lockout AC-4 forbids. The grace
+        // deadline is returned so the client can render an honest recovery banner.
+        const entitled = isMembershipActive(canonical);
+        return res.json({
+            status: entitled ? 'true' : 'false',
+            membershipEnds: entitled ? (canonical.membershipEnds || null) : null,
+            paymentGraceUntil: canonical.paymentGraceUntil || null,
+            paymentStatus: canonical.paymentStatus,
+        });
     } catch (error) {
         console.error('[Entitlement check]', error.message);
         return res.status(500).json({ status: 'false', error: 'Entitlement check failed' });
@@ -2213,11 +2271,11 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
             || publicConfig.subscriptions?.enabled === false
             || systemSettings.subscriptions?.state === false;
         const allowFreePdf = Boolean(publicConfig.watermark?.allowFreePdfDownload);
-        const entitled = isGlobalFreeMode || allowFreePdf || isMembershipActive(ownerCanonical) || (
-            isPaidMembershipTier(ownerCanonical.membership)
-            && ['ACTIVE', 'ADMIN_GRANTED'].includes(String(ownerCanonical.paymentStatus || '').toUpperCase())
-            && (!ownerCanonical.membershipEnds || new Date(ownerCanonical.membershipEnds) > new Date())
-        );
+        // DIR-022 / INV-5: the grace-aware entitlement gate, not an inline status
+        // list. A PAST_DUE owner inside the recovery window must still be able to
+        // export their resume; hard-locking them here is the false-positive
+        // lockout the directive forbids.
+        const entitled = isGlobalFreeMode || allowFreePdf || isMembershipActive(ownerCanonical);
         if (!entitled) {
             return res.status(402).json({ error: { code: 'ACTIVE_SUBSCRIPTION_REQUIRED', message: 'An active subscription is required for PDF export', requestId: res.locals.requestId } });
         }
@@ -4366,6 +4424,48 @@ if (require.main === module) {
         const scheduler = setInterval(runScheduler, intervalMs);
         scheduler.unref?.();
         setTimeout(runScheduler, 10_000).unref?.();
+    }
+
+    // DIR-022 / AC-3: autonomous subscription reconciliation.
+    //
+    // Follows the cmsScheduler convention exactly: opt-in via env, unref'd timer
+    // so it never holds the process open, a re-entrancy guard so an overlapping
+    // pass cannot double-write, and credentials resolved INSIDE the tick so no
+    // secret is captured in a closure for the process lifetime.
+    if (process.env.SUBSCRIPTION_RECONCILER_ENABLED === 'true') {
+        const intervalMs = Math.max(
+            60_000,
+            Math.min(Number(process.env.SUBSCRIPTION_RECONCILER_INTERVAL_MS) || 3_600_000, 86_400_000),
+        );
+        let reconcilerRunning = false;
+        const runSubscriptionReconciler = async () => {
+            if (reconcilerRunning) return;
+            reconcilerRunning = true;
+            try {
+                const credentials = {};
+                // Only the public key id and the client object are needed; the
+                // secret never leaves this scope and is never logged.
+                const razorpayKeys = await getRazorpayKeys().catch(() => ({}));
+                if (razorpayKeys?.keyId && razorpayKeys?.keySecret) {
+                    credentials.keyId = razorpayKeys.keyId;
+                    credentials.keySecret = razorpayKeys.keySecret;
+                }
+                const stripeClient = await getStripeClient().catch(() => null);
+                if (stripeClient) credentials.stripeClient = stripeClient;
+
+                const outcome = await reconcileSubscriptionsOnce({ credentials });
+                if (outcome.changed) {
+                    console.info(`[Subscription reconciler] Applied ${outcome.changed} correction(s); ${outcome.skipped} account(s) left untouched.`);
+                }
+            } catch (error) {
+                console.error('[Subscription reconciler] Pass failed:', error?.message || error);
+            } finally {
+                reconcilerRunning = false;
+            }
+        };
+        const reconcilerTimer = setInterval(runSubscriptionReconciler, intervalMs);
+        reconcilerTimer.unref?.();
+        setTimeout(runSubscriptionReconciler, 60_000).unref?.();
     }
 
     // Durable notification delivery worker — MySQL transactional outbox.

@@ -1,0 +1,17 @@
+{
+  "routes": [
+    "/dashboard",
+    "/dashboard/applied-jobs",
+    "/dashboard/job-tracker",
+    "/dashboard/interview",
+    "/dashboard/favorites",
+    "/dashboard/settings",
+    "/dashboard/jobs",
+    "/dashboard/cover-letters",
+    "/dashboard/portfolios",
+    "/dashboard/analytics"
+  ],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "failedApi": []
+}

@@ -121,9 +121,63 @@ describe('Admin authorization model is preserved (§7)', () => {
     });
 
     it('mounts the existing console unchanged behind the flag', () => {
-        assert.match(ADMIN, /const AdminConsoleInner = \(\) => \{/);
+        assert.match(ADMIN, /const AdminConsoleInner = \(\{ isCubaChrome = false \}\) => \{/);
         assert.match(ADMIN, /<AdminConsoleInner \/>/);
-        assert.match(ADMIN, /<AdminPortalCuba>\s*<AdminConsoleInner \/>\s*<\/AdminPortalCuba>/);
+        assert.match(ADMIN, /<AdminPortalCuba>\s*<AdminConsoleInner isCubaChrome \/>\s*<\/AdminPortalCuba>/);
+    });
+});
+
+/**
+ * DIR-011 — chrome de-duplication on the platform admin console.
+ *
+ * The universal M3 header mounts its own banner, breadcrumbs, navigation rail,
+ * command palette and account menu. The legacy console additionally rendered an
+ * AdminHeader <header>, a Sidebar rail and a second Ctrl+K palette binding, which
+ * produced two banner landmarks and competing owners for the same controls.
+ *
+ * These assertions pin the contract: the flag reaches the inner console as a prop
+ * (single source of truth, so the mounted branch and the rendered chrome cannot
+ * disagree), and each duplicated legacy surface is gated rather than merely hidden.
+ */
+describe('Admin chrome de-duplication (DIR-011)', () => {
+    it('receives the chrome flag as a prop instead of re-reading it', () => {
+        // A second read of isCubaShellEnabled() inside the inner console would be a
+        // second source of truth: the shell could be mounted while the console still
+        // believed it was in legacy mode (or the reverse).
+        assert.doesNotMatch(
+            ADMIN,
+            /embedded=\{isCubaShellEnabled\(\)\}/,
+            'AdminHeader must be driven by the isCubaChrome prop, not a fresh flag read',
+        );
+        assert.match(ADMIN, /embedded=\{isCubaChrome\}/);
+    });
+
+    it('does not mount the legacy sidebar under Cuba chrome', () => {
+        // display:none hides the duplicate but leaves it mounted: a second palette
+        // trigger in the DOM and a duplicate 120s health poll still running.
+        assert.match(ADMIN, /!isCubaChrome && \(\s*<div className="admin__left">/);
+    });
+
+    it('binds the legacy Ctrl+K palette shortcut only in legacy mode', () => {
+        // Two palettes answering one keystroke would make the winner depend on
+        // mount order; CubaAppShell owns the shortcut when Cuba chrome is active.
+        assert.match(
+            ADMIN,
+            /useEffect\(\(\) => \{\s*if \(isCubaChrome\) return undefined;/,
+            'the legacy Ctrl+K listener must be gated on !isCubaChrome',
+        );
+    });
+
+    it('keeps the admin-only controls the shell has no equivalent for', () => {
+        // The shell provides no backend health pill and no Super Admin role-view
+        // switcher, so those must survive as a non-landmark group rather than be
+        // deleted along with the duplicated chrome.
+        assert.match(ADMIN, /role: 'group', 'aria-label': 'Platform admin session controls'/);
+        assert.match(ADMIN, /role-switcher-button/);
+    });
+
+    it('leaves the legacy chrome fully intact when Cuba is off', () => {
+        assert.match(ADMIN, /const Wrapper = embedded \? 'div' : 'header';/);
     });
 });
 

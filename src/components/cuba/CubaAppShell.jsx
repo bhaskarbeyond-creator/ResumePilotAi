@@ -18,8 +18,12 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { FiChevronLeft, FiMenu, FiSearch, FiSun, FiMoon, FiX } from 'react-icons/fi';
 import AiEngineStatus from './AiEngineStatus';
 import CubaCommandPalette from './CubaCommandPalette';
+import M3Breadcrumbs from './M3Breadcrumbs';
+import M3UserMenu from './M3UserMenu';
+import M3NotificationCenter from './M3NotificationCenter';
 import ContextSwitcher from '../common/ContextSwitcher';
 import { useDialogA11y } from './useDialogA11y';
+import { useLocation } from 'react-router-dom';
 
 const cx = (...parts) => parts.filter(Boolean).join(' ');
 
@@ -41,9 +45,15 @@ const readCollapsed = () => {
 export const CubaNavGroups = ({ groups, collapsed = false, onNavigate, headingId = 'cuba-nav-heading', navigationLabel = 'Candidate workspace navigation' }) => (
     <nav aria-label={navigationLabel} className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-3 space-y-4">
         {groups.map((group) => (
+            // DIR-017 AC-5: these group headings are 11px-bold text, so they are
+            // held to the 4.5:1 AA bar in BOTH themes. The previous
+            // `text-slate-400/90 dark:text-slate-500` pair resolved to slate-500 in
+            // dark mode, which measures only 4.02:1 on the dark canvas. The semantic
+            // ink token is AA-safe in both themes (light 4.97:1, dark 7.49:1) and
+            // removes the last hardcoded slate ramp from this chrome.
             <div key={group.id} className="space-y-1">
                 {!collapsed && (
-                    <h2 id={`${headingId}-${group.id}`} className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400/90 dark:text-slate-500 mb-1.5">
+                    <h2 id={`${headingId}-${group.id}`} className="px-3 text-[11px] font-bold uppercase tracking-wider text-cuba-ink-subtle mb-1.5">
                         {group.label}
                     </h2>
                 )}
@@ -62,7 +72,7 @@ export const CubaNavGroups = ({ groups, collapsed = false, onNavigate, headingId
                                         'cuba-focusable flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200',
                                         collapsed && 'justify-center px-0 h-10 w-10 mx-auto',
                                         active
-                                            ? 'bg-[#7366ff] text-white shadow-[0_4px_14px_rgba(115,102,255,0.35)] font-semibold'
+                                            ? 'cuba-fill-pill shadow-[0_4px_14px_rgba(115,102,255,0.35)] font-semibold'
                                             : 'text-slate-600 hover:bg-[#f3f4fd] hover:text-[#7366ff] dark:text-slate-300 dark:hover:bg-slate-800/60 dark:hover:text-[#7366ff]',
                                     )}
                                 >
@@ -92,19 +102,45 @@ export const CubaNavGroups = ({ groups, collapsed = false, onNavigate, headingId
 const CubaAppShell = ({
     navigation = [],
     navigationLabel = 'Candidate workspace navigation',
+    /**
+     * Structured breadcrumb trail (DIR-011). When supplied it is rendered as a
+     * semantic `<nav aria-label="Breadcrumb">` with clickable ancestors.
+     * `breadcrumb` below is the LEGACY free-form node and is still honoured for
+     * any caller not yet migrated, so no portal loses its context label.
+     */
+    breadcrumbs = null,
     breadcrumb = null,
     theme = 'light',
     onToggleTheme,
     aiStatus = 'unknown',
     commands = [],
+    // DIR-012: forwarded verbatim to CubaCommandPalette. The shell never calls it,
+    // never inspects it and never assumes anything about what it returns — the
+    // portal that owns the data owns the provider. Keeping the shell ignorant is
+    // what stops a design layer from becoming a second source of truth (§7).
+    commandSearchProvider = null,
     toolbar = null,
     user = null,
+    onSignOut,
     onNavigate,
+    // ---- DIR-021: AI Career Copilot wiring ---------------------------------
+    // All optional and all forwarded verbatim to CubaCommandPalette. The shell
+    // never calls `copilotDispatch` itself: the palette owns the request so the
+    // authenticated aiService boundary stays in one place (INV-2).
+    copilotPortal = null,
+    copilotDispatch = null,
+    copilotContext = null,
+    copilotOnApply = null,
     children,
 }) => {
     const [collapsed, setCollapsed] = useState(readCollapsed);
     const [mobileOpen, setMobileOpen] = useState(false);
     const [paletteOpen, setPaletteOpen] = useState(false);
+    // DIR-021: the copilot's chips are resolved from the REAL route, so the
+    // shell reports where the user actually is. `useLocation` is read
+    // defensively: this shell also renders under non-router hosts in tests.
+    const location = useLocation();
+    const copilotPathname = location?.pathname || '';
     const mobileCloseRef = useRef(null);
     const { panelRef } = useDialogA11y({
         open: mobileOpen,
@@ -161,8 +197,12 @@ const CubaAppShell = ({
                 Skip to main content
             </a>
 
-            {/* ---- App bar. Glass here because it floats over scrolling content. */}
-            <header className="cuba-glass sticky top-0 z-50 flex h-[var(--cuba-header-h)] flex-none items-center gap-3 border-x-0 border-t-0 px-3 sm:px-5">
+            {/* ---- App bar (DIR-011: universal Google M3 header) -------------------
+                Single row at every viewport (320px → 4K). Left rail = navigation
+                controls; centre = the dominant command search; right rail =
+                status + identity. `flex-wrap` with `min-w-0` truncation is what
+                keeps it one clean row instead of letting any item overflow. */}
+            <header className="cuba-glass sticky top-0 z-50 flex h-[var(--cuba-header-h)] flex-none items-center gap-2 border-x-0 border-t-0 px-3 sm:gap-3 sm:px-5">
                 <button
                     type="button"
                     onClick={() => setMobileOpen(true)}
@@ -186,51 +226,93 @@ const CubaAppShell = ({
                     />
                 </button>
 
-                {breadcrumb ? (
-                    <div className="min-w-0 flex-1 truncate text-sm font-medium text-cuba-ink-muted">{breadcrumb}</div>
-                ) : (
-                    <div className="min-w-0 flex-1" />
-                )}
+                {/* Left rail: semantic trail. Hidden below md so the centred search
+                    keeps the visual centre of mass on small screens. */}
+                <div className="hidden min-w-0 flex-1 md:block">
+                    {breadcrumbs ? (
+                        <M3Breadcrumbs items={breadcrumbs} onNavigate={onNavigate} />
+                    ) : breadcrumb ? (
+                        <div className="min-w-0 truncate text-sm font-medium text-cuba-ink-muted">{breadcrumb}</div>
+                    ) : null}
+                </div>
 
+                {/* CENTRE: Material 3 pill command search — the header's dominant
+                    affordance, replacing the old small right-aligned trigger.
+                    Rendered only when the caller supplied REAL commands, so an
+                    empty palette is never advertised (§25).
+
+                    RESPONSIVE CONTRACT (DIR-011 §"Full Responsive Scaling"):
+                    at >=768px the full pill shows its placeholder + shortcut badge;
+                    below 768px the same control collapses to an ICON-ONLY button of
+                    the same 40px hit area as the neighbouring rail buttons. It is a
+                    real <button> with an accessible name (not a bare <FiSearch/>),
+                    so it is reachable by keyboard and announced as a control, and it
+                    opens the identical palette — the mobile collapse is a change of
+                    presentation, never a loss of function. */}
                 {commands.length > 0 && (
-                    <button
-                        type="button"
-                        onClick={() => setPaletteOpen(true)}
-                        className="cuba-focusable hidden items-center gap-2 rounded-xl border border-cuba-line bg-cuba-card px-3.5 py-1.5 text-xs text-cuba-ink-subtle shadow-xs transition-colors hover:border-[#7366ff]/50 md:inline-flex"
-                    >
-                        <FiSearch className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
-                        <span>Search</span>
-                        <kbd className="ml-2 rounded-md bg-slate-100 dark:bg-slate-800 border border-cuba-line px-1.5 py-0.5 text-[10px] font-mono font-bold text-slate-500">⌘K</kbd>
-                    </button>
-                )}
+                    <div className="mx-auto flex w-full max-w-xl flex-none items-center justify-center md:w-auto md:flex-1">
+                        <button
+                            type="button"
+                            onClick={() => setPaletteOpen(true)}
+                            data-testid="cuba-command-search"
+                            aria-label="Search or run a command"
+                            aria-keyshortcuts="Control+K Meta+K"
+                            className="cuba-focusable group hidden w-full items-center gap-2.5 rounded-full border border-cuba-header-search-border px-4 py-2.5 text-left shadow-cuba-sm transition-colors hover:bg-cuba-header-search-hover md:flex"
+                            style={{ backgroundColor: 'var(--cuba-header-search-bg)' }}
+                        >
+                            <FiSearch className="h-4 w-4 flex-none text-cuba-ink-subtle" aria-hidden="true" />
+                            <span className="min-w-0 flex-1 truncate text-sm text-cuba-ink-muted">
+                                Search or run a command
+                            </span>
+                            <kbd
+                                data-testid="cuba-command-search-shortcut"
+                                className="hidden flex-none items-center gap-0.5 rounded-md border border-cuba-line px-1.5 py-0.5 font-mono text-[10px] font-bold sm:inline-flex"
+                                style={{
+                                    backgroundColor: 'var(--cuba-header-kbd-bg)',
+                                    color: 'var(--cuba-header-kbd-ink)',
+                                }}
+                            >
+                                <span className="cuba-sr-only">Keyboard shortcut: </span>Ctrl K
+                            </kbd>
+                        </button>
 
-                {toolbar}
-
-                <AiEngineStatus status={aiStatus} className="hidden sm:inline-flex" />
-
-                {onToggleTheme && (
-                    <button
-                        type="button"
-                        onClick={onToggleTheme}
-                        aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
-                        className="cuba-focusable inline-flex h-9 w-9 flex-none items-center justify-center rounded-xl text-cuba-ink-muted hover:bg-cuba-primary-soft hover:text-[#7366ff] transition-colors"
-                    >
-                        {theme === 'dark'
-                            ? <FiSun className="h-4 w-4 text-amber-400" aria-hidden="true" />
-                            : <FiMoon className="h-4 w-4" aria-hidden="true" />}
-                    </button>
-                )}
-
-                {user && (
-                    <div className="hidden items-center gap-2 pl-2 sm:flex">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-[#7366ff] to-[#5949d6] text-xs font-bold text-white shadow-xs">
-                            {user.name ? user.name.slice(0, 2).toUpperCase() : 'U'}
-                        </div>
-                        <span className="max-w-[10rem] truncate text-xs font-semibold text-cuba-ink">
-                            {user.name}
-                        </span>
+                        {/* Mobile (<768px) collapsed trigger — same action, same a11y. */}
+                        <button
+                            type="button"
+                            onClick={() => setPaletteOpen(true)}
+                            data-testid="cuba-command-search-mobile"
+                            aria-label="Search or run a command"
+                            aria-keyshortcuts="Control+K Meta+K"
+                            className="cuba-focusable inline-flex h-10 w-10 flex-none items-center justify-center rounded-cuba-sm text-cuba-ink-muted hover:bg-cuba-primary-soft md:hidden"
+                        >
+                            <FiSearch className="h-5 w-5" aria-hidden="true" />
+                        </button>
                     </div>
                 )}
+
+                {/* Below md the trail has no room; give the search the full width and
+                    keep only the controls on one row. */}
+                {commands.length === 0 && <div className="min-w-0 flex-1 md:hidden" />}
+
+                {/* Right rail: context, status, identity. */}
+                <div className="ml-auto flex flex-none items-center gap-1.5 sm:gap-2">
+                    {toolbar}
+
+                    <AiEngineStatus status={aiStatus} className="hidden sm:inline-flex" />
+
+                    <M3NotificationCenter
+                        onNavigate={onNavigate}
+                        onOpenAll={toolbar ? undefined : (onNavigate ? () => onNavigate('/dashboard') : undefined)}
+                    />
+
+                    <M3UserMenu
+                        user={user}
+                        theme={theme}
+                        onToggleTheme={onToggleTheme}
+                        onNavigate={onNavigate}
+                        onSignOut={onSignOut}
+                    />
+                </div>
             </header>
 
             <div className="w-full flex min-h-0 flex-1">
@@ -253,7 +335,7 @@ const CubaAppShell = ({
                                 onNavigate('/dashboard');
                             }
                         }}
-                        className="flex items-center gap-2.5 min-w-0"
+                        className="flex items-center gap-2.5 min-w-0 text-cuba-ink"
                     >
                             <div className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-gradient-to-tr from-[#7366ff] to-[#5949d6] text-white font-black text-xs shadow-[0_3px_10px_rgba(115,102,255,0.35)]">
                                 ✦
@@ -262,7 +344,12 @@ const CubaAppShell = ({
                                 <div className="min-w-0 truncate">
                                     <div className="text-sm font-extrabold tracking-tight text-cuba-ink flex items-center gap-1.5">
                                         <span>IME365</span>
-                                        <span className="rounded bg-[#7366ff]/10 px-1 py-0.2 text-[8px] font-black text-[#7366ff] uppercase tracking-wider">AI</span>
+                                        {/* DIR-017 AC-5: the "AI" chip label is 8px text, so it is
+                                            held to the full 4.5:1 AA bar, not the 3:1 large-text
+                                            bar. The raw brand violet #7366ff is only 3.8:1 on the
+                                            light canvas, so the chip uses the AA-safe primary ink
+                                            (6.92:1) over the existing soft primary wash. */}
+                                        <span className="rounded bg-cuba-primary-soft px-1 py-0.5 text-[8px] font-black text-cuba-primary-ink-strong uppercase tracking-wider">AI</span>
                                     </div>
                                     <div className="text-[9px] font-semibold text-cuba-ink-subtle uppercase tracking-wider">Executive Suite</div>
                                 </div>
@@ -326,7 +413,18 @@ const CubaAppShell = ({
                 </main>
             </div>
 
-            <CubaCommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} commands={commands} />
+            <CubaCommandPalette
+                open={paletteOpen}
+                onClose={() => setPaletteOpen(false)}
+                commands={commands}
+                searchProvider={commandSearchProvider}
+                onNavigate={onNavigate}
+                copilotPortal={copilotPortal}
+                copilotPathname={copilotPathname}
+                copilotDispatch={copilotDispatch}
+                copilotOnApply={copilotOnApply}
+                data-testid="cuba-command-palette"
+            />
         </div>
     );
 };

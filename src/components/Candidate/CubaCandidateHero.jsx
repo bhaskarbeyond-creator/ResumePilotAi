@@ -68,8 +68,13 @@ const CubaCandidateHero = ({ displayName = 'Candidate' }) => {
 
     return (
         <div className="space-y-6">
-            {/* Authentic Cuba Executive Profile Box Welcome Banner */}
+            {/* Authentic Cuba Executive Profile Box Welcome Banner.
+              * `data-testid` is the single-authoritative-hero hook the DIR-009 E2E
+              * suite counts. DashboardHomepage's legacy welcome header and its four
+              * KPI cards are already suppressed behind `!isCuba`, so exactly one
+              * element carrying this id may exist in the Candidate Dashboard. */}
             <div
+                data-testid="cuba-candidate-hero"
                 className="relative overflow-hidden rounded-[18px] p-6 sm:p-8 text-white shadow-[0_12px_32px_-6px_rgba(115,102,255,0.42)] transition-all"
                 style={{
                     background: 'linear-gradient(103.75deg, #33b1ee -13.9%, #7366ff 79.68%)',

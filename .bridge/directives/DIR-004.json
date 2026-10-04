@@ -16,5 +16,18 @@
   "reviews": [],
   "freezeHash": "fc05a5fa0a9fb692b56b1cdf60f62835598b154c",
   "certifiedAt": "2026-10-02T12:53:51.418Z",
-  "certifiedBy": "Antigravity (Lead Gatekeeper)"
+  "certifiedBy": "Antigravity (Lead Gatekeeper)",
+  "secondReview": {
+    "status": "SCHEDULED_POST_DIR028",
+    "scheduledExecutionOrder": "AFTER_DIR028",
+    "targetDirectiveId": "DIR-030",
+    "phaseName": "Phase 2 Second Review \u2014 Candidate Workspace & Navigation",
+    "governingProtocol": "SKILL.md v10.0 (AI Bridge Supervisor Master Edition)",
+    "mandatoryAuditRules": [
+      "\u00a719 Zero-FOUC verification: Zero theme flashing or layout shift on hard reload across candidate routes",
+      "\u00a719 Font hydration timing < 50ms",
+      "\u00a722 Dark/light theme toggle contrast preservation"
+    ],
+    "scheduledAt": "2026-10-04T01:50:00Z"
+  }
 }

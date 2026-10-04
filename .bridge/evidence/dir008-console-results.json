@@ -1,0 +1,399 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "D:\\xampp\\htdocs\\IME365\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "-c",
+      "playwright.dir008.config.js"
+    ],
+    "configFile": "D:\\xampp\\htdocs\\IME365\\playwright.dir008.config.js",
+    "rootDir": "D:/xampp/htdocs/IME365/tests/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/xampp/htdocs/IME365/.bridge/evidence/dir008-artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "dir008-live-organization-console",
+        "name": "dir008-live-organization-console",
+        "testDir": "D:/xampp/htdocs/IME365/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "/dir008-organization-console\\.spec\\.js/"
+        ],
+        "timeout": 180000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": ".bridge/evidence/dir008-console-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "dir008-organization-console.spec.js",
+      "file": "dir008-organization-console.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "Stage 1 — the pathname is the authoritative source of the active module",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "dir008-live-organization-console",
+              "projectName": "dir008-live-organization-console",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 8846,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "[2026-10-03T03:21:52.463Z] DIR-008 organization console run starting. WEB=http://localhost:3000 API=http://localhost:8080\n"
+                    },
+                    {
+                      "text": "[2026-10-03T03:21:52.464Z] operator identity: uid=OhZdiSIFL7ePA1TMkfu9bnR935D3 email=bhaskar.beyond@gmail.com\n"
+                    },
+                    {
+                      "text": "[2026-10-03T03:21:52.474Z] live backend health status=200 authority=MARIADB\n"
+                    },
+                    {
+                      "text": "[2026-10-03T03:21:52.781Z] live tenants: acme-corp(ENTERPRISE_MEMBER), personal-66e908e4b168(TENANT_OWNER), global-tech(TENANT_OWNER)\n"
+                    },
+                    {
+                      "text": "[2026-10-03T03:21:53.392Z] tenant under test: id=df0adba6-f39c-4f69-b123-5d58c2aaf263 slug=global-tech name=\"Global Tech Industries\" permissions=[\"*\"]\n"
+                    },
+                    {
+                      "text": "[2026-10-03T03:22:02.222Z] stage1 pathname-authority verified: path module wins, ?tab= fallback works, bare slug canonicalizes\n"
+                    },
+                    {
+                      "text": "[2026-10-03T03:22:02.223Z] stage1 defects console=0 pageErrors=0 failedApi=0\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T03:21:52.433Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b0989fae4b71fa238df4-9042b9854ebd1b4a7811",
+          "file": "dir008-organization-console.spec.js",
+          "line": 243,
+          "column": 1
+        },
+        {
+          "title": "Stage 2 — all 13 console modules mount and render their own module",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "dir008-live-organization-console",
+              "projectName": "dir008-live-organization-console",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4623,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "[2026-10-03T03:22:05.238Z] stage2 module verified: overview -> \"Overview\"\n"
+                    },
+                    {
+                      "text": "[2026-10-03T03:22:05.391Z] stage2 module verified: resumes -> \"Talent & Resumes\"\n"
+                    },
+                    {
+                      "text": "[2026-10-03T03:22:05.570Z] stage2 module verified: members -> \"Users & IAM\"\n"
+                    },
+                    {
+                      "text": "[2026-10-03T03:22:05.700Z] stage2 module verified: teams -> \"Teams\"\n"
+                    },
+                    {
+                      "text": "[2026-10-03T03:22:05.825Z] stage2 module verified: workspaces -> \"Workspaces\"\n"
+                    },
+                    {
+                      "text": "[2026-10-03T03:22:05.950Z] stage2 module verified: access -> \"Roles & Permissions\"\n"
+                    },
+                    {
+                      "text": "[2026-10-03T03:22:06.047Z] stage2 module verified: ai -> \"AI Workspace\"\n"
+                    },
+                    {
+                      "text": "[2026-10-03T03:22:06.197Z] stage2 module verified: security -> \"Security & M2M\"\n"
+                    },
+                    {
+                      "text": "[2026-10-03T03:22:06.327Z] stage2 module verified: usage -> \"Usage & Quotas\"\n"
+                    },
+                    {
+                      "text": "[2026-10-03T03:22:06.480Z] stage2 module verified: email -> \"Email & Notifications\"\n"
+                    },
+                    {
+                      "text": "[2026-10-03T03:22:06.615Z] stage2 module verified: audit -> \"Audit Logs\"\n"
+                    },
+                    {
+                      "text": "[2026-10-03T03:22:06.736Z] stage2 module verified: support -> \"Support Access\"\n"
+                    },
+                    {
+                      "text": "[2026-10-03T03:22:06.858Z] stage2 module verified: settings -> \"Organization Settings\"\n"
+                    },
+                    {
+                      "text": "[2026-10-03T03:22:06.859Z] stage2 all 13 modules mounted and rendered their own content\n"
+                    },
+                    {
+                      "text": "[2026-10-03T03:22:06.859Z] stage2 defects console=0 pageErrors=0 failedApi=0\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T03:22:02.313Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b0989fae4b71fa238df4-5213ff52ad9abfbb2382",
+          "file": "dir008-organization-console.spec.js",
+          "line": 271,
+          "column": 1
+        },
+        {
+          "title": "Stage 3 — a single Cuba chrome renders with no duplicated landmarks",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "dir008-live-organization-console",
+              "projectName": "dir008-live-organization-console",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2937,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "[2026-10-03T03:22:09.818Z] stage3 single-chrome verified: one nav landmark, zero legacy chrome, switchers elevated\n"
+                    },
+                    {
+                      "text": "[2026-10-03T03:22:09.818Z] stage3 defects console=0 pageErrors=0 failedApi=0\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T03:22:06.946Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b0989fae4b71fa238df4-2068edf08e30bc9eecb0",
+          "file": "dir008-organization-console.spec.js",
+          "line": 307,
+          "column": 1
+        },
+        {
+          "title": "Stage 4 — the Organization switcher filters and switches tenant context",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "dir008-live-organization-console",
+              "projectName": "dir008-live-organization-console",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5989,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "[2026-10-03T03:22:12.748Z] stage4 switcher listed 3 real organizations\n"
+                    },
+                    {
+                      "text": "[2026-10-03T03:22:14.832Z] stage4 switched organization context to slug=acme-corp name=\"Acme Corporation\"\n"
+                    },
+                    {
+                      "text": "[2026-10-03T03:22:15.770Z] stage4 defects console=0 pageErrors=0 failedApi=0\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T03:22:09.892Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b0989fae4b71fa238df4-033f439f94f11b86dc43",
+          "file": "dir008-organization-console.spec.js",
+          "line": 344,
+          "column": 1
+        },
+        {
+          "title": "Stage 5 — overview quick actions deep-link with pre-applied parameters",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "dir008-live-organization-console",
+              "projectName": "dir008-live-organization-console",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5585,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "[2026-10-03T03:22:18.854Z] stage5 quick action deep-linked to members with query \"?tab=members&tenant=df0adba6-f39c-4f69-b123-5d58c2aaf263\"\n"
+                    },
+                    {
+                      "text": "[2026-10-03T03:22:21.357Z] stage5 deep-link parameter status=INVITED preserved on the canonical path\n"
+                    },
+                    {
+                      "text": "[2026-10-03T03:22:21.415Z] stage5 exactly one Cuba command palette opens from the keyboard shortcut\n"
+                    },
+                    {
+                      "text": "[2026-10-03T03:22:21.415Z] stage5 defects console=0 pageErrors=0 failedApi=0\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T03:22:15.893Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b0989fae4b71fa238df4-e1a02a9c1419af9604a4",
+          "file": "dir008-organization-console.spec.js",
+          "line": 409,
+          "column": 1
+        },
+        {
+          "title": "Stage 6 — the full console walk produced zero defects",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "dir008-live-organization-console",
+              "projectName": "dir008-live-organization-console",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "[2026-10-03T03:22:21.492Z] --- run-wide defect tally ---\n"
+                    },
+                    {
+                      "text": "[2026-10-03T03:22:21.492Z] consoleErrors=0 pageErrors=0 failedApi=0\n"
+                    },
+                    {
+                      "text": "[2026-10-03T03:22:21.494Z] DIR-008 organization console verification COMPLETE with 0 defects\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T03:22:21.488Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b0989fae4b71fa238df4-df110a7e0458814035d3",
+          "file": "dir008-organization-console.spec.js",
+          "line": 454,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-03T03:21:49.291Z",
+    "duration": 32277.887,
+    "expected": 6,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

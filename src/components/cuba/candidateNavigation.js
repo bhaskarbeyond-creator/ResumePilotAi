@@ -23,6 +23,18 @@ export const CANDIDATE_NAVIGATION = Object.freeze([
             { id: 'resumes', label: 'Resumes & Master CV', to: '/build-resume' },
             { id: 'cover-letters', label: 'Cover Letters', to: '/dashboard/cover-letters' },
             { id: 'portfolios', label: 'Portfolios & Web CV', to: '/dashboard/portfolios' },
+            // DIR-016: `/dashboard/favorites` is genuinely mounted — DashboardMain.jsx
+            // declares `<Route path="favorites" element={<DashboardFavourites />} />`
+            // in BOTH its Cuba and legacy route blocks — yet this model never listed
+            // it, so the Saved Favorites & Bookmarks hub was reachable only by typing
+            // the URL. Because Cuba is the default candidate chrome, that is a silent
+            // omission rather than a deliberate removal, and it also left the command
+            // palette with no way to surface it.
+            //
+            // `keywords` is declared here (not derived) so ⌘K matches the words a user
+            // actually types for this feature. The route path is still appended
+            // automatically below, so the two can never drift apart.
+            { id: 'favorites', label: 'Saved Favorites & Bookmarks', to: '/dashboard/favorites', keywords: 'saved jobs bookmarked resumes starred favorites' },
         ],
     },
     {
@@ -48,13 +60,20 @@ export const CANDIDATE_NAVIGATION = Object.freeze([
     },
 ]);
 
-/** Flat lookup used by the command palette; same real routes, no invented ones. */
+/**
+ * Flat lookup used by the command palette; same real routes, no invented ones.
+ *
+ * DIR-016: keywords are now the union of the derived terms (`label` + `to`) and any
+ * item-level `keywords`. The derived part is kept for EVERY item — not just the ones
+ * without an override — so `command.keywords` still contains the real route path and
+ * the §25 "a command is a real destination" guarantee still holds for every entry.
+ */
 export const CANDIDATE_COMMAND_INDEX = Object.freeze(
     CANDIDATE_NAVIGATION.flatMap((group) => group.items.map((item) => ({
         id: item.id,
         label: item.label,
         group: group.label,
-        keywords: `${item.label} ${item.to}`,
+        keywords: [item.label, item.to, item.keywords].filter(Boolean).join(' '),
     }))),
 );
 

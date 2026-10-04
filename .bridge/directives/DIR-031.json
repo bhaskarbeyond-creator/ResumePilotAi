@@ -1,0 +1,26 @@
+{
+  "id": "DIR-031",
+  "title": "Phase 2 Second Review & v10.0 Protocol Re-Audit — Public Marketing, Secondary Pages & Funnels (Re-evaluating DIR-003, DIR-005, DIR-006)",
+  "priority": "P1",
+  "status": "ISSUED",
+  "leadAuthor": "Antigravity (Lead Supervisor)",
+  "assignedTo": "Cline (Staff Developer)",
+  "createdAt": "2026-10-04T01:49:26.373Z",
+  "specFile": null,
+  "spec": "# Phase 2 Second Review Directive: Public Marketing, Secondary Pages & Funnels (DIR-031)\n**Governing Protocol:** SKILL.md v10.0 (AI Bridge Supervisor Master Edition)\n**Execution Schedule:** Sequenced in the Post-DIR-028 Second Review Pipeline.\n**Target Directives for Re-Audit:** DIR-003, DIR-005, DIR-006.\n\n## 1. Objective & Scope\nRe-evaluate Public Marketing surfaces, guest-to-candidate conversion funnels, and secondary pages against v10.0 protocol rules.\n\n## 2. Mandatory Verification Gates\n1. **§10 Legacy Dashboard2 Purge:** Confirm zero orphaned imports or lingering files.\n2. **§21.1 Token Grounding:** Full tokenization of Marketing landing page, pricing tables, and footer.\n3. **§65 Conversion Funnel:** Level 5 Playwright validation of entire guest signup and onboarding flow.\n4. **§22 WCAG 2.2 AA Contrast:** All text passes >= 4.5:1 contrast standards.",
+  "invariants": [
+    "INV-1: Zero legacy Dashboard2 imports: Entire repository must use src/components/Marketing/LandingPage.jsx and semantic marketing elements.",
+    "INV-2: Authentic pricing & currency: All marketing pricing tables must display correct INR ₹ symbols and active subscription tiers."
+  ],
+  "acceptanceCriteria": [
+    "§10 Legacy Residue Purge Verification: AST import audit confirming zero direct dependencies on deprecated Dashboard2 paths.",
+    "§21.1 Marketing Landing Page & Secondary Pages Token Audit: Landing page hero, feature grids, pricing tiers, FAQs, and footer match Cuba executive glassmorphism with 0 legacy utility residue.",
+    "§65 End-to-End Guest-to-Candidate Conversion Funnel: Level 5 Playwright test validating guest visitor -> pricing tier selection -> registration/login -> candidate onboarding funnel with zero 404s or broken CTAs.",
+    "§22 WCAG 2.2 AA Contrast on all marketing typography and testimonial cards."
+  ],
+  "plan": null,
+  "heartbeats": [],
+  "evidence": null,
+  "reviews": [],
+  "freezeHash": null
+}

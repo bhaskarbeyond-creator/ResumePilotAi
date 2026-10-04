@@ -1,0 +1,60 @@
+{
+  "id": "DIR-016",
+  "title": "Omitted Cross-Portal Surfaces & Navigation Completeness Freeze (Enterprise Platform Provisioner Tab, Candidate Favorites Restoration & Bi-Directional Parity Tests)",
+  "priority": "P0",
+  "status": "APPROVED_FROZEN",
+  "leadAuthor": "Antigravity (Lead Supervisor)",
+  "assignedTo": "Cline (Staff Developer)",
+  "createdAt": "2026-10-03T14:54:09.486Z",
+  "specFile": null,
+  "spec": "",
+  "invariants": [
+    "INV-1 (Certified Baselines): git diff e314f715 -- src/cv-templates/ backend/services/aiRuntime.js must be 0 bytes.",
+    "INV-2 (Zero DOM Secrets): No plaintext keys or sensitive tokens exposed in DOM or payloads.",
+    "INV-3 (RBAC Integrity): Platform administration tab in enterprise console is restricted strictly to platform admins (platformOnly: true); regular tenant members must never see or access it.",
+    "INV-4 (Bi-Directional Parity): Navigation models must strictly cover all mounted functional routes and console tabs without orphan links or dead ends."
+  ],
+  "acceptanceCriteria": [
+    "Restore 'platform' (Platform Administration & Tenant Provisioning Console) to ENTERPRISE_TABS and ENTERPRISE_GROUPS in src/components/cuba/portalNavigation.js, gated with platformOnly: true.",
+    "Restore 'favorites' (Saved Favorites & Bookmarks Hub, /dashboard/favorites) to CANDIDATE_NAVIGATION in src/components/cuba/candidateNavigation.js under workspace group.",
+    "Update CANDIDATE_COMMAND_INDEX so \u2318K search surfaces 'Saved Favorites & Bookmarks' with keywords 'saved jobs bookmarked resumes starred favorites'.",
+    "Update tests/cuba-enterprise-console.test.mjs and tests/cuba-candidate-portal.test.mjs to assert bi-directional route/tab coverage, eliminating silent omission regressions.",
+    "Author dedicated Playwright test suite (playwright.dir016.config.js + tests/e2e/dir016-omitted-surfaces.spec.js) verifying live DOM rendering of /dashboard/favorites and /org/:slug/platform at 10/10 quality."
+  ],
+  "plan": {
+    "submittedAt": "2026-10-03T16:03:35.141Z",
+    "summary": "DIR-016 nav restoration. ROOT CAUSE verified from real route tables: (A) ENTERPRISE_TABS has 13 tabs but EnterpriseConsole.jsx NAVIGATION renders 14 - platform (platformOnly:true) has no Cuba nav entry, so the org sidebar omits the Provisioning Console; the old test only walked nav-to-console so the omission was silent. (B) CANDIDATE_NAVIGATION has 13 items but DashboardMain.jsx mounts Route path=favorites to DashboardFavourites, so /dashboard/favorites is unreachable from the Cuba sidebar and palette. FIX: add platform tab with platformOnly to ENTERPRISE_TABS and ENTERPRISE_GROUPS; carry platformOnly through enterpriseNavigationFor; extend filterByPermissions with a fail-closed platformAdmin option (INV-3); wire the server-derived platformAdmin from useEnterpriseTenant in EnterprisePortalCuba using wildcard grants so all existing tab visibility stays byte-identical and ONLY platform is gated; add platform icon to ICON_MAP; restore favorites to the workspace group and merge item.keywords into CANDIDATE_COMMAND_INDEX while keeping item.to; add bi-directional parity tests in both suites with alias and showcase routes explicitly classified; author playwright.dir016.config.js plus tests/e2e/dir016-omitted-surfaces.spec.js against the live stack. BASELINE VERIFIED BEFORE ANY EDIT: frozen diff vs e314f715 = 0 bytes (INV-1); enterprise+candidate suites 64/64 pass.",
+    "steps": [
+      "1. Add platform tab (platformOnly) to ENTERPRISE_TABS and ENTERPRISE_GROUPS",
+      "2. Carry platformOnly in enterpriseNavigationFor",
+      "extend filterByPermissions fail-closed",
+      "3. Wire server-derived platformAdmin in EnterprisePortalCuba without adding storage or fetch",
+      "4. Add platform icon to CubaPortalShell ICON_MAP",
+      "5. Restore favorites to CANDIDATE_NAVIGATION workspace group and merge keywords into CANDIDATE_COMMAND_INDEX",
+      "6. Add bi-directional parity assertions to both test suites",
+      "7. Author playwright.dir016.config.js and dir016-omitted-surfaces.spec.js",
+      "8. Verify node --test, test:product, vite build under 4s, frozen diff 0, live Playwright, submit evidence"
+    ]
+  },
+  "heartbeats": [],
+  "evidence": null,
+  "reviews": [
+    {
+      "timestamp": "2026-10-03T16:05:32.411Z",
+      "verdict": "APPROVED"
+    }
+  ],
+  "freezeHash": null,
+  "secondReview": {
+    "status": "SCHEDULED_POST_DIR028",
+    "scheduledExecutionOrder": "AFTER_DIR028",
+    "targetDirectiveId": "DIR-032",
+    "phaseName": "Phase 2 Second Review \u2014 Admin Console, Settings & Security",
+    "governingProtocol": "SKILL.md v10.0 (AI Bridge Supervisor Master Edition)",
+    "mandatoryAuditRules": [
+      "\u00a716 Enterprise Platform Provisioner tab and Candidate Favorites operational verification",
+      "\u00a72 Bi-directional parity tests across portals"
+    ],
+    "scheduledAt": "2026-10-04T01:50:00Z"
+  }
+}

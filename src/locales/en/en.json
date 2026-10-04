@@ -1887,6 +1887,7 @@
     },
     "actions": {
       "view": "View",
+      "openStudio": "Open in Studio",
       "edit": "Edit",
       "delete": "Delete",
       "viewPreview": "View Preview"

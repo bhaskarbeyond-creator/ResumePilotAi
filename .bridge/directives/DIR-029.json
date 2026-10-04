@@ -1,0 +1,28 @@
+{
+  "id": "DIR-029",
+  "title": "Phase 2 Second Review & v10.0 Protocol Re-Audit — Enterprise & Recruiter Portals (Re-evaluating DIR-001, DIR-007, DIR-008, DIR-010)",
+  "priority": "P0",
+  "status": "ISSUED",
+  "leadAuthor": "Antigravity (Lead Supervisor)",
+  "assignedTo": "Cline (Staff Developer)",
+  "createdAt": "2026-10-04T01:49:17.233Z",
+  "specFile": null,
+  "spec": "# Phase 2 Second Review Directive: Enterprise & Recruiter Portals (DIR-029)\n**Governing Protocol:** SKILL.md v10.0 (AI Bridge Supervisor Master Edition)\n**Execution Schedule:** Triggered immediately after DIR-028 completion.\n**Target Directives for Re-Audit:** DIR-001, DIR-007, DIR-008, DIR-010.\n\n## 1. Objective & Scope\nRe-evaluate and perform deep forensic second review on all Enterprise and Recruiter portal surfaces against the updated v10.0 engineering standards.\n\n## 2. Mandatory Verification Gates\n1. **§21.1 Zero-Legacy-Utility Scan:** All EmployerPortal components and Enterprise console modules must be 100% grounded in Cuba design tokens. Zero legacy Tailwind families (slate/teal/indigo/stone) or raw hex strings.\n2. **§22 WCAG 2.2 AA Compliance:** Ensure all candidate scorecard tables, status pills, and action drawers satisfy >= 4.5:1 contrast in dark and light modes.\n3. **§2 Level 5 E2E Verification:** Automated Playwright execution against live MariaDB (applicant pipeline, requisition creation, organization user roles).\n4. **§9 Invariant Preservation:** INV-1 diff strictly 0 bytes.",
+  "invariants": [
+    "INV-1: Resume Templates & ATS Engine strictly 0-byte diff (git diff e314f715 -- src/cv-templates/ backend/services/aiRuntime.js == 0).",
+    "INV-2: Zero mock or synthetic data: All recruiter candidates and enterprise telemetry must be validated against live MariaDB.",
+    "INV-3: Strict tenant isolation: Organization console must strictly enforce multi-tenant authorization boundaries (401/403 on cross-tenant requests).",
+    "INV-4: Zero plaintext secrets in DOM, localStorage, or API responses."
+  ],
+  "acceptanceCriteria": [
+    "§21.1 Zero Legacy Utility Scan: Run comment-aware scanner across all Recruiter and Enterprise surfaces (src/components/EmployerPortal/, src/enterprise/). Must prove 0 occurrences of slate-*, teal-*, indigo-*, stone-*, and raw hex codes.",
+    "§22 WCAG 2.2 AA Contrast & Accessibility: Contrast ratio >= 4.5:1 across both light and dark themes on all tables, metric badges, and candidate scorecards. Unique nav landmarks.",
+    "§2 Level 5 Playwright E2E Verification: Run Playwright test suite against live dev server (:3000) and live MariaDB backend (:8080), verifying in-modal candidate resume review, ATS status transitions, and organization IAM member management with 100% pass rate.",
+    "§23 Performance Budget: Client route transitions under 100ms; Vite production build strictly < 4.0s."
+  ],
+  "plan": null,
+  "heartbeats": [],
+  "evidence": null,
+  "reviews": [],
+  "freezeHash": null
+}

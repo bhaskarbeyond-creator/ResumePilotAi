@@ -1,0 +1,459 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "D:\\xampp\\htdocs\\IME365\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--config=playwright.dir010.config.js"
+    ],
+    "configFile": "D:\\xampp\\htdocs\\IME365\\playwright.dir010.config.js",
+    "rootDir": "D:/xampp/htdocs/IME365/tests/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/xampp/htdocs/IME365/.bridge/evidence/dir010-artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "dir010-live-recruiter-portal",
+        "name": "dir010-live-recruiter-portal",
+        "testDir": "D:/xampp/htdocs/IME365/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "/dir010-recruiter-portal\\.spec\\.js/"
+        ],
+        "timeout": 180000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": ".bridge/evidence/dir010-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "dir010-recruiter-portal.spec.js",
+      "file": "dir010-recruiter-portal.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "DIR-010 recruiter portal — Cuba token harmonization + in-modal review",
+          "file": "dir010-recruiter-portal.spec.js",
+          "line": 358,
+          "column": 6,
+          "specs": [
+            {
+              "title": "stage 0: the live stack is healthy with MariaDB authoritative",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir010-live-recruiter-portal",
+                  "projectName": "dir010-live-recruiter-portal",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 17,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[2026-10-03T07:16:43.591Z] DIR-010 suite starting against http://localhost:3000 as bhaskar.beyond@gmail.com (uid OhZdiSIFL7ePA1TMkfu9bnR935D3)\n"
+                        },
+                        {
+                          "text": "[2026-10-03T07:16:43.591Z] canonical Cuba primary gradient = linear-gradient(135deg, rgb(115, 102, 255) 0%, rgb(89, 73, 214) 100%)\n"
+                        },
+                        {
+                          "text": "[2026-10-03T07:16:43.612Z] stage 0 live backend health status=200 authority=MARIADB owner=MARIADB writes=true\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-03T07:16:43.560Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6ab2d8be1d31110422ab-9c4daad9cd18f8aa5cca",
+              "file": "dir010-recruiter-portal.spec.js",
+              "line": 364,
+              "column": 5
+            },
+            {
+              "title": "stage 1: exactly one Cuba chrome and one uniquely-named nav landmark per recruiter route",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir010-live-recruiter-portal",
+                  "projectName": "dir010-live-recruiter-portal",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 8367,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[2026-10-03T07:16:46.463Z] stage 1 /employer defects: console=0 pageErrors=0 api=0\n"
+                        },
+                        {
+                          "text": "[2026-10-03T07:16:47.545Z] stage 1 /employer/jobs defects: console=0 pageErrors=0 api=0\n"
+                        },
+                        {
+                          "text": "[2026-10-03T07:16:48.513Z] stage 1 /employer/applicants defects: console=0 pageErrors=0 api=0\n"
+                        },
+                        {
+                          "text": "[2026-10-03T07:16:49.497Z] stage 1 /employer/company defects: console=0 pageErrors=0 api=0\n"
+                        },
+                        {
+                          "text": "[2026-10-03T07:16:50.986Z] stage 1 /employer/messages defects: console=0 pageErrors=0 api=0\n"
+                        },
+                        {
+                          "text": "[2026-10-03T07:16:51.980Z] stage 1 /employer/settings defects: console=0 pageErrors=0 api=0\n"
+                        },
+                        {
+                          "text": "[2026-10-03T07:16:51.983Z] stage 1 chrome census: [{\"route\":\"/employer\",\"variant\":\"cuba\",\"sidebars\":0,\"navs\":1},{\"route\":\"/employer/jobs\",\"variant\":\"cuba\",\"sidebars\":0,\"navs\":1},{\"route\":\"/employer/applicants\",\"variant\":\"cuba\",\"sidebars\":0,\"navs\":1},{\"route\":\"/employer/company\",\"variant\":\"cuba\",\"sidebars\":0,\"navs\":1},{\"route\":\"/employer/messages\",\"variant\":\"cuba\",\"sidebars\":0,\"navs\":1},{\"route\":\"/employer/settings\",\"variant\":\"cuba\",\"sidebars\":0,\"navs\":1}]\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-03T07:16:43.628Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6ab2d8be1d31110422ab-539e0859c859553b2a42",
+              "file": "dir010-recruiter-portal.spec.js",
+              "line": 383,
+              "column": 5
+            },
+            {
+              "title": "stage 2: recruiter action CTAs carry canonical Cuba primary tokens",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir010-live-recruiter-portal",
+                  "projectName": "dir010-live-recruiter-portal",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4814,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[2026-10-03T07:16:54.802Z] stage 2 /employer: audited 12 anchors/buttons\n"
+                        },
+                        {
+                          "text": "[2026-10-03T07:16:55.850Z] stage 2 /employer/jobs: audited 12 anchors/buttons\n"
+                        },
+                        {
+                          "text": "[2026-10-03T07:16:56.822Z] stage 2 /employer/applicants: audited 12 anchors/buttons\n"
+                        },
+                        {
+                          "text": "[2026-10-03T07:16:56.822Z] stage 2 total audited=36 token-driven=3 offenders=0\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-03T07:16:52.072Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6ab2d8be1d31110422ab-a3b5cf42036c1c1b7bfd",
+              "file": "dir010-recruiter-portal.spec.js",
+              "line": 436,
+              "column": 5
+            },
+            {
+              "title": "stage 3: ATS stage pills use opaque cuba-pill-* tokens, never Tailwind tints",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir010-live-recruiter-portal",
+                  "projectName": "dir010-live-recruiter-portal",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3854,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[2026-10-03T07:17:00.637Z] stage 3 stage-pill census (0 pills): []\n"
+                        },
+                        {
+                          "text": "[2026-10-03T07:17:00.638Z] stage 3 tokenized pills=0/0\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-03T07:16:56.896Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6ab2d8be1d31110422ab-3733a92eb79553859328",
+              "file": "dir010-recruiter-portal.spec.js",
+              "line": 481,
+              "column": 5
+            },
+            {
+              "title": "stage 4: in-modal candidate resume review renders unclipped with live applicant data",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir010-live-recruiter-portal",
+                  "projectName": "dir010-live-recruiter-portal",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4485,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[2026-10-03T07:17:01.076Z] stage 4 target job=job-air-23 title=\"Research Engineer (Model Evaluation & Benchmarking)\" liveApplicantRows=1\n"
+                        },
+                        {
+                          "text": "[2026-10-03T07:17:04.890Z] stage 4 modal header=\"Applications for Research Engineer (Model Evaluation & Benchmarking)\" total=\"1 total applications\"\n"
+                        },
+                        {
+                          "text": "[2026-10-03T07:17:04.891Z] stage 4 modal reported=1 mariadb=1\n"
+                        },
+                        {
+                          "text": "[2026-10-03T07:17:04.897Z] stage 4 applicant expanders = 1\n"
+                        },
+                        {
+                          "text": "[2026-10-03T07:17:05.000Z] stage 4 geometry: {\"viewportHeight\":720,\"panelHeight\":335,\"panelCapped\":true,\"scrollHost\":\"flex-1 min-h-0 overflow-y-auto p-4\",\"bodyOverflowY\":\"auto\",\"bodyClientHeight\":175,\"bodyScrollHeight\":356,\"scrollsInside\":true,\"panelIsColumnFlex\":true,\"worstOverflow\":0,\"clippedCount\":0,\"renderedTextLength\":426}\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-03T07:17:00.763Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6ab2d8be1d31110422ab-d9011afc905c37c30dbc",
+              "file": "dir010-recruiter-portal.spec.js",
+              "line": 546,
+              "column": 5
+            },
+            {
+              "title": "stage 5: pill and CTA ink clears WCAG 2.1 AA and focus rings are visible",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir010-live-recruiter-portal",
+                  "projectName": "dir010-live-recruiter-portal",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2633,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[2026-10-03T07:17:07.813Z] stage 5 sampled 10 ink pairs (pills + labelled controls)\n"
+                        },
+                        {
+                          "text": "[2026-10-03T07:17:07.815Z] stage 5 AA failures=0 unmeasurable=5\n"
+                        },
+                        {
+                          "text": "[2026-10-03T07:17:07.822Z] stage 5 focus indicator: {\"tag\":\"a\",\"text\":\"Skip to main content\",\"focused\":true,\"outlineStyle\":\"solid\",\"outlineWidth\":2,\"outlineColor\":\"rgb(79, 70, 229)\",\"boxShadow\":\"none\"}\n"
+                        },
+                        {
+                          "text": "[2026-10-03T07:17:07.824Z] stage 5 defects: console=0 pageErrors=0 api=0\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-03T07:17:05.259Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6ab2d8be1d31110422ab-099db3d740aaa6b95dce",
+              "file": "dir010-recruiter-portal.spec.js",
+              "line": 714,
+              "column": 5
+            },
+            {
+              "title": "stage 6: CV templates, DOCX export and ATS scoring engine are frozen",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir010-live-recruiter-portal",
+                  "projectName": "dir010-live-recruiter-portal",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 204,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[2026-10-03T07:17:08.110Z] stage 6 frozen diff vs e314f715: EMPTY (0 bytes changed)\n"
+                        },
+                        {
+                          "text": "[2026-10-03T07:17:08.113Z] stage 6 CV template directories present = 51\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-03T07:17:07.907Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6ab2d8be1d31110422ab-3fa847d96eb4e3fe2293",
+              "file": "dir010-recruiter-portal.spec.js",
+              "line": 826,
+              "column": 5
+            },
+            {
+              "title": "stage 7: the run accumulated zero console errors, page errors and failed API calls",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir010-live-recruiter-portal",
+                  "projectName": "dir010-live-recruiter-portal",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[2026-10-03T07:17:08.123Z] stage 7 drain: console=0 pageErrors=0 api=0\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-03T07:17:08.119Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6ab2d8be1d31110422ab-0d95862cdf68803934e2",
+              "file": "dir010-recruiter-portal.spec.js",
+              "line": 858,
+              "column": 5
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-03T07:16:39.194Z",
+    "duration": 29066.373,
+    "expected": 8,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

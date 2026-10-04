@@ -1,0 +1,323 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "D:\\xampp\\htdocs\\IME365\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--config=playwright.dir017.config.js"
+    ],
+    "configFile": "D:\\xampp\\htdocs\\IME365\\playwright.dir017.config.js",
+    "rootDir": "D:/xampp/htdocs/IME365/tests/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/xampp/htdocs/IME365/.bridge/evidence/dir017-artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "dir017-live-candidate-settings",
+        "name": "dir017-live-candidate-settings",
+        "testDir": "D:/xampp/htdocs/IME365/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "/dir017-candidate-settings\\.spec\\.js/"
+        ],
+        "timeout": 420000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": ".bridge/evidence/dir017-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "dir017-candidate-settings.spec.js",
+      "file": "dir017-candidate-settings.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "DIR-017 Candidate Account & Security Command Center (live stack)",
+          "file": "dir017-candidate-settings.spec.js",
+          "line": 308,
+          "column": 6,
+          "specs": [
+            {
+              "title": "AC-6 stage 1: outer switcher toggles Master Profile <-> Account & Security and keeps the URL authoritative",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 420000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir017-live-candidate-settings",
+                  "projectName": "dir017-live-candidate-settings",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3094,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-03T19:59:14.069Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2dfa5b41e63a006b184d-91a68481306b5ea13668",
+              "file": "dir017-candidate-settings.spec.js",
+              "line": 315,
+              "column": 5
+            },
+            {
+              "title": "AC-6 stage 2: Master Profile identity fields persist a real MariaDB round-trip and restore cleanly",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 420000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir017-live-candidate-settings",
+                  "projectName": "dir017-live-candidate-settings",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 11738,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-03T19:59:17.251Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2dfa5b41e63a006b184d-0767f3aea3a4eea38e96",
+              "file": "dir017-candidate-settings.spec.js",
+              "line": 368,
+              "column": 5
+            },
+            {
+              "title": "AC-6 stage 3: password form enforces re-auth, live strength rules, and refuses a mismatched confirmation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 420000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir017-live-candidate-settings",
+                  "projectName": "dir017-live-candidate-settings",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4683,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-03T19:59:29.001Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2dfa5b41e63a006b184d-d3720f772d6583180bc9",
+              "file": "dir017-candidate-settings.spec.js",
+              "line": 453,
+              "column": 5
+            },
+            {
+              "title": "AC-6 stage 4: MFA toggle flow renders the wizard with QR + manual key and gates verification on 6 digits",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 420000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir017-live-candidate-settings",
+                  "projectName": "dir017-live-candidate-settings",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2671,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-03T19:59:33.694Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2dfa5b41e63a006b184d-05aa3aa7db8f55a10649",
+              "file": "dir017-candidate-settings.spec.js",
+              "line": 507,
+              "column": 5
+            },
+            {
+              "title": "AC-4 stage 5: session card shows the current device and records the missing AC-4 capabilities",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 420000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir017-live-candidate-settings",
+                  "projectName": "dir017-live-candidate-settings",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2145,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-03T19:59:36.376Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2dfa5b41e63a006b184d-f9f849844cdd4cb02823",
+              "file": "dir017-candidate-settings.spec.js",
+              "line": 620,
+              "column": 5
+            },
+            {
+              "title": "AC-5 stage 6: account rail text meets WCAG 2.1 AA contrast in light and dark themes",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 420000,
+                  "annotations": [
+                    {
+                      "type": "contrast-light",
+                      "description": "122 text nodes sampled in light; 0 below AA"
+                    },
+                    {
+                      "type": "contrast-dark",
+                      "description": "115 text nodes sampled in dark; 0 below AA"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "dir017-live-candidate-settings",
+                  "projectName": "dir017-live-candidate-settings",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2959,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-03T19:59:38.534Z",
+                      "annotations": [
+                        {
+                          "type": "contrast-light",
+                          "description": "122 text nodes sampled in light; 0 below AA"
+                        },
+                        {
+                          "type": "contrast-dark",
+                          "description": "115 text nodes sampled in dark; 0 below AA"
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "dir017-contrast-aa.json",
+                          "contentType": "application/json",
+                          "body": "ewogICJmYWlsdXJlcyI6IFtdCn0="
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2dfa5b41e63a006b184d-05457714be7d82cfe891",
+              "file": "dir017-candidate-settings.spec.js",
+              "line": 676,
+              "column": 5
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-03T19:59:11.181Z",
+    "duration": 30406.479,
+    "expected": 6,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

@@ -67,14 +67,14 @@ const EmployerOverview = ({ showToast }) => {
                             type="button"
                             onClick={handleRefresh}
                             disabled={refreshing}
-                            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 cuba-focusable"
                         >
                             <FiTrendingUp className="h-4 w-4" aria-hidden="true" />
                             {refreshing ? 'Refreshing…' : 'Refresh'}
                         </button>
                         <Link
                             to="/employer/jobs"
-                            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-bold text-white transition-colors hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                            className="cuba-btn-primary inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold"
                         >
                             <FiBriefcase className="h-4 w-4" aria-hidden="true" />
                             Manage job postings
@@ -143,19 +143,19 @@ const EmployerOverview = ({ showToast }) => {
                     <h2 className="text-sm font-extrabold text-slate-900">Quick actions</h2>
                     <ul className="mt-4 space-y-2">
                         <li>
-                            <Link to="/employer/jobs" className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-3.5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-indigo-200 hover:bg-indigo-50/50 hover:text-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
+                            <Link to="/employer/jobs" className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-3.5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-indigo-200 hover:bg-indigo-50/50 hover:text-indigo-700 cuba-focusable">
                                 <span className="flex items-center gap-2"><FiBriefcase className="h-4 w-4" aria-hidden="true" />Post a new role</span>
                                 <FiArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
                             </Link>
                         </li>
                         <li>
-                            <Link to="/employer/applicants" className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-3.5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-indigo-200 hover:bg-indigo-50/50 hover:text-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
+                            <Link to="/employer/applicants" className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-3.5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-indigo-200 hover:bg-indigo-50/50 hover:text-indigo-700 cuba-focusable">
                                 <span className="flex items-center gap-2"><FiUsers className="h-4 w-4" aria-hidden="true" />Review applicants</span>
                                 <FiArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
                             </Link>
                         </li>
                         <li>
-                            <Link to="/employer/company" className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-3.5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-indigo-200 hover:bg-indigo-50/50 hover:text-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
+                            <Link to="/employer/company" className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-3.5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-indigo-200 hover:bg-indigo-50/50 hover:text-indigo-700 cuba-focusable">
                                 <span className="flex items-center gap-2"><FiLayers className="h-4 w-4" aria-hidden="true" />Company profile</span>
                                 <FiArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
                             </Link>

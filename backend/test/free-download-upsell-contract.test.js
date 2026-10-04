@@ -386,8 +386,12 @@ test('13. Phase 5 UX Theme Consistency: SubscriptionModal matches light design t
   assert.equal(modalContent.includes('bg-slate-900'), false, 'SubscriptionModal must not contain bg-slate-900 dark background');
   assert.equal(modalContent.includes('bg-slate-950/85'), false, 'SubscriptionModal must not contain bg-slate-950/85 dark overlay');
 
-  // Must contain light theme container tokens
-  assert.ok(modalContent.includes('bg-white rounded-3xl'), 'SubscriptionModal must use bg-white rounded-3xl container');
+  // Must contain light theme container tokens.
+  // DIR-018/AC-1 migrated the legacy `bg-white` palette class onto the semantic
+  // `bg-cuba-card` token, so assert the TOKEN, not the pre-migration literal.
+  // Asserting `bg-white` here would pin DIR-018's purge in place.
+  assert.ok(modalContent.includes('bg-cuba-card rounded-3xl'), 'SubscriptionModal must use bg-cuba-card rounded-3xl container');
+  assert.equal(modalContent.includes('bg-white'), false, 'SubscriptionModal must not retain legacy bg-white palette class');
   assert.ok(modalContent.includes('getActiveCoupons'), 'SubscriptionModal must call getActiveCoupons');
   assert.ok(modalContent.includes('validateCoupon'), 'SubscriptionModal must call validateCoupon');
 

@@ -536,7 +536,14 @@ class DashboardMain extends Component {
                                         <Route path="support" element={<DashboardSupport showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
                                         <Route path="tickets" element={<Navigate to="/dashboard/support" replace />} />
                                         <Route path="help" element={<Navigate to="/dashboard/support" replace />} />
+                                        <Route path="profile" element={<Navigate to="/dashboard/settings?tab=profile" replace />} />
+                                        <Route path="security" element={<Navigate to="/dashboard/settings?tab=security" replace />} />
+                                        <Route path="account" element={<Navigate to="/dashboard/settings" replace />} />
+                                        <Route path="billing" element={<Navigate to="/dashboard/plans" replace />} />
+                                        <Route path="my-resumes" element={<Navigate to="/dashboard" replace />} />
+                                        <Route path="cv" element={<Navigate to="/dashboard/cover-letters" replace />} />
                                         <Route path="design-system" element={<DesignSystemShowcase />} />
+                                        <Route path="*" element={<Navigate to="/dashboard" replace />} />
                                     </Routes>
                                 </Suspense>
                             </div>
@@ -611,7 +618,14 @@ class DashboardMain extends Component {
                                         <Route path="support" element={<DashboardSupport showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
                                         <Route path="tickets" element={<Navigate to="/dashboard/support" replace />} />
                                         <Route path="help" element={<Navigate to="/dashboard/support" replace />} />
+                                        <Route path="profile" element={<Navigate to="/dashboard/settings?tab=profile" replace />} />
+                                        <Route path="security" element={<Navigate to="/dashboard/settings?tab=security" replace />} />
+                                        <Route path="account" element={<Navigate to="/dashboard/settings" replace />} />
+                                        <Route path="billing" element={<Navigate to="/dashboard/plans" replace />} />
+                                        <Route path="my-resumes" element={<Navigate to="/dashboard" replace />} />
+                                        <Route path="cv" element={<Navigate to="/dashboard/cover-letters" replace />} />
                                         <Route path="design-system" element={<DesignSystemShowcase />} />
+                                        <Route path="*" element={<Navigate to="/dashboard" replace />} />
                                     </Routes>
                                 </Suspense>
                             </div>

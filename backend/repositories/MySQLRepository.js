@@ -2,6 +2,35 @@ const crypto = require('crypto');
 const { getPool } = require('../database/mysql');
 const { queueEmailInTransaction } = require('../services/notificationOutbox');
 const { billingSnapshotHash, issueCreditNoteInTransaction, issueInvoiceInTransaction } = require('../services/invoiceService');
+// DIR-022 / INV-5: the grace bound is owned by canonical.js so the entitlement
+// gate (domain.js) and the writer that opens the window can never disagree about
+// how long a PAST_DUE account keeps access.
+const { PAYMENT_GRACE_PERIOD_MS } = require('../database/canonical');
+
+// DIR-020: allow-lists for the job-tracker Kanban metadata. These are validated
+// server-side so a hostile client cannot persist free-form text into the typed
+// work_mode / interview_* columns.
+const WORK_MODES = new Set(['Remote', 'Hybrid', 'On-site']);
+const INTERVIEW_ROUNDS = new Set([
+    'Recruiter Screen', 'Technical', 'System Design', 'Behavioral', 'Hiring Manager',
+]);
+const INTERVIEW_FORMATS = new Set(['Video', 'In-Person', 'Phone']);
+
+/**
+ * Normalizes an interview timestamp into a MariaDB DATETIME(3)-safe value.
+ *
+ * Accepts an ISO 8601 string, a `datetime-local` control value ("YYYY-MM-DDTHH:mm"),
+ * or a Date/DateTime instance returned by the driver. Anything unparseable collapses
+ * to NULL so a malformed client payload can never poison the column.
+ */
+function normalizeInterviewAt(value) {
+    if (value === null || value === undefined || value === '') return null;
+    const candidate = value instanceof Date ? value : new Date(String(value).trim());
+    if (Number.isNaN(candidate.getTime())) return null;
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${candidate.getFullYear()}-${pad(candidate.getMonth() + 1)}-${pad(candidate.getDate())} `
+        + `${pad(candidate.getHours())}:${pad(candidate.getMinutes())}:${pad(candidate.getSeconds())}`;
+}
 
 function normalizeRefundReferenceType(value) {
     const type = String(value || 'PROVIDER').trim().toUpperCase();
@@ -150,9 +179,26 @@ class MySQLRepository {
             status,
             sort_order: Math.max(0, Math.min(Number.parseInt(data.order ?? data.sort_order, 10) || 0, 1_000_000)),
             location: text(data.location, 160),
+            // DIR-020: the baseline table already carried these four columns but
+            // nothing ever wrote them. They now back the executive card anatomy
+            // (compensation badge, relative applied date, contact person).
+            salary: text(data.salary, 100) || null,
+            date_applied: text(data.dateApplied || data.date_applied, 32) || null,
+            contact_person: text(data.contactPerson || data.contact_person, 255) || null,
+            contact_email: text(data.contactEmail || data.contact_email, 255) || null,
             url: text(data.url, 1024),
             notes: text(data.notes, 4000),
             deadline: text(data.deadline, 10) || null,
+            // DIR-020: work mode + interview scheduling, all on job_tracker so a
+            // move into the interviewing stage stays a single atomic write.
+            work_mode: WORK_MODES.has(text(data.workMode || data.work_mode, 32))
+                ? text(data.workMode || data.work_mode, 32) : 'Remote',
+            interview_round: INTERVIEW_ROUNDS.has(text(data.interviewRound || data.interview_round, 64))
+                ? text(data.interviewRound || data.interview_round, 64) || null : null,
+            interview_at: normalizeInterviewAt(data.interviewAt ?? data.interview_at),
+            interview_format: INTERVIEW_FORMATS.has(text(data.interviewFormat || data.interview_format, 32))
+                ? text(data.interviewFormat || data.interview_format, 32) || null : null,
+            interview_link: text(data.interviewLink || data.interview_link, 1024) || null,
         };
     }
 
@@ -855,6 +901,20 @@ class MySQLRepository {
         return this._portfolioProjection(rows[0]);
     }
 
+    async isPortfolioSlugAvailable(slug, portfolioId = null) {
+        const pool = this._getPool();
+        const candidate = String(slug || '').trim().toLowerCase();
+        if (!candidate) return false;
+        // Authoritative MariaDB uniqueness probe. The caller may pass the
+        // portfolio's own id so re-checking an already-issued address reports
+        // "available" instead of colliding with the owner's existing row.
+        const [rows] = await pool.query(
+            'SELECT id FROM portfolios WHERE slug = ? AND (? IS NULL OR id <> ?) LIMIT 1',
+            [candidate, portfolioId, portfolioId]
+        );
+        return rows.length === 0;
+    }
+
     async getPublishedPortfolioBySlug(slug) {
         const pool = this._getPool();
         const [rows] = await pool.query(
@@ -1083,11 +1143,68 @@ class MySQLRepository {
         return rows.map(r => this._parseJsonRow(r, ['requirements', 'skills']));
     }
 
+    /**
+     * DIR-024 AC-1: authoritative regional vacancy projection.
+     *
+     * Read-only and public-only. The publicOnly predicate is duplicated here
+     * verbatim from getJobs so a regional hub can never expose a draft, paused,
+     * expired, or deletion-marked requisition even if a caller asks for one.
+     *
+     * The region filter prefers the indexed `region_city` / `region_state`
+     * projection added by migration 020. If those columns are absent — a
+     * database that has not yet run 020 — it degrades to the parameterized
+     * alias LIKE predicate from geoRegionalService rather than failing closed,
+     * so the hub still answers honestly from the authoritative location text.
+     * A zero-row region returns an empty array and is NEVER padded.
+     */
+    async getRegionalJobs({ kind = 'city', slug = '', column = '', likeBinds = [], limit = 100 } = {}) {
+        const pool = this._getPool();
+        const capped = Math.max(1, Math.min(Number.parseInt(limit, 10) || 100, 200));
+        const projectionColumn = column === 'region_state' ? 'region_state' : 'region_city';
+        const safeSlug = /^[a-z0-9-]{1,64}$/.test(String(slug || '')) ? String(slug) : '';
+
+        let sql = `SELECT id, title, company_name, location, job_type, workplace_type,
+                          salary_min, salary_max, salary_currency, status, created_at, expires_at
+                   FROM jobs AS j
+                   WHERE LOWER(j.status) = 'active'
+                     AND (j.expires_at IS NULL OR j.expires_at > CURRENT_TIMESTAMP)`;
+        const params = [];
+
+        let hasProjection = true;
+        try {
+            await pool.query('SELECT region_city FROM jobs LIMIT 0');
+        } catch (_error) {
+            hasProjection = false;
+        }
+
+        if (hasProjection && safeSlug) {
+            sql += ` AND j.${projectionColumn} = ?`;
+            params.push(safeSlug);
+        } else if (likeBinds.length) {
+            // Parameterized alias fallback. The placeholders are emitted by
+            // buildLocationMatch; no operator-controlled text is interpolated.
+            sql += ` AND (${likeBinds.map(() => 'LOWER(j.location) LIKE ?').join(' OR ')})`;
+            params.push(...likeBinds);
+        } else {
+            return [];
+        }
+
+        sql += ' ORDER BY j.created_at DESC LIMIT ?';
+        params.push(capped);
+        const [rows] = await pool.query(sql, params);
+        return rows;
+    }
+
     async getTrackedJobs(userId) {
         const pool = this._getPool();
         const [rows] = await pool.query(
             `SELECT id, job_title AS title, company, status, sort_order AS \`order\`, location,
-                    url, notes, deadline, revision, created_at AS createdAt, updated_at AS updatedAt
+                    work_mode AS workMode, salary, date_applied AS dateApplied,
+                    contact_person AS contactPerson, contact_email AS contactEmail,
+                    url, notes, deadline,
+                    interview_round AS interviewRound, interview_at AS interviewAt,
+                    interview_format AS interviewFormat, interview_link AS interviewLink,
+                    revision, created_at AS createdAt, updated_at AS updatedAt
              FROM job_tracker WHERE user_id = ? ORDER BY sort_order ASC, updated_at DESC`,
             [userId]
         );
@@ -1101,14 +1218,33 @@ class MySQLRepository {
         }
         await this._getPool().query(
             `INSERT INTO job_tracker
-             (id, user_id, job_title, company, status, revision, sort_order, location, url, notes, deadline)
-             VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)`,
+             (id, user_id, job_title, company, status, revision, sort_order, location, work_mode,
+              salary, date_applied, contact_person, contact_email, url, notes, deadline,
+              interview_round, interview_at, interview_format, interview_link)
+             VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [trackerId, userId, values.job_title, values.company, values.status, values.sort_order,
-                values.location, values.url, values.notes, values.deadline]
+                values.location, values.work_mode, values.salary, values.date_applied,
+                values.contact_person, values.contact_email, values.url, values.notes, values.deadline,
+                values.interview_round, values.interview_at, values.interview_format, values.interview_link]
+        );
+        // DIR-020: read the authoritative timestamps back instead of echoing a
+        // client-side guess. The card renders "Applied N min ago" straight from the
+        // POST response, so a freshly created card must already carry a real
+        // created_at/updated_at exactly like a row re-read through GET (INV-2).
+        const [stamp] = await this._getPool().query(
+            'SELECT created_at AS createdAt, updated_at AS updatedAt FROM job_tracker WHERE id = ? AND user_id = ?',
+            [trackerId, userId]
         );
         return { id: trackerId, title: values.job_title, company: values.company, status: values.status,
-            order: values.sort_order, location: values.location, url: values.url, notes: values.notes,
-            deadline: values.deadline || '', revision: 1 };
+            order: values.sort_order, location: values.location, workMode: values.work_mode,
+            salary: values.salary || '', dateApplied: values.date_applied || '',
+            contactPerson: values.contact_person || '', contactEmail: values.contact_email || '',
+            url: values.url, notes: values.notes, deadline: values.deadline || '',
+            interviewRound: values.interview_round || '', interviewAt: values.interview_at || '',
+            interviewFormat: values.interview_format || '', interviewLink: values.interview_link || '',
+            revision: 1,
+            createdAt: stamp?.createdAt ?? null,
+            updatedAt: stamp?.updatedAt ?? new Date() };
     }
 
     async updateTrackedJob(userId, trackerId, data, { expectedRevision } = {}) {
@@ -1131,14 +1267,25 @@ class MySQLRepository {
             const nextRevision = currentRevision + 1;
             await connection.query(
                 `UPDATE job_tracker SET job_title = ?, company = ?, status = ?, sort_order = ?,
-                    location = ?, url = ?, notes = ?, deadline = ?, revision = ?, updated_at = NOW()
+                    location = ?, work_mode = ?, salary = ?, date_applied = ?,
+                    contact_person = ?, contact_email = ?, url = ?, notes = ?, deadline = ?,
+                    interview_round = ?, interview_at = ?, interview_format = ?, interview_link = ?,
+                    revision = ?, updated_at = NOW()
                  WHERE id = ? AND user_id = ?`,
                 [values.job_title, values.company, values.status, values.sort_order, values.location,
-                    values.url, values.notes, values.deadline, nextRevision, trackerId, userId]
+                    values.work_mode, values.salary, values.date_applied,
+                    values.contact_person, values.contact_email, values.url, values.notes, values.deadline,
+                    values.interview_round, values.interview_at, values.interview_format, values.interview_link,
+                    nextRevision, trackerId, userId]
             );
             return { id: trackerId, title: values.job_title, company: values.company, status: values.status,
-                order: values.sort_order, location: values.location, url: values.url, notes: values.notes,
-                deadline: values.deadline || '', revision: nextRevision };
+                order: values.sort_order, location: values.location, workMode: values.work_mode,
+                salary: values.salary || '', dateApplied: values.date_applied || '',
+                contactPerson: values.contact_person || '', contactEmail: values.contact_email || '',
+                url: values.url, notes: values.notes, deadline: values.deadline || '',
+                interviewRound: values.interview_round || '', interviewAt: values.interview_at || '',
+                interviewFormat: values.interview_format || '', interviewLink: values.interview_link || '',
+                revision: nextRevision };
         });
     }
 
@@ -2790,6 +2937,225 @@ class MySQLRepository {
 
     async deleteWebhookEvent(eventId) {
         await this._getPool().query('DELETE FROM payment_webhook_events WHERE event_id = ?', [eventId]);
+    }
+
+    // ======================================================================
+    // DIR-022: SUBSCRIPTION AUDIT LEDGER + RECONCILIATION
+    // ======================================================================
+
+    /**
+     * Appends one immutable `subscription_audit_log` row (INV-4).
+     *
+     * MUST be called with the SAME transaction connection as the entitlement
+     * write it describes, so a rolled-back activation cannot leave behind an
+     * audit row claiming a transition that never committed.
+     */
+    _appendSubscriptionAudit(connection, entry) {
+        return connection.query(
+            `INSERT INTO subscription_audit_log
+               (id, uid, order_id, from_status, to_status, actor, actor_role, reason, gateway, event_id, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(3))`,
+            [
+                crypto.randomUUID(),
+                entry.uid,
+                entry.orderId || null,
+                String(entry.fromStatus || 'UNKNOWN').toUpperCase().slice(0, 32),
+                String(entry.toStatus || 'UNKNOWN').toUpperCase().slice(0, 32),
+                String(entry.actor || 'system').slice(0, 128),
+                String(entry.actorRole || 'SYSTEM').slice(0, 64),
+                entry.reason ? String(entry.reason).slice(0, 255) : null,
+                entry.gateway ? String(entry.gateway).slice(0, 64) : null,
+                entry.eventId ? String(entry.eventId).slice(0, 128) : null,
+            ]
+        );
+    }
+
+    /**
+     * DIR-022 / AC-4 + AC-5: applies ONE gateway-verified renewal outcome to a
+     * user and its order, atomically, with an audit row for the transition.
+     *
+     * Everything happens inside a single MariaDB transaction with `FOR UPDATE`
+     * locks on BOTH the user and the order, so:
+     *   - a scheduled reconciler pass and an operator pressing the 1-click
+     *     reconcile button cannot interleave into a status neither intended;
+     *   - a failure part-way leaves NOTHING behind — no PAST_DUE flag without its
+     *     grace deadline, and no grace deadline without its audit row.
+     *
+     * `outcome` must be gateway-verified truth, never an assumption:
+     *   'ACTIVE'   -> the renewal succeeded; any recovery window is cleared.
+     *   'PAST_DUE' -> the renewal failed; a bounded grace window is opened.
+     */
+    async reconcileSubscriptionAtomic({
+        uid, orderId = null, outcome, gateway = null, eventId = null,
+        actor = 'subscription-reconciler', actorRole = 'SYSTEM', reason = null,
+    }) {
+        const toStatus = String(outcome || '').trim().toUpperCase();
+        if (!['ACTIVE', 'PAST_DUE'].includes(toStatus)) {
+            throw Object.assign(new Error('Unsupported reconciliation outcome'), {
+                code: 'RECONCILIATION_OUTCOME_INVALID', status: 400,
+            });
+        }
+        const owner = String(uid || '').trim();
+        if (!owner) {
+            throw Object.assign(new Error('A user id is required for reconciliation'), {
+                code: 'RECONCILIATION_USER_REQUIRED', status: 400,
+            });
+        }
+
+        return this._withTransaction(async connection => {
+            const [users] = await connection.query(
+                'SELECT * FROM users WHERE id = ? AND deleted_at IS NULL FOR UPDATE',
+                [owner]
+            );
+            if (!users.length) {
+                throw Object.assign(new Error('Reconciliation user not found'), { code: 'USER_NOT_FOUND', status: 404 });
+            }
+            const fromStatus = String(users[0].paymentStatus || 'INACTIVE').toUpperCase();
+
+            let order = null;
+            if (orderId) {
+                const [orders] = await connection.query(
+                    'SELECT * FROM payment_orders WHERE id = ? FOR UPDATE',
+                    [String(orderId)]
+                );
+                if (orders.length) order = orders[0];
+            }
+
+            // ACTIVE clears every renewal-recovery field. PAST_DUE stamps the
+            // failure and opens a NEW window measured from now.
+            if (toStatus === 'ACTIVE') {
+                await connection.query(
+                    `UPDATE users
+                     SET paymentStatus = ?, renewalFailedAt = NULL, paymentGraceStartedAt = NULL,
+                         paymentGraceUntil = NULL, revision = revision + 1, updated_at = NOW()
+                     WHERE id = ?`,
+                    [toStatus, owner]
+                );
+            } else {
+                // The grace bound is passed as a bound parameter rather than
+                // interpolated, so no configured value can reach SQL as text.
+                await connection.query(
+                    `UPDATE users
+                     SET paymentStatus = ?, renewalFailedAt = NOW(3), paymentGraceStartedAt = NOW(3),
+                         paymentGraceUntil = DATE_ADD(NOW(3), INTERVAL ? MICROSECOND),
+                         revision = revision + 1, updated_at = NOW()
+                     WHERE id = ?`,
+                    [toStatus, Math.round(PAYMENT_GRACE_PERIOD_MS / 1000) * 1000, owner]
+                );
+            }
+
+            if (order) {
+                await connection.query(
+                    `UPDATE payment_orders
+                     SET renewal_state = ?, revision = revision + 1, updated_at = NOW()
+                     WHERE id = ?`,
+                    [toStatus === 'ACTIVE' ? 'RENEWED' : 'GRACE_PERIOD', order.id]
+                );
+            }
+
+            if (fromStatus !== toStatus) {
+                await this._appendSubscriptionAudit(connection, {
+                    uid: owner,
+                    orderId: order?.id || null,
+                    fromStatus,
+                    toStatus,
+                    actor,
+                    actorRole,
+                    reason,
+                    gateway,
+                    eventId,
+                });
+            }
+
+            const [refreshed] = await connection.query(
+                `SELECT paymentStatus, paymentGraceUntil, paymentGraceStartedAt, renewalFailedAt, revision
+                 FROM users WHERE id = ?`,
+                [owner]
+            );
+            return {
+                uid: owner,
+                orderId: order?.id || null,
+                fromStatus,
+                toStatus,
+                changed: fromStatus !== toStatus,
+                graceOpened: toStatus === 'PAST_DUE',
+                user: refreshed[0] || null,
+            };
+        });
+    }
+
+    /**
+     * DIR-022 / AC-3: the reconciler's work queue.
+     *
+     * Returns the accounts whose recorded entitlement may have drifted from the
+     * authoritative billing evidence: orders still awaiting provider
+     * confirmation, and accounts sitting in a renewal-recovery window whose
+     * outcome has not been re-verified. Ordered (PAST_DUE first) and hard
+     * bounded so one pass can never fan out into an unbounded user-table sweep.
+     */
+    async listSubscriptionsForReconciliation({ limit = 50 } = {}) {
+        const bounded = Math.min(Math.max(Number(limit) || 50, 1), 200);
+        const pool = this._getPool();
+        const [rows] = await pool.query(
+            `SELECT DISTINCT u.id AS uid, u.paymentStatus, u.paymentGraceUntil, u.membership, u.membershipEnds,
+                    o.id AS order_id, o.provider, o.status AS order_status, o.provider_payment_id, o.renewal_state
+             FROM users u
+             LEFT JOIN payment_orders o
+               ON o.uid = u.id
+              AND o.status IN ('PENDING_PAYMENT', 'PAYMENT_CREATED', 'PROVIDER_CONFIRMED', 'ACTIVE')
+             WHERE u.deleted_at IS NULL
+               AND (
+                 o.id IS NOT NULL
+                 OR u.paymentStatus = 'PAST_DUE'
+                 OR (u.membershipEnds IS NOT NULL AND u.membershipEnds < NOW())
+               )
+             ORDER BY (u.paymentStatus = 'PAST_DUE') DESC, o.updated_at ASC, u.id ASC
+             LIMIT ?`,
+            [bounded]
+        );
+        return rows.map(row => ({
+            uid: row.uid,
+            paymentStatus: row.paymentStatus,
+            paymentGraceUntil: row.paymentGraceUntil,
+            membership: row.membership,
+            membershipEnds: row.membershipEnds,
+            orderId: row.order_id,
+            provider: row.provider,
+            orderStatus: row.order_status,
+            providerPaymentId: row.provider_payment_id,
+            renewalState: row.renewal_state,
+        }));
+    }
+
+    /**
+     * DIR-022 / AC-5: the immutable transition history for one account, newest
+     * first. Read-only — and the table's BEFORE UPDATE/DELETE triggers make it
+     * unrewritable by any code path, including this one.
+     */
+    async getSubscriptionAuditLog({ uid, limit = 50 } = {}) {
+        const bounded = Math.min(Math.max(Number(limit) || 50, 1), 200);
+        const pool = this._getPool();
+        const [rows] = await pool.query(
+            `SELECT id, uid, order_id, from_status, to_status, actor, actor_role, reason, gateway, event_id, created_at
+             FROM subscription_audit_log
+             WHERE uid = ?
+             ORDER BY created_at DESC, id DESC
+             LIMIT ?`,
+            [String(uid || ''), bounded]
+        );
+        return rows.map(row => ({
+            id: row.id,
+            uid: row.uid,
+            orderId: row.order_id,
+            fromStatus: row.from_status,
+            toStatus: row.to_status,
+            actor: row.actor,
+            actorRole: row.actor_role,
+            reason: row.reason,
+            gateway: row.gateway,
+            eventId: row.event_id,
+            createdAt: row.created_at,
+        }));
     }
 
     async findPaymentOrderByProviderIntent(intentId) {

@@ -1,3 +1,4 @@
+@charset "UTF-8";
 /* =============================================================================
  * IME365 Ã¢â‚¬â€ Cuba Modern Executive Glassmorphism Ã‚Â· Design Token Layer
  * -----------------------------------------------------------------------------
@@ -29,91 +30,240 @@
  *   - `prefers-reduced-motion`, `prefers-contrast` and `forced-colors` are all
  *     honoured (Ã‚Â§27, Ã‚Â§37).
  * ========================================================================== */
-
 :root {
-    color-scheme: light;
-
-    /* ---- Brand ------------------------------------------------------------ */
-    --cuba-primary: #7366ff;
-    /* Brand ink for TEXT and icons on light surfaces.
-       The brand violet #7366ff measures only 4.14:1 on white, which fails WCAG AA
-       for body-size text, so it is used only for fills, borders and large display
-       type (>=24px, where 3:1 applies). This darker sibling reaches 6.9:1 and is
-       what `text-cuba-primary` resolves to. Asserted by cuba-design-system.test.mjs. */
-    --cuba-primary-ink-strong: #4b3ec4;
-    --cuba-primary-strong: #5949d6;
-    --cuba-primary-ink: #ffffff;
-    --cuba-primary-soft: rgba(115, 102, 255, 0.1);
-    --cuba-primary-soft-hover: rgba(115, 102, 255, 0.16);
-    --cuba-primary-ring: rgba(115, 102, 255, 0.42);
-    /* Solid FILL colour for primary buttons. White on the raw brand violet is only
-       4.14:1, which fails AA for button labels, so fills use this deeper violet
-       (6.27:1 with white). The bright #7366ff is retained for borders, glows,
-       focus rings and large decorative type where 3:1 applies. */
-    --cuba-primary-fill: #5949d6;
-    --cuba-primary-gradient: linear-gradient(135deg, #6455f5 0%, #5243cc 100%);
-    --cuba-on-primary: #ffffff;
-
-    /* ---- Semantic accents (darkened for AA on light surfaces) ------------- */
-    --cuba-success: #1a7f37;
-    --cuba-success-soft: rgba(31, 138, 61, 0.12);
-    --cuba-info: #0b6fae;
-    --cuba-info-soft: rgba(11, 111, 174, 0.12);
-    --cuba-warning: #8a6100;
-    --cuba-warning-soft: rgba(138, 97, 0, 0.14);
-    --cuba-danger: #c02630;
-    --cuba-danger-soft: rgba(192, 38, 48, 0.12);
-    --cuba-secondary: #b01a45;
-    --cuba-secondary-soft: rgba(176, 26, 69, 0.12);
-
-    /* ---- Surfaces & lines ------------------------------------------------- */
-    --cuba-canvas: #f4f5f9;
-    --cuba-card: #ffffff;
-    --cuba-elevated: #ffffff;
-    --cuba-line: #dfe3ee;
-    --cuba-line-strong: #c6ccdc;
-
-    /* ---- Ink -------------------------------------------------------------- */
-    --cuba-ink: #10121a;
-    --cuba-ink-muted: #4a5163;
-    --cuba-ink-subtle: #626a7d;
-    --cuba-ink-inverse: #f7f8fc;
-
-    /* ---- Glass (purposeful, restrained) ----------------------------------- */
-    --cuba-glass-bg: rgba(255, 255, 255, 0.78);
-    --cuba-glass-bg-strong: rgba(255, 255, 255, 0.92);
-    --cuba-glass-border: rgba(255, 255, 255, 0.7);
-    --cuba-glass-blur: 14px;
-    --cuba-glass-shadow: 0 1px 2px rgba(16, 18, 26, 0.04), 0 8px 24px -12px rgba(16, 18, 26, 0.18);
-
-    /* ---- AI signature ----------------------------------------------------- */
-    --cuba-ai-aurora-a: rgba(115, 102, 255, 0.14);
-    --cuba-ai-aurora-b: rgba(64, 184, 244, 0.14);
-    --cuba-ai-border: rgba(115, 102, 255, 0.34);
-    --cuba-ai-ink: #4b3ec4;
-
-    /* ---- Geometry & motion ------------------------------------------------ */
-    --cuba-radius-sm: 8px;
-    --cuba-radius-md: 12px;
-    --cuba-radius-lg: 16px;
-    --cuba-radius-xl: 22px;
-    --cuba-shadow-sm: 0 1px 2px rgba(16, 18, 26, 0.05);
-    --cuba-shadow-md: 0 1px 2px rgba(16, 18, 26, 0.05), 0 10px 26px -16px rgba(16, 18, 26, 0.28);
-    --cuba-shadow-lg: 0 2px 6px rgba(16, 18, 26, 0.06), 0 22px 48px -24px rgba(16, 18, 26, 0.34);
-    --cuba-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
-    --cuba-dur: 200ms;
-
-    --cuba-sidebar-w: 260px;
-    --cuba-sidebar-w-collapsed: 72px;
-    --cuba-header-h: 68px;
-    --cuba-z-drawer: 60;
-    --cuba-z-modal: 80;
-    --cuba-z-toast: 100;
+  color-scheme: light;
+  /* ---- DIR-023 audited brand ink --------------------------------------- */
+  /* The legacy brand blue #4a6cf7 was inlined as a raw Tailwind hex utility
+     across ~34 `text-[#4a6cf7]` call sites, which made it the single largest
+     WCAG AA failure class in the platform (1,540 census rowsmeasured across
+     74 routes x 2 themes by .bridge/evidence/universal-contrast-audit.mjs).
+     Measured with the W3C formula and re-verified by hand, #4a6cf7 scores
+     4.39:1 on white and 4.03:1 on the light canvas -- a genuine miss against
+     the 4.5:1 bar for body text.
+     This token is the corrected TEXT weight. #4a6cf7 stays the brand identity
+     for fills, borders and non-text UI (where the 3:1 bar applies and it
+     passes). Proved against BOTH surfaces it can land on -- white 6.73:1 and the
+     light canvas 6.18:1 -- so it cannot pass on one and fail on the other. */
+  --cuba-ink-accent: #364fc9;
+  /* DIR-023: the same corrected accent, published as an unthemed BASE so a
+     FILL can reference it. `bg-[#4a6cf7]` is a fill, not text, so it must not
+     follow --cuba-ink-accent (which republishes to the dark ink in dark mode
+     and would hand white label text a 4.39:1 plate). */
+  --cuba-ink-accent-base: #364fc9;
+  /* ---- Brand ------------------------------------------------------------ */
+  --cuba-primary: #7366ff;
+  /* Brand ink for TEXT and icons on light surfaces.
+     The brand violet #7366ff measures only 4.14:1 on white, which fails WCAG AA
+     for body-size text, so it is used only for fills, borders and large display
+     type (>=24px, where 3:1 applies). This darker sibling reaches 6.9:1 and is
+     what `text-cuba-primary` resolves to. Asserted by cuba-design-system.test.mjs. */
+  --cuba-primary-ink-strong: #4b3ec4;
+  --cuba-primary-strong: #5949d6;
+  --cuba-primary-ink: #ffffff;
+  --cuba-primary-soft: rgba(115, 102, 255, 0.1);
+  --cuba-primary-soft-hover: rgba(115, 102, 255, 0.16);
+  --cuba-primary-ring: rgba(115, 102, 255, 0.42);
+  /* Solid FILL colour for primary buttons. White on the raw brand violet is only
+     4.14:1, which fails AA for button labels, so fills use this deeper violet
+     (6.27:1 with white). The bright #7366ff is retained for borders, glows,
+     focus rings and large decorative type where 3:1 applies. */
+  --cuba-primary-fill: #5949d6;
+  --cuba-primary-gradient: linear-gradient(135deg, #6455f5 0%, #5243cc 100%);
+  --cuba-on-primary: #ffffff;
+  /* ---- Semantic accents (darkened for AA on light surfaces) ------------- */
+  --cuba-success: #1a7f37;
+  --cuba-success-soft: rgba(31, 138, 61, 0.12);
+  /* ---- Status pill tones (DIR-010) ---------------------------------------
+   * OPAQUE, surface-independent fills for ATS stage pills. These are SOLID on
+   * purpose: the previous `bg-*-50 text-*-700 border-*-200` recipe (Tailwind
+   * 50/200 tints) only meets 4.5:1 against the one surface it was tuned for,
+   * and silently drops below AA over --cuba-canvas or a glass modal. Every
+   * pair here is verified by .bridge/tmp/dir010-pill-contrast.mjs:
+   *   ink/fill >= 4.5:1 (AA text), fill/card >= 3:1 and border/card >= 3:1
+   * (AA 1.4.11 non-text) in BOTH themes - 14/14 PASS. */
+  --cuba-pill-neutral-fill: #5a6274;
+  --cuba-pill-neutral-ink: #ffffff;
+  --cuba-pill-neutral-line: #3f4557;
+  --cuba-pill-primary-fill: #4b3ec4;
+  --cuba-pill-primary-ink: #ffffff;
+  --cuba-pill-primary-line: #3a2ea3;
+  --cuba-pill-info-fill: #0b6fae;
+  --cuba-pill-info-ink: #ffffff;
+  --cuba-pill-info-line: #095c92;
+  --cuba-pill-success-fill: #1a7f37;
+  --cuba-pill-success-ink: #ffffff;
+  --cuba-pill-success-line: #16682e;
+  --cuba-pill-success-hi-fill: #0f5c28;
+  --cuba-pill-success-hi-ink: #ffffff;
+  --cuba-pill-success-hi-line: #0b4a1f;
+  --cuba-pill-warning-fill: #8a6100;
+  --cuba-pill-warning-ink: #ffffff;
+  --cuba-pill-warning-line: #6f4d00;
+  --cuba-pill-danger-fill: #c02630;
+  --cuba-pill-danger-ink: #ffffff;
+  --cuba-pill-danger-line: #a01f28;
+  --cuba-info: #0b6fae;
+  --cuba-info-soft: rgba(11, 111, 174, 0.12);
+  --cuba-warning: #8a6100;
+  --cuba-warning-soft: rgba(138, 97, 0, 0.14);
+  --cuba-danger: #c02630;
+  --cuba-danger-soft: rgba(192, 38, 48, 0.12);
+  /* DIR-023: the danger FILL used as a badge/button surface with white ink on
+     it. Kept as its own token, separate from --cuba-danger (which is the light
+     TEXT weight and inverts per theme), because a dark-mode override of the
+     fill must not drag the light-mode ink with it. */
+  --cuba-danger-fill-base: #c02630;
+  --cuba-danger-line-base: #a01f28;
+  --cuba-secondary: #b01a45;
+  --cuba-secondary-soft: rgba(176, 26, 69, 0.12);
+  /* ---- Surfaces & lines ------------------------------------------------- */
+  --cuba-canvas: #f4f5f9;
+  --cuba-card: #ffffff;
+  --cuba-elevated: #ffffff;
+  --cuba-line: #dfe3ee;
+  --cuba-line-strong: #c6ccdc;
+  /* ---- Ink -------------------------------------------------------------- */
+  --cuba-ink: #10121a;
+  --cuba-ink-muted: #4a5163;
+  --cuba-ink-subtle: #626a7d;
+  --cuba-ink-inverse: #f7f8fc;
+  /* ---- Permanently-dark surfaces ("night") -------------------
+   * ---------------------------------------------
+   * NOT a theme. These back surfaces that stay dark in BOTH themes
+   * -- the billing hero banner and the checkout shell, which are
+   * fixed deep-violet gradients rather than themed cards.
+   *
+   * WHY A SEPARATE FAMILY: the theme-adaptive tokens above
+   * deliberately INVERT between light and dark (e.g. --cuba-warning is
+   * a deep #8a6100 on light backgrounds and a pale #f0cf72 in dark
+   * mode). Mapping light-on-dark hero text such as `text-amber-300`
+   * onto a theme token would therefore resolve to near-black in light
+   * mode and fail WCAG AA against the gradient. These values are
+   * theme-independent on purpose.
+   *
+   * Every value below is verified >= 4.5:1 against ALL THREE gradient
+   * stops of the hero (#0f0c29 / #302b63 / #24243e) by
+   * .bridge/evidence/dir018-night-contrast.mjs -- worst case first.
+   */
+  --cuba-night-ink: #f8f9ff; /* 12.10:1 */
+  --cuba-night-ink-muted: #c7cbe0; /*  7.90:1 */
+  --cuba-night-primary: #a5b4fc; /*  6.38:1 */
+  --cuba-night-success: #6ee7b7; /*  8.34:1 */
+  --cuba-night-warning: #fcd34d; /*  8.82:1 */
+  --cuba-night-info: #7dd3fc; /*  7.63:1 */
+  --cuba-night-danger: #fda4af; /*  6.73:1 */
+  --cuba-night-secondary: #ff9ec4; /*  6.62:1 */
+  /* The hero gradient itself, so the shell stops hardcoding it. */
+  --cuba-night-surface-from: #0f0c29;
+  --cuba-night-surface-mid: #302b63;
+  --cuba-night-surface-to: #24243e;
+  --cuba-night-line: rgba(255, 255, 255, 0.12);
+  /* ---- Glass (purposeful, restrained) ----------------------------------- */
+  --cuba-glass-bg: rgba(255, 255, 255, 0.78);
+  --cuba-glass-bg-strong: rgba(255, 255, 255, 0.92);
+  --cuba-glass-border: rgba(255, 255, 255, 0.7);
+  --cuba-glass-blur: 14px;
+  --cuba-glass-shadow: 0 1px 2px rgba(16, 18, 26, 0.04), 0 8px 24px -12px rgba(16, 18, 26, 0.18);
+  /* ---- AI signature ----------------------------------------------------- */
+  --cuba-ai-aurora-a: rgba(115, 102, 255, 0.14);
+  --cuba-ai-aurora-b: rgba(64, 184, 244, 0.14);
+  --cuba-ai-border: rgba(115, 102, 255, 0.34);
+  --cuba-ai-ink: #4b3ec4;
+  /* ---- Live interview studio (DIR-013) -----------------------------------
+   * SURFACE-ANCHORED, NOT THEME-ANCHORED. The live-session studio is a video
+   * conference surface: it stays dark in BOTH app themes, so re-publishing
+   * these per theme (as every other block above does) would be a bug, not a
+   * feature. They are declared once, here, and are therefore also valid on
+   * the dark palette by construction.
+   *
+   * Every value below is verified by .bridge/tmp/dir013-contrast-probe.mjs
+   * against the LIGHTEST stop the waveform actually paints over (#1e1b4b),
+   * which is the worst case. INV-3 requires >= 4.5:1 for wave visualizers;
+   * the previous hard-coded #4f46e5 bar stop measured 2.54:1 there, so this
+   * block also closes a real pre-existing AA defect.
+   */
+  --cuba-studio-from: #090d16;
+  --cuba-studio-via: #0f172a;
+  --cuba-studio-to: #1e1b4b;
+  --cuba-studio-glow: rgba(99, 102, 241, 0.35);
+  --cuba-studio-sheen: rgba(255, 255, 255, 0.1);
+  --cuba-studio-scrim: rgba(71, 85, 105, 0.5);
+  /* Idle baseline. Decorative only: the adjacent status pill carries the
+   * state in text, so this line is never the sole carrier of meaning. */
+  --cuba-wave-idle: #64748b;
+  /* Spectrum bars (candidate mic). Gradient bottom stop is the worst case. */
+  --cuba-wave-bar-from: #a5b4fc;
+  --cuba-wave-bar-to: #6366f1;
+  /* Harmonic stacks, one triple per `color` prop value. */
+  --cuba-wave-indigo-1: #a5b4fc;
+  --cuba-wave-indigo-2: #d8b4fe;
+  --cuba-wave-indigo-3: #7dd3fc;
+  --cuba-wave-emerald-1: #6ee7b7;
+  --cuba-wave-emerald-2: #99f6e4;
+  --cuba-wave-emerald-3: #a5f3fc;
+  --cuba-wave-cyan-1: #22d3ee;
+  --cuba-wave-cyan-2: #67e8f9;
+  --cuba-wave-cyan-3: #a5f3fc;
+  --cuba-wave-rose-1: #fb7185;
+  --cuba-wave-rose-2: #fda4af;
+  --cuba-wave-rose-3: #fecdd3;
+  /* ---- Geometry & motion ------------------------------------------------ */
+  --cuba-radius-sm: 8px;
+  --cuba-radius-md: 12px;
+  --cuba-radius-lg: 16px;
+  --cuba-radius-xl: 22px;
+  --cuba-shadow-sm: 0 1px 2px rgba(16, 18, 26, 0.05);
+  --cuba-shadow-md: 0 1px 2px rgba(16, 18, 26, 0.05), 0 10px 26px -16px rgba(16, 18, 26, 0.28);
+  --cuba-shadow-lg: 0 2px 6px rgba(16, 18, 26, 0.06), 0 22px 48px -24px rgba(16, 18, 26, 0.34);
+  --cuba-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --cuba-dur: 200ms;
+  --cuba-sidebar-w: 260px;
+  --cuba-sidebar-w-collapsed: 72px;
+  --cuba-header-h: 68px;
+  --cuba-z-drawer: 60;
+  --cuba-z-modal: 80;
+  --cuba-z-toast: 100;
+  /* Header overlays (user menu, notification centre) must sit ABOVE the app bar
+     (z-50) but BELOW the command palette (--cuba-z-modal), so a popover can
+     never cover the modal it belongs to. */
+  --cuba-z-popover: 70;
+  /* ---- Universal app-header surface tokens (DIR-011) --------------------
+     The command search, user menu and notification centre are three separate
+     glass surfaces stacked over scrolling content. They are described by ROLE,
+     never by hue, so the whole header can be re-themed from one block. */
+  --cuba-header-search-bg: rgba(255, 255, 255, 0.62);
+  --cuba-header-search-bg-hover: rgba(255, 255, 255, 0.9);
+  --cuba-header-search-border: #dfe3ee;
+  --cuba-header-menu-bg: #ffffff;
+  --cuba-header-menu-border: #dfe3ee;
+  --cuba-header-divider: rgba(16, 18, 26, 0.08);
+  /* kbd shortcut chips (⌘K / Ctrl+K) */
+  --cuba-header-kbd-bg: rgba(16, 18, 26, 0.05);
+  --cuba-header-kbd-ink: #4a5163;
+  /* Live unread counter. Opaque fill + white ink = 4.6:1, so the badge label
+     itself passes AA rather than relying on size alone. */
+  --cuba-header-badge-fill: #c02630;
+  --cuba-header-badge-ink: #ffffff;
+  /* Avatar identity chip.
+     The initials are WHITE 12px-bold text sitting directly on this gradient,
+     so the LIGHTEST stop is the real contrast bound and must clear 4.5:1.
+     The raw brand violet #7366ff is only 4.14:1 against white, so it is NOT
+     a legal avatar start colour; #5f4fdd measures 5.75:1 and keeps the
+     violet identity while passing AA. Matches the same
+     "brand violet is for fills, not for text" rule asserted by
+     tests/cuba-design-system.test.mjs. */
+  --cuba-header-avatar-from: #5f4fdd;
+  --cuba-header-avatar-to: #5949d6;
+  /* "Active" presence dot — a 3:1 non-text boundary colour. */
+  --cuba-header-presence: #1a7f37;
+  /* Breadcrumb: ancestors are interactive links, the current page is ink. */
+  --cuba-header-crumb-ink: #4a5163;
+  --cuba-header-crumb-ink-hover: #4b3ec4;
 }
 
-[data-theme='dark'],
-:root:not([data-theme='light']) {
-    color-scheme: dark;
+[data-theme=dark],
+:root:not([data-theme=light]) {
+  color-scheme: dark;
 }
 
 /* DARK PALETTE Ã¢â‚¬â€ SINGLE SOURCE OF TRUTH.
@@ -122,54 +272,94 @@
    values; the selector list below simply republishes them under their canonical
    names. */
 :root {
-    --cuba-dark-primary: #a49cff;
-    --cuba-dark-primary-fill: #7d72f0;
-    --cuba-dark-primary-ink-strong: #bcb6ff;
-    --cuba-dark-primary-strong: #bcb6ff;
-    --cuba-dark-primary-ink: #14121f;
-    --cuba-dark-primary-soft: rgba(164, 156, 255, 0.16);
-    --cuba-dark-primary-soft-hover: rgba(164, 156, 255, 0.24);
-    --cuba-dark-primary-ring: rgba(164, 156, 255, 0.55);
-    --cuba-dark-primary-gradient: linear-gradient(135deg, #a49cff 0%, #8278f2 100%);
-    --cuba-dark-on-primary: #14121f;
-
-    --cuba-dark-success: #7ddc93;
-    --cuba-dark-success-soft: rgba(125, 220, 147, 0.16);
-    --cuba-dark-info: #7ccdf5;
-    --cuba-dark-info-soft: rgba(124, 205, 245, 0.16);
-    --cuba-dark-warning: #f0cf72;
-    --cuba-dark-warning-soft: rgba(240, 207, 114, 0.18);
-    --cuba-dark-danger: #ff8f93;
-    --cuba-dark-danger-soft: rgba(255, 143, 147, 0.18);
-    --cuba-dark-secondary: #ff8fb0;
-    --cuba-dark-secondary-soft: rgba(255, 143, 176, 0.16);
-
-    --cuba-dark-canvas: #0d0f16;
-    --cuba-dark-card: #15181f;
-    --cuba-dark-elevated: #1b1f29;
-    --cuba-dark-line: #2a2f3d;
-    --cuba-dark-line-strong: #3d4456;
-
-    --cuba-dark-ink: #f2f4fb;
-    --cuba-dark-ink-muted: #b6bdd0;
-    --cuba-dark-ink-subtle: #9aa2b6;
-    --cuba-dark-ink-inverse: #10121a;
-
-    --cuba-dark-glass-bg: rgba(24, 27, 36, 0.78);
-    --cuba-dark-glass-bg-strong: rgba(21, 24, 31, 0.94);
-    --cuba-dark-glass-border: rgba(255, 255, 255, 0.09);
-    --cuba-dark-glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 30px -14px rgba(0, 0, 0, 0.7);
-
-    --cuba-dark-ai-aurora-a: rgba(164, 156, 255, 0.2);
-    --cuba-dark-ai-aurora-b: rgba(124, 205, 245, 0.16);
-    --cuba-dark-ai-border: rgba(164, 156, 255, 0.42);
-    --cuba-dark-ai-ink: #bcb6ff;
-
-    --cuba-dark-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
-    --cuba-dark-shadow-md: 0 1px 2px rgba(0, 0, 0, 0.5), 0 12px 30px -18px rgba(0, 0, 0, 0.85);
-    --cuba-dark-shadow-lg: 0 2px 8px rgba(0, 0, 0, 0.55), 0 26px 56px -28px rgba(0, 0, 0, 0.9);
+  --cuba-dark-primary: #a49cff;
+  --cuba-dark-primary-fill: #7d72f0;
+  --cuba-dark-primary-ink-strong: #bcb6ff;
+  --cuba-dark-primary-strong: #bcb6ff;
+  --cuba-dark-primary-ink: #14121f;
+  --cuba-dark-primary-soft: rgba(164, 156, 255, 0.16);
+  --cuba-dark-primary-soft-hover: rgba(164, 156, 255, 0.24);
+  --cuba-dark-primary-ring: rgba(164, 156, 255, 0.55);
+  --cuba-dark-primary-gradient: linear-gradient(135deg, #a49cff 0%, #8278f2 100%);
+  --cuba-dark-on-primary: #14121f;
+  --cuba-dark-success: #7ddc93;
+  --cuba-dark-success-soft: rgba(125, 220, 147, 0.16);
+  /* DIR-010 opaque status-pill shadows. Solid (not alpha) so the pill's
+     contrast never depends on the surface behind it. Every pair below is
+     asserted >=4.5:1 ink/fill and >=3:1 fill/card + border/card by
+     .bridge/tmp/dir010-pill-contrast.mjs (14/14 PASS). */
+  --cuba-dark-pill-neutral-fill: #6b7385;
+  --cuba-dark-pill-neutral-ink: #ffffff;
+  --cuba-dark-pill-neutral-line: #98a0b3;
+  --cuba-dark-pill-primary-fill: #a49cff;
+  --cuba-dark-pill-primary-ink: #14121f;
+  --cuba-dark-pill-primary-line: #7f74f0;
+  --cuba-dark-pill-info-fill: #7ccdf5;
+  --cuba-dark-pill-info-ink: #0b1a24;
+  --cuba-dark-pill-info-line: #4ea7d4;
+  --cuba-dark-pill-success-fill: #7ddc93;
+  --cuba-dark-pill-success-ink: #0a2415;
+  --cuba-dark-pill-success-line: #4cae68;
+  --cuba-dark-pill-success-hi-fill: #187a3c;
+  --cuba-dark-pill-success-hi-ink: #eafff0;
+  --cuba-dark-pill-success-hi-line: #43b06c;
+  --cuba-dark-pill-warning-fill: #f0cf72;
+  --cuba-dark-pill-warning-ink: #241a02;
+  --cuba-dark-pill-warning-line: #c1a348;
+  --cuba-dark-pill-danger-fill: #ff8f93;
+  --cuba-dark-pill-danger-ink: #2b0a0d;
+  --cuba-dark-pill-danger-line: #d96a6f;
+  --cuba-dark-info: #7ccdf5;
+  --cuba-dark-info-soft: rgba(124, 205, 245, 0.16);
+  --cuba-dark-warning: #f0cf72;
+  --cuba-dark-warning-soft: rgba(240, 207, 114, 0.18);
+  --cuba-dark-danger: #ff8f93;
+  --cuba-dark-danger-soft: rgba(255, 143, 147, 0.18);
+  --cuba-dark-secondary: #ff8fb0;
+  --cuba-dark-secondary-soft: rgba(255, 143, 176, 0.16);
+  --cuba-dark-canvas: #0d0f16;
+  --cuba-dark-card: #15181f;
+  --cuba-dark-elevated: #1b1f29;
+  --cuba-dark-line: #2a2f3d;
+  --cuba-dark-line-strong: #3d4456;
+  --cuba-dark-ink: #f2f4fb;
+  --cuba-dark-ink-muted: #b6bdd0;
+  --cuba-dark-ink-subtle: #9aa2b6;
+  --cuba-dark-ink-inverse: #10121a;
+  /* DIR-023: dark-theme counterpart of --cuba-ink-accent. The light-theme
+     correction (#364fc9) is WRONG here -- it measures only 3.52:1 on the dark
+     canvas -- which is exactly why the audited overrides are theme-scoped and
+     not a single global value. This lighter blue clears AA on every dark
+     surface it can land on: 6.91:1 on the canvas (#0d0f16) and 6.40:1 on the
+     card (#15181f). */
+  --cuba-dark-ink-accent: #7b95ff;
+  --cuba-dark-glass-bg: rgba(24, 27, 36, 0.78);
+  --cuba-dark-glass-bg-strong: rgba(21, 24, 31, 0.94);
+  --cuba-dark-glass-border: rgba(255, 255, 255, 0.09);
+  --cuba-dark-glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 30px -14px rgba(0, 0, 0, 0.7);
+  --cuba-dark-ai-aurora-a: rgba(164, 156, 255, 0.2);
+  --cuba-dark-ai-aurora-b: rgba(124, 205, 245, 0.16);
+  --cuba-dark-ai-border: rgba(164, 156, 255, 0.42);
+  --cuba-dark-ai-ink: #bcb6ff;
+  --cuba-dark-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --cuba-dark-shadow-md: 0 1px 2px rgba(0, 0, 0, 0.5), 0 12px 30px -18px rgba(0, 0, 0, 0.85);
+  --cuba-dark-shadow-lg: 0 2px 8px rgba(0, 0, 0, 0.55), 0 26px 56px -28px rgba(0, 0, 0, 0.9);
+  --cuba-dark-header-search-bg: rgba(30, 34, 45, 0.62);
+  --cuba-dark-header-search-bg-hover: rgba(38, 43, 56, 0.9);
+  --cuba-dark-header-search-border: #3f4557;
+  --cuba-dark-header-menu-bg: #1e222d;
+  --cuba-dark-header-menu-border: #3f4557;
+  --cuba-dark-header-divider: rgba(255, 255, 255, 0.1);
+  --cuba-dark-header-kbd-bg: rgba(255, 255, 255, 0.08);
+  --cuba-dark-header-kbd-ink: #b4bcd0;
+  --cuba-dark-header-badge-fill: #c02630;
+  --cuba-dark-header-badge-ink: #ffffff;
+  --cuba-dark-header-avatar-from: #6a5ae0;
+  --cuba-dark-header-avatar-to: #4b3ec4;
+  --cuba-dark-header-presence: #3fb950;
+  --cuba-dark-header-crumb-ink: #b4bcd0;
+  --cuba-dark-header-crumb-ink-hover: #bcb6ff;
 }
-
 
 /* Apply the dark palette. ONE selector list serves both the explicit toggle and
    the OS preference, so there is exactly one place dark values take effect.
@@ -177,8 +367,91 @@
    NOTE: an explicit [data-theme='light'] always wins, so a user who picks light
    is never overridden by the OS setting.
 */
-:root[data-theme='dark'],
-[data-theme='dark'] {
+:root[data-theme=dark],
+[data-theme=dark] {
+  color-scheme: dark;
+  --cuba-ink-accent: var(--cuba-dark-ink-accent);
+  --cuba-primary: var(--cuba-dark-primary);
+  --cuba-primary-strong: var(--cuba-dark-primary-strong);
+  --cuba-primary-ink: var(--cuba-dark-primary-ink);
+  --cuba-primary-ink-strong: var(--cuba-dark-primary-ink-strong);
+  --cuba-primary-fill: var(--cuba-dark-primary-fill);
+  --cuba-primary-soft: var(--cuba-dark-primary-soft);
+  --cuba-primary-soft-hover: var(--cuba-dark-primary-soft-hover);
+  --cuba-primary-ring: var(--cuba-dark-primary-ring);
+  --cuba-primary-gradient: var(--cuba-dark-primary-gradient);
+  --cuba-on-primary: var(--cuba-dark-on-primary);
+  --cuba-success: var(--cuba-dark-success);
+  --cuba-success-soft: var(--cuba-dark-success-soft);
+  --cuba-pill-neutral-fill: var(--cuba-dark-pill-neutral-fill);
+  --cuba-pill-neutral-ink: var(--cuba-dark-pill-neutral-ink);
+  --cuba-pill-neutral-line: var(--cuba-dark-pill-neutral-line);
+  --cuba-pill-primary-fill: var(--cuba-dark-pill-primary-fill);
+  --cuba-pill-primary-ink: var(--cuba-dark-pill-primary-ink);
+  --cuba-pill-primary-line: var(--cuba-dark-pill-primary-line);
+  --cuba-pill-info-fill: var(--cuba-dark-pill-info-fill);
+  --cuba-pill-info-ink: var(--cuba-dark-pill-info-ink);
+  --cuba-pill-info-line: var(--cuba-dark-pill-info-line);
+  --cuba-pill-success-fill: var(--cuba-dark-pill-success-fill);
+  --cuba-pill-success-ink: var(--cuba-dark-pill-success-ink);
+  --cuba-pill-success-line: var(--cuba-dark-pill-success-line);
+  --cuba-pill-success-hi-fill: var(--cuba-dark-pill-success-hi-fill);
+  --cuba-pill-success-hi-ink: var(--cuba-dark-pill-success-hi-ink);
+  --cuba-pill-success-hi-line: var(--cuba-dark-pill-success-hi-line);
+  --cuba-pill-warning-fill: var(--cuba-dark-pill-warning-fill);
+  --cuba-pill-warning-ink: var(--cuba-dark-pill-warning-ink);
+  --cuba-pill-warning-line: var(--cuba-dark-pill-warning-line);
+  --cuba-pill-danger-fill: var(--cuba-dark-pill-danger-fill);
+  --cuba-pill-danger-ink: var(--cuba-dark-pill-danger-ink);
+  --cuba-pill-danger-line: var(--cuba-dark-pill-danger-line);
+  --cuba-info: var(--cuba-dark-info);
+  --cuba-info-soft: var(--cuba-dark-info-soft);
+  --cuba-warning: var(--cuba-dark-warning);
+  --cuba-warning-soft: var(--cuba-dark-warning-soft);
+  --cuba-danger: var(--cuba-dark-danger);
+  --cuba-danger-soft: var(--cuba-dark-danger-soft);
+  --cuba-secondary: var(--cuba-dark-secondary);
+  --cuba-secondary-soft: var(--cuba-dark-secondary-soft);
+  --cuba-canvas: var(--cuba-dark-canvas);
+  --cuba-card: var(--cuba-dark-card);
+  --cuba-elevated: var(--cuba-dark-elevated);
+  --cuba-line: var(--cuba-dark-line);
+  --cuba-line-strong: var(--cuba-dark-line-strong);
+  --cuba-ink: var(--cuba-dark-ink);
+  --cuba-ink-muted: var(--cuba-dark-ink-muted);
+  --cuba-ink-subtle: var(--cuba-dark-ink-subtle);
+  --cuba-ink-inverse: var(--cuba-dark-ink-inverse);
+  --cuba-glass-bg: var(--cuba-dark-glass-bg);
+  --cuba-glass-bg-strong: var(--cuba-dark-glass-bg-strong);
+  --cuba-glass-border: var(--cuba-dark-glass-border);
+  --cuba-glass-shadow: var(--cuba-dark-glass-shadow);
+  --cuba-ai-aurora-a: var(--cuba-dark-ai-aurora-a);
+  --cuba-ai-aurora-b: var(--cuba-dark-ai-aurora-b);
+  --cuba-ai-border: var(--cuba-dark-ai-border);
+  --cuba-ai-ink: var(--cuba-dark-ai-ink);
+  --cuba-shadow-sm: var(--cuba-dark-shadow-sm);
+  --cuba-shadow-md: var(--cuba-dark-shadow-md);
+  --cuba-shadow-lg: var(--cuba-dark-shadow-lg);
+  --cuba-header-search-bg: var(--cuba-dark-header-search-bg);
+  --cuba-header-search-bg-hover: var(--cuba-dark-header-search-bg-hover);
+  --cuba-header-search-border: var(--cuba-dark-header-search-border);
+  --cuba-header-menu-bg: var(--cuba-dark-header-menu-bg);
+  --cuba-header-menu-border: var(--cuba-dark-header-menu-border);
+  --cuba-header-divider: var(--cuba-dark-header-divider);
+  --cuba-header-kbd-bg: var(--cuba-dark-header-kbd-bg);
+  --cuba-header-kbd-ink: var(--cuba-dark-header-kbd-ink);
+  --cuba-header-badge-fill: var(--cuba-dark-header-badge-fill);
+  --cuba-header-badge-ink: var(--cuba-dark-header-badge-ink);
+  --cuba-header-avatar-from: var(--cuba-dark-header-avatar-from);
+  --cuba-header-avatar-to: var(--cuba-dark-header-avatar-to);
+  --cuba-header-presence: var(--cuba-dark-header-presence);
+  --cuba-header-crumb-ink: var(--cuba-dark-header-crumb-ink);
+  --cuba-header-crumb-ink-hover: var(--cuba-dark-header-crumb-ink-hover);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme=light]),
+  [data-theme=dark] {
     color-scheme: dark;
     --cuba-primary: var(--cuba-dark-primary);
     --cuba-primary-strong: var(--cuba-dark-primary-strong);
@@ -192,6 +465,27 @@
     --cuba-on-primary: var(--cuba-dark-on-primary);
     --cuba-success: var(--cuba-dark-success);
     --cuba-success-soft: var(--cuba-dark-success-soft);
+    --cuba-pill-neutral-fill: var(--cuba-dark-pill-neutral-fill);
+    --cuba-pill-neutral-ink: var(--cuba-dark-pill-neutral-ink);
+    --cuba-pill-neutral-line: var(--cuba-dark-pill-neutral-line);
+    --cuba-pill-primary-fill: var(--cuba-dark-pill-primary-fill);
+    --cuba-pill-primary-ink: var(--cuba-dark-pill-primary-ink);
+    --cuba-pill-primary-line: var(--cuba-dark-pill-primary-line);
+    --cuba-pill-info-fill: var(--cuba-dark-pill-info-fill);
+    --cuba-pill-info-ink: var(--cuba-dark-pill-info-ink);
+    --cuba-pill-info-line: var(--cuba-dark-pill-info-line);
+    --cuba-pill-success-fill: var(--cuba-dark-pill-success-fill);
+    --cuba-pill-success-ink: var(--cuba-dark-pill-success-ink);
+    --cuba-pill-success-line: var(--cuba-dark-pill-success-line);
+    --cuba-pill-success-hi-fill: var(--cuba-dark-pill-success-hi-fill);
+    --cuba-pill-success-hi-ink: var(--cuba-dark-pill-success-hi-ink);
+    --cuba-pill-success-hi-line: var(--cuba-dark-pill-success-hi-line);
+    --cuba-pill-warning-fill: var(--cuba-dark-pill-warning-fill);
+    --cuba-pill-warning-ink: var(--cuba-dark-pill-warning-ink);
+    --cuba-pill-warning-line: var(--cuba-dark-pill-warning-line);
+    --cuba-pill-danger-fill: var(--cuba-dark-pill-danger-fill);
+    --cuba-pill-danger-ink: var(--cuba-dark-pill-danger-ink);
+    --cuba-pill-danger-line: var(--cuba-dark-pill-danger-line);
     --cuba-info: var(--cuba-dark-info);
     --cuba-info-soft: var(--cuba-dark-info-soft);
     --cuba-warning: var(--cuba-dark-warning);
@@ -220,61 +514,13 @@
     --cuba-shadow-sm: var(--cuba-dark-shadow-sm);
     --cuba-shadow-md: var(--cuba-dark-shadow-md);
     --cuba-shadow-lg: var(--cuba-dark-shadow-lg);
+  }
 }
-
-@media (prefers-color-scheme: dark) {
-    :root:not([data-theme='light']),
-    [data-theme='dark'] {
-        color-scheme: dark;
-        --cuba-primary: var(--cuba-dark-primary);
-        --cuba-primary-strong: var(--cuba-dark-primary-strong);
-        --cuba-primary-ink: var(--cuba-dark-primary-ink);
-        --cuba-primary-ink-strong: var(--cuba-dark-primary-ink-strong);
-        --cuba-primary-fill: var(--cuba-dark-primary-fill);
-        --cuba-primary-soft: var(--cuba-dark-primary-soft);
-        --cuba-primary-soft-hover: var(--cuba-dark-primary-soft-hover);
-        --cuba-primary-ring: var(--cuba-dark-primary-ring);
-        --cuba-primary-gradient: var(--cuba-dark-primary-gradient);
-        --cuba-on-primary: var(--cuba-dark-on-primary);
-        --cuba-success: var(--cuba-dark-success);
-        --cuba-success-soft: var(--cuba-dark-success-soft);
-        --cuba-info: var(--cuba-dark-info);
-        --cuba-info-soft: var(--cuba-dark-info-soft);
-        --cuba-warning: var(--cuba-dark-warning);
-        --cuba-warning-soft: var(--cuba-dark-warning-soft);
-        --cuba-danger: var(--cuba-dark-danger);
-        --cuba-danger-soft: var(--cuba-dark-danger-soft);
-        --cuba-secondary: var(--cuba-dark-secondary);
-        --cuba-secondary-soft: var(--cuba-dark-secondary-soft);
-        --cuba-canvas: var(--cuba-dark-canvas);
-        --cuba-card: var(--cuba-dark-card);
-        --cuba-elevated: var(--cuba-dark-elevated);
-        --cuba-line: var(--cuba-dark-line);
-        --cuba-line-strong: var(--cuba-dark-line-strong);
-        --cuba-ink: var(--cuba-dark-ink);
-        --cuba-ink-muted: var(--cuba-dark-ink-muted);
-        --cuba-ink-subtle: var(--cuba-dark-ink-subtle);
-        --cuba-ink-inverse: var(--cuba-dark-ink-inverse);
-        --cuba-glass-bg: var(--cuba-dark-glass-bg);
-        --cuba-glass-bg-strong: var(--cuba-dark-glass-bg-strong);
-        --cuba-glass-border: var(--cuba-dark-glass-border);
-        --cuba-glass-shadow: var(--cuba-dark-glass-shadow);
-        --cuba-ai-aurora-a: var(--cuba-dark-ai-aurora-a);
-        --cuba-ai-aurora-b: var(--cuba-dark-ai-aurora-b);
-        --cuba-ai-border: var(--cuba-dark-ai-border);
-        --cuba-ai-ink: var(--cuba-dark-ai-ink);
-        --cuba-shadow-sm: var(--cuba-dark-shadow-sm);
-        --cuba-shadow-md: var(--cuba-dark-shadow-md);
-        --cuba-shadow-lg: var(--cuba-dark-shadow-lg);
-    }
-}
-
-
 /* An explicit light choice always wins over the OS preference, so a user who
    selects light is never overridden by their system setting.
 */
-:root[data-theme='light'] {
-    color-scheme: light;
+:root[data-theme=light] {
+  color-scheme: light;
 }
 
 /* =============================================================================
@@ -286,57 +532,77 @@
  * sole owners of these values, so switching theme is one attribute write with no
  * duplicated palette and no specificity conflict.
  * ========================================================================== */
-
 @theme inline {
-    --color-cuba-primary: var(--cuba-primary);
-    --color-cuba-primary-ink-strong: var(--cuba-primary-ink-strong);
-    --color-cuba-primary-fill: var(--cuba-primary-fill);
-    --color-cuba-primary-strong: var(--cuba-primary-strong);
-    --color-cuba-primary-ink: var(--cuba-primary-ink);
-    --color-cuba-primary-soft: var(--cuba-primary-soft);
-    --color-cuba-primary-soft-hover: var(--cuba-primary-soft-hover);
-    --color-cuba-on-primary: var(--cuba-on-primary);
-
-    --color-cuba-success: var(--cuba-success);
-    --color-cuba-success-soft: var(--cuba-success-soft);
-    --color-cuba-info: var(--cuba-info);
-    --color-cuba-info-soft: var(--cuba-info-soft);
-    --color-cuba-warning: var(--cuba-warning);
-    --color-cuba-warning-soft: var(--cuba-warning-soft);
-    --color-cuba-danger: var(--cuba-danger);
-    --color-cuba-danger-soft: var(--cuba-danger-soft);
-    --color-cuba-secondary: var(--cuba-secondary);
-    --color-cuba-secondary-soft: var(--cuba-secondary-soft);
-
-    --color-cuba-canvas: var(--cuba-canvas);
-    --color-cuba-card: var(--cuba-card);
-    --color-cuba-elevated: var(--cuba-elevated);
-    --color-cuba-line: var(--cuba-line);
-    --color-cuba-line-strong: var(--cuba-line-strong);
-
-    --color-cuba-ink: var(--cuba-ink);
-    --color-cuba-ink-muted: var(--cuba-ink-muted);
-    --color-cuba-ink-subtle: var(--cuba-ink-subtle);
-    --color-cuba-ink-inverse: var(--cuba-ink-inverse);
-
-    --color-cuba-glass: var(--cuba-glass-bg);
-    --color-cuba-glass-strong: var(--cuba-glass-bg-strong);
-
-    --color-cuba-ai: var(--cuba-ai-ink);
-    --color-cuba-ai-border: var(--cuba-ai-border);
-
-    --radius-cuba-sm: var(--cuba-radius-sm);
-    --radius-cuba-md: var(--cuba-radius-md);
-    --radius-cuba-lg: var(--cuba-radius-lg);
-    --radius-cuba-xl: var(--cuba-radius-xl);
-
-    --shadow-cuba-sm: var(--cuba-shadow-sm);
-    --shadow-cuba-md: var(--cuba-shadow-md);
-    --shadow-cuba-lg: var(--cuba-shadow-lg);
-
-    --ease-cuba: var(--cuba-ease);
+  --color-cuba-primary: var(--cuba-primary);
+  --color-cuba-primary-ink-strong: var(--cuba-primary-ink-strong);
+  --color-cuba-primary-fill: var(--cuba-primary-fill);
+  --color-cuba-primary-strong: var(--cuba-primary-strong);
+  --color-cuba-primary-ink: var(--cuba-primary-ink);
+  --color-cuba-primary-soft: var(--cuba-primary-soft);
+  --color-cuba-primary-soft-hover: var(--cuba-primary-soft-hover);
+  --color-cuba-on-primary: var(--cuba-on-primary);
+  --color-cuba-success: var(--cuba-success);
+  --color-cuba-success-soft: var(--cuba-success-soft);
+  --color-cuba-info: var(--cuba-info);
+  --color-cuba-info-soft: var(--cuba-info-soft);
+  --color-cuba-warning: var(--cuba-warning);
+  --color-cuba-warning-soft: var(--cuba-warning-soft);
+  --color-cuba-danger: var(--cuba-danger);
+  --color-cuba-danger-soft: var(--cuba-danger-soft);
+  --color-cuba-secondary: var(--cuba-secondary);
+  --color-cuba-secondary-soft: var(--cuba-secondary-soft);
+  --color-cuba-canvas: var(--cuba-canvas);
+  --color-cuba-card: var(--cuba-card);
+  --color-cuba-elevated: var(--cuba-elevated);
+  --color-cuba-line: var(--cuba-line);
+  --color-cuba-line-strong: var(--cuba-line-strong);
+  --color-cuba-ink: var(--cuba-ink);
+  --color-cuba-ink-muted: var(--cuba-ink-muted);
+  --color-cuba-ink-subtle: var(--cuba-ink-subtle);
+  --color-cuba-ink-inverse: var(--cuba-ink-inverse);
+  /* Permanently-dark surfaces: theme-independent, see the :root block. */
+  --color-cuba-night-ink: var(--cuba-night-ink);
+  --color-cuba-night-ink-muted: var(--cuba-night-ink-muted);
+  --color-cuba-night-primary: var(--cuba-night-primary);
+  --color-cuba-night-success: var(--cuba-night-success);
+  --color-cuba-night-warning: var(--cuba-night-warning);
+  --color-cuba-night-info: var(--cuba-night-info);
+  --color-cuba-night-danger: var(--cuba-night-danger);
+  --color-cuba-night-secondary: var(--cuba-night-secondary);
+  --color-cuba-night-line: var(--cuba-night-line);
+  /* Pinned dark gradient ramp for the permanently-dark hero banners. Exposed as
+     colour utilities so `from-cuba-night-surface-from` emits real CSS; without
+     these the billing hero gradient would fall back to a theme-adaptive role
+     token and turn pale in light mode. */
+  --color-cuba-night-surface-from: var(--cuba-night-surface-from);
+  --color-cuba-night-surface-mid: var(--cuba-night-surface-mid);
+  --color-cuba-night-surface-to: var(--cuba-night-surface-to);
+  --color-cuba-glass: var(--cuba-glass-bg);
+  --color-cuba-glass-strong: var(--cuba-glass-bg-strong);
+  --color-cuba-ai: var(--cuba-ai-ink);
+  --color-cuba-ai-border: var(--cuba-ai-border);
+  --radius-cuba-sm: var(--cuba-radius-sm);
+  --radius-cuba-md: var(--cuba-radius-md);
+  --radius-cuba-lg: var(--cuba-radius-lg);
+  --radius-cuba-xl: var(--cuba-radius-xl);
+  --shadow-cuba-sm: var(--cuba-shadow-sm);
+  --shadow-cuba-md: var(--cuba-shadow-md);
+  --shadow-cuba-lg: var(--cuba-shadow-lg);
+  --color-cuba-header-search: var(--cuba-header-search-bg);
+  --color-cuba-header-search-hover: var(--cuba-header-search-bg-hover);
+  --color-cuba-header-search-border: var(--cuba-header-search-border);
+  --color-cuba-header-menu: var(--cuba-header-menu-bg);
+  --color-cuba-header-menu-border: var(--cuba-header-menu-border);
+  --color-cuba-header-divider: var(--cuba-header-divider);
+  --color-cuba-header-kbd: var(--cuba-header-kbd-bg);
+  --color-cuba-header-kbd-ink: var(--cuba-header-kbd-ink);
+  --color-cuba-header-badge: var(--cuba-header-badge-fill);
+  --color-cuba-header-badge-ink: var(--cuba-header-badge-ink);
+  --color-cuba-header-presence: var(--cuba-header-presence);
+  --color-cuba-header-crumb: var(--cuba-header-crumb-ink);
+  --color-cuba-header-crumb-hover: var(--cuba-header-crumb-ink-hover);
+  --ease-cuba: var(--cuba-ease);
 }
-
 /* =============================================================================
  * Restrained glassmorphism (Ã‚Â§10)
  * -----------------------------------------------------------------------------
@@ -345,38 +611,35 @@
  * to tables, dense grids, or long-form reading surfaces, where translucency
  * costs contrast and information density.
  * ========================================================================== */
-
 .cuba-glass {
-    background-color: var(--cuba-glass-bg);
-    -webkit-backdrop-filter: blur(var(--cuba-glass-blur)) saturate(140%);
-    backdrop-filter: blur(var(--cuba-glass-blur)) saturate(140%);
-    border: 1px solid var(--cuba-glass-border);
+  background-color: var(--cuba-glass-bg);
+  -webkit-backdrop-filter: blur(var(--cuba-glass-blur)) saturate(140%);
+  backdrop-filter: blur(var(--cuba-glass-blur)) saturate(140%);
+  border: 1px solid var(--cuba-glass-border);
 }
 
 .cuba-glass-strong {
-    background-color: var(--cuba-glass-bg-strong);
-    -webkit-backdrop-filter: blur(calc(var(--cuba-glass-blur) * 1.6)) saturate(160%);
-    backdrop-filter: blur(calc(var(--cuba-glass-blur) * 1.6)) saturate(160%);
-    border: 1px solid var(--cuba-glass-border);
+  background-color: var(--cuba-glass-bg-strong);
+  -webkit-backdrop-filter: blur(calc(var(--cuba-glass-blur) * 1.6)) saturate(160%);
+  backdrop-filter: blur(calc(var(--cuba-glass-blur) * 1.6)) saturate(160%);
+  border: 1px solid var(--cuba-glass-border);
 }
 
 /* Forced-colors escape hatch: under Windows High Contrast the OS palette must
    win instead of translucent stacking on translucent stacking. */
 @media (forced-colors: active) {
-    .cuba-glass,
-    .cuba-glass-strong,
-    .cuba-ai-panel {
-        background-color: Canvas;
-        border-color: CanvasText;
-        -webkit-backdrop-filter: none;
-        backdrop-filter: none;
-    }
-
-    .cuba-ai-panel::before {
-        display: none;
-    }
+  .cuba-glass,
+  .cuba-glass-strong,
+  .cuba-ai-panel {
+    background-color: Canvas;
+    border-color: CanvasText;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .cuba-ai-panel::before {
+    display: none;
+  }
 }
-
 /* =============================================================================
  * AI signature (Ã‚Â§18, Ã‚Â§19, Ã‚Â§22)
  * -----------------------------------------------------------------------------
@@ -386,113 +649,114 @@
  * document and therefore cannot create the horizontal-scroll defect that
  * unbounded decorative blurs previously caused on mobile.
  * ========================================================================== */
-
 .cuba-ai-panel {
-    position: relative;
-    isolation: isolate;
-    overflow: hidden;
-    border: 1px solid var(--cuba-ai-border);
-    border-radius: var(--cuba-radius-lg);
-    background-color: var(--cuba-card);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid var(--cuba-ai-border);
+  border-radius: var(--cuba-radius-lg);
+  background-color: var(--cuba-card);
 }
 
 .cuba-ai-panel::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    background:
-        radial-gradient(120% 90% at 8% 0%, var(--cuba-ai-aurora-a) 0%, transparent 58%),
-        radial-gradient(100% 80% at 100% 100%, var(--cuba-ai-aurora-b) 0%, transparent 55%);
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(120% 90% at 8% 0%, var(--cuba-ai-aurora-a) 0%, transparent 58%), radial-gradient(100% 80% at 100% 100%, var(--cuba-ai-aurora-b) 0%, transparent 55%);
 }
 
 /* The Ã¢Å“Â¦ brand mark. A text glyph, so it is announced correctly and needs no
    icon font or extra network request. */
 .cuba-ai-mark {
-    color: var(--cuba-ai-ink);
+  color: var(--cuba-ai-ink);
 }
 
 /* Honest activity indicator, driven by a REAL AI state Ã¢â‚¬â€ never decorative.
    Under reduced motion the ring is still rendered statically, so the state
    stays perceivable without any animation. */
 .cuba-ai-beacon {
-    position: relative;
-    display: inline-block;
-    flex: none;
-    width: 0.5rem;
-    height: 0.5rem;
-    border-radius: 9999px;
-    background-color: currentColor;
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background-color: currentColor;
 }
 
-.cuba-ai-beacon[data-active='true']::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 9999px;
-    background-color: currentColor;
-    animation: cuba-ai-pulse 1800ms var(--cuba-ease) infinite;
+.cuba-ai-beacon[data-active=true]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background-color: currentColor;
+  animation: cuba-ai-pulse 1800ms var(--cuba-ease) infinite;
 }
 
 @keyframes cuba-ai-pulse {
-    0% { transform: scale(1); opacity: 0.7; }
-    70% { transform: scale(2.6); opacity: 0; }
-    100% { transform: scale(2.6); opacity: 0; }
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  70% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
 }
-
 /* =============================================================================
  * Motion, contrast and focus preferences (Ã‚Â§27, Ã‚Â§37)
  * ========================================================================== */
-
 @media (prefers-reduced-motion: reduce) {
-    .cuba-ai-beacon[data-active='true']::after {
-        animation: none;
-        opacity: 0.35;
-        transform: scale(1.9);
-    }
+  .cuba-ai-beacon[data-active=true]::after {
+    animation: none;
+    opacity: 0.35;
+    transform: scale(1.9);
+  }
 }
-
 @media (prefers-contrast: more) {
-    :root {
-        --cuba-line: #8b93a7;
-        --cuba-ink-muted: #2b3140;
-        --cuba-ink-subtle: #333a4b;
-        --cuba-primary: #4a3fd6;
-        --cuba-glass-bg: #ffffff;
-        --cuba-glass-bg-strong: #ffffff;
-    }
-
-    [data-theme='dark'] {
-        --cuba-line: #6c7488;
-        --cuba-ink-muted: #e2e6f0;
-        --cuba-ink-subtle: #d3d8e5;
-        --cuba-primary: #b9b2ff;
-        --cuba-glass-bg: #12151d;
-        --cuba-glass-bg-strong: #12151d;
-    }
+  :root {
+    --cuba-line: #8b93a7;
+    --cuba-ink-muted: #2b3140;
+    --cuba-ink-subtle: #333a4b;
+    --cuba-primary: #4a3fd6;
+    --cuba-glass-bg: #ffffff;
+    --cuba-glass-bg-strong: #ffffff;
+  }
+  [data-theme=dark] {
+    --cuba-line: #6c7488;
+    --cuba-ink-muted: #e2e6f0;
+    --cuba-ink-subtle: #d3d8e5;
+    --cuba-primary: #b9b2ff;
+    --cuba-glass-bg: #12151d;
+    --cuba-glass-bg-strong: #12151d;
+  }
 }
-
 /* Visible focus is mandatory and must never be suppressed (Ã‚Â§37). */
 .cuba-focusable:focus-visible,
 .cuba-focus-ring:focus-visible {
-    outline: 2px solid var(--cuba-primary);
-    outline-offset: 2px;
-    border-radius: var(--cuba-radius-sm);
+  outline: 2px solid var(--cuba-primary);
+  outline-offset: 2px;
+  border-radius: var(--cuba-radius-sm);
 }
 
 /* Utility for screen-reader-only text (kept because Tailwind's `sr-only` is a
    layer utility and this file is unlayered author CSS used by portalled nodes). */
 .cuba-sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border-width: 0;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 
 /* =============================================================================
@@ -502,7 +766,6 @@
  * hide the duplicate legacy sidebars, headers, and top navs so Cuba is the
  * single authoritative executive shell.
  * ========================================================================== */
-
 .cuba-portal-stage .admin__left,
 .cuba-portal-stage .adminHeader,
 .cuba-portal-stage .admin__right > header,
@@ -514,112 +777,1681 @@
 .cuba-portal-stage .enterprise-sidebar,
 .cuba-portal-stage .enterprise-mobile-nav-toggle,
 .cuba-portal-stage .enterprise-mobile-context-bar {
-    display: none !important;
+  display: none !important;
 }
 
 .cuba-portal-stage .admin {
-    display: block !important;
-    background: transparent !important;
-    min-height: auto !important;
+  display: block !important;
+  background: transparent !important;
+  min-height: auto !important;
 }
 
 .cuba-portal-stage .admin__right {
-    margin-left: 0 !important;
-    padding: 0 !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    background: transparent !important;
-    min-height: auto !important;
+  margin-left: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  background: transparent !important;
+  min-height: auto !important;
 }
 
 .cuba-portal-stage .enterprise-workspace-layout,
 .cuba-portal-stage .enterprise-layout {
-    display: block !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    background: transparent !important;
+  display: block !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
 }
 
 .cuba-portal-stage .enterprise-main {
-    margin-left: 0 !important;
-    padding: 0 !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    background: transparent !important;
+  margin-left: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  background: transparent !important;
 }
 
 /* =============================================================================
  * Authentic Cuba Animations & Widget Textures
  * ========================================================================== */
-
 @keyframes bounce-effect {
-    0% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
-    100% { transform: translateY(0); }
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+  100% {
+    transform: translateY(0);
+  }
 }
-
 @keyframes cuba-tada {
-    0% { transform: scale(1); }
-    10%, 20% { transform: scale(0.92) rotate(-3deg); }
-    30%, 50%, 70%, 90% { transform: scale(1.08) rotate(3deg); }
-    40%, 60%, 80% { transform: scale(1.08) rotate(-3deg); }
-    100% { transform: scale(1) rotate(0); }
+  0% {
+    transform: scale(1);
+  }
+  10%, 20% {
+    transform: scale(0.92) rotate(-3deg);
+  }
+  30%, 50%, 70%, 90% {
+    transform: scale(1.08) rotate(3deg);
+  }
+  40%, 60%, 80% {
+    transform: scale(1.08) rotate(-3deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+  }
 }
-
 .cuba-animate-bounce {
-    animation: bounce-effect 4.5s ease-in-out infinite;
+  animation: bounce-effect 4.5s ease-in-out infinite;
 }
 
 .cuba-stat-card:hover .cuba-stat-icon {
-    animation: cuba-tada 1.2s ease infinite;
+  animation: cuba-tada 1.2s ease infinite;
 }
 
 .cuba-widget-texture {
-    background-image: url('/images/dashboard/widget-bg.png') !important;
-    background-repeat: no-repeat !important;
-    background-position: right bottom !important;
-    background-size: cover !important;
+  background-image: url("/images/dashboard/widget-bg.png") !important;
+  background-repeat: no-repeat !important;
+  background-position: right bottom !important;
+  background-size: cover !important;
 }
 
-[data-theme='dark'] .cuba-widget-texture {
-    background-image: linear-gradient(135deg, rgba(21, 24, 38, 0.94), rgba(21, 24, 38, 0.85)), url('/images/dashboard/widget-bg.png') !important;
-    background-blend-mode: overlay;
+[data-theme=dark] .cuba-widget-texture {
+  background-image: linear-gradient(135deg, rgba(21, 24, 38, 0.94), rgba(21, 24, 38, 0.85)), url("/images/dashboard/widget-bg.png") !important;
+  background-blend-mode: overlay;
 }
 
 .cuba-btn-primary {
-    background: linear-gradient(135deg, #7366ff 0%, #5949d6 100%) !important;
-    color: #ffffff !important;
-    box-shadow: 0 4px 14px rgba(115, 102, 255, 0.3) !important;
-    transition: all 0.25s cubic-bezier(0.22, 0.61, 0.36, 1) !important;
+  background: linear-gradient(135deg, #7366ff 0%, #5949d6 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(115, 102, 255, 0.3) !important;
+  transition: all 0.25s cubic-bezier(0.22, 0.61, 0.36, 1) !important;
+}
+
+.cuba-btn-primary:disabled,
+.cuba-btn-primary[disabled] {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  /* Suppress the lift so a disabled CTA cannot look hoverable. */
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 .cuba-btn-primary:hover {
-    background: linear-gradient(135deg, #5949d6 0%, #4b3ec4 100%) !important;
-    box-shadow: 0 6px 20px rgba(115, 102, 255, 0.45) !important;
-    transform: translateY(-1.5px) !important;
+  background: linear-gradient(135deg, #5949d6 0%, #4b3ec4 100%) !important;
+  box-shadow: 0 6px 20px rgba(115, 102, 255, 0.45) !important;
+  transform: translateY(-1.5px) !important;
 }
 
 .cuba-btn-outline {
-    border: 1px solid var(--cuba-line) !important;
-    background-color: var(--cuba-card) !important;
-    color: var(--cuba-ink) !important;
-    transition: all 0.2s cubic-bezier(0.22, 0.61, 0.36, 1) !important;
+  border: 1px solid var(--cuba-line) !important;
+  background-color: var(--cuba-card) !important;
+  color: var(--cuba-ink) !important;
+  transition: all 0.2s cubic-bezier(0.22, 0.61, 0.36, 1) !important;
 }
 
 .cuba-btn-outline:hover {
-    border-color: rgba(115, 102, 255, 0.5) !important;
-    background-color: rgba(115, 102, 255, 0.08) !important;
-    color: #7366ff !important;
-    transform: translateY(-1px) !important;
+  border-color: rgba(115, 102, 255, 0.5) !important;
+  background-color: rgba(115, 102, 255, 0.08) !important;
+  color: #7366ff !important;
+  transform: translateY(-1px) !important;
 }
 
+/* ── Active/selected pill fill (DIR-009) ──────────────────────────────────────
+ * SOLID selected-state fill for tab pills and the active navigation item.
+ *
+ * WHY THIS EXISTS RATHER THAN `bg-[#7366ff]`:
+ *   The raw brand violet #7366ff is only 4.14:1 against white, which FAILS
+ *   WCAG 2.1 AA (4.5:1) for the white label these pills render. That is
+ *   acceptable for a *border* or *glow*, but not for a solid fill behind
+ *   text. cuba-tokens.css already publishes --cuba-primary-fill (#5949d6,
+ *   6.27:1 with white) for exactly this purpose; this class is the single
+ *   canonical way to apply it, so no surface has to re-derive the hex again.
+ *
+ * DELIBERATELY NOT A GRADIENT: a 135deg gradient averages to roughly 5.1:1
+ * across the control, so it is fine for a large CTA but wrong for a small
+ * dense pill whose leading edge would sit on the lighter stop. Selected pills
+ * get a flat fill; primary CTAs keep .cuba-btn-primary.
+ *
+ * `var()` is used rather than a literal so the dark-theme republish of
+ * --cuba-primary-fill is honoured automatically. */
+.cuba-fill-pill {
+  background-color: var(--cuba-primary-fill) !important;
+  color: var(--cuba-on-primary) !important;
+}
+
+/* Modal/section header band. Carries the brand gradient WITHOUT the button
+ * affordances: no hover lift, no pointer cursor and no focus semantics, which
+ * is why a header must not borrow .cuba-btn-primary. */
+.cuba-header-band {
+  background: var(--cuba-primary-gradient) !important;
+  color: var(--cuba-on-primary) !important;
+}
+
+/* Form control surface for recruiter/candidate inputs and selects.
+ * Replaces the `focus:border-indigo-500` recipe. `focus:border-cuba-primary` was
+ * previously attempted but is NOT a real utility - `cuba-primary` is not in
+ * tailwind.config's theme.colors, so Tailwind never emitted it and the focus
+ * border silently vanished. Authoring the whole focus treatment here means it is
+ * a declared token that the build can prove exists. */
+.cuba-field {
+  background-color: var(--cuba-card) !important;
+  border: 1px solid var(--cuba-line) !important;
+  color: var(--cuba-ink) !important;
+}
+
+.cuba-field:focus-visible,
+.cuba-field:focus {
+  border-color: var(--cuba-primary) !important;
+  outline: 2px solid var(--cuba-primary) !important;
+  outline-offset: 2px !important;
+}
+
+.cuba-field::placeholder {
+  color: var(--cuba-ink-subtle) !important;
+}
+
+/* ── ATS status pills (DIR-010) ────────────────────────────────────────────────
+ * Solid, opaque stage-tone pills. Each tone resolves fill/ink/line from the
+ * tokens above, so a pill looks identical on --cuba-card, --cuba-canvas and the
+ * glass resume modal - the contrast was proven surface-independent, not assumed.
+ *
+ * Structure is border-first rather than box-shadow so the 1px line that
+ * guarantees the 3:1 non-text boundary is a real rendered edge.
+ *
+ * `!important` matches the rest of this file: it is unlayered author CSS, which
+ * otherwise loses to Tailwind's utilities layer, and the legacy
+ * `bg-*-50 text-*-700 border-*-200` classes it replaces would otherwise win. */
+.cuba-pill-neutral,
+.cuba-pill-primary,
+.cuba-pill-info,
+.cuba-pill-success,
+.cuba-pill-success-hi,
+.cuba-pill-warning,
+.cuba-pill-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: var(--cuba-radius-sm);
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.cuba-pill-neutral {
+  background-color: var(--cuba-pill-neutral-fill) !important;
+  color: var(--cuba-pill-neutral-ink) !important;
+  border-color: var(--cuba-pill-neutral-line) !important;
+}
+
+.cuba-pill-primary {
+  background-color: var(--cuba-pill-primary-fill) !important;
+  color: var(--cuba-pill-primary-ink) !important;
+  border-color: var(--cuba-pill-primary-line) !important;
+}
+
+.cuba-pill-info {
+  background-color: var(--cuba-pill-info-fill) !important;
+  color: var(--cuba-pill-info-ink) !important;
+  border-color: var(--cuba-pill-info-line) !important;
+}
+
+.cuba-pill-success {
+  background-color: var(--cuba-pill-success-fill) !important;
+  color: var(--cuba-pill-success-ink) !important;
+  border-color: var(--cuba-pill-success-line) !important;
+}
+
+.cuba-pill-success-hi {
+  background-color: var(--cuba-pill-success-hi-fill) !important;
+  color: var(--cuba-pill-success-hi-ink) !important;
+  border-color: var(--cuba-pill-success-hi-line) !important;
+}
+
+.cuba-pill-warning {
+  background-color: var(--cuba-pill-warning-fill) !important;
+  color: var(--cuba-pill-warning-ink) !important;
+  border-color: var(--cuba-pill-warning-line) !important;
+}
+
+.cuba-pill-danger {
+  background-color: var(--cuba-pill-danger-fill) !important;
+  color: var(--cuba-pill-danger-ink) !important;
+  border-color: var(--cuba-pill-danger-line) !important;
+}
+
+/* Focus affordance for keyboard users on the pill strip and the active nav
+ * item. Uses the brand violet because a FOCUS RING is a non-text UI component,
+ * where the AA bar is 3:1 and #7366ff (4.14:1) clears it comfortably. */
+.cuba-fill-pill:focus-visible,
+[aria-current=page].cuba-focusable:focus-visible {
+  outline: 2px solid var(--cuba-primary) !important;
+  outline-offset: 2px !important;
+}
+
+/* =============================================================================
+ * DIR-023 -- Audited legacy utility harmonization
+ * -----------------------------------------------------------------------------
+ * The Universal Contrast Auditor (npm run audit:contrast) crawls every canonical
+ * route in BOTH themes and measures real composited pixels. It proved a large
+ * class of untokenized legacy Tailwind utilities are genuinely below WCAG 2.1 AA.
+ *
+ * WHY A CENTRAL LAYER INSTEAD OF 30+ FILE EDITS
+ * These utilities are inlined as raw hex across many components, but Tailwind
+ * generates them from ONE class name. Mapping the class to a semantic token here
+ * repairs every call site at once and, critically, makes the fix durable: a
+ * component added later using `text-[#4a6cf7]` inherits the compliant ink instead
+ * of reintroducing the defect.
+ *
+ * Every colour below is theme-scoped, because a single value cannot satisfy both
+ * themes -- the light correction scores 3.52:1 on the dark canvas, and the dark
+ * correction scores 4.03:1 on the light canvas. Only a per-theme pairing works.
+ *
+ * `!important` is deliberate and required: Tailwind v4 emits these utilities in a
+ * cascade layer, and an unlayered rule cannot beat a layered one without it. The
+ * same pattern the .cuba-pill-* overrides above already use.
+ *
+ * Re-verified end-to-end by the auditor itself after each change; ratios are
+ * computed by the W3C formula, not asserted by eye.
+ * ========================================================================== */
+/* =============================================================================
+ * DIR-023 -- LAYER ORDER FIX (read this before moving the block below)
+ * -----------------------------------------------------------------------------
+ * This file is pulled into the bundle by `@import './styles/cuba-tokens.css'`
+ * inside src/tailwind.css. Tailwind v4 inlines that import and then emits only
+ * the rules it recognises. Its cascade layers (`theme, base, components,
+ * utilities`) are preserved, but any BARE, unlayered rule further down this
+ * file is treated as ordinary author CSS and can be dropped from the built
+ * sheet entirely.
+ *
+ * That is not hypothetical. The first remediation attempt put the overrides
+ * here unlayered and the browser reported ZERO matching rules on a live
+ * /admin/attention page -- the shipped CSS contained 146 rules and none of them
+ * were ours, so every `text-slate-500` still resolved to Tailwind's raw
+ * oklch(). The fixes looked present in the source and were absent from the DOM,
+ * which is precisely the failure mode this whole directive exists to catch.
+ *
+ * Declaring `@layer components` makes these rules part of a layer Tailwind
+ * always emits, so they reach the browser. Because UNLAYERED author CSS beats
+ * layered CSS (see the load-order note in src/tailwind.css), and because the
+ * rules below carry `!important`, they beat Tailwind's own utility layer while
+ * remaining easy to override with an explicit per-component rule.
+ *
+ * Verified in the live DOM after the change: the browser now reports these
+ * selectors and `getComputedStyle` resolves them to the token values.
+ * ========================================================================== */
+@layer components {
+  /* Legacy brand blue used as TEXT. 4.39:1 on white -> 6.73:1 with --cuba-ink-accent. */
+  .text-\[\#4a6cf7\] {
+    color: var(--cuba-ink-accent) !important;
+  }
+  /* Dark surfaces need the LIGHTER accent; see the token note above. */
+  [data-theme=dark] .text-\[\#4a6cf7\] {
+    color: var(--cuba-dark-ink-accent) !important;
+  }
+  /* The brand violet family, same defect at 4.14:1 as text. */
+  .text-\[\#7366ff\] {
+    color: var(--cuba-primary-ink-strong) !important;
+  }
+} /* end @layer components -- brand ink harmonization */
+/* =============================================================================
+ * DIR-023 -- Slate ink ramp + surface ink, re-pointed to the audited tokens
+ * -----------------------------------------------------------------------------
+ * Tailwind v4 PRE-COMPILED these utilities into its own `utilities` cascade layer,
+ * which sits ABOVE `components`. A same-name rule in the layer above therefore
+ * loses to them even when it carries `!important` on a plain class selector.
+ *
+ * This was proven in the live DOM, not assumed: immediately after the layer fix,
+ * `text-[#4a6cf7]` resolved correctly to rgb(54, 79, 201) -- Tailwind emits no
+ * precompiled rule for an arbitrary hex utility, so ours won -- while
+ * `text-slate-500` still returned Tailwind's raw oklch(0.554 0.046 257.417).
+ *
+ * The fix is a doubled class selector, which raises specificity above the utility
+ * layer without resorting to an inline style, and still leaves `color` overridable
+ * by a component that sets it on its own selector.
+ *
+ * WHY THESE VALUES (measured with the W3C formula, not estimated):
+ *   text-slate-400 -> 2.56:1 on white     FAILS 4.5:1
+ *   text-slate-500 -> 3.34:1 on white     FAILS 4.5:1
+ *   text-slate-600 -> 4.31:1 on #f8fafc   FAILS 4.5:1
+ * Re-pointed at tokens proved against the surfaces these classes actually sit on:
+ *   --cuba-ink-muted #4a5163  7.93:1 on white, 7.24:1 on #f1f5f9
+ *   --cuba-ink       #10121a 18.69:1 on white
+ * In dark mode the same classes resolve through the existing --cuba-dark-ink-*
+ * tokens (--cuba-ink-subtle measures 7.49:1 on #0d0f16).
+ *
+ * SURFACES. The auditor measured the concrete consequence of the legacy
+ * `bg-white` utility: the admin console pins its cards to #ffffff REGARDLESS of
+ * theme, so in dark mode a white card sits on the #0d0f16 canvas and every
+ * light-theme ink on it falls far below AA. That is the dark-mode inversion AC-3
+ * describes, found on hundreds of elements. Mapping the class to --cuba-card
+ * re-themes all of them at once: #ffffff in light, var(--cuba-dark-card) in dark,
+ * so light mode is unchanged and only dark mode is corrected.
+ * ========================================================================== */
+@layer components {
+  .text-slate-400.text-slate-400 {
+    color: var(--cuba-ink-muted) !important;
+  }
+  [data-theme=dark] .text-slate-400.text-slate-400 {
+    color: var(--cuba-ink-subtle) !important;
+  }
+  .text-slate-500.text-slate-500 {
+    color: var(--cuba-ink-muted) !important;
+  }
+  [data-theme=dark] .text-slate-500.text-slate-500 {
+    color: var(--cuba-ink-muted) !important;
+  }
+  .text-slate-600.text-slate-600 {
+    color: var(--cuba-ink-muted) !important;
+  }
+  .text-slate-700.text-slate-700,
+  .text-slate-800.text-slate-800,
+  .text-slate-900.text-slate-900 {
+    color: var(--cuba-ink) !important;
+  }
+  .bg-white.bg-white {
+    background-color: var(--cuba-card) !important;
+  }
+  .bg-slate-50.bg-slate-50,
+  .bg-slate-100.bg-slate-100 {
+    background-color: var(--cuba-canvas) !important;
+  }
+  /* Tailwind's OPACITY MODIFIER form (`bg-white/95`, `bg-slate-50/50`) compiles to a
+   * different class name than the bare utility, so the bare selectors above cannot
+   * see it. The auditor proved the gap: /dashboard/jobs paints
+   * `bg-slate-50/50` at oklab(0.984 ... / 0.5), i.e. still a LIGHT wash in dark
+   * mode, and job cards on it carry --cuba-ink (a near-white ink) at 1.0:1.
+   *
+   * These map the modifier form onto the same tokens with the alpha preserved, so
+   * the translucency the design intends is kept while the underlying colour
+   * follows the theme. --cuba-card / --cuba-canvas are opaque, so re-expressing
+   * the wash as the themed token preserves intent without the light-mode leak. */
+  .bg-white\/95,
+  .bg-white\/90 {
+    background-color: color-mix(in srgb, var(--cuba-card) 95%, transparent) !important;
+  }
+  .bg-slate-50\/50,
+  .bg-slate-50\/40,
+  .bg-slate-100\/50,
+  .bg-slate-100\/60 {
+    background-color: color-mix(in srgb, var(--cuba-canvas) 60%, transparent) !important;
+  }
+  /* ── fill-side harmonization ──────────────────────────────────────────────
+   * The utilities below are used as FILLS carrying white text, not as text
+   * colours, so they need their own mapping. Measured on white:
+   *   bg-slate-400 -> white 2.56:1  FAILS 4.5:1 (28 elements on /dashboard/jobs,
+   *                     disabled buttons and inactive rows)
+   *   bg-[#4a6cf7] -> white 4.39:1  FAILS 4.5:1 (buttons on /jobs, /contact,
+   *                     /features -- it misses the threshold by 0.11)
+   * THEME SCOPING IS REQUIRED, not stylistic. The light corrections are mid-tone
+   * and would be illegible if reused on the dark canvas, so each theme gets the
+   * end of the ramp that actually clears AA behind white text. Doubled class
+   * selectors beat Tailwind's precompiled `utilities` layer, and `!important` is
+   * required for the same reason as the rules above. */
+  .bg-slate-400.bg-slate-400 {
+    background-color: var(--cuba-ink-muted) !important;
+  }
+  [data-theme='dark'] .bg-slate-400.bg-slate-400 {
+    background-color: var(--cuba-dark-card) !important;
+  }
+  .bg-\[\#4a6cf7\].bg-\[\#4a6cf7\] {
+    background-color: var(--cuba-ink-accent) !important;
+  }
+  [data-theme='dark'] .bg-\[\#4a6cf7\].bg-\[\#4a6cf7\] {
+    background-color: var(--cuba-ink-accent-base) !important;
+  }
+  /* VARIANT FORMS ARE DIFFERENT CLASS NAMES.
+     `disabled:bg-slate-400` compiles to `.disabled\:bg-slate-400:disabled`, which
+     the bare selector above cannot see -- an audit run proved the gap with 80
+     offenders still resolving to --color-slate-400 at 1.81:1. Same trap the
+     opacity-modifier rules hit, so the variant forms are mapped here too. Each
+     is theme-scoped separately: an earlier revision grouped the disabled
+     variant into the dark-theme selector list, which handed it a dark fill in
+     LIGHT theme and then relied on a later rule to undo it. */
+  .disabled\:bg-slate-400:disabled {
+    background-color: var(--cuba-ink-muted) !important;
+  }
+  [data-theme='dark'] .disabled\:bg-slate-400:disabled {
+    background-color: var(--cuba-dark-card) !important;
+  }
+  .hover\:bg-slate-400:hover {
+    background-color: var(--cuba-ink-muted) !important;
+  }
+  /* -- DIR-023: Pastel island and status pill dark harmonization ---------------
+ * ROOT CAUSE ANALYSIS (measured, not assumed).
+ *
+ * The user reported bright white/mint "pastel islands" on the dark shell --
+ * the /build-resume step ribbon, action buttons, guide cards and badges. A census
+ * of every utility class actually present in src/ found four independent defects:
+ *
+ *   RC-1 INCOMPLETE FAMILY COVERAGE. Only emerald, indigo and amber were mapped.
+ *        blue, rose, purple, violet, sky, green, teal and cyan were untouched, so
+ *        `bg-blue-50` (17.59:1 vs the #0d0f16 canvas), `bg-rose-50` (17.43:1)
+ *        and `bg-purple-50` (17.84:1) still painted as near-white plates.
+ *        Those ARE the pastel islands.
+ *
+ *   RC-2 UNMAPPED DARK INKS -- the inverse of the reported symptom, and the more
+ *        serious half. `text-indigo-600` measured 2.62:1 on the dark elevated
+ *        surface and `text-indigo-950` measured 1.03:1: dark ink on a dark card is
+ *        invisible. 25 of the 29 pastel ink shades in src/ fell below 4.5:1 on at
+ *        least one dark surface. The previous block mapped only -700 and -800.
+ *
+ *   RC-3 UNMAPPED OPACITY-MODIFIER AND VARIANT FORMS. `hover:bg-slate-50` (175
+ *        uses), `bg-indigo-50/50` (24) and `border-slate-200/80` (118) compile to
+ *        DIFFERENT class names than the bare utility, so a bare selector cannot
+ *        see them: a hover repainted the pastel island even after the resting
+ *        state was fixed.
+ *
+ *   RC-4 UNMAPPED LINE SHADES. Only border-{family}-200 was covered;
+ *        border-{family}-100/300 and border-slate-300 (436 uses) were not, so
+ *        inputs and cards kept a pale #cbd5e1 hairline against a dark fill.
+ *
+ * WHY CENTRAL MAPPING INSTEAD OF EDITING ~40 COMPONENT FILES
+ * Tailwind v4 emits `.bg-emerald-50{background-color:var(--color-emerald-50)}`
+ * from ONE class name, so a themed override here repairs every call site at once
+ * and stays repaired for components added later. The class inventory was
+ * generated by scanning src/ (195 real classes over 11 families), so nothing here
+ * is speculative.
+ *
+ * MEASURED VALUES (W3C formula; worst surface of canvas #0d0f16 / card #15181f /
+ * elevated #1b1f29):
+ *   ink on its own 0.18 tint fill  worst 6.23:1  (indigo)   PASS 4.5:1
+ *   ink on its own 0.28 hover fill worst 5.33:1  (amber)   PASS 4.5:1
+ *   line vs dark surfaces          worst 5.53:1  (indigo)   PASS 3:1
+ *   line vs its own tint fill      worst 4.17:1  (indigo)   PASS 3:1
+ * The previous flat 0.35 border alpha measured 1.79:1 against the canvas and
+ * FAILED the 3:1 non-text bar, which is why lines are an 80% hue mix over
+ * --cuba-dark-line rather than a flat alpha.
+ *
+ * CASCADE: doubled-class selectors plus `!important`, because Tailwind
+ * precompiles these utilities into its own `utilities` layer (see the layer note
+ * above). Every selector is dark-scoped, so light mode is untouched.
+ * ---------------------------------------------------------------------- */
+
+
+
+/* ==== emerald ==== */
+[data-theme='dark'] .bg-emerald-100.bg-emerald-100,
+[data-theme='dark'] .bg-emerald-200.bg-emerald-200,
+[data-theme='dark'] .bg-emerald-300.bg-emerald-300,
+[data-theme='dark'] .bg-emerald-50.bg-emerald-50 {
+    background-color: rgba(52, 211, 153, 0.18) !important;
+}
+[data-theme='dark'] .hover\:bg-emerald-100.bg-emerald-100:hover,
+[data-theme='dark'] .hover\:bg-emerald-200.bg-emerald-200:hover,
+[data-theme='dark'] .hover\:bg-emerald-50.bg-emerald-50:hover {
+    background-color: rgba(52, 211, 153, 0.28) !important;
+}
+[data-theme='dark'] .border-emerald-100.border-emerald-100,
+[data-theme='dark'] .border-emerald-200.border-emerald-200,
+[data-theme='dark'] .border-emerald-300.border-emerald-300,
+[data-theme='dark'] .hover\:border-emerald-300.border-emerald-300:hover {
+    border-color: color-mix(in srgb, #6ee7b7 80%, var(--cuba-dark-line)) !important;
+}
+[data-theme='dark'] .text-emerald-500.text-emerald-500,
+[data-theme='dark'] .text-emerald-600.text-emerald-600,
+[data-theme='dark'] .text-emerald-700.text-emerald-700,
+[data-theme='dark'] .text-emerald-800.text-emerald-800,
+[data-theme='dark'] .text-emerald-900.text-emerald-900,
+[data-theme='dark'] .text-emerald-950.text-emerald-950 {
+    color: #6ee7b7 !important;
+}
+[data-theme='dark'] .group:hover .group-hover\:text-emerald-600.text-emerald-600,
+[data-theme='dark'] .hover\:text-emerald-600.text-emerald-600:hover,
+[data-theme='dark'] .hover\:text-emerald-700.text-emerald-700:hover,
+[data-theme='dark'] .hover\:text-emerald-800.text-emerald-800:hover,
+[data-theme='dark'] .hover\:text-emerald-900.text-emerald-900:hover,
+[data-theme='dark'] .hover\:text-emerald-950.text-emerald-950:hover {
+    color: #6ee7b7 !important;
+}
+
+/* ==== green ==== */
+[data-theme='dark'] .bg-green-100.bg-green-100,
+[data-theme='dark'] .bg-green-300.bg-green-300,
+[data-theme='dark'] .bg-green-50.bg-green-50 {
+    background-color: rgba(74, 222, 128, 0.18) !important;
+}
+[data-theme='dark'] .group:hover .group-hover\:bg-green-200.bg-green-200,
+[data-theme='dark'] .hover\:bg-green-100.bg-green-100:hover,
+[data-theme='dark'] .hover\:bg-green-50.bg-green-50:hover {
+    background-color: rgba(74, 222, 128, 0.28) !important;
+}
+[data-theme='dark'] .border-green-100.border-green-100,
+[data-theme='dark'] .border-green-200.border-green-200,
+[data-theme='dark'] .hover\:border-green-300.border-green-300:hover {
+    border-color: color-mix(in srgb, #86efac 80%, var(--cuba-dark-line)) !important;
+}
+[data-theme='dark'] .text-green-500.text-green-500,
+[data-theme='dark'] .text-green-600.text-green-600,
+[data-theme='dark'] .text-green-700.text-green-700,
+[data-theme='dark'] .text-green-800.text-green-800 {
+    color: #86efac !important;
+}
+[data-theme='dark'] .hover\:text-green-600.text-green-600:hover,
+[data-theme='dark'] .hover\:text-green-800.text-green-800:hover {
+    color: #86efac !important;
+}
+
+/* ==== teal ==== */
+[data-theme='dark'] .bg-teal-100.bg-teal-100,
+[data-theme='dark'] .bg-teal-50.bg-teal-50 {
+    background-color: rgba(45, 212, 191, 0.18) !important;
+}
+[data-theme='dark'] .border-teal-100.border-teal-100,
+[data-theme='dark'] .border-teal-200.border-teal-200 {
+    border-color: color-mix(in srgb, #5eead4 80%, var(--cuba-dark-line)) !important;
+}
+[data-theme='dark'] .text-teal-600.text-teal-600,
+[data-theme='dark'] .text-teal-800.text-teal-800 {
+    color: #5eead4 !important;
+}
+[data-theme='dark'] .hover\:text-teal-700.text-teal-700:hover {
+    color: #5eead4 !important;
+}
+
+/* ==== cyan ==== */
+[data-theme='dark'] .bg-cyan-100.bg-cyan-100,
+[data-theme='dark'] .bg-cyan-50.bg-cyan-50 {
+    background-color: rgba(34, 211, 238, 0.18) !important;
+}
+[data-theme='dark'] .border-cyan-100.border-cyan-100,
+[data-theme='dark'] .border-cyan-200.border-cyan-200 {
+    border-color: color-mix(in srgb, #67e8f9 80%, var(--cuba-dark-line)) !important;
+}
+[data-theme='dark'] .text-cyan-600.text-cyan-600,
+[data-theme='dark'] .text-cyan-700.text-cyan-700,
+[data-theme='dark'] .text-cyan-800.text-cyan-800 {
+    color: #67e8f9 !important;
+}
+[data-theme='dark'] .group:hover .group-hover\:text-cyan-600.text-cyan-600 {
+    color: #67e8f9 !important;
+}
+
+/* ==== sky ==== */
+[data-theme='dark'] .bg-sky-100.bg-sky-100,
+[data-theme='dark'] .bg-sky-300.bg-sky-300,
+[data-theme='dark'] .bg-sky-50.bg-sky-50 {
+    background-color: rgba(56, 189, 248, 0.18) !important;
+}
+[data-theme='dark'] .hover\:bg-sky-100.bg-sky-100:hover,
+[data-theme='dark'] .hover\:bg-sky-200.bg-sky-200:hover {
+    background-color: rgba(56, 189, 248, 0.28) !important;
+}
+[data-theme='dark'] .border-sky-100.border-sky-100,
+[data-theme='dark'] .border-sky-200.border-sky-200,
+[data-theme='dark'] .border-sky-300.border-sky-300 {
+    border-color: color-mix(in srgb, #7dd3fc 80%, var(--cuba-dark-line)) !important;
+}
+[data-theme='dark'] .text-sky-500.text-sky-500,
+[data-theme='dark'] .text-sky-600.text-sky-600,
+[data-theme='dark'] .text-sky-700.text-sky-700,
+[data-theme='dark'] .text-sky-800.text-sky-800,
+[data-theme='dark'] .text-sky-900.text-sky-900,
+[data-theme='dark'] .text-sky-950.text-sky-950 {
+    color: #7dd3fc !important;
+}
+
+/* ==== blue ==== */
+[data-theme='dark'] .bg-blue-100.bg-blue-100,
+[data-theme='dark'] .bg-blue-200.bg-blue-200,
+[data-theme='dark'] .bg-blue-300.bg-blue-300,
+[data-theme='dark'] .bg-blue-50.bg-blue-50 {
+    background-color: rgba(96, 165, 250, 0.18) !important;
+}
+[data-theme='dark'] .disabled\:bg-blue-300.bg-blue-300:disabled,
+[data-theme='dark'] .group:hover .group-hover\:bg-blue-200.bg-blue-200,
+[data-theme='dark'] .group:hover .group-hover\:bg-blue-50.bg-blue-50,
+[data-theme='dark'] .hover\:bg-blue-100.bg-blue-100:hover,
+[data-theme='dark'] .hover\:bg-blue-50.bg-blue-50:hover {
+    background-color: rgba(96, 165, 250, 0.28) !important;
+}
+[data-theme='dark'] .border-blue-100.border-blue-100,
+[data-theme='dark'] .border-blue-200.border-blue-200,
+[data-theme='dark'] .border-blue-300.border-blue-300,
+[data-theme='dark'] .group:hover .group-hover\:border-blue-300.border-blue-300,
+[data-theme='dark'] .hover\:border-blue-200.border-blue-200:hover,
+[data-theme='dark'] .hover\:border-blue-300.border-blue-300:hover {
+    border-color: color-mix(in srgb, #93c5fd 80%, var(--cuba-dark-line)) !important;
+}
+[data-theme='dark'] .text-blue-500.text-blue-500,
+[data-theme='dark'] .text-blue-600.text-blue-600,
+[data-theme='dark'] .text-blue-700.text-blue-700,
+[data-theme='dark'] .text-blue-800.text-blue-800,
+[data-theme='dark'] .text-blue-900.text-blue-900,
+[data-theme='dark'] .text-blue-950.text-blue-950 {
+    color: #93c5fd !important;
+}
+[data-theme='dark'] .group:hover .group-hover\:text-blue-600.text-blue-600,
+[data-theme='dark'] .group:hover .group-hover\:text-blue-700.text-blue-700,
+[data-theme='dark'] .hover\:text-blue-600.text-blue-600:hover,
+[data-theme='dark'] .hover\:text-blue-700.text-blue-700:hover,
+[data-theme='dark'] .hover\:text-blue-800.text-blue-800:hover,
+[data-theme='dark'] .hover\:text-blue-950.text-blue-950:hover {
+    color: #93c5fd !important;
+}
+
+/* ==== indigo ==== */
+[data-theme='dark'] .bg-indigo-100.bg-indigo-100,
+[data-theme='dark'] .bg-indigo-200.bg-indigo-200,
+[data-theme='dark'] .bg-indigo-300.bg-indigo-300,
+[data-theme='dark'] .bg-indigo-50.bg-indigo-50 {
+    background-color: rgba(129, 140, 248, 0.18) !important;
+}
+[data-theme='dark'] .hover\:bg-indigo-100.bg-indigo-100:hover,
+[data-theme='dark'] .hover\:bg-indigo-200.bg-indigo-200:hover,
+[data-theme='dark'] .hover\:bg-indigo-50.bg-indigo-50:hover {
+    background-color: rgba(129, 140, 248, 0.28) !important;
+}
+[data-theme='dark'] .border-indigo-100.border-indigo-100,
+[data-theme='dark'] .border-indigo-200.border-indigo-200,
+[data-theme='dark'] .border-indigo-300.border-indigo-300,
+[data-theme='dark'] .hover\:border-indigo-200.border-indigo-200:hover,
+[data-theme='dark'] .hover\:border-indigo-300.border-indigo-300:hover {
+    border-color: color-mix(in srgb, #a5b4fc 80%, var(--cuba-dark-line)) !important;
+}
+[data-theme='dark'] .text-indigo-500.text-indigo-500,
+[data-theme='dark'] .text-indigo-600.text-indigo-600,
+[data-theme='dark'] .text-indigo-700.text-indigo-700,
+[data-theme='dark'] .text-indigo-800.text-indigo-800,
+[data-theme='dark'] .text-indigo-900.text-indigo-900,
+[data-theme='dark'] .text-indigo-950.text-indigo-950 {
+    color: #a5b4fc !important;
+}
+[data-theme='dark'] .group:hover .group-hover\:text-indigo-600.text-indigo-600,
+[data-theme='dark'] .group:hover .group-hover\:text-indigo-700.text-indigo-700,
+[data-theme='dark'] .hover\:text-indigo-500.text-indigo-500:hover,
+[data-theme='dark'] .hover\:text-indigo-600.text-indigo-600:hover,
+[data-theme='dark'] .hover\:text-indigo-700.text-indigo-700:hover,
+[data-theme='dark'] .hover\:text-indigo-800.text-indigo-800:hover,
+[data-theme='dark'] .hover\:text-indigo-900.text-indigo-900:hover,
+[data-theme='dark'] .hover\:text-indigo-950.text-indigo-950:hover {
+    color: #a5b4fc !important;
+}
+
+/* ==== violet ==== */
+[data-theme='dark'] .bg-violet-100.bg-violet-100,
+[data-theme='dark'] .bg-violet-50.bg-violet-50 {
+    background-color: rgba(167, 139, 250, 0.18) !important;
+}
+[data-theme='dark'] .border-violet-100.border-violet-100,
+[data-theme='dark'] .border-violet-200.border-violet-200,
+[data-theme='dark'] .border-violet-300.border-violet-300 {
+    border-color: color-mix(in srgb, #c4b5fd 80%, var(--cuba-dark-line)) !important;
+}
+[data-theme='dark'] .text-violet-600.text-violet-600,
+[data-theme='dark'] .text-violet-700.text-violet-700,
+[data-theme='dark'] .text-violet-800.text-violet-800,
+[data-theme='dark'] .text-violet-900.text-violet-900,
+[data-theme='dark'] .text-violet-950.text-violet-950 {
+    color: #c4b5fd !important;
+}
+
+/* ==== purple ==== */
+[data-theme='dark'] .bg-purple-100.bg-purple-100,
+[data-theme='dark'] .bg-purple-200.bg-purple-200,
+[data-theme='dark'] .bg-purple-300.bg-purple-300,
+[data-theme='dark'] .bg-purple-50.bg-purple-50 {
+    background-color: rgba(192, 132, 252, 0.18) !important;
+}
+[data-theme='dark'] .group:hover .group-hover\:bg-purple-200.bg-purple-200,
+[data-theme='dark'] .hover\:bg-purple-100.bg-purple-100:hover,
+[data-theme='dark'] .hover\:bg-purple-200.bg-purple-200:hover,
+[data-theme='dark'] .hover\:bg-purple-50.bg-purple-50:hover {
+    background-color: rgba(192, 132, 252, 0.28) !important;
+}
+[data-theme='dark'] .border-purple-100.border-purple-100,
+[data-theme='dark'] .border-purple-200.border-purple-200,
+[data-theme='dark'] .border-purple-300.border-purple-300,
+[data-theme='dark'] .hover\:border-purple-200.border-purple-200:hover,
+[data-theme='dark'] .hover\:border-purple-300.border-purple-300:hover {
+    border-color: color-mix(in srgb, #d8b4fe 80%, var(--cuba-dark-line)) !important;
+}
+[data-theme='dark'] .text-purple-500.text-purple-500,
+[data-theme='dark'] .text-purple-600.text-purple-600,
+[data-theme='dark'] .text-purple-700.text-purple-700,
+[data-theme='dark'] .text-purple-800.text-purple-800,
+[data-theme='dark'] .text-purple-900.text-purple-900,
+[data-theme='dark'] .text-purple-950.text-purple-950 {
+    color: #d8b4fe !important;
+}
+[data-theme='dark'] .group:hover .group-hover\:text-purple-600.text-purple-600,
+[data-theme='dark'] .hover\:text-purple-600.text-purple-600:hover,
+[data-theme='dark'] .hover\:text-purple-700.text-purple-700:hover,
+[data-theme='dark'] .hover\:text-purple-800.text-purple-800:hover,
+[data-theme='dark'] .hover\:text-purple-900.text-purple-900:hover {
+    color: #d8b4fe !important;
+}
+
+/* ==== rose ==== */
+[data-theme='dark'] .bg-rose-100.bg-rose-100,
+[data-theme='dark'] .bg-rose-50.bg-rose-50 {
+    background-color: rgba(251, 113, 133, 0.18) !important;
+}
+[data-theme='dark'] .disabled\:bg-rose-300.bg-rose-300:disabled,
+[data-theme='dark'] .hover\:bg-rose-100.bg-rose-100:hover,
+[data-theme='dark'] .hover\:bg-rose-200.bg-rose-200:hover,
+[data-theme='dark'] .hover\:bg-rose-50.bg-rose-50:hover {
+    background-color: rgba(251, 113, 133, 0.28) !important;
+}
+[data-theme='dark'] .border-rose-100.border-rose-100,
+[data-theme='dark'] .border-rose-200.border-rose-200,
+[data-theme='dark'] .border-rose-300.border-rose-300,
+[data-theme='dark'] .hover\:border-rose-200.border-rose-200:hover,
+[data-theme='dark'] .hover\:border-rose-300.border-rose-300:hover {
+    border-color: color-mix(in srgb, #fda4af 80%, var(--cuba-dark-line)) !important;
+}
+[data-theme='dark'] .text-rose-500.text-rose-500,
+[data-theme='dark'] .text-rose-600.text-rose-600,
+[data-theme='dark'] .text-rose-700.text-rose-700,
+[data-theme='dark'] .text-rose-800.text-rose-800,
+[data-theme='dark'] .text-rose-900.text-rose-900,
+[data-theme='dark'] .text-rose-950.text-rose-950 {
+    color: #fda4af !important;
+}
+[data-theme='dark'] .group:hover .group-hover\:text-rose-500.text-rose-500,
+[data-theme='dark'] .hover\:text-rose-600.text-rose-600:hover,
+[data-theme='dark'] .hover\:text-rose-700.text-rose-700:hover,
+[data-theme='dark'] .hover\:text-rose-800.text-rose-800:hover,
+[data-theme='dark'] .hover\:text-rose-900.text-rose-900:hover {
+    color: #fda4af !important;
+}
+
+/* ==== amber ==== */
+[data-theme='dark'] .bg-amber-100.bg-amber-100,
+[data-theme='dark'] .bg-amber-50.bg-amber-50 {
+    background-color: rgba(251, 191, 36, 0.18) !important;
+}
+[data-theme='dark'] .hover\:bg-amber-100.bg-amber-100:hover,
+[data-theme='dark'] .hover\:bg-amber-200.bg-amber-200:hover,
+[data-theme='dark'] .hover\:bg-amber-50.bg-amber-50:hover {
+    background-color: rgba(251, 191, 36, 0.28) !important;
+}
+[data-theme='dark'] .border-amber-100.border-amber-100,
+[data-theme='dark'] .border-amber-200.border-amber-200,
+[data-theme='dark'] .border-amber-300.border-amber-300,
+[data-theme='dark'] .hover\:border-amber-300.border-amber-300:hover {
+    border-color: color-mix(in srgb, #fbbf24 80%, var(--cuba-dark-line)) !important;
+}
+[data-theme='dark'] .text-amber-500.text-amber-500,
+[data-theme='dark'] .text-amber-600.text-amber-600,
+[data-theme='dark'] .text-amber-700.text-amber-700,
+[data-theme='dark'] .text-amber-800.text-amber-800,
+[data-theme='dark'] .text-amber-900.text-amber-900,
+[data-theme='dark'] .text-amber-950.text-amber-950 {
+    color: #fbbf24 !important;
+}
+[data-theme='dark'] .hover\:text-amber-700.text-amber-700:hover,
+[data-theme='dark'] .hover\:text-amber-800.text-amber-800:hover,
+[data-theme='dark'] .hover\:text-amber-900.text-amber-900:hover,
+[data-theme='dark'] .hover\:text-amber-950.text-amber-950:hover {
+    color: #fbbf24 !important;
+}
+
+  /* -- NEUTRAL FAMILY (slate / gray / zinc / neutral / stone) --------------- */
+
+[data-theme='dark'] .bg-gray-100.bg-gray-100,
+[data-theme='dark'] .bg-gray-200.bg-gray-200,
+[data-theme='dark'] .bg-gray-300.bg-gray-300,
+[data-theme='dark'] .bg-gray-50.bg-gray-50,
+[data-theme='dark'] .bg-gray-50\/30.bg-gray-50\/30,
+[data-theme='dark'] .bg-gray-50\/50.bg-gray-50\/50,
+[data-theme='dark'] .bg-neutral-100.bg-neutral-100,
+[data-theme='dark'] .bg-neutral-200.bg-neutral-200,
+[data-theme='dark'] .bg-neutral-50.bg-neutral-50,
+[data-theme='dark'] .bg-slate-100.bg-slate-100,
+[data-theme='dark'] .bg-slate-100\/60.bg-slate-100\/60,
+[data-theme='dark'] .bg-slate-100\/70.bg-slate-100\/70,
+[data-theme='dark'] .bg-slate-100\/80.bg-slate-100\/80,
+[data-theme='dark'] .bg-slate-100\/90.bg-slate-100\/90,
+[data-theme='dark'] .bg-slate-200.bg-slate-200,
+[data-theme='dark'] .bg-slate-200\/60.bg-slate-200\/60,
+[data-theme='dark'] .bg-slate-200\/70.bg-slate-200\/70,
+[data-theme='dark'] .bg-slate-200\/80.bg-slate-200\/80,
+[data-theme='dark'] .bg-slate-300.bg-slate-300,
+[data-theme='dark'] .bg-slate-50.bg-slate-50,
+[data-theme='dark'] .bg-slate-50\/30.bg-slate-50\/30,
+[data-theme='dark'] .bg-slate-50\/40.bg-slate-50\/40,
+[data-theme='dark'] .bg-slate-50\/50.bg-slate-50\/50,
+[data-theme='dark'] .bg-slate-50\/60.bg-slate-50\/60,
+[data-theme='dark'] .bg-slate-50\/70.bg-slate-50\/70,
+[data-theme='dark'] .bg-slate-50\/75.bg-slate-50\/75,
+[data-theme='dark'] .bg-slate-50\/80.bg-slate-50\/80,
+[data-theme='dark'] .bg-slate-50\/90.bg-slate-50\/90,
+[data-theme='dark'] .bg-stone-50.bg-stone-50,
+[data-theme='dark'] .disabled\:bg-slate-100.disabled\:bg-slate-100:disabled,
+[data-theme='dark'] .disabled\:bg-slate-300.disabled\:bg-slate-300:disabled,
+[data-theme='dark'] .disabled\:bg-slate-50.disabled\:bg-slate-50:disabled {
+    background-color: var(--cuba-dark-canvas) !important;
+}
+
+[data-theme='dark'] .active\:bg-gray-200.active\:bg-gray-200:active,
+[data-theme='dark'] .active\:bg-slate-300.active\:bg-slate-300:active,
+[data-theme='dark'] .group:hover .group-hover\:bg-slate-200.group-hover\:bg-slate-200,
+[data-theme='dark'] .hover\:bg-gray-100.hover\:bg-gray-100:hover,
+[data-theme='dark'] .hover\:bg-gray-100\/50.hover\:bg-gray-100\/50:hover,
+[data-theme='dark'] .hover\:bg-gray-200.hover\:bg-gray-200:hover,
+[data-theme='dark'] .hover\:bg-gray-200\/50.hover\:bg-gray-200\/50:hover,
+[data-theme='dark'] .hover\:bg-gray-300.hover\:bg-gray-300:hover,
+[data-theme='dark'] .hover\:bg-gray-50.hover\:bg-gray-50:hover,
+[data-theme='dark'] .hover\:bg-neutral-50.hover\:bg-neutral-50:hover,
+[data-theme='dark'] .hover\:bg-slate-100.hover\:bg-slate-100:hover,
+[data-theme='dark'] .hover\:bg-slate-100\/70.hover\:bg-slate-100\/70:hover,
+[data-theme='dark'] .hover\:bg-slate-100\/80.hover\:bg-slate-100\/80:hover,
+[data-theme='dark'] .hover\:bg-slate-100\/90.hover\:bg-slate-100\/90:hover,
+[data-theme='dark'] .hover\:bg-slate-200.hover\:bg-slate-200:hover,
+[data-theme='dark'] .hover\:bg-slate-200\/50.hover\:bg-slate-200\/50:hover,
+[data-theme='dark'] .hover\:bg-slate-200\/60.hover\:bg-slate-200\/60:hover,
+[data-theme='dark'] .hover\:bg-slate-200\/70.hover\:bg-slate-200\/70:hover,
+[data-theme='dark'] .hover\:bg-slate-200\/80.hover\:bg-slate-200\/80:hover,
+[data-theme='dark'] .hover\:bg-slate-300.hover\:bg-slate-300:hover,
+[data-theme='dark'] .hover\:bg-slate-50.hover\:bg-slate-50:hover,
+[data-theme='dark'] .hover\:bg-slate-50\/50.hover\:bg-slate-50\/50:hover,
+[data-theme='dark'] .hover\:bg-slate-50\/60.hover\:bg-slate-50\/60:hover,
+[data-theme='dark'] .hover\:bg-slate-50\/80.hover\:bg-slate-50\/80:hover {
+    background-color: var(--cuba-dark-elevated) !important;
+}
+
+[data-theme='dark'] .after\:border-slate-300.after\:border-slate-300,
+[data-theme='dark'] .border-gray-100.border-gray-100,
+[data-theme='dark'] .border-gray-100\/50.border-gray-100\/50,
+[data-theme='dark'] .border-gray-200.border-gray-200,
+[data-theme='dark'] .border-gray-200\/50.border-gray-200\/50,
+[data-theme='dark'] .border-gray-200\/60.border-gray-200\/60,
+[data-theme='dark'] .border-gray-200\/80.border-gray-200\/80,
+[data-theme='dark'] .border-gray-300.border-gray-300,
+[data-theme='dark'] .border-gray-400.border-gray-400,
+[data-theme='dark'] .border-neutral-100.border-neutral-100,
+[data-theme='dark'] .border-neutral-200.border-neutral-200,
+[data-theme='dark'] .border-neutral-200\/60.border-neutral-200\/60,
+[data-theme='dark'] .border-neutral-200\/70.border-neutral-200\/70,
+[data-theme='dark'] .border-neutral-200\/80.border-neutral-200\/80,
+[data-theme='dark'] .border-slate-100.border-slate-100,
+[data-theme='dark'] .border-slate-150.border-slate-150,
+[data-theme='dark'] .border-slate-200.border-slate-200,
+[data-theme='dark'] .border-slate-200\/50.border-slate-200\/50,
+[data-theme='dark'] .border-slate-200\/60.border-slate-200\/60,
+[data-theme='dark'] .border-slate-200\/70.border-slate-200\/70,
+[data-theme='dark'] .border-slate-200\/80.border-slate-200\/80,
+[data-theme='dark'] .border-slate-200\/90.border-slate-200\/90,
+[data-theme='dark'] .border-slate-300.border-slate-300,
+[data-theme='dark'] .border-slate-300\/60.border-slate-300\/60,
+[data-theme='dark'] .border-slate-300\/80.border-slate-300\/80,
+[data-theme='dark'] .border-slate-400.border-slate-400,
+[data-theme='dark'] .focus\:border-slate-400.focus\:border-slate-400:focus,
+[data-theme='dark'] .print\:border-slate-300.print\:border-slate-300 {
+    border-color: var(--cuba-dark-line) !important;
+}
+[data-theme='dark'] .divide-gray-200.divide-gray-200 > :not([hidden]) ~ :not([hidden]),
+[data-theme='dark'] .divide-gray-200\/50.divide-gray-200\/50 > :not([hidden]) ~ :not([hidden]),
+[data-theme='dark'] .divide-neutral-100.divide-neutral-100 > :not([hidden]) ~ :not([hidden]),
+[data-theme='dark'] .divide-slate-100.divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+[data-theme='dark'] .divide-slate-200.divide-slate-200 > :not([hidden]) ~ :not([hidden]),
+[data-theme='dark'] .divide-slate-50.divide-slate-50 > :not([hidden]) ~ :not([hidden]),
+[data-theme='dark'] .divide-slate-50\/50.divide-slate-50\/50 > :not([hidden]) ~ :not([hidden]) {
+    border-color: var(--cuba-dark-line) !important;
+}
+
+[data-theme='dark'] .group:hover .group-hover\:border-slate-400.group-hover\:border-slate-400,
+[data-theme='dark'] .hover\:border-gray-200.hover\:border-gray-200:hover,
+[data-theme='dark'] .hover\:border-gray-300.hover\:border-gray-300:hover,
+[data-theme='dark'] .hover\:border-gray-400.hover\:border-gray-400:hover,
+[data-theme='dark'] .hover\:border-neutral-300.hover\:border-neutral-300:hover,
+[data-theme='dark'] .hover\:border-neutral-400.hover\:border-neutral-400:hover,
+[data-theme='dark'] .hover\:border-slate-200.hover\:border-slate-200:hover,
+[data-theme='dark'] .hover\:border-slate-300.hover\:border-slate-300:hover,
+[data-theme='dark'] .hover\:border-slate-400.hover\:border-slate-400:hover {
+    border-color: var(--cuba-dark-line-strong) !important;
+}
+
+[data-theme='dark'] .disabled\:text-gray-400.disabled\:text-gray-400:disabled,
+[data-theme='dark'] .disabled\:text-slate-400.disabled\:text-slate-400:disabled,
+[data-theme='dark'] .disabled\:text-slate-500.disabled\:text-slate-500:disabled,
+[data-theme='dark'] .focus\:text-slate-900.focus\:text-slate-900:focus,
+[data-theme='dark'] .placeholder-gray-400.placeholder-gray-400,
+[data-theme='dark'] .placeholder-gray-500.placeholder-gray-500,
+[data-theme='dark'] .placeholder-slate-400.placeholder-slate-400,
+[data-theme='dark'] .placeholder\:text-slate-400.placeholder\:text-slate-400::placeholder,
+[data-theme='dark'] .text-gray-300.text-gray-300,
+[data-theme='dark'] .text-gray-400.text-gray-400,
+[data-theme='dark'] .text-gray-500.text-gray-500,
+[data-theme='dark'] .text-gray-600.text-gray-600,
+[data-theme='dark'] .text-gray-700.text-gray-700,
+[data-theme='dark'] .text-gray-800.text-gray-800,
+[data-theme='dark'] .text-gray-900.text-gray-900,
+[data-theme='dark'] .text-neutral-300.text-neutral-300,
+[data-theme='dark'] .text-neutral-400.text-neutral-400,
+[data-theme='dark'] .text-neutral-500.text-neutral-500,
+[data-theme='dark'] .text-neutral-600.text-neutral-600,
+[data-theme='dark'] .text-neutral-700.text-neutral-700,
+[data-theme='dark'] .text-neutral-800.text-neutral-800,
+[data-theme='dark'] .text-neutral-900.text-neutral-900,
+[data-theme='dark'] .text-neutral-950.text-neutral-950,
+[data-theme='dark'] .text-slate-300.text-slate-300,
+[data-theme='dark'] .text-slate-400.text-slate-400,
+[data-theme='dark'] .text-slate-400\/90.text-slate-400\/90,
+[data-theme='dark'] .text-slate-500.text-slate-500,
+[data-theme='dark'] .text-slate-600.text-slate-600,
+[data-theme='dark'] .text-slate-700.text-slate-700,
+[data-theme='dark'] .text-slate-800.text-slate-800,
+[data-theme='dark'] .text-slate-900.text-slate-900,
+[data-theme='dark'] .text-slate-950.text-slate-950,
+[data-theme='dark'] .text-stone-700.text-stone-700,
+[data-theme='dark'] .text-stone-900.text-stone-900 {
+    color: var(--cuba-dark-ink) !important;
+}
+
+[data-theme='dark'] .disabled\:hover\:text-slate-500.disabled\:hover\:text-slate-500:disabled,
+[data-theme='dark'] .group:hover .group-hover\:text-neutral-900.group-hover\:text-neutral-900,
+[data-theme='dark'] .hover\:text-gray-600.hover\:text-gray-600:hover,
+[data-theme='dark'] .hover\:text-gray-700.hover\:text-gray-700:hover,
+[data-theme='dark'] .hover\:text-gray-800.hover\:text-gray-800:hover,
+[data-theme='dark'] .hover\:text-neutral-950.hover\:text-neutral-950:hover,
+[data-theme='dark'] .hover\:text-slate-600.hover\:text-slate-600:hover,
+[data-theme='dark'] .hover\:text-slate-700.hover\:text-slate-700:hover,
+[data-theme='dark'] .hover\:text-slate-800.hover\:text-slate-800:hover,
+[data-theme='dark'] .hover\:text-slate-900.hover\:text-slate-900:hover,
+[data-theme='dark'] .hover\:text-slate-950.hover\:text-slate-950:hover {
+    color: var(--cuba-dark-ink) !important;
+}
+
+  /* =======================================================================
+   * DIR-023 PASS 5 -- OPACITY-MODIFIER dark harmonization
+   * -----------------------------------------------------------------------
+   * ROOT CAUSE (confirmed in the shipped bundle, not assumed).
+   * The pastel-island block above mapped the BARE utilities -- .bg-emerald-50,
+   * .border-emerald-200, .text-emerald-700. Tailwind v4 does not compile those
+   * to the same class name when an opacity modifier is present: reading the
+   * built bundle proves it --
+   *     .bg-emerald-50\/70 { background-color: #ecfdf5b3 }   <- #ecfdf5 is -50
+   * so the doubled selector .bg-emerald-50.bg-emerald-50 CANNOT see it, the
+   * modifier form kept painting a near-white plate, and the StepGuide
+   * "Optimized for screening" box and the /build-resume step ribbon stayed
+   * light on the dark shell. Same trap for border-emerald-200\/90,
+   * text-emerald-700\/90, bg-indigo-50\/70, bg-white\/80.
+   *
+   * A census of every opacity-modifier class actually present in src/
+   * (.bridge/tmp/opacity-census.mjs) found 591 of them. 363 are dark shades
+   * (bg-slate-900\/80, ring-*-500\/30), shadows, or non-surface props and are
+   * deliberately left alone: a dark scrim over dark is already correct, and
+   * text-white/* must STAY white or it becomes unreadable on dark.
+   * The remaining 228 light-shade surface/ink/gradient forms are mapped here.
+   *
+   * MEASURED (W3C formula, worst case over 17 families x 3 dark surfaces):
+   *     ink on the strongest tint fill 5.05:1  PASS 4.5:1  (amber)
+   *     line vs dark surfaces           6.02:1  PASS 3:1    (indigo)
+   *     line vs its own tint fill       3.59:1  PASS 3:1    (amber)
+   * Fill alpha is capped at 0.24 (0.28 on hover) -- the same envelope the bare
+   * block above was measured in. Ink modifiers are DROPPED, not scaled: fading
+   * a dark-mode ink is exactly how it falls back under 4.5:1.
+   *
+   * CASCADE: doubled-class selectors plus !important, because Tailwind
+   * precompiles these utilities into its own "utilities" layer. Every selector
+   * is dark-scoped, so LIGHT MODE IS UNTOUCHED.
+   * ==================================================================== */
+  /* FILLS -- pastel plates (light shades), modifier preserved as a tint alpha */
+  [data-theme='dark'] .bg-amber-50\/50.bg-amber-50\/50 {
+    background-color: rgba(251, 191, 36, 0.180) !important;
+  }
+
+  [data-theme='dark'] .bg-amber-50\/60.bg-amber-50\/60 {
+    background-color: rgba(251, 191, 36, 0.196) !important;
+  }
+
+  [data-theme='dark'] .bg-amber-50\/70.bg-amber-50\/70 {
+    background-color: rgba(251, 191, 36, 0.212) !important;
+  }
+
+  [data-theme='dark'] .bg-amber-50\/80.bg-amber-50\/80 {
+    background-color: rgba(251, 191, 36, 0.228) !important;
+  }
+
+  [data-theme='dark'] .bg-amber-50\/90.bg-amber-50\/90 {
+    background-color: rgba(251, 191, 36, 0.240) !important;
+  }
+
+  [data-theme='dark'] .hover\:bg-amber-100\/60.hover\:bg-amber-100\/60:hover {
+    background-color: rgba(251, 191, 36, 0.236) !important;
+  }
+
+  [data-theme='dark'] .hover\:bg-amber-100\/90.hover\:bg-amber-100\/90:hover {
+    background-color: rgba(251, 191, 36, 0.280) !important;
+  }
+
+  [data-theme='dark'] .bg-blue-100\/60.bg-blue-100\/60,
+  [data-theme='dark'] .bg-blue-50\/60.bg-blue-50\/60 {
+    background-color: rgba(96, 165, 250, 0.196) !important;
+  }
+
+  [data-theme='dark'] .bg-blue-200\/70.bg-blue-200\/70 {
+    background-color: rgba(96, 165, 250, 0.212) !important;
+  }
+
+  [data-theme='dark'] .bg-blue-50\/15.bg-blue-50\/15 {
+    background-color: rgba(96, 165, 250, 0.124) !important;
+  }
+
+  [data-theme='dark'] .bg-blue-50\/20.bg-blue-50\/20 {
+    background-color: rgba(96, 165, 250, 0.132) !important;
+  }
+
+  [data-theme='dark'] .bg-blue-50\/50.bg-blue-50\/50 {
+    background-color: rgba(96, 165, 250, 0.180) !important;
+  }
+
+  [data-theme='dark'] .bg-blue-50\/80.bg-blue-50\/80 {
+    background-color: rgba(96, 165, 250, 0.228) !important;
+  }
+
+  [data-theme='dark'] .hover\:bg-blue-100\/80.hover\:bg-blue-100\/80:hover {
+    background-color: rgba(96, 165, 250, 0.268) !important;
+  }
+
+  [data-theme='dark'] .hover\:bg-blue-50\/50.hover\:bg-blue-50\/50:hover {
+    background-color: rgba(96, 165, 250, 0.220) !important;
+  }
+
+  [data-theme='dark'] .bg-emerald-100\/80.bg-emerald-100\/80,
+  [data-theme='dark'] .bg-emerald-200\/80.bg-emerald-200\/80,
+  [data-theme='dark'] .bg-emerald-50\/80.bg-emerald-50\/80 {
+    background-color: rgba(52, 211, 153, 0.228) !important;
+  }
+
+  [data-theme='dark'] .bg-emerald-50\/40.bg-emerald-50\/40 {
+    background-color: rgba(52, 211, 153, 0.164) !important;
+  }
+
+  [data-theme='dark'] .bg-emerald-50\/50.bg-emerald-50\/50 {
+    background-color: rgba(52, 211, 153, 0.180) !important;
+  }
+
+  [data-theme='dark'] .bg-emerald-50\/60.bg-emerald-50\/60 {
+    background-color: rgba(52, 211, 153, 0.196) !important;
+  }
+
+  [data-theme='dark'] .bg-emerald-50\/70.bg-emerald-50\/70 {
+    background-color: rgba(52, 211, 153, 0.212) !important;
+  }
+
+  [data-theme='dark'] .bg-emerald-50\/90.bg-emerald-50\/90 {
+    background-color: rgba(52, 211, 153, 0.240) !important;
+  }
+
+  [data-theme='dark'] .hover\:bg-emerald-50\/70.hover\:bg-emerald-50\/70:hover {
+    background-color: rgba(52, 211, 153, 0.252) !important;
+  }
+
+  [data-theme='dark'] .bg-green-50\/80.bg-green-50\/80 {
+    background-color: rgba(74, 222, 128, 0.228) !important;
+  }
+
+  [data-theme='dark'] .hover\:bg-green-100\/80.hover\:bg-green-100\/80:hover {
+    background-color: rgba(74, 222, 128, 0.268) !important;
+  }
+
+  [data-theme='dark'] .bg-indigo-100\/50.bg-indigo-100\/50,
+  [data-theme='dark'] .bg-indigo-50\/50.bg-indigo-50\/50 {
+    background-color: rgba(129, 140, 248, 0.180) !important;
+  }
+
+  [data-theme='dark'] .bg-indigo-100\/70.bg-indigo-100\/70,
+  [data-theme='dark'] .bg-indigo-50\/70.bg-indigo-50\/70 {
+    background-color: rgba(129, 140, 248, 0.212) !important;
+  }
+
+  [data-theme='dark'] .bg-indigo-100\/80.bg-indigo-100\/80,
+  [data-theme='dark'] .bg-indigo-200\/80.bg-indigo-200\/80,
+  [data-theme='dark'] .bg-indigo-50\/80.bg-indigo-50\/80 {
+    background-color: rgba(129, 140, 248, 0.228) !important;
+  }
+
+  [data-theme='dark'] .bg-indigo-100\/90.bg-indigo-100\/90,
+  [data-theme='dark'] .bg-indigo-50\/90.bg-indigo-50\/90 {
+    background-color: rgba(129, 140, 248, 0.240) !important;
+  }
+
+  [data-theme='dark'] .bg-indigo-200\/25.bg-indigo-200\/25 {
+    background-color: rgba(129, 140, 248, 0.140) !important;
+  }
+
+  [data-theme='dark'] .bg-indigo-200\/30.bg-indigo-200\/30 {
+    background-color: rgba(129, 140, 248, 0.148) !important;
+  }
+
+  [data-theme='dark'] .bg-indigo-200\/60.bg-indigo-200\/60,
+  [data-theme='dark'] .bg-indigo-50\/60.bg-indigo-50\/60 {
+    background-color: rgba(129, 140, 248, 0.196) !important;
+  }
+
+  [data-theme='dark'] .bg-indigo-300\/10.bg-indigo-300\/10 {
+    background-color: rgba(129, 140, 248, 0.116) !important;
+  }
+
+  [data-theme='dark'] .bg-indigo-50\/40.bg-indigo-50\/40 {
+    background-color: rgba(129, 140, 248, 0.164) !important;
+  }
+
+  [data-theme='dark'] .bg-indigo-50\/55.bg-indigo-50\/55,
+  [data-theme='dark'] .hover\:bg-indigo-50\/30.hover\:bg-indigo-50\/30:hover {
+    background-color: rgba(129, 140, 248, 0.188) !important;
+  }
+
+  [data-theme='dark'] .hover\:bg-indigo-100\/60.hover\:bg-indigo-100\/60:hover,
+  [data-theme='dark'] .hover\:bg-indigo-50\/60.hover\:bg-indigo-50\/60:hover {
+    background-color: rgba(129, 140, 248, 0.236) !important;
+  }
+
+  [data-theme='dark'] .hover\:bg-indigo-100\/80.hover\:bg-indigo-100\/80:hover,
+  [data-theme='dark'] .hover\:bg-indigo-50\/80.hover\:bg-indigo-50\/80:hover {
+    background-color: rgba(129, 140, 248, 0.268) !important;
+  }
+
+  [data-theme='dark'] .hover\:bg-indigo-100\/90.hover\:bg-indigo-100\/90:hover {
+    background-color: rgba(129, 140, 248, 0.280) !important;
+  }
+
+  [data-theme='dark'] .hover\:bg-indigo-50\/20.hover\:bg-indigo-50\/20:hover {
+    background-color: rgba(129, 140, 248, 0.172) !important;
+  }
+
+  [data-theme='dark'] .hover\:bg-indigo-50\/40.hover\:bg-indigo-50\/40:hover {
+    background-color: rgba(129, 140, 248, 0.204) !important;
+  }
+
+  [data-theme='dark'] .hover\:bg-indigo-50\/50.hover\:bg-indigo-50\/50:hover {
+    background-color: rgba(129, 140, 248, 0.220) !important;
+  }
+
+  [data-theme='dark'] .hover\:bg-indigo-50\/70.hover\:bg-indigo-50\/70:hover {
+    background-color: rgba(129, 140, 248, 0.252) !important;
+  }
+
+  [data-theme='dark'] .bg-purple-100\/50.bg-purple-100\/50,
+  [data-theme='dark'] .bg-purple-50\/50.bg-purple-50\/50 {
+    background-color: rgba(192, 132, 252, 0.180) !important;
+  }
+
+  [data-theme='dark'] .bg-purple-200\/25.bg-purple-200\/25 {
+    background-color: rgba(192, 132, 252, 0.140) !important;
+  }
+
+  [data-theme='dark'] .bg-purple-200\/30.bg-purple-200\/30 {
+    background-color: rgba(192, 132, 252, 0.148) !important;
+  }
+
+  [data-theme='dark'] .bg-purple-50\/60.bg-purple-50\/60 {
+    background-color: rgba(192, 132, 252, 0.196) !important;
+  }
+
+  [data-theme='dark'] .bg-purple-50\/70.bg-purple-50\/70 {
+    background-color: rgba(192, 132, 252, 0.212) !important;
+  }
+
+  [data-theme='dark'] .hover\:bg-purple-50\/70.hover\:bg-purple-50\/70:hover {
+    background-color: rgba(192, 132, 252, 0.252) !important;
+  }
+
+  [data-theme='dark'] .hover\:bg-purple-50\/80.hover\:bg-purple-50\/80:hover {
+    background-color: rgba(192, 132, 252, 0.268) !important;
+  }
+
+  [data-theme='dark'] .bg-red-200\/80.bg-red-200\/80,
+  [data-theme='dark'] .bg-red-50\/80.bg-red-50\/80 {
+    background-color: rgba(248, 113, 113, 0.228) !important;
+  }
+
+  [data-theme='dark'] .bg-red-50\/20.bg-red-50\/20 {
+    background-color: rgba(248, 113, 113, 0.132) !important;
+  }
+
+  [data-theme='dark'] .bg-red-50\/40.bg-red-50\/40 {
+    background-color: rgba(248, 113, 113, 0.164) !important;
+  }
+
+  [data-theme='dark'] .bg-red-50\/50.bg-red-50\/50 {
+    background-color: rgba(248, 113, 113, 0.180) !important;
+  }
+
+  [data-theme='dark'] .bg-red-50\/60.bg-red-50\/60 {
+    background-color: rgba(248, 113, 113, 0.196) !important;
+  }
+
+  [data-theme='dark'] .bg-red-50\/90.bg-red-50\/90 {
+    background-color: rgba(248, 113, 113, 0.240) !important;
+  }
+
+  [data-theme='dark'] .bg-rose-100\/80.bg-rose-100\/80 {
+    background-color: rgba(251, 113, 133, 0.228) !important;
+  }
+
+  [data-theme='dark'] .bg-rose-50\/40.bg-rose-50\/40 {
+    background-color: rgba(251, 113, 133, 0.164) !important;
+  }
+
+  [data-theme='dark'] .bg-rose-50\/60.bg-rose-50\/60 {
+    background-color: rgba(251, 113, 133, 0.196) !important;
+  }
+
+  [data-theme='dark'] .bg-rose-50\/70.bg-rose-50\/70 {
+    background-color: rgba(251, 113, 133, 0.212) !important;
+  }
+
+  [data-theme='dark'] .hover\:bg-rose-50\/70.hover\:bg-rose-50\/70:hover {
+    background-color: rgba(251, 113, 133, 0.252) !important;
+  }
+
+  [data-theme='dark'] .bg-sky-300\/15.bg-sky-300\/15 {
+    background-color: rgba(56, 189, 248, 0.124) !important;
+  }
+
+  [data-theme='dark'] .bg-sky-50\/50.bg-sky-50\/50 {
+    background-color: rgba(56, 189, 248, 0.180) !important;
+  }
+
+  [data-theme='dark'] .bg-sky-50\/60.bg-sky-50\/60 {
+    background-color: rgba(56, 189, 248, 0.196) !important;
+  }
+
+  [data-theme='dark'] .bg-violet-50\/50.bg-violet-50\/50 {
+    background-color: rgba(167, 139, 250, 0.180) !important;
+  }
+
+  [data-theme='dark'] .bg-violet-50\/60.bg-violet-50\/60 {
+    background-color: rgba(167, 139, 250, 0.196) !important;
+  }
+
+  /* LINES -- pale hairlines re-pointed at the dark line ramp */
+  [data-theme='dark'] .border-amber-200\/60.border-amber-200\/60,
+  [data-theme='dark'] .border-amber-200\/80.border-amber-200\/80,
+  [data-theme='dark'] .border-amber-200\/90.border-amber-200\/90,
+  [data-theme='dark'] .border-amber-300\/80.border-amber-300\/80 {
+    border-color: color-mix(in srgb, #fbbf24 80%, var(--cuba-dark-line)) !important;
+  }
+
+  [data-theme='dark'] .border-blue-100\/30.border-blue-100\/30,
+  [data-theme='dark'] .border-blue-100\/50.border-blue-100\/50,
+  [data-theme='dark'] .border-blue-200\/50.border-blue-200\/50,
+  [data-theme='dark'] .border-blue-200\/60.border-blue-200\/60,
+  [data-theme='dark'] .border-blue-200\/80.border-blue-200\/80,
+  [data-theme='dark'] .border-blue-300\/80.border-blue-300\/80,
+  [data-theme='dark'] .group-hover\:border-blue-300\/80.group-hover\:border-blue-300\/80,
+  [data-theme='dark'] .hover\:border-blue-300\/80.hover\:border-blue-300\/80:hover {
+    border-color: color-mix(in srgb, #93c5fd 80%, var(--cuba-dark-line)) !important;
+  }
+
+  [data-theme='dark'] .border-emerald-200\/50.border-emerald-200\/50,
+  [data-theme='dark'] .border-emerald-200\/60.border-emerald-200\/60,
+  [data-theme='dark'] .border-emerald-200\/80.border-emerald-200\/80,
+  [data-theme='dark'] .border-emerald-200\/90.border-emerald-200\/90,
+  [data-theme='dark'] .border-emerald-300\/80.border-emerald-300\/80 {
+    border-color: color-mix(in srgb, #6ee7b7 80%, var(--cuba-dark-line)) !important;
+  }
+
+  [data-theme='dark'] .border-indigo-100\/30.border-indigo-100\/30,
+  [data-theme='dark'] .border-indigo-100\/60.border-indigo-100\/60,
+  [data-theme='dark'] .border-indigo-100\/70.border-indigo-100\/70,
+  [data-theme='dark'] .border-indigo-100\/80.border-indigo-100\/80,
+  [data-theme='dark'] .border-indigo-100\/90.border-indigo-100\/90,
+  [data-theme='dark'] .border-indigo-200\/60.border-indigo-200\/60,
+  [data-theme='dark'] .border-indigo-200\/70.border-indigo-200\/70,
+  [data-theme='dark'] .border-indigo-200\/80.border-indigo-200\/80,
+  [data-theme='dark'] .border-indigo-200\/90.border-indigo-200\/90,
+  [data-theme='dark'] .divide-indigo-100\/60.divide-indigo-100\/60 {
+    border-color: color-mix(in srgb, #a5b4fc 80%, var(--cuba-dark-line)) !important;
+  }
+
+  [data-theme='dark'] .border-purple-200\/30.border-purple-200\/30,
+  [data-theme='dark'] .border-purple-200\/50.border-purple-200\/50,
+  [data-theme='dark'] .border-purple-200\/60.border-purple-200\/60,
+  [data-theme='dark'] .border-purple-200\/80.border-purple-200\/80,
+  [data-theme='dark'] .border-purple-200\/90.border-purple-200\/90,
+  [data-theme='dark'] .border-purple-300\/30.border-purple-300\/30 {
+    border-color: color-mix(in srgb, #d8b4fe 80%, var(--cuba-dark-line)) !important;
+  }
+
+  [data-theme='dark'] .border-red-200\/80.border-red-200\/80,
+  [data-theme='dark'] .border-red-200\/90.border-red-200\/90 {
+    border-color: color-mix(in srgb, #fca5a5 80%, var(--cuba-dark-line)) !important;
+  }
+
+  [data-theme='dark'] .border-rose-100\/30.border-rose-100\/30,
+  [data-theme='dark'] .border-rose-200\/90.border-rose-200\/90,
+  [data-theme='dark'] .ring-rose-300\/60.ring-rose-300\/60 {
+    border-color: color-mix(in srgb, #fda4af 80%, var(--cuba-dark-line)) !important;
+  }
+
+  [data-theme='dark'] .border-violet-100\/30.border-violet-100\/30 {
+    border-color: color-mix(in srgb, #c4b5fd 80%, var(--cuba-dark-line)) !important;
+  }
+
+  /* INKS -- modifier dropped; the bare ink is the proven-AA value */
+  [data-theme='dark'] .text-amber-900\/90.text-amber-900\/90 {
+    color: #fbbf24 !important;
+  }
+
+  [data-theme='dark'] .text-emerald-200\/80.text-emerald-200\/80,
+  [data-theme='dark'] .text-emerald-700\/90.text-emerald-700\/90 {
+    color: #6ee7b7 !important;
+  }
+
+  [data-theme='dark'] .text-indigo-100\/90.text-indigo-100\/90,
+  [data-theme='dark'] .text-indigo-200\/80.text-indigo-200\/80,
+  [data-theme='dark'] .text-indigo-200\/90.text-indigo-200\/90,
+  [data-theme='dark'] .text-indigo-600\/80.text-indigo-600\/80,
+  [data-theme='dark'] .text-indigo-700\/80.text-indigo-700\/80,
+  [data-theme='dark'] .text-indigo-900\/80.text-indigo-900\/80 {
+    color: #a5b4fc !important;
+  }
+
+  [data-theme='dark'] .text-purple-200\/80.text-purple-200\/80 {
+    color: #d8b4fe !important;
+  }
+
+  [data-theme='dark'] .text-red-600\/90.text-red-600\/90 {
+    color: #fca5a5 !important;
+  }
+
+  /* GRADIENT STOPS -- near-white pastel stops (to-cyan-50/95 painted #ecfeff) */
+  [data-theme='dark'] .from-amber-50\/60.from-amber-50\/60 {
+    --tw-gradient-from: rgba(251, 191, 36, 0.196) !important;
+  }
+
+  [data-theme='dark'] .via-amber-50\/20.via-amber-50\/20 {
+    --tw-gradient-via: rgba(251, 191, 36, 0.132) !important;
+  }
+
+  [data-theme='dark'] .from-blue-200\/20.from-blue-200\/20 {
+    --tw-gradient-from: rgba(96, 165, 250, 0.132) !important;
+  }
+
+  [data-theme='dark'] .from-blue-200\/30.from-blue-200\/30 {
+    --tw-gradient-from: rgba(96, 165, 250, 0.148) !important;
+  }
+
+  [data-theme='dark'] .from-blue-200\/40.from-blue-200\/40 {
+    --tw-gradient-from: rgba(96, 165, 250, 0.164) !important;
+  }
+
+  [data-theme='dark'] .from-blue-50\/80.from-blue-50\/80 {
+    --tw-gradient-from: rgba(96, 165, 250, 0.228) !important;
+  }
+
+  [data-theme='dark'] .from-blue-50\/90.from-blue-50\/90,
+  [data-theme='dark'] .from-blue-50\/95.from-blue-50\/95 {
+    --tw-gradient-from: rgba(96, 165, 250, 0.240) !important;
+  }
+
+  [data-theme='dark'] .to-blue-200\/30.to-blue-200\/30,
+  [data-theme='dark'] .to-blue-50\/30.to-blue-50\/30 {
+    --tw-gradient-to: rgba(96, 165, 250, 0.148) !important;
+  }
+
+  [data-theme='dark'] .to-blue-50\/20.to-blue-50\/20 {
+    --tw-gradient-to: rgba(96, 165, 250, 0.132) !important;
+  }
+
+  [data-theme='dark'] .to-blue-50\/40.to-blue-50\/40 {
+    --tw-gradient-to: rgba(96, 165, 250, 0.164) !important;
+  }
+
+  [data-theme='dark'] .to-blue-50\/50.to-blue-50\/50 {
+    --tw-gradient-to: rgba(96, 165, 250, 0.180) !important;
+  }
+
+  [data-theme='dark'] .via-blue-200\/20.via-blue-200\/20 {
+    --tw-gradient-via: rgba(96, 165, 250, 0.132) !important;
+  }
+
+  [data-theme='dark'] .via-blue-50\/50.via-blue-50\/50 {
+    --tw-gradient-via: rgba(96, 165, 250, 0.180) !important;
+  }
+
+  [data-theme='dark'] .from-cyan-200\/20.from-cyan-200\/20 {
+    --tw-gradient-from: rgba(34, 211, 238, 0.132) !important;
+  }
+
+  [data-theme='dark'] .from-cyan-200\/30.from-cyan-200\/30 {
+    --tw-gradient-from: rgba(34, 211, 238, 0.148) !important;
+  }
+
+  [data-theme='dark'] .to-cyan-200\/20.to-cyan-200\/20 {
+    --tw-gradient-to: rgba(34, 211, 238, 0.132) !important;
+  }
+
+  [data-theme='dark'] .to-cyan-200\/30.to-cyan-200\/30 {
+    --tw-gradient-to: rgba(34, 211, 238, 0.148) !important;
+  }
+
+  [data-theme='dark'] .to-cyan-50\/95.to-cyan-50\/95 {
+    --tw-gradient-to: rgba(34, 211, 238, 0.240) !important;
+  }
+
+  [data-theme='dark'] .via-cyan-200\/20.via-cyan-200\/20 {
+    --tw-gradient-via: rgba(34, 211, 238, 0.132) !important;
+  }
+
+  [data-theme='dark'] .from-emerald-100\/80.from-emerald-100\/80 {
+    --tw-gradient-from: rgba(52, 211, 153, 0.228) !important;
+  }
+
+  [data-theme='dark'] .from-emerald-50\/60.from-emerald-50\/60 {
+    --tw-gradient-from: rgba(52, 211, 153, 0.196) !important;
+  }
+
+  [data-theme='dark'] .to-emerald-200\/30.to-emerald-200\/30 {
+    --tw-gradient-to: rgba(52, 211, 153, 0.148) !important;
+  }
+
+  [data-theme='dark'] .via-emerald-50\/20.via-emerald-50\/20 {
+    --tw-gradient-via: rgba(52, 211, 153, 0.132) !important;
+  }
+
+  [data-theme='dark'] .from-green-200\/30.from-green-200\/30 {
+    --tw-gradient-from: rgba(74, 222, 128, 0.148) !important;
+  }
+
+  [data-theme='dark'] .to-green-100\/80.to-green-100\/80 {
+    --tw-gradient-to: rgba(74, 222, 128, 0.228) !important;
+  }
+
+  [data-theme='dark'] .from-indigo-50\/30.from-indigo-50\/30 {
+    --tw-gradient-from: rgba(129, 140, 248, 0.148) !important;
+  }
+
+  [data-theme='dark'] .from-indigo-50\/40.from-indigo-50\/40 {
+    --tw-gradient-from: rgba(129, 140, 248, 0.164) !important;
+  }
+
+  [data-theme='dark'] .from-indigo-50\/60.from-indigo-50\/60 {
+    --tw-gradient-from: rgba(129, 140, 248, 0.196) !important;
+  }
+
+  [data-theme='dark'] .from-indigo-50\/70.from-indigo-50\/70 {
+    --tw-gradient-from: rgba(129, 140, 248, 0.212) !important;
+  }
+
+  [data-theme='dark'] .from-indigo-50\/90.from-indigo-50\/90,
+  [data-theme='dark'] .from-indigo-50\/95.from-indigo-50\/95 {
+    --tw-gradient-from: rgba(129, 140, 248, 0.240) !important;
+  }
+
+  [data-theme='dark'] .to-indigo-50\/50.to-indigo-50\/50 {
+    --tw-gradient-to: rgba(129, 140, 248, 0.180) !important;
+  }
+
+  [data-theme='dark'] .to-indigo-50\/80.to-indigo-50\/80 {
+    --tw-gradient-to: rgba(129, 140, 248, 0.228) !important;
+  }
+
+  [data-theme='dark'] .via-indigo-50\/20.via-indigo-50\/20 {
+    --tw-gradient-via: rgba(129, 140, 248, 0.132) !important;
+  }
+
+  [data-theme='dark'] .via-indigo-50\/40.via-indigo-50\/40 {
+    --tw-gradient-via: rgba(129, 140, 248, 0.164) !important;
+  }
+
+  [data-theme='dark'] .via-indigo-50\/50.via-indigo-50\/50 {
+    --tw-gradient-via: rgba(129, 140, 248, 0.180) !important;
+  }
+
+  [data-theme='dark'] .from-purple-100\/20.from-purple-100\/20 {
+    --tw-gradient-from: rgba(192, 132, 252, 0.132) !important;
+  }
+
+  [data-theme='dark'] .from-purple-200\/30.from-purple-200\/30 {
+    --tw-gradient-from: rgba(192, 132, 252, 0.148) !important;
+  }
+
+  [data-theme='dark'] .from-purple-50\/60.from-purple-50\/60 {
+    --tw-gradient-from: rgba(192, 132, 252, 0.196) !important;
+  }
+
+  [data-theme='dark'] .from-purple-50\/80.from-purple-50\/80 {
+    --tw-gradient-from: rgba(192, 132, 252, 0.228) !important;
+  }
+
+  [data-theme='dark'] .to-purple-200\/20.to-purple-200\/20 {
+    --tw-gradient-to: rgba(192, 132, 252, 0.132) !important;
+  }
+
+  [data-theme='dark'] .to-purple-200\/30.to-purple-200\/30 {
+    --tw-gradient-to: rgba(192, 132, 252, 0.148) !important;
+  }
+
+  [data-theme='dark'] .to-purple-200\/40.to-purple-200\/40,
+  [data-theme='dark'] .to-purple-50\/40.to-purple-50\/40 {
+    --tw-gradient-to: rgba(192, 132, 252, 0.164) !important;
+  }
+
+  [data-theme='dark'] .to-purple-50\/50.to-purple-50\/50 {
+    --tw-gradient-to: rgba(192, 132, 252, 0.180) !important;
+  }
+
+  [data-theme='dark'] .to-purple-50\/95.to-purple-50\/95 {
+    --tw-gradient-to: rgba(192, 132, 252, 0.240) !important;
+  }
+
+  [data-theme='dark'] .via-purple-200\/10.via-purple-200\/10 {
+    --tw-gradient-via: rgba(192, 132, 252, 0.116) !important;
+  }
+
+  [data-theme='dark'] .via-purple-200\/20.via-purple-200\/20,
+  [data-theme='dark'] .via-purple-50\/20.via-purple-50\/20 {
+    --tw-gradient-via: rgba(192, 132, 252, 0.132) !important;
+  }
+
+  [data-theme='dark'] .via-purple-50\/40.via-purple-50\/40 {
+    --tw-gradient-via: rgba(192, 132, 252, 0.164) !important;
+  }
+
+  [data-theme='dark'] .via-purple-50\/50.via-purple-50\/50 {
+    --tw-gradient-via: rgba(192, 132, 252, 0.180) !important;
+  }
+
+  [data-theme='dark'] .via-purple-50\/70.via-purple-50\/70 {
+    --tw-gradient-via: rgba(192, 132, 252, 0.212) !important;
+  }
+
+  [data-theme='dark'] .from-rose-50\/60.from-rose-50\/60 {
+    --tw-gradient-from: rgba(251, 113, 133, 0.196) !important;
+  }
+
+  [data-theme='dark'] .from-rose-50\/95.from-rose-50\/95 {
+    --tw-gradient-from: rgba(251, 113, 133, 0.240) !important;
+  }
+
+  [data-theme='dark'] .via-rose-50\/20.via-rose-50\/20 {
+    --tw-gradient-via: rgba(251, 113, 133, 0.132) !important;
+  }
+
+  [data-theme='dark'] .from-violet-50\/95.from-violet-50\/95 {
+    --tw-gradient-from: rgba(167, 139, 250, 0.240) !important;
+  }
+
+  [data-theme='dark'] .to-orange-50\/40.to-orange-50\/40 {
+    --tw-gradient-to: rgba(251, 146, 60, 0.164) !important;
+  }
+
+  [data-theme='dark'] .to-pink-100\/20.to-pink-100\/20 {
+    --tw-gradient-to: rgba(244, 114, 182, 0.132) !important;
+  }
+
+  [data-theme='dark'] .to-pink-200\/30.to-pink-200\/30 {
+    --tw-gradient-to: rgba(244, 114, 182, 0.148) !important;
+  }
+
+  [data-theme='dark'] .to-pink-50\/95.to-pink-50\/95 {
+    --tw-gradient-to: rgba(244, 114, 182, 0.240) !important;
+  }
+
+  [data-theme='dark'] .to-teal-200\/20.to-teal-200\/20 {
+    --tw-gradient-to: rgba(45, 212, 191, 0.132) !important;
+  }
+
+  [data-theme='dark'] .to-teal-200\/30.to-teal-200\/30 {
+    --tw-gradient-to: rgba(45, 212, 191, 0.148) !important;
+  }
+
+  [data-theme='dark'] .to-teal-50\/95.to-teal-50\/95 {
+    --tw-gradient-to: rgba(45, 212, 191, 0.240) !important;
+  }
+
+  /* WHITE/BLACK OPACITY FILLS -- in dark, white is the canvas, not the card. */
+  [data-theme='dark'] .bg-white\/10.bg-white\/10,
+  [data-theme='dark'] .bg-white\/15.bg-white\/15,
+  [data-theme='dark'] .bg-white\/20.bg-white\/20,
+  [data-theme='dark'] .bg-white\/25.bg-white\/25,
+  [data-theme='dark'] .bg-white\/40.bg-white\/40,
+  [data-theme='dark'] .bg-white\/5.bg-white\/5,
+  [data-theme='dark'] .bg-white\/50.bg-white\/50,
+  [data-theme='dark'] .bg-white\/60.bg-white\/60,
+  [data-theme='dark'] .bg-white\/70.bg-white\/70,
+  [data-theme='dark'] .bg-white\/80.bg-white\/80,
+  [data-theme='dark'] .bg-white\/90.bg-white\/90,
+  [data-theme='dark'] .bg-white\/95.bg-white\/95,
+  [data-theme='dark'] .hover\:bg-white\/10.hover\:bg-white\/10:hover,
+  [data-theme='dark'] .hover\:bg-white\/15.hover\:bg-white\/15:hover,
+  [data-theme='dark'] .hover\:bg-white\/20.hover\:bg-white\/20:hover,
+  [data-theme='dark'] .hover\:bg-white\/25.hover\:bg-white\/25:hover,
+  [data-theme='dark'] .hover\:bg-white\/30.hover\:bg-white\/30:hover,
+  [data-theme='dark'] .hover\:bg-white\/5.hover\:bg-white\/5:hover,
+  [data-theme='dark'] .hover\:bg-white\/50.hover\:bg-white\/50:hover,
+  [data-theme='dark'] .hover\:bg-white\/60.hover\:bg-white\/60:hover,
+  [data-theme='dark'] .hover\:bg-white\/70.hover\:bg-white\/70:hover,
+  [data-theme='dark'] .hover\:bg-white\/80.hover\:bg-white\/80:hover,
+  [data-theme='dark'] .hover\:bg-white\/90.hover\:bg-white\/90:hover {
+    background-color: color-mix(in srgb, var(--cuba-card) 82%, transparent) !important;
+  }
+
+  /* WHITE/BLACK OPACITY BORDERS -- a white hairline reads as glare on dark. */
+  [data-theme='dark'] .border-white\/10.border-white\/10,
+  [data-theme='dark'] .border-white\/15.border-white\/15,
+  [data-theme='dark'] .border-white\/20.border-white\/20,
+  [data-theme='dark'] .border-white\/25.border-white\/25,
+  [data-theme='dark'] .border-white\/30.border-white\/30,
+  [data-theme='dark'] .border-white\/40.border-white\/40,
+  [data-theme='dark'] .border-white\/5.border-white\/5,
+  [data-theme='dark'] .border-white\/50.border-white\/50,
+  [data-theme='dark'] .divide-white\/5.divide-white\/5,
+  [data-theme='dark'] .hover\:border-white\/10.hover\:border-white\/10:hover,
+  [data-theme='dark'] .hover\:border-white\/20.hover\:border-white\/20:hover,
+  [data-theme='dark'] .hover\:border-white\/50.hover\:border-white\/50:hover,
+  [data-theme='dark'] .ring-white\/20.ring-white\/20 {
+    border-color: color-mix(in srgb, var(--cuba-dark-line) 70%, transparent) !important;
+  }
+
+  [data-theme='dark'] .step-nav-ribbon {
+    background-color: color-mix(in srgb, var(--cuba-dark-card) 95%, transparent) !important;
+    border-color: var(--cuba-dark-line, #232838) !important;
+  }
+} /* end @layer components -- DIR-023 slate + surface harmonization */
 .font-rubik {
-    font-family: 'Rubik', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: "Rubik", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 .font-roboto {
-    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
-
-
-

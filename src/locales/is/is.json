@@ -1854,6 +1854,7 @@
     },
     "actions": {
       "view": "Skoða",
+      "openStudio": "Opnaí í stúdíó",
       "edit": "Breyta",
       "delete": "Eyða",
       "viewPreview": "Skoða Forskoðun"

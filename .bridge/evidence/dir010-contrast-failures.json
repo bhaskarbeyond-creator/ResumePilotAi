@@ -1,0 +1,35 @@
+{
+  "failures": [],
+  "unmeasurable": [
+    {
+      "tag": "a",
+      "text": "Recruiter Overview",
+      "color": "oklch(0.446 0.043 257.281)",
+      "background": "rgba(255, 255, 255, 0.78)"
+    },
+    {
+      "tag": "a",
+      "text": "Job Postings",
+      "color": "oklch(0.446 0.043 257.281)",
+      "background": "rgba(255, 255, 255, 0.78)"
+    },
+    {
+      "tag": "a",
+      "text": "Candidate Messages",
+      "color": "oklch(0.446 0.043 257.281)",
+      "background": "rgba(255, 255, 255, 0.78)"
+    },
+    {
+      "tag": "a",
+      "text": "Company Profile",
+      "color": "oklch(0.446 0.043 257.281)",
+      "background": "rgba(255, 255, 255, 0.78)"
+    },
+    {
+      "tag": "a",
+      "text": "Hiring Preferences",
+      "color": "oklch(0.446 0.043 257.281)",
+      "background": "rgba(255, 255, 255, 0.78)"
+    }
+  ]
+}

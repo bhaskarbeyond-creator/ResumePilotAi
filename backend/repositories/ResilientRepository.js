@@ -22,7 +22,7 @@ const READ_METHODS = new Set([
     'getUser', 'getUserByEmail', 'getUsers', 'getUsersByIds',
     'getResume', 'getResumes', 'getPublicResume', 'getResumePublication',
     'getLiveInterviewSession',
-    'getPortfolio', 'getPortfolios', 'getPublishedPortfolioBySlug', 'getPublishedPortfolios',
+    'getPortfolio', 'getPortfolios', 'getPublishedPortfolioBySlug', 'getPublishedPortfolios', 'isPortfolioSlugAvailable',
     'getCover', 'getCovers',
     'getJob', 'getJobs', 'getApplications',
     'getBlogPosts', 'getBlogPostBySlug', 'getBlogPostById',
@@ -34,6 +34,9 @@ const READ_METHODS = new Set([
     'getUserContentCounts', 'getUserPaymentOrders',
     'getPaymentOrder', 'getCoupon', 'getCouponRedemption',
     'findPaymentOrderByProviderIntent',
+    // DIR-022 / AC-3 + AC-5: the reconciler work queue and the immutable
+    // transition history behind the operator auditor.
+    'listSubscriptionsForReconciliation', 'getSubscriptionAuditLog',
     'getCompany', 'getCompanies',
     'getApplication', 'getDocument', 'listDocuments', 'getReview',
 ]);
@@ -54,6 +57,11 @@ const WRITE_METHODS = new Set([
     'savePaymentOrder', 'saveCoupon', 'deleteCoupon', 'saveCouponRedemption', 'deleteCouponRedemption',
     'saveCompany', 'deleteCompany',
     'claimWebhookEvent',
+    // DIR-022: subscription reconciliation + the immutable audit ledger. Listed
+    // here so a failover exercises them through the same resilience contract as
+    // every other write — the reconciler must degrade loudly rather than
+    // silently write through a degraded pool.
+    'reconcileSubscriptionAtomic',
     'deleteApplication', 'saveDocument', 'deleteDocument',
     'saveReview', 'deleteReview',
 ]);

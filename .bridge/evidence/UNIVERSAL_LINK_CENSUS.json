@@ -1,0 +1,395 @@
+{
+  "directive": "DIR-025",
+  "timestamp": "2026-10-03T16:02:11.695Z",
+  "baseUrl": "http://localhost:3000",
+  "totalAudited": 42,
+  "totalPassed": 42,
+  "totalFailed": 0,
+  "passRate": "100.0%",
+  "invariants": {
+    "INV_1_FROZEN_DIFF": "VERIFIED 0 BYTES",
+    "INV_2_ZERO_BROKEN_LINKS": "VERIFIED",
+    "INV_3_SESSION_GUARD": "VERIFIED",
+    "INV_4_CANONICAL_ALIGNMENT": "VERIFIED"
+  },
+  "links": [
+    {
+      "path": "/",
+      "url": "http://localhost:3000/",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/login",
+      "url": "http://localhost:3000/login",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/login",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/pricing",
+      "url": "http://localhost:3000/pricing",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/pricing",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/features",
+      "url": "http://localhost:3000/features",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/features",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/contact",
+      "url": "http://localhost:3000/contact",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/contact",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/blog",
+      "url": "http://localhost:3000/blog",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/blog",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/jobs",
+      "url": "http://localhost:3000/jobs",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/jobs",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/portfolios",
+      "url": "http://localhost:3000/portfolios",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/portfolios",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/faq",
+      "url": "http://localhost:3000/faq",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/faq",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/privacy",
+      "url": "http://localhost:3000/privacy",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/privacy",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/terms",
+      "url": "http://localhost:3000/terms",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/terms",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/cookies",
+      "url": "http://localhost:3000/cookies",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/cookies",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/about",
+      "url": "http://localhost:3000/about",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/about",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/dashboard",
+      "url": "http://localhost:3000/dashboard",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/dashboard",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/dashboard/settings",
+      "url": "http://localhost:3000/dashboard/settings",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/dashboard/settings",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/dashboard/settings?tab=profile",
+      "url": "http://localhost:3000/dashboard/settings?tab=profile",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/dashboard/settings?tab=profile",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/dashboard/settings?tab=security",
+      "url": "http://localhost:3000/dashboard/settings?tab=security",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/dashboard/settings?tab=security",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/dashboard/profile",
+      "url": "http://localhost:3000/dashboard/profile",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/dashboard/profile",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/dashboard/security",
+      "url": "http://localhost:3000/dashboard/security",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/dashboard/security",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/dashboard/account",
+      "url": "http://localhost:3000/dashboard/account",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/dashboard/account",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/dashboard/billing",
+      "url": "http://localhost:3000/dashboard/billing",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/dashboard/billing",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/dashboard/plans",
+      "url": "http://localhost:3000/dashboard/plans",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/dashboard/plans",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/dashboard/my-resumes",
+      "url": "http://localhost:3000/dashboard/my-resumes",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/dashboard/my-resumes",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/dashboard/cv",
+      "url": "http://localhost:3000/dashboard/cv",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/dashboard/cv",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/dashboard/cover-letters",
+      "url": "http://localhost:3000/dashboard/cover-letters",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/dashboard/cover-letters",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/dashboard/portfolios",
+      "url": "http://localhost:3000/dashboard/portfolios",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/dashboard/portfolios",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/dashboard/messages",
+      "url": "http://localhost:3000/dashboard/messages",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/dashboard/messages",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/dashboard/favorites",
+      "url": "http://localhost:3000/dashboard/favorites",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/dashboard/favorites",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/dashboard/interview",
+      "url": "http://localhost:3000/dashboard/interview",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/dashboard/interview",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/dashboard/applied-jobs",
+      "url": "http://localhost:3000/dashboard/applied-jobs",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/dashboard/applied-jobs",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/dashboard/job-tracker",
+      "url": "http://localhost:3000/dashboard/job-tracker",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/dashboard/job-tracker",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/dashboard/jobs",
+      "url": "http://localhost:3000/dashboard/jobs",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/dashboard/jobs",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/dashboard/support",
+      "url": "http://localhost:3000/dashboard/support",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/dashboard/support",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/employer",
+      "url": "http://localhost:3000/employer",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/employer",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/employer/jobs",
+      "url": "http://localhost:3000/employer/jobs",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/employer/jobs",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/employer/company",
+      "url": "http://localhost:3000/employer/company",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/employer/company",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/employer/pipeline",
+      "url": "http://localhost:3000/employer/pipeline",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/employer/pipeline",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/org",
+      "url": "http://localhost:3000/org",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/org",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/admin",
+      "url": "http://localhost:3000/admin",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/admin",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/admin/overview",
+      "url": "http://localhost:3000/admin/overview",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/admin/overview",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/admin/users",
+      "url": "http://localhost:3000/admin/users",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/admin/users",
+      "hasContent": true,
+      "errors": []
+    },
+    {
+      "path": "/admin/settings",
+      "url": "http://localhost:3000/admin/settings",
+      "status": "PASS",
+      "httpStatus": 200,
+      "redirectedTo": "/admin/settings",
+      "hasContent": true,
+      "errors": []
+    }
+  ]
+}

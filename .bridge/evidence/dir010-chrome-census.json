@@ -1,0 +1,50 @@
+[
+  {
+    "route": "/employer",
+    "shellVariant": "cuba",
+    "sidebarCount": 0,
+    "navLabels": [
+      "Employer navigation"
+    ]
+  },
+  {
+    "route": "/employer/jobs",
+    "shellVariant": "cuba",
+    "sidebarCount": 0,
+    "navLabels": [
+      "Employer navigation"
+    ]
+  },
+  {
+    "route": "/employer/applicants",
+    "shellVariant": "cuba",
+    "sidebarCount": 0,
+    "navLabels": [
+      "Employer navigation"
+    ]
+  },
+  {
+    "route": "/employer/company",
+    "shellVariant": "cuba",
+    "sidebarCount": 0,
+    "navLabels": [
+      "Employer navigation"
+    ]
+  },
+  {
+    "route": "/employer/messages",
+    "shellVariant": "cuba",
+    "sidebarCount": 0,
+    "navLabels": [
+      "Employer navigation"
+    ]
+  },
+  {
+    "route": "/employer/settings",
+    "shellVariant": "cuba",
+    "sidebarCount": 0,
+    "navLabels": [
+      "Employer navigation"
+    ]
+  }
+]

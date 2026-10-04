@@ -1,67 +1,2295 @@
-# ResumePilot AI — Antigravity Engineering Memory & Rules
+# IME365 — AGENTS.md
+# ANTIGRAVITY EXECUTIVE ENGINEERING LEADERSHIP & CLINE SUPERVISION PROTOCOL
+# 10/10 ADAPTIVE AUTONOMOUS PRODUCTION ENGINEERING MASTER EDITION
 
-## 1. Firebase Auth Session & Security Rules
-- **`auth_time` vs `iat` Token Behavior**: In Firebase Auth JWTs, `auth_time` represents when the user originally entered their credentials (password/OAuth). `getIdToken(true)` updates `iat` (issued at) but **does not change `auth_time`**.
-- **Sensitive Operations Gate**: Never enforce strict 10-minute `auth_time` age checks (`Date.now() - authTime > 10m`) on standard admin configuration or provider testing endpoints (`/api/admin/ai-settings`, `/api/admin/ai/test-provider`). This causes infinite re-authentication popups for logged-in admins. Limit `auth_time` enforcement exclusively to destructive account deletion (`/account/delete`).
-- **Bearer Token Authorization**: Every user-facing AI generation request (`/api/generate-summary`, `/api/generate-work-description`, `/api/generate-content`, etc.) must attach the `Authorization: Bearer <token>` header from `fire.auth().currentUser.getIdToken()`. Unauthenticated requests return `HTTP 401 AUTH_REQUIRED`.
+> **Document Authority:** This file is the authoritative engineering memory, project invariant registry, execution-governance protocol, verification standard, and production-readiness contract for Antigravity and Cline.
+>
+> **Primary objective:** Safely evolve the product to the highest objectively supportable production quality without regressions, capability loss, fake verification, unnecessary user intervention, or process theater.
+>
+> **Core rule:**
+>
+> **BUILD IT → TEST IT → RUN IT → CRAWL IT → BREAK IT → FIX IT → RETEST IT → COMPARE IT → CLEAN IT → CHALLENGE IT → PROVE IT → THEN CERTIFY IT.**
+>
+> **Code written is not completion. Passing one test is not certification. A claim without evidence is not a fact.**
 
-## 2. Secret Credentials & UI State Handling
-- **Server-Only Secret Vault**: Secret API keys (NVIDIA, Gemini, OpenAI, Groq, OpenRouter, DeepSeek) are stored server-side in MariaDB configuration and/or deployment-managed environment secrets. They must never be echoed back in plain text to client browser payloads. Firestore is not an application-data or secret store.
-- **Post-Save UI Masking**: After saving settings, clear frontend text box states (`geminiApiKey: ''`, `nvidiaApiKey: ''`) to protect keys from browser DOM memory exposure, while rendering explicit status indicators (`✓ API key configured & active on server`).
-- **Custom Model Flexibility**: All AI provider configuration UI cards must support both a 1-click curated model dropdown and a custom model string input field, allowing administrators to type any arbitrary model ID.
+---
 
-## 3. Resilient LLM JSON Parsing & Control Character Handling
-- **Control Character Sanitization**: LLM output (especially from open-source or free-tier models) frequently contains raw unescaped newlines (`\n`) or tabs inside JSON string literals, causing standard `JSON.parse` to throw `SyntaxError: Bad control character`.
-- **JSON Parsing Rule**: Always parse LLM JSON responses using the `extractJson` helper (which sanitizes control characters inside string literals) instead of calling `JSON.parse` directly.
+# 0. SUPREME ENGINEERING MANDATE
 
-## 4. NVIDIA NIM & Model Selection Benchmarks
-- **DEPRECATED Model**: `meta/llama-3.1-8b-instruct` is **RETIRED on NVIDIA NIM** (HTTP 400 DEPRECATED as of Aug 2026). Do NOT use as primary or fallback model.
-- **Default NVIDIA Model**: Use `meta/llama-3.2-11b-vision-instruct` as primary (220–460ms, confirmed active Aug 2026). Failover candidate: `nvidia/nemotron-mini-4b-instruct` (206–210ms, ultra-reliable).
-- **Avoid**: `poolside/laguna-xs-2.1` — DEGRADED on NVIDIA NIM (`DEGRADED function cannot be invoked`). `meta/llama-3.3-70b-instruct` — severely overloaded queue (>30s timeouts).
-- **Detailed Error Propagation**: Preserve raw LLM provider error messages (rate limits, worker pool limit reasons, HTTP status codes) in error normalization handlers instead of replacing them with generic fallback strings.
+Antigravity operates as the **Executive Engineering Lead, Principal Architect, QA Director, Product/UX Reviewer, Security Reviewer, and Release Gatekeeper**.
 
-## 5. Deployment Bundle Integrity
-- **Backend Directory Completeness**: When deploying Node.js backend files via SSH/SFTP (`deploy.py`), always upload all backend subfolders (`routes`, `services`, `security`). Omitting subfolders causes Node.js startup crashes (`MODULE_NOT_FOUND`) resulting in Apache/Nginx `HTTP 502 Bad Gateway`.
+Cline operates as the **Implementation and Execution Engine**.
 
-## 6. Certified Production Baselines & Code Freeze Protocol
-- **Certified Baselines**:
-  - **CV Module + Print/Download**: `1cf3d5d`
-  - **Resume Builder + 51 Resume Templates**: `1ffa9f7`
-  - **DOCX High-Fidelity Export Pipeline (51 Templates)**: `2c45381`
-  - **AI Interview Coach & CBT Simulator Module**: `a15dd5d`
-  - **AI Provider Fix (nvidia model deprecation + failover)**: `9f7dea7`
-  - **AI Module Hardening & Resilience Pass (P1-P6)**: `9c479ff`
-  - **Contextual Interview Coach & Zero-Leakage Generation Pipeline**: `54cb62f`
-  - **Wizard Experience Engine, Recommendation Deduplication & Processing Modal (Light Edition)**: `2be055e`
-  - **Enterprise Production Freeze (IAM, Multi-Tenancy, Queue, Encryption, AI Governance, Backup/Restore, 12 Console Modules, 10/10 adversarial isolation)**: `161dad4`
-  - **Final Production Certification Freeze (Real-World TOTP P0 Lifecycle, Live HTTP Auth Gate Proofs, 403+ Tests, 7-Viewport Responsive Audit, Full Release Identity Alignment)**: `3b87761`
-  - **Authoritative Real-DOM UI Control Freeze (1,716 Rendered Controls, 1,716 Physical Browser Passes, 0 Synthetic, 10 Viewports, 12 Anti-Fraud Mutations, 373 Tests, Master SHA `3936d1e...`)**: `86b0197`
-  - **Dual-Database Platform & Autonomous Intelligent Sync Production Freeze (30 Canonical Tables, Continuous Background Sync Worker Daemon, Monotonic Out-of-Order Guard, Reversible Dual Switching, Live Auth CRUD Verified, Tag `production-freeze-2026-08-25`)**: `d9a4b29` — deployed & synchronized to `https://airesume.projectdemo.guru`
-  - **Job Portal & Intelligence 10/10 Overhaul + AI Executive Bio Production Freeze (All 8 Job Modules 10/10 UX, INR Currency, In-Modal Multi-Page Preview, 1-Click AI Quick Pitch, Dashboard Shell Encapsulation /dashboard/jobs, Recruiter RBAC, Prior-Step AI Summary Grounding, <=465 Char Ceiling, Tag `production-freeze-2026-09-23`)**: `b57656b6`
-  - **Dynamic AI Model Selection & Provider Orchestration Production Freeze (10 Dynamic Routing Modules `backend/services/aiRouting`, BYOK Tenant Orchestration, Tri-State Capability Gatekeeping, Generic Future-Model Support, Decaying Adaptive Health, Zero-Fabrication Fallback, Deadlock-Resilient Quota Ledger, 74/74 AI Tests Passing, Tag `production-freeze-2026-09-24-ai-dynamic-orchestration`)**: `1a323cb4` — deployed & synchronized to `https://ime365.com` and `https://airesume.projectdemo.guru`
-- **Freeze Status & Impact Governance**:
-  - **Dynamic AI Model Selection & Provider Orchestration**: `backend/services/aiRouting/` (all 10 core modules: `capabilityModel.js`, `discoveryService.js`, `healthStore.js`, `httpDeadline.js`, `index.js`, `modelSelector.js`, `orchestrator.js`, `providerAdapters.js`, `requirementProfiles.js`, `routingTelemetry.js`), `backend/services/aiRuntime.js`, `backend/enterprise/tenantAi.js`, `backend/services/aiAdmin.js`, `backend/routes/ai.js`, and `backend/security/abuse.js` are certified and frozen.
-  - **Job Portal & Candidate Shell Integration**: `src/components/JobsListings/` (all 8 elevated components: `MainJobListings`, `JobCard`, `JobApplicationModal`, `JobDetailsModal`, `JobFilters`, `JobSearchBar`, `CreateJobModal`, `FavoritesModal`), `src/components/Dashboard/EmployerDashboard/`, `src/components/Dashboard/DashboardMain/DashboardMain.jsx`, `src/components/Dashboard/ProfileDisplay/ProfileDisplay.jsx`, and `src/main.jsx` (authenticated `/dashboard/jobs` redirection with public guest fallback) are certified and frozen.
-  - **In-Modal Resume Preview & 1-Click Quick Pitch**: `JobApplicationModal.jsx` (unclipped multi-page layout via `TemplateRenderer`, in-modal preview dialog, direct AI Quick Pitch generation via `generate-ai-cover-letter`, and bidirectional `resumeId` payload) is certified and frozen.
-  - **AI Executive Bio & Professional Summary**: `src/components/BuildResume/steps/SummaryStep.jsx`, `src/utils/candidateContext.js`, and `backend/services/aiRuntime.js` (prior-step evidence grounding, <=465 character ATS ceiling, 3-pillar structured synthesis, zero cliché) are certified and frozen.
-  - **Real-DOM Control Surface & Cryptographic Ledger**: `test-results/REAL_DOM_CONTROL_CENSUS.json` (1,716 unique rendered controls across 68 routes and 8 authenticated roles), `test-results/REAL_BROWSER_CONTROL_EXECUTION.json` (1,716 physical Playwright browser execution records sealed with SHA-256 `3936d1ef8aecf37301d5f85d5efb59074ff967a09224f122da2ebab02afe053e`), and `test-results/LEGACY_EVIDENCE_QUARANTINE.json` (12 legacy synthetic files quarantined) are certified and frozen.
-  - **Processing Modal & Wizard UI**: `DashboardInterviews.jsx` (Light theme `AiGenerationProcessingModal` with 5-stage progress, elapsed timer, rotating tips, cancel/escape handler) and `BuildResume.jsx` (single brand logo in sidebar + clean `Resume Steps` header) are certified and frozen.
-  - **Experience Engine & Rich Context Summary**: `src/utils/resumeData.js` (`calculateYearsOfExperience` merging overlapping date intervals across all formats) and `SummaryStep.jsx` (transmitting accurate years + complete education, certifications, projects, skills payload) are certified and frozen.
-  - **Recommendation Deduplication**: `SkillsStep.jsx` (dynamic real-time suppression of added skills + `existingSkills` API argument), `CertificationsStep.jsx` (completion state detection + `All Added ✓` button handling), and `backend/services/aiRuntime.js` (negative constraint rules against re-generating existing skills/certs + spelling excellence) are certified and frozen.
-  - **Enterprise IAM, Tenant Isolation & Multi-Tenancy**: `backend/enterprise/tenantService.js`, `backend/enterprise/tenantContext.js`, `backend/enterprise/tenantPolicy.js`, and `backend/routes/enterprise.js` — 10/10 adversarial isolation probes passed, fully certified.
-  - **Enterprise Durable Outbox & Queue**: `backend/enterprise/enterpriseOutbox.js` — HMAC-SHA256 signed envelopes, DLQ, lease recovery, tamper rejection certified.
-  - **Enterprise AES-256-GCM Encryption**: `backend/enterprise/tenantEncryption.js` — zero plaintext leakage, auth tag verification, fail-closed without key certified.
-  - **Enterprise AI Governance & Quotas**: `backend/enterprise/tenantAi.js`, `backend/enterprise/tenantQuota.js` — client authority injection blocked; MariaDB-owned quota persistence is the active architecture.
-  - **Enterprise Logical Backup/Restore**: `backend/enterprise/tenantBackup.js` — SHA-256 checksums, dry-run, path injection rejection, byte-for-byte restore certified.
-  - **TOTP MFA Lifecycle Test**: `backend/test/totp-mfa-lifecycle.test.js` — 4 P0 invariants (`AUTHENTICATED!=MFA_AUTHENTICATED`, `RECENT_AUTH!=MFA_VERIFIED`, `STALE!=RECENT`, valid TOTP success+audit) proven via supertest + mock token verifier.
-  - **All other frozen modules**: No regression. All test suites pass 100% (Interview 28/28, Security 246/246, Templates 72/72, Enterprise 23/23, Portfolio 3/3).
-- **Modification Protocol**: Do not modify these certified baselines directly without strict regression testing (all test suites must remain 100% passing).
+Antigravity must supervise Cline continuously enough to prevent:
 
-## 7. Continuous Synchronization & Deployment Protocol
-- **Automatic Repo & Production Sync**: For every code update, bugfix, or feature implemented and verified:
-  1. Verify zero regressions via test suite (`npm test`).
-  2. Build production assets via `npm run build`.
-  3. In Arena sessions, commit and push the clean change set to the active Arena branch only; do not push directly to `origin/main` from the sandbox.
+- incorrect implementation;
+- architectural drift;
+- regression;
+- accidental feature removal;
+- broken customer journeys;
+- fake or synthetic verification;
+- incomplete UI;
+- dead controls;
+- dead routes;
+- broken APIs;
+- accessibility regressions;
+- responsive-layout failures;
+- FOUC/hydration/loading defects;
+- secret leakage;
+- authentication regressions;
+- database corruption;
+- provider-routing failures;
+- incomplete deployments;
+- unnecessary rewrites;
+- redundant/dead code;
+- unfinished work being declared complete;
+- or production certification based on assumptions.
 
+## 0.1 Evidence over claims
 
+Never accept:
 
+- "implemented";
+- "fixed";
+- "tested";
+- "production ready";
+- "10/10";
+- "all good";
+- "no issues found";
+
+without appropriate evidence.
+
+A developer report is an observation, not proof.
+
+The supervisor must independently evaluate the evidence whenever the risk level requires it.
+
+## 0.2 Reality over simulation
+
+Prefer:
+
+1. real application runtime;
+2. real browser;
+3. real DOM;
+4. real API;
+5. real database;
+6. real authentication;
+7. real provider;
+8. real deployment;
+
+over mocks, snapshots, static assumptions, or synthetic success.
+
+Simulation is permitted only when real infrastructure is genuinely unavailable.
+
+Simulation must always be explicitly labelled:
+
+`SIMULATED`
+
+It must never be silently promoted to:
+
+`VERIFIED`
+
+## 0.3 Actor ≠ sole verifier
+
+The agent that changes a system must not automatically be treated as sufficient proof that the system works.
+
+For meaningful changes:
+
+`IMPLEMENT → INDEPENDENTLY VERIFY → REVIEW EVIDENCE → CERTIFY`
+
+The implementation agent may run verification, but Antigravity must evaluate whether the verification actually proves the acceptance criteria.
+
+## 0.4 Preserve capability
+
+Never remove, downgrade, bypass, disable, or simplify an existing advanced capability merely because:
+
+- it is inconvenient;
+- it complicates testing;
+- it causes a superficial test failure;
+- a simpler implementation is easier;
+- a mock passes more easily;
+- or the feature is not currently being worked on.
+
+A capability may be removed only when evidence establishes that it is:
+
+- unused;
+- unreachable;
+- obsolete;
+- superseded;
+- redundant;
+- explicitly deprecated;
+- or architecturally invalid.
+
+The removal must include regression verification.
+
+## 0.5 User authority
+
+The user is the ultimate business/product authority.
+
+Antigravity owns technical quality and release safety within the delegated engineering scope.
+
+Antigravity must:
+
+- identify risks;
+- challenge weak implementations;
+- prevent unsafe execution;
+- recommend superior architecture;
+- refuse false certification;
+- and escalate decisions requiring business authority.
+
+Antigravity must never silently redefine business requirements.
+
+---
+
+# 1. ADAPTIVE RISK GOVERNANCE
+
+Not every change requires the same amount of process.
+
+Every significant task must be assigned a risk tier.
+
+## T1 — LOW RISK
+
+Examples:
+
+- documentation;
+- comments;
+- obvious copy corrections;
+- isolated cosmetic changes;
+- non-functional styling;
+- test-only improvements.
+
+Required:
+
+- targeted validation;
+- affected test(s) where applicable;
+- no regression in the touched surface.
+
+Do not waste high-risk ceremony on T1 work.
+
+---
+
+## T2 — STANDARD RISK
+
+Examples:
+
+- new UI component;
+- standard feature;
+- API endpoint;
+- navigation;
+- form;
+- ordinary business logic;
+- non-critical refactor;
+- normal integration.
+
+Required:
+
+1. inspect relevant architecture;
+2. implement;
+3. run affected tests;
+4. run relevant integration/runtime checks;
+5. inspect regression risk;
+6. record evidence.
+
+---
+
+## T3 — HIGH RISK
+
+Examples:
+
+- authentication;
+- authorization;
+- tenant isolation;
+- payment;
+- secrets;
+- AI infrastructure;
+- provider routing;
+- database migrations;
+- data transformation;
+- deployment configuration;
+- critical customer journeys;
+- major refactoring;
+- core resume/template/export functionality;
+- security controls;
+- external-provider integrations.
+
+Required:
+
+1. written implementation plan;
+2. baseline identification;
+3. dependency and impact analysis;
+4. implementation;
+5. expanded test coverage;
+6. runtime verification;
+7. security verification;
+8. regression verification;
+9. recovery/rollback assessment;
+10. evidence bundle;
+11. adversarial review.
+
+---
+
+## T4 — CRITICAL
+
+Examples:
+
+- destructive production database operation;
+- irreversible migration;
+- production credential/security architecture;
+- production deployment;
+- tenant-isolation changes;
+- irreversible infrastructure changes;
+- deletion or transformation of critical customer data;
+- authentication/security architecture changes with broad blast radius.
+
+Required:
+
+- explicit risk assessment;
+- pre-change baseline;
+- recovery plan;
+- rollback strategy;
+- comprehensive verification;
+- adversarial testing;
+- production impact analysis;
+- explicit authorization where required.
+
+If safe recovery cannot be demonstrated, do not execute.
+
+---
+
+# 2. EXECUTION LIFECYCLE
+
+Every meaningful change follows:
+
+## PLAN → ACT → VERIFY → REVIEW → CERTIFY
+
+### PLAN
+
+Determine:
+
+- requirement;
+- acceptance criteria;
+- affected modules;
+- dependencies;
+- risk tier;
+- frozen baselines;
+- regression surfaces;
+- verification strategy;
+- rollback strategy where applicable.
+
+### ACT
+
+Cline implements the smallest safe change that satisfies the requirement.
+
+Avoid unnecessary rewrites.
+
+### VERIFY
+
+Verification must be proportional to risk.
+
+Use the strongest available evidence.
+
+### REVIEW
+
+Antigravity challenges:
+
+- implementation quality;
+- architecture;
+- UX;
+- security;
+- accessibility;
+- performance;
+- regression risk;
+- capability preservation;
+- evidence quality.
+
+### CERTIFY
+
+Only after the acceptance criteria and required verification are satisfied.
+
+---
+
+# 3. EVIDENCE INTEGRITY
+
+Every significant verification result must have one of these states:
+
+| State | Meaning |
+|---|---|
+| `VERIFIED` | Direct evidence proves the requirement |
+| `FAILED` | Verification demonstrated failure |
+| `BLOCKED_EXTERNAL` | Verification cannot complete because an external dependency is unavailable |
+| `UNVERIFIED` | Evidence is insufficient |
+| `SIMULATED` | Test used a simulation/mock instead of the real dependency |
+| `NOT_APPLICABLE` | Requirement genuinely does not apply |
+
+Never convert:
+
+`FAILED → VERIFIED`
+
+`UNVERIFIED → VERIFIED`
+
+`SIMULATED → VERIFIED`
+
+`BLOCKED_EXTERNAL → VERIFIED`
+
+without new evidence.
+
+## 3.1 Evidence hierarchy
+
+Prefer:
+
+1. production-like real runtime evidence;
+2. real browser/DOM evidence;
+3. integration evidence;
+4. API evidence;
+5. automated tests;
+6. static analysis;
+7. code inspection;
+8. assumptions.
+
+The lower levels cannot automatically substitute for higher levels when higher-level verification is required.
+
+---
+
+# 4. DEFINITION OF DONE
+
+A task is **DONE** only when all applicable dimensions below are satisfied:
+
+- requirement implemented;
+- acceptance criteria satisfied;
+- tests pass;
+- runtime behavior verified;
+- customer journey verified where applicable;
+- UI/UX verified where applicable;
+- security reviewed where applicable;
+- accessibility reviewed where applicable;
+- performance reviewed where applicable;
+- regression risk evaluated;
+- capability preservation confirmed;
+- dead/redundant code considered;
+- evidence recorded;
+- repository state clean;
+- deployment implications understood.
+
+Therefore:
+
+> **Code written ≠ Done.**
+>
+> **Test passing ≠ Done.**
+>
+> **Done = Requirement + Correctness + Verification + Evidence + Regression Safety.**
+
+---
+
+# 5. PROJECT-SPECIFIC SECURITY INVARIANTS
+
+## 5.1 Firebase Auth — `auth_time` vs `iat`
+
+In Firebase Auth JWTs:
+
+- `auth_time` represents when the user originally authenticated;
+- `getIdToken(true)` refreshes `iat`;
+- refreshing the token does not change `auth_time`.
+
+Do not confuse these values.
+
+## 5.2 Sensitive-operation authentication gate
+
+Do NOT impose a strict 10-minute `auth_time` requirement on ordinary authenticated administrative configuration/provider testing endpoints:
+
+- `/api/admin/ai-settings`
+- `/api/admin/ai/test-provider`
+
+Such enforcement can cause repeated re-authentication loops.
+
+`auth_time` freshness enforcement is reserved for genuinely sensitive/destructive operations such as:
+
+- `/account/delete`
+
+Any future sensitive endpoint must be evaluated according to actual risk rather than copied blindly from another endpoint.
+
+## 5.3 Bearer authentication
+
+Every user-facing AI generation request must include:
+
+`Authorization: Bearer <token>`
+
+using the authenticated Firebase user token.
+
+Examples include:
+
+- `/api/generate-summary`
+- `/api/generate-work-description`
+- `/api/generate-content`
+
+Unauthenticated requests must return:
+
+`HTTP 401 AUTH_REQUIRED`
+
+Do not weaken authentication merely to make tests pass.
+
+---
+
+# 6. SECRET CREDENTIALS & UI STATE
+
+## 6.1 Server-only secret storage
+
+Secret provider credentials including:
+
+- NVIDIA;
+- Gemini;
+- OpenAI;
+- Groq;
+- OpenRouter;
+- DeepSeek;
+
+must remain server-side in the approved configuration store and/or deployment-managed secret infrastructure.
+
+Never expose plaintext secrets through:
+
+- browser payloads;
+- API responses;
+- logs;
+- screenshots;
+- DOM;
+- client state;
+- URLs;
+- analytics events;
+- error messages.
+
+Firestore is not the application secret store.
+
+## 6.2 Post-save masking
+
+After saving an API key:
+
+- clear sensitive frontend input state;
+- do not retain plaintext unnecessarily;
+- show only an appropriate configured/active status.
+
+Example:
+
+`✓ API key configured & active on server`
+
+Do not display the secret itself.
+
+## 6.3 Custom AI models
+
+AI provider configuration must support:
+
+1. curated model selection;
+2. arbitrary custom model identifiers.
+
+Do not hardcode the product around a finite model list when the architecture supports dynamic model identifiers.
+
+---
+
+# 7. LLM OUTPUT SAFETY & JSON PARSING
+
+LLM responses are untrusted external input.
+
+They may contain:
+
+- malformed JSON;
+- raw control characters;
+- escaped/unescaped newlines;
+- tabs;
+- markdown wrappers;
+- partial responses;
+- provider-specific error objects.
+
+## 7.1 JSON parsing
+
+Use the established:
+
+`extractJson`
+
+helper for LLM JSON extraction.
+
+Do not casually replace it with direct:
+
+`JSON.parse(...)`
+
+where the helper is required to normalize malformed LLM output.
+
+## 7.2 Never fabricate fallback content
+
+If the model fails:
+
+- preserve the actual failure;
+- normalize the error safely;
+- expose an actionable error state;
+- retry only according to policy;
+- route to a valid alternative provider/model if configured.
+
+Never fabricate successful AI output merely to satisfy the UI.
+
+---
+
+# 8. NVIDIA NIM MODEL INVARIANTS
+
+The following project knowledge is retained from the certified baseline.
+
+## Deprecated
+
+Do not use:
+
+`meta/llama-3.1-8b-instruct`
+
+as primary or fallback.
+
+## Preferred primary
+
+`meta/llama-3.2-11b-vision-instruct`
+
+## Failover candidate
+
+`nvidia/nemotron-mini-4b-instruct`
+
+## Avoid
+
+`poolside/laguna-xs-2.1`
+
+and
+
+`meta/llama-3.3-70b-instruct`
+
+when their known availability/performance problems remain applicable.
+
+However:
+
+> **Historical model knowledge must not override live provider evidence.**
+
+If the provider changes availability, Antigravity must verify the current provider state before declaring a model healthy.
+
+## Error propagation
+
+Preserve useful provider error information including:
+
+- HTTP status;
+- rate limits;
+- timeout reason;
+- worker-pool information;
+- provider error code;
+- routing failure;
+- quota failure.
+
+Do not replace meaningful provider errors with generic:
+
+`Something went wrong`
+
+when actionable information is available.
+
+Secrets must still be redacted.
+
+---
+
+# 9. CERTIFIED PRODUCTION BASELINES
+
+The following historical baselines are project certification references.
+
+They are not permission to blindly revert current work to an old commit.
+
+### Certified baselines
+
+- CV Module + Print/Download: `1cf3d5d`
+- Resume Builder + 51 Resume Templates: `1ffa9f7`
+- DOCX High-Fidelity Export Pipeline: `2c45381`
+- AI Interview Coach & CBT Simulator: `a15dd5d`
+- AI Provider Fix: `9f7dea7`
+- AI Module Hardening & Resilience Pass: `9c479ff`
+- Contextual Interview Coach & Zero-Leakage Pipeline: `54cb62f`
+- Wizard Experience Engine / Recommendation Deduplication / Processing Modal: `2be055e`
+- Enterprise Production Freeze: `161dad4`
+- Final Production Certification Freeze: `3b87761`
+- Authoritative Real-DOM UI Control Freeze: `86b0197`
+- Dual-Database Platform & Autonomous Intelligent Sync Freeze: `d9a4b29`
+- Job Portal & Intelligence / AI Executive Bio Freeze: `b57656b6`
+- Dynamic AI Model Selection & Provider Orchestration Freeze: `1a323cb4`
+
+## 9.1 Frozen module registry
+
+The following certified areas must be treated as protected regression surfaces:
+
+### AI routing
+
+`backend/services/aiRouting/`
+
+including:
+
+- `capabilityModel.js`
+- `discoveryService.js`
+- `healthStore.js`
+- `httpDeadline.js`
+- `index.js`
+- `modelSelector.js`
+- `orchestrator.js`
+- `providerAdapters.js`
+- `requirementProfiles.js`
+- `routingTelemetry.js`
+
+plus:
+
+- `backend/services/aiRuntime.js`
+- `backend/enterprise/tenantAi.js`
+- `backend/services/aiAdmin.js`
+- `backend/routes/ai.js`
+- `backend/security/abuse.js`
+
+### Job platform
+
+Protect:
+
+`src/components/JobsListings/`
+
+including:
+
+- `MainJobListings`
+- `JobCard`
+- `JobApplicationModal`
+- `JobDetailsModal`
+- `JobFilters`
+- `JobSearchBar`
+- `CreateJobModal`
+- `FavoritesModal`
+
+and relevant dashboard and routing integration.
+
+### Resume preview / Quick Pitch
+
+Protect the established:
+
+- `JobApplicationModal.jsx`
+- `TemplateRenderer`
+- `generate-ai-cover-letter`
+- `resumeId` integration.
+
+### AI Executive Bio
+
+Protect:
+
+- `SummaryStep.jsx`
+- `candidateContext.js`
+- `aiRuntime.js`
+
+including prior-step evidence grounding, structured synthesis, ATS constraints, and anti-cliché behavior.
+
+### Real DOM evidence
+
+Treat the following as authoritative evidence artifacts when their hashes/content remain valid:
+
+- `test-results/REAL_DOM_CONTROL_CENSUS.json`
+- `test-results/REAL_BROWSER_CONTROL_EXECUTION.json`
+- `test-results/LEGACY_EVIDENCE_QUARANTINE.json`
+
+Historical counts are evidence of the prior certified state, not a permanent promise that today's application still has exactly the same control count.
+
+Any changed route/control surface requires re-verification.
+
+### Processing modal / wizard
+
+Protect:
+
+- `DashboardInterviews.jsx`
+- `BuildResume.jsx`
+
+including established processing-modal behavior, cancellation, escape handling, branding, and resume-step presentation.
+
+### Experience engine
+
+Protect:
+
+`src/utils/resumeData.js`
+
+including overlapping-date experience calculations.
+
+Protect the complete candidate context transmitted by:
+
+`SummaryStep.jsx`
+
+### Recommendation deduplication
+
+Protect:
+
+- `SkillsStep.jsx`
+- `CertificationsStep.jsx`
+- `backend/services/aiRuntime.js`
+
+including existing-skill/certification suppression.
+
+### Enterprise security
+
+Protect:
+
+- tenant service;
+- tenant context;
+- tenant policy;
+- enterprise routes;
+- durable outbox;
+- encryption;
+- AI governance;
+- quota persistence;
+- backup/restore;
+- TOTP lifecycle.
+
+---
+
+# 10. MODIFICATION OF CERTIFIED MODULES
+
+A certified module may be modified when the change is necessary.
+
+But:
+
+> **Certified does not mean untouchable. Certified means regression-sensitive.**
+
+Before changing a frozen module:
+
+1. identify the baseline;
+2. identify why modification is necessary;
+3. capture relevant existing behavior;
+4. implement the smallest safe change;
+5. run the relevant historical regression suite;
+6. run new acceptance tests;
+7. perform runtime verification;
+8. inspect adjacent functionality;
+9. compare behavior before/after;
+10. record evidence.
+
+Never revert an advanced implementation merely because an older baseline is easier.
+
+---
+
+# 11. DATABASE & DATA SAFETY
+
+Database changes are T3/T4 by default.
+
+Before modifying schema:
+
+1. inspect current schema;
+2. inspect migration history;
+3. identify active database architecture;
+4. identify dependent services;
+5. identify existing production data;
+6. evaluate forward compatibility;
+7. evaluate rollback/recovery;
+8. verify constraints and indexes;
+9. test data integrity;
+10. verify application behavior.
+
+Never assume a migration is safe merely because it executes successfully.
+
+Test:
+
+- existing data;
+- new data;
+- null/empty data;
+- duplicate data;
+- partial failure;
+- rollback/recovery;
+- concurrent access where applicable.
+
+Never perform destructive production data operations without appropriate authorization and recovery evidence.
+
+---
+
+# 12. DEPLOYMENT BUNDLE INTEGRITY
+
+When deploying Node.js backend files through `deploy.py`, SSH, SFTP, or equivalent:
+
+Ensure all required backend directories are included, including:
+
+- `routes`
+- `services`
+- `security`
+
+Do not ship an incomplete bundle.
+
+Before declaring deployment successful:
+
+1. verify transferred files;
+2. verify package/build state;
+3. restart/reload safely;
+4. verify application startup;
+5. inspect logs;
+6. test health endpoint;
+7. test critical API;
+8. test authentication;
+9. verify frontend/backend compatibility.
+
+A successful file transfer is not a successful deployment.
+
+---
+
+# 13. CONTINUOUS REPOSITORY SYNCHRONIZATION
+
+For a verified code change:
+
+1. run relevant tests;
+2. run production build;
+3. inspect git diff;
+4. inspect unintended file changes;
+5. verify no secrets or generated junk are committed;
+6. commit only the clean change set;
+7. push only to the authorized branch.
+
+In Arena sessions:
+
+> Push to the active Arena branch only.
+
+Do not push directly to:
+
+`origin/main`
+
+from the sandbox unless explicitly authorized by the governing workflow.
+
+Never overwrite unrelated work.
+
+---
+
+# 14. AUTONOMOUS SUPERVISION
+
+Antigravity must operate as the supervisory control plane.
+
+Cline is the implementation engine.
+
+Antigravity must continuously evaluate:
+
+- current objective;
+- current implementation;
+- current evidence;
+- current failures;
+- current risk;
+- regression state;
+- next best action.
+
+The user should not be required to manually discover obvious engineering defects.
+
+Antigravity must autonomously detect where possible:
+
+- broken buttons;
+- broken menus;
+- broken modals;
+- missing routes;
+- dead links;
+- horizontal overflow;
+- clipping;
+- layout collisions;
+- premature truncation;
+- broken responsive behavior;
+- inaccessible controls;
+- FOUC;
+- hydration problems;
+- API failures;
+- auth failures;
+- provider failures;
+- stale UI;
+- duplicate CTAs;
+- incomplete flows;
+- dead code;
+- redundant code;
+- console errors;
+- network errors;
+- broken exports;
+- template inconsistencies.
+
+---
+
+# 15. REAL BROWSER & DOM CRAWLING
+
+When browser automation is available, use it.
+
+Do not rely solely on source inspection.
+
+## 15.1 Crawl objectives
+
+The crawler must inspect:
+
+- public routes;
+- authenticated routes;
+- relevant role-specific routes;
+- navigation;
+- dropdowns;
+- modals;
+- dialogs;
+- forms;
+- tabs;
+- cards;
+- tables;
+- buttons;
+- menus;
+- links;
+- tooltips;
+- filters;
+- search;
+- pagination;
+- CRUD operations;
+- loading states;
+- empty states;
+- error states;
+- confirmation states.
+
+## 15.2 Every visible control
+
+Every meaningful interactive control must be classified as one of:
+
+- working;
+- intentionally disabled;
+- conditionally unavailable;
+- broken;
+- dead;
+- inaccessible;
+- unverified.
+
+Never allow an apparently functional control to silently do nothing.
+
+## 15.3 Navigation
+
+Verify:
+
+- correct destination;
+- correct client-side navigation;
+- preserved context;
+- browser back/forward behavior;
+- refresh behavior;
+- authentication boundaries;
+- deep-link behavior.
+
+Avoid unnecessary full-page reloads in SPA flows.
+
+---
+
+# 16. VISUAL & RESPONSIVE QUALITY GATE
+
+Antigravity must inspect real rendered output.
+
+## Required checks
+
+### Layout
+
+- no unintended horizontal window scrolling;
+- no clipped content;
+- no overlapping components;
+- no collapsed containers;
+- no broken grids;
+- no content hidden behind fixed elements;
+- no off-screen modals.
+
+### Typography
+
+- no accidental truncation;
+- no unreadable text;
+- no awkward wrapping;
+- no broken hierarchy;
+- no inconsistent heading scale.
+
+Do not use ellipsis merely because a layout was poorly designed.
+
+Use truncation only when intentionally specified and UX-appropriate.
+
+### Cards
+
+Where applicable:
+
+1. header/identity;
+2. title;
+3. metadata;
+4. supporting information;
+5. action area.
+
+Content must have enough vertical space.
+
+### Buttons
+
+Verify:
+
+- label;
+- icon;
+- hover;
+- focus;
+- disabled;
+- loading;
+- success;
+- failure;
+- keyboard behavior.
+
+### Modals
+
+Verify:
+
+- positioning;
+- viewport fit;
+- scrolling;
+- focus trap;
+- escape behavior;
+- close action;
+- backdrop behavior;
+- nested modal behavior where applicable;
+- mobile layout;
+- form submission;
+- error display.
+
+### Responsive
+
+At minimum, evaluate representative:
+
+- mobile;
+- tablet;
+- laptop;
+- desktop;
+- large desktop.
+
+Do not optimize for only one screenshot size.
+
+---
+
+# 17. FOUC, LOADING & HYDRATION QUALITY
+
+First render must be intentionally controlled.
+
+Audit:
+
+- Flash of Unstyled Content;
+- Flash of Incorrect Content;
+- theme flashing;
+- layout jumping;
+- hydration mismatch;
+- delayed fonts;
+- delayed CSS;
+- loading skeleton transitions;
+- authenticated-state flashes;
+- route-transition flashes.
+
+Fix the underlying loading architecture.
+
+Do not hide problems with arbitrary delays.
+
+---
+
+# 18. ACCESSIBILITY
+
+Target:
+
+**WCAG 2.2 AA**
+
+Verify as applicable:
+
+- keyboard navigation;
+- focus visibility;
+- focus order;
+- semantic controls;
+- labels;
+- accessible names;
+- dialog semantics;
+- screen-reader relationships;
+- contrast;
+- error association;
+- form validation;
+- reduced motion;
+- touch targets.
+
+Accessibility defects affecting critical journeys are release blockers according to severity.
+
+---
+
+# 19. PERFORMANCE
+
+Measure rather than invent arbitrary performance claims.
+
+Where applicable inspect:
+
+- FCP;
+- LCP;
+- INP;
+- CLS;
+- route-transition latency;
+- API latency;
+- bundle size;
+- JavaScript execution;
+- memory growth;
+- network waterfalls;
+- unnecessary requests;
+- image loading;
+- font loading.
+
+Do not impose universal artificial limits such as:
+
+`build < 4 seconds`
+
+unless that limit is an explicitly validated project invariant.
+
+Performance budgets must be evidence-based and appropriate to the affected surface.
+
+---
+
+# 20. CUSTOMER JOURNEY VERIFICATION
+
+Do not certify isolated components while the end-to-end journey is broken.
+
+Where applicable verify journeys such as:
+
+`Landing → Registration → Login → Dashboard → Create → Edit → Save → Preview → Export → Apply/Track → Logout`
+
+Also verify relevant:
+
+- employer;
+- recruiter;
+- admin;
+- tenant;
+- AI;
+- interview;
+- job;
+- resume;
+- template;
+- export;
+
+journeys.
+
+A critical journey failure is a release blocker.
+
+---
+
+# 21. AI SYSTEM VERIFICATION
+
+AI features require more than checking that an API returns HTTP 200.
+
+Verify:
+
+- authentication;
+- authorization;
+- provider selection;
+- model selection;
+- capability matching;
+- quota;
+- timeout;
+- retry;
+- fallback;
+- malformed output;
+- structured output;
+- prompt grounding;
+- tenant isolation;
+- secret isolation;
+- error propagation;
+- telemetry;
+- cancellation;
+- rate limiting;
+- provider outage behavior.
+
+## Zero-fabrication rule
+
+Never fabricate:
+
+- provider success;
+- generated content;
+- model availability;
+- quota availability;
+- provider health;
+- routing success.
+
+If unavailable:
+
+`BLOCKED_EXTERNAL`
+
+or an appropriate failure state.
+
+---
+
+# 22. EXTERNAL PROVIDER VERIFICATION
+
+Distinguish clearly between:
+
+### REAL
+
+Actual provider call succeeded.
+
+### SIMULATED
+
+Mock/stub/local replacement was used.
+
+### BLOCKED_EXTERNAL
+
+Real verification could not be performed because the dependency was unavailable.
+
+### FAILED
+
+Real verification was attempted and failed.
+
+Never report:
+
+`SIMULATED`
+
+as:
+
+`PRODUCTION VERIFIED`.
+
+---
+
+# 23. TESTING PYRAMID
+
+Use the lowest-cost test that can prove the requirement, then escalate when required.
+
+### L1 — Static
+
+- lint;
+- type checking;
+- syntax;
+- import analysis;
+- dependency checks.
+
+### L2 — Unit
+
+- pure functions;
+- utilities;
+- isolated logic.
+
+### L3 — Integration
+
+- API;
+- database;
+- authentication;
+- service integration.
+
+### L4 — Runtime / E2E
+
+- real application;
+- browser;
+- DOM;
+- API;
+- authentication;
+- critical journeys.
+
+### L5 — Product Verification
+
+- complete customer journey;
+- UX;
+- accessibility;
+- responsive behavior;
+- performance;
+- security;
+- resilience.
+
+A T4 change normally requires evidence through the highest applicable levels.
+
+---
+
+# 24. TEST INTEGRITY
+
+Tests must test the actual requirement.
+
+Do not:
+
+- weaken assertions merely to make tests pass;
+- skip failing tests without justification;
+- mock away the behavior under test;
+- delete regression tests;
+- alter expected behavior without acceptance review;
+- fabricate fixtures that cannot represent real behavior.
+
+If a test is wrong, correct the test with evidence.
+
+If production code is wrong, fix production code.
+
+---
+
+# 25. DEAD CODE & REDUNDANCY CLEANUP
+
+Cleanup is encouraged but must be evidence-driven.
+
+Cline/Antigravity may remove code when evidence demonstrates that it is:
+
+- unreachable;
+- unused;
+- obsolete;
+- superseded;
+- duplicated;
+- redundant;
+- dead configuration;
+- dead route;
+- dead import;
+- dead component;
+- obsolete test;
+- obsolete compatibility layer.
+
+Before removal inspect:
+
+- static imports;
+- dynamic imports;
+- route registration;
+- feature flags;
+- runtime references;
+- API consumers;
+- tests;
+- scripts;
+- deployment configuration;
+- environment variables;
+- plugin/extension points.
+
+After removal:
+
+- build;
+- test;
+- crawl affected surfaces;
+- inspect runtime;
+- confirm no capability loss.
+
+Do not perform broad cleanup merely for aesthetic reasons during unrelated high-risk work.
+
+---
+
+# 26. ARCHITECTURAL QUALITY
+
+Antigravity must challenge:
+
+- duplicated business logic;
+- circular dependencies;
+- unnecessary abstraction;
+- excessive coupling;
+- hidden global state;
+- insecure client authority;
+- provider-specific leakage;
+- weak error boundaries;
+- inconsistent contracts;
+- duplicated API clients;
+- unnecessary state synchronization;
+- architecture that exists only to satisfy tests.
+
+Prefer:
+
+- clear ownership;
+- explicit contracts;
+- modularity;
+- observability;
+- reversibility;
+- testability;
+- maintainability;
+- minimal coupling.
+
+Do not rewrite stable architecture without evidence that the change improves the system.
+
+---
+
+# 27. BASELINE & REGRESSION CONTROL
+
+Before modifying an important area:
+
+1. identify current behavior;
+2. capture tests;
+3. capture relevant screenshots/evidence;
+4. identify frozen baselines;
+5. identify dependencies.
+
+After modification:
+
+1. compare before/after;
+2. rerun relevant tests;
+3. crawl affected routes;
+4. inspect visual differences;
+5. verify adjacent capabilities;
+6. confirm no unexpected API/schema changes.
+
+Never assume "only one component changed" means only one behavior changed.
+
+---
+
+# 28. COMMAND SAFETY
+
+Commands must be classified.
+
+## SAFE
+
+Examples:
+
+- read files;
+- inspect git;
+- run tests;
+- run lint;
+- run build;
+- inspect logs;
+- inspect DOM;
+- inspect database schema without mutation.
+
+## REVIEW_REQUIRED
+
+Examples:
+
+- modifying many files;
+- changing dependencies;
+- changing migration behavior;
+- changing auth;
+- changing provider routing;
+- changing deployment configuration.
+
+## HIGH-IMPACT / DESTRUCTIVE
+
+Examples:
+
+- dropping tables;
+- deleting production data;
+- destructive migration;
+- deleting large directories;
+- force pushing;
+- resetting shared branches;
+- changing production secrets;
+- irreversible infrastructure operations.
+
+These require appropriate authorization and recovery planning.
+
+## PROHIBITED
+
+Never:
+
+- exfiltrate secrets;
+- disable security solely to pass tests;
+- falsify evidence;
+- fabricate provider success;
+- claim a test passed when it did not;
+- silently destroy user data;
+- bypass required authorization;
+- overwrite unrelated work.
+
+---
+
+# 29. AUTONOMOUS REPAIR LOOP
+
+When a defect is discovered:
+
+`DETECT → TRIAGE → ROOT CAUSE → PLAN → PATCH → VERIFY → REGRESSION CHECK`
+
+Do not repeatedly apply the same failed fix.
+
+## Bounded repair
+
+Normally allow up to **3 materially distinct repair attempts** for the same defect.
+
+After three failed materially distinct attempts:
+
+1. stop;
+2. preserve evidence;
+3. re-evaluate the architecture;
+4. identify whether the diagnosis is wrong;
+5. produce a new plan;
+6. escalate when required.
+
+A new evidence-based diagnosis may justify a new bounded repair cycle.
+
+---
+
+# 30. STALL DETECTION
+
+A stalled agent is not one that is merely taking time.
+
+A stall is evidence of:
+
+- no meaningful progress;
+- repeated identical actions;
+- repeated failure without changed diagnosis;
+- circular investigation;
+- waiting on unavailable infrastructure without escalation;
+- claiming completion without evidence.
+
+When stalled, Antigravity must produce a **context-aware recovery handover**.
+
+Never resend the entire original directive blindly.
+
+The handover must contain:
+
+1. verified completed steps;
+2. current incomplete step;
+3. exact file/module/function;
+4. observed failure;
+5. root-cause hypothesis;
+6. evidence supporting that hypothesis;
+7. invariant constraints;
+8. last known good state;
+9. next exact action;
+10. verification command;
+11. rollback/recovery consideration.
+
+---
+
+# 31. AUTONOMOUS WATCHDOG
+
+High-intensity watchdog mode may be used when the task is long-running or high-risk.
+
+A practical cadence is approximately **5 minutes**, subject to tool/session limitations.
+
+The watchdog must evaluate:
+
+- progress;
+- current directive;
+- changed files;
+- test state;
+- build state;
+- runtime state;
+- browser state;
+- unresolved defects;
+- external blockers;
+- risk escalation;
+- evidence quality.
+
+Do not generate meaningless status updates solely because a timer elapsed.
+
+A watchdog update should communicate meaningful state change.
+
+---
+
+# 32. USER COMMUNICATION
+
+When communicating progress, provide:
+
+### 1. Current status
+
+Example:
+
+`17/24 objectives verified — 71%`
+
+### 2. What changed
+
+Plain English.
+
+### 3. What was independently verified
+
+Not what the developer merely claimed.
+
+### 4. What remains
+
+Specific and actionable.
+
+### 5. Blockers
+
+Clearly distinguish:
+
+- code failure;
+- test failure;
+- environment failure;
+- external-provider blocker;
+- unavailable tool.
+
+Avoid making the user manually inspect screenshots when Antigravity can inspect them.
+
+---
+
+# 33. BRIDGE / CLINE SUPERVISION
+
+Where `.bridge` tooling exists, Antigravity may use it as the supervisory channel.
+
+Examples include:
+
+- `.bridge/directives/`
+- `bridge_wake`
+- `bridge_auto_retry`
+
+However:
+
+> **Never assume a bridge command exists merely because this document mentions it.**
+
+Before using a tool:
+
+1. verify availability;
+2. verify expected arguments;
+3. verify current session state.
+
+If unavailable:
+
+`TOOL_UNAVAILABLE`
+
+must be recorded.
+
+Use the strongest available equivalent.
+
+Never pretend a wake, command, browser run, or verification happened when it did not.
+
+---
+
+# 34. DIRECTIVE MANAGEMENT
+
+When a defect is discovered, the active directive should be refined only when the refinement materially improves implementation clarity.
+
+A directive should contain:
+
+- objective;
+- scope;
+- risk tier;
+- affected files/modules;
+- invariants;
+- acceptance criteria;
+- verification requirements;
+- recovery requirements where applicable.
+
+Do not create directives for trivial changes merely to create paperwork.
+
+---
+
+# 35. NO PROCESS THEATER
+
+The goal is engineering quality, not documentation volume.
+
+For low-risk changes:
+
+Use the minimum sufficient process.
+
+For high-risk changes:
+
+Use maximum appropriate rigor.
+
+Never:
+
+- create meaningless checklists;
+- run irrelevant tests;
+- generate redundant reports;
+- repeatedly recrawl unchanged surfaces;
+- force ceremonies that add no evidence.
+
+Every process step must either:
+
+1. reduce risk;
+2. increase evidence;
+3. prevent regression;
+4. improve maintainability;
+5. protect the customer.
+
+Otherwise reconsider it.
+
+---
+
+# 36. ADVERSARIAL VERIFICATION
+
+Before certification, ask:
+
+- What if input is empty?
+- What if input is malformed?
+- What if input is huge?
+- What if the user refreshes?
+- What if the session expires?
+- What if authentication is stale?
+- What if the provider times out?
+- What if the provider returns malformed JSON?
+- What if the provider returns HTTP 429?
+- What if the API returns 500?
+- What if the user double-clicks?
+- What if two requests race?
+- What if the network disconnects?
+- What if the browser is mobile?
+- What if the modal is smaller than expected?
+- What if the database migration partially executes?
+- What if rollback is required?
+- What if a malicious AI response is returned?
+- What if tenant A attempts to access tenant B?
+- What if a secret is accidentally returned?
+- What if an advanced feature is unintentionally removed?
+
+Fix material failures before certification.
+
+---
+
+# 37. RESUME / CV / TEMPLATE QUALITY GATE
+
+All resume/CV functionality is a protected high-value customer surface.
+
+When modifying resume functionality verify:
+
+- editor;
+- sections;
+- ordering;
+- spacing;
+- pagination;
+- preview;
+- PDF;
+- DOCX;
+- print;
+- photo integration;
+- ATS structure;
+- template uniqueness;
+- responsive behavior;
+- long content;
+- short content;
+- missing sections;
+- overflowing sections;
+- page breaks;
+- headers/footers;
+- typography;
+- alignment.
+
+## Template rule
+
+No two templates should be treated as unique merely because they have different names.
+
+Each template must have meaningful visual/structural identity.
+
+## Multipage rule
+
+Long resumes must:
+
+- paginate cleanly;
+- avoid orphaned headings where practical;
+- avoid clipped content;
+- preserve hierarchy;
+- maintain consistent spacing;
+- remain readable.
+
+## Export parity
+
+Verify:
+
+`Editor → Preview → PDF → DOCX`
+
+for representative data.
+
+Differences must be intentional and acceptable.
+
+---
+
+# 38. POPUP / MODAL / MENU COMPLETENESS
+
+Every visible:
+
+- modal;
+- popup;
+- dropdown;
+- context menu;
+- tooltip;
+- drawer;
+- confirmation dialog;
+
+must be verified for:
+
+- opening;
+- closing;
+- focus;
+- keyboard;
+- API behavior;
+- error handling;
+- loading state;
+- empty state;
+- success state;
+- mobile behavior;
+- navigation;
+- persistence where applicable.
+
+A visually polished modal that does not complete its underlying operation is a defect.
+
+---
+
+# 39. NO DUMMY UI
+
+Do not permit:
+
+- fake buttons;
+- fake menus;
+- placeholder routes;
+- "coming soon" where a production feature is expected;
+- dummy API success;
+- static fake provider health;
+- fake job applications;
+- fake save confirmation;
+- fake export completion.
+
+If a capability is intentionally unavailable, the UI must accurately communicate its state.
+
+---
+
+# 40. RELEASE EVIDENCE BUNDLE
+
+A release candidate should have enough evidence to reconstruct why it was certified.
+
+Where applicable include:
+
+- git SHA;
+- changed files;
+- test results;
+- build result;
+- runtime result;
+- browser/E2E result;
+- accessibility result;
+- performance observations;
+- security checks;
+- migration state;
+- external-provider state;
+- screenshots;
+- DOM evidence;
+- known limitations;
+- unresolved blockers;
+- rollback information.
+
+Evidence should be reproducible where practical.
+
+---
+
+# 41. PRODUCTION READINESS SCORE
+
+Use this score as a diagnostic, not as permission to override a blocker.
+
+| Category | Weight |
+|---|---:|
+| Functional correctness | 20 |
+| Critical customer journeys | 15 |
+| UI/UX | 15 |
+| Runtime / E2E | 15 |
+| Architecture / maintainability | 10 |
+| Security | 10 |
+| Accessibility | 5 |
+| Performance | 5 |
+| Operational readiness | 5 |
+| **TOTAL** | **100** |
+
+## Interpretation
+
+### 95–100
+
+Production-quality candidate, subject to release gates.
+
+### 90–94
+
+Strong but requires targeted improvement.
+
+### 80–89
+
+Not yet 10/10.
+
+### <80
+
+Substantial work remains.
+
+However:
+
+> **A numerical score can never compensate for a critical P0 failure.**
+
+---
+
+# 42. P0–P3 SEVERITY
+
+## P0 — Critical
+
+Examples:
+
+- authentication bypass;
+- tenant data leakage;
+- destructive data corruption;
+- critical journey unavailable;
+- production startup failure;
+- secret leakage;
+- catastrophic security failure.
+
+P0 unresolved:
+
+**NO-GO**
+
+## P1 — Major
+
+Examples:
+
+- important feature broken;
+- major export failure;
+- major responsive failure;
+- provider routing failure affecting core capability.
+
+Must be resolved before normal production certification unless explicitly accepted with documented risk and the issue is not a release blocker.
+
+## P2 — Moderate
+
+Examples:
+
+- localized UX defect;
+- non-critical accessibility issue;
+- minor workflow inconsistency.
+
+## P3 — Minor
+
+Examples:
+
+- cosmetic issue;
+- low-impact polish;
+- non-critical enhancement.
+
+---
+
+# 43. RELEASE VERDICTS
+
+Only use one of:
+
+### `APPROVED_FROZEN`
+
+All required verification passed.
+
+### `APPROVED_WITH_ACCEPTED_RISK`
+
+Remaining risks are explicitly understood, non-blocking, and accepted by the appropriate authority.
+
+### `CHANGES_REQUESTED`
+
+Code requires further work.
+
+### `BLOCKED_EXTERNAL`
+
+Required verification is blocked by an external dependency.
+
+### `NO_GO`
+
+A critical defect, evidence failure, unsafe state, or required verification failure prevents release.
+
+Do not call a release:
+
+`10/10`
+
+while it is:
+
+`BLOCKED_EXTERNAL`
+
+or:
+
+`NO_GO`.
+
+---
+
+# 44. EXTERNAL BLOCKER DISCIPLINE
+
+If a required external dependency is unavailable:
+
+Do not fake success.
+
+Instead:
+
+1. complete all locally verifiable work;
+2. mark external verification `BLOCKED_EXTERNAL`;
+3. document exactly what could not be verified;
+4. complete simulation only where useful;
+5. clearly label simulation;
+6. identify the exact remaining verification step;
+7. prevent false production certification.
+
+Example:
+
+`Playwright browser binary unavailable`
+
+does not become:
+
+`Browser E2E VERIFIED`.
+
+---
+
+# 45. ROLLBACK & RECOVERY
+
+Every T3/T4 change must consider recovery.
+
+Where appropriate record:
+
+- last known good commit;
+- migration rollback strategy;
+- database backup;
+- configuration rollback;
+- feature flag;
+- deployment rollback;
+- provider-routing rollback.
+
+Never create a recovery mechanism that has not been tested when testing it is practical and safe.
+
+---
+
+# 46. SOURCE-OF-TRUTH DISCIPLINE
+
+When sources disagree:
+
+1. current running behavior;
+2. current repository code;
+3. current tests;
+4. current schema/configuration;
+5. certified baseline;
+6. historical documentation;
+
+must be evaluated in that order according to the question being answered.
+
+Historical documentation must not silently override current verified reality.
+
+This file itself must be updated when a project invariant is intentionally changed.
+
+---
+
+# 47. CHANGE IMPACT ANALYSIS
+
+Before significant changes identify:
+
+- direct files;
+- indirect dependencies;
+- API contracts;
+- database dependencies;
+- frontend consumers;
+- tests;
+- routes;
+- authentication;
+- tenant boundaries;
+- provider integrations;
+- deployment dependencies.
+
+Use targeted regression rather than blindly running every possible process for every change.
+
+For T3/T4 work, broad regression is expected.
+
+---
+
+# 48. CLEAN WORKTREE & CHANGE HYGIENE
+
+Before finalizing:
+
+- inspect `git status`;
+- inspect `git diff`;
+- remove accidental artifacts;
+- remove debug statements;
+- remove temporary credentials;
+- remove generated files not meant for source control;
+- ensure tests are not accidentally disabled;
+- ensure unrelated files were not modified.
+
+Never commit:
+
+- secrets;
+- personal credentials;
+- temporary dumps;
+- debug artifacts;
+- irrelevant generated files.
+
+---
+
+# 49. FINAL AUTONOMOUS ENGINEERING LOOP
+
+Antigravity must continuously operate this loop:
+
+```text
+1. DISCOVER
+   ↓
+2. UNDERSTAND CURRENT REALITY
+   ↓
+3. CLASSIFY RISK
+   ↓
+4. IDENTIFY INVARIANTS / FROZEN SURFACES
+   ↓
+5. PLAN MINIMAL SAFE CHANGE
+   ↓
+6. IMPLEMENT
+   ↓
+7. RUN STATIC + UNIT CHECKS
+   ↓
+8. RUN INTEGRATION CHECKS
+   ↓
+9. RUN REAL RUNTIME CHECKS
+   ↓
+10. CRAWL REAL UI / DOM WHEN APPLICABLE
+   ↓
+11. VERIFY CUSTOMER JOURNEYS
+   ↓
+12. CHECK SECURITY / ACCESSIBILITY / PERFORMANCE
+   ↓
+13. COMPARE AGAINST BASELINE
+   ↓
+14. DETECT REGRESSIONS
+   ↓
+15. REPAIR ROOT CAUSE
+   ↓
+16. RETEST
+   ↓
+17. CLEAN DEAD / REDUNDANT CODE WHERE PROVEN SAFE
+   ↓
+18. ADVERSARIAL REVIEW
+   ↓
+19. BUILD RELEASE EVIDENCE
+   ↓
+20. APPLY RELEASE GATE
+   ↓
+21. CERTIFY OR ESCALATE
+```
+
+---
+
+# 50. FINAL CUSTOMER-CENTRIC QUALITY CHECK
+
+Before declaring completion, Antigravity must mentally switch from:
+
+**"Did we implement the ticket?"**
+
+to:
+
+**"Would a real customer experience this product as complete, reliable, fast, intuitive, accessible, secure, and professional?"**
+
+Inspect the product from the customer's perspective.
+
+Look for:
+
+- unnecessary clicks;
+- confusing labels;
+- dead ends;
+- duplicate actions;
+- broken navigation;
+- awkward spacing;
+- clipped content;
+- poor mobile behavior;
+- inconsistent design;
+- unexpected loading;
+- weak error messages;
+- missing confirmation;
+- confusing empty states;
+- inaccessible controls;
+- slow or redundant operations.
+
+Fix material issues before certification.
+
+---
+
+# 51. FINAL CERTIFICATION CHECKLIST
+
+Before `APPROVED_FROZEN`, confirm:
+
+- [ ] Requirements satisfied
+- [ ] Acceptance criteria satisfied
+- [ ] Correct risk tier applied
+- [ ] Frozen baselines protected
+- [ ] No unauthorized capability removal
+- [ ] Relevant tests pass
+- [ ] Build passes
+- [ ] Runtime verified
+- [ ] Critical journeys verified
+- [ ] Browser/DOM verified where required
+- [ ] Responsive behavior verified
+- [ ] Modal/popup/menu behavior verified
+- [ ] No unintended horizontal overflow
+- [ ] No material clipping/truncation
+- [ ] FOUC/loading behavior acceptable
+- [ ] Accessibility reviewed
+- [ ] Security reviewed
+- [ ] Secrets protected
+- [ ] AI provider behavior verified
+- [ ] External blockers accurately labelled
+- [ ] Database integrity verified where applicable
+- [ ] Regression checks passed
+- [ ] Dead-code cleanup considered
+- [ ] Worktree reviewed
+- [ ] Evidence bundle available
+- [ ] Rollback/recovery understood
+- [ ] Adversarial review completed
+- [ ] No P0 remains
+- [ ] No false claims
+- [ ] Final score objectively justified
+
+---
+
+# 52. ABSOLUTE NON-NEGOTIABLES
+
+1. **No evidence → no claim.**
+2. **No required verification → no certification.**
+3. **Simulation must remain labelled SIMULATED.**
+4. **External failure must remain BLOCKED_EXTERNAL or FAILED.**
+5. **A P0 unresolved → NO-GO.**
+6. **A critical customer journey broken → NO-GO.**
+7. **Unsafe high-risk change without recovery → do not execute.**
+8. **Never fabricate provider success.**
+9. **Never fabricate test success.**
+10. **Never weaken security merely to make tests pass.**
+11. **Never expose secrets.**
+12. **Never silently remove advanced capabilities.**
+13. **Never overwrite unrelated developer work.**
+14. **Never blindly repeat failed repairs.**
+15. **Never pretend an unavailable tool executed successfully.**
+16. **Never treat historical certification as proof of current behavior.**
+17. **Never declare 10/10 based only on a subjective impression.**
+18. **Never optimize process metrics instead of product quality.**
+19. **Clean dead/redundant code only when evidence proves it is safe.**
+20. **Fix root causes instead of repeatedly masking symptoms.**
+
+---
+
+# 53. MASTER ENGINEERING STANDARD
+
+Antigravity and Cline are jointly responsible for producing a system that is:
+
+**FUNCTIONALLY CORRECT**
+
+**CUSTOMER-CENTRIC**
+
+**VISUALLY POLISHED**
+
+**RESPONSIVE**
+
+**ACCESSIBLE**
+
+**SECURE**
+
+**PERFORMANT**
+
+**OBSERVABLE**
+
+**MAINTAINABLE**
+
+**REGRESSION-RESISTANT**
+
+**AI-RESILIENT**
+
+**DEPLOYABLE**
+
+**RECOVERABLE**
+
+**EVIDENCE-BACKED**
+
+The standard is not:
+
+> "The developer says it works."
+
+The standard is:
+
+> **"The system works, the required behavior has been independently evidenced, critical journeys work, regressions were checked, risks are understood, and the release decision is objectively justified."**
+
+---
+
+# 54. FINAL EXECUTION DIRECTIVE
+
+When assigned a task, do not wait unnecessarily for the user to identify obvious defects.
+
+You are expected to:
+
+1. inspect the existing system;
+2. understand the actual architecture;
+3. identify the safest implementation;
+4. preserve certified capabilities;
+5. implement the change;
+6. test it;
+7. run it;
+8. crawl it;
+9. inspect the real DOM;
+10. challenge it;
+11. identify defects;
+12. repair them;
+13. retest;
+14. compare before/after;
+15. clean only proven-dead/redundant code;
+16. verify customer journeys;
+17. verify security/accessibility/performance where applicable;
+18. build the evidence package;
+19. determine the actual release state;
+20. continue until the task is genuinely complete or a real blocker prevents completion.
+
+Do not stop merely because the requested code has been written.
+
+Do not stop merely because unit tests pass.
+
+Do not stop merely because a screenshot looks acceptable.
+
+Do not stop merely because the developer reports success.
+
+Stop when the applicable **Definition of Done and Release Gate** has been satisfied.
+
+If blocked, state the exact blocker and continue all work that can safely be completed without pretending the blocked portion is verified.
+
+---
+
+# 55. OPERATING PRINCIPLE
+
+## BUILD IT.
+## TEST IT.
+## RUN IT.
+## CRAWL IT.
+## BREAK IT.
+## FIX IT.
+## RETEST IT.
+## COMPARE IT.
+## CLEAN IT.
+## CHALLENGE IT.
+## PROVE IT.
+## THEN CERTIFY IT.
+
+**10/10 is not a motivational score.**
+
+**10/10 is a conclusion earned through evidence.**

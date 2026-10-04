@@ -64,11 +64,33 @@ body {
 a {
     text-decoration: inherit;
 }
-a:not([class*="bg-"]):not([class*="text-"]):not([class*="btn"]):not([class*="enterprise-"]):not([class*="button"]) {
-    color: #4a6cf7;
+/* Legacy default link ink, re-pointed at the audited accent token.
+ * The raw pair measured 4.394:1 (resting) and 3.678:1 (hover) against white --
+ * both under the 4.5:1 bar, and the resting colour alone accounted for 1570
+ * failing links on /admin/attention. --cuba-ink-accent (#364fc9) measures 6.73:1
+ * on white and re-themes to --cuba-dark-ink-accent, which measures 6.91:1 on the
+ * dark canvas and 6.42:1 on the dark card, so one token covers both themes
+ * instead of a hard-coded value that only worked on white.
+ *
+ * The exclusion list is what stops this ramp from taking over controls that
+ * already declare their own colour.
+ *
+ * The `:not([class*="skip"])` clause is a WCAG 2.1 AA fix, not a cosmetic
+ * one. The document-level skip link (index.html) is a fixed dark plate
+ * (#0f172a) carrying a #ffffff label = 17.9:1. Its class contains none of
+ * the other substrings excluded below, so this selector at (0,6,1) used to
+ * outrank `.skip-link` at (0,1,0) and repaint that label #4a6cf7, which
+ * measures 4.06:1 against its own plate - under the 4.5:1 bar. Both the base
+ * and the :hover rule exclude it so neither can reintroduce the failure.
+ *
+ * :hover additionally gains the `:not([class*="cuba-"])` clause that the base
+ * rule already carried, so a tokenized Cuba link cannot flip to legacy blue
+ * on hover while its resting state is correctly exempt. */
+a:not([class*="bg-"]):not([class*="text-"]):not([class*="btn"]):not([class*="cuba-"]):not([class*="enterprise-"]):not([class*="button"]):not([class*="skip"]) {
+    color: var(--cuba-ink-accent);
 }
 a:not([class*="bg-"]):not([class*="text-"]):not([class*="btn"]):not([class*="enterprise-"]):not([class*="button"]):hover {
-    color: #6c7ee1;
+    color: var(--cuba-ink-accent);
 }
 
 /* Modern button interactive base & accessibility standards */

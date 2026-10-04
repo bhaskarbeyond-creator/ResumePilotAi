@@ -35,6 +35,10 @@ const ENTITIES = Object.freeze({
     payment_order: maria('payment_order', 'payment_orders'),
     payment_refund_reference: maria('payment_refund_reference', 'payment_refund_provider_references', 'Normalized immutable provider evidence; aggregate refunds retain every component reference.'),
     payment_webhook: maria('payment_webhook', 'payment_webhook_events', 'Provider event id is the idempotency key.'),
+    // DIR-022 / INV-4: the append-only financial audit trail for every
+    // subscription state transition. INSERT-only by database trigger, and
+    // written inside the same transaction as the entitlement change it records.
+    subscription_audit: maria('subscription_audit', 'subscription_audit_log', 'Append-only transition ledger; UPDATE and DELETE are refused by database triggers (INV-4).'),
     coupon: maria('coupon', 'coupons'),
     coupon_redemption: maria('coupon_redemption', 'coupon_redemptions'),
     invoice: maria('invoice', 'invoices'),
@@ -110,6 +114,7 @@ const ALIASES = Object.freeze({
     memberships: 'membership', subscriptions: 'subscription',
     transactions: 'payment_transaction', payment_orders: 'payment_order',
     payment_refund_provider_references: 'payment_refund_reference', payment_webhook_events: 'payment_webhook',
+    subscription_audit_log: 'subscription_audit',
     coupons: 'coupon', coupon_redemptions: 'coupon_redemption', invoices: 'invoice', invoice_counters: 'invoice_counter',
     credit_notes: 'credit_note', credit_note_counters: 'credit_note_counter',
     resumes: 'resume', live_interview_sessions: 'live_interview_session', public_resumes: 'resume_publication', canonical_documents: 'canonical_document', portfolios: 'portfolio',

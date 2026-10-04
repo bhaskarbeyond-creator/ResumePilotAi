@@ -95,7 +95,7 @@ const EmployerOnboarding = ({ isEmployer, hasCompanies, showToast }) => {
                         <button
                             type="button"
                             onClick={() => navigate('/employer/jobs')}
-                            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                            className="cuba-btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold"
                         >
                             <FiBriefcase className="h-4 w-4" aria-hidden="true" />
                             Register Company &amp; Post First Job
@@ -105,7 +105,7 @@ const EmployerOnboarding = ({ isEmployer, hasCompanies, showToast }) => {
                             <button
                                 type="button"
                                 onClick={() => setCompanyModalOpen(true)}
-                                className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                                className="cuba-btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold"
                             >
                                 <FaBuilding className="h-4 w-4" aria-hidden="true" />
                                 Register Company Profile
@@ -113,7 +113,7 @@ const EmployerOnboarding = ({ isEmployer, hasCompanies, showToast }) => {
                             <button
                                 type="button"
                                 onClick={() => navigate('/employer/jobs')}
-                                className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                                className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 cuba-focusable"
                             >
                                 Register Company &amp; Post First Job
                                 <FiArrowRight className="h-3.5 w-3.5" aria-hidden="true" />

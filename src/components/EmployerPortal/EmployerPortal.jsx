@@ -110,7 +110,7 @@ const EmployerPortal = () => {
                 <button
                     type="button"
                     onClick={() => setMobileMenuOpen(true)}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-slate-100 cuba-focusable"
                     aria-label="Open hiring navigation"
                     aria-expanded={mobileMenuOpen}
                 >

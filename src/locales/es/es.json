@@ -1852,6 +1852,7 @@
     },
     "actions": {
       "view": "Ver",
+      "openStudio": "Abrir en el estudio",
       "edit": "Editar",
       "delete": "Eliminar",
       "viewPreview": "Ver Vista Previa"

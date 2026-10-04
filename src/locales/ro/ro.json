@@ -1854,6 +1854,7 @@
     },
     "actions": {
       "view": "Vizualizare",
+      "openStudio": "Deschide în Studio",
       "edit": "Editare",
       "delete": "Ștergere",
       "viewPreview": "Vizualizare Previzualizare"

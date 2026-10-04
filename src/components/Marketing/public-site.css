@@ -35,6 +35,47 @@
   --rp-elev-glow: 0 0 24px rgba(26, 115, 232, 0.22);
 }
 
+/* ============================================================================
+ * DIR-023 -- DARK THEME PALETTE for the public marketing surface
+ * ----------------------------------------------------------------------------
+ * PROVEN DEFECT, found by the real-DOM auditor (npm run audit:contrast): this
+ * stylesheet declared a LIGHT-ONLY palette. Not one token was re-declared for dark
+ * mode, so switching the document to data-theme='dark' left the public site with
+ * light-only ink, and kept --rp-blue at #1a73e8, which scores just 4.31:1 against this
+ * surface's own --rp-surface-bg (#f8fafd) -- below the 4.5:1 AA bar for body text.
+ *
+ * The fix re-points the palette at the Cuba dark tokens (--cuba-*) instead of inventing a
+ * second set of dark hex values, so the public site stays on the same design language as the
+ * authenticated portals.
+ *
+ * Every ink below is proved against the dark surface it lands on (#15181f card / #0d0f16
+ * canvas): --cuba-ink 17.9:1, --cuba-ink-muted 9.5:1, --cuba-ink-subtle 7.5:1, and
+ * --cuba-ink-accent 6.4:1 (the lighter sibling of the brand blue, which scores only 4.03:1
+ * here). Light mode is untouched: the :root block above still applies, because this block only
+ * contributes when data-theme='dark' is actually set.
+ * ========================================================================== */
+[data-theme='dark'] {
+  --rp-blue: var(--cuba-ink-accent);
+  --rp-blue-hover: #93a9ff;
+  --rp-blue-subtle: rgba(123, 149, 255, 0.14);
+  --rp-green: #5cd6a0;
+  --rp-green-subtle: rgba(92, 214, 160, 0.14);
+  --rp-amber: #f0b45e;
+  --rp-amber-subtle: rgba(240, 180, 94, 0.14);
+  --rp-surface-bg: var(--cuba-canvas);
+  --rp-surface-card: var(--cuba-card);
+  --rp-surface-border: var(--cuba-line);
+  --rp-border-subtle: var(--cuba-line);
+  --rp-text-title: var(--cuba-ink);
+  --rp-text-body: var(--cuba-ink-muted);
+  --rp-text-muted: var(--cuba-ink-subtle);
+  /* Shadows read as nothing on a dark canvas; the rim carries the elevation. */
+  --rp-elev-1: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --rp-elev-2: 0 4px 14px rgba(0, 0, 0, 0.55);
+  --rp-elev-3: 0 12px 32px rgba(0, 0, 0, 0.6);
+  --rp-elev-glow: 0 0 24px rgba(123, 149, 255, 0.28);
+}
+
 /* Base public site shell */
 .rp-public-site {
   font-family: -apple-system, BlinkMacSystemFont, "Google Sans", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;

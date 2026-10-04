@@ -134,7 +134,14 @@ const JobCard = ({ job, isSaved, onToggleSaved, onViewDetails, onAuthRequired, o
         if (!user?.uid) {
             return {
                 text: t('JobsUpdate.JobCard2.applicationStatus.applyNow', 'Apply Now'),
-                className: 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 text-white shadow-sm hover:shadow-md hover:shadow-blue-500/20 active:scale-95',
+                // DIR-009: canonical Cuba primary token. The legacy
+                // `from-blue-600 via-indigo-600 to-blue-700` ramp was a
+                // legacy-blue CTA that drifted out of the Cuba brand palette.
+                // .cuba-btn-primary is the single authoritative primary
+                // gradient (#7366ff -> #5949d6) and carries its own hover
+                // glow, so the old hover:from-*/hover:to-* utilities are
+                // dropped rather than fought by specificity.
+                className: 'cuba-btn-primary active:scale-95',
                 icon: FaPaperPlane,
                 disabled: false,
             };
@@ -173,7 +180,9 @@ const JobCard = ({ job, isSaved, onToggleSaved, onViewDetails, onAuthRequired, o
 
         return {
             text: t('JobsUpdate.JobCard2.applicationStatus.applyNow', 'Apply Now'),
-            className: 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 text-white shadow-sm hover:shadow-md hover:shadow-blue-500/20 active:scale-95',
+            // DIR-009: canonical Cuba primary token (see the !user?.uid branch
+            // above for the rationale).
+            className: 'cuba-btn-primary active:scale-95',
             icon: FaPaperPlane,
             disabled: false,
         };

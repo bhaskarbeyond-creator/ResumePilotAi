@@ -1,0 +1,207 @@
+{
+  "settle": {
+    "loading": false,
+    "rows": 1,
+    "snippet": "Skip to main content Skip to main content Recruiter & Hiring/Applicant ATS Pipeline Search ⌘K ✦ AI Engine Status Unknown . The availability check could not be completed, so no claim is made. RE Recruiter ✦ IME365 AI EXECUTIVE SUITE Recruiter Portal HIRING COMMAND Recruiter Overview Job Postings Applicant ATS Pipeline Candidate Messages BRAND & SETTINGS Company Profile Hiring Preferences REQUISITIO"
+  },
+  "waitedSeconds": 11.1,
+  "census": {
+    "bodyRows": 1,
+    "pillCount": 2,
+    "pills": [
+      {
+        "tag": "li",
+        "tone": "cuba-pill-danger",
+        "text": "rejected: 1",
+        "className": "capitalize cuba-pill-danger px-2.5 py-1 text-xs"
+      },
+      {
+        "tag": "span",
+        "tone": "cuba-pill-danger",
+        "text": "rejected",
+        "className": "capitalize cuba-pill-danger px-2.5 py-1 text-xs"
+      }
+    ],
+    "stageSummaryItems": [
+      {
+        "text": "rejected: 1",
+        "className": "capitalize cuba-pill-danger px-2.5 py-1 text-xs"
+      }
+    ],
+    "viewResumeButtons": 1,
+    "stageSelects": 1,
+    "textSample": "Skip to main content Skip to main content Recruiter & Hiring/Applicant ATS Pipeline Search ⌘K ✦ AI Engine Status Unknown . The availability check could not be completed, so no claim is made. RE Recruiter ✦ IME365 AI EXECUTIVE SUITE Recruiter Portal HIRING COMMAND Recruiter Overview Job Postings Applicant ATS Pipeline Candidate Messages BRAND & SETTINGS Company Profile Hiring Preferences REQUISITIONS & APPLICANTS Applicant ATS Pipeline Every applicant across your requisitions, with their current "
+  },
+  "apiLog": [
+    {
+      "status": 200,
+      "path": "/api/platform/public-config",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/platform/public-config",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/platform/public-config",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/service-availability",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/enterprise/status",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/employer/companies",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/users-data/OhZdiSIFL7ePA1TMkfu9bnR935D3",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/enterprise/context",
+      "method": "POST"
+    },
+    {
+      "status": 200,
+      "path": "/api/employer/jobs",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/jobs/job-air-23/applications",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/jobs/job-con-25/applications",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/jobs/job-fli-22/applications",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/jobs/job-msf-19/applications",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/jobs/job-par-24/applications",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/jobs/job-sno-21/applications",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/jobs/job-ube-20/applications",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/jobs/job-air-12/applications",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/jobs/job-ant-02/applications",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/jobs/job-atl-17/applications",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/jobs/job-can-07/applications",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/jobs/job-dat-09/applications",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/jobs/job-fig-03/applications",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/jobs/job-fre-18/applications",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/jobs/job-git-16/applications",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/jobs/job-goo-13/applications",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/jobs/job-lin-05/applications",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/jobs/job-not-10/applications",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/jobs/job-raz-06/applications",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/jobs/job-rev-08/applications",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/jobs/job-sho-14/applications",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/jobs/job-spo-11/applications",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/jobs/job-str-01/applications",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/jobs/job-swi-15/applications",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/jobs/job-ver-04/applications",
+      "method": "GET"
+    }
+  ]
+}

@@ -88,17 +88,35 @@ function textOf(root) {
  * throttled runner the assertion could fire before React committed and fail
  * intermittently (this suite was the documented flake in crawl-report.md).
  *
+ * The original fix replaced that guess with a poll, but bounded it at
+ * `60 x 25ms = 1.5s`. That inverts the error: 1.5s is only enough on an idle
+ * machine. Under the real contention of `npm run test:product` (which drives
+ * ~50 spec files concurrently, each booting its own Vite SSR server) the poll
+ * exhausts BEFORE React commits the takeover re-render, and the suite fails at
+ * 'returned to setup after takeover' even though the product is correct —
+ * reproduced: the file passes 1/1 in isolation (8.2s) and fails only in the
+ * contended suite run (11.0s).
+ *
+ * So the bound must be a genuine UPPER bound on a correct run, not a guess at a
+ * typical one. This helper is DEADLINE-based: it polls every `stepMs` and
+ * returns the instant the condition holds, but will keep waiting out to
+ * `timeoutMs` before giving up. That makes the happy path as fast as before
+ * (first poll usually already satisfies it) while making the slow path patient
+ * enough to survive a loaded runner.
+ *
  * The assertions themselves are UNCHANGED — only the wait is made
  * condition-driven, so this still proves the takeover actually rendered rather
- * than that 50ms happened to be enough on an idle machine. Bounded so a real
- * regression fails fast instead of hanging.
+ * than that some duration happened to elapse on an idle machine. It stays
+ * fail-closed: if the takeover never renders, the deadline expires and the
+ * original assertion still fails.
  */
-async function waitForText(root, needle, { attempts = 60, stepMs = 25 } = {}) {
-    for (let attempt = 0; attempt < attempts; attempt += 1) {
+async function waitForText(root, needle, { timeoutMs = 15_000, stepMs = 50 } = {}) {
+    const deadline = Date.now() + timeoutMs;
+    for (;;) {
         if (textOf(root()).includes(needle)) return true;
+        if (Date.now() >= deadline) return false;
         await act(async () => { await new Promise(r => setTimeout(r, stepMs)); });
     }
-    return textOf(root()).includes(needle);
 }
 
 async function renderComponent(vite, _root) {

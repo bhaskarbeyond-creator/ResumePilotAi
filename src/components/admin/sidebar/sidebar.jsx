@@ -32,6 +32,12 @@ const PATH_PERMS = Object.freeze({
     '/admin/messages': 'notifications.send',
     '/admin/help-desk': 'tickets.manage',
     '/admin/phrases': 'system.config.write',
+    // DIR-012: `/admin/settings` was missing here even though the console mounts it
+    // behind `<RequireTabPerm required="*">` and the legacy sidebar drives it through
+    // `SETTINGS_GROUPS` rather than through this map. That omission is what let the
+    // Cuba nav omit the route too: with no authoritative entry in EITHER table the
+    // whole System Configuration surface became unreachable. `'*'` mirrors the gate.
+    '/admin/settings': '*',
 });
 
 // Selection state uses the left rail marker. The only status dot in this

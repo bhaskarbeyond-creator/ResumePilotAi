@@ -36,11 +36,11 @@ class CheckoutErrorBoundary extends React.Component {
         if (this.state.hasError) {
             return (
                 <div className="p-8 text-center space-y-4">
-                    <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto text-xl font-bold">
+                    <div className="w-12 h-12 rounded-2xl bg-cuba-warning-soft border border-cuba-warning-soft text-cuba-warning flex items-center justify-center mx-auto text-xl font-bold">
                         ⚠️
                     </div>
-                    <h3 className="text-base font-extrabold text-slate-900">Checkout Gateway Temporarily Unavailable</h3>
-                    <p className="text-xs text-slate-500 max-w-md mx-auto">
+                    <h3 className="text-base font-extrabold text-cuba-ink">Checkout Gateway Temporarily Unavailable</h3>
+                    <p className="text-xs text-cuba-ink-muted max-w-md mx-auto">
                         Could not initialize the payment interface ({this.state.error?.message || 'Client initialization error'}). You can return to plan selection and try again.
                     </p>
                     <div className="pt-2 flex items-center justify-center gap-3">
@@ -50,7 +50,7 @@ class CheckoutErrorBoundary extends React.Component {
                                 this.setState({ hasError: false, error: null });
                                 if (this.props.onReset) this.props.onReset();
                             }}
-                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer"
+                            className="px-4 py-2 bg-cuba-primary-fill hover:bg-cuba-primary-strong text-cuba-on-primary text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer"
                         >
                             Return to Plan Selection
                         </button>
@@ -261,29 +261,29 @@ const SubscriptionModal = ({ isOpen, onClose, user, onSuccess }) => {
 
     return (
         <div
-            className="fixed inset-0 z-[10000] bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-200 pointer-events-auto"
+            className="fixed inset-0 z-[10000] bg-cuba-ink/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-200 pointer-events-auto"
             role="dialog"
             aria-modal="true"
             aria-labelledby="subscription-modal-title"
         >
-            <div className="bg-white rounded-3xl max-w-3xl w-full flex flex-col shadow-2xl border border-slate-200 overflow-hidden relative my-auto text-slate-900">
+            <div className="bg-cuba-card rounded-3xl max-w-3xl w-full flex flex-col shadow-2xl border border-cuba-line overflow-hidden relative my-auto text-cuba-ink">
                 
                 {/* Executive Light Header */}
-                <div className="px-6 py-3.5 bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 flex items-center justify-between shrink-0 text-white">
+                <div className="px-6 py-3.5 bg-gradient-to-r from-cuba-night-surface-from via-cuba-night-surface-mid to-cuba-night-surface-to flex items-center justify-between shrink-0 text-cuba-on-primary">
                     <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center text-amber-400 font-extrabold shadow-sm shrink-0">
-                            <FaCrown className="w-5 h-5 text-amber-400" />
+                        <div className="w-9 h-9 rounded-xl bg-cuba-night-line border border-cuba-night-line flex items-center justify-center text-cuba-night-warning font-extrabold shadow-sm shrink-0">
+                            <FaCrown className="w-5 h-5 text-cuba-night-warning" />
                         </div>
                         <div>
-                            <h2 id="subscription-modal-title" className="text-base font-extrabold tracking-tight text-white leading-tight">
+                            <h2 id="subscription-modal-title" className="text-base font-extrabold tracking-tight text-cuba-on-primary leading-tight">
                                 PRO Candidate Subscription
                             </h2>
-                            <div className="flex items-center gap-2 text-[11px] text-indigo-100/90 mt-0.5">
-                                <span className="font-semibold text-amber-300">
+                            <div className="flex items-center gap-2 text-[11px] text-cuba-primary/90 mt-0.5">
+                                <span className="font-semibold text-cuba-night-warning">
                                     Current Plan: <strong>{userCurrentMembership}</strong>
                                 </span>
-                                <span className="text-indigo-300">•</span>
-                                <span className="flex items-center gap-1 text-emerald-300 font-medium">
+                                <span className="text-cuba-night-primary">•</span>
+                                <span className="flex items-center gap-1 text-cuba-night-success font-medium">
                                     <FaShieldAlt className="w-3 h-3" />
                                     <span>30-Day Money Back Guarantee</span>
                                 </span>
@@ -294,7 +294,7 @@ const SubscriptionModal = ({ isOpen, onClose, user, onSuccess }) => {
                     <button
                         type="button"
                         onClick={onClose}
-                        className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-white/50"
+                        className="w-8 h-8 rounded-full bg-cuba-night-line hover:bg-cuba-night-line text-cuba-on-primary flex items-center justify-center transition-all cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-cuba-night-line"
                         aria-label="Close subscription modal">
                         <FaTimes className="w-3.5 h-3.5" />
                     </button>
@@ -304,27 +304,27 @@ const SubscriptionModal = ({ isOpen, onClose, user, onSuccess }) => {
                 {step === 1 && (
                     <div className="flex-1 flex flex-col">
                         {/* What am I buying & Benefits (Full Width, No Squeezing) */}
-                        <div className="bg-gradient-to-r from-indigo-50/80 via-purple-50/40 to-slate-50/70 border-b border-indigo-100/80 px-6 py-4">
+                        <div className="bg-gradient-to-r from-cuba-primary-soft/80 via-cuba-primary-soft/40 to-cuba-canvas/70 border-b border-cuba-primary-soft/80 px-6 py-4">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
                                 <div>
-                                    <span className="text-[10px] font-extrabold tracking-wider uppercase text-indigo-700 bg-indigo-100/80 px-2 py-0.5 rounded-md mr-2">
+                                    <span className="text-[10px] font-extrabold tracking-wider uppercase text-cuba-primary-ink-strong bg-cuba-primary-soft/80 px-2 py-0.5 rounded-md mr-2">
                                         Upgrade Offer
                                     </span>
-                                    <h3 className="inline text-base font-extrabold text-slate-900 tracking-tight">
+                                    <h3 className="inline text-base font-extrabold text-cuba-ink tracking-tight">
                                         Accelerate your career with PRO Candidate features
                                     </h3>
                                 </div>
-                                <span className="text-xs font-semibold text-slate-500 shrink-0">
+                                <span className="text-xs font-semibold text-cuba-ink-muted shrink-0">
                                     100% Watermark-Free Export
                                 </span>
                             </div>
 
                             {/* Balanced Benefits Checklist */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs text-slate-700">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs text-cuba-ink">
                                 {PRO_UNLOCKED_FEATURES.map((feat, i) => (
-                                    <div key={i} className="flex items-center gap-2 bg-white/90 px-3 py-1.5 rounded-xl border border-slate-200/80 shadow-2xs">
-                                        <FaCheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                                        <span className="font-semibold text-[11px] leading-tight text-slate-800">{feat}</span>
+                                    <div key={i} className="flex items-center gap-2 bg-cuba-card px-3 py-1.5 rounded-xl border border-cuba-line/80 shadow-2xs">
+                                        <FaCheckCircle className="w-3.5 h-3.5 text-cuba-success shrink-0" />
+                                        <span className="font-semibold text-[11px] leading-tight text-cuba-ink">{feat}</span>
                                     </div>
                                 ))}
                             </div>
@@ -333,15 +333,15 @@ const SubscriptionModal = ({ isOpen, onClose, user, onSuccess }) => {
                         {/* Modal Body: Billing Selection + Coupon & Summary */}
                         <div className="p-6 space-y-5">
                             {subscriptionConfig.error && (
-                                <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center justify-between text-rose-800 text-xs font-semibold shadow-xs">
+                                <div className="p-4 bg-cuba-danger-soft border border-cuba-danger-soft rounded-2xl flex items-center justify-between text-cuba-danger text-xs font-semibold shadow-xs">
                                     <div className="flex items-center gap-2">
-                                        <FaTimes className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                                        <FaTimes className="w-3.5 h-3.5 text-cuba-danger shrink-0" />
                                         <span>{subscriptionConfig.error}</span>
                                     </div>
                                     <button
                                         type="button"
                                         onClick={loadSubscriptionPricing}
-                                        className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition shadow-xs cursor-pointer"
+                                        className="px-3 py-1 bg-cuba-danger hover:bg-cuba-danger text-cuba-on-primary rounded-lg text-xs font-bold transition shadow-xs cursor-pointer"
                                     >
                                         Retry
                                     </button>
@@ -351,10 +351,10 @@ const SubscriptionModal = ({ isOpen, onClose, user, onSuccess }) => {
                             {/* 1. Billing Cycle Selection */}
                             <div>
                                 <div className="flex items-center justify-between mb-2.5">
-                                    <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-600">
+                                    <h4 className="text-xs font-extrabold uppercase tracking-wider text-cuba-ink-muted">
                                         1. Select Billing Cycle
                                     </h4>
-                                    <span className="text-[11px] text-slate-500 font-medium">
+                                    <span className="text-[11px] text-cuba-ink-muted font-medium">
                                         Cancel anytime with 1-click
                                     </span>
                                 </div>
@@ -365,8 +365,8 @@ const SubscriptionModal = ({ isOpen, onClose, user, onSuccess }) => {
                                         onClick={() => setSelectedDuration('1')}
                                         className={`relative rounded-2xl p-4 border-2 transition-all cursor-pointer flex flex-col justify-between ${
                                             selectedDuration === '1'
-                                                ? 'bg-indigo-50/20 border-indigo-600 shadow-md ring-2 ring-indigo-600/20'
-                                                : 'bg-white border-slate-200 hover:border-slate-300'
+                                                ? 'bg-cuba-primary-soft/20 border-cuba-primary shadow-md ring-2 ring-cuba-primary/20'
+                                                : 'bg-cuba-card border-cuba-line hover:border-cuba-line-strong'
                                         }`}
                                         role="radio"
                                         aria-checked={selectedDuration === '1'}
@@ -375,19 +375,19 @@ const SubscriptionModal = ({ isOpen, onClose, user, onSuccess }) => {
                                     >
                                         <div>
                                             <div className="flex justify-between items-center mb-1.5">
-                                                <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">Monthly</span>
-                                                <span className="text-[9px] font-extrabold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">Standard</span>
+                                                <span className="text-xs font-bold text-cuba-ink uppercase tracking-wide">Monthly</span>
+                                                <span className="text-[9px] font-extrabold text-cuba-ink-muted bg-cuba-elevated px-2 py-0.5 rounded-full">Standard</span>
                                             </div>
                                             <div className="mb-1">
-                                                <span className="text-2xl font-black text-slate-900">{subscriptionConfig.monthlyPrice ? `${subscriptionConfig.symbol}${subscriptionConfig.monthlyPrice}` : '--'}</span>
-                                                <span className="text-xs text-slate-500"> / mo</span>
+                                                <span className="text-2xl font-black text-cuba-ink">{subscriptionConfig.monthlyPrice ? `${subscriptionConfig.symbol}${subscriptionConfig.monthlyPrice}` : '--'}</span>
+                                                <span className="text-xs text-cuba-ink-muted"> / mo</span>
                                             </div>
-                                            <p className="text-[11px] text-slate-500 leading-tight">Flexible monthly billing.</p>
+                                            <p className="text-[11px] text-cuba-ink-muted leading-tight">Flexible monthly billing.</p>
                                         </div>
-                                        <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                                        <div className="mt-3 pt-2.5 border-t border-cuba-line flex items-center justify-between text-[11px] text-cuba-ink-muted">
                                             <span>Renews monthly</span>
-                                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selectedDuration === '1' ? 'border-indigo-600 bg-indigo-600' : 'border-slate-300'}`}>
-                                                {selectedDuration === '1' && <FaCheck className="w-2 h-2 text-white" />}
+                                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selectedDuration === '1' ? 'border-cuba-primary bg-cuba-primary-fill' : 'border-cuba-line-strong'}`}>
+                                                {selectedDuration === '1' && <FaCheck className="w-2 h-2 text-cuba-on-primary" />}
                                             </div>
                                         </div>
                                     </div>
@@ -397,8 +397,8 @@ const SubscriptionModal = ({ isOpen, onClose, user, onSuccess }) => {
                                         onClick={() => setSelectedDuration('6')}
                                         className={`relative rounded-2xl p-4 border-2 transition-all cursor-pointer flex flex-col justify-between ${
                                             selectedDuration === '6'
-                                                ? 'bg-indigo-50/20 border-indigo-600 shadow-md ring-2 ring-indigo-600/20'
-                                                : 'bg-white border-slate-200 hover:border-slate-300'
+                                                ? 'bg-cuba-primary-soft/20 border-cuba-primary shadow-md ring-2 ring-cuba-primary/20'
+                                                : 'bg-cuba-card border-cuba-line hover:border-cuba-line-strong'
                                         }`}
                                         role="radio"
                                         aria-checked={selectedDuration === '6'}
@@ -406,27 +406,27 @@ const SubscriptionModal = ({ isOpen, onClose, user, onSuccess }) => {
                                         onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') setSelectedDuration('6'); }}
                                     >
                                         <div className="absolute -top-2.5 right-3">
-                                            <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-gradient-to-r from-purple-600 to-indigo-600 text-white uppercase shadow-2xs">
+                                            <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-gradient-to-r from-cuba-primary-fill to-cuba-primary-fill text-cuba-on-primary uppercase shadow-2xs">
                                                 Save 35%
                                             </span>
                                         </div>
                                         <div>
                                             <div className="flex justify-between items-center mb-1.5">
-                                                <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">6 Months</span>
-                                                <span className="text-[9px] font-extrabold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full">Popular</span>
+                                                <span className="text-xs font-bold text-cuba-ink uppercase tracking-wide">6 Months</span>
+                                                <span className="text-[9px] font-extrabold text-cuba-primary-ink-strong bg-cuba-primary-soft px-2 py-0.5 rounded-full">Popular</span>
                                             </div>
                                             <div className="mb-1">
-                                                <span className="text-2xl font-black text-slate-900">{subscriptionConfig.quartarlyPrice ? `${subscriptionConfig.symbol}${Math.round(subscriptionConfig.quartarlyPrice / 6)}` : '--'}</span>
-                                                <span className="text-xs text-slate-500"> / mo</span>
+                                                <span className="text-2xl font-black text-cuba-ink">{subscriptionConfig.quartarlyPrice ? `${subscriptionConfig.symbol}${Math.round(subscriptionConfig.quartarlyPrice / 6)}` : '--'}</span>
+                                                <span className="text-xs text-cuba-ink-muted"> / mo</span>
                                             </div>
-                                            <p className="text-[11px] text-slate-500 leading-tight">
+                                            <p className="text-[11px] text-cuba-ink-muted leading-tight">
                                                 Billed {subscriptionConfig.quartarlyPrice ? `${subscriptionConfig.symbol}${subscriptionConfig.quartarlyPrice}` : '--'} semi-annually.
                                             </p>
                                         </div>
-                                        <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                                        <div className="mt-3 pt-2.5 border-t border-cuba-line flex items-center justify-between text-[11px] text-cuba-ink-muted">
                                             <span>Renews every 6 months</span>
-                                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selectedDuration === '6' ? 'border-indigo-600 bg-indigo-600' : 'border-slate-300'}`}>
-                                                {selectedDuration === '6' && <FaCheck className="w-2 h-2 text-white" />}
+                                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selectedDuration === '6' ? 'border-cuba-primary bg-cuba-primary-fill' : 'border-cuba-line-strong'}`}>
+                                                {selectedDuration === '6' && <FaCheck className="w-2 h-2 text-cuba-on-primary" />}
                                             </div>
                                         </div>
                                     </div>
@@ -436,8 +436,8 @@ const SubscriptionModal = ({ isOpen, onClose, user, onSuccess }) => {
                                         onClick={() => setSelectedDuration('12')}
                                         className={`relative rounded-2xl p-4 border-2 transition-all cursor-pointer flex flex-col justify-between ${
                                             selectedDuration === '12'
-                                                ? 'bg-amber-50/20 border-amber-500 shadow-md ring-2 ring-amber-500/20'
-                                                : 'bg-white border-slate-200 hover:border-slate-300'
+                                                ? 'bg-cuba-warning-soft/20 border-cuba-warning shadow-md ring-2 ring-cuba-warning/20'
+                                                : 'bg-cuba-card border-cuba-line hover:border-cuba-line-strong'
                                         }`}
                                         role="radio"
                                         aria-checked={selectedDuration === '12'}
@@ -445,27 +445,27 @@ const SubscriptionModal = ({ isOpen, onClose, user, onSuccess }) => {
                                         onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') setSelectedDuration('12'); }}
                                     >
                                         <div className="absolute -top-2.5 right-3">
-                                            <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-gradient-to-r from-emerald-600 to-teal-600 text-white uppercase shadow-2xs">
+                                            <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-gradient-to-r from-cuba-success to-cuba-success text-cuba-on-primary uppercase shadow-2xs">
                                                 Best Value
                                             </span>
                                         </div>
                                         <div>
                                             <div className="flex justify-between items-center mb-1.5 mt-0.5">
-                                                <span className="text-xs font-extrabold text-slate-800 uppercase tracking-wide">12 Months</span>
-                                                <span className="text-[9px] font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">Top Choice</span>
+                                                <span className="text-xs font-extrabold text-cuba-ink uppercase tracking-wide">12 Months</span>
+                                                <span className="text-[9px] font-extrabold text-cuba-success bg-cuba-success-soft px-2 py-0.5 rounded-full">Top Choice</span>
                                             </div>
                                             <div className="mb-1">
-                                                <span className="text-2xl font-black text-slate-900">{subscriptionConfig.yearlyPrice ? `${subscriptionConfig.symbol}${Math.round(subscriptionConfig.yearlyPrice / 12)}` : '--'}</span>
-                                                <span className="text-xs text-slate-500"> / mo</span>
+                                                <span className="text-2xl font-black text-cuba-ink">{subscriptionConfig.yearlyPrice ? `${subscriptionConfig.symbol}${Math.round(subscriptionConfig.yearlyPrice / 12)}` : '--'}</span>
+                                                <span className="text-xs text-cuba-ink-muted"> / mo</span>
                                             </div>
-                                            <p className="text-[11px] text-slate-500 leading-tight">
+                                            <p className="text-[11px] text-cuba-ink-muted leading-tight">
                                                 Billed {subscriptionConfig.yearlyPrice ? `${subscriptionConfig.symbol}${subscriptionConfig.yearlyPrice}` : '--'} annually.
                                             </p>
                                         </div>
-                                        <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                                        <div className="mt-3 pt-2.5 border-t border-cuba-line flex items-center justify-between text-[11px] text-cuba-ink-muted">
                                             <span>Renews annually</span>
-                                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selectedDuration === '12' ? 'border-indigo-600 bg-indigo-600' : 'border-slate-300'}`}>
-                                                {selectedDuration === '12' && <FaCheck className="w-2 h-2 text-white" />}
+                                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selectedDuration === '12' ? 'border-cuba-primary bg-cuba-primary-fill' : 'border-cuba-line-strong'}`}>
+                                                {selectedDuration === '12' && <FaCheck className="w-2 h-2 text-cuba-on-primary" />}
                                             </div>
                                         </div>
                                     </div>
@@ -474,12 +474,12 @@ const SubscriptionModal = ({ isOpen, onClose, user, onSuccess }) => {
 
                             {/* 2. Promo Coupon Code */}
                             <div>
-                                <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-600 mb-2">
+                                <h4 className="text-xs font-extrabold uppercase tracking-wider text-cuba-ink-muted mb-2">
                                     2. Have a Coupon Code?
                                 </h4>
                                 <div className="flex gap-2">
                                     <div className="relative flex-1">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-cuba-ink-subtle">
                                             <FaTag className="w-3.5 h-3.5" />
                                         </div>
                                         <input
@@ -491,14 +491,14 @@ const SubscriptionModal = ({ isOpen, onClose, user, onSuccess }) => {
                                             }}
                                             aria-label="Coupon code input"
                                             placeholder="e.g. SPRING30"
-                                            className="w-full pl-9 pr-3 py-2 text-xs font-bold uppercase rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-hidden bg-slate-50/50"
+                                            className="w-full pl-9 pr-3 py-2 text-xs font-bold uppercase rounded-xl border border-cuba-line focus:border-cuba-primary focus:ring-1 focus:ring-cuba-primary outline-hidden bg-cuba-canvas/50"
                                         />
                                     </div>
                                     <button
                                         type="button"
                                         onClick={handleApplyCoupon}
                                         disabled={isValidatingCoupon || !couponInput.trim()}
-                                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white text-xs font-bold rounded-xl transition shadow-xs cursor-pointer disabled:cursor-not-allowed shrink-0"
+                                        className="px-4 py-2 bg-cuba-primary-fill hover:bg-cuba-primary-strong disabled:bg-cuba-primary-fill text-cuba-on-primary text-xs font-bold rounded-xl transition shadow-xs cursor-pointer disabled:cursor-not-allowed shrink-0"
                                     >
                                         {isValidatingCoupon ? 'Checking...' : 'Apply'}
                                     </button>
@@ -507,7 +507,7 @@ const SubscriptionModal = ({ isOpen, onClose, user, onSuccess }) => {
                                 {/* Active Promos Pill List */}
                                 {availableCoupons.length > 0 && !appliedCoupon && (
                                     <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                                        <span className="text-[10px] text-slate-500 font-medium">Available promos:</span>
+                                        <span className="text-[10px] text-cuba-ink-muted font-medium">Available promos:</span>
                                         {availableCoupons.map((c) => (
                                             <button
                                                 key={c.code}
@@ -516,7 +516,7 @@ const SubscriptionModal = ({ isOpen, onClose, user, onSuccess }) => {
                                                     setCouponInput(c.code);
                                                     setCouponError('');
                                                 }}
-                                                className="px-2 py-0.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/60 rounded-md text-[10px] font-bold tracking-wider cursor-pointer transition"
+                                                className="px-2 py-0.5 bg-cuba-primary-soft hover:bg-cuba-primary-soft text-cuba-primary-ink-strong border border-cuba-primary-soft/60 rounded-md text-[10px] font-bold tracking-wider cursor-pointer transition"
                                             >
                                                 {c.code} (-{c.discount}%)
                                             </button>
@@ -525,22 +525,22 @@ const SubscriptionModal = ({ isOpen, onClose, user, onSuccess }) => {
                                 )}
 
                                 {couponError && (
-                                    <p className="text-[11px] text-rose-600 font-semibold mt-1.5 flex items-center gap-1">
+                                    <p className="text-[11px] text-cuba-danger font-semibold mt-1.5 flex items-center gap-1">
                                         <FaTimes className="w-3 h-3" />
                                         <span>{couponError}</span>
                                     </p>
                                 )}
 
                                 {appliedCoupon && (
-                                    <div className="mt-2.5 p-2.5 bg-emerald-50 border border-emerald-200/80 rounded-xl flex items-center justify-between text-xs text-emerald-800">
+                                    <div className="mt-2.5 p-2.5 bg-cuba-success-soft border border-cuba-success-soft/80 rounded-xl flex items-center justify-between text-xs text-cuba-success">
                                         <div className="flex items-center gap-2">
-                                            <FaCheckCircle className="w-4 h-4 text-emerald-600" />
+                                            <FaCheckCircle className="w-4 h-4 text-cuba-success" />
                                             <span className="font-bold">✓ {appliedCoupon.code} (-{appliedCoupon.discount}%)</span>
                                         </div>
                                         <button
                                             type="button"
                                             onClick={handleRemoveCoupon}
-                                            className="text-emerald-700 hover:text-emerald-900 text-[11px] font-bold underline cursor-pointer"
+                                            className="text-cuba-success hover:text-cuba-success text-[11px] font-bold underline cursor-pointer"
                                         >
                                             Remove
                                         </button>
@@ -549,28 +549,28 @@ const SubscriptionModal = ({ isOpen, onClose, user, onSuccess }) => {
                             </div>
 
                             {/* 3. Order Summary & CTA */}
-                            <div className="border-t border-slate-200 pt-4">
-                                <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200/80 space-y-3">
-                                    <div className="space-y-1 text-xs text-slate-600">
+                            <div className="border-t border-cuba-line pt-4">
+                                <div className="bg-cuba-canvas/80 rounded-2xl p-4 border border-cuba-line/80 space-y-3">
+                                    <div className="space-y-1 text-xs text-cuba-ink-muted">
                                         <div className="flex justify-between items-center">
                                             <span>Standard Plan Rate</span>
-                                            <span className="font-semibold text-slate-900">{subscriptionConfig.monthlyPrice ? `${subscriptionConfig.symbol}${getOriginalPriceBeforeDiscount()}` : '--'}</span>
+                                            <span className="font-semibold text-cuba-ink">{subscriptionConfig.monthlyPrice ? `${subscriptionConfig.symbol}${getOriginalPriceBeforeDiscount()}` : '--'}</span>
                                         </div>
                                         {getDurationSavings() > 0 && (
-                                            <div className="flex justify-between items-center text-emerald-700 font-medium">
+                                            <div className="flex justify-between items-center text-cuba-success font-medium">
                                                 <span>Duration Savings</span>
                                                 <span>-{subscriptionConfig.symbol}{getDurationSavings()}</span>
                                             </div>
                                         )}
                                         {appliedCoupon && (
-                                            <div className="flex justify-between items-center text-emerald-700 font-bold">
+                                            <div className="flex justify-between items-center text-cuba-success font-bold">
                                                 <span>Coupon Discount ({appliedCoupon.code})</span>
                                                 <span>-{subscriptionConfig.symbol}{getCouponDiscountAmount()}</span>
                                             </div>
                                         )}
-                                        <div className="pt-1.5 border-t border-slate-200 flex justify-between items-center">
-                                            <span className="font-bold text-slate-800">Total Due Today</span>
-                                            <span className="text-2xl text-indigo-950 font-black tracking-tight">
+                                        <div className="pt-1.5 border-t border-cuba-line flex justify-between items-center">
+                                            <span className="font-bold text-cuba-ink">Total Due Today</span>
+                                            <span className="text-2xl text-cuba-primary-ink-strong font-black tracking-tight">
                                                 {subscriptionConfig.monthlyPrice ? `${subscriptionConfig.symbol}${getFinalTotal()}` : '--'}
                                             </span>
                                         </div>
@@ -580,10 +580,10 @@ const SubscriptionModal = ({ isOpen, onClose, user, onSuccess }) => {
                                         type="button"
                                         onClick={() => setStep(2)}
                                         disabled={subscriptionConfig.isLoading || !!subscriptionConfig.error || subscriptionConfig.monthlyPrice === null}
-                                        className={`w-full py-3 text-white text-xs font-extrabold uppercase tracking-wider rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all ${
+                                        className={`w-full py-3 text-cuba-on-primary text-xs font-extrabold uppercase tracking-wider rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all ${
                                             subscriptionConfig.isLoading || !!subscriptionConfig.error || subscriptionConfig.monthlyPrice === null
-                                                ? 'bg-slate-400 cursor-not-allowed opacity-60'
-                                                : 'bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 shadow-indigo-600/20 cursor-pointer hover:scale-[1.01]'
+                                                ? 'bg-cuba-line-strong cursor-not-allowed opacity-60'
+                                                : 'bg-gradient-to-r from-cuba-primary-fill to-cuba-primary-strong hover:from-cuba-primary-fill hover:to-cuba-primary-fill shadow-cuba-primary/20 cursor-pointer hover:scale-[1.01]'
                                         }`}
                                     >
                                         <span>Continue to Checkout</span>
@@ -604,25 +604,25 @@ const SubscriptionModal = ({ isOpen, onClose, user, onSuccess }) => {
                                     <div className="space-y-5 max-w-2xl mx-auto">
                                         
                                         {/* Cart Review Banner */}
-                                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
+                                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-cuba-canvas p-3.5 rounded-2xl border border-cuba-line shadow-2xs">
                                             <button
                                                 type="button"
                                                 onClick={() => setStep(1)}
-                                                className="px-3 py-1.5 text-xs font-bold text-indigo-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer self-start sm:self-auto shadow-2xs"
+                                                className="px-3 py-1.5 text-xs font-bold text-cuba-primary-ink-strong bg-cuba-card hover:bg-cuba-canvas border border-cuba-line rounded-xl transition-all flex items-center gap-1.5 cursor-pointer self-start sm:self-auto shadow-2xs"
                                             >
                                                 ← Edit Plan &amp; Duration
                                             </button>
                                             <div className="text-right">
-                                                <span className="text-xs text-slate-500 mr-2">Due Today:</span>
-                                                <span className="text-sm font-black text-slate-900 uppercase tracking-wider">
+                                                <span className="text-xs text-cuba-ink-muted mr-2">Due Today:</span>
+                                                <span className="text-sm font-black text-cuba-ink uppercase tracking-wider">
                                                     {selectedDuration} Mos • {subscriptionConfig.symbol}{getFinalTotal()} {subscriptionConfig.currency}
-                                                    {appliedCoupon && <span className="ml-1.5 px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-md text-[10px] border border-emerald-300 font-bold">{appliedCoupon.code}</span>}
+                                                    {appliedCoupon && <span className="ml-1.5 px-2 py-0.5 bg-cuba-success-soft text-cuba-success rounded-md text-[10px] border border-cuba-success-soft font-bold">{appliedCoupon.code}</span>}
                                                 </span>
                                             </div>
                                         </div>
 
                                         {/* Native Embedded Checkout Gateway */}
-                                        <div className="bg-white rounded-2xl p-4 sm:p-6 text-slate-900 shadow-lg border border-slate-200">
+                                        <div className="bg-cuba-card rounded-2xl p-4 sm:p-6 text-cuba-ink shadow-lg border border-cuba-line">
                                             <ElementsConsumer>
                                                 {({ stripe, elements }) => (
                                                     <Checkout

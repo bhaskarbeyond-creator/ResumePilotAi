@@ -1,8 +1,12 @@
-import React, { useState, useContext, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { lazy, Suspense, useState, useContext, useEffect, useCallback, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Puck } from '@puckeditor/core';
-import '@puckeditor/core/puck.css';
+// DIR-019 DEFECT 1: the legacy Puck editor and its `puck.css` are loaded LAZILY
+// via the dynamic import below. A static `import '@puckeditor/core/puck.css'`
+// here bundled an `@import "https://rsms.me/inter/inter.css"` into the default
+// studio route's stylesheet, which the production CSP blocks — the blocked
+// remote @import made Vite's preload helper throw and RouteErrorBoundary render
+// a fatal 'Application View Error' on /portfolio/builder. See LegacyPuckEditor.jsx.
 import { AuthContext } from '../../context/AuthContext';
 import { publishPortfolio, updateExistingPortfolio, savePortfolioDraft, getUserPortfolios, updatePortfolioVisibility, deletePortfolio, duplicatePortfolio, renamePortfolio, getPortfolioById } from '../../services/api/platform';
 import { NavbarCategory, HeroCategory, AboutCategory, SkillsCategory, ExperienceCategory, EducationCategory, ProjectsCategory, ServicesCategory, TestimonialsCategory, ResumeCategory, AwardsCategory, ContactCategory, FooterCategory, GridLayoutCategory, GridItemCategory, FlexLayoutCategory, FlexItemCategory, LayoutCategory } from './PortfolioComponents';
@@ -11,6 +15,13 @@ import TemplateSelector from './TemplateSelector';
 import { SecurityUtils, loadTemplate } from './templateUtils';
 import Toasts from '../Toasts/Toats';
 import WebCvStudio from './WebCvStudio';
+
+// DIR-019 DEFECT 1: lazy boundary for the legacy Puck editor. Because this is a
+// dynamic import, Vite emits `puck.css` as its OWN async chunk that is only
+// requested when `?legacy=1` is actually present — so the default studio route
+// never triggers the CSP-blocked `rsms.me` @import that caused the fatal
+// 'Application View Error'. See LegacyPuckEditor.jsx for the full rationale.
+const LegacyPuckEditor = lazy(() => import('./LegacyPuckEditor'));
 
 // Define the component categories with enhanced template selection and descriptions
 const config = {
@@ -1137,23 +1148,32 @@ const PortfolioBuilder = () => {
                         </div>
                     </div>
                 )}
-                {/* Portfolio Builder */}
-                <Puck
-                    key={`portfolio-${currentPortfolioId || 'new'}-${renderKey}`}
-                    config={config}
-                    data={portfolioData}
-                    headerTitle="Portfolio Builder"
-                    overrides={{
-                        headerActions: CustomHeaderActions,
-                    }}
-                    onPublish={async (data) => {
-                        if (data && data.content) {
-                            setPortfolioData(data);
-                            await handlePublish(data);
-                        }
-                    }}
-                    onChange={handlePuckChange}
-                />
+                {/* Legacy Puck editor — lazily loaded, so its CSP-hostile
+                    `puck.css` (@import https://rsms.me/inter/inter.css) is only
+                    ever requested on this `?legacy=1` branch (DIR-019 DEFECT 1). */}
+                <Suspense
+                    fallback={
+                        <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-cuba-canvas" role="status" aria-live="polite">
+                            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-cuba-primary mx-auto" />
+                            <p className="text-cuba-ink-muted text-sm font-medium">Loading legacy editor…</p>
+                        </div>
+                    }>
+                    <LegacyPuckEditor
+                        key={`portfolio-${currentPortfolioId || 'new'}-${renderKey}`}
+                        config={config}
+                        data={portfolioData}
+                        overrides={{
+                            headerActions: CustomHeaderActions,
+                        }}
+                        onPublish={async (data) => {
+                            if (data && data.content) {
+                                setPortfolioData(data);
+                                await handlePublish(data);
+                            }
+                        }}
+                        onChange={handlePuckChange}
+                    />
+                </Suspense>
 
                 {/* Manage Portfolios Modal - Rendered as Portal */}
                 {showManageModal &&

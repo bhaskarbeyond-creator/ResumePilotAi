@@ -128,4 +128,5 @@ scripts/capture-user-dashboard-visuals.mjs
 dashboardTemplate/
 temp_inspect/
 archive_list.txt
+/.bridge/tmp/
 

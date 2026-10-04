@@ -1854,6 +1854,7 @@
     },
     "actions": {
       "view": "Bekijken",
+      "openStudio": "Openen in Studio",
       "edit": "Bewerken",
       "delete": "Verwijderen",
       "viewPreview": "Voorbeeld Bekijken"

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { withTranslation } from 'react-i18next';
 import { FaBriefcase, FaSearch, FaFilter, FaCalendar, FaMapMarkerAlt, FaDollarSign, FaEye, FaClock, FaCheckCircle, FaTimesCircle, FaHourglass, FaInfoCircle, FaSortAmountDown, FaBuilding, FaPlus, FaEdit, FaTrash, FaUsers, FaChartBar, FaFileAlt, FaExclamationTriangle, FaChevronDown, FaChevronUp } from 'react-icons/fa';
@@ -20,7 +20,11 @@ const EmployerDashboard = ({ showToast, _sidebarCollapsed, t }) => {
     const [loading, setLoading] = useState(true);
     const [selectedJob, setSelectedJob] = useState(null);
     const [applications, setApplications] = useState([]);
-    const [_loadingApplications, setLoadingApplications] = useState(false);
+    const [loadingApplications, setLoadingApplications] = useState(false);
+    // Monotonic request token. Opening the ATS modal is asynchronous (the applicant
+    // list is fetched), so without this a slow response for a previously-clicked
+    // requisition can resolve AFTER a newer one and overwrite the visible pipeline.
+    const applicationsRequestRef = useRef(0);
     const [expandedJob, setExpandedJob] = useState(null);
     const [showApplicationsModal, setShowApplicationsModal] = useState(false);
     const [showAddCompanyModal, setShowAddCompanyModal] = useState(false);
@@ -124,9 +128,15 @@ const EmployerDashboard = ({ showToast, _sidebarCollapsed, t }) => {
     };
 
     const loadApplications = async (jobId) => {
+        const requestId = ++applicationsRequestRef.current;
         setLoadingApplications(true);
         try {
             const jobApplications = await getJobApplications(jobId);
+
+            // Stale response: a newer requisition was opened while this fetch was in
+            // flight. Discard it rather than painting the wrong applicant pipeline
+            // into the modal (DIR-010 §2 in-modal review correctness).
+            if (requestId !== applicationsRequestRef.current) return;
 
        
             if (jobApplications && jobApplications.length > 0) {
@@ -158,12 +168,18 @@ const EmployerDashboard = ({ showToast, _sidebarCollapsed, t }) => {
             showToast && showToast('error', 'Error', 'Failed to load applications');
             setApplications([]);
         } finally {
-            setLoadingApplications(false);
+            // Only the newest request may clear the loading flag; a stale one
+            // settling here would switch off the spinner for a fetch still running.
+            if (requestId === applicationsRequestRef.current) setLoadingApplications(false);
         }
     };
 
     const handleJobClick = (job) => {
         setSelectedJob(job);
+        // Clear the previous requisition's applicants synchronously BEFORE the new
+        // fetch starts. The modal opens on the same tick as this call, so any
+        // retained rows would render as the new job's pipeline for a frame.
+        setApplications([]);
         loadApplications(job.id);
         setShowApplicationsModal(true);
     };
@@ -265,20 +281,24 @@ const EmployerDashboard = ({ showToast, _sidebarCollapsed, t }) => {
     };
 
     const getStatusBadge = (status) => {
+        // Canonical Cuba status pills (DIR-010 §2). Tones resolve to the opaque
+        // .cuba-pill-* tokens, which are the only approved way to express ATS
+        // stage status: their fill/ink pairs are contrast-verified to WCAG 2.1
+        // AA in both themes, so no component may re-invent a bg-*/text-* pair.
         const statusConfig = {
-            active: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', icon: FaCheckCircle, label: 'Active' },
-            pending: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', icon: FaClock, label: 'Pending Approval' },
-            paused: { bg: 'bg-slate-100', text: 'text-slate-600', border: 'border-slate-200', icon: FaHourglass, label: 'Paused' },
-            closed: { bg: 'bg-slate-100', text: 'text-slate-600', border: 'border-slate-200', icon: FaTimesCircle, label: 'Closed' },
-            draft: { bg: 'bg-slate-50', text: 'text-slate-600', border: 'border-slate-200', icon: FaFileAlt, label: 'Draft' },
+            active: { tone: 'cuba-pill-success', icon: FaCheckCircle, label: 'Active' },
+            pending: { tone: 'cuba-pill-warning', icon: FaClock, label: 'Pending Approval' },
+            paused: { tone: 'cuba-pill-neutral', icon: FaHourglass, label: 'Paused' },
+            closed: { tone: 'cuba-pill-neutral', icon: FaTimesCircle, label: 'Closed' },
+            draft: { tone: 'cuba-pill-neutral', icon: FaFileAlt, label: 'Draft' },
         };
 
         const config = statusConfig[status] || statusConfig.pending; // Default to pending instead of active
         const IconComponent = config.icon;
 
         return (
-            <span className={`inline-flex items-center px-2 py-1 rounded border text-xs font-medium ${config.bg} ${config.text} ${config.border}`}>
-                <IconComponent className="w-2.5 h-2.5 mr-1" />
+            <span className={`${config.tone} px-2.5 py-1 text-xs font-bold`}>
+                <IconComponent className="w-2.5 h-2.5 mr-1" aria-hidden="true" />
                 {config.label}
             </span>
         );
@@ -509,6 +529,15 @@ const EmployerDashboard = ({ showToast, _sidebarCollapsed, t }) => {
                         {filteredJobs.map((job) => (
                             <motion.div
                                 key={job.id}
+                                // Stable per-row anchor for the DIR-010 E2E suite. The ATS
+                                // applications modal is opened from THIS row's CTA, and the
+                                // suite must target the requisition that actually holds
+                                // applicant rows in MariaDB — a positional `openers.first()`
+                                // silently opened job-air-12 (0 applications) and made the
+                                // in-modal review stage assert against an empty pipeline.
+                                // Naming convention matches data-template-id in
+                                // src/components/BuildResume; it is inert to CSS and to a11y.
+                                data-job-id={job.id}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 className="bg-white rounded-lg border border-slate-200 overflow-hidden hover:border-slate-300 transition-all duration-200">
@@ -639,6 +668,7 @@ const EmployerDashboard = ({ showToast, _sidebarCollapsed, t }) => {
                     onClose={handleCloseModal}
                     job={selectedJob}
                     applications={applications}
+                    isLoadingApplications={loadingApplications}
                     onUpdateStatus={handleUpdateApplicationStatus}
                     showToast={showToast}
                 />

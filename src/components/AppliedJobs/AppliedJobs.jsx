@@ -107,15 +107,15 @@ const AppliedJobs = ({ showToast, t }) => {
     const getStatusColor = (status) => {
         switch (status) {
             case 'pending':
-                return 'text-orange-700 bg-orange-50 border-orange-200';
+                return 'text-cuba-warning bg-cuba-warning-soft border-cuba-warning';
             case 'interview':
-                return 'text-indigo-700 bg-indigo-50 border-indigo-200';
+                return 'text-cuba-primary-ink-strong bg-cuba-primary-soft border-cuba-primary';
             case 'accepted':
-                return 'text-teal-700 bg-teal-50 border-teal-200';
+                return 'text-cuba-success bg-cuba-success-soft border-cuba-success';
             case 'rejected':
-                return 'text-stone-600 bg-stone-50 border-stone-200';
+                return 'text-cuba-ink-muted bg-cuba-canvas border-cuba-line';
             default:
-                return 'text-stone-600 bg-stone-50 border-stone-200';
+                return 'text-cuba-ink-muted bg-cuba-canvas border-cuba-line';
         }
     };
 
@@ -143,12 +143,15 @@ const AppliedJobs = ({ showToast, t }) => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-slate-50">
+            <div className="min-h-screen bg-cuba-canvas">
                 <div className="mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-4 sm:py-6 max-w-none w-full" style={{maxWidth: '1600px'}}>
                     <div className="flex items-center justify-center h-64" aria-busy="true">
                         <div className="text-center" role="status" aria-live="polite">
-                            <div aria-hidden="true" className="animate-spin rounded-full h-10 w-10 border-2 border-slate-200 border-t-slate-600 mx-auto mb-3"></div>
-                            <p className="text-slate-600 text-sm font-medium">{t('JobsUpdate.AppliedJobs.loading', 'Loading your applications...')}</p>
+                            {/* AC-1: the spinner accent is the Cuba brand token, not the
+                                legacy `border-t-slate-600`, so it follows the active
+                                theme (including dark mode) automatically. */}
+                            <div aria-hidden="true" className="animate-spin rounded-full h-10 w-10 border-2 border-cuba-line border-t-cuba-primary mx-auto mb-3"></div>
+                            <p className="text-cuba-ink-muted text-sm font-medium">{t('JobsUpdate.AppliedJobs.loading', 'Loading your applications...')}</p>
                         </div>
                     </div>
                 </div>
@@ -159,15 +162,15 @@ const AppliedJobs = ({ showToast, t }) => {
     // Check if user is logged in
     if (!user?.uid) {
         return (
-            <div className="min-h-screen bg-slate-50">
+            <div className="min-h-screen bg-cuba-canvas">
                 <div className="mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-4 sm:py-6 max-w-none w-full" style={{maxWidth: '1600px'}}>
                     <div className="flex items-center justify-center h-64">
                         <div className="text-center">
-                            <div className="p-4 bg-slate-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                                <FaBriefcase className="w-8 h-8 text-slate-400" />
+                            <div className="p-4 bg-cuba-elevated rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                                <FaBriefcase className="w-8 h-8 text-cuba-ink-subtle" />
                             </div>
-                            <h3 className="text-sm font-medium text-slate-900 mb-2">{t('JobsUpdate.AppliedJobs.loginRequired.title', 'Please log in')}</h3>
-                            <p className="text-slate-600 text-sm">{t('JobsUpdate.AppliedJobs.loginRequired.message', 'You need to be logged in to view your job applications.')}</p>
+                            <h3 className="text-sm font-medium text-cuba-ink mb-2">{t('JobsUpdate.AppliedJobs.loginRequired.title', 'Please log in')}</h3>
+                            <p className="text-cuba-ink-muted text-sm">{t('JobsUpdate.AppliedJobs.loginRequired.message', 'You need to be logged in to view your job applications.')}</p>
                         </div>
                     </div>
                 </div>
@@ -177,11 +180,11 @@ const AppliedJobs = ({ showToast, t }) => {
 
     if (loadError) {
         return (
-            <main className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
+            <main className="min-h-screen bg-cuba-canvas flex items-center justify-center px-4">
                 <div className="max-w-md text-center" role="alert">
-                    <FaInfoCircle aria-hidden="true" className="w-10 h-10 text-amber-600 mx-auto mb-3" />
-                    <h1 className="text-lg font-semibold text-slate-900 mb-2">Applications unavailable</h1>
-                    <p className="text-sm text-slate-600 mb-4">{loadError}</p>
+                    <FaInfoCircle aria-hidden="true" className="w-10 h-10 text-cuba-warning mx-auto mb-3" />
+                    <h1 className="text-lg font-semibold text-cuba-ink mb-2">Applications unavailable</h1>
+                    <p className="text-sm text-cuba-ink-muted mb-4">{loadError}</p>
                     <button type="button" onClick={() => setRetryCount((count) => count + 1)} className="cuba-btn-primary px-4 py-2 rounded-xl text-sm font-bold shadow-xs">
                         Try again
                     </button>
@@ -194,18 +197,18 @@ const AppliedJobs = ({ showToast, t }) => {
         navigate('/jobs');
     };
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-screen bg-cuba-canvas">
             <div className="mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-4 sm:py-6 max-w-none w-full" style={{maxWidth: '1600px'}}>
                 {/* Header Section */}
                 <div className="mb-4 sm:mb-6">
                     <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center space-x-3 flex-1 min-w-0">
-                            <div className="p-2 bg-slate-100 rounded-lg">
-                                <FaBriefcase className="w-5 h-5 text-slate-600" />
+                            <div className="p-2 bg-cuba-elevated rounded-lg">
+                                <FaBriefcase className="w-5 h-5 text-cuba-ink-muted" />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <h1 className="text-lg sm:text-xl font-semibold text-slate-900 tracking-tight truncate">{t('JobsUpdate.AppliedJobs.title', 'Applied Jobs')}</h1>
-                                <p className="text-slate-600 text-sm mt-0.5">{t('JobsUpdate.AppliedJobs.subtitle', 'Track your job applications and their current status')}</p>
+                                <h1 className="text-lg sm:text-xl font-semibold text-cuba-ink tracking-tight truncate">{t('JobsUpdate.AppliedJobs.title', 'Applied Jobs')}</h1>
+                                <p className="text-cuba-ink-muted text-sm mt-0.5">{t('JobsUpdate.AppliedJobs.subtitle', 'Track your job applications and their current status')}</p>
                             </div>
                         </div>
                     </div>
@@ -213,70 +216,70 @@ const AppliedJobs = ({ showToast, t }) => {
 
                 {/* Statistics Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
-                    <div className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm">
+                    <div className="bg-cuba-card rounded-lg p-4 border border-cuba-line shadow-sm">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{t('JobsUpdate.AppliedJobs.stats.totalApplied', 'Total Applied')}</p>
-                                <p className="text-lg font-semibold text-slate-900 mt-1">{appliedJobs.length}</p>
+                                <p className="text-xs font-medium text-cuba-ink-muted uppercase tracking-wide">{t('JobsUpdate.AppliedJobs.stats.totalApplied', 'Total Applied')}</p>
+                                <p className="text-lg font-semibold text-cuba-ink mt-1">{appliedJobs.length}</p>
                             </div>
-                            <div className="p-2 bg-slate-100 rounded-md">
-                                <FaBriefcase className="w-4 h-4 text-slate-600" />
+                            <div className="p-2 bg-cuba-elevated rounded-md">
+                                <FaBriefcase className="w-4 h-4 text-cuba-ink-muted" />
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm">
+                    <div className="bg-cuba-card rounded-lg p-4 border border-cuba-line shadow-sm">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{t('JobsUpdate.AppliedJobs.stats.pending', 'Pending')}</p>
-                                <p className="text-lg font-semibold text-slate-900 mt-1">{getStatusCount('pending')}</p>
+                                <p className="text-xs font-medium text-cuba-ink-muted uppercase tracking-wide">{t('JobsUpdate.AppliedJobs.stats.pending', 'Pending')}</p>
+                                <p className="text-lg font-semibold text-cuba-ink mt-1">{getStatusCount('pending')}</p>
                             </div>
-                            <div className="p-2 bg-amber-50 rounded-md">
-                                <FaHourglass className="w-4 h-4 text-amber-600" />
+                            <div className="p-2 bg-cuba-warning-soft rounded-md">
+                                <FaHourglass className="w-4 h-4 text-cuba-warning" />
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm">
+                    <div className="bg-cuba-card rounded-lg p-4 border border-cuba-line shadow-sm">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{t('JobsUpdate.AppliedJobs.stats.interviews', 'Interviews')}</p>
-                                <p className="text-lg font-semibold text-slate-900 mt-1">{getStatusCount('interview')}</p>
+                                <p className="text-xs font-medium text-cuba-ink-muted uppercase tracking-wide">{t('JobsUpdate.AppliedJobs.stats.interviews', 'Interviews')}</p>
+                                <p className="text-lg font-semibold text-cuba-ink mt-1">{getStatusCount('interview')}</p>
                             </div>
-                            <div className="p-2 bg-blue-50 rounded-md">
-                                <FaClock className="w-4 h-4 text-blue-600" />
+                            <div className="p-2 bg-cuba-primary-soft rounded-md">
+                                <FaClock className="w-4 h-4 text-cuba-primary" />
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm">
+                    <div className="bg-cuba-card rounded-lg p-4 border border-cuba-line shadow-sm">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{t('JobsUpdate.AppliedJobs.stats.successRate', 'Success Rate')}</p>
-                                <p className="text-lg font-semibold text-slate-900 mt-1">{appliedJobs.length > 0 ? Math.round((getStatusCount('accepted') / appliedJobs.length) * 100) : 0}%</p>
+                                <p className="text-xs font-medium text-cuba-ink-muted uppercase tracking-wide">{t('JobsUpdate.AppliedJobs.stats.successRate', 'Success Rate')}</p>
+                                <p className="text-lg font-semibold text-cuba-ink mt-1">{appliedJobs.length > 0 ? Math.round((getStatusCount('accepted') / appliedJobs.length) * 100) : 0}%</p>
                             </div>
-                            <div className="p-2 bg-emerald-50 rounded-md">
-                                <FaCheckCircle className="w-4 h-4 text-emerald-600" />
+                            <div className="p-2 bg-cuba-success-soft rounded-md">
+                                <FaCheckCircle className="w-4 h-4 text-cuba-success" />
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Search and Filter Section */}
-                <div className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm mb-6">
+                <div className="bg-cuba-card rounded-lg p-4 border border-cuba-line shadow-sm mb-6">
                     <div className="flex flex-col sm:flex-row gap-3">
                         {/* Search */}
                         <div className="flex-1">
                             <label htmlFor="application-search" className="sr-only">Search applications</label>
                             <div className="relative">
-                                <FaSearch aria-hidden="true" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-3.5 h-3.5" />
+                                <FaSearch aria-hidden="true" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-cuba-ink-subtle w-3.5 h-3.5" />
                                 <input
                                     id="application-search"
                                     type="search"
                                     placeholder={t('JobsUpdate.AppliedJobs.search.placeholder', 'Search jobs, companies, or locations...')}
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 placeholder-slate-400"
+                                    className="w-full pl-9 pr-3 py-2.5 text-sm border border-cuba-line-strong rounded-md focus:outline-none focus:ring-1 focus:ring-cuba-primary focus:border-cuba-primary placeholder-cuba-ink-subtle"
                                 />
                             </div>
                         </div>
@@ -288,7 +291,7 @@ const AppliedJobs = ({ showToast, t }) => {
                                 id="application-status-filter"
                                 value={statusFilter}
                                 onChange={(e) => setStatusFilter(e.target.value)}
-                                className="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 bg-white">
+                                className="w-full px-3 py-2.5 text-sm border border-cuba-line-strong rounded-md focus:outline-none focus:ring-1 focus:ring-cuba-primary focus:border-cuba-primary bg-cuba-card">
                                 <option value="all">{t('JobsUpdate.AppliedJobs.filters.allStatus', 'All Status')}</option>
                                 <option value="pending">{t('JobsUpdate.AppliedJobs.filters.underReview', 'Under Review')}</option>
                                 <option value="interview">{t('JobsUpdate.AppliedJobs.filters.interview', 'Interview')}</option>
@@ -304,7 +307,7 @@ const AppliedJobs = ({ showToast, t }) => {
                                 id="application-sort"
                                 value={sortBy}
                                 onChange={(e) => setSortBy(e.target.value)}
-                                className="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 bg-white">
+                                className="w-full px-3 py-2.5 text-sm border border-cuba-line-strong rounded-md focus:outline-none focus:ring-1 focus:ring-cuba-primary focus:border-cuba-primary bg-cuba-card">
                                 <option value="date">{t('JobsUpdate.AppliedJobs.sort.byDate', 'Sort by Date')}</option>
                                 <option value="company">{t('JobsUpdate.AppliedJobs.sort.byCompany', 'Sort by Company')}</option>
                                 <option value="status">{t('JobsUpdate.AppliedJobs.sort.byStatus', 'Sort by Status')}</option>
@@ -317,12 +320,12 @@ const AppliedJobs = ({ showToast, t }) => {
                 <div className="space-y-3">
                     
                     {filteredJobs.length === 0 ? (
-                        <div className="bg-white rounded-lg border border-slate-200 p-8 text-center shadow-sm">
-                            <div className="p-4 bg-slate-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                                <FaBriefcase className="w-8 h-8 text-slate-400" />
+                        <div className="bg-cuba-card rounded-lg border border-cuba-line p-8 text-center shadow-sm">
+                            <div className="p-4 bg-cuba-elevated rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                                <FaBriefcase className="w-8 h-8 text-cuba-ink-subtle" />
                             </div>
-                            <h3 className="text-sm font-medium text-slate-900 mb-2">{t('JobsUpdate.AppliedJobs.noApplications.title', 'No applications found')}</h3>
-                            <p className="text-slate-600 text-sm mb-4">
+                            <h3 className="text-sm font-medium text-cuba-ink mb-2">{t('JobsUpdate.AppliedJobs.noApplications.title', 'No applications found')}</h3>
+                            <p className="text-cuba-ink-muted text-sm mb-4">
                                 {searchTerm || statusFilter !== 'all' ? t('JobsUpdate.AppliedJobs.noApplications.filterMessage', 'Try adjusting your search or filter criteria.') : t('JobsUpdate.AppliedJobs.noApplications.emptyMessage', "You haven't applied to any jobs yet. Start exploring opportunities!")}
                             </p>
                             {!searchTerm && statusFilter === 'all' && (
@@ -335,19 +338,19 @@ const AppliedJobs = ({ showToast, t }) => {
                                 key={job.id}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="bg-white rounded-lg border border-slate-200 overflow-hidden hover:border-slate-300 transition-all duration-200">
+                                className="bg-cuba-card rounded-lg border border-cuba-line overflow-hidden hover:border-cuba-line-strong transition-all duration-200">
                                 <div className="p-4">
                                     <div className="flex items-start justify-between">
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center justify-between mb-1">
-                                                <h3 className="text-sm font-semibold text-slate-900 truncate">{job.jobTitle}</h3>
+                                                <h3 className="text-sm font-semibold text-cuba-ink truncate">{job.jobTitle}</h3>
                                                 <div className={`inline-flex items-center gap-2 px-2 py-1 rounded border text-xs font-medium ${getStatusColor(job.status)}`}>
                                                     {getStatusIcon(job.status)}
                                                     {getStatusText(job.status)}
                                                 </div>
                                             </div>
 
-                                            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600 mb-3">
+                                            <div className="flex flex-wrap items-center gap-3 text-xs text-cuba-ink-muted mb-3">
                                                 <div className="flex items-center gap-1">
                                                     <FaBuilding className="w-3 h-3" />
                                                     <span>{job.company}</span>
@@ -374,9 +377,9 @@ const AppliedJobs = ({ showToast, t }) => {
 
                                             <div className="flex items-center gap-4 text-xs">
                                                 <div className="flex items-center gap-1">
-                                                    <FaInfoCircle className="w-3 h-3 text-slate-500" />
-                                                    <span className="font-medium text-slate-900">{t('JobsUpdate.AppliedJobs.jobInfo.status', 'Status')}:</span>
-                                                    <span className="text-slate-500">{getStatusText(job.status)}</span>
+                                                    <FaInfoCircle className="w-3 h-3 text-cuba-ink-muted" />
+                                                    <span className="font-medium text-cuba-ink">{t('JobsUpdate.AppliedJobs.jobInfo.status', 'Status')}:</span>
+                                                    <span className="text-cuba-ink-muted">{getStatusText(job.status)}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -388,7 +391,7 @@ const AppliedJobs = ({ showToast, t }) => {
                                                 aria-expanded={expandedJobId === job.id}
                                                 aria-controls={`application-details-${job.id}`}
                                                 aria-label={`${expandedJobId === job.id ? 'Hide' : 'Show'} details for ${job.jobTitle || 'application'}`}
-                                                className="p-2 text-slate-500 hover:text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-700 transition-colors rounded-md hover:bg-slate-50">
+                                                className="p-2 text-cuba-ink-muted hover:text-cuba-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cuba-primary transition-colors rounded-md hover:bg-cuba-canvas">
                                                 {expandedJobId === job.id ? <FaChevronUp aria-hidden="true" className="w-3 h-3" /> : <FaChevronDown aria-hidden="true" className="w-3 h-3" />}
                                             </button>
                                         </div>
@@ -402,60 +405,60 @@ const AppliedJobs = ({ showToast, t }) => {
                                                 initial={{ opacity: 0, height: 0 }}
                                                 animate={{ opacity: 1, height: 'auto' }}
                                                 exit={{ opacity: 0, height: 0 }}
-                                                className="mt-3 pt-3 border-t border-slate-200">
+                                                className="mt-3 pt-3 border-t border-cuba-line">
                                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                                                     <div className="lg:col-span-2">
-                                                        <h4 className="text-sm font-medium text-slate-900 mb-2">{t('JobsUpdate.AppliedJobs.jobDetails.jobDescription', 'Job Description')}</h4>
-                                                        <p className="text-slate-600 text-xs leading-relaxed mb-3 line-clamp-3">
+                                                        <h4 className="text-sm font-medium text-cuba-ink mb-2">{t('JobsUpdate.AppliedJobs.jobDetails.jobDescription', 'Job Description')}</h4>
+                                                        <p className="text-cuba-ink-muted text-xs leading-relaxed mb-3 line-clamp-3">
                                                             {job.description || `Join ${job.company} as a ${job.jobTitle}. This is an exciting opportunity to contribute to our team and make a meaningful impact.`}
                                                         </p>
 
-                                                        <h4 className="text-sm font-medium text-slate-900 mb-2">{t('JobsUpdate.AppliedJobs.jobDetails.requirements', 'Requirements')}</h4>
+                                                        <h4 className="text-sm font-medium text-cuba-ink mb-2">{t('JobsUpdate.AppliedJobs.jobDetails.requirements', 'Requirements')}</h4>
                                                         <div className="flex flex-wrap gap-1.5">
                                                             {Array.isArray(job.requirements) && job.requirements.length > 0 ? (
                                                                 job.requirements.slice(0, 6).map((req, index) => (
-                                                                    <span key={index} className="px-2 py-1 bg-slate-100 text-slate-700 rounded text-xs font-medium">
+                                                                    <span key={index} className="px-2 py-1 bg-cuba-elevated text-cuba-ink rounded text-xs font-medium">
                                                                         {req}
                                                                     </span>
                                                                 ))
                                                             ) : (
-                                                                <span className="text-xs text-slate-500">{t('JobsUpdate.AppliedJobs.jobDetails.noRequirements', 'No specific requirements listed')}</span>
+                                                                <span className="text-xs text-cuba-ink-muted">{t('JobsUpdate.AppliedJobs.jobDetails.noRequirements', 'No specific requirements listed')}</span>
                                                             )}
                                                             {Array.isArray(job.requirements) && job.requirements.length > 6 && (
-                                                                <span className="px-2 py-1 bg-slate-100 text-slate-500 rounded text-xs">+{job.requirements.length - 6} more</span>
+                                                                <span className="px-2 py-1 bg-cuba-elevated text-cuba-ink-muted rounded text-xs">+{job.requirements.length - 6} more</span>
                                                             )}
                                                         </div>
                                                     </div>
 
                                                     <div className="flex flex-col gap-2">
-                                                        <div className="bg-slate-50 rounded-lg p-3">
-                                                            <h4 className="text-sm font-medium text-slate-900 mb-2">{t('JobsUpdate.AppliedJobs.jobDetails.applicationStatus', 'Application Status')}</h4>
+                                                        <div className="bg-cuba-canvas rounded-lg p-3">
+                                                            <h4 className="text-sm font-medium text-cuba-ink mb-2">{t('JobsUpdate.AppliedJobs.jobDetails.applicationStatus', 'Application Status')}</h4>
                                                             <div className="flex items-center justify-between mb-2">
-                                                                <span className="text-xs text-slate-500">{t('JobsUpdate.AppliedJobs.jobDetails.status', 'Status')}:</span>
+                                                                <span className="text-xs text-cuba-ink-muted">{t('JobsUpdate.AppliedJobs.jobDetails.status', 'Status')}:</span>
                                                                 <div className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${getStatusColor(job.status)}`}>
                                                                     {getStatusIcon(job.status)}
                                                                     {getStatusText(job.status)}
                                                                 </div>
                                                             </div>
-                                                            <div className="text-xs text-slate-500">
+                                                            <div className="text-xs text-cuba-ink-muted">
                                                                 {t('JobsUpdate.AppliedJobs.jobDetails.appliedOn', 'Applied on')} {formatDate(job.appliedDate)}
                                                             </div>
                                                         </div>
                                                         
-                                                        <div className="bg-slate-50 rounded-lg p-3">
-                                                            <h4 className="text-sm font-medium text-slate-900 mb-2">{t('JobsUpdate.AppliedJobs.jobDetails.jobDetails', 'Job Details')}</h4>
+                                                        <div className="bg-cuba-canvas rounded-lg p-3">
+                                                            <h4 className="text-sm font-medium text-cuba-ink mb-2">{t('JobsUpdate.AppliedJobs.jobDetails.jobDetails', 'Job Details')}</h4>
                                                             <div className="space-y-1">
                                                                 <div className="flex justify-between text-xs">
-                                                                    <span className="text-slate-500">{t('JobsUpdate.AppliedJobs.jobDetails.type', 'Type')}:</span>
-                                                                    <span className="text-slate-900 font-medium">{job.jobType || 'Full-time'}</span>
+                                                                    <span className="text-cuba-ink-muted">{t('JobsUpdate.AppliedJobs.jobDetails.type', 'Type')}:</span>
+                                                                    <span className="text-cuba-ink font-medium">{job.jobType || 'Full-time'}</span>
                                                                 </div>
                                                                 <div className="flex justify-between text-xs">
-                                                                    <span className="text-slate-500">{t('JobsUpdate.AppliedJobs.jobDetails.mode', 'Mode')}:</span>
-                                                                    <span className="text-slate-900 font-medium">{job.workMode || 'On-site'}</span>
+                                                                    <span className="text-cuba-ink-muted">{t('JobsUpdate.AppliedJobs.jobDetails.mode', 'Mode')}:</span>
+                                                                    <span className="text-cuba-ink font-medium">{job.workMode || 'On-site'}</span>
                                                                 </div>
                                                                 <div className="flex justify-between text-xs">
-                                                                    <span className="text-slate-500">{t('JobsUpdate.AppliedJobs.jobDetails.salary', 'Salary')}:</span>
-                                                                    <span className="text-slate-900 font-medium">{job.salary}</span>
+                                                                    <span className="text-cuba-ink-muted">{t('JobsUpdate.AppliedJobs.jobDetails.salary', 'Salary')}:</span>
+                                                                    <span className="text-cuba-ink font-medium">{job.salary}</span>
                                                                 </div>
                                                             </div>
                                                         </div>

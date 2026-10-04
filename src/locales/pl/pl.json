@@ -1854,6 +1854,7 @@
     },
     "actions": {
       "view": "Zobacz",
+      "openStudio": "Otwórz w studio",
       "edit": "Edytuj",
       "delete": "Usuń",
       "viewPreview": "Zobacz podgląd"

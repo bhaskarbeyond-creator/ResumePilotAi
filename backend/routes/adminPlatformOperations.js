@@ -103,7 +103,8 @@ router.get('/subscriptions', requirePermission('payments.read'), async (req, res
     const pool = getPool();
     const userParams = [];
     let userSql = `SELECT id, email, displayName, firstname, lastname, membership, membershipEnds,
-                          paymentStatus, lastPaymentCurrency, updated_at
+                          paymentStatus, lastPaymentCurrency, paymentGraceUntil, paymentGraceStartedAt,
+                          renewalFailedAt, updated_at
                    FROM users
                    WHERE deleted_at IS NULL AND membership IN ('Premium', 'Pro', 'Enterprise')`;
     if (status !== 'ALL') {
@@ -136,6 +137,11 @@ router.get('/subscriptions', requirePermission('payments.read'), async (req, res
       membershipEnds: adminIso(user.membershipEnds),
       paymentStatus: user.paymentStatus,
       currency: normalizeCurrencyCode(user.lastPaymentCurrency || 'INR'),
+      // DIR-022 / AC-4: the operator needs to see WHICH accounts are inside a
+      // renewal recovery window, and until when, to triage a support ticket.
+      paymentGraceUntil: adminIso(user.paymentGraceUntil),
+      paymentGraceStartedAt: adminIso(user.paymentGraceStartedAt),
+      renewalFailedAt: adminIso(user.renewalFailedAt),
       updatedAt: adminIso(user.updated_at),
     }));
     const transactions = orderRows.map(order => ({
@@ -162,6 +168,121 @@ router.get('/subscriptions', requirePermission('payments.read'), async (req, res
     return res.status(503).json({ success: false, code: 'SUBSCRIPTION_DATA_UNAVAILABLE', error: 'Subscription data is unavailable.' });
   }
 });
+
+/* ------------------------------------------------------------------
+ * DIR-022 / AC-5 — 1-click "Reconcile User Entitlements"
+ * ------------------------------------------------------------------
+ *
+ * AUTHORISATION (two independent gates, both required):
+ *   - requirePermission('payments.manage'): this WRITES entitlement state, so a
+ *     read-only payments auditor must not be able to trigger it.
+ *   - requireRecentAdminAuthentication: it changes what a customer is paying
+ *     for, so a stale stolen session must not be enough.
+ *
+ * The endpoint never fabricates an outcome. It probes the gateway and reports
+ * what the gateway said; when the gateway cannot be reached it returns
+ * `reconciled: false` with a reason and changes nothing, rather than guessing.
+ */
+router.post('/subscriptions/:uid/reconcile', requirePermission('payments.manage'), requireRecentAdminAuthentication, async (req, res) => {
+  // Operators hold a support ticket with an EMAIL, not an internal uid, so an
+  // address is accepted too. Resolution is server-side only: the client never
+  // chooses which account to touch beyond naming it.
+  const rawTarget = String(req.params.uid || '').trim();
+  if (!rawTarget || rawTarget.length > 255) {
+    return res.status(400).json({ success: false, code: 'INVALID_SUBSCRIPTION_UID', error: 'A valid subscription owner id or email is required.' });
+  }
+  try {
+    const { reconcileUserSubscription } = require('../services/subscriptionReconciler');
+    const { getRepository } = require('../repositories');
+    const repository = getRepository();
+
+    const targetAccount = rawTarget.includes('@')
+      ? await repository.getUserByEmail(rawTarget.toLowerCase())
+      : await repository.getUser(rawTarget);
+    if (!targetAccount) {
+      return res.status(404).json({ success: false, code: 'USER_NOT_FOUND', error: 'No subscription owner matches that identifier.' });
+    }
+
+    // Credentials are resolved here and passed straight through. They are never
+    // echoed into the response and never written to the audit trail (INV-2).
+    const credentials = {};
+    const razorpayKeys = await resolveRazorpayKeysForReconciliation();
+    if (razorpayKeys?.keyId && razorpayKeys?.keySecret) {
+      credentials.keyId = razorpayKeys.keyId;
+      credentials.keySecret = razorpayKeys.keySecret;
+    }
+    const stripeClient = await resolveStripeClientForReconciliation();
+    if (stripeClient) credentials.stripeClient = stripeClient;
+
+    const outcome = await reconcileUserSubscription({
+      uid: targetAccount.id,
+      repository,
+      credentials,
+      actor: req.user.uid,
+      actorRole: 'ADMIN',
+    });
+
+    res.setHeader('Cache-Control', 'no-store');
+    return res.json({
+      success: true,
+      // `reconciled: false` is a SUCCESSFUL audit: it means the platform asked
+      // the gateway and is honestly reporting that it has no correction to make
+      // (or could not verify). Only a genuine failure returns a non-2xx status.
+      reconciled: outcome.reconciled,
+      changed: outcome.changed,
+      uid: outcome.uid,
+      fromStatus: outcome.fromStatus,
+      toStatus: outcome.toStatus,
+      observation: outcome.observation,
+      reason: outcome.reason,
+      gracePeriodMs: outcome.gracePeriodMs,
+      audit: outcome.audit,
+      requestId: res.locals.requestId,
+    });
+  } catch (error) {
+    console.error('[Admin subscription reconcile]', { code: error.code, requestId: res.locals.requestId });
+    return res.status(error.status || 503).json({
+      success: false,
+      code: error.code || 'SUBSCRIPTION_RECONCILIATION_UNAVAILABLE',
+      error: 'Subscription reconciliation is unavailable.',
+      requestId: res.locals.requestId,
+    });
+  }
+});
+
+/**
+ * Resolves the complete Razorpay credential pair for a reconciliation probe.
+ * Mirrors the checkout resolution order (deployment secret first, then the
+ * Admin-managed MariaDB secret) so the probe authenticates exactly like
+ * checkout does, and never a half-configured mix of the two.
+ */
+async function resolveRazorpayKeysForReconciliation() {
+  const { getPaymentSettingsProjection } = require('../services/paymentAdmin');
+  const envKeyId = String(process.env.RAZORPAY_KEY_ID || '').trim();
+  const envKeySecret = String(process.env.RAZORPAY_KEY_SECRET || '').trim();
+  if (envKeyId && envKeySecret) return { keyId: envKeyId, keySecret: envKeySecret };
+  try {
+    const settings = await getPaymentSettingsProjection();
+    const razorpay = settings?.providers?.razorpay || settings?.razorpay || {};
+    if (razorpay.keyId && razorpay.keySecret) {
+      return { keyId: razorpay.keyId, keySecret: razorpay.keySecret };
+    }
+  } catch (_) {
+    // Falls through to "no credentials", which the reconciler reports honestly.
+  }
+  return null;
+}
+
+async function resolveStripeClientForReconciliation() {
+  const envSecret = String(process.env.STRIPE_SECRET || '').trim();
+  if (!envSecret) return null;
+  try {
+    const Stripe = require('stripe');
+    return Stripe(envSecret);
+  } catch (_) {
+    return null;
+  }
+}
 
 router.get('/ai/entitlements', requirePermission('ai.usage.read'), async (_req, res) => {
   try {

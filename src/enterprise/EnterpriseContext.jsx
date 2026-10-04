@@ -57,22 +57,39 @@ export function EnterpriseTenantProvider({ children }) {
         setState(next);
         return next;
       }
-      const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-      const paramTenantId = urlParams?.get('tenant') || '';
-      const paramWorkspaceId = urlParams?.get('workspace') || '';
-      const simulatedTenant = readStorage('superadmin_enterprise_tenant');
-      const requestedTenantId = tenantId || paramTenantId || simulatedTenant || readStorage(tenantStorageKey(user.uid));
+      let pathSlug = '';
+      if (typeof window !== 'undefined') {
+        const pathSegments = window.location.pathname.split('/').filter(Boolean);
+        if (pathSegments[0] === 'org' && pathSegments[1]) {
+          const candidate = decodeURIComponent(pathSegments[1]);
+          const KNOWN_TABS = ['overview', 'resumes', 'members', 'teams', 'workspaces', 'access', 'ai', 'security', 'usage', 'email', 'audit', 'support', 'settings', 'platform'];
+          if (!KNOWN_TABS.includes(candidate)) {
+            pathSlug = candidate;
+          }
+        }
+      }
+      const tenantList = await enterpriseFetch('/api/enterprise/tenants').catch(() => ({ tenants: [] }));
+      const rawTenants = Array.isArray(tenantList?.tenants) ? tenantList.tenants : [];
+      let matchedBySlug = '';
+      if (pathSlug && rawTenants.length) {
+        const found = rawTenants.find(t => t.slug === pathSlug || t.id === pathSlug);
+        if (found) matchedBySlug = found.id;
+      }
+      // Explicit deep-link selections. These are honored BEFORE the path slug so a
+// deliberate `?tenant=` choice always wins, and the server re-verifies
+// membership before returning anything for it (§7: never widen access).
+const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+const paramTenantId = urlParams?.get('tenant') || '';
+const paramWorkspaceId = urlParams?.get('workspace') || '';
+const simulatedTenant = readStorage('superadmin_enterprise_tenant');
+const requestedTenantId = tenantId || paramTenantId || matchedBySlug || simulatedTenant || readStorage(tenantStorageKey(user.uid));
       const requestedWorkspaceId = workspaceId || paramWorkspaceId || (requestedTenantId ? readStorage(workspaceStorageKey(user.uid, requestedTenantId)) : '');
-      const [tenantList, active] = await Promise.all([
-        enterpriseFetch('/api/enterprise/tenants').catch(() => ({ tenants: [] })),
-        enterpriseFetch('/api/enterprise/context', { method: 'POST', body: { tenantId: requestedTenantId, workspaceId: requestedWorkspaceId } }),
-      ]);
+      const active = await enterpriseFetch('/api/enterprise/context', { method: 'POST', body: { tenantId: requestedTenantId, workspaceId: requestedWorkspaceId } });
       const activeTenantId = active.tenant?.id || '';
       const activeWorkspaceId = active.workspace?.id || '';
       const workspaceList = await enterpriseFetch('/api/enterprise/workspaces', { tenantId: activeTenantId, workspaceId: activeWorkspaceId }).catch(() => ({ workspaces: [] }));
       writeStorage(tenantStorageKey(user.uid), activeTenantId);
       if (activeTenantId) writeStorage(workspaceStorageKey(user.uid, activeTenantId), activeWorkspaceId);
-      const rawTenants = Array.isArray(tenantList?.tenants) ? tenantList.tenants : [];
       const tenants = rawTenants.length > 0 ? rawTenants : (active.tenant ? [active.tenant] : []);
       const next = {
         loading: false,
