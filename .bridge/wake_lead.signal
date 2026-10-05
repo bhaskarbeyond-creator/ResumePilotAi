@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-10-05T00:10:01.338Z",
+  "seq": 1459,
+  "id": "evt_muuhtmng_18f585c9f217",
+  "type": "EVIDENCE_SUBMITTED",
+  "title": "[Evidence] DIR-046: DIR-001 Certification Gap Closure (Playwright Test Suite, Multi-Viewport Audit & Shell Token Hygiene)",
+  "sender": "STAFF_DEVELOPER",
+  "directiveId": "DIR-046",
+  "summary": "All 6 acceptance criteria and baseline invariants verified 100% green. 7/7 Playwright tests passed in tests/e2e/dir-001.spec.js. 30 multi-viewport screenshots captured across 5 canonical breakpoints (375, 768, 1024, 1280, 1920) with zero horizontal scroll. 1280px stat-card collision probe verifies 0 geometric collisions. Token hygiene applied to CubaAppShell gradient and badge sites without computed style regression. cubaShellFlag.js comments synchronized with Cuba default and zero-downtime rollback semantics. Frozen diff against e314f715 remains strictly 0 bytes. ESLint 0 errors, build time 3.41s (< 4.0s), 170/170 Cuba unit tests pass."
+}

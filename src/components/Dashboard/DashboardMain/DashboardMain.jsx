@@ -29,6 +29,9 @@ const JobTracker = lazy(() => import('../../AppliedJobs/JobTracker'));
 const EmployerDashboard = lazy(() => import('../EmployerDashboard/EmployerDashboard'));
 const CompaniesManagement = lazy(() => import('../EmployerDashboard/CompaniesManagement'));
 const DashboardMessages = lazy(() => import('../DashboardMessages/DashboardMessages'));
+// DIR-026 / AC-3: the candidate messages route is gated on the administrator
+// module flag so a bookmarked /dashboard/messages cannot bypass the AC-4 gate.
+import MessagesModuleGate from '../../cuba/MessagesModuleGate';
 const DashboardSupport = lazy(() => import('../DashboardSupport/DashboardSupport'));
 const CoverLetter = lazy(() => import('../../CoverLetter/CoverLetter'));
 const Billing = lazy(() => import('../../Billing/Plans/Plans'));
@@ -517,7 +520,7 @@ class DashboardMain extends Component {
                                             }
                                         />
                                         <Route path="settings" element={<DashboardSettings showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
-                                        <Route path="messages" element={<DashboardMessages showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />     
+                                        <Route path="messages" element={<MessagesModuleGate home="/dashboard" notify={this.showToast}><DashboardMessages showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} /></MessagesModuleGate>} />     
                                         <Route path="favorites" element={<DashboardFavourites showToast={this.showToast} />} />
                                         <Route path="interview" element={<DashboardInterviews showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
                                         <Route path="cover-letters" element={<CoverLetter />} />
@@ -599,7 +602,7 @@ class DashboardMain extends Component {
                                             }
                                         />
                                         <Route path="settings" element={<DashboardSettings showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
-                                        <Route path="messages" element={<DashboardMessages showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />     
+                                        <Route path="messages" element={<MessagesModuleGate home="/dashboard" notify={this.showToast}><DashboardMessages showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} /></MessagesModuleGate>} />     
                                         <Route path="favorites" element={<DashboardFavourites showToast={this.showToast} />} />
                                         <Route path="interview" element={<DashboardInterviews showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
                                         <Route path="cover-letters" element={<CoverLetter />} />

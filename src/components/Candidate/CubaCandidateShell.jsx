@@ -17,6 +17,9 @@ import PaymentGraceBanner from './PaymentGraceBanner';
 import { getCurrentUserProfile } from '../../services/api/users';
 import { resolveActiveItem } from './navigationState';
 import { CANDIDATE_NAVIGATION } from '../cuba/candidateNavigation';
+import { useUnreadMessages } from '../../hooks/useUnreadMessages';
+import { resolveMessagesVisibility } from '../../utils/moduleFlags';
+import { getSystemSettings } from '../../services/api/platform';
 import { useAiEngineStatus } from '../../hooks/useAiEngineStatus';
 import { AuthContext } from '../../context/AuthContext';
 import { generateUserAiContent } from '../../services/aiService';
@@ -147,15 +150,46 @@ const CubaCandidateShell = ({ children, copilotResume = null }) => {
         [location.pathname]
     );
 
+    // DIR-026 / AC-3: the Messages & Chat navigation entry is gated on the
+    // administrator's authoritative module flag. `undefined` means "not yet
+    // resolved" and is deliberately treated as visible-not-yet-known rather than
+    // hidden, so the nav does not flicker on every page load; `resolveMessagesVisibility`
+    // itself still fails closed on any fallback/stale settings payload.
+    const [messagesNavAllowed, setMessagesNavAllowed] = useState(undefined);
+    useEffect(() => {
+        let cancelled = false;
+        getSystemSettings()
+            .then((settings) => { if (!cancelled) setMessagesNavAllowed(resolveMessagesVisibility(settings) === true); })
+            .catch(() => { if (!cancelled) setMessagesNavAllowed(false); });
+        return () => { cancelled = true; };
+    }, []);
+
+    // DIR-026 / AC-2: one live unread total for the whole shell. `CubaAppShell`
+    // already renders `item.badge`, so the nav gains a real count with no shell
+    // rewrite (see CubaAppShell.jsx:82-91).
+    const { unreadCount: unreadMessages, status: unreadStatus } = useUnreadMessages();
+
+    // A failed read must never render as "0 unread / all clear" — that would be
+    // a fabricated claim about the user's own inbox. '!' means "status unknown".
+    const messagesBadge = unreadStatus === 'error'
+        ? '!'
+        : unreadMessages > 0
+            ? (unreadMessages > 99 ? '99+' : String(unreadMessages))
+            : null;
+
     const groups = useMemo(() => CANDIDATE_NAVIGATION.map((group) => ({
         ...group,
-        items: group.items.map((item) => ({
-            ...item,
-            icon: ICONS[item.id] || FiGrid,
-            href: item.to,
-            active: activeItem?.id === item.id,
-        })),
-    })), [activeItem]);
+        items: group.items
+            .filter((item) => item.id !== 'messages' || messagesNavAllowed !== false)
+            .map((item) => ({
+                ...item,
+                icon: ICONS[item.id] || FiGrid,
+                href: item.to,
+                active: activeItem?.id === item.id,
+                // The pill renders nothing at 0, so a normal shell pays no cost.
+                ...(item.id === 'messages' && messagesBadge ? { badge: messagesBadge } : {}),
+            })),
+    })), [activeItem, messagesNavAllowed, messagesBadge]);
 
     const commands = useMemo(() => buildCommands(groups, navigate), [groups, navigate]);
 
@@ -370,6 +404,8 @@ const CubaCandidateShell = ({ children, copilotResume = null }) => {
             // grounding an operation needs is genuinely absent.
             copilotPortal={COPILOT_PORTALS.CANDIDATE}
             copilotDispatch={copilotDispatch}
+            // DIR-026 / AC-2: the candidate shell owns the real destination.
+            messagesHref="/dashboard/messages"
         >
             <div className="space-y-6">
                 {/* DIR-022 / AC-4: renewal recovery. Renders only when the

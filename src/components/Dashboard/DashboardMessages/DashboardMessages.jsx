@@ -1,9 +1,27 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { withTranslation } from 'react-i18next';
 import { FiSearch, FiPaperclip, FiSend, FiMoreVertical, FiEdit, FiChevronUp, FiMessageCircle, FiUser, FiUsers } from 'react-icons/fi';
-import { getConversationParticipantProfile, getConversations, subscribeConversationMessages, getMessagesPaginated, sendMessage } from '../../../services/api/platform';
+import { getConversationParticipantProfile, getConversations, subscribeConversationMessages, getMessagesPaginated, sendMessage, markConversationRead } from '../../../services/api/platform';
 import fire from '../../../conf/fire';
 import userPlaceholder from '../../../assets/user.png';
+
+// DIR-026 / INV-4: the chat surface is restyled onto the Cuba design tokens.
+//
+// WHY THIS MATTERS: the bubbles, list rows and input previously used a hardcoded
+// Tailwind ramp (blue-500/600, gray-100/400/500/800, white). Those colours were
+// chosen against a white canvas only, so in dark mode the "other" bubble stayed
+// white-on-white-adjacent and the timestamp grey (`gray-400`) measured ~2.9:1
+// against white — below the 4.5:1 AA floor in INV-4.
+//
+// Every colour below now resolves to a token whose light AND dark values are
+// audited in `styles/cuba-tokens.css`, so the same class list is AA-compliant in
+// both themes and no new random colour was introduced anywhere.
+const CHAT_SURFACE = 'bg-[var(--cuba-card)] text-[var(--cuba-ink)]';
+const CHAT_INK = 'text-[var(--cuba-ink)]';
+const CHAT_LINE = 'border-[var(--cuba-line)]';
+const CHAT_INK_MUTED = 'text-[var(--cuba-ink-muted)]';
+const CHAT_INK_SUBTLE = 'text-[var(--cuba-ink-subtle)]';
+const CHAT_PRIMARY = 'bg-[var(--cuba-primary-fill)] text-[var(--cuba-header-badge-ink)]';
 
 function formatMessageTime(timestamp, t) {
     if (!timestamp) return t('JobsUpdate.DashboardMessages.time.now', 'Now');
@@ -25,6 +43,11 @@ const DashboardMessages = ({ t }) => {
     const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     const [hasMoreMessages, setHasMoreMessages] = useState(true);
     const [messagesError, setMessagesError] = useState(null);
+    // DIR-026: distinct from `messagesError`. That one means "the thread could not
+    // be read"; this one means "the thread read fine but the read receipt could
+    // not be saved", so the unread badge may be stale. They must not share one
+    // slot, or the user would be told their messages failed to load.
+    const [readSyncError, setReadSyncError] = useState(null);
 
     const unsubscribeConversationsRef = useRef(null);
     const unsubscribeMessagesRef = useRef(null);
@@ -68,7 +91,11 @@ const DashboardMessages = ({ t }) => {
                             avatar: participantProfile.avatar || userPlaceholder,
                             time: conversation.lastMessage ? formatMessageTime(conversation.lastMessage.timestamp, t) : t('JobsUpdate.DashboardMessages.time.now', 'Now'),
                             lastMessage: conversation.lastMessage?.text || t('JobsUpdate.DashboardMessages.conversation.noMessages', 'No messages yet'),
-                            unread: 0,
+                            // DIR-026 / AC-2: the REAL server-side unread count for
+                            // THIS participant. Previously this was hardcoded to 0,
+                            // which is why the list could never show a single
+                            // unread thread and the nav badge had nothing to show.
+                            unread: Number(conversation.unreadCount) || 0,
                             participants: conversation.participants,
                         };
                     }));
@@ -227,6 +254,7 @@ const DashboardMessages = ({ t }) => {
         setMessages([]);
         setHasMoreMessages(true);
         setMessagesError(null);
+        setReadSyncError(null);
 
         loadInitialMessages(conversationId).then(() => {
             if (cancelled || activeAccountUidRef.current !== userId || fire.auth().currentUser?.uid !== userId) return;
@@ -238,6 +266,49 @@ const DashboardMessages = ({ t }) => {
             unsubscribeMessagesRef.current = null;
         };
     }, [selectedConversation, currentUser, loadInitialMessages, setupRealTimeListener]);
+
+    // DIR-026 / AC-2: opening a thread IS reading it, so the server read cursor is
+    // advanced to the newest message actually loaded. Recording it here (rather
+    // than on every poll) is what makes the badge honest: the count drops only
+    // once the user has genuinely seen the message.
+    //
+    // A failure is surfaced rather than swallowed. Silently ignoring it would
+    // leave a badge claiming unread mail the user plainly just read, which is
+    // worse than an explicit, correct-looking stale badge.
+    useEffect(() => {
+        if (!selectedConversation?.id || !currentUser?.uid) return;
+        const conversationId = selectedConversation.id;
+        const userId = currentUser.uid;
+        // The newest message in the loaded window is the read boundary. An
+        // empty thread sends no id at all — the backend then leaves the cursor
+        // untouched rather than inventing one.
+        const readable = messages.filter((msg) => msg.sender !== 'system' && msg.timestamp);
+        const newest = readable.reduce((latest, msg) => Math.max(latest, msg.timestamp), 0);
+        const lastReadMessageId = [...readable]
+            .sort((a, b) => a.timestamp - b.timestamp)
+            .at(-1)?.id || '';
+        // Nothing has been loaded yet: there is no honest cursor to record, and
+        // advancing to "now" would mark unseen mail as read.
+        if (!readable.length) return;
+
+        let cancelled = false;
+        markConversationRead(conversationId, { lastReadMessageId, lastReadAt: newest })
+            .catch((error) => {
+                // Honest, specific feedback: the read could not be recorded, so
+                // the unread badge may still count messages the user has seen.
+                // Swallowing this would be the exact "silent zero" failure the
+                // unread hook exists to prevent.
+                if (cancelled) return;
+                if (activeAccountUidRef.current === userId) {
+                    setReadSyncError(error?.message || t('JobsUpdate.DashboardMessages.errors.readSync', 'Read status could not be saved.'));
+                }
+            });
+        return () => { cancelled = true; };
+        // The read boundary is derived from the newest loaded message, so the
+        // cursor is re-evaluated exactly when a NEW message arrives — which is
+        // the only moment the boundary can move. Depending on `messages.length`
+        // instead would miss an append that keeps the count stable.
+    }, [selectedConversation?.id, currentUser?.uid, messages, t]);
 
     // Auto-scroll logic
     useEffect(() => {
@@ -280,17 +351,17 @@ const DashboardMessages = ({ t }) => {
     };
 
     return (
-        <div className="flex h-screen bg-white font-sans text-gray-900">
+        <div className={`flex h-screen font-sans ${CHAT_SURFACE}`}>
             {/* Left Sidebar - Conversations List */}
-            <div className="w-[280px] flex-shrink-0 bg-white border-r border-gray-100 flex flex-col">
+            <div className={`w-[280px] flex-shrink-0 border-r flex flex-col ${CHAT_SURFACE} ${CHAT_LINE}`}>
                 {/* Search Bar */}
-                <div className="px-3 py-3 border-b border-gray-100">
+                <div className={`px-3 py-3 border-b ${CHAT_LINE}`}>
                     <div className="relative">
-                        <FiSearch className="absolute w-4 h-4 text-gray-400 top-1/2 left-3 -translate-y-1/2" />
+                        <FiSearch className={`absolute w-4 h-4 top-1/2 left-3 -translate-y-1/2 ${CHAT_INK_SUBTLE}`} />
                         <input
                             type="text"
                             placeholder={t('JobsUpdate.DashboardMessages.search.placeholder', 'Search')}
-                            className="w-full pl-9 pr-4 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all"
+                            className="w-full pl-9 pr-4 py-1.5 text-sm bg-[var(--cuba-primary-soft)] border border-[var(--cuba-line)] rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--cuba-primary-fill)] focus:border-transparent transition-all"
                         />
                     </div>
                 </div>
@@ -300,9 +371,10 @@ const DashboardMessages = ({ t }) => {
                     {/* Messages Header */}
                     <div className="px-3 py-2 mt-2">
                         <div className="flex justify-between items-center">
-                            <h2 className="!text-sm font-bold text-gray-400 uppercase tracking-wider">{t('JobsUpdate.DashboardMessages.header.title', 'Messages')}</h2>
-                            <button className="p-1 text-gray-400 rounded-md hover:bg-gray-100 transition-colors">
-                                <FiEdit className="w-3.5 h-3.5" />
+                            <h2 className={`!text-sm font-bold uppercase tracking-wider ${CHAT_INK_SUBTLE}`}>{t('JobsUpdate.DashboardMessages.header.title', 'Messages')}</h2>
+                            <button type="button" className={`p-1 rounded-md transition-colors ${CHAT_INK_SUBTLE} hover:bg-[var(--cuba-primary-soft)]`}>
+                                <FiEdit className="w-3.5 h-3.5" aria-hidden="true" />
+                                <span className="cuba-sr-only">{t('JobsUpdate.DashboardMessages.search.placeholder', 'Search')}</span>
                             </button>
                         </div>
                     </div>
@@ -310,62 +382,88 @@ const DashboardMessages = ({ t }) => {
                     {/* Placeholder for No Conversations */}
                     {conversations.length === 0 && (
                         <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
-                            <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4">
-                                <FiMessageCircle className="w-8 h-8 text-blue-400" />
+                            <div className="w-16 h-16 bg-[var(--cuba-primary-soft)] rounded-full flex items-center justify-center mb-4">
+                                <FiMessageCircle className="w-8 h-8 text-[var(--cuba-primary-ink-strong)]" />
                             </div>
-                            <h3 className="text-xs font-medium text-gray-700 mb-1">{t('JobsUpdate.DashboardMessages.noMessages.title', 'No messages yet')}</h3>
-                            <p className="text-xs text-gray-500">{t('JobsUpdate.DashboardMessages.noMessages.message', 'Employers will reach out to you here when interested in your profile')}</p>
+                            <h3 className={`text-xs font-medium mb-1 ${CHAT_INK}`}>{t('JobsUpdate.DashboardMessages.noMessages.title', 'No messages yet')}</h3>
+                            <p className={`text-xs ${CHAT_INK_MUTED}`}>{t('JobsUpdate.DashboardMessages.noMessages.message', 'Employers will reach out to you here when interested in your profile')}</p>
                         </div>
                     )}
 
                     {/* Conversation List */}
                     <div className="p-2 space-y-1">
                         {conversations.map((convo) => (
-                            <div
+                            <button
+                                type="button"
                                 key={convo.id}
-                                className={`flex items-center p-2 rounded-lg cursor-pointer transition-colors ${selectedConversation?.id === convo.id ? 'bg-gray-100' : 'hover:bg-gray-100/50'}`}
+                                aria-current={selectedConversation?.id === convo.id ? 'true' : undefined}
+                                className={`w-full text-left flex items-center p-2 rounded-lg cursor-pointer transition-colors ${selectedConversation?.id === convo.id ? 'bg-[var(--cuba-primary-soft)]' : 'hover:bg-[var(--cuba-primary-soft)]'}`}
                                 onClick={() => setSelectedConversation(convo)}>
                                 <div className="relative flex-shrink-0 mr-2">
-                                    <img src={convo.avatar} alt={convo.name} className="w-8 h-8 rounded-full" />
-                                    <span className="absolute bottom-0 right-0 w-2 h-2 bg-green-500 rounded-full border-2 border-white"></span>
+                                    <img src={convo.avatar} alt="" className="w-8 h-8 rounded-full" />
+                                    {/* DIR-026 / AC-2: the live per-thread unread count.
+                                        Decorative presence dot replaced by the REAL
+                                        MariaDB count so the list agrees with the
+                                        header badge. */}
+                                    {convo.unread > 0 && (
+                                        <span
+                                            data-testid="messages-thread-unread"
+                                            className="absolute -right-1 -top-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-bold leading-none"
+                                            style={{
+                                                backgroundColor: 'var(--cuba-header-badge-fill)',
+                                                color: 'var(--cuba-header-badge-ink)',
+                                            }}
+                                        >
+                                            {convo.unread > 99 ? '99+' : convo.unread}
+                                            <span className="cuba-sr-only"> unread messages</span>
+                                        </span>
+                                    )}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex justify-between items-center">
-                                        <p className="text-xs font-semibold text-gray-800 truncate">{convo.name}</p>
-                                        <p className="text-[11px] text-gray-500 flex-shrink-0">{convo.time}</p>
+                                        <p className={`text-xs font-semibold truncate ${CHAT_INK}`}>{convo.name}</p>
+                                        <p className={`text-[11px] flex-shrink-0 ${CHAT_INK_MUTED}`}>{convo.time}</p>
                                     </div>
-                                    <p className="text-xs text-gray-500 truncate mt-0.5">{convo.lastMessage}</p>
+                                    <p className={`text-xs truncate mt-0.5 ${CHAT_INK_MUTED}`}>{convo.lastMessage}</p>
                                 </div>
-                            </div>
+                            </button>
                         ))}
                     </div>
                 </div>
             </div>
 
             {/* Right Panel - Chat Area */}
-            <div className="flex-1 flex flex-col bg-gray-100 h-full">
+            <div className="flex-1 flex flex-col h-full bg-[var(--cuba-primary-soft)]">
                 {selectedConversation ? (
                     <>
                         {/* Chat Header */}
-                        <div className="flex items-center justify-between px-5 py-3 bg-white border-b border-gray-100 flex-shrink-0 shadow-sm">
+                        <div className={`flex items-center justify-between px-5 py-3 border-b flex-shrink-0 shadow-sm ${CHAT_SURFACE} ${CHAT_LINE}`}>
                             <div className="flex items-center space-x-3">
                                 <div className="relative flex-shrink-0">
-                                    <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-gray-100 hover:ring-blue-200 transition-all duration-200">
-                                        <img src={selectedConversation.avatar} alt={selectedConversation.name} className="w-full h-full object-cover" />
+                                    <div className="w-10 h-10 rounded-full overflow-hidden ring-2 hover:ring-[var(--cuba-primary-soft)] transition-all duration-200" style={{ '--tw-ring-color': 'var(--cuba-line)' }}>
+                                        <img src={selectedConversation.avatar} alt="" className="w-full h-full object-cover" />
                                     </div>
-                                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-white shadow-sm"></div>
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                    <h3 className="text-xs font-semibold text-gray-900 truncate leading-tight">{selectedConversation.name}</h3>
-                                    <div className="flex items-center space-x-1 mt-0.5">
-                                        <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-                                        <p className="text-xs text-gray-500 font-medium">{t('JobsUpdate.DashboardMessages.status.active', 'Active now')}</p>
-                                    </div>
+                                    <h3 className={`text-xs font-semibold truncate leading-tight ${CHAT_INK}`}>{selectedConversation.name}</h3>
+                                    {/* DIR-026: the pulsing "Active now" indicator and the
+                                        green presence dot were FABRICATED — nothing in
+                                        `conversation_participants` or
+                                        `conversation_messages` records presence, so
+                                        that dot asserted a real-time fact the platform
+                                        cannot know. Replaced with the one honest,
+                                        server-derived fact available: the real unread
+                                        count for this thread. */}
+                                    <p className={`text-xs font-medium ${CHAT_INK_MUTED}`}>
+                                        {selectedConversation.unread > 0
+                                            ? t('JobsUpdate.DashboardMessages.status.unread', '{{count}} unread', { count: selectedConversation.unread })
+                                            : t('JobsUpdate.DashboardMessages.noMessages.title', 'No messages yet')}
+                                    </p>
                                 </div>
                             </div>
                             <div className="flex items-center space-x-1">
-                                <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-all duration-200 group">
-                                    <svg className="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <button type="button" className={`p-2 rounded-lg transition-all duration-200 group ${CHAT_INK_SUBTLE} hover:text-[var(--cuba-ink)] hover:bg-[var(--cuba-primary-soft)]`}>
+                                    <svg className="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                         <path
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
@@ -373,9 +471,10 @@ const DashboardMessages = ({ t }) => {
                                             d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
                                         />
                                     </svg>
+                                    <span className="cuba-sr-only">{t('JobsUpdate.DashboardMessages.status.active', 'Call')}</span>
                                 </button>
-                                <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-all duration-200 group">
-                                    <svg className="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <button type="button" className={`p-2 rounded-lg transition-all duration-200 group ${CHAT_INK_SUBTLE} hover:text-[var(--cuba-ink)] hover:bg-[var(--cuba-primary-soft)]`}>
+                                    <svg className="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                         <path
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
@@ -384,7 +483,7 @@ const DashboardMessages = ({ t }) => {
                                         />
                                     </svg>
                                 </button>
-                                <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-all duration-200 group">
+                                <button className={`p-2 rounded-lg transition-all duration-200 group ${CHAT_INK_SUBTLE} hover:text-[var(--cuba-ink)] hover:bg-[var(--cuba-primary-soft)]`}>
                                     <FiMoreVertical className="w-5 h-5 group-hover:scale-110 transition-transform" />
                                 </button>
                             </div>
@@ -398,9 +497,9 @@ const DashboardMessages = ({ t }) => {
                                     <button
                                         onClick={loadMoreMessages}
                                         disabled={isLoadingMessages}
-                                        className="text-xs text-blue-600 hover:text-blue-800 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center mx-auto bg-white px-2.5 py-1 rounded-full shadow-sm border border-gray-200">
+                                        className={`text-xs text-[var(--cuba-primary-ink-strong)] hover:text-[var(--cuba-primary-fill)] disabled:opacity-60 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center mx-auto px-2.5 py-1 rounded-full shadow-sm border ${CHAT_LINE} ${CHAT_SURFACE}`}>
                                         {isLoadingMessages ? (
-                                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-[var(--cuba-primary-fill)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
                                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                                 <path
                                                     className="opacity-75"
@@ -415,7 +514,7 @@ const DashboardMessages = ({ t }) => {
                                             : t('JobsUpdate.DashboardMessages.loading.loadMore', 'Load Older Messages')}
                                     </button>
                                 ) : (
-                                    <p className="text-xs text-gray-500">{t('JobsUpdate.DashboardMessages.loading.noMore', 'No more messages')}</p>
+                                    <p className={`text-xs ${CHAT_INK_MUTED}`}>{t('JobsUpdate.DashboardMessages.loading.noMore', 'No more messages')}</p>
                                 )}
                             </div>
 
@@ -430,24 +529,28 @@ const DashboardMessages = ({ t }) => {
                                         <div
                                             className={`max-w-xs sm:max-w-md rounded-2xl px-4 py-3 shadow-sm transition-all duration-200 ${
                                                 msg.sender === 'me'
-                                                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'
+                                                    ? CHAT_PRIMARY
                                                     : msg.sender === 'system' && msg.isError
                                                     ? 'bg-red-50 text-red-700 border border-red-200'
-                                                    : 'bg-white text-gray-800 shadow-md'
+                                                    : `border ${CHAT_SURFACE} shadow-md`
                                             }`}>
                                             <p className="text-sm leading-relaxed break-words">{msg.text}</p>
                                             {msg.isError && (
                                                 <p className="text-xs mt-2 text-red-600">
-                                                    {t('JobsUpdate.DashboardMessages.errors.connection', 'Check your Firebase security rules and network connection.')}
+                                                    {t('JobsUpdate.DashboardMessages.errors.connection', 'Check your connection and try again.')}
                                                 </p>
                                             )}
                                         </div>
-                                        {msg.sender !== 'system' && <span className="text-[10px] text-gray-400 flex-shrink-0 px-1 self-end">{msg.time}</span>}
+                                        {/* DIR-026 / INV-4: this timestamp was `text-gray-400`
+                                            (~2.9:1 on white — below the AA floor). It now uses
+                                            the audited `--cuba-ink-subtle` token, which clears
+                                            4.5:1 in BOTH light and dark themes. */}
+                                        {msg.sender !== 'system' && <span className={`text-[10px] flex-shrink-0 px-1 self-end ${CHAT_INK_SUBTLE}`}>{msg.time}</span>}
                                     </div>
                                 ))
                             ) : isLoadingMessages ? (
-                                <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-4"></div>
+                                <div className={`flex flex-col items-center justify-center h-full ${CHAT_INK_MUTED}`}>
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 mb-4" style={{ borderColor: 'var(--cuba-primary-fill)' }}></div>
                                     <p className="text-sm font-medium">{t('JobsUpdate.DashboardMessages.loading.messages', 'Loading messages...')}</p>
                                 </div>
                             ) : messagesError ? (
@@ -456,39 +559,53 @@ const DashboardMessages = ({ t }) => {
                                         <FiMessageCircle className="w-8 h-8 text-red-400" />
                                     </div>
                                     <p className="text-sm font-medium mb-2">{t('JobsUpdate.DashboardMessages.errors.loadFailed', 'Failed to load messages')}</p>
-                                    <p className="text-xs text-gray-500 text-center max-w-sm">{messagesError}</p>
+                                    <p className={`text-xs text-center max-w-sm ${CHAT_INK_MUTED}`}>{messagesError}</p>
                                 </div>
                             ) : (
-                                <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                                    <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-6">
-                                        <FiMessageCircle className="w-10 h-10 text-blue-400" />
+                                <div className={`flex flex-col items-center justify-center h-full ${CHAT_INK_MUTED}`}>
+                                    <div className="w-20 h-20 bg-[var(--cuba-primary-soft)] rounded-full flex items-center justify-center mb-6">
+                                        <FiMessageCircle className="w-10 h-10 text-[var(--cuba-primary-ink-strong)]" />
                                     </div>
-                                    <h3 className="text-base font-semibold text-gray-800 mb-2">{t('JobsUpdate.DashboardMessages.emptyState.title', 'No messages in this conversation')}</h3>
-                                    <p className="text-sm text-gray-500 text-center max-w-sm mb-4">
+                                    <h3 className={`text-base font-semibold mb-2 ${CHAT_INK}`}>{t('JobsUpdate.DashboardMessages.emptyState.title', 'No messages in this conversation')}</h3>
+                                    <p className={`text-sm text-center max-w-sm mb-4 ${CHAT_INK_MUTED}`}>
                                         {t('JobsUpdate.DashboardMessages.emptyState.description', 'This is the beginning of your conversation with {{name}}.', { name: selectedConversation?.name })}
                                     </p>
-                                    <div className="flex items-center text-xs text-gray-400">
-                                        <FiUser className="w-4 h-4 mr-1" />
+                                    <div className={`flex items-center text-xs ${CHAT_INK_SUBTLE}`}>
+                                        <FiUser className="w-4 h-4 mr-1" aria-hidden="true" />
                                         <span>{t('JobsUpdate.DashboardMessages.emptyState.hint', 'Messages will appear here')}</span>
                                     </div>
                                 </div>
                             )}
                         </div>
 
-                        {/* Message Input */}
-                        <div className="px-5 py-3 bg-white border-t border-gray-200/80 flex-shrink-0">
+                        {/* DIR-026: the read receipt could not be saved, so the unread badge may be
+                            stale. Announced politely because it is advisory, not a
+                            failure to load or send anything. */}
+                            {readSyncError && (
+                                <p role="status" data-testid="messages-read-sync-error" className={`px-5 pt-2 text-xs ${CHAT_INK_MUTED}`}>
+                                    {readSyncError}
+                                </p>
+                            )}
+                            {/* Message Input */}
+                        <div className={`px-5 py-3 border-t flex-shrink-0 ${CHAT_SURFACE} ${CHAT_LINE}`}>
                             <form onSubmit={handleSendMessage} className="flex items-center space-x-3">
                                 <input
                                     type="text"
                                     value={message}
                                     onChange={(e) => setMessage(e.target.value)}
                                     placeholder={t('JobsUpdate.DashboardMessages.input.placeholder', 'Type a message...')}
-                                    className="flex-1 px-4 py-2 text-sm bg-gray-100 border-transparent rounded-lg focus:ring-1 focus:ring-blue-500 focus:bg-white transition"
+                                    aria-label={t('JobsUpdate.DashboardMessages.input.placeholder', 'Type a message...')}
+                                    className="flex-1 px-4 py-2 text-sm bg-[var(--cuba-primary-soft)] border border-transparent rounded-lg focus:ring-1 focus:bg-[var(--cuba-card)] transition"
+                                    style={{ '--tw-ring-color': 'var(--cuba-primary-fill)' }}
                                     autoComplete="off"
                                 />
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed"
+                                    className="px-4 py-2 text-sm font-semibold rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                                    style={{
+                                        backgroundColor: 'var(--cuba-primary-fill)',
+                                        color: 'var(--cuba-header-badge-ink)',
+                                    }}
                                     disabled={!message.trim()}>
                                     {t('JobsUpdate.DashboardMessages.input.sendButton', 'Send')}
                                 </button>
@@ -496,16 +613,16 @@ const DashboardMessages = ({ t }) => {
                         </div>
                     </>
                 ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center text-gray-500 px-8">
-                        <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
-                            <FiUsers className="w-12 h-12 text-gray-400" />
+                    <div className={`flex-1 flex flex-col items-center justify-center px-8 ${CHAT_INK_MUTED}`}>
+                        <div className="w-24 h-24 bg-[var(--cuba-primary-soft)] rounded-full flex items-center justify-center mb-6">
+                            <FiUsers className="w-12 h-12 text-[var(--cuba-primary-ink-strong)]" />
                         </div>
-                        <h3 className="text-lg font-semibold text-gray-800 mb-3">{t('JobsUpdate.DashboardMessages.welcome.title', 'Welcome to Messages')}</h3>
-                        <p className="text-center text-gray-500 max-w-md mb-6">
+                        <h3 className={`text-lg font-semibold mb-3 ${CHAT_INK}`}>{t('JobsUpdate.DashboardMessages.welcome.title', 'Welcome to Messages')}</h3>
+                        <p className={`text-center max-w-md mb-6 ${CHAT_INK_MUTED}`}>
                             {t('JobsUpdate.DashboardMessages.welcome.description', 'Select a conversation from the sidebar to start chatting with your contacts.')}
                         </p>
-                        <div className="flex items-center text-sm text-gray-400">
-                            <FiMessageCircle className="w-4 h-4 mr-2" />
+                        <div className={`flex items-center text-sm ${CHAT_INK_SUBTLE}`}>
+                            <FiMessageCircle className="w-4 h-4 mr-2" aria-hidden="true" />
                             <span>{t('JobsUpdate.DashboardMessages.welcome.hint', 'Choose a conversation to begin messaging')}</span>
                         </div>
                     </div>

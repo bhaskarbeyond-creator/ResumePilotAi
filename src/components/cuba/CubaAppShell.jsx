@@ -84,7 +84,7 @@ export const CubaNavGroups = ({ groups, collapsed = false, onNavigate, headingId
                                             'ml-auto rounded-full px-2 py-0.5 text-[10px] font-bold',
                                             active
                                                 ? 'bg-white/20 text-white'
-                                                : 'bg-[#7366ff]/10 text-[#7366ff]'
+                                                : 'bg-cuba-primary-soft text-cuba-primary-ink-strong'
                                         )}>
                                             {item.badge}
                                         </span>
@@ -337,7 +337,7 @@ const CubaAppShell = ({
                         }}
                         className="flex items-center gap-2.5 min-w-0 text-cuba-ink"
                     >
-                            <div className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-gradient-to-tr from-[#7366ff] to-[#5949d6] text-white font-black text-xs shadow-[0_3px_10px_rgba(115,102,255,0.35)]">
+                            <div className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-gradient-to-tr from-cuba-primary to-cuba-primary-fill text-white font-black text-xs shadow-[0_3px_10px_rgba(115,102,255,0.35)]">
                                 ✦
                             </div>
                             {!collapsed && (
@@ -377,7 +377,7 @@ const CubaAppShell = ({
                         >
                             <div className="flex h-14 flex-none items-center justify-between border-b border-cuba-line/60 px-4">
                                 <div className="flex items-center gap-2.5 min-w-0">
-                                    <div className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-gradient-to-tr from-[#7366ff] to-[#5949d6] text-white font-black text-xs shadow-[0_3px_10px_rgba(115,102,255,0.35)]">
+                                    <div className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-gradient-to-tr from-cuba-primary to-cuba-primary-fill text-white font-black text-xs shadow-[0_3px_10px_rgba(115,102,255,0.35)]">
                                         ✦
                                     </div>
                                     <span className="text-sm font-extrabold tracking-tight text-cuba-ink">IME365 Career Suite</span>

@@ -2645,6 +2645,24 @@ export async function getConversationParticipantProfile(conversationId) {
     }
 }
 
+/**
+ * DIR-026 / AC-2: advance the caller's read cursor for one conversation.
+ *
+ * The newest message the user has actually seen is what gets sent — never a
+ * timestamp the client invented. A failure here is deliberately NOT swallowed:
+ * the caller decides whether an unrecorded read should be surfaced, because
+ * silently ignoring it would leave a badge claiming unread mail that the user
+ * has plainly just read.
+ */
+export async function markConversationRead(conversationId, { lastReadMessageId = '', lastReadAt = 0 } = {}) {
+    const data = await apiJson(`/api/messages/conversations/${encodeURIComponent(conversationId)}/read`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lastReadMessageId, lastReadAt }),
+    });
+    return data?.success === true;
+}
+
 export async function sendMessage(conversationId, _senderId, text) {
     try {
         const data = await apiJson('/api/messages/send', {

@@ -1,0 +1,62 @@
+{
+  "certifiedAt": "2026-10-04T23:47:45.833Z",
+  "version": "3.0.0",
+  "architecture": "BIDIRECTIONAL_INSTANT_WAKE_V1",
+  "status": "FROZEN_AND_CERTIFIED",
+  "leadToDevWake": {
+    "protocol": "short_uri_prompt_file_dual_dispatch",
+    "extensions": [
+      {
+        "id": "rooveterinaryinc.roo-cline",
+        "dir": "rooveterinaryinc.roo-cline-3.54.0",
+        "taskSupported": true,
+        "autoHealed": false
+      },
+      {
+        "id": "rooveterinaryinc.roo-code-nightly",
+        "dir": "rooveterinaryinc.roo-code-nightly-0.0.8179-universal",
+        "taskSupported": true,
+        "autoHealed": false
+      },
+      {
+        "id": "saoudrizwan.claude-dev",
+        "dir": "saoudrizwan.claude-dev-4.1.22-universal",
+        "taskSupported": true,
+        "promptFileSupported": true,
+        "autoHealed": false
+      }
+    ],
+    "allExtensionsCertified": true
+  },
+  "devToLeadWake": {
+    "protocol": "triple_redundant_signal_queue_udp",
+    "udpPort": 48222,
+    "leadWatcher": {
+      "running": true,
+      "pid": 1396,
+      "udpPort": 48222,
+      "scriptExists": true,
+      "certifiedBackupExists": true
+    }
+  },
+  "certifiedFiles": [
+    {
+      "file": "bridge.cjs",
+      "sha256": "f6eb5775fb7342489c327cc51842785eed8d3a903d70ceae81bc60342a9c0932",
+      "bytes": 72264,
+      "certifiedBackup": "bridge.cjs.certified.bak"
+    },
+    {
+      "file": "lead_watcher.cjs",
+      "sha256": "5f4808960143c9f6b2b7f610630c09a7203166b07cb564f50702d0d148a236a3",
+      "bytes": 5014,
+      "certifiedBackup": "lead_watcher.cjs.certified.bak"
+    },
+    {
+      "file": "wake_patch_guardian.cjs",
+      "sha256": "c15d888d1d1bc4925e57604e358e35287120a7b29ecf9c4d73ba8ef57425cc8a",
+      "bytes": 9056,
+      "certifiedBackup": "wake_patch_guardian.cjs.certified.bak"
+    }
+  ]
+}

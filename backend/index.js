@@ -501,6 +501,41 @@ app.use(['/api/export', '/api/public-export', '/api/export-docx'], exportAccount
 app.use('/api/linkedin-scraper', scraperAccountLimiter);
 app.use('/api/contact', contactAccountLimiter);
 app.use('/api/messages', messagingAccountLimiter);
+
+// DIR-026 / AC-4: the administrator "Messages & Chat Module" toggle is enforced
+// SERVER-SIDE, not merely hidden in the UI. Mounted AFTER the `/api`
+// requireAuth middleware above, so `req.user` is always resolved and a disabled
+// module can never leak its existence to an anonymous caller.
+//
+// POLARITY IS STRICTLY `!== true`, matching the OFF-by-default contract declared
+// by the admin panel (`ModulesSettings.jsx:16` ships `enableMessagesModule:
+// false`). A missing key, a null, the string "true" from a hand-edited row, or
+// an unreadable settings document all mean DISABLED. This deliberately differs
+// from the portfolios guard above, which uses `!== false` because that module
+// is ON by default; flipping the polarity here would silently enable messaging
+// for every deployment that never explicitly turned it on.
+//
+// Fail CLOSED on a database read error rather than falling through: a settings
+// outage must not become an open messaging API.
+app.use('/api/messages', async (req, res, next) => {
+    try {
+        const { getRepository } = require('./repositories');
+        const config = await getRepository().getSetting('public_config');
+        if (config?.modules?.enableMessagesModule === true) return next();
+        return res.status(403).json({
+            success: false,
+            code: 'MODULE_DISABLED',
+            error: 'Messaging module is disabled by administrator.',
+            requestId: res.locals?.requestId,
+        });
+    } catch (_error) {
+        return res.status(503).json({
+            success: false,
+            code: 'APPLICATION_DATABASE_UNAVAILABLE',
+            error: 'Application database unavailable',
+        });
+    }
+});
 // Defense in depth for administrative namespaces. The route policy also protects aliases
 // such as /api/auth/purge-orphaned-auth and modular email routes mounted under /api.
 app.use(['/api/admin', '/api/email/admin'], (req, res, next) => {
@@ -1953,6 +1988,13 @@ app.get('/api/messages/conversations', async (req, res) => {
         if (conversations.length) {
             const conversationIds = conversations.map(row => row.id);
             const placeholders = conversationIds.map(() => '?').join(',');
+            // DIR-026 / AC-2: the unread projection rides along inside the SAME
+            // bounded message query rather than as a fourth round trip. Read state
+            // lives on `conversation_participants` (migration 024), so the cursor is
+            // resolved per participant with a LEFT JOIN and the unread count is the
+            // number of messages this caller has not consumed. The membership JOIN
+            // added here is the caller's OWN participant row, which is what keeps the
+            // projection bound to INV-3 — it can never surface another user's cursor.
             const [partRows, lastRows] = await Promise.all([
                 pool.query(
                     `SELECT conversation_id, user_id FROM conversation_participants
@@ -1960,17 +2002,21 @@ app.get('/api/messages/conversations', async (req, res) => {
                     conversationIds
                 ),
                 pool.query(
-                    `SELECT conversationId, id, senderId, text, timestamp FROM (
+                    `SELECT conversationId, id, senderId, text, timestamp, unreadCount FROM (
                        SELECT m.conversation_id AS conversationId, m.id, m.sender_id AS senderId,
                               m.text, m.timestamp,
+                              SUM(CASE WHEN m.sender_id <> ? AND (m.timestamp > cp.last_read_at OR cp.last_read_at IS NULL) THEN 1 ELSE 0 END)
+                                  OVER (PARTITION BY m.conversation_id) AS unreadCount,
                               ROW_NUMBER() OVER (
                                   PARTITION BY m.conversation_id
                                   ORDER BY m.timestamp DESC, m.id DESC
                               ) AS rn
                        FROM conversation_messages m
+                       JOIN conversation_participants cp
+                         ON cp.conversation_id = m.conversation_id AND cp.user_id = ?
                        WHERE m.conversation_id IN (${placeholders})
                      ) ranked WHERE ranked.rn = 1`,
-                    conversationIds
+                    [uid, uid, ...conversationIds]
                 ),
             ]);
             const byId = new Map(conversations.map(row => [row.id, row]));
@@ -1990,11 +2036,20 @@ app.get('/api/messages/conversations', async (req, res) => {
                         text: messageRow.text,
                         timestamp: messageRow.timestamp,
                     };
+                    // The caller is a participant of every row in this map (query 1
+                    // joins on their uid), so this is always THEIR unread count and
+                    // never a neighbouring participant's.
+                    conversation.unreadCount = Number(messageRow.unreadCount) || 0;
                 }
             }
         }
         conversations.sort((a, b) => (b.lastMessage?.timestamp || 0) - (a.lastMessage?.timestamp || 0));
-        return res.json({ success: true, conversations });
+        // DIR-026 / AC-2: a single authoritative total for the nav badge, so the
+        // shell never has to re-derive it and the header can never disagree with
+        // the conversation list it is rendered next to.
+        const totalUnread = conversations.reduce((sum, conversation) => sum + (Number(conversation.unreadCount) || 0), 0);
+        res.setHeader('Cache-Control', 'no-store, private');
+        return res.json({ success: true, conversations, totalUnread });
     } catch (error) {
         console.error('[List conversations]', error.message);
         return res.status(503).json({ success: false, error: 'Messaging is temporarily unavailable.' });
@@ -2028,6 +2083,65 @@ app.get('/api/messages/conversations/:conversationId/messages', async (req, res)
     } catch (error) {
         console.error('[List messages]', error.message);
         return res.status(503).json({ success: false, error: 'Messages are temporarily unavailable.' });
+    }
+});
+
+// DIR-026 / AC-2: advance this caller's read cursor for one conversation.
+// Membership is verified FIRST and independently, so a non-participant gets the
+// same 404 an unknown conversation gets — the endpoint never confirms that a
+// conversation exists to someone who is not in it (INV-3).
+//
+// The cursor is the newest message timestamp the caller has consumed, and it is
+// written for THIS participant row only. It is monotonic by construction: a
+// stale or replayed advance (a second tab that was open before a refresh) can
+// only ever move the cursor FORWARD, never rewind it and resurrect an already
+// read message as unread.
+app.post('/api/messages/conversations/:conversationId/read', async (req, res) => {
+    const conversationId = String(req.params.conversationId || '');
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(conversationId)) {
+        return res.status(404).json({ success: false, error: 'Conversation not found.' });
+    }
+    try {
+        const pool = require('./database/mysql').getPool();
+        const uid = req.user.uid;
+        // Message ids are `msg_<epochMs>_<hex>` (see the send route), so the id
+        // is validated against that exact shape rather than the looser
+        // conversation-id pattern. Anything else is treated as "no cursor".
+        const rawReadId = String(req.body?.lastReadMessageId || '');
+        const lastReadMessageId = /^msg_\d{10,20}_[a-f0-9]{8,64}$/.test(rawReadId) ? rawReadId : '';
+        const [membership] = await pool.query(
+            'SELECT 1 FROM conversation_participants WHERE conversation_id = ? AND user_id = ?',
+            [conversationId, uid]
+        );
+        if (!membership.length) {
+            return res.status(404).json({ success: false, error: 'Conversation not found.' });
+        }
+        // GREATEST() keeps the cursor monotonic and makes this endpoint
+        // idempotent, so concurrent tab opens cannot lower a newer cursor. The
+        // CASE guard matters: an empty id (a conversation that genuinely has no
+        // messages yet) must leave the stored cursor untouched, because
+        // GREATEST('', '') = '' would otherwise erase a real cursor.
+        await pool.query(
+            `UPDATE conversation_participants
+             SET last_read_message_id = CASE
+                     WHEN ? <> '' THEN GREATEST(COALESCE(last_read_message_id, ''), ?)
+                     ELSE last_read_message_id
+                 END,
+                 last_read_at = GREATEST(COALESCE(last_read_at, 0), ?)
+             WHERE conversation_id = ? AND user_id = ?`,
+            [
+                lastReadMessageId,
+                lastReadMessageId,
+                Number(req.body?.lastReadAt) || Date.now(),
+                conversationId,
+                uid,
+            ]
+        );
+        res.setHeader('Cache-Control', 'no-store, private');
+        return res.json({ success: true });
+    } catch (error) {
+        console.error('[Mark conversation read]', error.message);
+        return res.status(503).json({ success: false, error: 'Messaging service unavailable.' });
     }
 });
 

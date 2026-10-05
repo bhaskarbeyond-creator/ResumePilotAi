@@ -7,6 +7,38 @@ import logo from '../../assets/logo/logo.png';
 import { AuthContext } from '../../context/AuthContext';
 import signOutUser from '../../utils/signOut';
 import ContextSwitcher from '../common/ContextSwitcher';
+import { useUnreadMessages } from '../../hooks/useUnreadMessages';
+import { resolveMessagesVisibility } from '../../utils/moduleFlags';
+import { getSystemSettings } from '../../services/api/platform';
+
+// DIR-026 / AC-2 & AC-3: the recruiter's Candidate Messages entry carries the same
+// live unread total as the candidate shell — it is the SAME conversation list read
+// through the SAME owner-scoped endpoint, so the two surfaces can never disagree.
+//
+// The navigation model itself stays a frozen module-level export (several tests
+// and the link crawler import `EMPLOYER_NAV` directly), so the module gate is
+// applied to the projected groups at render time rather than by mutating the
+// shared constant. Gating here rather than in the constant means the crawler
+// still sees the route (it exists), while a disabled module is never linked.
+export const EMPLOYER_MESSAGES_PATH = '/employer/messages';
+
+/**
+ * Project the recruiter navigation through the administrator's module flag and
+ * the live unread count. Pure and framework-free so it can be asserted in Node.
+ */
+export function buildEmployerNavGroups(groups, { messagesAllowed, unreadCount = 0, unreadStatus = 'ready' } = {}) {
+    // An unread read that failed must not render as "0 / all clear" (see the
+    // hook's fail-visible contract); '!' is the honest "status unknown" state.
+    const badge = unreadStatus === 'error' ? '!' : unreadCount > 0 ? String(unreadCount) : null;
+    return groups
+        .map((group) => ({
+            ...group,
+            items: group.items
+                .filter((item) => item.path !== EMPLOYER_MESSAGES_PATH || messagesAllowed !== false)
+                .map((item) => (item.path === EMPLOYER_MESSAGES_PATH && badge ? { ...item, badge } : item)),
+        }))
+        .filter((group) => group.items.length > 0);
+}
 
 // Employer portal information architecture. Recruiter capability is deliberately
 // separate from the candidate sidebar: there are no resume-builder or admin
@@ -38,10 +70,10 @@ export const EMPLOYER_NAV = [
 export const EMPLOYER_NAV_PATHS = EMPLOYER_NAV.flatMap(group => group.items.map(item => item.path));
 
 
-const EmployerNavList = ({ isActive, onNavigate, label }) => {
+const EmployerNavList = ({ isActive, onNavigate, label, groups }) => {
     return (
         <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-4" aria-label={label}>
-            {EMPLOYER_NAV.map((group) => (
+            {groups.map((group) => (
                 <div key={group.group}>
                     <p className="px-2 mb-1 text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">
                         {group.group}
@@ -60,6 +92,24 @@ const EmployerNavList = ({ isActive, onNavigate, label }) => {
                                         <div className={`flex items-center text-xs transition-all duration-150 rounded-xl ${active ? 'cuba-fill-pill cuba-focusable font-bold border-l-3 border-indigo-600 shadow-2xs pl-2.5' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium'} px-2.5 py-2`}>
                                             <Icon className="text-base min-w-[18px] mr-2.5" aria-hidden="true" />
                                             <span className="flex-1 truncate">{item.label}</span>
+                                            {/* DIR-026 / AC-2: the live unread total, on the
+                                                audited badge token pair so AA contrast
+                                                holds in both themes (INV-4). */}
+                                            {item.badge && (
+                                                <span
+                                                    data-testid="employer-messages-badge"
+                                                    className="ml-2 inline-flex h-4 min-w-[18px] flex-none items-center justify-center rounded-full px-1.5 text-[10px] font-bold leading-none"
+                                                    style={{
+                                                        backgroundColor: 'var(--cuba-header-badge-fill)',
+                                                        color: 'var(--cuba-header-badge-ink)',
+                                                    }}
+                                                >
+                                                    {item.badge}
+                                                    <span className="cuba-sr-only">
+                                                        {item.badge === '!' ? 'unread status unavailable' : 'unread messages'}
+                                                    </span>
+                                                </span>
+                                            )}
                                         </div>
                                     </Link>
                                 </li>
@@ -128,6 +178,26 @@ const EmployerSidebar = ({ sidebarCollapsed, onSidebarToggle, mobileMenuOpen, on
         return location.pathname === path || location.pathname.startsWith(path + '/');
     };
 
+    // DIR-026 / AC-3 + AC-2: one authoritative module flag and one live unread
+    // total, projected into every sidebar variant below (expanded desktop,
+    // collapsed icon rail and mobile drawer) so the recruiter can never see a
+    // contradictory count or a link to a disabled surface.
+    const [messagesAllowed, setMessagesAllowed] = useState(undefined);
+    useEffect(() => {
+        let cancelled = false;
+        getSystemSettings()
+            .then((settings) => { if (!cancelled) setMessagesAllowed(resolveMessagesVisibility(settings) === true); })
+            .catch(() => { if (!cancelled) setMessagesAllowed(false); });
+        return () => { cancelled = true; };
+    }, []);
+
+    const { unreadCount: unreadMessages, status: unreadStatus } = useUnreadMessages();
+    const navGroups = buildEmployerNavGroups(EMPLOYER_NAV, {
+        messagesAllowed,
+        unreadCount: unreadMessages,
+        unreadStatus,
+    });
+
     const handleLogout = async () => {
         await signOutUser();
         navigate('/');
@@ -165,14 +235,26 @@ const EmployerSidebar = ({ sidebarCollapsed, onSidebarToggle, mobileMenuOpen, on
                 {sidebarCollapsed ? (
                     <nav className="flex-1 overflow-y-auto px-2 py-3" aria-label="Employer navigation icons">
                         <ul className="space-y-1 list-none p-0 m-0">
-                            {EMPLOYER_NAV.flatMap(g => g.items).map((item) => {
+                            {navGroups.flatMap(g => g.items).map((item) => {
                                 const Icon = item.icon;
                                 const active = isActive(item.path, item.exact);
                                 return (
                                     <li key={item.path}>
-                                        <Link to={item.path} title={item.label} aria-label={item.label} aria-current={active ? 'page' : undefined}>
+                                        <Link to={item.path} title={item.label} aria-label={item.badge ? `${item.label}, ${item.badge === '!' ? 'unread status unavailable' : `${item.badge} unread`}` : item.label} aria-current={active ? 'page' : undefined}>
                                             <span className={`flex items-center justify-center p-2.5 rounded-xl transition-all ${active ? 'cuba-fill-pill' : 'text-slate-500 hover:bg-slate-100'}`}>
                                                 <Icon className="text-base" aria-hidden="true" />
+                                                {item.badge && (
+                                                    <span
+                                                        data-testid="employer-messages-badge"
+                                                        className="absolute ml-4 -mt-4 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-bold leading-none"
+                                                        style={{
+                                                            backgroundColor: 'var(--cuba-header-badge-fill)',
+                                                            color: 'var(--cuba-header-badge-ink)',
+                                                        }}
+                                                    >
+                                                        {item.badge}
+                                                    </span>
+                                                )}
                                             </span>
                                         </Link>
                                     </li>
@@ -181,7 +263,7 @@ const EmployerSidebar = ({ sidebarCollapsed, onSidebarToggle, mobileMenuOpen, on
                         </ul>
                     </nav>
                 ) : (
-                    <EmployerNavList isActive={isActive} onNavigate={undefined} label="Employer navigation" />
+                    <EmployerNavList isActive={isActive} onNavigate={undefined} label="Employer navigation" groups={navGroups} />
                 )}
 
                 <PortalUtilities collapsed={sidebarCollapsed} onNavigate={undefined} isAdmin={isAdmin} onLogout={handleLogout} />
@@ -220,7 +302,7 @@ const EmployerSidebar = ({ sidebarCollapsed, onSidebarToggle, mobileMenuOpen, on
                     </button>
                 </div>
                 <div className="flex flex-col h-[calc(100%-57px)]">
-                    <EmployerNavList isActive={isActive} onNavigate={onCloseMobile} label="Mobile employer navigation" />
+                    <EmployerNavList isActive={isActive} onNavigate={onCloseMobile} label="Mobile employer navigation" groups={navGroups} />
                     <PortalUtilities collapsed={false} onNavigate={onCloseMobile} isAdmin={isAdmin} onLogout={handleLogout} />
                 </div>
             </aside>

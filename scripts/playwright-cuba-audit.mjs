@@ -14,6 +14,143 @@ import {
 const OUT = path.resolve('test-results/cuba-audit-screenshots');
 fs.mkdirSync(OUT, { recursive: true });
 
+/**
+ * DIR-046 -- Canonical breakpoint sweep + 1280px stat-card collision probe.
+ *
+ * The single hardcoded 1440x900 context viewport below could only ever prove the
+ * layout at ONE width. DIR-001 AC-1..AC-4 are breakpoint claims, so they need a
+ * census that spans the real responsive range: 375 (small phone), 768 (tablet),
+ * 1024 (small laptop / iPad landscape), 1280 (the width at which the 4-up stat
+ * grid collapses to a single row and horizontal badge collision becomes possible)
+ * and 1920 (desktop). Every artifact is retained as slug-WIDTH.png so a reviewer
+ * can diff one breakpoint without re-running the sweep.
+ */
+const CANONICAL_BREAKPOINTS = [375, 768, 1024, 1280, 1920];
+
+/** The collision-sensitive width from DIR-001 AC-2. */
+const COLLISION_PROBE_WIDTH = 1280;
+
+/** Height is held constant so a width change never alters the captured fold. */
+const SWEEP_HEIGHT = 900;
+
+const EVIDENCE_DIR = path.resolve('.bridge/evidence');
+fs.mkdirSync(EVIDENCE_DIR, { recursive: true });
+
+/**
+ * Routes swept at every canonical breakpoint. These are the authenticated Cuba
+ * portals; the public landing page is excluded because it renders no Cuba app
+ * shell and therefore no stat cards, so sweeping it would only inflate the PNG
+ * count with evidence that proves nothing about the shell contract.
+ */
+const SWEEP_ROUTES = [
+  { slug: '02-dashboard', path: '/dashboard', settle: 2000 },
+  { slug: '03-design-system-showcase', path: '/dashboard/design-system', settle: 1500 },
+  { slug: '04-recruiter-employer-portal', path: '/employer', settle: 2000 },
+  { slug: '05-platform-admin-command-center', path: '/admin/dashboard', settle: 2500 },
+  { slug: '06-dashboard-jobs', path: '/dashboard/jobs', settle: 2000 },
+  { slug: '07-enterprise-console', path: '/org/northwind', settle: 2000 },
+];
+
+/**
+ * Runs entirely inside the page so the rectangles come from the same layout pass
+ * the browser paints, not from a Node-side reconstruction.
+ *
+ * Two independent collision classes are checked on every .cuba-stat-card:
+ *   1. icon bubble vs trend badge inside the card's TOP ROW. This is the exact
+ *      defect DIR-001 AC-2 names: a horizontal badge overlapping the icon.
+ *   2. card vs card. A grid gap collapse makes neighbouring cards touch; with
+ *      `gap` this cannot happen, but it is measured rather than assumed.
+ *
+ * `tolerance` of 0.5px absorbs sub-pixel rounding only. Any real overlap is
+ * reported as a violation with the measured intersection area.
+ */
+const measureStatCards = () => {
+  const TOLERANCE = 0.5;
+  const cards = Array.from(document.querySelectorAll('.cuba-stat-card'));
+
+  const intersects = (a, b) => {
+    const w = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+    const h = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+    if (w <= TOLERANCE || h <= TOLERANCE) return 0;
+    return Math.round(w * h * 100) / 100;
+  };
+
+  const label = (card, index) => {
+    const value = card.querySelector('p');
+    const name = card.querySelectorAll('p')[1];
+    const text = `${value?.textContent || ''} ${name?.textContent || ''}`.trim();
+    return text ? `#${index} "${text.replace(/\s+/g, ' ').slice(0, 40)}"` : `#${index}`;
+  };
+
+  const topRowViolations = [];
+  const cardViolations = [];
+
+  cards.forEach((card, index) => {
+    const row = card.querySelector('.cuba-stat-card > div');
+    const icon = card.querySelector('.cuba-stat-icon');
+    // The trend badge is the sibling of the icon bubble within the top row.
+    const badge = icon?.parentElement ? icon.parentElement.nextElementSibling : null;
+    if (icon && badge && badge.getBoundingClientRect) {
+      const iconRect = icon.getBoundingClientRect();
+      const badgeRect = badge.getBoundingClientRect();
+      const area = intersects(iconRect, badgeRect);
+      if (area > 0) {
+        topRowViolations.push({
+          card: label(card, index),
+          icon: { x: iconRect.x, y: iconRect.y, w: iconRect.width, h: iconRect.height },
+          badge: { x: badgeRect.x, y: badgeRect.y, w: badgeRect.width, h: badgeRect.height },
+          intersectionAreaPx2: area,
+        });
+      }
+    }
+  });
+
+  for (let i = 0; i < cards.length; i += 1) {
+    for (let j = i + 1; j < cards.length; j += 1) {
+      const area = intersects(cards[i].getBoundingClientRect(), cards[j].getBoundingClientRect());
+      if (area > 0) {
+        cardViolations.push({ pair: [label(cards[i], i), label(cards[j], j)], intersectionAreaPx2: area });
+      }
+    }
+  }
+
+  return {
+    cardCount: cards.length,
+    topRowViolationCount: topRowViolations.length,
+    cardViolationCount: cardViolations.length,
+    topRowViolations,
+    cardViolations,
+  };
+};
+
+/**
+ * Captures the RESOLVED computed colour of the Cuba shell's token-bearing
+ * surfaces. DIR-046 requires the arbitrary-value -> token swap in CubaAppShell
+ * to be provably NOT a restyle, and the only honest proof is the browser's own
+ * computed value before and after the edit rather than a reading of the source.
+ */
+const measureShellTokens = () => {
+  const read = (el, props) => {
+    if (!el) return null;
+    const cs = window.getComputedStyle(el);
+    const out = {};
+    props.forEach((prop) => { out[prop] = cs.getPropertyValue(prop).trim(); });
+    return out;
+  };
+
+  const sidebarInactive = document.querySelector('nav a[aria-current]')
+    ?? document.querySelector('nav a:not(.cuba-fill-pill)');
+  const brandMark = document.querySelector('.bg-gradient-to-tr');
+  const softChip = Array.from(document.querySelectorAll('span'))
+    .find(el => el.textContent?.trim() === 'AI') ?? null;
+
+  return {
+    sidebarInactiveHoverBg: read(sidebarInactive, ['background-color', 'color']),
+    brandMarkGradient: read(brandMark, ['background-image']),
+    aiChip: read(softChip, ['background-color', 'color']),
+  };
+};
+
 async function run() {
   console.log('=== Starting Vite Server for Cuba Executive Playwright Visual Audit ===');
   const vite = await createServer({
@@ -296,6 +433,28 @@ async function run() {
     if (pathname === '/api/employer/jobs') {
       return json({ jobs: recruiterJobs });
     }
+
+    // Public job board feed consumed by /dashboard/jobs via getActiveJobs().
+    // Without this branch the request escaped interception and reached the live
+    // backend, which answered 503 DATABASE_UNAVAILABLE and logged two console
+    // errors per capture. The DIR-046 acceptance criterion is ZERO console
+    // errors, so a gap in the fixture router is a real audit defect rather than a
+    // cosmetic one. The payload reuses the SAME recruiterJobs array already
+    // declared above, so no new data is fabricated.
+    if (pathname === '/api/jobs-data') {
+      return json({
+        success: true,
+        jobs: recruiterJobs,
+        pagination: {
+          totalItems: recruiterJobs.length,
+          totalPages: 1,
+          currentPage: 1,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
+      });
+    }
+
     if (pathname === '/api/employer/companies') {
       return json({ companies: recruiterCompanies });
     }
@@ -550,6 +709,108 @@ async function run() {
     diagnostics = { cubaPrimary: '#7366ff', cubaCanvas: '#f4f5f9', cubaCard: '#ffffff', cubaElements: 34, shellActive: true };
   }
   console.log('Diagnostic result:', JSON.stringify(diagnostics, null, 2));
+
+  console.log('\n--- DIR-046 Canonical Breakpoint Sweep ---');
+  console.log(`Breakpoints: ${CANONICAL_BREAKPOINTS.join(', ')} px`);
+  console.log(`Routes: ${SWEEP_ROUTES.length} | Artifacts -> ${OUT}`);
+
+  const census = {
+    generatedAt: new Date().toISOString(),
+    breakpoints: CANONICAL_BREAKPOINTS,
+    routes: SWEEP_ROUTES.map(r => ({ slug: r.slug, path: r.path })),
+    captures: [],
+    statCardProbe: null,
+    shellTokens: null,
+    consoleErrorCount: 0,
+    pageErrorCount: 0,
+  };
+
+  // The page-level listeners above only PRINT their failures. The census also has
+  // to COUNT them, because "zero console errors" is an acceptance criterion and a
+  // printed line nobody greps is not a verifiable claim. Both counters are
+  // sliced from the start of the sweep so the legacy fixed-width captures that
+  // ran first cannot mask a regression introduced by the sweep itself.
+  const consoleErrors = [];
+  const pageErrors = [];
+  const onConsole = (msg) => { if (msg.type() === 'error') consoleErrors.push(msg.text().slice(0, 300)); };
+  const onPageError = (err) => pageErrors.push(err.message);
+  page.on('console', onConsole);
+  page.on('pageerror', onPageError);
+
+  // Preserve the light theme for every capture: a sweep that inherits the dark
+  // reset performed above would only ever prove one theme per breakpoint.
+  await page.evaluate(() => {
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.documentElement.classList.remove('dark');
+  });
+
+  for (const width of CANONICAL_BREAKPOINTS) {
+    await page.setViewportSize({ width, height: SWEEP_HEIGHT });
+    // The shell reads the viewport on mount for its mobile/desktop switch, so a
+    // resize alone can leave a stale breakpoint decision until a re-layout.
+    await page.evaluate(() => window.dispatchEvent(new Event('resize')));
+
+    for (const route of SWEEP_ROUTES) {
+      await page.goto(`${base}${route.path}`, { waitUntil: 'networkidle' });
+      await page.waitForTimeout(route.settle);
+      // Vite dev server pre-bundles deps lazily; the admin route can briefly paint
+      // the route error boundary on a cold cache. One reload clears it.
+      if (await page.getByText('Application View Error').isVisible().catch(() => false)) {
+        await page.waitForTimeout(1000);
+        await page.reload({ waitUntil: 'networkidle' });
+        await page.waitForTimeout(route.settle);
+      }
+
+      const file = `${route.slug}-${width}.png`;
+      await page.screenshot({ path: path.join(OUT, file), fullPage: false });
+
+      const measured = await page.evaluate(measureStatCards).catch(() => null);
+      census.captures.push({
+        width,
+        height: SWEEP_HEIGHT,
+        slug: route.slug,
+        path: route.path,
+        artifact: `test-results/cuba-audit-screenshots/${file}`,
+        statCardCount: measured?.cardCount ?? 0,
+        topRowViolations: measured?.topRowViolationCount ?? 0,
+        cardViolations: measured?.cardViolationCount ?? 0,
+        horizontalScroll: await page.evaluate(
+          () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+        ),
+      });
+      console.log(`  [${String(width).padStart(4)}px] ${route.path} -> ${file} (statCards=${measured?.cardCount ?? 0}, overlaps=${(measured?.topRowViolationCount ?? 0) + (measured?.cardViolationCount ?? 0)})`);
+    }
+  }
+
+  page.off('console', onConsole);
+  page.off('pageerror', onPageError);
+
+  // Dedicated 1280px collision probe. It re-visits the candidate dashboard -- the
+  // only route that renders the 4-up CubaStatCard grid -- so the result is a
+  // direct geometric answer to DIR-001 AC-2 rather than a value harvested from a
+  // sweep entry that may have measured a different page.
+  console.log(`\n--- DIR-046 Stat-Card Collision Probe @ ${COLLISION_PROBE_WIDTH}px ---`);
+  await page.setViewportSize({ width: COLLISION_PROBE_WIDTH, height: SWEEP_HEIGHT });
+  await page.goto(`${base}/dashboard`, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(2500);
+  census.statCardProbe = await page.evaluate(measureStatCards);
+  census.shellTokens = await page.evaluate(measureShellTokens);
+  console.log(JSON.stringify({
+    cardCount: census.statCardProbe.cardCount,
+    topRowViolations: census.statCardProbe.topRowViolationCount,
+    cardViolations: census.statCardProbe.cardViolationCount,
+  }, null, 2));
+
+  census.consoleErrorCount = consoleErrors.length;
+  census.pageErrorCount = pageErrors.length;
+  census.consoleErrors = consoleErrors;
+  census.pageErrors = pageErrors;
+  census.artifactCount = census.captures.length;
+
+  const censusPath = path.join(EVIDENCE_DIR, 'dir046-visual-audit.json');
+  fs.writeFileSync(censusPath, JSON.stringify(census, null, 2));
+  console.log(`\nDIR-046 census written: ${censusPath}`);
+  console.log(`Artifacts retained: ${census.artifactCount} PNGs across ${CANONICAL_BREAKPOINTS.length} breakpoints`);
 
   await browser.close();
   await server.close();

@@ -1,15 +1,26 @@
 {
-  "updatedAt": "2026-10-04T10:10:13.405Z",
-  "eventCount": 1378,
-  "activeDirectiveId": "DIR-025",
-  "activeDirectiveTitle": "Universal Link Crawler, Route Completeness & Zero-404 Navigation Freeze (Deep Link Crawl, Sub-Route Mounting & Header Dropdown Fixes)",
-  "activeDirectiveStatus": "ISSUED",
-  "unreadForLead": 435,
-  "unreadForDev": 691,
-  "pendingBlockers": 1,
+  "schemaVersion": 3,
+  "updatedAt": "2026-10-05T00:07:45.875Z",
+  "eventCount": 1456,
+  "activeDirectiveId": "DIR-027",
+  "activeDirectiveTitle": "Job Portal Clean Architecture & External Scraper Deprecation (Naukri Scraper Purge, Admin Module Rebranding & Pure Direct-Hiring Board Freeze)",
+  "activeDirectiveStatus": "IN_PROGRESS",
+  "awaitingHuman": false,
+  "awaitingHumanReason": null,
+  "awaitingHumanSince": null,
+  "stallDeadline": "2026-10-05T00:00:15.108Z",
+  "unreadForLead": 8,
+  "unreadForDev": 14,
+  "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-04T09:58:32.072Z",
-    "status": "DIR-024 all-green: duplicate main landmark + first-paint flash fixed, Playwright 4/4, build 3.86s, INV-1=0. Evidence submitted, awaiting Gatekeeper verdict.",
-    "percent": 100
+    "timestamp": "2026-10-05T00:00:15.108Z",
+    "status": "Playwright dir-001 suite 7/7 passed; awaiting Lead decision on 3 non-identical token mappings",
+    "percent": 75
+  },
+  "integrity": {
+    "ok": true,
+    "checked": 1456,
+    "legacy": 0,
+    "bad": 0
   }
 }

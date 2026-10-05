@@ -11,22 +11,32 @@
  *
  *   Therefore the UI rollout flag is deliberately CLIENT-SIDE and LOCAL:
  *   - It is a *presentation* switch. It can never grant access to a route, a
- *     permission, or data — RBAC remains entirely server-authoritative (§7).
- *   - It has no build-time coupling, so flipping it OFF requires no redeploy
- *     and no rebuild: it is a single localStorage write (§49 rollback path).
- *   - It defaults to the CURRENT, fully-verified legacy chrome, so a user with no
- *     stored preference sees exactly the shell that shipped and passed the
- *     baseline gates. The new shell is opt-in, therefore it cannot regress an
- *     un-flagged production user.
+ *     capability, or data — RBAC remains entirely server-authoritative (§7).
+ *   - It has no build-time coupling, so reverting requires no redeploy and no
+ *     rebuild: it is a single localStorage write (§49 rollback path).
+ *   - It defaults to CUBA, the fully-verified executive chrome. Cuba is now the
+ *     default shell for every user, so nobody is opted in silently and nobody
+ *     sees an unverified surface.
  *
- * This is the honest rollback mechanism for this repository: flip OFF, no
- * redeploy. It is not claimed to be more than that.
+ *   The legacy chrome is PRESERVED, not deleted, as the zero-downtime rollback
+ *   target. It remains reachable with zero downtime through three equivalent
+ *   doors: the `legacy=1` query parameter, the `cuba=0` query parameter, and a
+ *   programmatic `setCubaShellVariant('legacy')` call. Any of the three is a
+ *   single localStorage write, so a rollback is instantaneous and needs no
+ *   redeploy, no rebuild and no downtime.
+ *
+ * This is the honest rollback mechanism for this repository: revert with one
+ * write, no redeploy. It is not claimed to be more than that.
  */
 
 export const CUBA_SHELL_FLAG = 'ime365_cuba_shell_v2';
 export const CUBA_SHELL_STORAGE_KEY = CUBA_SHELL_FLAG;
 
-/** Values: 'legacy' (default), 'cuba', or absent (= legacy). */
+/**
+ * Values: 'cuba' (the default, used whenever nothing valid is stored) or
+ * 'legacy' (the preserved zero-downtime rollback target, reachable via the
+ * `legacy=1` / `cuba=0` query parameters or setCubaShellVariant('legacy')).
+ */
 const isKnownValue = (value) => value === 'legacy' || value === 'cuba';
 
 const readStored = () => {

@@ -1,0 +1,352 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "D:\\xampp\\htdocs\\IME365\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--config=playwright.dir046.config.js"
+    ],
+    "configFile": "D:\\xampp\\htdocs\\IME365\\playwright.dir046.config.js",
+    "rootDir": "D:/xampp/htdocs/IME365/tests/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/xampp/htdocs/IME365/.bridge/evidence/dir046-artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "dir046-dir001-certification",
+        "name": "dir046-dir001-certification",
+        "testDir": "D:/xampp/htdocs/IME365/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "/dir-001\\.spec\\.js/"
+        ],
+        "timeout": 300000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": ".bridge/evidence/dir046-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "dir-001.spec.js",
+      "file": "dir-001.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "DIR-001 Cuba Executive Design System -- certification suite",
+          "file": "dir-001.spec.js",
+          "line": 235,
+          "column": 6,
+          "specs": [
+            {
+              "title": "AC-1: the Cuba chrome is the active shell on all four authenticated portals",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 300000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir046-dir001-certification",
+                  "projectName": "dir046-dir001-certification",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 12233,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "text": "\u001b[33m\u001b[1mDeprecation Warning\u001b[0m [\u001b[34mglobal-builtin\u001b[0m]: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.\nUse color.adjust instead.\n\nMore info and automated migrator: https://sass-lang.com/d/import\n\n\u001b[34m   ╷\u001b[0m\n\u001b[34m97 │\u001b[0m         background-color: \u001b[31mdarken($btn-default, 6%)\u001b[0m;\r\n\u001b[34m   │\u001b[0m \u001b[31m                          ^^^^^^^^^^^^^^^^^^^^^^^^\u001b[0m\n\u001b[34m   ╵\u001b[0m\n    ..\\..\\..\\..\\src\\index.scss 97:27  root stylesheet\n\n"
+                        },
+                        {
+                          "text": "\u001b[33m\u001b[1mDeprecation Warning\u001b[0m [\u001b[34mcolor-functions\u001b[0m]: darken() is deprecated. Suggestions:\n\ncolor.scale($color, $lightness: -9.5327102804%)\ncolor.adjust($color, $lightness: -6%)\n\nMore info: https://sass-lang.com/d/color-functions\n\n\u001b[34m   ╷\u001b[0m\n\u001b[34m97 │\u001b[0m         background-color: \u001b[31mdarken($btn-default, 6%)\u001b[0m;\r\n\u001b[34m   │\u001b[0m \u001b[31m                          ^^^^^^^^^^^^^^^^^^^^^^^^\u001b[0m\n\u001b[34m   ╵\u001b[0m\n    ..\\..\\..\\..\\src\\index.scss 97:27  root stylesheet\n\n"
+                        },
+                        {
+                          "text": "\u001b[33m\u001b[1mDeprecation Warning\u001b[0m [\u001b[34mglobal-builtin\u001b[0m]: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.\nUse color.adjust instead.\n\nMore info and automated migrator: https://sass-lang.com/d/import\n\n\u001b[34m    ╷\u001b[0m\n\u001b[34m153 │\u001b[0m         border-color: \u001b[31mdarken($btn-default, 10%)\u001b[0m;\r\n\u001b[34m    │\u001b[0m \u001b[31m                      ^^^^^^^^^^^^^^^^^^^^^^^^^\u001b[0m\n\u001b[34m    ╵\u001b[0m\n    ..\\..\\..\\..\\src\\index.scss 153:23  root stylesheet\n\n"
+                        },
+                        {
+                          "text": "\u001b[33m\u001b[1mDeprecation Warning\u001b[0m [\u001b[34mcolor-functions\u001b[0m]: darken() is deprecated. Suggestions:\n\ncolor.scale($color, $lightness: -15.8878504673%)\ncolor.adjust($color, $lightness: -10%)\n\nMore info: https://sass-lang.com/d/color-functions\n\n\u001b[34m    ╷\u001b[0m\n\u001b[34m153 │\u001b[0m         border-color: \u001b[31mdarken($btn-default, 10%)\u001b[0m;\r\n\u001b[34m    │\u001b[0m \u001b[31m                      ^^^^^^^^^^^^^^^^^^^^^^^^^\u001b[0m\n\u001b[34m    ╵\u001b[0m\n    ..\\..\\..\\..\\src\\index.scss 153:23  root stylesheet\n\n"
+                        },
+                        {
+                          "text": "\u001b[33m\u001b[1mDeprecation Warning\u001b[0m [\u001b[34mglobal-builtin\u001b[0m]: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.\nUse color.adjust instead.\n\nMore info and automated migrator: https://sass-lang.com/d/import\n\n\u001b[34m    ╷\u001b[0m\n\u001b[34m154 │\u001b[0m         color: \u001b[31mdarken($btn-default, 10%)\u001b[0m;\r\n\u001b[34m    │\u001b[0m \u001b[31m               ^^^^^^^^^^^^^^^^^^^^^^^^^\u001b[0m\n\u001b[34m    ╵\u001b[0m\n    ..\\..\\..\\..\\src\\index.scss 154:16  root stylesheet\n\n"
+                        },
+                        {
+                          "text": "\u001b[33m\u001b[1mDeprecation Warning\u001b[0m [\u001b[34mcolor-functions\u001b[0m]: darken() is deprecated. Suggestions:\n\ncolor.scale($color, $lightness: -15.8878504673%)\ncolor.adjust($color, $lightness: -10%)\n\nMore info: https://sass-lang.com/d/color-functions\n\n\u001b[34m    ╷\u001b[0m\n\u001b[34m154 │\u001b[0m         color: \u001b[31mdarken($btn-default, 10%)\u001b[0m;\r\n\u001b[34m    │\u001b[0m \u001b[31m               ^^^^^^^^^^^^^^^^^^^^^^^^^\u001b[0m\n\u001b[34m    ╵\u001b[0m\n    ..\\..\\..\\..\\src\\index.scss 154:16  root stylesheet\n\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-10-05T00:04:53.348Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "8c9043b4bad20c5a268c-bca169fe989f285b525b",
+              "file": "dir-001.spec.js",
+              "line": 236,
+              "column": 5
+            },
+            {
+              "title": "AC-2: stat cards stack in two rows with zero geometric collision at 1280px",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 300000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir046-dir001-certification",
+                  "projectName": "dir046-dir001-certification",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1676,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-05T00:05:05.972Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "8c9043b4bad20c5a268c-a35afd5b857359ca731a",
+              "file": "dir-001.spec.js",
+              "line": 262,
+              "column": 5
+            },
+            {
+              "title": "AC-3: every nav landmark on a page carries a unique accessible name",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 300000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir046-dir001-certification",
+                  "projectName": "dir046-dir001-certification",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5786,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-05T00:05:07.655Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "8c9043b4bad20c5a268c-77fa8ac955f836f18c2f",
+              "file": "dir-001.spec.js",
+              "line": 311,
+              "column": 5
+            },
+            {
+              "title": "AC-4: Cuba/M3 tokens resolve and no shell source carries a hardcoded hex",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 300000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir046-dir001-certification",
+                  "projectName": "dir046-dir001-certification",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1622,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-05T00:05:13.452Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "8c9043b4bad20c5a268c-3c6a07d952965164134d",
+              "file": "dir-001.spec.js",
+              "line": 345,
+              "column": 5
+            },
+            {
+              "title": "AC-5: all five canonical breakpoints render without horizontal overflow",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 300000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir046-dir001-certification",
+                  "projectName": "dir046-dir001-certification",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 30671,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-05T00:05:15.081Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "8c9043b4bad20c5a268c-bd2f394c50fc1d860993",
+              "file": "dir-001.spec.js",
+              "line": 378,
+              "column": 5
+            },
+            {
+              "title": "AC-6: zero console errors, zero page errors and zero 4xx/5xx API responses",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 300000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir046-dir001-certification",
+                  "projectName": "dir046-dir001-certification",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 13456,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-05T00:05:45.762Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "8c9043b4bad20c5a268c-c97ba5ad0764d3f042d0",
+              "file": "dir-001.spec.js",
+              "line": 400,
+              "column": 5
+            },
+            {
+              "title": "INV-1: the frozen CV-template and AI-runtime baseline remains a 0-byte diff",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 300000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir046-dir001-certification",
+                  "projectName": "dir046-dir001-certification",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 46,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-05T00:05:59.226Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "8c9043b4bad20c5a268c-a54eeac00858f93e8d0b",
+              "file": "dir-001.spec.js",
+              "line": 416,
+              "column": 5
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-05T00:04:52.634Z",
+    "duration": 66911.927,
+    "expected": 7,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

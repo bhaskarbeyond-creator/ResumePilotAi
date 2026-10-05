@@ -177,6 +177,12 @@ function conversationsDataset({ callerUid = identities.user.uid } = {}) {
   return {
     conversationIds,
     onQuery: async (sql, params = []) => {
+      // DIR-026 / AC-4: every /api/messages request first passes the module gate,
+      // which reads `public_config` from system_settings. The budget under test is
+      // the CONVERSATION read path, so the module is reported enabled here; the
+      // gate's own 403 polarity is asserted in messaging-module-gate.test.mjs and
+      // in the DIR-026 Playwright suite, not here.
+      if (/FROM system_settings/.test(sql)) return [{ data: JSON.stringify({ modules: { enableMessagesModule: true } }) }];
       if (/FROM conversations c/.test(sql)) {
         // The route's ownership predicate must be present; echo only caller rows.
         assert.ok(/cp\.user_id = \?/.test(sql.replace(/\s+/g, ' ')), 'conversation list must be caller-scoped');
@@ -210,7 +216,7 @@ test('conversation list issues a constant three round trips regardless of conver
   assert.equal(res.body.success, true);
   assert.equal(res.body.conversations.length, CONVERSATION_COUNT);
 
-  const reads = pool.log.sql.filter(entry => /conversations|conversation_participants|conversation_messages/.test(entry.sql));
+  const reads = pool.log.sql.filter(entry => /conversations c|conversation_participants|conversation_messages/.test(entry.sql) && !/FROM system_settings/.test(entry.sql));
   assert.equal(reads.length, 3, `expected 3 round trips for ${CONVERSATION_COUNT} conversations, measured ${reads.length}`);
   assert.equal(pool.log.maxConcurrent, 2, 'participants and latest-message reads run as one parallel pair, never 2N sequential trips');
 });
@@ -220,23 +226,37 @@ test('conversation list preserves per-conversation participants and latest messa
   setPoolForTests(recordingPool({ onQuery: dataset.onQuery }));
   const res = await request(app).get('/api/messages/conversations').set('Authorization', 'Bearer user');
   const [first] = res.body.conversations;
-  assert.deepEqual(Object.keys(first).sort(), ['applicationId', 'id', 'lastMessage', 'participants']);
+  // `unreadCount` was added by DIR-026 / AC-2: the live unread badge is rendered
+  // from a server-computed per-conversation count rather than a client guess.
+  assert.deepEqual(Object.keys(first).sort(), ['applicationId', 'id', 'lastMessage', 'participants', 'unreadCount']);
   assert.deepEqual(Object.keys(first.lastMessage).sort(), ['id', 'senderId', 'text', 'timestamp']);
   assert.equal(first.participants[identities.user.uid], true, 'the caller must remain a participant of their own conversation');
   assert.equal(first.participants['peer-of-conv'], true);
 });
 
 test('an empty conversation list performs no per-conversation queries at all', async () => {
-  const pool = recordingPool({ onQuery: async () => [] });
+  const pool = recordingPool({
+    onQuery: async sql => (/FROM system_settings/.test(sql)
+      ? [{ data: JSON.stringify({ modules: { enableMessagesModule: true } }) }]
+      : []),
+  });
   setPoolForTests(pool);
   const res = await request(app).get('/api/messages/conversations').set('Authorization', 'Bearer user');
   assert.equal(res.status, 200);
   assert.deepEqual(res.body.conversations, []);
-  assert.equal(pool.log.sql.length, 1, 'the batched follow-up reads must be skipped entirely');
+  // The AC-4 module gate legitimately reads system_settings once per request;
+  // the budget being pinned here is that the BATCHED conversation follow-up
+  // reads are skipped entirely when the caller has no conversations.
+  const conversationReads = pool.log.sql.filter(entry => !/FROM system_settings/.test(entry.sql));
+  assert.equal(conversationReads.length, 1, 'the batched follow-up reads must be skipped entirely');
 });
 
 test('conversation list is unauthenticated without a verified token', async () => {
-  setPoolForTests(recordingPool({ onQuery: async () => [] }));
+  setPoolForTests(recordingPool({
+    onQuery: async sql => (/FROM system_settings/.test(sql)
+      ? [{ data: JSON.stringify({ modules: { enableMessagesModule: true } }) }]
+      : []),
+  }));
   const res = await request(app).get('/api/messages/conversations');
   assert.equal(res.status, 401);
   assert.equal(res.body.error.code, 'AUTH_REQUIRED');

@@ -32,6 +32,8 @@ const EmployerApplicantPipeline = lazy(() => import('./EmployerApplicantPipeline
 const EmployerCompanyProfile = lazy(() => import('./EmployerCompanyProfile'));
 const EmployerHiringPreferences = lazy(() => import('./EmployerHiringPreferences'));
 const EmployerCandidateMessages = lazy(() => import('./EmployerCandidateMessages'));
+// DIR-026 / AC-3: the administrator module gate for the recruiter messages route.
+import MessagesModuleGate from '../cuba/MessagesModuleGate';
 
 const TOAST_VISIBLE_MS = 5000;
 
@@ -88,7 +90,17 @@ const EmployerPortalCuba = () => {
                     <Route path="jobs" element={<EmployerJobPostings showToast={showToast} />} />
                     <Route path="applicants" element={<EmployerApplicantPipeline showToast={showToast} />} />
                     <Route path="company" element={<EmployerCompanyProfile showToast={showToast} />} />
-                    <Route path="messages" element={<EmployerCandidateMessages showToast={showToast} />} />
+                    {/* DIR-026 / AC-3: the recruiter messages surface is gated on the
+                        administrator module flag, so a bookmarked or typed
+                        /employer/messages cannot bypass the AC-4 backend gate. */}
+                    <Route
+                        path="messages"
+                        element={(
+                            <MessagesModuleGate home="/employer" notify={showToast}>
+                                <EmployerCandidateMessages showToast={showToast} />
+                            </MessagesModuleGate>
+                        )}
+                    />
                     <Route path="settings" element={<EmployerHiringPreferences showToast={showToast} />} />
                     <Route path="*" element={<Navigate to="/employer" replace />} />
                 </Routes>
