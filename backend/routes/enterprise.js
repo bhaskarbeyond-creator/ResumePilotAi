@@ -70,7 +70,9 @@ router.use((req, res, next) => {
 const m2mAccountLimiter = rateLimit({
   windowMs: 60_000,
   limit: Number(process.env.ENTERPRISE_M2M_KEY_RPM || 300),
-  standardHeaders: true,
+  // DIR-040: draft-6 emits the separate RateLimit-Limit/Remaining/Reset headers
+  // the directive requires; v8's default emits only the combined RateLimit-Policy.
+  standardHeaders: 'draft-6',
   legacyHeaders: false,
   keyGenerator: req => `ent-m2m:${req.serviceContext?.principalId || 'unknown'}`,
   message: { error: { code: 'M2M_RATE_LIMITED', message: 'Service account request budget exhausted', requestId: undefined } },

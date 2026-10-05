@@ -732,26 +732,72 @@ Protect:
 
 ---
 
-# 10. MODIFICATION OF CERTIFIED MODULES
+# 10. MODIFICATION OF CERTIFIED & FROZEN MODULES
 
-A certified module may be modified when the change is necessary.
+A certified/frozen module may be modified when a change is strictly necessary (e.g. critical bug fix, upstream dependency break, or new product requirement).
 
 But:
 
-> **Certified does not mean untouchable. Certified means regression-sensitive.**
+> **Certified/Frozen does not mean untouchable. Certified/Frozen means regression-sensitive and gatekeeper-locked.**
 
-Before changing a frozen module:
+## 10.1 MANDATORY FROZEN MODULE MODIFICATION PROTOCOL (INFORM -> APPROVE -> MODIFY -> REVERIFY)
 
-1. identify the baseline;
-2. identify why modification is necessary;
-3. capture relevant existing behavior;
-4. implement the smallest safe change;
-5. run the relevant historical regression suite;
-6. run new acceptance tests;
-7. perform runtime verification;
-8. inspect adjacent functionality;
-9. compare behavior before/after;
-10. record evidence.
+Whenever a developer (Cline) identifies that a frozen module or certified baseline requires modification:
+
+1. **DEVELOPER INFORMS ANTIGRAVITY (ZERO UNILATERAL EDITS)**:
+   The developer MUST NOT modify or touch the frozen module directly. The developer must inform Antigravity via `bridge dev ask` or `bridge dev plan` detailing:
+   - Exactly which frozen module, route, or file needs modification
+   - The concrete technical reason why modification is necessary (root cause, failure trace, or requirement)
+   - The baseline behavior to preserve and proposed surgical diff
+   - Request for explicit Lead authorization.
+
+2. **ANTIGRAVITY EVALUATION & EXPLICIT APPROVAL**:
+   Antigravity evaluates the proposal against system invariants, security contracts, and historical baselines:
+   - If approved, Antigravity grants explicit authorization via `bridge lead approve-plan` or `bridge lead reply` (e.g. "Frozen module modification authorized for <file>. Preserve invariants: ...").
+   - If rejected, Antigravity provides an alternative architectural solution that preserves the frozen boundary.
+
+3. **SURGICAL IMPLEMENTATION & REGRESSION TESTING**:
+   Upon receiving explicit Lead approval, the developer:
+   - Implements the smallest safe modification
+   - Runs historical regression suites + new acceptance tests
+   - Captures runtime evidence and DOM crawls
+   - Submits evidence via `bridge dev submit-evidence`.
+
+4. **ANTIGRAVITY INDEPENDENT RE-VERIFICATION & RE-CERTIFICATION**:
+   Antigravity independently re-verifies the modified module:
+   - Audits the git diff against the previous certified freeze hash
+   - Validates that zero frozen capabilities or invariants were regressed
+   - Verifies all test logs and DOM census results via `bridge lead review`
+   - Re-certifies and re-freezes the module via `bridge gatekeeper certify`.
+
+## 10.2 BIDIRECTIONAL MUTUAL WAITING & WAKE PROTOCOL (ZERO SILENT STALLS)
+
+Neither agent may sit idle waiting for the other without active, observable signaling:
+
+1. **DEVELOPER WAKES LEAD WHEN BLOCKED / AWAITING GATES**:
+   When the developer has submitted work or reached a blocker:
+   - After submitting a plan (`bridge dev plan`)
+   - After submitting evidence (`bridge dev submit-evidence`)
+   - After asking a blocker question (`bridge dev ask`)
+   - Or if the Lead has not responded within 60–120 seconds
+   The developer MUST immediately execute:
+   `bridge dev wake-lead --directive <DIR-ID> --reason "<reason>"` (or `bridge wake --target lead`).
+   This triggers an instant UDP datagram to port 48222 and appends to `lead_wake_queue.jsonl`, immediately waking Antigravity in the IDE.
+
+2. **LEAD WAKES DEVELOPER ON GATING TRANSITIONS**:
+   Every state transition issued by Antigravity automatically dispatches a wake signal to Cline:
+   - Directive creation (`bridge directive create`) -> auto-wakes developer in PLAN mode
+   - Plan approval (`bridge lead approve-plan`) -> auto-wakes developer in ACT mode
+   - Plan revision request (`bridge lead request-changes`) -> auto-wakes developer in PLAN mode
+   - Question response (`bridge lead reply`) -> auto-wakes developer in ACT mode
+   - Evidence revision request (`bridge lead review --verdict CHANGES_REQUESTED`) -> auto-wakes developer in ACT mode
+   Lead can also explicitly ping Developer at any time via:
+   `bridge lead wake-dev --directive <DIR-ID> --mode plan|act` (or `bridge wake --directive <DIR-ID> --mode <plan|act>`).
+
+3. **AUTONOMOUS MUTUAL WAIT WATCHDOG (`lead_watcher.cjs`)**:
+   The background daemon runs continuously and checks for mutual waiting every 30s:
+   - If Developer has waited on Lead (`PLAN_SUBMITTED`, `EVIDENCE_SUBMITTED`, `QUESTION_ASKED` open) for > 2–3 minutes, it alerts the Lead Supervisor with actionable commands.
+   - If Lead has waited on Developer (`ISSUED`, `CHANGES_REQUESTED`, or `IN_PROGRESS` inactive) for > 3–8 minutes, it alerts the Lead and automatically dispatches wake pings to Developer with `--force`.
 
 Never revert an advanced implementation merely because an older baseline is easier.
 

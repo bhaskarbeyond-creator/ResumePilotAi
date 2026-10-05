@@ -1,25 +1,25 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-05T00:07:45.875Z",
-  "eventCount": 1456,
-  "activeDirectiveId": "DIR-027",
-  "activeDirectiveTitle": "Job Portal Clean Architecture & External Scraper Deprecation (Naukri Scraper Purge, Admin Module Rebranding & Pure Direct-Hiring Board Freeze)",
-  "activeDirectiveStatus": "IN_PROGRESS",
+  "updatedAt": "2026-10-05T04:00:06.222Z",
+  "eventCount": 1693,
+  "activeDirectiveId": "DIR-031",
+  "activeDirectiveTitle": "Phase 2 Second Review & v10.0 Protocol Re-Audit — Public Marketing, Secondary Pages & Funnels (Re-evaluating DIR-003, DIR-005, DIR-006)",
+  "activeDirectiveStatus": "ISSUED",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-05T00:00:15.108Z",
-  "unreadForLead": 8,
-  "unreadForDev": 14,
+  "stallDeadline": "2026-10-05T03:43:52.819Z",
+  "unreadForLead": 7,
+  "unreadForDev": 18,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-05T00:00:15.108Z",
-    "status": "Playwright dir-001 suite 7/7 passed; awaiting Lead decision on 3 non-identical token mappings",
-    "percent": 75
+    "timestamp": "2026-10-05T03:43:52.819Z",
+    "status": "Verifying DIR-040 implementation: 28/28 backend security tests pass, 56/56 header assertions pass, 0 drift across all 3 Apache configs",
+    "percent": 70
   },
   "integrity": {
     "ok": true,
-    "checked": 1456,
+    "checked": 1693,
     "legacy": 0,
     "bad": 0
   }

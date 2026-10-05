@@ -2,7 +2,7 @@
   "id": "DIR-027",
   "title": "Job Portal Clean Architecture & External Scraper Deprecation (Naukri Scraper Purge, Admin Module Rebranding & Pure Direct-Hiring Board Freeze)",
   "priority": "P1",
-  "status": "IN_PROGRESS",
+  "status": "CANCELLED",
   "leadAuthor": "Antigravity (Lead Supervisor)",
   "assignedTo": "Cline (Staff Developer - Antigravity)",
   "createdAt": "2026-10-03T21:44:04.604Z",
@@ -47,11 +47,11 @@
   "freezeHash": null,
   "qualityRating": "10/10",
   "category": "Platform Engineering",
-  "updatedAt": "2026-10-04T23:04:11.597Z",
+  "updatedAt": "2026-10-05T02:29:19.825Z",
   "verification": {
     "browserCrawlRequired": true,
     "playwrightSuite": "tests/e2e/dir-027.spec.js",
     "minScore": "10/10"
   },
-  "lastTransitionReason": "developer plan submitted"
+  "lastTransitionReason": "User requested reset all issued/active directives"
 }

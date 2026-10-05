@@ -1,0 +1,11 @@
+﻿backend/index.js
+package.json
+src/components/Candidate/CubaCandidateShell.jsx
+src/components/Dashboard/DashboardMain/DashboardMain.jsx
+src/components/Dashboard/DashboardMessages/DashboardMessages.jsx
+src/components/EmployerPortal/EmployerPortal.jsx
+src/components/EmployerPortal/EmployerPortalCuba.jsx
+src/components/EmployerPortal/EmployerSidebar.jsx
+src/components/cuba/CubaAppShell.jsx
+src/hooks/useUnreadMessages.js
+src/services/api/platform.js

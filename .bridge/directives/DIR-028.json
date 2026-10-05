@@ -2,7 +2,7 @@
   "id": "DIR-028",
   "title": "Platform-Wide Orphaned Code, Dead Tests, Stale Docs & Transient File Hygiene 10/10 Overhaul (Zero-Breakage Safety Protocol, Dry-Run Quarantine & Full Real-DOM Operational Verification)",
   "priority": "P2",
-  "status": "ISSUED",
+  "status": "CANCELLED",
   "leadAuthor": "Antigravity (Lead Supervisor)",
   "assignedTo": "Cline (Staff Developer - Antigravity)",
   "createdAt": "2026-10-03T21:54:25.752Z",
@@ -34,10 +34,11 @@
   "freezeHash": null,
   "qualityRating": "10/10",
   "category": "Platform Engineering",
-  "updatedAt": "2026-10-04T23:04:11.600Z",
+  "updatedAt": "2026-10-05T02:29:05.741Z",
   "verification": {
     "browserCrawlRequired": true,
     "playwrightSuite": "tests/e2e/dir-028.spec.js",
     "minScore": "10/10"
-  }
+  },
+  "lastTransitionReason": "User requested reset all issued directives"
 }

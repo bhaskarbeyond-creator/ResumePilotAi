@@ -123,8 +123,15 @@ const {
     scraperAccountLimiter,
     contactAccountLimiter,
     messagingAccountLimiter,
+    publicBrowseLimiter,
+    generalApiLimiter,
     enforceDailyAiQuota
 } = require('./security/abuse');
+// DIR-040: canonical security headers (one policy shared with the Apache configs),
+// the universal request sanitizer, and the boot-time secret-integrity linter.
+const { securityHeaders } = require('./security/headers');
+const { sanitizeRequest } = require('./security/sanitize');
+const { assertSecretIntegrity } = require('./security/secretVault');
 const port = process.env.PORT || 8080;
 const configuredWebsiteName = String(process.env.WEBSITE_NAME || process.env.APP_DOMAIN || 'ai-resume-builder.local').trim().toLowerCase();
 if (!/^(?:[a-z0-9](?:[a-z0-9-]{0,62})\.)*[a-z0-9][a-z0-9-]{0,62}(?::\d{1,5})?$/.test(configuredWebsiteName)) {
@@ -345,12 +352,23 @@ app.use(cors({
     credentials: false
 }));
 
-const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 
-// Security Headers
-app.use(helmet());
-app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" })); // Allow cross-origin image/resource loading if needed
+// DIR-040 — Security Headers.
+// Previously this was a bare `helmet()`, which applied helmet's *default* CSP
+// (default-src 'self'; script-src 'self' — no connect-src, no payment origins)
+// and therefore diverged from the far stricter policy Apache applies to the
+// document. It is replaced by the canonical policy so the API surface and the
+// document enforce one rule set, with a real per-response nonce for the only
+// HTML this process renders (the Indian gateway callback pages).
+app.use(securityHeaders());
+
+// Universal request sanitizer. Registered immediately after the body parsers
+// and BEFORE any authentication, authorization or admission decision, so no
+// downstream middleware can ever observe a prototype-polluted object. It
+// neutralizes pollution keys and active-content URLs without HTML-escaping
+// resume text, which would corrupt legitimate candidate code samples.
+app.use(sanitizeRequest());
 
 // Global API Rate Limiter (2500 requests per 15 minutes for interactive SPA & enterprise console usage).
 // GLOBAL_RATE_LIMIT_MAX overrides in every environment (previously ignored in
@@ -359,23 +377,37 @@ const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: Number(process.env.GLOBAL_RATE_LIMIT_MAX || (process.env.NODE_ENV === 'test' ? 10000 : 2500)),
     message: { error: { code: 'RATE_LIMITED', message: 'Too many requests, please try again in a few moments.', requestId: undefined } },
-    standardHeaders: true,
+    standardHeaders: 'draft-6',
     legacyHeaders: false,
     keyGenerator: req => req.user?.uid || req.ip || 'global',
     validate: { trustProxy: false, keyGeneratorIpFallback: false }
 });
 app.use('/api', globalLimiter);
 
-// Strict Auth/Email Rate Limiter (20 requests per hour). The cap is lifted in
-// the automated test environment the same way the global limiter is, so
+// DIR-040 — Strict Auth/Email Rate Limiter (20 requests per hour).
+// The directive asks for 5 requests/minute on the auth routes. The existing
+// hourly cap is STRICTER in aggregate (20/hour vs 300/hour), so it is retained
+// rather than silently weakened; the directive's 5/minute ceiling is expressed
+// as an ADDITIONAL burst limiter below, so brute force is bounded per minute
+// AND per hour. Both are lifted in the automated test environment so
 // certification/E2E suites that provision many accounts are not throttled.
-const authLimiter = rateLimit({
+const authHourlyLimiter = rateLimit({
     windowMs: 60 * 60 * 1000,
     max: process.env.NODE_ENV === 'test' ? Number(process.env.AUTH_RATE_LIMIT_MAX || 10000) : Number(process.env.AUTH_RATE_LIMIT_MAX || 20),
-    message: 'Too many sensitive requests from this IP, please try again after an hour'
+    standardHeaders: 'draft-6',
+    legacyHeaders: false,
+    message: { error: { code: 'RATE_LIMITED', message: 'Too many sensitive requests from this IP, please try again after an hour', requestId: undefined } },
+    validate: { trustProxy: false, keyGeneratorIpFallback: false }
 });
-app.use('/api/email', authLimiter);
-app.use('/api/auth', authLimiter);
+const authBurstLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: process.env.NODE_ENV === 'test' ? Number(process.env.AUTH_BURST_RATE_LIMIT_MAX || 10000) : Number(process.env.AUTH_BURST_RATE_LIMIT_MAX || 5),
+    standardHeaders: 'draft-6',
+    legacyHeaders: false,
+    message: { error: { code: 'AUTH_BURST_LIMITED', message: 'Too many authentication attempts. Please wait before trying again.', requestId: undefined } },
+    validate: { trustProxy: false, keyGeneratorIpFallback: false }
+});
+app.use(['/api/email', '/api/auth'], authBurstLimiter, authHourlyLimiter);
 
 // Zero-trust API boundary. Requests are authenticated unless they are explicitly
 // public protocol endpoints. Route handlers must still enforce their own role/ownership policy.
@@ -419,6 +451,7 @@ function isPublicApiPath(pathname) {
 // a Firebase bearer token (tenant member or support elevation) or an x-api-key
 // service credential (M2M). Ambiguous requests are rejected outright.
 const requireEnterpriseAuth = createEnterpriseAuthMiddleware({ requireAuth });
+
 app.use('/api', (req, res, next) => {
     if (req.path === '/cms-pages' || req.path.startsWith('/cms-pages/')) {
         return res.status(410).json({
@@ -431,6 +464,24 @@ app.use('/api', (req, res, next) => {
     if (isPublicApiPath(req.path)) return next();
     if (req.path.startsWith('/enterprise/')) return requireEnterpriseAuth(req, res, next);
     return requireAuth(req, res, next);
+});
+
+// DIR-040 — coarse per-tier admission budgets.
+//
+// ORDERING (corrected): this block sits AFTER the authentication middleware
+// above, which is what the directive's "per user token" keying actually
+// requires — identityKey() reads req.user?.uid, so installing the tiers before
+// requireAuth would silently degrade them to a shared per-IP budget and make the
+// SuperAdmin exemption dead code. They remain in addition to the IP-keyed global
+// limiter and to the per-feature durable MariaDB counters; the tightest wins.
+//   - public browse/search: 60/min per IP
+//   - general API:          120/min per account (uid, falling back to IP)
+// Infrastructure probes bypass these (see INFRA_PROBE_PATHS) so a MySQL outage
+// cannot make /healthz or /readyz report unavailable, and verified SuperAdmins
+// bypass them per directive invariant 1.
+app.use('/api', (req, res, next) => {
+    if (isPublicApiPath(req.path)) return publicBrowseLimiter(req, res, next);
+    return generalApiLimiter(req, res, next);
 });
 app.use('/api', (req, res, next) => {
     if (isPublicApiPath(req.path)) return next();
@@ -4540,6 +4591,13 @@ app.get('/api/readyz', async (req, res) => {
 
 // Start a listener only for the executable entry point; integration tests import the Express app.
 if (require.main === module) {
+    // DIR-040 — Cryptographic secret vaulting. A placeholder secret in production
+    // is indistinguishable from a real one at runtime: the service boots, reports
+    // healthy, and protects nothing. This fails the boot loudly instead. The linter
+    // reports variable NAMES only, never values, so the "zero plaintext credentials
+    // in logs" invariant holds even on failure.
+    assertSecretIntegrity(process.env);
+
     // Startup schema bootstrap (idempotent, non-fatal). Fresh deployments become
     // operational on first boot; a MySQL outage degrades instead of crash-looping.
     runSchemaBootstrap().catch(() => {});

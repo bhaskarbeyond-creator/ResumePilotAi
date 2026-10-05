@@ -1,0 +1,42 @@
+﻿{
+    "generatedAt":  "2026-10-05T00:14:25.6332051Z",
+    "note":  "getComputedStyle captured BEFORE and AFTER the CubaAppShell.jsx token swap; every value identical proves the change is not a restyle",
+    "allIdentical":  true,
+    "probes":  [
+                   {
+                       "probe":  "aiChip",
+                       "property":  "color",
+                       "before":  "rgb(75, 62, 196)",
+                       "after":  "rgb(75, 62, 196)",
+                       "identical":  true
+                   },
+                   {
+                       "probe":  "aiChip",
+                       "property":  "background-color",
+                       "before":  "rgba(115, 102, 255, 0.1)",
+                       "after":  "rgba(115, 102, 255, 0.1)",
+                       "identical":  true
+                   },
+                   {
+                       "probe":  "sidebarInactiveHoverBg",
+                       "property":  "color",
+                       "before":  "rgb(255, 255, 255)",
+                       "after":  "rgb(255, 255, 255)",
+                       "identical":  true
+                   },
+                   {
+                       "probe":  "sidebarInactiveHoverBg",
+                       "property":  "background-color",
+                       "before":  "rgb(89, 73, 214)",
+                       "after":  "rgb(89, 73, 214)",
+                       "identical":  true
+                   },
+                   {
+                       "probe":  "brandMarkGradient",
+                       "property":  "background-image",
+                       "before":  "linear-gradient(to right top in oklab, rgb(115, 102, 255) 0%, rgb(89, 73, 214) 100%)",
+                       "after":  "linear-gradient(to right top in oklab, rgb(115, 102, 255) 0%, rgb(89, 73, 214) 100%)",
+                       "identical":  true
+                   }
+               ]
+}
