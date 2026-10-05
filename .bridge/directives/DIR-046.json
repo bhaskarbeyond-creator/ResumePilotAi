@@ -2,11 +2,11 @@
   "id": "DIR-046",
   "title": "DIR-001 Certification Gap Closure (Playwright Test Suite, Multi-Viewport Audit & Shell Token Hygiene)",
   "priority": "P1",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "Antigravity (Lead Supervisor)",
   "assignedTo": "Cline (Staff Developer - Antigravity)",
   "createdAt": "2026-10-04T15:00:12.267Z",
-  "updatedAt": "2026-10-05T00:10:06.279Z",
+  "updatedAt": "2026-10-05T00:11:59.481Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "# DIR-046: DIR-001 Certification Gap Closure\n\n## 1. Executive Context\nAuthorizes closing the 4 certification gaps identified in read-only reconnaissance without mutating the frozen baseline.\n\n## 2. Scope\n1. Author tests/e2e/dir-001.spec.js.\n2. Extend scripts/playwright-cuba-audit.mjs with 5 canonical breakpoints (375/768/1024/1280/1920) and retain PNG artifacts to test-results/cuba-audit-screenshots/.\n3. Verify 1280px stat-card non-overlap.\n4. Token hygiene on the 4 portal shells.\n5. Comment synchronization in cubaShellFlag.js.",
   "invariants": [
@@ -83,6 +83,12 @@
       "evidenceHash": "d919bb07120a73837b5e6f832c00927576852f0d3a2e3ceae0e4471796afd616"
     }
   ],
-  "freeze": null,
-  "lastTransitionReason": "lead review"
+  "freeze": {
+    "freezeHash": "0b6da38d5cf47d65582b208d5d26391047666ef6",
+    "certifiedAt": "2026-10-05T00:11:59.481Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "DIR-046 certified 10/10: 7/7 Playwright tests passed, 30 multi-viewport screenshots verified across 5 canonical breakpoints, zero stat-card collisions at 1280px, zero console/page errors, tokens clean, 0 diff bytes against e314f715 baseline.",
+    "evidenceHash": "d919bb07120a73837b5e6f832c00927576852f0d3a2e3ceae0e4471796afd616"
+  },
+  "lastTransitionReason": "gatekeeper certification"
 }
