@@ -806,7 +806,13 @@
       "button": "Send Another Message"
     },
     "error": {
-      "general": "Something went wrong. Please try again."
+      "general": "Something went wrong. Please try again.",
+      "nameRequired": "Please enter your full name.",
+      "nameLength": "Your name must be between 2 and 100 characters.",
+      "emailRequired": "Please enter your email address.",
+      "emailInvalid": "Please enter a valid email address.",
+      "messageRequired": "Please tell us how we can help.",
+      "messageLength": "Your message must be between 10 and 5000 characters."
     }
   },
   "billing": {

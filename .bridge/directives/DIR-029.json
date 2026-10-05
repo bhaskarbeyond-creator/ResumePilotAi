@@ -2,13 +2,13 @@
   "id": "DIR-029",
   "title": "Phase 2 Second Review & v10.0 Protocol Re-Audit — Enterprise & Recruiter Portals (Re-evaluating DIR-001, DIR-007, DIR-008, DIR-010)",
   "priority": "P1",
-  "category": "Production Audit & Hardening",
+  "category": "Consolidated into DIR-047",
   "qualityRating": "10/10",
   "status": "CANCELLED",
   "leadAuthor": "Antigravity (Lead Supervisor)",
   "assignedTo": "Cline (Staff Developer - Antigravity)",
   "createdAt": "2026-10-04T01:49:17.233Z",
-  "updatedAt": "2026-10-05T02:29:05.743Z",
+  "updatedAt": "2026-10-05T05:01:30.457Z",
   "spec": "# DIR-029: Phase 2 Second Review & v10.0 Protocol Re-Audit — Enterprise & Recruiter Portals\n\n## 1. Executive Context & Objectives\nUnder the Autonomous Engineering Governance Protocol, early phase directives (DIR-001 Cuba Master, DIR-007 ATS Pipeline, DIR-008 Enterprise Console, DIR-010 Recruiter Portal) must undergo a rigorous Second Review using the v10.0 verification protocol. This ensures that later implementations have not introduced regressions, broken responsive layouts, created dead controls, or compromised enterprise multi-tenant boundaries.\n\nThis directive governs the systematic re-audit, end-to-end crawling, and hardening of all Enterprise and Recruiter surfaces, achieving a certified 10/10 quality bar.\n\n## 2. Re-Audit Scope & Architectural Verification\n1. **Enterprise Organization Console (DIR-008 Re-Audit)**:\n   - Verify all 12 console modules: Overview, Department Hierarchy, Member Management, Role Delegation, Quota Allocation, Audit Logs, Security Policies, SSO/SAML, Billing, Invoices, API Access, Platform Provisioner.\n   - Confirm tenant data isolation: cross-tenant ID leakage prevention, strict SQL WHERE tenant_id = ? enforcement.\n   - Test bulk operations (invite members, modify quotas, export CSV audit logs).\n\n2. **Recruiter ATS Candidate Pipeline (DIR-007 & DIR-010 Re-Audit)**:\n   - Audit the multi-stage Kanban board: Applied > Screening > Interview > Offer > Hired > Rejected.\n   - Verify drag-and-drop transitions, status updates, candidate scorecards, and in-modal resume review.\n   - Test candidate quick-actions: Send Email, Schedule Interview, Download Resume, Add Private Note.\n\n3. **Cross-Portal Cuba Design Token Alignment (DIR-001 Re-Audit)**:\n   - Check all tables, badges, buttons, cards, and modal dialogs for strict token usage.\n   - Confirm zero unstyled HTML elements, zero hardcoded hex colors, and consistent hover/focus states.\n\n## 3. Acceptance Criteria\n1. 100% of controls in Enterprise Console (all 12 modules) verified functional in real browser crawls.\n2. Recruiter ATS Kanban board supports smooth drag-and-drop, state persistence, and error recovery.\n3. Candidate In-Modal Review renders high-fidelity resumes with zoom, search, and score submission.\n4. Tenant isolation verified: no data bleed across enterprise accounts in API responses or UI.\n5. All forms feature live validation, clear loading indicators, and informative toast feedback.\n6. Zero console errors or accessibility violations (WCAG 2.1 AA compliance verified).\n\n## 4. Strict Invariants\n1. Zero data leakage across tenant boundaries; strict multi-tenant isolation preserved.\n2. In-modal resume review must not expose candidate PII to unauthorized recruiters.\n3. All state transitions on candidate status must be logged in the immutable audit trail.\n4. No regression to legacy styling or hardcoded inline styles.",
   "invariants": [
     "Strict multi-tenant isolation must be preserved across all Enterprise API routes",
@@ -28,5 +28,5 @@
     "playwrightSuite": "tests/e2e/dir-029.spec.js",
     "minScore": "10/10"
   },
-  "lastTransitionReason": "User requested reset all issued directives"
+  "lastTransitionReason": "Consolidated into Master Testing & UAT Directive DIR-047"
 }

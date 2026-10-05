@@ -1,0 +1,75 @@
+﻿# DIR-047: Master Full-Platform Testing & Universal UAT 10/10 Certification â€” SWOT-Backed Deep UI/UX & Full-Spectrum Quality Audit
+
+## 1. Executive Mandate & SWOT Governance Framework
+This directive establishes the ultimate, all-encompassing User Acceptance Testing (UAT) and release certification framework for ResumePilotAI (IME365). 
+
+To ensure complete production resilience, UAT is systematically governed by a rigorous **SWOT Architecture Matrix**:
+- **Strengths (S):** Protect and verify all 28 certified baseline modules (51 resume templates, dual-database sync, ATS pipeline, AI interview coach, Cuba M3 design system) with zero-diff preservation.
+- **Weaknesses (W):** Systematically detect and eliminate vulnerabilities (locale key drift across 15 languages, simulated latency, DOM unmount style leaks, unlayered CSS overrides).
+- **Opportunities (O):** Deploy automated multi-viewport Playwright crawls, pure Node.js visual pixel diffing (bridge visual-diff), in-page getBoundingClientRect() collision probes, and unified 4-portal customer journeys.
+- **Threats (T):** Adversarial penetration tests against multi-tenant data leakage, plaintext secret exposure, XSS injection, dark-mode contrast inversions, and WCAG accessibility violations.
+
+---
+
+## 2. The 7 Deep UI/UX Verification Vectors
+
+### ðŸŽ¨ Vector 1: Visual Token Fidelity & Glassmorphism Audit [SWOT-S]
+- In-page computed style probe (window.getComputedStyle) verifying that 100% of cards, badges, buttons, and headers strictly consume Cuba Executive M3 tokens (bg-cuba-primary, hover:bg-cuba-primary-soft-hover, text-cuba-primary-ink-strong).
+- Zero arbitrary hex color overrides (#7366ff, etc.) or ad-hoc unstyled utilities.
+- Frosted glass elevation verified with backdrop-blur-md and subtle border highlights (border-white/10 in dark mode, border-slate-200/60 in light mode).
+
+### ðŸ“ Vector 2: Responsive Geometry & Bounding Box Collision Engine [SWOT-O]
+- Multi-viewport browser crawls executed across 5 canonical breakpoints:
+  * ðŸ“± 375px (Mobile Phone)
+  * ðŸ“± 768px (Tablet Portrait)
+  * ðŸ’» 1024px (Laptop / iPad Landscape)
+  * ðŸ–¥ï¸ 1280px (Desktop â€” grid collapse threshold)
+  * ðŸ–¥ï¸ 1920px (Ultra-Wide Desktop)
+- In-page element.getBoundingClientRect() probe mathematically proving 0 geometric collisions between stat cards, icons, trend badges, and action buttons.
+- Strict scroll check asserting document.documentElement.scrollWidth <= window.innerWidth (strictly 0px horizontal scroll on 375px mobile).
+
+### ðŸŒ Vector 3: 15-Locale Internationalization & Typography Expansion Safety [SWOT-W]
+- Automated injection testing across all 15 configured locales (en, de, dk, es, fr, gk, hi, is, it, nl, no, pl, pt, ro, ru, se).
+- Verifies that long German, Russian, and Polish strings do not break card geometry, cause text clipping, or overflow button boundaries.
+- Graceful English fallback verified for any unlocalized secondary keys with zero raw translation token leaks.
+
+### âš¡ Vector 4: Micro-Interactions & State Transition Lifecycle [SWOT-W / SWOT-O]
+- Zero Simulated Latency: AST and runtime grep proving strictly 0 instances of setTimeout artificial delays.
+- Optimistic UI & Skeletons: Verifies that API actions render instant loading skeletons (animate-pulse) and resolve smoothly upon genuine promise completion.
+- DOM Cleanup on Unmount: Verifies that route transitions and modal dismissals cleanly restore document.body and root container inline styles (e.g. restoring overflow: auto).
+
+### â™¿ Vector 5: WCAG 2.1 AA/AAA Contrast & Keyboard Accessibility [SWOT-T]
+- Automated axe-core audits enforcing minimum 4.5:1 text contrast ratio across both Light and Dark modes.
+- Keyboard Tab traversal validates visible, accessible focus rings (ring-2 ring-cuba-primary ring-offset-2).
+- Unique landmark navigation tags enforced across all dashboards (<nav aria-label="...">).
+- Escape key dismissal verified on all modal dialogs, command palettes (âŒ˜K), and dropdowns without focus loss.
+
+### ðŸ‘ï¸ Vector 6: Automated Pure Node.js Visual Diffing (bridge visual-diff) [SWOT-O]
+- Pure Node.js PNG unfiltering and Euclidean Î”E color distance comparison against certified baseline screenshot artifacts.
+- Any visual drift or layout shift > 0.05% Î”E triggers an immediate visual regression review.
+
+### ðŸš€ Vector 7: Full 4-Portal End-to-End Customer Journey Execution [SWOT-UAT]
+- Unified multi-role end-to-end transaction executed in real browser:
+  1. Candidate onboards, builds resume with template switcher, generates AI bio, and applies for a job.
+  2. Recruiter receives application in ATS Kanban, inspects candidate resume in modal with zoom/ratings, and advances candidate stage.
+  3. Enterprise Admin adjusts department quotas, invites team members, and audits immutable action logs.
+  4. SuperAdmin switches AI model providers, reviews telemetry health, and simulates role switching.
+
+---
+
+## 3. Strict Invariants & Quality Standards
+1. [SWOT-T] Zero cross-tenant data leakage and zero plaintext credential exposure in client DOM, logs, or network payloads.
+2. [SWOT-S] 100% Cuba Executive M3 design token adherence with zero unstyled HTML elements or arbitrary hex overrides.
+3. [SWOT-T] WCAG 2.1 AA accessibility compliance across all 4 portals in both Light and Dark modes (contrast >= 4.5:1).
+4. [SWOT-W] Zero simulated latency (no artificial setTimeout delays) across all user flows, forms, and buttons.
+5. [SWOT-S] Clean production build under 4.0s and ESLint 0 errors.
+
+---
+
+## 4. Acceptance Criteria & 10/10 Certification Bar
+1. [SWOT-S] All 28 Phase 1 certified baselines verified with zero code regressions and zero diff bytes on frozen surfaces.
+2. [SWOT-W] 15-locale fallback, DOM style restoration, and zero-setTimeout validation verified 100% green.
+3. [SWOT-O] Universal 68-route Playwright E2E crawl and multi-viewport visual diffing pass with zero console errors and zero collisions.
+4. [SWOT-T] Multi-tenant isolation penetration tests, static security sentinel, and WCAG accessibility scans pass with zero violations.
+5. [SWOT-UAT] Complete end-to-end 4-portal customer journey executed successfully in real browser.
+6. [CERTIFICATION] Final production release certified with release commit hash sealed in CERTIFIED_FREEZE_MANIFEST.json.

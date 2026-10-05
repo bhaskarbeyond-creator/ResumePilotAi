@@ -1,0 +1,12 @@
+﻿node.exe : [31mERROR: Message not found[0m
+At C:\Users\mbhas\AppData\Roaming\npm\bridge.ps1:20 
+char:5
++     & "node$exe"  
+"C:\Users\mbhas\.ai-bridge\bridge.cjs" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([31mERR 
+   OR: Message not found[0m:String) [], RemoteExcep  
+  tion
+    + FullyQualifiedErrorId : NativeCommandError
+ 

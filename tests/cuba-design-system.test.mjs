@@ -54,7 +54,16 @@ describe('Cuba design tokens', () => {
         // A `@theme` block in a plain CSS file is emitted literally and generates
         // no utilities. This regression already happened once and was caught by
         // inspecting the built CSS, so it is now guarded.
-        assert.match(TAILWIND_ENTRY, /@import 'tailwindcss';/);
+        //
+        // DIR-047 (build budget) scopes the scanner with `@import 'tailwindcss'
+        // source(none)` + explicit `@source` directives so Tailwind stops walking
+        // ~22,500 non-production files. The `source(...)` option only restricts
+        // WHERE classes are discovered; the framework itself is still imported
+        // here and `@theme inline` is still processed. The assertion therefore
+        // matches the specifier plus any trailing options rather than pinning the
+        // exact literal, so scoping can be tuned without the guard misfiring.
+        // Utility parity is proved separately by `npm run audit:tailwind-scope`.
+        assert.match(TAILWIND_ENTRY, /@import\s+'tailwindcss'[^;]*;/);
         assert.match(TAILWIND_ENTRY, /@import '\.\/styles\/cuba-tokens\.css';/);
         assert.doesNotMatch(MAIN, /import '\.\/styles\/cuba-tokens\.css';/);
     });

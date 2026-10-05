@@ -808,7 +808,13 @@
       "button": "Trimite un alt mesaj"
     },
     "error": {
-      "general": "Ceva nu a mers bine. Vă rugăm să încercați din nou."
+      "general": "Ceva nu a mers bine. Vă rugăm să încercați din nou.",
+      "nameRequired":"Introduceți numele dvs. complet.",
+      "nameLength":"Numele dvs. trebuie să aibă între 2 și 100 de caractere.",
+      "emailRequired":"Introduceți adresa dvs. de e-mail.",
+      "emailInvalid":"Introduceți o adresă de e-mail validă.",
+      "messageRequired":"Spuneți-ne cum vă putem ajuta.",
+      "messageLength":"Mesajul dvs. trebuie să aibă între 10 și 5000 de caractere."
     }
   },
   "billing": {

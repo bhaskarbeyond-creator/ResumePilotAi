@@ -390,10 +390,10 @@ export default function BlogEditor({ user: propUser }) {
       await deleteBlogPost(postId || post.id);
       showNotification('Post deleted successfully.', 'success');
       setShowDeleteConfirm(false);
-      setTimeout(() => {
-        if (isFromAdmin) navigate('/adm');
-        else navigate('/blog');
-      }, 700);
+      // DIR-047 [SWOT-W]: the delete is already confirmed; route immediately instead of
+      // making the user watch a 700ms pause on a modal that is already closing.
+      if (isFromAdmin) navigate('/adm');
+      else navigate('/blog');
     } catch (err) {
       console.error('[BlogEditor] Delete error:', err);
       showNotification('Failed to delete post: ' + err.message, 'error');

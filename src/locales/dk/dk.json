@@ -808,7 +808,13 @@
       "button": "Send en anden besked"
     },
     "error": {
-      "general": "Noget gik galt. Prøv igen."
+      "general": "Noget gik galt. Prøv igen.",
+      "nameRequired":"Indtast venligst dit fulde navn.",
+      "nameLength":"Dit navn skal være mellem 2 og 100 tegn.",
+      "emailRequired":"Indtast venligst din e-mailadresse.",
+      "emailInvalid":"Indtast venligst en gyldig e-mailadresse.",
+      "messageRequired":"Fortæl os, hvordan vi kan hjælpe dig.",
+      "messageLength":"Din besked skal være mellem 10 og 5000 tegn."
     }
   },
   "billing": {

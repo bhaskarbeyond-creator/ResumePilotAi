@@ -150,16 +150,90 @@ class CustomePage extends Component {
             currentPage: this.props.custompage,
         };
 
-        // Inisialising proper  style for custom pages
-        window.location.pathname.substring(0, 3) == '/p/' && this.customStyles();
+        /**
+         * DIR-047 [SWOT-W] unmount style leak.
+         *
+         * This used to run `customStyles()` from the CONSTRUCTOR, which wrote
+         * inline styles onto <html>, <body> and #root and never took them back
+         * off. Because those elements outlive every React tree, the leak escaped
+         * the component: navigating from a public custom page into the resume
+         * builder (or any shell) inherited `overflow: scroll`,
+         * `overflowX: hidden` and `height: fit-content` for the rest of the
+         * session. Contact.jsx had already been repaired for exactly this
+         * defect class; this page had not.
+         *
+         * The fix mirrors Contact.jsx: capture the previous inline value of every
+         * property we are about to touch, apply on MOUNT (never in the
+         * constructor, which can run for a component that is discarded), and
+         * restore on UNMOUNT. Restoring the captured value rather than clearing
+         * to '' is what makes nested shells safe -- whichever component applied
+         * its own scroll lock before us gets its own value back.
+         */
+        this._styleBackup = null;
+        if (window.location.pathname.substring(0, 3) === '/p/') this.applyCustomStyles();
     }
 
     componentDidMount() {
         this._active = true; this._generation = 0;
+        // The constructor already ran before mount on the initial render, but a
+        // client-side navigation into /p/:slug mounts this component WITHOUT a
+        // constructor pass, so the styles must be (re)applied here too.
+        this.applyCustomStyles();
         this.loadPage(this.props.custompage);
     }
     componentDidUpdate(previousProps) { if (previousProps.custompage !== this.props.custompage) this.loadPage(this.props.custompage); }
-    componentWillUnmount() { this._active = false; this._generation += 1; }
+    componentWillUnmount() {
+        this._active = false; this._generation += 1;
+        this.restoreCustomStyles();
+    }
+    /**
+     * Applies the public-page layout styles, snapshotting whatever was there
+     * first so the exact prior inline values can be reinstated on unmount.
+     */
+    applyCustomStyles() {
+        const root = document.getElementById('root');
+        const body = document.getElementsByTagName('body')[0];
+        const html = document.getElementsByTagName('html')[0];
+        const targets = [
+            [root, ['overflow', 'height']],
+            [body, ['height', 'overflow']],
+            [html, ['height', 'overflow', 'overflowX']],
+        ];
+
+        // Snapshot only once: re-entering this method must not overwrite the
+        // backup with the values we ourselves just wrote, or restoring would
+        // restore our own leak instead of the original state.
+        if (!this._styleBackup) {
+            this._styleBackup = targets
+                .filter(([element]) => element)
+                .map(([element, properties]) => [element, properties.map((property) => [property, element.style[property]])]);
+        }
+
+        if (root) {
+            root.style.overflow = 'unset';
+            root.style.height = 'unset';
+        }
+        if (body) {
+            body.style.height = 'fit-content';
+            body.style.overflow = 'unset';
+        }
+        if (html) {
+            html.style.height = 'fit-content';
+            html.style.overflow = 'scroll';
+            html.style.overflowX = 'hidden';
+        }
+    }
+
+    /** Reinstates every inline value captured by applyCustomStyles(). */
+    restoreCustomStyles() {
+        if (!this._styleBackup) return;
+        for (const [element, properties] of this._styleBackup) {
+            for (const [property, value] of properties) {
+                element.style[property] = value;
+            }
+        }
+        this._styleBackup = null;
+    }
     async loadPage(slug) {
         const generation = ++this._generation;
         const normalizedSlug = String(slug || '').toLowerCase().trim();
@@ -194,17 +268,6 @@ class CustomePage extends Component {
         } catch (error) {
             if (this._active && generation === this._generation) this.setState({ loaded: true, pageState: 'failed', error: error.message || 'Page could not be loaded.' });
         }
-    }
-
-    // Giving the proper stylicn for custom pages
-    customStyles() {
-        document.getElementById('root').style.overflow = 'none';
-        document.getElementById('root').style.height = 'unset';
-        document.getElementsByTagName('body')[0].style.height = 'fit-content';
-        document.getElementsByTagName('body')[0].style.overflow = 'unset';
-        document.getElementsByTagName('html')[0].style.height = 'fit-content';
-        document.getElementsByTagName('html')[0].style.overflow = 'scroll';
-        document.getElementsByTagName('html')[0].style.overflowX = 'hidden';
     }
 
     render() {

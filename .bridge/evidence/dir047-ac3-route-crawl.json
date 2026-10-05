@@ -1,0 +1,86 @@
+{
+  "directive": "DIR-047",
+  "ac": "AC-3 [SWOT-O]",
+  "assertedRoutes": 68,
+  "reconciledRoutes": 143,
+  "breakpoints": [
+    375,
+    768,
+    1024,
+    1280,
+    1920
+  ],
+  "breakpointsVerified": [
+    375,
+    768,
+    1024,
+    1280,
+    1920
+  ],
+  "routeCount": 143,
+  "visits": 715,
+  "consoleErrorCount": 0,
+  "pageErrorCount": 0,
+  "apiFailureCount": 0,
+  "overflowCount": 0,
+  "collisionCount": 0,
+  "emptyRouteCount": 0,
+  "samples": {
+    "consoleErrors": [],
+    "apiFailures": [],
+    "empty": []
+  },
+  "perBreakpoint": [
+    {
+      "breakpoint": 375,
+      "routeCount": 143,
+      "consoleErrorCount": 0,
+      "pageErrorCount": 0,
+      "apiFailureCount": 0,
+      "overflowCount": 0,
+      "collisionCount": 0,
+      "emptyRouteCount": 0
+    },
+    {
+      "breakpoint": 768,
+      "routeCount": 143,
+      "consoleErrorCount": 0,
+      "pageErrorCount": 0,
+      "apiFailureCount": 0,
+      "overflowCount": 0,
+      "collisionCount": 0,
+      "emptyRouteCount": 0
+    },
+    {
+      "breakpoint": 1024,
+      "routeCount": 143,
+      "consoleErrorCount": 0,
+      "pageErrorCount": 0,
+      "apiFailureCount": 0,
+      "overflowCount": 0,
+      "collisionCount": 0,
+      "emptyRouteCount": 0
+    },
+    {
+      "breakpoint": 1280,
+      "routeCount": 143,
+      "consoleErrorCount": 0,
+      "pageErrorCount": 0,
+      "apiFailureCount": 0,
+      "overflowCount": 0,
+      "collisionCount": 0,
+      "emptyRouteCount": 0
+    },
+    {
+      "breakpoint": 1920,
+      "routeCount": 143,
+      "consoleErrorCount": 0,
+      "pageErrorCount": 0,
+      "apiFailureCount": 0,
+      "overflowCount": 0,
+      "collisionCount": 0,
+      "emptyRouteCount": 0
+    }
+  ],
+  "verdict": "PASS"
+}

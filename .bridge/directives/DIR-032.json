@@ -2,7 +2,7 @@
   "id": "DIR-032",
   "title": "Phase 2 Second Review & v10.0 Protocol Re-Audit — Admin Console, Settings & Security (Re-evaluating DIR-012, DIR-015, DIR-016, DIR-017)",
   "priority": "P1",
-  "category": "Production Audit & Hardening",
+  "category": "Consolidated into DIR-047",
   "qualityRating": "10/10",
   "status": "CANCELLED",
   "leadAuthor": "Antigravity (Lead Supervisor)",
@@ -28,5 +28,5 @@
     "playwrightSuite": "tests/e2e/dir-032.spec.js",
     "minScore": "10/10"
   },
-  "lastTransitionReason": "User requested reset all issued directives"
+  "lastTransitionReason": "Consolidated into Master Testing & UAT Directive DIR-047"
 }

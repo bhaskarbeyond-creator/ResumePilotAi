@@ -66,3 +66,24 @@ test('static sitemap fallback stays stable while live sitemap routes add only re
   assert.match(htaccess, /sitemap\\\.xml/);
   assert.match(vite, /'\/sitemap\.xml'/);
 });
+
+test('DIR-031: static sitemap URLs are exactly the backend stable public paths on one origin', async () => {
+  // The static public/sitemap.xml is the build-time fallback that answers when the
+  // backend is unreachable. It previously listed its own hand-copied path set and its
+  // own hand-copied origin, so it could drift from the live /sitemap.xml route in both
+  // dimensions without any test failing. Parity is now asserted against the backend's
+  // own STABLE_PUBLIC_PATHS, which is the same list the live route renders.
+  const { createRequire } = await import('node:module');
+  const require = createRequire(`${process.cwd()}/parity.mjs`);
+  const { STABLE_PUBLIC_PATHS } = require('./backend/services/publicSitemap.js');
+
+  const sitemap = await fs.readFile('public/sitemap.xml', 'utf8');
+  const locs = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
+  assert.equal(locs.length, STABLE_PUBLIC_PATHS.length, 'static sitemap must list every stable public path exactly once');
+
+  const origins = new Set(locs.map((loc) => new URL(loc).origin));
+  assert.equal(origins.size, 1, `static sitemap must use exactly one canonical origin, found: ${[...origins].join(', ')}`);
+
+  const expected = STABLE_PUBLIC_PATHS.map((routePath) => new URL(routePath, `${[...origins][0]}/`).href);
+  assert.deepEqual(locs, expected, 'static sitemap path set/order must equal backend STABLE_PUBLIC_PATHS');
+});

@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-05T04:12:01.515Z",
-  "seq": 1697,
-  "id": "evt_muuqguhe_50fdae5fa45e",
-  "type": "QUESTION_ASKED",
-  "title": "[Blocker] DIR-040 auth throttle value for Lead confirmation: I did NOT weaken the existing auth limiter. It was 20/hour, which is ",
+  "timestamp": "2026-10-05T17:45:10.536Z",
+  "seq": 1966,
+  "id": "evt_muvjikbx_b39fd30db539",
+  "type": "HEARTBEAT",
+  "title": "[Heartbeat] Certification suite RUNNING: AC-1 PASS (frozen surface 0-byte diff vs e314f715 + 51 CV/4 cover render), AC-2 PASS (16 locales, DOM restore, 0 simulated latency), AC-3 PASS at 375/768/1024px. 5 of 9 gr",
   "sender": "STAFF_DEVELOPER",
-  "directiveId": "DIR-040",
-  "summary": "DIR-040 auth throttle value for Lead confirmation: I did NOT weaken the existing auth limiter. It was 20/hour, which is STRICTER in aggregate than the directive's 5/minute (300/hour), so I kept 20/hour AND added a SEPARATE 5/minute burst limiter on /api/email + /api/auth so brute force is bounded per-minute AND per-hour (tightest wins). Please confirm this satisfies AC-2, or tell me to relax the hourly cap.\n\nbackend/index.js:394-410 (authHourlyLimiter + authBurstLimiter), both standardHeaders draft-6"
+  "directiveId": "DIR-047",
+  "summary": "Certification suite RUNNING: AC-1 PASS (frozen surface 0-byte diff vs e314f715 + 51 CV/4 cover render), AC-2 PASS (16 locales, DOM restore, 0 simulated latency), AC-3 PASS at 375/768/1024px. 5 of 9 green, 0 failures."
 }

@@ -1,0 +1,71 @@
+{
+  "rounds": [
+    {
+      "BASELINE": {
+        "wallMs": 4117,
+        "viteMs": 3470,
+        "exit": 0,
+        "cssBytes": 1351026
+      },
+      "SCOPED": {
+        "wallMs": 1494,
+        "viteMs": null,
+        "exit": 1,
+        "cssBytes": 0
+      }
+    },
+    {
+      "BASELINE": {
+        "wallMs": 3865,
+        "viteMs": 3250,
+        "exit": 0,
+        "cssBytes": 1351026
+      },
+      "SCOPED": {
+        "wallMs": 1537,
+        "viteMs": null,
+        "exit": 1,
+        "cssBytes": 0
+      }
+    },
+    {
+      "BASELINE": {
+        "wallMs": 3889,
+        "viteMs": 3290,
+        "exit": 0,
+        "cssBytes": 1351026
+      },
+      "SCOPED": {
+        "wallMs": 1512,
+        "viteMs": null,
+        "exit": 1,
+        "cssBytes": 0
+      }
+    }
+  ],
+  "summary": {
+    "BASELINE": {
+      "medianWallMs": 3889,
+      "medianViteMs": 3290,
+      "walls": [
+        4117,
+        3865,
+        3889
+      ],
+      "cssBytes": 1351026,
+      "allExitZero": true
+    },
+    "SCOPED": {
+      "medianWallMs": 1512,
+      "medianViteMs": null,
+      "walls": [
+        1494,
+        1537,
+        1512
+      ],
+      "cssBytes": 0,
+      "allExitZero": false
+    },
+    "deltaWallMs": -2377
+  }
+}

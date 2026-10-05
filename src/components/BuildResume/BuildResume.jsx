@@ -1269,7 +1269,10 @@ const BuildResume = () => {
         trackEvent('resume_completed', 'Documents', currentTemplate, 1);
         localStorage.removeItem('currentResumeId');
         localStorage.removeItem('currentResumeItem');
-        setTimeout(() => navigate('/dashboard'), 700);
+        // DIR-047 [SWOT-W]: navigate immediately once persistence has confirmed. The
+        // 700ms timer used to sit between a finished save and the dashboard, which is
+        // simulated latency on the single most-completing flow in the product.
+        navigate('/dashboard');
     };
 
     // Fetch global subscription status on component mount

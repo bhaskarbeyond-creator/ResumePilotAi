@@ -95,31 +95,32 @@ const ResetPasswordModal = ({ oobCode, initialEmail, onClose }) => {
                 console.warn('[Auto Login Note]:', loginErr.message);
             }
 
-            setTimeout(async () => {
-                if (onClose) onClose();
-                try {
-                    const { getPostLoginRedirectPath, clearPostLoginRedirectPath, isSafeInternalPath } = await import('../../../utils/safeInternalPath');
-                    const targetPath = getPostLoginRedirectPath(window.location.search);
-                    if (targetPath && isSafeInternalPath(targetPath)) {
-                        clearPostLoginRedirectPath();
-                        window.location.href = targetPath;
-                        return;
-                    }
-                    const currentPath = window.location.pathname;
-                    if (
-                        currentPath.startsWith('/enterprise') ||
-                        currentPath.startsWith('/dashboard') ||
-                        currentPath.startsWith('/build') ||
-                        currentPath.startsWith('/portfolio') ||
-                        currentPath.startsWith('/adm')
-                    ) {
-                        return;
-                    }
-                    window.location.href = '/dashboard';
-                } catch (_) {
-                    window.location.href = '/dashboard';
+            // DIR-047 [SWOT-W]: the credential update has already been confirmed by the server,
+            // so the redirect runs immediately. The old 2000ms timer made a user who had
+            // just finished resetting their password stare at a modal for two seconds.
+            if (onClose) onClose();
+            try {
+                const { getPostLoginRedirectPath, clearPostLoginRedirectPath, isSafeInternalPath } = await import('../../../utils/safeInternalPath');
+                const targetPath = getPostLoginRedirectPath(window.location.search);
+                if (targetPath && isSafeInternalPath(targetPath)) {
+                    clearPostLoginRedirectPath();
+                    window.location.href = targetPath;
+                    return;
                 }
-            }, 2000);
+                const currentPath = window.location.pathname;
+                if (
+                    currentPath.startsWith('/enterprise') ||
+                    currentPath.startsWith('/dashboard') ||
+                    currentPath.startsWith('/build') ||
+                    currentPath.startsWith('/portfolio') ||
+                    currentPath.startsWith('/adm')
+                ) {
+                    return;
+                }
+                window.location.href = '/dashboard';
+            } catch (_) {
+                window.location.href = '/dashboard';
+            }
         } catch (err) {
             console.error('[Confirm Password Reset Error]:', err);
             setErrorMessage(err.message || 'Failed to reset password. Link may have expired.');

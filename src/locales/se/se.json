@@ -808,7 +808,13 @@
       "button": "Skicka ett annat meddelande"
     },
     "error": {
-      "general": "Något gick fel. Försök igen."
+      "general": "Något gick fel. Försök igen.",
+      "nameRequired":"Ange ditt fullständiga namn.",
+      "nameLength":"Ditt namn måste vara mellan 2 och 100 tecken.",
+      "emailRequired":"Ange din e-postadress.",
+      "emailInvalid":"Ange en giltig e-postadress.",
+      "messageRequired":"Berätta hur vi kan hjälpa dig.",
+      "messageLength":"Ditt meddelande måste vara mellan 10 och 5000 tecken."
     }
   },
   "billing": {

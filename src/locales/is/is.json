@@ -808,7 +808,13 @@
       "button": "Senda önnur skilaboð"
     },
     "error": {
-      "general": "Eitthvað fór úrskeiðis. Vinsamlegast reyndu aftur."
+      "general": "Eitthvað fór úrskeiðis. Vinsamlegast reyndu aftur.",
+      "nameRequired":"Sláðu inn nafn þitt.",
+      "nameLength":"Nafnið þitt verður að vera á bilinu 2–100 stafi.",
+      "emailRequired":"Sláðu inn netfangið þitt.",
+      "emailInvalid":"Sláðu inn gilt netfang.",
+      "messageRequired":"Segðu okkur hvernig við getum aðstoðað þér.",
+      "messageLength":"Skilaboðin þín verða að vera á bilinu 10–5000 stafi."
     }
   },
   "billing": {

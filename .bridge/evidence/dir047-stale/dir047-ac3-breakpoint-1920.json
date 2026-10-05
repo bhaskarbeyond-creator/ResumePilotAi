@@ -1,0 +1,23 @@
+{
+  "directive": "DIR-047",
+  "ac": "AC-3 [SWOT-O]",
+  "breakpoint": 1920,
+  "routeCount": 143,
+  "consoleErrorCount": 0,
+  "pageErrorCount": 0,
+  "apiFailureCount": 0,
+  "overflowCount": 0,
+  "collisionCount": 0,
+  "emptyRouteCount": 0,
+  "assertedRoutes": 68,
+  "reconciledRoutes": 143,
+  "samples": {
+    "consoleErrors": [],
+    "pageErrors": [],
+    "apiFailures": [],
+    "overflow": [],
+    "collisions": [],
+    "empty": []
+  },
+  "verdict": "PASS"
+}

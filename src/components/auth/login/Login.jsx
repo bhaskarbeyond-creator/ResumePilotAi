@@ -161,15 +161,17 @@ class Login extends Component {
                 }
                 const { getPostLoginRedirectPath, clearPostLoginRedirectPath, isSafeInternalPath } = await import('../../../utils/safeInternalPath');
                 const targetPath = getPostLoginRedirectPath(window.location.search);
-                setTimeout(() => {
-                    if (this.props.closeModal) this.props.closeModal();
-                    if (targetPath && isSafeInternalPath(targetPath)) {
-                        clearPostLoginRedirectPath();
-                        window.location.href = targetPath;
-                    } else {
-                        this._handleRedirect(u.user.uid);
-                    }
-                }, 400);
+                // DIR-047 [SWOT-W]: no simulated latency. The credential exchange has
+                // already resolved, so redirecting now costs the user nothing; the old
+                // 400ms timer held a finished sign-in on screen for no benefit.
+                // Double-submit stays guarded by the isSubmitting lock, not by a delay.
+                if (this.props.closeModal) this.props.closeModal();
+                if (targetPath && isSafeInternalPath(targetPath)) {
+                    clearPostLoginRedirectPath();
+                    window.location.href = targetPath;
+                } else {
+                    this._handleRedirect(u.user.uid);
+                }
             });
         };
 

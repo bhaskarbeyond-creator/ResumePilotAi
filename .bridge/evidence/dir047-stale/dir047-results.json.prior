@@ -1,0 +1,366 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "D:\\xampp\\htdocs\\IME365\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--config=playwright.dir047.config.js"
+    ],
+    "configFile": "D:\\xampp\\htdocs\\IME365\\playwright.dir047.config.js",
+    "rootDir": "D:/xampp/htdocs/IME365/tests/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/xampp/htdocs/IME365/.bridge/evidence/dir047-artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "dir047-universal-swot-uat",
+        "name": "dir047-universal-swot-uat",
+        "testDir": "D:/xampp/htdocs/IME365/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "/universal-swot-uat\\.spec\\.js/"
+        ],
+        "timeout": 900000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": ".bridge/evidence/dir047-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "universal-swot-uat.spec.js",
+      "file": "universal-swot-uat.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "DIR-047 Universal SWOT UAT -- certification suite",
+          "file": "universal-swot-uat.spec.js",
+          "line": 338,
+          "column": 6,
+          "specs": [
+            {
+              "title": "AC-1 [SWOT-S]: the certified baseline is a ZERO-BYTE diff and all 51 CV + 4 cover templates render",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 900000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir047-universal-swot-uat",
+                  "projectName": "dir047-universal-swot-uat",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 42506,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-05T14:32:59.857Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7055ac6cecf3cd16517a-15dda425da0ef0a9cfdb",
+              "file": "universal-swot-uat.spec.js",
+              "line": 340,
+              "column": 5
+            },
+            {
+              "title": "AC-2 [SWOT-W]: 16 locales fall back cleanly, DOM styles restore on unmount, and the setTimeout census has ZERO simulated latency",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 900000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir047-universal-swot-uat",
+                  "projectName": "dir047-universal-swot-uat",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5334,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "text": "\u001b[33m\u001b[1mDeprecation Warning\u001b[0m [\u001b[34mglobal-builtin\u001b[0m]: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.\nUse color.adjust instead.\n\nMore info and automated migrator: https://sass-lang.com/d/import\n\n\u001b[34m   ╷\u001b[0m\n\u001b[34m97 │\u001b[0m         background-color: \u001b[31mdarken($btn-default, 6%)\u001b[0m;\r\n\u001b[34m   │\u001b[0m \u001b[31m                          ^^^^^^^^^^^^^^^^^^^^^^^^\u001b[0m\n\u001b[34m   ╵\u001b[0m\n    ..\\..\\..\\..\\src\\index.scss 97:27  root stylesheet\n\n"
+                        },
+                        {
+                          "text": "\u001b[33m\u001b[1mDeprecation Warning\u001b[0m [\u001b[34mcolor-functions\u001b[0m]: darken() is deprecated. Suggestions:\n\ncolor.scale($color, $lightness: -9.5327102804%)\ncolor.adjust($color, $lightness: -6%)\n\nMore info: https://sass-lang.com/d/color-functions\n\n\u001b[34m   ╷\u001b[0m\n\u001b[34m97 │\u001b[0m         background-color: \u001b[31mdarken($btn-default, 6%)\u001b[0m;\r\n\u001b[34m   │\u001b[0m \u001b[31m                          ^^^^^^^^^^^^^^^^^^^^^^^^\u001b[0m\n\u001b[34m   ╵\u001b[0m\n    ..\\..\\..\\..\\src\\index.scss 97:27  root stylesheet\n\n"
+                        },
+                        {
+                          "text": "\u001b[33m\u001b[1mDeprecation Warning\u001b[0m [\u001b[34mglobal-builtin\u001b[0m]: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.\nUse color.adjust instead.\n\nMore info and automated migrator: https://sass-lang.com/d/import\n\n\u001b[34m    ╷\u001b[0m\n\u001b[34m153 │\u001b[0m         border-color: \u001b[31mdarken($btn-default, 10%)\u001b[0m;\r\n\u001b[34m    │\u001b[0m \u001b[31m                      ^^^^^^^^^^^^^^^^^^^^^^^^^\u001b[0m\n\u001b[34m    ╵\u001b[0m\n    ..\\..\\..\\..\\src\\index.scss 153:23  root stylesheet\n\n"
+                        },
+                        {
+                          "text": "\u001b[33m\u001b[1mDeprecation Warning\u001b[0m [\u001b[34mcolor-functions\u001b[0m]: darken() is deprecated. Suggestions:\n\ncolor.scale($color, $lightness: -15.8878504673%)\ncolor.adjust($color, $lightness: -10%)\n\nMore info: https://sass-lang.com/d/color-functions\n\n\u001b[34m    ╷\u001b[0m\n\u001b[34m153 │\u001b[0m         border-color: \u001b[31mdarken($btn-default, 10%)\u001b[0m;\r\n\u001b[34m    │\u001b[0m \u001b[31m                      ^^^^^^^^^^^^^^^^^^^^^^^^^\u001b[0m\n\u001b[34m    ╵\u001b[0m\n    ..\\..\\..\\..\\src\\index.scss 153:23  root stylesheet\n\n"
+                        },
+                        {
+                          "text": "\u001b[33m\u001b[1mDeprecation Warning\u001b[0m [\u001b[34mglobal-builtin\u001b[0m]: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.\nUse color.adjust instead.\n\nMore info and automated migrator: https://sass-lang.com/d/import\n\n\u001b[34m    ╷\u001b[0m\n\u001b[34m154 │\u001b[0m         color: \u001b[31mdarken($btn-default, 10%)\u001b[0m;\r\n\u001b[34m    │\u001b[0m \u001b[31m               ^^^^^^^^^^^^^^^^^^^^^^^^^\u001b[0m\n\u001b[34m    ╵\u001b[0m\n    ..\\..\\..\\..\\src\\index.scss 154:16  root stylesheet\n\n"
+                        },
+                        {
+                          "text": "\u001b[33m\u001b[1mDeprecation Warning\u001b[0m [\u001b[34mcolor-functions\u001b[0m]: darken() is deprecated. Suggestions:\n\ncolor.scale($color, $lightness: -15.8878504673%)\ncolor.adjust($color, $lightness: -10%)\n\nMore info: https://sass-lang.com/d/color-functions\n\n\u001b[34m    ╷\u001b[0m\n\u001b[34m154 │\u001b[0m         color: \u001b[31mdarken($btn-default, 10%)\u001b[0m;\r\n\u001b[34m    │\u001b[0m \u001b[31m               ^^^^^^^^^^^^^^^^^^^^^^^^^\u001b[0m\n\u001b[34m    ╵\u001b[0m\n    ..\\..\\..\\..\\src\\index.scss 154:16  root stylesheet\n\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-10-05T14:33:42.914Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7055ac6cecf3cd16517a-1a5307338107c319cbed",
+              "file": "universal-swot-uat.spec.js",
+              "line": 499,
+              "column": 5
+            },
+            {
+              "title": "AC-3 [SWOT-O] @ 375px: every reconciled route renders with zero console errors, zero collisions and zero horizontal overflow",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 900000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir047-universal-swot-uat",
+                  "projectName": "dir047-universal-swot-uat",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "interrupted",
+                      "duration": 113430,
+                      "error": {
+                        "message": "Error: browserContext.newPage: Target page, context or browser has been closed",
+                        "stack": "Error: browserContext.newPage: Target page, context or browser has been closed\n    at openCrawlPage (D:\\xampp\\htdocs\\IME365\\tests\\e2e\\universal-swot-uat.spec.js:797:30)\n    at crawlBreakpoint (D:\\xampp\\htdocs\\IME365\\tests\\e2e\\universal-swot-uat.spec.js:839:23)\n    at D:\\xampp\\htdocs\\IME365\\tests\\e2e\\universal-swot-uat.spec.js:885:26",
+                        "location": {
+                          "file": "D:\\xampp\\htdocs\\IME365\\tests\\e2e\\universal-swot-uat.spec.js",
+                          "column": 30,
+                          "line": 797
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 795 |\u001b[39m\n \u001b[90m 796 |\u001b[39m     \u001b[36mconst\u001b[39m openCrawlPage \u001b[33m=\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 797 |\u001b[39m         page \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m context\u001b[33m.\u001b[39mnewPage()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 798 |\u001b[39m         \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39msetViewportSize(viewport)\u001b[33m;\u001b[39m\n \u001b[90m 799 |\u001b[39m         \u001b[36mawait\u001b[39m installAuthenticatedSession(page\u001b[33m,\u001b[39m identity)\u001b[33m;\u001b[39m\n \u001b[90m 800 |\u001b[39m         \u001b[36mawait\u001b[39m installApiFixture(page\u001b[33m,\u001b[39m apiHandler)\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\xampp\\htdocs\\IME365\\tests\\e2e\\universal-swot-uat.spec.js",
+                            "column": 30,
+                            "line": 797
+                          },
+                          "message": "Error: browserContext.newPage: Target page, context or browser has been closed\n\n  795 |\n  796 |     const openCrawlPage = async () => {\n> 797 |         page = await context.newPage();\n      |                              ^\n  798 |         await page.setViewportSize(viewport);\n  799 |         await installAuthenticatedSession(page, identity);\n  800 |         await installApiFixture(page, apiHandler);\n    at openCrawlPage (D:\\xampp\\htdocs\\IME365\\tests\\e2e\\universal-swot-uat.spec.js:797:30)\n    at crawlBreakpoint (D:\\xampp\\htdocs\\IME365\\tests\\e2e\\universal-swot-uat.spec.js:839:23)\n    at D:\\xampp\\htdocs\\IME365\\tests\\e2e\\universal-swot-uat.spec.js:885:26"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-05T14:33:48.261Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir047-artifacts\\universal-swot-uat-DIR-047-2c83a-nd-zero-horizontal-overflow-dir047-universal-swot-uat\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\xampp\\htdocs\\IME365\\tests\\e2e\\universal-swot-uat.spec.js",
+                        "column": 30,
+                        "line": 797
+                      }
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7055ac6cecf3cd16517a-fc35bf4400cf37f22438",
+              "file": "universal-swot-uat.spec.js",
+              "line": 878,
+              "column": 5
+            },
+            {
+              "title": "AC-3 [SWOT-O] @ 768px: every reconciled route renders with zero console errors, zero collisions and zero horizontal overflow",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 900000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir047-universal-swot-uat",
+                  "projectName": "dir047-universal-swot-uat",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7055ac6cecf3cd16517a-86bcf703bf7ea712ca07",
+              "file": "universal-swot-uat.spec.js",
+              "line": 878,
+              "column": 5
+            },
+            {
+              "title": "AC-3 [SWOT-O] @ 1024px: every reconciled route renders with zero console errors, zero collisions and zero horizontal overflow",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 900000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir047-universal-swot-uat",
+                  "projectName": "dir047-universal-swot-uat",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7055ac6cecf3cd16517a-f5d9b8fd000346efb30a",
+              "file": "universal-swot-uat.spec.js",
+              "line": 878,
+              "column": 5
+            },
+            {
+              "title": "AC-3 [SWOT-O] @ 1280px: every reconciled route renders with zero console errors, zero collisions and zero horizontal overflow",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 900000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir047-universal-swot-uat",
+                  "projectName": "dir047-universal-swot-uat",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7055ac6cecf3cd16517a-496cc5c7d2fbf72e7f5e",
+              "file": "universal-swot-uat.spec.js",
+              "line": 878,
+              "column": 5
+            },
+            {
+              "title": "AC-3 [SWOT-O] @ 1920px: every reconciled route renders with zero console errors, zero collisions and zero horizontal overflow",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 900000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir047-universal-swot-uat",
+                  "projectName": "dir047-universal-swot-uat",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7055ac6cecf3cd16517a-191624ced11da0ab01f8",
+              "file": "universal-swot-uat.spec.js",
+              "line": 878,
+              "column": 5
+            },
+            {
+              "title": "AC-4 [SWOT-T]: cross-tenant isolation holds, no plaintext secrets or script injection reach the DOM, and axe-core reports WCAG 2.1 AA in BOTH light and dark",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 900000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir047-universal-swot-uat",
+                  "projectName": "dir047-universal-swot-uat",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7055ac6cecf3cd16517a-28e6a89bf7030070ec7b",
+              "file": "universal-swot-uat.spec.js",
+              "line": 973,
+              "column": 5
+            },
+            {
+              "title": "AC-5 [SWOT-UAT]: ONE continuous authenticated journey walks candidate -> recruiter -> enterprise -> admin -> candidate with zero errors and zero session loss",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 900000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "dir047-universal-swot-uat",
+                  "projectName": "dir047-universal-swot-uat",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7055ac6cecf3cd16517a-40d47b05c9f395abc825",
+              "file": "universal-swot-uat.spec.js",
+              "line": 1121,
+              "column": 5
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-05T14:32:58.924Z",
+    "duration": 163242.792,
+    "expected": 2,
+    "skipped": 7,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

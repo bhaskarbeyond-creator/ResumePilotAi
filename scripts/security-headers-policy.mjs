@@ -71,7 +71,24 @@ export const CSP_FRAME_ORIGINS = [
   'https://api.razorpay.com',
 ];
 
-const list = values => values.map(value => `'${value}'`).join(' ');
+/**
+ * Joins host-source expressions for a CSP directive.
+ *
+ * THESE MUST NOT BE SINGLE-QUOTED. Per CSP Level 2/3 the serialized grammar for a
+ * host-source is `scheme-part "://" host-part [":" port-part] [path-part]`. Quoting
+ * is meaningful only for keyword-sources ('self', 'none', 'unsafe-inline',
+ * 'strict-dynamic', ...) and nonce/hash sources. A quoted host such as
+ * 'https://*.googleapis.com' is therefore an *invalid source*: Chromium and Edge
+ * discard it silently instead of treating it as an origin, which collapses
+ * connect-src down to its remaining 'self' token and breaks every third-party call —
+ * including Firebase identitytoolkit, surfacing as auth/network-request-failed.
+ *
+ * Proven against real Chromium rather than assumed: see
+ * .bridge/evidence/dir047-csp-quote-probe.mjs, which fetches a second live origin
+ * under a quoted policy, an unquoted policy and a no-host-source control, and
+ * observes BLOCKED / ALLOWED / BLOCKED respectively.
+ */
+const hosts = values => values.join(' ');
 
 /**
  * The canonical Content-Security-Policy. `style-src` itself carries no
@@ -84,14 +101,14 @@ export const CONTENT_SECURITY_POLICY = [
   `object-src 'none'`,
   `frame-ancestors 'none'`,
   `form-action 'self'`,
-  `script-src 'self' ${list(CSP_SCRIPT_ORIGINS)}`,
-  `style-src 'self' ${list(CSP_STYLE_ELEM_ORIGINS)}`,
+  `script-src 'self' ${hosts(CSP_SCRIPT_ORIGINS)}`,
+  `style-src 'self' ${hosts(CSP_STYLE_ELEM_ORIGINS)}`,
   `style-src-attr 'unsafe-inline'`,
-  `style-src-elem 'self' 'unsafe-inline' ${list(CSP_STYLE_ELEM_ORIGINS)}`,
-  `font-src 'self' data: ${list(CSP_FONT_ORIGINS)}`,
+  `style-src-elem 'self' 'unsafe-inline' ${hosts(CSP_STYLE_ELEM_ORIGINS)}`,
+  `font-src 'self' data: ${hosts(CSP_FONT_ORIGINS)}`,
   `img-src 'self' data: blob: https:`,
-  `connect-src 'self' ${list(CSP_CONNECT_ORIGINS)}`,
-  `frame-src 'self' ${list(CSP_FRAME_ORIGINS)}`,
+  `connect-src 'self' ${hosts(CSP_CONNECT_ORIGINS)}`,
+  `frame-src 'self' ${hosts(CSP_FRAME_ORIGINS)}`,
   `worker-src 'self' blob:`,
   `manifest-src 'self'`,
   `upgrade-insecure-requests`,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FiMail, FiUser, FiMessageSquare, FiSend, FiCheckCircle } from 'react-icons/fi';
 import { BiSupport } from 'react-icons/bi';
 import { useLottie } from "lottie-react";
@@ -7,6 +7,9 @@ import LoaderAnimation from '../../assets/animations/lottie-loader.json';
 import { getPages, getWebsiteData, getSocialLinks, addContactMessage } from '../../services/api/platform';
 import HomepageFooter from '../Marketing/elements/HomepageFooter';
 import HomepageNavbar from '../Marketing/elements/HomepageNavbar';
+// DIR-031: the public lead form validates against the SAME bounds the server enforces
+// (see src/utils/contactFormValidation.js and backend `app.post('/api/contact')`).
+import { CONTACT_FIELD_LIMITS, validateContactForm } from '../../utils/contactFormValidation';
 
 const Contact = ({ user, t }) => {
   const [state, setState] = useState({
@@ -22,6 +25,17 @@ const Contact = ({ user, t }) => {
     isSubmitting: false,
   });
 
+  // DIR-031: per-field validation messages plus a form-level submit failure.
+  // These replace the previous `alert()` calls, which are a WCAG 2.1 failure: an
+  // alert steals focus, cannot be announced reliably by a screen reader, and is
+  // silently discarded by assistive tech that suppresses modal dialogs.
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [submitError, setSubmitError] = useState('');
+
+  // DOM handles for the three fields so a failed submit can move focus to the first
+  // invalid control (WCAG 2.1 AA — identification of errors).
+  const formRefs = useRef({});
+
   const loaderOptions = {
     loop: true,
     autoplay: true,
@@ -34,15 +48,39 @@ const Contact = ({ user, t }) => {
   const { View } = useLottie(loaderOptions);
 
   useEffect(() => {
-    // Apply custom styles for page
+    // Apply custom styles for page.
+    // DIR-031: the previous version mutated #root/body/html inline styles and never
+    // restored them, so every one of those properties leaked into whatever component
+    // rendered next. That is a real cross-route defect: a visitor who opened /contact
+    // and then navigated to the resume builder inherited `overflow: scroll` on <html>
+    // and `height: fit-content` on <body>. We now capture the previous inline value of
+    // every property we touch and restore it in the effect cleanup.
+    const root = document.getElementById('root');
+    const body = document.getElementsByTagName('body')[0];
+    const html = document.getElementsByTagName('html')[0];
+    const targets = [
+      [root, ['overflow', 'height']],
+      [body, ['height', 'overflow']],
+      [html, ['height', 'overflow', 'overflowX']],
+    ];
+    const previous = targets
+      .filter(([element]) => element)
+      .map(([element, properties]) => [element, properties.map((property) => [property, element.style[property]])]);
+
     const applyCustomStyles = () => {
-      document.getElementById('root').style.overflow = 'unset';
-      document.getElementById('root').style.height = 'unset';
-      document.getElementsByTagName('body')[0].style.height = 'fit-content';
-      document.getElementsByTagName('body')[0].style.overflow = 'unset';
-      document.getElementsByTagName('html')[0].style.height = 'fit-content';
-      document.getElementsByTagName('html')[0].style.overflow = 'scroll';
-      document.getElementsByTagName('html')[0].style.overflowX = 'hidden';
+      if (root) {
+        root.style.overflow = 'unset';
+        root.style.height = 'unset';
+      }
+      if (body) {
+        body.style.height = 'fit-content';
+        body.style.overflow = 'unset';
+      }
+      if (html) {
+        html.style.height = 'fit-content';
+        html.style.overflow = 'scroll';
+        html.style.overflowX = 'hidden';
+      }
     };
 
     if (window.location.pathname.substring(0, 8) === '/contact') {
@@ -73,6 +111,14 @@ const Contact = ({ user, t }) => {
     };
 
     fetchData();
+
+    // Restore every inline property this effect mutated so the page-level styles do
+    // not leak into the next route.
+    return () => {
+      for (const [element, properties] of previous) {
+        for (const [property, value] of properties) element.style[property] = value;
+      }
+    };
   }, []);
 
   const handleInputChange = (field, value) => {
@@ -80,35 +126,63 @@ const Contact = ({ user, t }) => {
       ...prev,
       [field]: value,
     }));
+    // Clear this field's error as soon as the visitor edits it, so a stale message
+    // never contradicts what is currently on screen.
+    setFieldErrors(prev => (prev[field] ? { ...prev, [field]: undefined } : prev));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!state.email || !state.name || !state.message) {
-      alert(t('contact.error.general'));
+
+    // DIR-031: client-side validation mirrors the server contract exactly, so an
+    // over-long or malformed payload is rejected before it is transmitted instead of
+    // after a wasted round trip. The server remains authoritative; this is defence in
+    // depth and a fast, accessible feedback loop.
+    const { valid, values, errors } = validateContactForm({
+      email: state.email,
+      name: state.name,
+      message: state.message,
+    });
+    setFieldErrors(errors);
+    setSubmitError('');
+    if (!valid) {
+      // Move focus to the first invalid control so keyboard and screen-reader users
+      // are taken straight to the problem rather than left wondering why nothing
+      // happened.
+      const firstInvalid = ['name', 'email', 'message'].find((field) => errors[field]);
+      if (firstInvalid) formRefs.current[firstInvalid]?.focus();
       return;
     }
 
     setState(prev => ({ ...prev, isSubmitting: true }));
 
     try {
-      await addContactMessage(state.email, state.name, state.message);
-      
-      setTimeout(() => {
-        setState(prev => ({
-          ...prev,
-          isSuccessShowed: true,
-          isSubmitting: false,
-          email: '',
-          name: '',
-          message: '',
-        }));
-      }, 1000);
+      // `values` are already trimmed/lower-cased and script-URI-stripped by
+      // validateContactForm, so exactly what was validated is what is transmitted.
+      // DIR-031 removed the hardcoded `setTimeout(..., 1000)` that used to sit here:
+      // simulated latency violates the zero-simulated-latency invariant and made the
+      // form feel broken on a slow connection. The awaited promise IS the real signal.
+      const result = await addContactMessage(values.email, values.name, values.message);
+      // `addContactMessage` resolves with `{ success: false, error }` on failure
+      // instead of rejecting, so the resolved value must be inspected as well.
+      if (result && result.success === false) {
+        throw new Error(result.error || 'Submission failed');
+      }
+
+      setState(prev => ({
+        ...prev,
+        isSuccessShowed: true,
+        isSubmitting: false,
+        email: '',
+        name: '',
+        message: '',
+      }));
+      setFieldErrors({});
     } catch (error) {
       console.error('Error submitting message:', error);
       setState(prev => ({ ...prev, isSubmitting: false }));
-      alert(t('contact.error.general'));
+      // Non-blocking inline error, announced politely to assistive technology.
+      setSubmitError(t('contact.error.general'));
     }
   };
 
@@ -189,7 +263,7 @@ const Contact = ({ user, t }) => {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {/* Name Input */}
                   <div className="group/input">
-                    <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    <label htmlFor="contact-name" className="block text-sm font-semibold text-gray-700 mb-3">
                       {t('contact.form.fullName')}
                     </label>
                     <div className="relative">
@@ -197,19 +271,32 @@ const Contact = ({ user, t }) => {
                         <FiUser className="h-5 w-5 text-gray-400 group-focus-within/input:text-[#4a6cf7] transition-colors duration-300" />
                       </div>
                       <input
+                        id="contact-name"
+                        name="name"
                         type="text"
                         value={state.name}
                         onChange={(e) => handleInputChange('name', e.target.value)}
+                        ref={(node) => { formRefs.current.name = node; }}
+                        minLength={CONTACT_FIELD_LIMITS.NAME_MIN}
+                        maxLength={CONTACT_FIELD_LIMITS.NAME_MAX}
+                        autoComplete="name"
+                        aria-invalid={fieldErrors.name ? 'true' : undefined}
+                        aria-describedby={fieldErrors.name ? 'contact-name-error' : undefined}
                         className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#4a6cf7]/50 focus:border-[#4a6cf7] focus:outline-none transition-all duration-200 bg-white text-gray-900"
                         placeholder={t('contact.form.fullNamePlaceholder')}
                         required
                       />
                     </div>
+                    {fieldErrors.name && (
+                      <p id="contact-name-error" role="alert" className="mt-2 text-sm text-red-600">
+                        {t(fieldErrors.name)}
+                      </p>
+                    )}
                   </div>
 
                   {/* Email Input */}
                   <div className="group/input">
-                    <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    <label htmlFor="contact-email" className="block text-sm font-semibold text-gray-700 mb-3">
                       {t('contact.form.email')}
                     </label>
                     <div className="relative">
@@ -217,19 +304,31 @@ const Contact = ({ user, t }) => {
                         <FiMail className="h-5 w-5 text-gray-400 group-focus-within/input:text-[#4a6cf7] transition-colors duration-300" />
                       </div>
                       <input
+                        id="contact-email"
+                        name="email"
                         type="email"
                         value={state.email}
                         onChange={(e) => handleInputChange('email', e.target.value)}
+                        ref={(node) => { formRefs.current.email = node; }}
+                        maxLength={CONTACT_FIELD_LIMITS.EMAIL_MAX}
+                        autoComplete="email"
+                        aria-invalid={fieldErrors.email ? 'true' : undefined}
+                        aria-describedby={fieldErrors.email ? 'contact-email-error' : undefined}
                         className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#4a6cf7]/50 focus:border-[#4a6cf7] focus:outline-none transition-all duration-200 bg-white text-gray-900"
                         placeholder={t('contact.form.emailPlaceholder')}
                         required
                       />
                     </div>
+                    {fieldErrors.email && (
+                      <p id="contact-email-error" role="alert" className="mt-2 text-sm text-red-600">
+                        {t(fieldErrors.email)}
+                      </p>
+                    )}
                   </div>
 
                   {/* Message Textarea */}
                   <div className="group/input">
-                    <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    <label htmlFor="contact-message" className="block text-sm font-semibold text-gray-700 mb-3">
                       {t('contact.form.message')}
                     </label>
                     <div className="relative">
@@ -237,15 +336,38 @@ const Contact = ({ user, t }) => {
                         <FiMessageSquare className="h-5 w-5 text-gray-400 group-focus-within/input:text-[#4a6cf7] transition-colors duration-300" />
                       </div>
                       <textarea
+                        id="contact-message"
+                        name="message"
                         rows={5}
                         value={state.message}
                         onChange={(e) => handleInputChange('message', e.target.value)}
+                        ref={(node) => { formRefs.current.message = node; }}
+                        minLength={CONTACT_FIELD_LIMITS.MESSAGE_MIN}
+                        maxLength={CONTACT_FIELD_LIMITS.MESSAGE_MAX}
+                        aria-invalid={fieldErrors.message ? 'true' : undefined}
+                        aria-describedby={fieldErrors.message ? 'contact-message-error' : 'contact-message-hint'}
                         className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#4a6cf7]/50 focus:border-[#4a6cf7] focus:outline-none transition-all duration-200 bg-white resize-none text-gray-900"
                         placeholder={t('contact.form.messagePlaceholder')}
                         required
                       />
                     </div>
+                    {fieldErrors.message ? (
+                      <p id="contact-message-error" role="alert" className="mt-2 text-sm text-red-600">
+                        {t(fieldErrors.message)}
+                      </p>
+                    ) : (
+                      <p id="contact-message-hint" className="mt-2 text-xs text-gray-500">
+                        {`${CONTACT_FIELD_LIMITS.MESSAGE_MIN}–${CONTACT_FIELD_LIMITS.MESSAGE_MAX} characters`}
+                      </p>
+                    )}
                   </div>
+
+                  {/* Non-blocking submit failure — replaces the previous alert() */}
+                  {submitError && (
+                    <p role="alert" className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+                      {submitError}
+                    </p>
+                  )}
 
                   {/* Clean Submit Button */}
                   <div className="pt-2">

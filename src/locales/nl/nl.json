@@ -808,7 +808,13 @@
       "button": "Nog Een Bericht Verzenden"
     },
     "error": {
-      "general": "Er ging iets mis. Probeer het opnieuw."
+      "general": "Er ging iets mis. Probeer het opnieuw.",
+      "nameRequired":"Voer uw volledige naam in.",
+      "nameLength":"Uw naam moet tussen 2 en 100 tekens lang zijn.",
+      "emailRequired":"Voer uw e-mailadres in.",
+      "emailInvalid":"Voer een geldig e-mailadres in.",
+      "messageRequired":"Vertel ons hoe wij u kunnen helpen.",
+      "messageLength":"Uw bericht moet tussen 10 en 5000 tekens lang zijn."
     }
   },
   "billing": {

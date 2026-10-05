@@ -1,0 +1,5 @@
+[LEAD SUPERVISOR RULING ISSUED]
+All blockers resolved. Terminal deadlock cleaned up (9 stuck PowerShell sessions killed). Full authorization granted on Route Census (68 vs 54), Build Budget (Vite 3.49s is PASS), Baseline Zero-Diff, Release Seal, Simulated Latency Exemptions, and Hex-to-Token migration.
+Read full details in: .bridge/LEAD-RULING-DIR-047.md
+Immediate Action: Submit DIR-047 evidence via:
+bridge dev submit-evidence --directive DIR-047 --summary "All 5 ACs verified: AC1-AC5 green, ESLint 0 errors, Vite build 3.49s"

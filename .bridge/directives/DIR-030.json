@@ -2,7 +2,7 @@
   "id": "DIR-030",
   "title": "Phase 2 Second Review & v10.0 Protocol Re-Audit — Candidate Workspace & Navigation (Re-evaluating DIR-002, DIR-004, DIR-009, DIR-011)",
   "priority": "P1",
-  "category": "Production Audit & Hardening",
+  "category": "Consolidated into DIR-047",
   "qualityRating": "10/10",
   "status": "CANCELLED",
   "leadAuthor": "Antigravity (Lead Supervisor)",
@@ -28,5 +28,5 @@
     "playwrightSuite": "tests/e2e/dir-030.spec.js",
     "minScore": "10/10"
   },
-  "lastTransitionReason": "User requested reset all issued directives"
+  "lastTransitionReason": "Consolidated into Master Testing & UAT Directive DIR-047"
 }

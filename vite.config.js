@@ -86,9 +86,55 @@ export default defineConfig({
         // omit that diagnostic work without changing emitted production assets.
         reportCompressedSize: false,
         rollupOptions: {
+            // DIR-047 (build budget): the production bundle is a SINGLE entry.
+            //
+            // `template-lab/index.html` used to be a second Rollup input, so every
+            // production build bundled the Template Forensic Lab as a public page.
+            // That was never needed in production, and it cost real build time:
+            // dropping it measurably reduced the bundling work.
+            //
+            // DO NOT READ THIS AS "THE 4000ms BAR IS MET". It is not, and an earlier
+            // revision of this comment said it was, which is exactly the kind of claim
+            // that gets a failing invariant certified by mistake. The authoritative
+            // measurement is the wall clock of the REAL `npm run build`, taken by
+            // scripts/dir047-build-budget.mjs, because that is what the [SWOT-S]
+            // "production build under 4.0s" invariant actually governs. Its latest run
+            // (.bridge/evidence/dir047-build-budget.json) records median 4688ms with
+            // all 7 cold-cache runs over budget (min 4139ms) and verdict FAIL.
+            //
+            // The 3803ms figure an earlier comment cited here is a `vite build`-only
+            // number. scripts/dir047-build-variants.mjs carries an explicit caveat that
+            // such numbers "must never be quoted as the budget", because they exclude
+            // the npm/node process-spawn layer.
+            //
+            // WHERE THE REMAINING OVERAGE ACTUALLY SITS: the bundling work is already
+            // inside budget (~3.4-3.8s vite-reported). The overage is Windows process
+            // startup and module resolution, measured at 691ms for a direct vite-bin
+            // launch and 955ms for `npm run build`
+            // (.bridge/evidence/dir047-build-attribution.json). The launcher A/B in
+            // .bridge/evidence/dir047-build-launcher-ab.json confirms removing the
+            // cmd.exe layer and the vite.cmd bin shim saves ~835ms but still lands at a
+            // 4381ms median, so it records treatmentUnderBudget: false. Closing the last
+            // ~381ms needs a further reduction in bundle/transform work, not a
+            // favourable re-run of the harness.
+            //
+            // It is also a security improvement, not merely a speed one. The lab is a
+            // developer harness that renders internal fixtures, a cross-app audit
+            // view and the interview-coach surface with no application chrome; as a
+            // second build entry it was emitted into dist/ and therefore published to
+            // the production webroot by scripts/deploy-ime365-live.mjs, which tars
+            // the whole of dist. Keeping it out of production keeps those internal
+            // fixtures out of the shipped artifact.
+            //
+            // NOTHING IS LOST FOR TESTING: every template-lab consumer
+            // (template-lab/gate.mjs, visual-regression.mjs, audit.mjs, and the
+            // browser suites in tests/) drives a Vite DEV server and requests
+            // `/template-lab/*.html` from it. The dev server serves those pages from
+            // the project root regardless of `build.rollupOptions.input`, so the
+            // lab remains fully reachable for its intended use. Only the copy that
+            // was being published to production is gone.
             input: {
                 main: 'index.html',
-                lab: 'template-lab/index.html',
             },
             output: {
                 entryFileNames: 'assets/index-[hash].js',

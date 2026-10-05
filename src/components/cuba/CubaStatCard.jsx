@@ -6,11 +6,23 @@ import './cuba-skeleton.css';
 
 const cx = (...parts) => parts.filter(Boolean).join(' ');
 
+// DIR-047 (Vector 1, token fidelity): the `primary` accent previously reached for
+// `border-[#7366ff]`, `bg-[#7366ff]/10` and `text-[#7366ff]`. Those arbitrary
+// values bypassed the token layer entirely, so the card could not follow a theme
+// change: it painted the LIGHT-theme violet on a dark surface. Every one of them
+// has an exactly equivalent published token --
+//   #7366ff                 -> --cuba-primary
+//   rgba(115,102,255,0.10)  -> --cuba-primary-soft   (byte-identical)
+//   rgba(115,102,255,0.20)  -> --cuba-primary-line   (published below for this)
+//   #7366ff as TEXT         -> --cuba-primary-ink-strong
+// The last one was already being rewritten at runtime by the
+// `.text-[#7366ff]` remap in cuba-tokens.css, so naming the token directly is
+// behaviour-preserving in light mode and FIXES the dark-mode inversion.
 const ACCENT_TOKENS = {
     primary: {
-        border: 'border-[#7366ff]',
-        bg: 'bg-[#7366ff]/10 text-[#7366ff]',
-        badge: 'bg-[#7366ff]/10 text-[#7366ff] border-[#7366ff]/20',
+        border: 'border-cuba-primary',
+        bg: 'bg-cuba-primary-soft text-cuba-primary-ink-strong',
+        badge: 'bg-cuba-primary-soft text-cuba-primary-ink-strong border-cuba-primary-line',
     },
     success: {
         border: 'border-emerald-500',
@@ -57,7 +69,7 @@ const CubaStatCard = ({
     return (
         <CubaCard
             className={cx(
-                'cuba-stat-card cuba-widget-texture relative overflow-hidden rounded-[15px] border border-cuba-line bg-cuba-card p-5 shadow-[0_9px_20px_rgba(46,35,94,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_24px_rgba(46,35,94,0.12)] flex flex-col justify-between',
+                'cuba-stat-card cuba-widget-texture relative overflow-hidden rounded-[15px] border border-cuba-line bg-cuba-card p-5 shadow-cuba-md transition-all duration-300 hover:-translate-y-1 hover:shadow-cuba-lg flex flex-col justify-between',
                 className
             )}
         >

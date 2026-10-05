@@ -63,6 +63,20 @@
   --cuba-primary-soft: rgba(115, 102, 255, 0.1);
   --cuba-primary-soft-hover: rgba(115, 102, 255, 0.16);
   --cuba-primary-ring: rgba(115, 102, 255, 0.42);
+  /* Border-weight brand line. `border-[#7366ff]/20` was the arbitrary value this
+     replaces; it is a NON-TEXT boundary so the 3:1 AA bar applies, and the raw
+     brand violet clears that against both the card (#ffffff) and the canvas. */
+  --cuba-primary-line: rgba(115, 102, 255, 0.2);
+  /* Brand glow elevation for the mark/avatar tiles that sit on a primary gradient.
+     Replaces `shadow-[0_3px_10px_rgba(115,102,255,0.35)]` and
+     `shadow-[0_4px_14px_rgba(115,102,255,0.35)]` as a real shadow token so the
+     elevation follows the theme rather than being frozen to the light violet. */
+  --cuba-primary-glow: 0 4px 14px rgba(115, 102, 255, 0.35);
+  /* White wash used when a badge sits ON a saturated primary fill (the active nav
+     pill). Previously `bg-white/20` / an inline `rgba(255,255,255,0.22)`; the
+     badge INK is already tokenised, so the FILL is published here to complete the
+     pair and keep it theme-trackable. */
+  --cuba-badge-inverted-fill: rgba(255, 255, 255, 0.22);
   /* Solid FILL colour for primary buttons. White on the raw brand violet is only
      4.14:1, which fails AA for button labels, so fills use this deeper violet
      (6.27:1 with white). The bright #7366ff is retained for borders, glows,
@@ -104,8 +118,17 @@
   --cuba-pill-danger-line: #a01f28;
   --cuba-info: #0b6fae;
   --cuba-info-soft: rgba(11, 111, 174, 0.12);
-  --cuba-warning: #8a6100;
-  --cuba-warning-soft: rgba(138, 97, 0, 0.14);
+  /* DIR-047 WCAG: --cuba-warning is a TEXT ink that is also used ON
+     --cuba-warning-soft. The previous #8a6100 cleared AA against --cuba-card
+     (5.54:1) but only reached 4.21:1 against its own soft background
+     (rgba(138,97,0,.14) composited over the slate-50 admin canvas -> #e5e0d6),
+     so every `text-cuba-warning` on `bg-cuba-warning-soft` callout failed
+     axe-core's 4.5:1 gate. Darkening the ink to #7d5800 fixes the soft pairing
+     (5.01:1) while still improving card (6.43:1) and canvas (5.94:1).
+     --cuba-warning-soft keeps the SAME hue at 125,88,0 so the warning family
+     stays one colour; alpha is unchanged so the tint reads identically. */
+  --cuba-warning: #7d5800;
+  --cuba-warning-soft: rgba(125, 88, 0, 0.14);
   --cuba-danger: #c02630;
   --cuba-danger-soft: rgba(192, 38, 48, 0.12);
   /* DIR-023: the danger FILL used as a badge/button surface with white ink on

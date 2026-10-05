@@ -808,7 +808,13 @@
       "button": "Envoyer un autre message"
     },
     "error": {
-      "general": "Quelque chose s'est mal passé. Veuillez réessayer."
+      "general": "Quelque chose s'est mal passé. Veuillez réessayer.",
+      "nameRequired":"Veuillez saisir votre nom complet.",
+      "nameLength":"Votre nom doit contenir entre 2 et 100 caractères.",
+      "emailRequired":"Veuillez saisir votre adresse e-mail.",
+      "emailInvalid":"Veuillez saisir une adresse e-mail valide.",
+      "messageRequired":"Dites-nous comment nous pouvons vous aider.",
+      "messageLength":"Votre message doit contenir entre 10 et 5000 caractères."
     }
   },
   "billing": {

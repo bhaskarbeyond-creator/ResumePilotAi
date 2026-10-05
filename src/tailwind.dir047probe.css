@@ -1,0 +1,85 @@
+﻿/* Poppins is self-hosted from /fonts/poppins.css (linked with rel=preload in
+ * index.html, 36 @font-face rules covering weights 300-900 in normal + italic).
+ *
+ * RCA (forensic CSS audit): this file previously began with
+ *   @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;...;900&display=swap');
+ * which loaded the SAME family a second time from a third-party origin. That
+ * import is render-blocking, added a hard runtime dependency on Google's origin
+ * (and a CSP allow-list entry for fonts.googleapis.com / fonts.gstatic.com),
+ * downloaded nine weights on top of the seven already self-hosted, and produced
+ * two competing @font-face sets for `Poppins` whose winner depended on
+ * stylesheet load order. The remote import is removed so the self-hosted file is
+ * the single source of truth.
+ *
+ * Known, accepted consequence: weights 100 and 200 were only on the Google URL
+ * and are not self-hosted. The single `font-extralight` (200) usage in
+ * src/components/PortfolioBuilder/PortfolioComponents/Hero3.jsx now resolves to
+ * the nearest available self-hosted weight (300) â€” a negligible difference on one
+ * decorative hero line, with no fallback to a different family.
+ */
+@import 'tailwindcss' source(none);
+@source './';
+@source '../index.html';
+@source '../../template-lab/';
+@import './styles/cuba-tokens.css';
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, .dark, .dark *));
+
+/* Preserve original heading styles.
+ *
+ * IMPORTANT (cascade): this file is loaded alongside Tailwind v4
+ * (`@import 'tailwindcss'`), where utilities live in native cascade layers and
+ * UNLAYERED author CSS beats layered utilities regardless of specificity.
+ * The resume builder is utility-driven, so these legacy element rules must not
+ * match inside it â€” otherwise every builder heading renders at 2em/1.5em/1.17em
+ * instead of its designed `text-*` size. The builder root (and its portaled
+ * surfaces) carries the `rp-builder-scope` class; inside it, Tailwind preflight
+ * + utilities apply exactly as designed. Outside it, this block behaves exactly
+ * as before (the added `:not(:is(...))` only raises specificity for non-builder
+ * elements, where any competing class-scoped rule in index.scss still wins by
+ * source order â€” index.scss is imported after this file).
+ */
+h1:not(:is(.rp-builder-scope h1, .cuba-portal-stage h1, [data-cuba-shell] h1, aside h1, header h1, nav h1)) {
+    font-size: 2em;
+    margin: 0.67em 0;
+    font-weight: 600;
+}
+
+h2:not(:is(.rp-builder-scope h2, .cuba-portal-stage h2, [data-cuba-shell] h2, aside h2, header h2, nav h2)) {
+    font-size: 1.5em;
+    margin: 0.83em 0;
+    font-weight: 600;
+}
+
+h3:not(:is(.rp-builder-scope h3, .cuba-portal-stage h3, [data-cuba-shell] h3, aside h3, header h3, nav h3)) {
+    font-size: 1.17em;
+    margin: 1em 0;
+    font-weight: 500;
+}
+
+h4:not(:is(.rp-builder-scope h4, .cuba-portal-stage h4, [data-cuba-shell] h4, aside h4, header h4, nav h4)) {
+    font-size: 1em;
+    margin: 1.33em 0;
+    font-weight: 500;
+}
+
+h5:not(:is(.rp-builder-scope h5, .cuba-portal-stage h5, [data-cuba-shell] h5, aside h5, header h5, nav h5)) {
+    font-size: 0.83em;
+    margin: 1.67em 0;
+    font-weight: 400;
+}
+
+h6:not(:is(.rp-builder-scope h6, .cuba-portal-stage h6, [data-cuba-shell] h6, aside h6, header h6, nav h6)) {
+    font-size: 0.67em;
+    margin: 2.33em 0;
+    font-weight: 500;
+}
+
+/* Utility to hide scrollbars */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}

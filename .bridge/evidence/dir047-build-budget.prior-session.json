@@ -1,0 +1,43 @@
+{
+  "directive": "DIR-047",
+  "generatedAt": "2026-10-05T13:42:19.311Z",
+  "method": "wall clock of the real `npm run build`, cold cache (node_modules/.vite + dist purged before each run), median of N runs",
+  "budgetMs": 4000,
+  "runs": [
+    {
+      "run": 1,
+      "wallMs": 3876,
+      "viteReportedMs": 2770,
+      "exitCode": 0
+    },
+    {
+      "run": 2,
+      "wallMs": 3750,
+      "viteReportedMs": 2730,
+      "exitCode": 0
+    },
+    {
+      "run": 3,
+      "wallMs": 3912,
+      "viteReportedMs": 2720,
+      "exitCode": 0
+    },
+    {
+      "run": 4,
+      "wallMs": 3733,
+      "viteReportedMs": 2740,
+      "exitCode": 0
+    },
+    {
+      "run": 5,
+      "wallMs": 3756,
+      "viteReportedMs": 2750,
+      "exitCode": 0
+    }
+  ],
+  "medianWallMs": 3756,
+  "minWallMs": 3733,
+  "maxWallMs": 3912,
+  "allRunsExitedZero": true,
+  "verdict": "PASS"
+}

@@ -808,7 +808,13 @@
       "button": "Eine weitere Nachricht senden"
     },
     "error": {
-      "general": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
+      "general": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+      "nameRequired":"Bitte geben Sie Ihren vollständigen Namen ein.",
+      "nameLength":"Ihr Name muss zwischen 2 und 100 Zeichen lang sein.",
+      "emailRequired":"Bitte geben Sie Ihre E-Mail-Adresse ein.",
+      "emailInvalid":"Bitte geben Sie eine gültige E-Mail-Adresse ein.",
+      "messageRequired":"Sagen Sie uns, wie wir Ihnen helfen können.",
+      "messageLength":"Ihre Nachricht muss zwischen 10 und 5000 Zeichen lang sein."
     }
   },
   "billing": {

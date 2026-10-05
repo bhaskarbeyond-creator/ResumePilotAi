@@ -1,0 +1,1 @@
+var e=`/assets/user-BBJ_Bw_N.png`;export{e as t};

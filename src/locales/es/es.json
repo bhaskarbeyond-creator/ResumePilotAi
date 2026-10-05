@@ -806,7 +806,13 @@
       "button": "Enviar otro mensaje"
     },
     "error": {
-      "general": "Algo salió mal. Por favor, inténtalo de nuevo."
+      "general": "Algo salió mal. Por favor, inténtalo de nuevo.",
+      "nameRequired":"Introduce tu nombre completo.",
+      "nameLength":"Tu nombre debe tener entre 2 y 100 caracteres.",
+      "emailRequired":"Introduce tu dirección de correo electrónico.",
+      "emailInvalid":"Introduce una dirección de correo electrónico válida.",
+      "messageRequired":"Cuéntanos cómo podemos ayudarte.",
+      "messageLength":"Tu mensaje debe tener entre 10 y 5000 caracteres."
     }
   },
   "billing": {

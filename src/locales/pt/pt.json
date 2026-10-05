@@ -808,7 +808,13 @@
       "button": "Enviar Outra Mensagem"
     },
     "error": {
-      "general": "Algo correu mal. Por favor, tente novamente."
+      "general": "Algo correu mal. Por favor, tente novamente.",
+      "nameRequired":"Introduza o seu nome completo.",
+      "nameLength":"O seu nome deve ter entre 2 e 100 caracteres.",
+      "emailRequired":"Introduza o seu endereço de e-mail.",
+      "emailInvalid":"Introduza um endereço de e-mail válido.",
+      "messageRequired":"Diga-nos como podemos ajudá-lo.",
+      "messageLength":"A sua mensagem deve ter entre 10 e 5000 caracteres."
     }
   },
   "billing": {

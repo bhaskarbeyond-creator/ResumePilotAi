@@ -32,12 +32,12 @@
   "reviews": [],
   "freezeHash": null,
   "qualityRating": "10/10",
-  "category": "Platform Engineering",
+  "category": "Consolidated into DIR-047",
   "updatedAt": "2026-10-05T02:29:05.744Z",
   "verification": {
     "browserCrawlRequired": true,
     "playwrightSuite": "tests/e2e/dir-033.spec.js",
     "minScore": "10/10"
   },
-  "lastTransitionReason": "User requested reset all issued directives"
+  "lastTransitionReason": "Consolidated into Master Testing & UAT Directive DIR-047"
 }

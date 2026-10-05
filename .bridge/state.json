@@ -1,25 +1,25 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-05T04:00:06.222Z",
-  "eventCount": 1693,
+  "updatedAt": "2026-10-05T17:37:25.655Z",
+  "eventCount": 1965,
   "activeDirectiveId": "DIR-031",
   "activeDirectiveTitle": "Phase 2 Second Review & v10.0 Protocol Re-Audit — Public Marketing, Secondary Pages & Funnels (Re-evaluating DIR-003, DIR-005, DIR-006)",
-  "activeDirectiveStatus": "ISSUED",
+  "activeDirectiveStatus": "IN_PROGRESS",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-05T03:43:52.819Z",
-  "unreadForLead": 7,
-  "unreadForDev": 18,
+  "stallDeadline": "2026-10-05T16:42:19.938Z",
+  "unreadForLead": 124,
+  "unreadForDev": 173,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-05T03:43:52.819Z",
-    "status": "Verifying DIR-040 implementation: 28/28 backend security tests pass, 56/56 header assertions pass, 0 drift across all 3 Apache configs",
-    "percent": 70
+    "timestamp": "2026-10-05T16:42:19.938Z",
+    "status": "Resumed: verified prior state (Playwright 9/9, ESLint 0 errors, Tailwind-scope + single-entry build remediations in place). Root-caused build-budget drift to environmental memory pressure (0.69GB free / 15.4GB). Re-measuring honest cold-cache baseline.",
+    "percent": 55
   },
   "integrity": {
     "ok": true,
-    "checked": 1693,
+    "checked": 1965,
     "legacy": 0,
     "bad": 0
   }

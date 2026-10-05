@@ -101,7 +101,22 @@ const CSP_FRAME_ORIGINS = [
   'https://api.razorpay.com',
 ];
 
-const quoted = values => values.map(value => `'${value}'`).join(' ');
+/**
+ * Joins host-source expressions for a CSP directive.
+ *
+ * THESE MUST NOT BE SINGLE-QUOTED. Per CSP Level 2/3 the serialized grammar for a
+ * host-source is `scheme-part "://" host-part [":" port-part] [path-part]`. Quoting
+ * applies only to keyword-sources ('self', 'none', 'unsafe-inline', ...) and
+ * nonce/hash sources, so a quoted host is an *invalid source* that Chromium/Edge
+ * discard rather than honour — silently collapsing connect-src to its remaining
+ * 'self' token and breaking Firebase identitytoolkit (auth/network-request-failed).
+ *
+ * This helper is duplicated from scripts/security-headers-policy.mjs because the
+ * backend is CommonJS and the canonical module is ESM. backend/test/dir040-zero-trust
+ * .test.js asserts the two layers emit a byte-identical policy, so they must not
+ * diverge. Empirically proven in .bridge/evidence/dir047-csp-quote-probe.mjs.
+ */
+const hosts = values => values.join(' ');
 
 /**
  * Builds the canonical policy. When `nonce` is supplied it is threaded into the
@@ -116,14 +131,14 @@ function canonicalContentSecurityPolicy(nonce) {
     `object-src 'none'`,
     `frame-ancestors 'none'`,
     `form-action 'self'`,
-    `script-src 'self'${nonceSource} ${quoted(CSP_SCRIPT_ORIGINS)}`,
-    `style-src 'self' ${quoted(CSP_STYLE_ELEM_ORIGINS)}`,
+    `script-src 'self'${nonceSource} ${hosts(CSP_SCRIPT_ORIGINS)}`,
+    `style-src 'self' ${hosts(CSP_STYLE_ELEM_ORIGINS)}`,
     `style-src-attr 'unsafe-inline'`,
-    `style-src-elem 'self'${nonceSource} 'unsafe-inline' ${quoted(CSP_STYLE_ELEM_ORIGINS)}`,
-    `font-src 'self' data: ${quoted(CSP_FONT_ORIGINS)}`,
+    `style-src-elem 'self'${nonceSource} 'unsafe-inline' ${hosts(CSP_STYLE_ELEM_ORIGINS)}`,
+    `font-src 'self' data: ${hosts(CSP_FONT_ORIGINS)}`,
     `img-src 'self' data: blob: https:`,
-    `connect-src 'self' ${quoted(CSP_CONNECT_ORIGINS)}`,
-    `frame-src 'self' ${quoted(CSP_FRAME_ORIGINS)}`,
+    `connect-src 'self' ${hosts(CSP_CONNECT_ORIGINS)}`,
+    `frame-src 'self' ${hosts(CSP_FRAME_ORIGINS)}`,
     `worker-src 'self' blob:`,
     `manifest-src 'self'`,
     `upgrade-insecure-requests`,

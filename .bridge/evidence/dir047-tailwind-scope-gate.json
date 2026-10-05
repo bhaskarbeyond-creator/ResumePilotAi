@@ -1,0 +1,86 @@
+{
+  "directive": "DIR-047",
+  "generatedAt": "2026-10-05T12:18:33.432Z",
+  "method": "interleaved round-robin, cold cache (node_modules/.vite + outDir purged) before every single build",
+  "budgetMs": 4000,
+  "rounds": [
+    {
+      "round": 1,
+      "BASELINE": {
+        "wallMs": 4979,
+        "viteMs": 3620,
+        "exit": 0
+      },
+      "SCOPED": {
+        "wallMs": 4291,
+        "viteMs": 2880,
+        "exit": 0
+      }
+    },
+    {
+      "round": 2,
+      "BASELINE": {
+        "wallMs": 5241,
+        "viteMs": 3870,
+        "exit": 0
+      },
+      "SCOPED": {
+        "wallMs": 4108,
+        "viteMs": 2750,
+        "exit": 0
+      }
+    },
+    {
+      "round": 3,
+      "BASELINE": {
+        "wallMs": 5306,
+        "viteMs": 3830,
+        "exit": 0
+      },
+      "SCOPED": {
+        "wallMs": 4268,
+        "viteMs": 2750,
+        "exit": 0
+      }
+    }
+  ],
+  "summary": {
+    "BASELINE": {
+      "medianWallMs": 5241,
+      "medianViteMs": 3830,
+      "walls": [
+        4979,
+        5241,
+        5306
+      ],
+      "exitCodes": [
+        0,
+        0,
+        0
+      ],
+      "allExitZero": true
+    },
+    "SCOPED": {
+      "medianWallMs": 4268,
+      "medianViteMs": 2750,
+      "walls": [
+        4291,
+        4108,
+        4268
+      ],
+      "exitCodes": [
+        0,
+        0,
+        0
+      ],
+      "allExitZero": true
+    }
+  },
+  "cssParity": {
+    "baselineFileCount": 78,
+    "scopedFileCount": 78,
+    "identical": false
+  },
+  "deltaWallMs": -973,
+  "verdict": "FAIL"
+}

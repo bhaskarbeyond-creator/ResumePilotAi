@@ -1,0 +1,140 @@
+{
+  "directive": "DIR-047",
+  "generatedAt": "2026-10-05T11:56:16.840Z",
+  "method": "interleaved round-robin, cold cache (node_modules/.vite + dist purged) before every single build; medians compared across rounds so machine drift is shared",
+  "caveat": "These are `vite build` timings WITHOUT the npm/npx wrapper. They attribute cost only. The 4000ms budget is measured separately by scripts/dir047-build-budget.mjs against real `npm run build`.",
+  "rounds": [
+    {
+      "BASELINE": {
+        "wallMs": 4138,
+        "viteReportedMs": 3470,
+        "exitCode": 0
+      },
+      "ESNEXT": {
+        "wallMs": 4086,
+        "viteReportedMs": 3410,
+        "exitCode": 0
+      },
+      "LIGHTNING_CSS": {
+        "wallMs": 4174,
+        "viteReportedMs": 3470,
+        "exitCode": 0
+      },
+      "ESNEXT_PLUS_LIGHTNING": {
+        "wallMs": 4085,
+        "viteReportedMs": 3420,
+        "exitCode": 0
+      },
+      "LOCALE_STUB": {
+        "wallMs": 4164,
+        "viteReportedMs": 3480,
+        "exitCode": 0
+      }
+    },
+    {
+      "BASELINE": {
+        "wallMs": 4129,
+        "viteReportedMs": 3480,
+        "exitCode": 0
+      },
+      "ESNEXT": {
+        "wallMs": 4135,
+        "viteReportedMs": 3470,
+        "exitCode": 0
+      },
+      "LIGHTNING_CSS": {
+        "wallMs": 4166,
+        "viteReportedMs": 3480,
+        "exitCode": 0
+      },
+      "ESNEXT_PLUS_LIGHTNING": {
+        "wallMs": 4221,
+        "viteReportedMs": 3530,
+        "exitCode": 0
+      },
+      "LOCALE_STUB": {
+        "wallMs": 4188,
+        "viteReportedMs": 3520,
+        "exitCode": 0
+      }
+    }
+  ],
+  "summary": {
+    "BASELINE": {
+      "medianWallMs": 4138,
+      "medianViteMs": 3480,
+      "minWallMs": 4129,
+      "maxWallMs": 4138,
+      "walls": [
+        4138,
+        4129
+      ],
+      "exitCodes": [
+        0,
+        0
+      ]
+    },
+    "ESNEXT": {
+      "medianWallMs": 4135,
+      "medianViteMs": 3470,
+      "minWallMs": 4086,
+      "maxWallMs": 4135,
+      "walls": [
+        4086,
+        4135
+      ],
+      "exitCodes": [
+        0,
+        0
+      ],
+      "deltaVsBaselineMs": -3
+    },
+    "LIGHTNING_CSS": {
+      "medianWallMs": 4174,
+      "medianViteMs": 3480,
+      "minWallMs": 4166,
+      "maxWallMs": 4174,
+      "walls": [
+        4174,
+        4166
+      ],
+      "exitCodes": [
+        0,
+        0
+      ],
+      "deltaVsBaselineMs": 36
+    },
+    "ESNEXT_PLUS_LIGHTNING": {
+      "medianWallMs": 4221,
+      "medianViteMs": 3530,
+      "minWallMs": 4085,
+      "maxWallMs": 4221,
+      "walls": [
+        4085,
+        4221
+      ],
+      "exitCodes": [
+        0,
+        0
+      ],
+      "deltaVsBaselineMs": 83
+    },
+    "LOCALE_STUB": {
+      "medianWallMs": 4188,
+      "medianViteMs": 3520,
+      "minWallMs": 4164,
+      "maxWallMs": 4188,
+      "walls": [
+        4164,
+        4188
+      ],
+      "exitCodes": [
+        0,
+        0
+      ],
+      "deltaVsBaselineMs": 50
+    }
+  },
+  "budgetMs": 4000,
+  "baselineMedianWallMs": 4138
+}

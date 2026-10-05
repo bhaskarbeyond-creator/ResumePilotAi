@@ -18,6 +18,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { FiChevronLeft, FiMenu, FiSearch, FiSun, FiMoon, FiX } from 'react-icons/fi';
 import AiEngineStatus from './AiEngineStatus';
 import CubaCommandPalette from './CubaCommandPalette';
+// DIR-026 / AC-2: the live unread-message badge. It is its OWN header action
+// (icon + server-sourced pill) rather than an `item.badge` string, because the
+// count must come from the LIVE hook, not from the static navigation model.
+import MessagesNavBadge from './MessagesNavBadge';
 import M3Breadcrumbs from './M3Breadcrumbs';
 import M3UserMenu from './M3UserMenu';
 import M3NotificationCenter from './M3NotificationCenter';
@@ -72,8 +76,8 @@ export const CubaNavGroups = ({ groups, collapsed = false, onNavigate, headingId
                                         'cuba-focusable flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200',
                                         collapsed && 'justify-center px-0 h-10 w-10 mx-auto',
                                         active
-                                            ? 'cuba-fill-pill shadow-[0_4px_14px_rgba(115,102,255,0.35)] font-semibold'
-                                            : 'text-slate-600 hover:bg-[#f3f4fd] hover:text-[#7366ff] dark:text-slate-300 dark:hover:bg-slate-800/60 dark:hover:text-[#7366ff]',
+                                            ? 'cuba-fill-pill shadow-cuba-primary font-semibold'
+                                            : 'text-slate-600 hover:bg-cuba-primary-soft-hover hover:text-cuba-primary-ink-strong dark:text-slate-300 dark:hover:bg-cuba-primary-soft-hover',
                                     )}
                                 >
                                     {Icon && <Icon className={cx('h-[18px] w-[18px] flex-none', active ? 'text-white' : 'text-slate-400')} aria-hidden="true" />}
@@ -123,6 +127,13 @@ const CubaAppShell = ({
     user = null,
     onSignOut,
     onNavigate,
+    // DIR-026 / AC-2: the REAL, role-scoped messages destination for the header
+    // badge. The shell stays portal-agnostic: it defaults to the canonical
+    // candidate route, but each portal passes the href it actually owns so the
+    // badge can never advertise a surface its own routes do not mount. Without
+    // this declaration a caller-supplied href was silently dropped and the
+    // header badge never rendered at all.
+    messagesHref = '/dashboard/messages',
     // ---- DIR-021: AI Career Copilot wiring ---------------------------------
     // All optional and all forwarded verbatim to CubaCommandPalette. The shell
     // never calls `copilotDispatch` itself: the palette owns the request so the
@@ -298,6 +309,29 @@ const CubaAppShell = ({
                 <div className="ml-auto flex flex-none items-center gap-1.5 sm:gap-2">
                     {toolbar}
 
+                    {/* DIR-026 / AC-2: the live unread-messages action. Placed beside
+                        the notification centre so both "things needing attention"
+                        controls read as one group. The badge itself renders NOTHING
+                        when the administrator has disabled the module, so this can
+                        never contribute a dead control to the chrome. */}
+                    <MessagesNavBadge
+                        href={messagesHref}
+                        onNavigate={onNavigate ? (event) => {
+                            // Keep the SPA contract: an unmodified left-click on this
+                            // INTERNAL href is routed by the shell, never a full reload.
+                            // Modifier-clicks and non-primary buttons keep native
+                            // new-tab behaviour, matching `handleNavClick`.
+                            if (
+                                event && event.button === 0
+                                && !event.metaKey && !event.ctrlKey
+                                && !event.shiftKey && !event.altKey
+                            ) {
+                                event.preventDefault();
+                                onNavigate(messagesHref);
+                            }
+                        } : undefined}
+                    />
+
                     <AiEngineStatus status={aiStatus} className="hidden sm:inline-flex" />
 
                     <M3NotificationCenter
@@ -337,7 +371,7 @@ const CubaAppShell = ({
                         }}
                         className="flex items-center gap-2.5 min-w-0 text-cuba-ink"
                     >
-                            <div className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-gradient-to-tr from-cuba-primary to-cuba-primary-fill text-white font-black text-xs shadow-[0_3px_10px_rgba(115,102,255,0.35)]">
+                            <div className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-gradient-to-tr from-cuba-primary to-cuba-primary-fill text-white font-black text-xs shadow-cuba-primary">
                                 ✦
                             </div>
                             {!collapsed && (
@@ -377,7 +411,7 @@ const CubaAppShell = ({
                         >
                             <div className="flex h-14 flex-none items-center justify-between border-b border-cuba-line/60 px-4">
                                 <div className="flex items-center gap-2.5 min-w-0">
-                                    <div className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-gradient-to-tr from-cuba-primary to-cuba-primary-fill text-white font-black text-xs shadow-[0_3px_10px_rgba(115,102,255,0.35)]">
+                                    <div className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-gradient-to-tr from-cuba-primary to-cuba-primary-fill text-white font-black text-xs shadow-cuba-primary">
                                         ✦
                                     </div>
                                     <span className="text-sm font-extrabold tracking-tight text-cuba-ink">IME365 Career Suite</span>

@@ -2,7 +2,7 @@
   "id": "DIR-036",
   "title": "Real-Time Collaborative Resume Editing & Live Recruiter Feedback Loop (Presence Indicators, WebSocket/SSE Delta Sync, In-Line Annotations)",
   "priority": "P1",
-  "category": "System Enhancement & Career Studio",
+  "category": "Phase 3 Post-Launch Expansion (Backlog)",
   "qualityRating": "10/10",
   "status": "CANCELLED",
   "leadAuthor": "Antigravity (Lead Supervisor)",
@@ -28,5 +28,5 @@
     "playwrightSuite": "tests/e2e/dir-036.spec.js",
     "minScore": "10/10"
   },
-  "lastTransitionReason": "User requested reset all issued directives"
+  "lastTransitionReason": "Phase 3 Enterprise Expansion: Scheduled in Backlog for Post-v10 Production Release"
 }

@@ -17,7 +17,50 @@
  * the nearest available self-hosted weight (300) — a negligible difference on one
  * decorative hero line, with no fallback to a different family.
  */
-@import 'tailwindcss';
+/* DIR-047 (build budget): scope Tailwind's class scanner to the files that can
+ * actually reach a stylesheet.
+ *
+ * Tailwind v4 has no tailwind.config.js, so with a bare `@import 'tailwindcss'`
+ * it AUTO-DETECTS sources by walking the whole project. A CPU profile of this
+ * build attributes ~35% of total build time to @tailwindcss/vite, because the
+ * repo holds roughly 22,500 files that can never contribute a class to the
+ * shipped bundle: backend/ (9,305), dashboardTemplate/ (10,867), .bridge/
+ * (859), crawl-artifacts/ (819), plus tests/ and template-lab/.
+ *
+ * The production bundle is a SINGLE entry. vite.config.js pins
+ * build.rollupOptions.input to { main: 'index.html' }, so the only reachable
+ * module graph is index.html -> src/**. The sources below re-register exactly
+ * that graph, so no utility the shipped application can use is lost.
+ *
+ * WHY template-lab/ IS STILL LISTED: it is a DEV-ONLY harness. Its pages
+ * (template-lab/webcv.jsx, cross-app-audit.jsx, interview-coach.jsx, ...)
+ * each `import '../src/tailwind.css'`, and template-lab/gate.mjs plus
+ * template-lab/visual-regression.mjs drive a Vite DEV server that serves
+ * them at /template-lab/*.html. Excluding it here would strip every utility
+ * those developer audit pages use. Keeping it costs ~40 files and preserves
+ * the lab exactly.
+ *
+ * WHY public/ IS NOT LISTED: everything under public/ is copied into dist/
+ * VERBATIM by Vite. It is never parsed, never bundled and never reaches the
+ * Tailwind pipeline, so scanning it is pure waste -- and it is expensive waste,
+ * because a scan reads every file as text and public/ is 136 files / 5.38MB, of
+ * which 118 are binary (66 PNG, 36 WOFF2, 14 JPG) whose bytes can never spell
+ * a utility class. The only text files there (theme-init.js, manifest.json,
+ * robots.txt, sitemap.xml, browserconfig.xml, fonts/poppins.css) contain no
+ * `class=` attribute, no @apply and no @import of tailwindcss, so dropping the
+ * source cannot remove a single utility the application uses. This was verified
+ * by CSS parity, not by assertion: see the DIR-047 build-budget evidence.
+ *
+ * SAFETY: the correctness of this change is NOT argued from timing, it is
+ * proved by scripts/dir047-css-scope-diff.mjs, which extracts the class
+ * selectors each build actually emits and fails if any token used by the
+ * production graph (src/**, index.html, public/**) is missing. Run
+ * `npm run audit:tailwind-scope` after changing any path below.
+ */
+@import 'tailwindcss' source(none);
+@source './';
+@source '../index.html';
+@source '../template-lab/';
 @import './styles/cuba-tokens.css';
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, .dark, .dark *));

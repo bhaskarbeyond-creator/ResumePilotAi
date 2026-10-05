@@ -49,15 +49,47 @@ const Features = ({ _t }) => {
   }, [location.hash]);
 
   useEffect(() => {
-    // Apply custom styles for page
+    // Apply custom styles for page.
+    //
+    // DIR-047: this effect mutated #root/body/html inline styles and never took them
+    // back off. Because <html>, <body> and #root all outlive this React tree, the
+    // write escaped the component: a visitor who opened /features and then navigated
+    // to /about carried `height: fit-content` and `overflow-x: hidden` (serialized as
+    // `overflow: hidden scroll`) into every route that followed, for the rest of the
+    // session. That is the concrete cross-route defect AC-2's DOM-restoration probe
+    // exists to catch.
+    //
+    // The fix is the one Contact.jsx and CustomePage.jsx already carry: snapshot the
+    // previous inline value of every property we are about to write, apply on mount,
+    // and restore on unmount. Restoring the CAPTURED value rather than clearing to ''
+    // is what keeps this safe under nested shells -- a component that applied its own
+    // scroll lock before us gets its own value back, not an empty one.
+    const root = document.getElementById('root');
+    const body = document.getElementsByTagName('body')[0];
+    const html = document.getElementsByTagName('html')[0];
+    const targets = [
+      [root, ['overflow', 'height']],
+      [body, ['height', 'overflow']],
+      [html, ['height', 'overflow', 'overflowX']],
+    ];
+    const previous = targets
+      .filter(([element]) => element)
+      .map(([element, properties]) => [element, properties.map((property) => [property, element.style[property]])]);
+
     const applyCustomStyles = () => {
-      document.getElementById('root').style.overflow = 'unset';
-      document.getElementById('root').style.height = 'unset';
-      document.getElementsByTagName('body')[0].style.height = 'fit-content';
-      document.getElementsByTagName('body')[0].style.overflow = 'unset';
-      document.getElementsByTagName('html')[0].style.height = 'fit-content';
-      document.getElementsByTagName('html')[0].style.overflow = 'scroll';
-      document.getElementsByTagName('html')[0].style.overflowX = 'hidden';
+      if (root) {
+        root.style.overflow = 'unset';
+        root.style.height = 'unset';
+      }
+      if (body) {
+        body.style.height = 'fit-content';
+        body.style.overflow = 'unset';
+      }
+      if (html) {
+        html.style.height = 'fit-content';
+        html.style.overflow = 'scroll';
+        html.style.overflowX = 'hidden';
+      }
     };
 
     if (window.location.pathname.substring(0, 9) === '/features') {
@@ -88,6 +120,23 @@ const Features = ({ _t }) => {
     };
 
     fetchData();
+
+    // Restore every inline property this effect mutated so the page-level styles
+    // do not leak into the next route.
+    //
+    // DIR-047: `previous` was captured but this cleanup was never returned, so the
+    // snapshot was dead code. Because <html>, <body> and #root outlive this React
+    // tree, the writes escaped the component: a visitor who opened /features and
+    // then navigated to /about carried `height: fit-content` and `overflow-x: hidden`
+    // (serialized as `overflow: hidden scroll`) into every route that followed, for
+    // the rest of the session. Restoring the CAPTURED value rather than clearing to
+    // '' is what keeps this safe under nested shells -- a component that applied its
+    // own scroll lock before us gets its own value back, not an empty one.
+    return () => {
+      for (const [element, properties] of previous) {
+        for (const [property, value] of properties) element.style[property] = value;
+      }
+    };
   }, []);
 
   // Authentication handlers

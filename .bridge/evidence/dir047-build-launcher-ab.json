@@ -1,0 +1,123 @@
+{
+  "directive": "DIR-047",
+  "generatedAt": "2026-10-05T16:02:03.448Z",
+  "method": "interleaved round-robin, SEQUENTIAL arms (never concurrent), cold cache (node_modules/.vite + dist purged) before every single build, medians compared across rounds so machine drift is shared",
+  "budgetMs": 4000,
+  "controlScript": "node node_modules/vite/bin/vite.js build",
+  "rounds": [
+    {
+      "round": 1,
+      "CONTROL_npm_shim": {
+        "wallMs": 5652,
+        "viteReportedMs": 4200,
+        "exitCode": 0
+      },
+      "TREATMENT_direct_node": {
+        "wallMs": 4944,
+        "viteReportedMs": 3550,
+        "exitCode": 0
+      }
+    },
+    {
+      "round": 2,
+      "CONTROL_npm_shim": {
+        "wallMs": 6104,
+        "viteReportedMs": 4200,
+        "exitCode": 0
+      },
+      "TREATMENT_direct_node": {
+        "wallMs": 4381,
+        "viteReportedMs": 3500,
+        "exitCode": 0
+      }
+    },
+    {
+      "round": 3,
+      "CONTROL_npm_shim": {
+        "wallMs": 5216,
+        "viteReportedMs": 3670,
+        "exitCode": 0
+      },
+      "TREATMENT_direct_node": {
+        "wallMs": 4344,
+        "viteReportedMs": 3420,
+        "exitCode": 0
+      }
+    },
+    {
+      "round": 4,
+      "CONTROL_npm_shim": {
+        "wallMs": 5201,
+        "viteReportedMs": 3430,
+        "exitCode": 0
+      },
+      "TREATMENT_direct_node": {
+        "wallMs": 4806,
+        "viteReportedMs": 3890,
+        "exitCode": 0
+      }
+    },
+    {
+      "round": 5,
+      "CONTROL_npm_shim": {
+        "wallMs": 5078,
+        "viteReportedMs": 3440,
+        "exitCode": 0
+      },
+      "TREATMENT_direct_node": {
+        "wallMs": 4347,
+        "viteReportedMs": 3480,
+        "exitCode": 0
+      }
+    }
+  ],
+  "summary": {
+    "CONTROL_npm_shim": {
+      "description": "current package.json \"build\" script: node node_modules/vite/bin/vite.js build",
+      "medianWallMs": 5216,
+      "minWallMs": 5078,
+      "maxWallMs": 6104,
+      "walls": [
+        5652,
+        6104,
+        5216,
+        5201,
+        5078
+      ],
+      "medianViteMs": 3670,
+      "exitCodes": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "allRunsExitedZero": true
+    },
+    "TREATMENT_direct_node": {
+      "description": "vite CLI invoked directly: no cmd.exe layer and no vite.cmd bin shim",
+      "medianWallMs": 4381,
+      "minWallMs": 4344,
+      "maxWallMs": 4944,
+      "walls": [
+        4944,
+        4381,
+        4344,
+        4806,
+        4347
+      ],
+      "medianViteMs": 3500,
+      "exitCodes": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "allRunsExitedZero": true
+    }
+  },
+  "deltaMs": -835,
+  "treatmentUnderBudget": false,
+  "verdict": "FAIL"
+}

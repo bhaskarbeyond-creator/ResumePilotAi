@@ -1,5 +1,5 @@
 {
-  "certifiedAt": "2026-10-05T03:57:02.848Z",
+  "certifiedAt": "2026-10-05T06:59:09.771Z",
   "version": "3.0.0",
   "architecture": "BIDIRECTIONAL_INSTANT_WAKE_V1",
   "status": "FROZEN_AND_CERTIFIED",
@@ -34,7 +34,7 @@
     "udpPort": 48222,
     "leadWatcher": {
       "running": true,
-      "pid": 13776,
+      "pid": 11772,
       "udpPort": 48222,
       "scriptExists": true,
       "certifiedBackupExists": true
@@ -43,14 +43,14 @@
   "certifiedFiles": [
     {
       "file": "bridge.cjs",
-      "sha256": "5964fb9f4b543a89e83051ced66222fcccc50eea4df8384014a6e693a0586869",
-      "bytes": 170001,
+      "sha256": "57c124fa48f606ecc0e18609fc2844ee806934930c11784e41f6b8f33f68a26d",
+      "bytes": 173066,
       "certifiedBackup": "bridge.cjs.certified.bak"
     },
     {
       "file": "lead_watcher.cjs",
-      "sha256": "8228f7f82f08e74a2641dec402577f6039066829b756ad04a59222effc15b17a",
-      "bytes": 20302,
+      "sha256": "baeadee9b430d2bf11038bc1c399e3f350ff6b422b93e1a7b690ad8988ecbdd1",
+      "bytes": 25324,
       "certifiedBackup": "lead_watcher.cjs.certified.bak"
     },
     {

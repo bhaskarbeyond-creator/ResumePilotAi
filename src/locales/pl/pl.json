@@ -808,7 +808,13 @@
       "button": "Wyślij kolejną wiadomość"
     },
     "error": {
-      "general": "Coś poszło nie tak. Spróbuj ponownie."
+      "general": "Coś poszło nie tak. Spróbuj ponownie.",
+      "nameRequired":"Podaj swoje pełne imię i nazwisko.",
+      "nameLength":"Twoje imię i nazwisko musi mieć od 2 do 100 znaków.",
+      "emailRequired":"Podaj swój adres e-mail.",
+      "emailInvalid":"Podaj prawidłowy adres e-mail.",
+      "messageRequired":"Napisz, jak możemy Ci pomóc.",
+      "messageLength":"Twoja wiadomość musi mieć od 10 do 5000 znaków."
     }
   },
   "billing": {

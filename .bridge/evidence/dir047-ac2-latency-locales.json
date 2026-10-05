@@ -1,0 +1,128 @@
+{
+  "directive": "DIR-047",
+  "ac": "AC-2 [SWOT-W]",
+  "localeCount": 16,
+  "locales": [
+    {
+      "locale": "de",
+      "bytes": 110438,
+      "topLevelKeys": 49,
+      "nonEmpty": true
+    },
+    {
+      "locale": "dk",
+      "bytes": 102746,
+      "topLevelKeys": 49,
+      "nonEmpty": true
+    },
+    {
+      "locale": "en",
+      "bytes": 104748,
+      "topLevelKeys": 49,
+      "nonEmpty": true
+    },
+    {
+      "locale": "es",
+      "bytes": 109507,
+      "topLevelKeys": 49,
+      "nonEmpty": true
+    },
+    {
+      "locale": "fr",
+      "bytes": 110772,
+      "topLevelKeys": 49,
+      "nonEmpty": true
+    },
+    {
+      "locale": "gk",
+      "bytes": 111941,
+      "topLevelKeys": 49,
+      "nonEmpty": true
+    },
+    {
+      "locale": "hi",
+      "bytes": 102610,
+      "topLevelKeys": 49,
+      "nonEmpty": true
+    },
+    {
+      "locale": "is",
+      "bytes": 105388,
+      "topLevelKeys": 49,
+      "nonEmpty": true
+    },
+    {
+      "locale": "it",
+      "bytes": 109037,
+      "topLevelKeys": 49,
+      "nonEmpty": true
+    },
+    {
+      "locale": "nl",
+      "bytes": 105958,
+      "topLevelKeys": 49,
+      "nonEmpty": true
+    },
+    {
+      "locale": "no",
+      "bytes": 102222,
+      "topLevelKeys": 49,
+      "nonEmpty": true
+    },
+    {
+      "locale": "pl",
+      "bytes": 106861,
+      "topLevelKeys": 49,
+      "nonEmpty": true
+    },
+    {
+      "locale": "pt",
+      "bytes": 108199,
+      "topLevelKeys": 49,
+      "nonEmpty": true
+    },
+    {
+      "locale": "ro",
+      "bytes": 107874,
+      "topLevelKeys": 49,
+      "nonEmpty": true
+    },
+    {
+      "locale": "ru",
+      "bytes": 108235,
+      "topLevelKeys": 49,
+      "nonEmpty": true
+    },
+    {
+      "locale": "se",
+      "bytes": 102850,
+      "topLevelKeys": 49,
+      "nonEmpty": true
+    }
+  ],
+  "rawKeyLeaks": [],
+  "styleRestoration": {
+    "appliedOnFeatures": {
+      "htmlStyle": "height: fit-content; overflow: hidden scroll;",
+      "bodyStyle": "height: fit-content; overflow: unset;"
+    },
+    "afterUnmount": {
+      "htmlStyle": "",
+      "bodyStyle": ""
+    },
+    "verdict": "RESTORED"
+  },
+  "latency": {
+    "filesScanned": 614,
+    "timerSites": 238,
+    "byCategory": {
+      "unclassified": 104,
+      "debounce": 43,
+      "auto-dismiss": 77,
+      "deadline-guard": 5,
+      "paint-deferral": 9
+    },
+    "simulatedLatencyCount": 0
+  },
+  "verdict": "PASS"
+}

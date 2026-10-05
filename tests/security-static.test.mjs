@@ -42,9 +42,21 @@ test('tracked files contain no recognizable private credentials', () => {
     /SG\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}/,
   ];
   // Documented placeholders that intentionally look like the real thing.
+  //
+  // Each entry must be a DISPOSABLE fixture from a negative test that asserts the
+  // secret classifier accepts real-shaped input, never a live value. These are
+  // scrubbed before the pattern sweep, so a real secret in any other file still
+  // fails the sentinel -- the allowlist narrows nothing except these literals.
+  // DIR-047 added the three DIR-040 classifier fixtures below, which were failing
+  // this sentinel and therefore the [SWOT-T] zero-plaintext-credential invariant.
   const placeholders = [
     /firebase-adminsdk-xxx@my-project\.iam\.gserviceaccount\.com/,
     /firebase-adminsdk@project-id\.iam\.gserviceaccount\.com/,
+    // DIR-040 classifier fixtures: assert classifyValue() accepts real-shaped
+    // Stripe/Google credentials and rejects placeholders.
+    /sk_live_51H8xQ2eZvKYlo2C0abcdefghijklmnop/,
+    /AIzaSyD-1a2b3c4d5e6f7g8h9i0jKLMNOPQRSTUV/,
+    /sk_live_SUPERSECRETVALUE/,
   ];
   const findings = [];
   for (const file of tracked) {

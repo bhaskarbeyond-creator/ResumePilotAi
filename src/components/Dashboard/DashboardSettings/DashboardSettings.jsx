@@ -1024,9 +1024,10 @@ function DashboardSettings(_props) {
             const retained = result.retainedRecordTypes?.length ? ` Legally/operationally retained records: ${result.retainedRecordTypes.join(', ')}.` : '';
             triggerNotification(`${result.message}${retained}`);
             setDeleteAccountModalOpen(false);
-            setTimeout(() => {
-                window.location.href = '/';
-            }, 1000);
+            // DIR-047 [SWOT-W]: the purge is confirmed and the session is being torn
+            // down; navigate at once. The prior 1000ms timer served no purpose and
+            // delayed the one redirect a user cannot undo.
+            window.location.href = '/';
         } catch (err) {
             console.error('Delete Account Error:', err);
             let msg = err.message || 'Failed to delete account.';
