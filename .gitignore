@@ -20,6 +20,14 @@ __pycache__/
 # Build outputs
 dist
 dist-ssr
+# DIR-047: the build-budget A/B investigation produced two extra Vite output
+# directories (dist-base, dist-scoped). They are reproducible build artifacts, not
+# source, and as bundles they embed the client Firebase config -- so committing them
+# put a credential-shaped literal (AIza...) into tracked files and broke the
+# [SWOT-T] "tracked files contain no recognizable private credentials" sentinel.
+# Ignored for the same reason `dist` already is.
+dist-base
+dist-scoped
 /build
 *.local
 backend/COMMIT_SHA

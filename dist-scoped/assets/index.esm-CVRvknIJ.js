@@ -1,1 +1,0 @@
-import{r as e}from"./rolldown-runtime-C0FnF6B9.js";import{a as t,i as n,it as r,nt as i,s as a,vt as o,yt as s}from"./index-DGK4UgBf-BIPCdT3h.js";var c=e({EmailAuthProvider:()=>n,FacebookAuthProvider:()=>t,GoogleAuthProvider:()=>a,reauthenticateWithCredential:()=>i,reauthenticateWithPopup:()=>r,updateEmail:()=>o,updatePassword:()=>s});export{c as t};

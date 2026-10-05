@@ -1,1 +1,0 @@
-import"./rolldown-runtime-C0FnF6B9.js";import{n as e,t}from"./jsx-runtime-CKeovgl0.js";import{t as n}from"./dist-BdcIj7Gs.js";e();var r=t(),i=({config:e,data:t,overrides:i,onPublish:a,onChange:o})=>(0,r.jsx)(n,{config:e,data:t,headerTitle:`Portfolio Builder`,overrides:i,onPublish:a,onChange:o});export{i as default};

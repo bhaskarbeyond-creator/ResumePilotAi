@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-05T17:45:10.536Z",
-  "seq": 1966,
-  "id": "evt_muvjikbx_b39fd30db539",
+  "timestamp": "2026-10-05T18:08:55.175Z",
+  "seq": 1968,
+  "id": "evt_muvkd3ld_215a830d65fa",
   "type": "HEARTBEAT",
-  "title": "[Heartbeat] Certification suite RUNNING: AC-1 PASS (frozen surface 0-byte diff vs e314f715 + 51 CV/4 cover render), AC-2 PASS (16 locales, DOM restore, 0 simulated latency), AC-3 PASS at 375/768/1024px. 5 of 9 gr",
+  "title": "[Heartbeat] POST-SEAL FINDING: seal commit 5760e56b swept 1100 untracked dist-base/dist-scoped build bundles into git, putting an AIza credential-shaped literal into tracked files and failing the [SWOT-T] sentine",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-047",
-  "summary": "Certification suite RUNNING: AC-1 PASS (frozen surface 0-byte diff vs e314f715 + 51 CV/4 cover render), AC-2 PASS (16 locales, DOM restore, 0 simulated latency), AC-3 PASS at 375/768/1024px. 5 of 9 green, 0 failures."
+  "summary": "POST-SEAL FINDING: seal commit 5760e56b swept 1100 untracked dist-base/dist-scoped build bundles into git, putting an AIza credential-shaped literal into tracked files and failing the [SWOT-T] sentinel. Remediated: git rm --cached (files preserved on disk) + .gitignore. Sentinel now 14/14 PASS. Re-certifying full suites. Vector 6 also completed: 80 PNGs + diff gate PASS (max drift 0.0376%% vs 0.05%% trigger)."
 }

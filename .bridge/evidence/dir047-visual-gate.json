@@ -1,0 +1,2204 @@
+{
+  "directive": "DIR-047",
+  "vector": "Vector 6 -- pure Node.js visual diffing",
+  "engine": "scripts/dir047-visual-diff.mjs",
+  "runner": "scripts/dir047-visual-gate.mjs",
+  "generatedAt": "2026-10-05T18:05:48.273Z",
+  "durationMs": 4091,
+  "driftTriggerPct": 0.05,
+  "distancesComputed": [
+    "CIE76 delta-E*ab (gate)",
+    "Euclidean RGB (reported alongside)"
+  ],
+  "decoderOracle": {
+    "samples": [
+      {
+        "file": "dir047-portal-visual/current/light/candidate-dashboard__375x900.png",
+        "verdict": "IDENTICAL",
+        "width": 375,
+        "height": 900,
+        "bytes": 1012500
+      },
+      {
+        "file": "dir047-portal-visual/current/dark/candidate-dashboard__375x900.png",
+        "verdict": "IDENTICAL",
+        "width": 375,
+        "height": 900,
+        "bytes": 1012500
+      },
+      {
+        "file": "dir047-portal-visual/current/dark/platform-admin__1920x900.png",
+        "verdict": "IDENTICAL",
+        "width": 1920,
+        "height": 900,
+        "bytes": 5184000
+      }
+    ],
+    "verdict": "IDENTICAL"
+  },
+  "falsePositiveControl": {
+    "selfDiffMaxDriftPct": 0,
+    "verdict": "CLEAN"
+  },
+  "sensitivityControl": {
+    "file": "dir047-portal-visual/current/light/candidate-dashboard__375x900.png",
+    "injectedBlock": {
+      "x": 100,
+      "y": 100,
+      "w": 60,
+      "h": 40,
+      "areaPx": 2400
+    },
+    "injectedPctOfFrame": 0.7111,
+    "detectedDriftPct": 0.6753,
+    "detectedPixels": 2279,
+    "worstSamples": [
+      {
+        "x": 100,
+        "y": 100,
+        "baselineRgb": [
+          73,
+          150,
+          244
+        ],
+        "actualRgb": [
+          85,
+          162,
+          255
+        ],
+        "deltaE": 4.614
+      },
+      {
+        "x": 101,
+        "y": 100,
+        "baselineRgb": [
+          74,
+          150,
+          244
+        ],
+        "actualRgb": [
+          86,
+          162,
+          255
+        ],
+        "deltaE": 4.613
+      },
+      {
+        "x": 102,
+        "y": 100,
+        "baselineRgb": [
+          74,
+          150,
+          244
+        ],
+        "actualRgb": [
+          86,
+          162,
+          255
+        ],
+        "deltaE": 4.613
+      },
+      {
+        "x": 103,
+        "y": 100,
+        "baselineRgb": [
+          75,
+          150,
+          245
+        ],
+        "actualRgb": [
+          87,
+          162,
+          255
+        ],
+        "deltaE": 4.789
+      },
+      {
+        "x": 104,
+        "y": 100,
+        "baselineRgb": [
+          74,
+          149,
+          244
+        ],
+        "actualRgb": [
+          86,
+          161,
+          255
+        ],
+        "deltaE": 4.62
+      }
+    ],
+    "worstSamplesInsideInjectedBlock": true,
+    "triggerPct": 0.05
+  },
+  "baselineVsCurrent": {
+    "comparedShots": 40,
+    "minDriftPct": 0,
+    "maxDriftPct": 0.0376,
+    "meanDriftPct": 0.006542,
+    "shotsExceedingTrigger": 0,
+    "rows": [
+      {
+        "theme": "light",
+        "breakpoint": 375,
+        "portal": "candidate-dashboard",
+        "baselineFile": "dir047-portal-visual/baseline/light/candidate-dashboard__375x900.png",
+        "currentFile": "dir047-portal-visual/current/light/candidate-dashboard__375x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0,
+        "driftedPixels": 0,
+        "totalPixels": 337500,
+        "maxDeltaE": 0,
+        "meanDeltaE": 0,
+        "geometry": {
+          "baseline": {
+            "path": "/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 988,
+            "childCount": 333,
+            "theme": "light"
+          },
+          "current": {
+            "path": "/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 988,
+            "childCount": 333,
+            "theme": "light"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": []
+      },
+      {
+        "theme": "light",
+        "breakpoint": 375,
+        "portal": "recruiter-portal",
+        "baselineFile": "dir047-portal-visual/baseline/light/recruiter-portal__375x900.png",
+        "currentFile": "dir047-portal-visual/current/light/recruiter-portal__375x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0,
+        "driftedPixels": 0,
+        "totalPixels": 337500,
+        "maxDeltaE": 0,
+        "meanDeltaE": 0,
+        "geometry": {
+          "baseline": {
+            "path": "/employer",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 960,
+            "childCount": 176,
+            "theme": "light"
+          },
+          "current": {
+            "path": "/employer",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 960,
+            "childCount": 176,
+            "theme": "light"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": []
+      },
+      {
+        "theme": "light",
+        "breakpoint": 375,
+        "portal": "enterprise-console",
+        "baselineFile": "dir047-portal-visual/baseline/light/enterprise-console__375x900.png",
+        "currentFile": "dir047-portal-visual/current/light/enterprise-console__375x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0,
+        "driftedPixels": 0,
+        "totalPixels": 337500,
+        "maxDeltaE": 0,
+        "meanDeltaE": 0,
+        "geometry": {
+          "baseline": {
+            "path": "/org/northwind/overview",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 308,
+            "childCount": 214,
+            "theme": "light"
+          },
+          "current": {
+            "path": "/org/northwind/overview",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 308,
+            "childCount": 214,
+            "theme": "light"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": []
+      },
+      {
+        "theme": "light",
+        "breakpoint": 375,
+        "portal": "platform-admin",
+        "baselineFile": "dir047-portal-visual/baseline/light/platform-admin__375x900.png",
+        "currentFile": "dir047-portal-visual/current/light/platform-admin__375x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0.0376,
+        "driftedPixels": 127,
+        "totalPixels": 337500,
+        "maxDeltaE": 77.143,
+        "meanDeltaE": 37.965,
+        "geometry": {
+          "baseline": {
+            "path": "/admin/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 2381,
+            "childCount": 510,
+            "theme": "light"
+          },
+          "current": {
+            "path": "/admin/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 2381,
+            "childCount": 510,
+            "theme": "light"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": [
+          {
+            "x": 269,
+            "y": 546,
+            "baselineRgb": [
+              20,
+              25,
+              54
+            ],
+            "actualRgb": [
+              120,
+              129,
+              149
+            ],
+            "deltaE": 45.248
+          },
+          {
+            "x": 270,
+            "y": 546,
+            "baselineRgb": [
+              98,
+              106,
+              128
+            ],
+            "actualRgb": [
+              202,
+              213,
+              226
+            ],
+            "deltaE": 40.44
+          },
+          {
+            "x": 272,
+            "y": 546,
+            "baselineRgb": [
+              167,
+              177,
+              193
+            ],
+            "actualRgb": [
+              196,
+              207,
+              220
+            ],
+            "deltaE": 10.926
+          }
+        ]
+      },
+      {
+        "theme": "light",
+        "breakpoint": 768,
+        "portal": "candidate-dashboard",
+        "baselineFile": "dir047-portal-visual/baseline/light/candidate-dashboard__768x900.png",
+        "currentFile": "dir047-portal-visual/current/light/candidate-dashboard__768x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0,
+        "driftedPixels": 0,
+        "totalPixels": 691200,
+        "maxDeltaE": 0,
+        "meanDeltaE": 0,
+        "geometry": {
+          "baseline": {
+            "path": "/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1080,
+            "childCount": 333,
+            "theme": "light"
+          },
+          "current": {
+            "path": "/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1080,
+            "childCount": 333,
+            "theme": "light"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": []
+      },
+      {
+        "theme": "light",
+        "breakpoint": 768,
+        "portal": "recruiter-portal",
+        "baselineFile": "dir047-portal-visual/baseline/light/recruiter-portal__768x900.png",
+        "currentFile": "dir047-portal-visual/current/light/recruiter-portal__768x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0,
+        "driftedPixels": 0,
+        "totalPixels": 691200,
+        "maxDeltaE": 0,
+        "meanDeltaE": 0,
+        "geometry": {
+          "baseline": {
+            "path": "/employer",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1061,
+            "childCount": 176,
+            "theme": "light"
+          },
+          "current": {
+            "path": "/employer",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1061,
+            "childCount": 176,
+            "theme": "light"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": []
+      },
+      {
+        "theme": "light",
+        "breakpoint": 768,
+        "portal": "enterprise-console",
+        "baselineFile": "dir047-portal-visual/baseline/light/enterprise-console__768x900.png",
+        "currentFile": "dir047-portal-visual/current/light/enterprise-console__768x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0,
+        "driftedPixels": 0,
+        "totalPixels": 691200,
+        "maxDeltaE": 0,
+        "meanDeltaE": 0,
+        "geometry": {
+          "baseline": {
+            "path": "/org/northwind/overview",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 393,
+            "childCount": 214,
+            "theme": "light"
+          },
+          "current": {
+            "path": "/org/northwind/overview",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 393,
+            "childCount": 214,
+            "theme": "light"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": []
+      },
+      {
+        "theme": "light",
+        "breakpoint": 768,
+        "portal": "platform-admin",
+        "baselineFile": "dir047-portal-visual/baseline/light/platform-admin__768x900.png",
+        "currentFile": "dir047-portal-visual/current/light/platform-admin__768x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0.0171,
+        "driftedPixels": 118,
+        "totalPixels": 691200,
+        "maxDeltaE": 77.296,
+        "meanDeltaE": 37.812,
+        "geometry": {
+          "baseline": {
+            "path": "/admin/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 2494,
+            "childCount": 510,
+            "theme": "light"
+          },
+          "current": {
+            "path": "/admin/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 2494,
+            "childCount": 510,
+            "theme": "light"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": [
+          {
+            "x": 297,
+            "y": 517,
+            "baselineRgb": [
+              17,
+              24,
+              48
+            ],
+            "actualRgb": [
+              119,
+              128,
+              146
+            ],
+            "deltaE": 45.251
+          },
+          {
+            "x": 298,
+            "y": 517,
+            "baselineRgb": [
+              97,
+              106,
+              125
+            ],
+            "actualRgb": [
+              202,
+              213,
+              226
+            ],
+            "deltaE": 40.371
+          },
+          {
+            "x": 300,
+            "y": 517,
+            "baselineRgb": [
+              167,
+              177,
+              192
+            ],
+            "actualRgb": [
+              196,
+              207,
+              220
+            ],
+            "deltaE": 10.875
+          }
+        ]
+      },
+      {
+        "theme": "light",
+        "breakpoint": 1024,
+        "portal": "candidate-dashboard",
+        "baselineFile": "dir047-portal-visual/baseline/light/candidate-dashboard__1024x900.png",
+        "currentFile": "dir047-portal-visual/current/light/candidate-dashboard__1024x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0.0219,
+        "driftedPixels": 202,
+        "totalPixels": 921600,
+        "maxDeltaE": 92.059,
+        "meanDeltaE": 32.804,
+        "geometry": {
+          "baseline": {
+            "path": "/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1429,
+            "childCount": 333,
+            "theme": "light"
+          },
+          "current": {
+            "path": "/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1429,
+            "childCount": 333,
+            "theme": "light"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": [
+          {
+            "x": 881,
+            "y": 238,
+            "baselineRgb": [
+              255,
+              249,
+              243
+            ],
+            "actualRgb": [
+              255,
+              238,
+              221
+            ],
+            "deltaE": 7.715
+          },
+          {
+            "x": 882,
+            "y": 238,
+            "baselineRgb": [
+              255,
+              248,
+              242
+            ],
+            "actualRgb": [
+              255,
+              245,
+              235
+            ],
+            "deltaE": 2.494
+          },
+          {
+            "x": 881,
+            "y": 239,
+            "baselineRgb": [
+              255,
+              151,
+              50
+            ],
+            "actualRgb": [
+              255,
+              145,
+              38
+            ],
+            "deltaE": 4.274
+          }
+        ]
+      },
+      {
+        "theme": "light",
+        "breakpoint": 1024,
+        "portal": "recruiter-portal",
+        "baselineFile": "dir047-portal-visual/baseline/light/recruiter-portal__1024x900.png",
+        "currentFile": "dir047-portal-visual/current/light/recruiter-portal__1024x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0,
+        "driftedPixels": 0,
+        "totalPixels": 921600,
+        "maxDeltaE": 0,
+        "meanDeltaE": 0,
+        "geometry": {
+          "baseline": {
+            "path": "/employer",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1247,
+            "childCount": 176,
+            "theme": "light"
+          },
+          "current": {
+            "path": "/employer",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1247,
+            "childCount": 176,
+            "theme": "light"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": []
+      },
+      {
+        "theme": "light",
+        "breakpoint": 1024,
+        "portal": "enterprise-console",
+        "baselineFile": "dir047-portal-visual/baseline/light/enterprise-console__1024x900.png",
+        "currentFile": "dir047-portal-visual/current/light/enterprise-console__1024x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0,
+        "driftedPixels": 0,
+        "totalPixels": 921600,
+        "maxDeltaE": 0,
+        "meanDeltaE": 0,
+        "geometry": {
+          "baseline": {
+            "path": "/org/northwind/overview",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 670,
+            "childCount": 214,
+            "theme": "light"
+          },
+          "current": {
+            "path": "/org/northwind/overview",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 670,
+            "childCount": 214,
+            "theme": "light"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": []
+      },
+      {
+        "theme": "light",
+        "breakpoint": 1024,
+        "portal": "platform-admin",
+        "baselineFile": "dir047-portal-visual/baseline/light/platform-admin__1024x900.png",
+        "currentFile": "dir047-portal-visual/current/light/platform-admin__1024x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0.0125,
+        "driftedPixels": 115,
+        "totalPixels": 921600,
+        "maxDeltaE": 77.296,
+        "meanDeltaE": 35.82,
+        "geometry": {
+          "baseline": {
+            "path": "/admin/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 3004,
+            "childCount": 510,
+            "theme": "light"
+          },
+          "current": {
+            "path": "/admin/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 3004,
+            "childCount": 510,
+            "theme": "light"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": [
+          {
+            "x": 565,
+            "y": 517,
+            "baselineRgb": [
+              17,
+              24,
+              48
+            ],
+            "actualRgb": [
+              119,
+              128,
+              146
+            ],
+            "deltaE": 45.251
+          },
+          {
+            "x": 566,
+            "y": 517,
+            "baselineRgb": [
+              97,
+              106,
+              125
+            ],
+            "actualRgb": [
+              202,
+              213,
+              226
+            ],
+            "deltaE": 40.371
+          },
+          {
+            "x": 568,
+            "y": 517,
+            "baselineRgb": [
+              167,
+              177,
+              192
+            ],
+            "actualRgb": [
+              196,
+              207,
+              220
+            ],
+            "deltaE": 10.875
+          }
+        ]
+      },
+      {
+        "theme": "light",
+        "breakpoint": 1280,
+        "portal": "candidate-dashboard",
+        "baselineFile": "dir047-portal-visual/baseline/light/candidate-dashboard__1280x900.png",
+        "currentFile": "dir047-portal-visual/current/light/candidate-dashboard__1280x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0.0174,
+        "driftedPixels": 200,
+        "totalPixels": 1152000,
+        "maxDeltaE": 92.059,
+        "meanDeltaE": 32.722,
+        "geometry": {
+          "baseline": {
+            "path": "/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1429,
+            "childCount": 333,
+            "theme": "light"
+          },
+          "current": {
+            "path": "/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1429,
+            "childCount": 333,
+            "theme": "light"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": [
+          {
+            "x": 1137,
+            "y": 200,
+            "baselineRgb": [
+              255,
+              249,
+              243
+            ],
+            "actualRgb": [
+              255,
+              238,
+              221
+            ],
+            "deltaE": 7.715
+          },
+          {
+            "x": 1138,
+            "y": 200,
+            "baselineRgb": [
+              255,
+              248,
+              242
+            ],
+            "actualRgb": [
+              255,
+              245,
+              235
+            ],
+            "deltaE": 2.494
+          },
+          {
+            "x": 1137,
+            "y": 201,
+            "baselineRgb": [
+              255,
+              151,
+              50
+            ],
+            "actualRgb": [
+              255,
+              145,
+              38
+            ],
+            "deltaE": 4.274
+          }
+        ]
+      },
+      {
+        "theme": "light",
+        "breakpoint": 1280,
+        "portal": "recruiter-portal",
+        "baselineFile": "dir047-portal-visual/baseline/light/recruiter-portal__1280x900.png",
+        "currentFile": "dir047-portal-visual/current/light/recruiter-portal__1280x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0,
+        "driftedPixels": 0,
+        "totalPixels": 1152000,
+        "maxDeltaE": 0,
+        "meanDeltaE": 0,
+        "geometry": {
+          "baseline": {
+            "path": "/employer",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1247,
+            "childCount": 176,
+            "theme": "light"
+          },
+          "current": {
+            "path": "/employer",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1247,
+            "childCount": 176,
+            "theme": "light"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": []
+      },
+      {
+        "theme": "light",
+        "breakpoint": 1280,
+        "portal": "enterprise-console",
+        "baselineFile": "dir047-portal-visual/baseline/light/enterprise-console__1280x900.png",
+        "currentFile": "dir047-portal-visual/current/light/enterprise-console__1280x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0,
+        "driftedPixels": 0,
+        "totalPixels": 1152000,
+        "maxDeltaE": 0,
+        "meanDeltaE": 0,
+        "geometry": {
+          "baseline": {
+            "path": "/org/northwind/overview",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 670,
+            "childCount": 214,
+            "theme": "light"
+          },
+          "current": {
+            "path": "/org/northwind/overview",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 670,
+            "childCount": 214,
+            "theme": "light"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": []
+      },
+      {
+        "theme": "light",
+        "breakpoint": 1280,
+        "portal": "platform-admin",
+        "baselineFile": "dir047-portal-visual/baseline/light/platform-admin__1280x900.png",
+        "currentFile": "dir047-portal-visual/current/light/platform-admin__1280x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0.0076,
+        "driftedPixels": 88,
+        "totalPixels": 1152000,
+        "maxDeltaE": 77.277,
+        "meanDeltaE": 36.43,
+        "geometry": {
+          "baseline": {
+            "path": "/admin/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 3004,
+            "childCount": 510,
+            "theme": "light"
+          },
+          "current": {
+            "path": "/admin/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 3004,
+            "childCount": 510,
+            "theme": "light"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": [
+          {
+            "x": 565,
+            "y": 409,
+            "baselineRgb": [
+              15,
+              23,
+              45
+            ],
+            "actualRgb": [
+              118,
+              128,
+              145
+            ],
+            "deltaE": 45.711
+          },
+          {
+            "x": 566,
+            "y": 409,
+            "baselineRgb": [
+              97,
+              106,
+              123
+            ],
+            "actualRgb": [
+              202,
+              213,
+              226
+            ],
+            "deltaE": 40.323
+          },
+          {
+            "x": 568,
+            "y": 409,
+            "baselineRgb": [
+              167,
+              177,
+              191
+            ],
+            "actualRgb": [
+              196,
+              207,
+              220
+            ],
+            "deltaE": 10.853
+          }
+        ]
+      },
+      {
+        "theme": "light",
+        "breakpoint": 1920,
+        "portal": "candidate-dashboard",
+        "baselineFile": "dir047-portal-visual/baseline/light/candidate-dashboard__1920x900.png",
+        "currentFile": "dir047-portal-visual/current/light/candidate-dashboard__1920x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0.011,
+        "driftedPixels": 190,
+        "totalPixels": 1728000,
+        "maxDeltaE": 92.059,
+        "meanDeltaE": 33.721,
+        "geometry": {
+          "baseline": {
+            "path": "/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1429,
+            "childCount": 333,
+            "theme": "light"
+          },
+          "current": {
+            "path": "/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1429,
+            "childCount": 333,
+            "theme": "light"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": [
+          {
+            "x": 1647,
+            "y": 200,
+            "baselineRgb": [
+              255,
+              249,
+              243
+            ],
+            "actualRgb": [
+              255,
+              238,
+              221
+            ],
+            "deltaE": 7.715
+          },
+          {
+            "x": 1648,
+            "y": 200,
+            "baselineRgb": [
+              255,
+              248,
+              242
+            ],
+            "actualRgb": [
+              255,
+              245,
+              235
+            ],
+            "deltaE": 2.494
+          },
+          {
+            "x": 1647,
+            "y": 201,
+            "baselineRgb": [
+              255,
+              151,
+              50
+            ],
+            "actualRgb": [
+              255,
+              145,
+              38
+            ],
+            "deltaE": 4.274
+          }
+        ]
+      },
+      {
+        "theme": "light",
+        "breakpoint": 1920,
+        "portal": "recruiter-portal",
+        "baselineFile": "dir047-portal-visual/baseline/light/recruiter-portal__1920x900.png",
+        "currentFile": "dir047-portal-visual/current/light/recruiter-portal__1920x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0,
+        "driftedPixels": 0,
+        "totalPixels": 1728000,
+        "maxDeltaE": 0,
+        "meanDeltaE": 0,
+        "geometry": {
+          "baseline": {
+            "path": "/employer",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1247,
+            "childCount": 176,
+            "theme": "light"
+          },
+          "current": {
+            "path": "/employer",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1247,
+            "childCount": 176,
+            "theme": "light"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": []
+      },
+      {
+        "theme": "light",
+        "breakpoint": 1920,
+        "portal": "enterprise-console",
+        "baselineFile": "dir047-portal-visual/baseline/light/enterprise-console__1920x900.png",
+        "currentFile": "dir047-portal-visual/current/light/enterprise-console__1920x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0,
+        "driftedPixels": 0,
+        "totalPixels": 1728000,
+        "maxDeltaE": 0,
+        "meanDeltaE": 0,
+        "geometry": {
+          "baseline": {
+            "path": "/org/northwind/overview",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 670,
+            "childCount": 214,
+            "theme": "light"
+          },
+          "current": {
+            "path": "/org/northwind/overview",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 670,
+            "childCount": 214,
+            "theme": "light"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": []
+      },
+      {
+        "theme": "light",
+        "breakpoint": 1920,
+        "portal": "platform-admin",
+        "baselineFile": "dir047-portal-visual/baseline/light/platform-admin__1920x900.png",
+        "currentFile": "dir047-portal-visual/current/light/platform-admin__1920x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0.0068,
+        "driftedPixels": 118,
+        "totalPixels": 1728000,
+        "maxDeltaE": 77.755,
+        "meanDeltaE": 35.884,
+        "geometry": {
+          "baseline": {
+            "path": "/admin/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 3004,
+            "childCount": 510,
+            "theme": "light"
+          },
+          "current": {
+            "path": "/admin/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 3004,
+            "childCount": 510,
+            "theme": "light"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": [
+          {
+            "x": 723,
+            "y": 386,
+            "baselineRgb": [
+              14,
+              22,
+              42
+            ],
+            "actualRgb": [
+              118,
+              127,
+              143
+            ],
+            "deltaE": 45.839
+          },
+          {
+            "x": 724,
+            "y": 386,
+            "baselineRgb": [
+              95,
+              106,
+              122
+            ],
+            "actualRgb": [
+              202,
+              213,
+              226
+            ],
+            "deltaE": 40.462
+          },
+          {
+            "x": 726,
+            "y": 386,
+            "baselineRgb": [
+              166,
+              177,
+              191
+            ],
+            "actualRgb": [
+              196,
+              207,
+              220
+            ],
+            "deltaE": 10.921
+          }
+        ]
+      },
+      {
+        "theme": "dark",
+        "breakpoint": 375,
+        "portal": "candidate-dashboard",
+        "baselineFile": "dir047-portal-visual/baseline/dark/candidate-dashboard__375x900.png",
+        "currentFile": "dir047-portal-visual/current/dark/candidate-dashboard__375x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0,
+        "driftedPixels": 0,
+        "totalPixels": 337500,
+        "maxDeltaE": 0,
+        "meanDeltaE": 0,
+        "geometry": {
+          "baseline": {
+            "path": "/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 988,
+            "childCount": 333,
+            "theme": "dark"
+          },
+          "current": {
+            "path": "/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 988,
+            "childCount": 333,
+            "theme": "dark"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": []
+      },
+      {
+        "theme": "dark",
+        "breakpoint": 375,
+        "portal": "recruiter-portal",
+        "baselineFile": "dir047-portal-visual/baseline/dark/recruiter-portal__375x900.png",
+        "currentFile": "dir047-portal-visual/current/dark/recruiter-portal__375x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0,
+        "driftedPixels": 0,
+        "totalPixels": 337500,
+        "maxDeltaE": 0,
+        "meanDeltaE": 0,
+        "geometry": {
+          "baseline": {
+            "path": "/employer",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 960,
+            "childCount": 176,
+            "theme": "dark"
+          },
+          "current": {
+            "path": "/employer",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 960,
+            "childCount": 176,
+            "theme": "dark"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": []
+      },
+      {
+        "theme": "dark",
+        "breakpoint": 375,
+        "portal": "enterprise-console",
+        "baselineFile": "dir047-portal-visual/baseline/dark/enterprise-console__375x900.png",
+        "currentFile": "dir047-portal-visual/current/dark/enterprise-console__375x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0,
+        "driftedPixels": 0,
+        "totalPixels": 337500,
+        "maxDeltaE": 0,
+        "meanDeltaE": 0,
+        "geometry": {
+          "baseline": {
+            "path": "/org/northwind/overview",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 308,
+            "childCount": 214,
+            "theme": "dark"
+          },
+          "current": {
+            "path": "/org/northwind/overview",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 308,
+            "childCount": 214,
+            "theme": "dark"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": []
+      },
+      {
+        "theme": "dark",
+        "breakpoint": 375,
+        "portal": "platform-admin",
+        "baselineFile": "dir047-portal-visual/baseline/dark/platform-admin__375x900.png",
+        "currentFile": "dir047-portal-visual/current/dark/platform-admin__375x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0.0359,
+        "driftedPixels": 121,
+        "totalPixels": 337500,
+        "maxDeltaE": 88.74,
+        "meanDeltaE": 40.619,
+        "geometry": {
+          "baseline": {
+            "path": "/admin/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 2381,
+            "childCount": 510,
+            "theme": "dark"
+          },
+          "current": {
+            "path": "/admin/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 2381,
+            "childCount": 510,
+            "theme": "dark"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": [
+          {
+            "x": 269,
+            "y": 546,
+            "baselineRgb": [
+              20,
+              25,
+              54
+            ],
+            "actualRgb": [
+              155,
+              158,
+              174
+            ],
+            "deltaE": 56.875
+          },
+          {
+            "x": 270,
+            "y": 546,
+            "baselineRgb": [
+              132,
+              135,
+              154
+            ],
+            "actualRgb": [
+              242,
+              244,
+              251
+            ],
+            "deltaE": 40.235
+          },
+          {
+            "x": 272,
+            "y": 546,
+            "baselineRgb": [
+              205,
+              207,
+              218
+            ],
+            "actualRgb": [
+              236,
+              238,
+              246
+            ],
+            "deltaE": 11.021
+          }
+        ]
+      },
+      {
+        "theme": "dark",
+        "breakpoint": 768,
+        "portal": "candidate-dashboard",
+        "baselineFile": "dir047-portal-visual/baseline/dark/candidate-dashboard__768x900.png",
+        "currentFile": "dir047-portal-visual/current/dark/candidate-dashboard__768x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0,
+        "driftedPixels": 0,
+        "totalPixels": 691200,
+        "maxDeltaE": 0,
+        "meanDeltaE": 0,
+        "geometry": {
+          "baseline": {
+            "path": "/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1080,
+            "childCount": 333,
+            "theme": "dark"
+          },
+          "current": {
+            "path": "/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1080,
+            "childCount": 333,
+            "theme": "dark"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": []
+      },
+      {
+        "theme": "dark",
+        "breakpoint": 768,
+        "portal": "recruiter-portal",
+        "baselineFile": "dir047-portal-visual/baseline/dark/recruiter-portal__768x900.png",
+        "currentFile": "dir047-portal-visual/current/dark/recruiter-portal__768x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0,
+        "driftedPixels": 0,
+        "totalPixels": 691200,
+        "maxDeltaE": 0,
+        "meanDeltaE": 0,
+        "geometry": {
+          "baseline": {
+            "path": "/employer",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1061,
+            "childCount": 176,
+            "theme": "dark"
+          },
+          "current": {
+            "path": "/employer",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1061,
+            "childCount": 176,
+            "theme": "dark"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": []
+      },
+      {
+        "theme": "dark",
+        "breakpoint": 768,
+        "portal": "enterprise-console",
+        "baselineFile": "dir047-portal-visual/baseline/dark/enterprise-console__768x900.png",
+        "currentFile": "dir047-portal-visual/current/dark/enterprise-console__768x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0,
+        "driftedPixels": 0,
+        "totalPixels": 691200,
+        "maxDeltaE": 0,
+        "meanDeltaE": 0,
+        "geometry": {
+          "baseline": {
+            "path": "/org/northwind/overview",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 393,
+            "childCount": 214,
+            "theme": "dark"
+          },
+          "current": {
+            "path": "/org/northwind/overview",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 393,
+            "childCount": 214,
+            "theme": "dark"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": []
+      },
+      {
+        "theme": "dark",
+        "breakpoint": 768,
+        "portal": "platform-admin",
+        "baselineFile": "dir047-portal-visual/baseline/dark/platform-admin__768x900.png",
+        "currentFile": "dir047-portal-visual/current/dark/platform-admin__768x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0.0163,
+        "driftedPixels": 113,
+        "totalPixels": 691200,
+        "maxDeltaE": 89.049,
+        "meanDeltaE": 45.188,
+        "geometry": {
+          "baseline": {
+            "path": "/admin/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 2494,
+            "childCount": 510,
+            "theme": "dark"
+          },
+          "current": {
+            "path": "/admin/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 2494,
+            "childCount": 510,
+            "theme": "dark"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": [
+          {
+            "x": 297,
+            "y": 517,
+            "baselineRgb": [
+              17,
+              24,
+              48
+            ],
+            "actualRgb": [
+              154,
+              158,
+              171
+            ],
+            "deltaE": 57.314
+          },
+          {
+            "x": 298,
+            "y": 517,
+            "baselineRgb": [
+              131,
+              135,
+              151
+            ],
+            "actualRgb": [
+              242,
+              244,
+              251
+            ],
+            "deltaE": 40.14
+          },
+          {
+            "x": 300,
+            "y": 517,
+            "baselineRgb": [
+              204,
+              207,
+              217
+            ],
+            "actualRgb": [
+              236,
+              238,
+              246
+            ],
+            "deltaE": 11.059
+          }
+        ]
+      },
+      {
+        "theme": "dark",
+        "breakpoint": 1024,
+        "portal": "candidate-dashboard",
+        "baselineFile": "dir047-portal-visual/baseline/dark/candidate-dashboard__1024x900.png",
+        "currentFile": "dir047-portal-visual/current/dark/candidate-dashboard__1024x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0.0219,
+        "driftedPixels": 202,
+        "totalPixels": 921600,
+        "maxDeltaE": 92.059,
+        "meanDeltaE": 32.785,
+        "geometry": {
+          "baseline": {
+            "path": "/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1429,
+            "childCount": 333,
+            "theme": "dark"
+          },
+          "current": {
+            "path": "/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1429,
+            "childCount": 333,
+            "theme": "dark"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": [
+          {
+            "x": 874,
+            "y": 234,
+            "baselineRgb": [
+              155,
+              154,
+              177
+            ],
+            "actualRgb": [
+              167,
+              162,
+              161
+            ],
+            "deltaE": 13.658
+          },
+          {
+            "x": 875,
+            "y": 234,
+            "baselineRgb": [
+              223,
+              223,
+              231
+            ],
+            "actualRgb": [
+              226,
+              222,
+              212
+            ],
+            "deltaE": 9.471
+          },
+          {
+            "x": 875,
+            "y": 235,
+            "baselineRgb": [
+              167,
+              172,
+              182
+            ],
+            "actualRgb": [
+              226,
+              200,
+              101
+            ],
+            "deltaE": 58.945
+          }
+        ]
+      },
+      {
+        "theme": "dark",
+        "breakpoint": 1024,
+        "portal": "recruiter-portal",
+        "baselineFile": "dir047-portal-visual/baseline/dark/recruiter-portal__1024x900.png",
+        "currentFile": "dir047-portal-visual/current/dark/recruiter-portal__1024x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0,
+        "driftedPixels": 0,
+        "totalPixels": 921600,
+        "maxDeltaE": 0,
+        "meanDeltaE": 0,
+        "geometry": {
+          "baseline": {
+            "path": "/employer",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1247,
+            "childCount": 176,
+            "theme": "dark"
+          },
+          "current": {
+            "path": "/employer",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1247,
+            "childCount": 176,
+            "theme": "dark"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": []
+      },
+      {
+        "theme": "dark",
+        "breakpoint": 1024,
+        "portal": "enterprise-console",
+        "baselineFile": "dir047-portal-visual/baseline/dark/enterprise-console__1024x900.png",
+        "currentFile": "dir047-portal-visual/current/dark/enterprise-console__1024x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0,
+        "driftedPixels": 0,
+        "totalPixels": 921600,
+        "maxDeltaE": 0,
+        "meanDeltaE": 0,
+        "geometry": {
+          "baseline": {
+            "path": "/org/northwind/overview",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 670,
+            "childCount": 214,
+            "theme": "dark"
+          },
+          "current": {
+            "path": "/org/northwind/overview",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 670,
+            "childCount": 214,
+            "theme": "dark"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": []
+      },
+      {
+        "theme": "dark",
+        "breakpoint": 1024,
+        "portal": "platform-admin",
+        "baselineFile": "dir047-portal-visual/baseline/dark/platform-admin__1024x900.png",
+        "currentFile": "dir047-portal-visual/current/dark/platform-admin__1024x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0.0135,
+        "driftedPixels": 124,
+        "totalPixels": 921600,
+        "maxDeltaE": 88.993,
+        "meanDeltaE": 43.655,
+        "geometry": {
+          "baseline": {
+            "path": "/admin/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 3004,
+            "childCount": 510,
+            "theme": "dark"
+          },
+          "current": {
+            "path": "/admin/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 3004,
+            "childCount": 510,
+            "theme": "dark"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": [
+          {
+            "x": 565,
+            "y": 517,
+            "baselineRgb": [
+              17,
+              24,
+              48
+            ],
+            "actualRgb": [
+              204,
+              207,
+              217
+            ],
+            "deltaE": 75.362
+          },
+          {
+            "x": 566,
+            "y": 517,
+            "baselineRgb": [
+              131,
+              135,
+              151
+            ],
+            "actualRgb": [
+              242,
+              244,
+              251
+            ],
+            "deltaE": 40.14
+          },
+          {
+            "x": 568,
+            "y": 517,
+            "baselineRgb": [
+              204,
+              207,
+              217
+            ],
+            "actualRgb": [
+              242,
+              244,
+              251
+            ],
+            "deltaE": 13.172
+          }
+        ]
+      },
+      {
+        "theme": "dark",
+        "breakpoint": 1280,
+        "portal": "candidate-dashboard",
+        "baselineFile": "dir047-portal-visual/baseline/dark/candidate-dashboard__1280x900.png",
+        "currentFile": "dir047-portal-visual/current/dark/candidate-dashboard__1280x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0.0172,
+        "driftedPixels": 198,
+        "totalPixels": 1152000,
+        "maxDeltaE": 92.059,
+        "meanDeltaE": 34.327,
+        "geometry": {
+          "baseline": {
+            "path": "/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1429,
+            "childCount": 333,
+            "theme": "dark"
+          },
+          "current": {
+            "path": "/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1429,
+            "childCount": 333,
+            "theme": "dark"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": [
+          {
+            "x": 1142,
+            "y": 194,
+            "baselineRgb": [
+              255,
+              255,
+              255
+            ],
+            "actualRgb": [
+              251,
+              242,
+              206
+            ],
+            "deltaE": 19.248
+          },
+          {
+            "x": 1143,
+            "y": 194,
+            "baselineRgb": [
+              246,
+              246,
+              247
+            ],
+            "actualRgb": [
+              244,
+              231,
+              181
+            ],
+            "deltaE": 27.212
+          },
+          {
+            "x": 1142,
+            "y": 195,
+            "baselineRgb": [
+              255,
+              255,
+              255
+            ],
+            "actualRgb": [
+              250,
+              237,
+              186
+            ],
+            "deltaE": 27.309
+          }
+        ]
+      },
+      {
+        "theme": "dark",
+        "breakpoint": 1280,
+        "portal": "recruiter-portal",
+        "baselineFile": "dir047-portal-visual/baseline/dark/recruiter-portal__1280x900.png",
+        "currentFile": "dir047-portal-visual/current/dark/recruiter-portal__1280x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0,
+        "driftedPixels": 0,
+        "totalPixels": 1152000,
+        "maxDeltaE": 0,
+        "meanDeltaE": 0,
+        "geometry": {
+          "baseline": {
+            "path": "/employer",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1247,
+            "childCount": 176,
+            "theme": "dark"
+          },
+          "current": {
+            "path": "/employer",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1247,
+            "childCount": 176,
+            "theme": "dark"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": []
+      },
+      {
+        "theme": "dark",
+        "breakpoint": 1280,
+        "portal": "enterprise-console",
+        "baselineFile": "dir047-portal-visual/baseline/dark/enterprise-console__1280x900.png",
+        "currentFile": "dir047-portal-visual/current/dark/enterprise-console__1280x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0,
+        "driftedPixels": 0,
+        "totalPixels": 1152000,
+        "maxDeltaE": 0,
+        "meanDeltaE": 0,
+        "geometry": {
+          "baseline": {
+            "path": "/org/northwind/overview",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 670,
+            "childCount": 214,
+            "theme": "dark"
+          },
+          "current": {
+            "path": "/org/northwind/overview",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 670,
+            "childCount": 214,
+            "theme": "dark"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": []
+      },
+      {
+        "theme": "dark",
+        "breakpoint": 1280,
+        "portal": "platform-admin",
+        "baselineFile": "dir047-portal-visual/baseline/dark/platform-admin__1280x900.png",
+        "currentFile": "dir047-portal-visual/current/dark/platform-admin__1280x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0.007,
+        "driftedPixels": 81,
+        "totalPixels": 1152000,
+        "maxDeltaE": 89.022,
+        "meanDeltaE": 46.282,
+        "geometry": {
+          "baseline": {
+            "path": "/admin/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 3004,
+            "childCount": 510,
+            "theme": "dark"
+          },
+          "current": {
+            "path": "/admin/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 3004,
+            "childCount": 510,
+            "theme": "dark"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": [
+          {
+            "x": 565,
+            "y": 409,
+            "baselineRgb": [
+              153,
+              157,
+              170
+            ],
+            "actualRgb": [
+              204,
+              206,
+              216
+            ],
+            "deltaE": 18.203
+          },
+          {
+            "x": 569,
+            "y": 409,
+            "baselineRgb": [
+              130,
+              135,
+              150
+            ],
+            "actualRgb": [
+              154,
+              157,
+              170
+            ],
+            "deltaE": 8.644
+          },
+          {
+            "x": 584,
+            "y": 409,
+            "baselineRgb": [
+              16,
+              24,
+              46
+            ],
+            "actualRgb": [
+              98,
+              104,
+              121
+            ],
+            "deltaE": 35.963
+          }
+        ]
+      },
+      {
+        "theme": "dark",
+        "breakpoint": 1920,
+        "portal": "candidate-dashboard",
+        "baselineFile": "dir047-portal-visual/baseline/dark/candidate-dashboard__1920x900.png",
+        "currentFile": "dir047-portal-visual/current/dark/candidate-dashboard__1920x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0.0107,
+        "driftedPixels": 185,
+        "totalPixels": 1728000,
+        "maxDeltaE": 92.059,
+        "meanDeltaE": 34.267,
+        "geometry": {
+          "baseline": {
+            "path": "/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1429,
+            "childCount": 333,
+            "theme": "dark"
+          },
+          "current": {
+            "path": "/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1429,
+            "childCount": 333,
+            "theme": "dark"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": [
+          {
+            "x": 1652,
+            "y": 194,
+            "baselineRgb": [
+              251,
+              242,
+              206
+            ],
+            "actualRgb": [
+              255,
+              255,
+              255
+            ],
+            "deltaE": 19.248
+          },
+          {
+            "x": 1653,
+            "y": 194,
+            "baselineRgb": [
+              244,
+              231,
+              181
+            ],
+            "actualRgb": [
+              246,
+              246,
+              247
+            ],
+            "deltaE": 27.212
+          },
+          {
+            "x": 1652,
+            "y": 195,
+            "baselineRgb": [
+              250,
+              237,
+              186
+            ],
+            "actualRgb": [
+              255,
+              255,
+              255
+            ],
+            "deltaE": 27.309
+          }
+        ]
+      },
+      {
+        "theme": "dark",
+        "breakpoint": 1920,
+        "portal": "recruiter-portal",
+        "baselineFile": "dir047-portal-visual/baseline/dark/recruiter-portal__1920x900.png",
+        "currentFile": "dir047-portal-visual/current/dark/recruiter-portal__1920x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0,
+        "driftedPixels": 0,
+        "totalPixels": 1728000,
+        "maxDeltaE": 0,
+        "meanDeltaE": 0,
+        "geometry": {
+          "baseline": {
+            "path": "/employer",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1247,
+            "childCount": 176,
+            "theme": "dark"
+          },
+          "current": {
+            "path": "/employer",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 1247,
+            "childCount": 176,
+            "theme": "dark"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": []
+      },
+      {
+        "theme": "dark",
+        "breakpoint": 1920,
+        "portal": "enterprise-console",
+        "baselineFile": "dir047-portal-visual/baseline/dark/enterprise-console__1920x900.png",
+        "currentFile": "dir047-portal-visual/current/dark/enterprise-console__1920x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0,
+        "driftedPixels": 0,
+        "totalPixels": 1728000,
+        "maxDeltaE": 0,
+        "meanDeltaE": 0,
+        "geometry": {
+          "baseline": {
+            "path": "/org/northwind/overview",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 670,
+            "childCount": 214,
+            "theme": "dark"
+          },
+          "current": {
+            "path": "/org/northwind/overview",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 670,
+            "childCount": 214,
+            "theme": "dark"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": []
+      },
+      {
+        "theme": "dark",
+        "breakpoint": 1920,
+        "portal": "platform-admin",
+        "baselineFile": "dir047-portal-visual/baseline/dark/platform-admin__1920x900.png",
+        "currentFile": "dir047-portal-visual/current/dark/platform-admin__1920x900.png",
+        "dimensionMismatch": false,
+        "driftPct": 0.0073,
+        "driftedPixels": 126,
+        "totalPixels": 1728000,
+        "maxDeltaE": 88.978,
+        "meanDeltaE": 43.577,
+        "geometry": {
+          "baseline": {
+            "path": "/admin/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 3004,
+            "childCount": 510,
+            "theme": "dark"
+          },
+          "current": {
+            "path": "/admin/dashboard",
+            "overflowPx": 0,
+            "overlayCount": 0,
+            "textLength": 3004,
+            "childCount": 510,
+            "theme": "dark"
+          }
+        },
+        "exceedsTrigger": false,
+        "worstSamples": [
+          {
+            "x": 723,
+            "y": 386,
+            "baselineRgb": [
+              153,
+              157,
+              169
+            ],
+            "actualRgb": [
+              204,
+              206,
+              216
+            ],
+            "deltaE": 18.183
+          },
+          {
+            "x": 727,
+            "y": 386,
+            "baselineRgb": [
+              129,
+              134,
+              148
+            ],
+            "actualRgb": [
+              153,
+              157,
+              169
+            ],
+            "deltaE": 8.93
+          },
+          {
+            "x": 736,
+            "y": 386,
+            "baselineRgb": [
+              74,
+              80,
+              96
+            ],
+            "actualRgb": [
+              15,
+              23,
+              43
+            ],
+            "deltaE": 26.525
+          }
+        ]
+      }
+    ]
+  },
+  "scopeStatement": "Baseline and current are produced by one capture run seconds apart, because no pre-existing 4-portal two-theme baseline existed. Check 4 therefore measures render reproducibility and seeds the baseline for future directives; it is not a claim of historical pixel stability.",
+  "deltaESanityBlackVsWhite": 100.00000386666815,
+  "verdict": "PASS",
+  "failures": []
+}

@@ -22,6 +22,8 @@
     "test:live-infrastructure": "node --test backend/test/mariadb-migration-gate.test.js tests/certification/mysql-outage.test.mjs tests/certification/outbox-lifecycle.test.mjs",
     "audit:contrast": "node .bridge/evidence/universal-contrast-audit.mjs",
     "audit:viewport": "node .bridge/evidence/viewport-visual-audit.mjs",
+    "audit:visual:capture": "node scripts/dir047-visual-capture.mjs",
+    "audit:visual": "node scripts/dir047-visual-gate.mjs",
     "audit:production": "npm audit --omit=dev --audit-level=high && npm --prefix backend audit --omit=dev --audit-level=high",
     "ci:security": "npm run lint && npm run test:security && npm run test:product && npm run build && npm run audit:production && npm run audit:all",
     "audit:all": "npm audit --audit-level=moderate && npm --prefix backend audit --audit-level=moderate",

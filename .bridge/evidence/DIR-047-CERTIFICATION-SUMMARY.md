@@ -129,8 +129,127 @@ at the assertion it repairs.
 | `dir047-latency-census.json` | Regenerated `setTimeout` triage ledger |
 | `dir047-build-budget.json` / `.log` | Cold-cache build timings |
 | `dir047-release-candidate.txt` | HEAD + release-candidate snapshot hash |
+| `dir047-portal-visual/` (80 PNGs) | 4 portals × 5 breakpoints × 2 themes × 2 passes |
+| `dir047-portal-visual-crawl.json` | Per-shot byte size + live geometry census |
+| `dir047-visual-gate.json` / `.log` | Vector 6 gate: oracle, controls, 40 baseline-vs-current rows |
+| `DIR-047-CERTIFICATION-SUMMARY.md` | This document |
+
+## 8. Reproduce This Certification
+
+```
+node scripts/dir047-route-census.mjs            # regenerate the router census
+npx playwright test --config=playwright.dir047.config.js   # 9/9 AC suite
+npm run test:security                           # 959/959
+npm run test:product                            # 715/715
+npm run lint                                    # 0 errors
+node scripts/dir047-build-budget.mjs            # cold-cache median < 4000ms
+npm run audit:visual:capture                    # 80 PNGs + census
+npm run audit:visual                            # Vector 6 diff gate
+```
 
 **Open item for the Gatekeeper:** the release seal in `.bridge/CERTIFIED_FREEZE_MANIFEST.json` is the
 Lead's action per the approved plan (step 8). This submission provides the release-candidate hash
 (`6ab4daed…`) for sealing; the DIR-047 change set is intentionally left **uncommitted** so the Lead
 can scope the release commit.
+
+---
+
+## 7. Vector 6 — Pure Node.js Visual Diffing + Plan Step 7 PNG Artifacts
+
+The visual-diff engine (`scripts/dir047-visual-diff.mjs`, hand-written PNG unfilter + CIE76 ΔE)
+already existed but **nothing ever called it**. An engine with no runner certifies nothing: a gate
+that has never executed is indistinguishable from one that always passes. Two runners were therefore
+authored and wired to npm:
+
+- `npm run audit:visual:capture` → `scripts/dir047-visual-capture.mjs`
+- `npm run audit:visual` → `scripts/dir047-visual-gate.mjs`
+
+### 7.1 PNG + JSON artifacts (plan step 7)
+
+**80 PNGs** = 4 portals × 5 breakpoints × 2 themes × 2 passes, retained in
+`.bridge/evidence/dir047-portal-visual/{baseline,current}/<theme>/`, plus
+`dir047-portal-visual-crawl.json` carrying per-shot byte size and live geometry.
+
+| Control | Result |
+|---|---|
+| Theme actually applied in every shot | **80/80** |
+| Shots with horizontal overflow > 2px | **0** |
+| Shots rendering a full-viewport overlay | **0** |
+| Empty shots (innerText < 20 chars) | **0** |
+| Render geometry reproducible (baseline vs current) | **0 mismatches** across 40 pairs |
+
+Captured text per portal (min–max innerText): candidate-dashboard 988–1429,
+recruiter-portal 960–1247, enterprise-console 308–670, platform-admin 2381–3004 — i.e. real
+content, not empty shells.
+
+### 7.2 The diff gate, and the proof that it can fail
+
+| Check | Purpose | Result |
+|---|---|---|
+| **Decoder oracle** | Re-decode real captures through `sharp` and require byte-for-byte agreement | **IDENTICAL** on all 3 samples (375×900, 375×900, 1920×900) |
+| **False-positive control** | Diff every capture against *itself* | **0%** drift on all 40 (CLEAN) |
+| **Sensitivity control** | Perturb a real capture by a known +12/channel over a 60×40 block | injected **0.7111%** → detected **0.6753%** (2279 px), worst samples localised inside the injected block |
+| **Baseline vs current** | Apply the directive's 0.05% trigger | min **0%** / max **0.0376%** / mean **0.006542%**; **0 of 40** exceed the trigger |
+
+ΔE sanity: `deltaE76(black, white) = 100.00`.
+
+Because no pre-existing 4-portal two-theme baseline existed (the certified set in
+`crawl-artifacts/screenshots/baseline` is a different corpus at different geometries, so diffing
+across it would compare different layouts rather than drift), the baseline is established by this
+run and check 4 therefore measures **render reproducibility** — the property that makes every future
+visual-regression report meaningful. It is reported as exactly that, not as a claim of historical
+pixel stability. The baseline now exists on disk for later directives.
+
+`npm run audit:visual` → **VERDICT: PASS**, `GATE_EXIT=0`.
+
+---
+
+## 9. Post-Seal Remediation — `[SWOT-T]` Credential Sentinel (found after commit `5760e56b`)
+
+**This section is appended because the failure appeared AFTER the first evidence submission and
+AFTER the release commit. Reporting it rather than leaving it silent is the whole point of a
+certification.**
+
+**Symptom.** Re-running `npm run test:security:static` after the seal commit failed
+`tracked files contain no recognizable private credentials` with four findings:
+
+```
+dist-base/assets/Admin-SzSb43Pk.js      <= /AIza[0-9A-Za-z_-]{30,}/
+dist-base/assets/fire-D5M92hyl.js       <= /AIza[0-9A-Za-z_-]{30,}/
+dist-scoped/assets/Admin-DxLMVdL0.js    <= /AIza[0-9A-Za-z_-]{30,}/
+dist-scoped/assets/fire-D5M92hyl.js     <= /AIza[0-9A-Za-z_-]{30,}/
+```
+
+**Root cause.** The build-budget A/B investigation earlier in DIR-047 produced two extra Vite
+output directories, `dist-base/` and `dist-scoped/`. They were **untracked** at the time the AC
+suite and the 959/959 security run executed — and the sentinel walks `git ls-files`, so untracked
+artifacts were invisible to it and the run was green. The seal commit `5760e56b`
+("[EVIDENCE] DIR-047 … [Verified Tests Pass]", 1319 files) then swept them into git. Build bundles
+embed the client Firebase config, so an `AIza…` literal entered tracked files and the sentinel
+correctly tripped. **The sentinel was right; the commit was wrong.**
+
+This is a genuine `[SWOT-T]` finding rather than a test artefact: the project's own policy (already
+applied to `dist` and `dist-ssr`) is that build output is not source and must not be tracked.
+
+**Remediation.**
+1. `git rm -r --cached dist-base dist-scoped` — untrack the 1100 artifact files, leaving all of them
+   on disk (verified: **1100 files still present**).
+2. `.gitignore` — add `dist-base` and `dist-scoped` beside the existing `dist`/`dist-ssr` entries,
+   with the reason recorded inline.
+
+**Verification.**
+
+| Check | Before | After |
+|---|---|---|
+| `tracked files contain no recognizable private credentials` | **FAIL** | **PASS** |
+| `tests/security-static.test.mjs` | 13 pass / 1 fail | **14 pass / 0 fail**, exit 0 |
+| Tracked files under `dist-base`/`dist-scoped` | 1100 | **0** (all still on disk) |
+| Frozen surface vs `e314f715` | 0 bytes | **0 bytes** (unchanged) |
+| Template families | 51 CV + 4 cover | **51 CV + 4 cover** (unchanged) |
+
+**Action required from the Lead.** The seal commit `5760e56b` still contains the artifacts, so the
+remediation is staged but not committed. A follow-up commit (or an amended seal) is needed to clear
+the index. Nothing else in the certified result set is affected: the A/B directories are not read by
+any test or by the application, and only `scripts/dir047-tailwind-scope-gate.mjs` (a prior
+diagnostic) mentions them by name.
+

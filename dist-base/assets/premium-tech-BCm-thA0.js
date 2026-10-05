@@ -1,1 +1,0 @@
-var e=`/assets/modern-minimal-BPPZY7Kh.png`,t=`/assets/executive-Cxa8KQHk.png`,n=`/assets/creative-dark-SKA3qHhv.png`,r=`/assets/premium-tech-DNIgZfnI.png`;export{e as i,n,t as r,r as t};

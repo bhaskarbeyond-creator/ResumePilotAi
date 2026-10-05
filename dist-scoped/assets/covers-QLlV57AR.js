@@ -1,1 +1,0 @@
-import{t as e}from"./client-D6tBQV8c.js";async function t(){return(await e(`/api/covers`)).covers||[]}export{t as getCovers};
