@@ -134,23 +134,12 @@ at the assertion it repairs.
 | `dir047-visual-gate.json` / `.log` | Vector 6 gate: oracle, controls, 40 baseline-vs-current rows |
 | `DIR-047-CERTIFICATION-SUMMARY.md` | This document |
 
-## 8. Reproduce This Certification
-
-```
-node scripts/dir047-route-census.mjs            # regenerate the router census
-npx playwright test --config=playwright.dir047.config.js   # 9/9 AC suite
-npm run test:security                           # 959/959
-npm run test:product                            # 715/715
-npm run lint                                    # 0 errors
-node scripts/dir047-build-budget.mjs            # cold-cache median < 4000ms
-npm run audit:visual:capture                    # 80 PNGs + census
-npm run audit:visual                            # Vector 6 diff gate
-```
-
 **Open item for the Gatekeeper:** the release seal in `.bridge/CERTIFIED_FREEZE_MANIFEST.json` is the
-Lead's action per the approved plan (step 8). This submission provides the release-candidate hash
-(`6ab4daed…`) for sealing; the DIR-047 change set is intentionally left **uncommitted** so the Lead
-can scope the release commit.
+Lead's action per the approved plan (step 8). Two commits now exist — `5760e56b` (first seal) and
+`902654f9` (which captured the section 9 remediation, the Vector 6 runners and the `package.json`
+script wiring) — and the working tree is clean apart from bridge bookkeeping. The release seal should
+be anchored to `902654f9`, not to `5760e56b`, because the earlier commit still contains the
+credential-bearing `dist-base/`+`dist-scoped/` artifacts described in section 9.
 
 ---
 
@@ -203,6 +192,22 @@ pixel stability. The baseline now exists on disk for later directives.
 `npm run audit:visual` → **VERDICT: PASS**, `GATE_EXIT=0`.
 
 ---
+## 8. Reproduce This Certification
+
+```
+node scripts/dir047-route-census.mjs            # regenerate the router census
+npx playwright test --config=playwright.dir047.config.js   # 9/9 AC suite
+npm run test:security                           # 959/959
+npm run test:product                            # 715/715
+npm run lint                                    # 0 errors
+node scripts/dir047-build-budget.mjs            # cold-cache median < 4000ms
+npm run audit:visual:capture                    # 80 PNGs + census
+npm run audit:visual                            # Vector 6 diff gate
+```
+
+---
+
+
 
 ## 9. Post-Seal Remediation — `[SWOT-T]` Credential Sentinel (found after commit `5760e56b`)
 

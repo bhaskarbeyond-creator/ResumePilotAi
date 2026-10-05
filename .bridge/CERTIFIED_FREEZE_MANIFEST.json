@@ -1,23 +1,11 @@
 {
-  "certifiedAt": "2026-10-05T06:59:09.771Z",
+  "certifiedAt": "2026-10-05T18:44:07.274Z",
   "version": "3.0.0",
   "architecture": "BIDIRECTIONAL_INSTANT_WAKE_V1",
   "status": "FROZEN_AND_CERTIFIED",
   "leadToDevWake": {
     "protocol": "short_uri_prompt_file_dual_dispatch",
     "extensions": [
-      {
-        "id": "rooveterinaryinc.roo-cline",
-        "dir": "rooveterinaryinc.roo-cline-3.54.0",
-        "taskSupported": true,
-        "autoHealed": false
-      },
-      {
-        "id": "rooveterinaryinc.roo-code-nightly",
-        "dir": "rooveterinaryinc.roo-code-nightly-0.0.8179-universal",
-        "taskSupported": true,
-        "autoHealed": false
-      },
       {
         "id": "saoudrizwan.claude-dev",
         "dir": "saoudrizwan.claude-dev-4.1.22-universal",
@@ -34,7 +22,7 @@
     "udpPort": 48222,
     "leadWatcher": {
       "running": true,
-      "pid": 11772,
+      "pid": 34276,
       "udpPort": 48222,
       "scriptExists": true,
       "certifiedBackupExists": true
@@ -43,14 +31,14 @@
   "certifiedFiles": [
     {
       "file": "bridge.cjs",
-      "sha256": "57c124fa48f606ecc0e18609fc2844ee806934930c11784e41f6b8f33f68a26d",
-      "bytes": 173066,
+      "sha256": "ef12109c4d5f9e21ca5bd4123b9094f682707b18060f1d66b9109b1e82b20795",
+      "bytes": 173504,
       "certifiedBackup": "bridge.cjs.certified.bak"
     },
     {
       "file": "lead_watcher.cjs",
-      "sha256": "baeadee9b430d2bf11038bc1c399e3f350ff6b422b93e1a7b690ad8988ecbdd1",
-      "bytes": 25324,
+      "sha256": "5a82542fda827a8be14b213201d572ad8f7279d5760f47a1a35754ea9b1ddc2f",
+      "bytes": 26290,
       "certifiedBackup": "lead_watcher.cjs.certified.bak"
     },
     {
