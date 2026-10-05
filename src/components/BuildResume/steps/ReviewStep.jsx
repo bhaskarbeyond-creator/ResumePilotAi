@@ -13,6 +13,7 @@ import {
 import { calculateAtsScore } from '../../../utils/atsScore';
 import { generateUserAiContent } from '../../../services/aiService';
 import ConfirmRegenerateModal from './components/ConfirmRegenerateModal';
+import CubaInlineNotice from '../../cuba/CubaInlineNotice';
 
 const personalFields = ['firstname', 'lastname'];
 
@@ -41,6 +42,10 @@ export default function ReviewStep({
     const [isJdInputOpen, setIsJdInputOpen] = useState(false);
     const [isGeneratingJd, setIsGeneratingJd] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
+    // DIR-048: precondition message for the autofill action, previously delivered
+    // through window.alert. Kept as state so it renders inline and can be cleared
+    // by the very action it was blocking.
+    const [jdNotice, setJdNotice] = useState('');
 
     const executeAutofillJd = async () => {
         const effectiveRole = String(resumeData.targetRole || resumeData.occupation || '').trim();
@@ -73,9 +78,14 @@ export default function ReviewStep({
     const handleAutofillJd = () => {
         const effectiveRole = String(resumeData.targetRole || resumeData.occupation || '').trim();
         if (!effectiveRole) {
-            alert('Please specify a target role or occupation in Step 1 (Heading) first.');
+            // DIR-048: this used window.alert. The message is a precondition for the
+            // button the user just pressed, so it belongs beside that button — as an
+            // assertive inline notice — not in a blocking OS dialog that steals focus
+            // and cannot be observed by the automation suite.
+            setJdNotice('Please specify a target role or occupation in Step 1 (Heading) first.');
             return;
         }
+        setJdNotice('');
         if (targetJd && targetJd.trim().length >= 30) {
             setShowConfirmModal(true);
             return;
@@ -193,6 +203,17 @@ export default function ReviewStep({
             {/* Target Job Description Matcher */}
             {isJdInputOpen && (
                 <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-2xs space-y-3">
+                    {/* DIR-048: replaces window.alert for the missing-target-role
+                        precondition. Assertive role, rendered at the top of the card
+                        the user is working in, dismissible once the role exists. */}
+                    {jdNotice && (
+                        <CubaInlineNotice
+                            tone="warning"
+                            message={jdNotice}
+                            onDismiss={() => setJdNotice('')}
+                            testId="review-step-jd-notice"
+                        />
+                    )}
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                         <h3 className="text-sm font-bold text-slate-900">Target job description</h3>
                         <div className="flex items-center gap-2">

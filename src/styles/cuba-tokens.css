@@ -238,6 +238,15 @@
   --cuba-shadow-sm: 0 1px 2px rgba(16, 18, 26, 0.05);
   --cuba-shadow-md: 0 1px 2px rgba(16, 18, 26, 0.05), 0 10px 26px -16px rgba(16, 18, 26, 0.28);
   --cuba-shadow-lg: 0 2px 6px rgba(16, 18, 26, 0.06), 0 22px 48px -24px rgba(16, 18, 26, 0.34);
+  /* DIR-048: executive popover elevation — the header menus float higher than
+     any card, so they need a deeper, softer drop than --cuba-shadow-lg. */
+  --cuba-shadow-xl: 0 4px 10px rgba(16, 18, 26, 0.07), 0 28px 60px -28px rgba(16, 18, 26, 0.4);
+  /* DIR-048: executive scrollbar surfaces. Tokens, not raw slate utilities, so
+     the thumb stays theme-anchored (light slate-300 family / dark slate-700
+     family) and every surface it lands on keeps the Cuba palette discipline. */
+  --cuba-scrollbar-thumb: #c7cddd;
+  --cuba-scrollbar-thumb-hover: #aeb6cc;
+  --cuba-scrollbar-track: transparent;
   --cuba-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
   --cuba-dur: 200ms;
   --cuba-sidebar-w: 260px;
@@ -259,6 +268,14 @@
   --cuba-header-search-border: #dfe3ee;
   --cuba-header-menu-bg: #ffffff;
   --cuba-header-menu-border: #dfe3ee;
+  /* DIR-048: executive popover surface. The user menu and notification centre
+     are the two chrome panels that float above scrolling content, so they earn
+     real glassmorphism — but at 0.94 alpha, not the 0.62 used by the search
+     field. A popover carries body text at 12-14px; at 0.62 the backdrop would
+     bleed through enough to drop ink contrast under the 4.5:1 AA bar. At 0.94
+     the blur still reads as glass while the worst-case composite background
+     stays above 14:1 against --cuba-ink. */
+  --cuba-popover-bg: rgba(255, 255, 255, 0.94);
   --cuba-header-divider: rgba(16, 18, 26, 0.08);
   /* kbd shortcut chips (⌘K / Ctrl+K) */
   --cuba-header-kbd-bg: rgba(16, 18, 26, 0.05);
@@ -367,11 +384,16 @@
   --cuba-dark-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
   --cuba-dark-shadow-md: 0 1px 2px rgba(0, 0, 0, 0.5), 0 12px 30px -18px rgba(0, 0, 0, 0.85);
   --cuba-dark-shadow-lg: 0 2px 8px rgba(0, 0, 0, 0.55), 0 26px 56px -28px rgba(0, 0, 0, 0.9);
+  --cuba-dark-shadow-xl: 0 4px 12px rgba(0, 0, 0, 0.6), 0 32px 64px -32px rgba(0, 0, 0, 0.95);
+  --cuba-dark-scrollbar-thumb: #3d4a63;
+  --cuba-dark-scrollbar-thumb-hover: #4e5d7c;
+  --cuba-dark-scrollbar-track: transparent;
   --cuba-dark-header-search-bg: rgba(30, 34, 45, 0.62);
   --cuba-dark-header-search-bg-hover: rgba(38, 43, 56, 0.9);
   --cuba-dark-header-search-border: #3f4557;
   --cuba-dark-header-menu-bg: #1e222d;
   --cuba-dark-header-menu-border: #3f4557;
+  --cuba-dark-popover-bg: rgba(30, 34, 45, 0.94);
   --cuba-dark-header-divider: rgba(255, 255, 255, 0.1);
   --cuba-dark-header-kbd-bg: rgba(255, 255, 255, 0.08);
   --cuba-dark-header-kbd-ink: #b4bcd0;
@@ -455,11 +477,16 @@
   --cuba-shadow-sm: var(--cuba-dark-shadow-sm);
   --cuba-shadow-md: var(--cuba-dark-shadow-md);
   --cuba-shadow-lg: var(--cuba-dark-shadow-lg);
+  --cuba-shadow-xl: var(--cuba-dark-shadow-xl);
+  --cuba-scrollbar-thumb: var(--cuba-dark-scrollbar-thumb);
+  --cuba-scrollbar-thumb-hover: var(--cuba-dark-scrollbar-thumb-hover);
+  --cuba-scrollbar-track: var(--cuba-dark-scrollbar-track);
   --cuba-header-search-bg: var(--cuba-dark-header-search-bg);
   --cuba-header-search-bg-hover: var(--cuba-dark-header-search-bg-hover);
   --cuba-header-search-border: var(--cuba-dark-header-search-border);
   --cuba-header-menu-bg: var(--cuba-dark-header-menu-bg);
   --cuba-header-menu-border: var(--cuba-dark-header-menu-border);
+  --cuba-popover-bg: var(--cuba-dark-popover-bg);
   --cuba-header-divider: var(--cuba-dark-header-divider);
   --cuba-header-kbd-bg: var(--cuba-dark-header-kbd-bg);
   --cuba-header-kbd-ink: var(--cuba-dark-header-kbd-ink);
@@ -537,6 +564,10 @@
     --cuba-shadow-sm: var(--cuba-dark-shadow-sm);
     --cuba-shadow-md: var(--cuba-dark-shadow-md);
     --cuba-shadow-lg: var(--cuba-dark-shadow-lg);
+    --cuba-shadow-xl: var(--cuba-dark-shadow-xl);
+    --cuba-scrollbar-thumb: var(--cuba-dark-scrollbar-thumb);
+    --cuba-scrollbar-thumb-hover: var(--cuba-dark-scrollbar-thumb-hover);
+    --cuba-scrollbar-track: var(--cuba-dark-scrollbar-track);
   }
 }
 /* An explicit light choice always wins over the OS preference, so a user who
@@ -611,6 +642,9 @@
   --shadow-cuba-sm: var(--cuba-shadow-sm);
   --shadow-cuba-md: var(--cuba-shadow-md);
   --shadow-cuba-lg: var(--cuba-shadow-lg);
+  /* DIR-048: bridges the executive popover elevation into the utility layer so
+     `shadow-cuba-xl` emits real CSS instead of silently doing nothing. */
+  --shadow-cuba-xl: var(--cuba-shadow-xl);
   --color-cuba-header-search: var(--cuba-header-search-bg);
   --color-cuba-header-search-hover: var(--cuba-header-search-bg-hover);
   --color-cuba-header-search-border: var(--cuba-header-search-border);
@@ -648,11 +682,84 @@
   border: 1px solid var(--cuba-glass-border);
 }
 
+/* =============================================================================
+ * DIR-048: executive scrollbar
+ * -----------------------------------------------------------------------------
+ * Scrolling popover content (the notification feed) previously rendered the OS
+ * default scrollbar — a wide, opaque, light-grey Windows track that visually
+ * collided with the glass surface it sat on.
+ *
+ * This is token-driven, NOT a raw `scrollbar-thumb-slate-300` utility, so the
+ * thumb follows the theme: it republishes from --cuba-dark-scrollbar-* under
+ * [data-theme=dark] exactly like every other Cuba role token. Both the standard
+ * `scrollbar-*` properties and the legacy `::-webkit-scrollbar` pseudo-elements
+ * are set, because Chromium/WebKit still honour only the latter for the track.
+ *
+ * `scrollbar-gutter: stable` is deliberately NOT set: it would reserve a permanent
+ * empty column and reintroduce the asymmetric padding this class exists to fix.
+ * ========================================================================== */
+.cuba-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--cuba-scrollbar-thumb) var(--cuba-scrollbar-track);
+}
+
+.cuba-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.cuba-scrollbar::-webkit-scrollbar-track {
+  background: var(--cuba-scrollbar-track);
+}
+
+.cuba-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--cuba-scrollbar-thumb);
+  border-radius: 999px;
+  /* Inset border paints a transparent ring so the thumb reads as a slim pill
+     inside an 8px track instead of a full-width block. */
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.cuba-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: var(--cuba-scrollbar-thumb-hover);
+}
+
+.cuba-scrollbar::-webkit-scrollbar-corner {
+  background: var(--cuba-scrollbar-track);
+}
+
+/* =============================================================================
+ * DIR-048: executive popover surface
+ * -----------------------------------------------------------------------------
+ * The account menu and the notification centre are the two panels that float
+ * above scrolling content, so §10 grants them glass. They previously used
+ * `bg-cuba-header-menu shadow-cuba-lg` — an opaque flat card with a card-grade
+ * drop, visually indistinguishable from page content and too shallow to read as
+ * "floating above" it.
+ *
+ * This is a single unlayered class rather than a stack of utilities for one
+ * concrete cascade reason: `.cuba-glass` is ALSO unlayered and sets its own
+ * `border`, so pairing `cuba-glass` with `border-cuba-header-menu-border` makes
+ * the glass border silently win and the menu loses its edge against a light
+ * backdrop. Composing the surface here means the border token is the one that
+ * actually paints, in both themes, with no specificity gamble.
+ * ========================================================================== */
+.cuba-popover {
+  background-color: var(--cuba-popover-bg);
+  -webkit-backdrop-filter: blur(var(--cuba-glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--cuba-glass-blur)) saturate(160%);
+  border: 1px solid var(--cuba-header-menu-border);
+  border-radius: var(--cuba-radius-xl);
+  box-shadow: var(--cuba-shadow-xl);
+}
+
 /* Forced-colors escape hatch: under Windows High Contrast the OS palette must
    win instead of translucent stacking on translucent stacking. */
 @media (forced-colors: active) {
   .cuba-glass,
   .cuba-glass-strong,
+  .cuba-popover,
   .cuba-ai-panel {
     background-color: Canvas;
     border-color: CanvasText;

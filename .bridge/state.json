@@ -1,26 +1,26 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-05T17:37:25.655Z",
-  "eventCount": 1965,
+  "updatedAt": "2026-10-05T21:57:01.745Z",
+  "eventCount": 2051,
   "activeDirectiveId": "DIR-031",
   "activeDirectiveTitle": "Phase 2 Second Review & v10.0 Protocol Re-Audit — Public Marketing, Secondary Pages & Funnels (Re-evaluating DIR-003, DIR-005, DIR-006)",
   "activeDirectiveStatus": "IN_PROGRESS",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-05T16:42:19.938Z",
-  "unreadForLead": 124,
-  "unreadForDev": 173,
+  "stallDeadline": "2026-10-05T20:22:57.589Z",
+  "unreadForLead": 138,
+  "unreadForDev": 223,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-05T16:42:19.938Z",
-    "status": "Resumed: verified prior state (Playwright 9/9, ESLint 0 errors, Tailwind-scope + single-entry build remediations in place). Root-caused build-budget drift to environmental memory pressure (0.69GB free / 15.4GB). Re-measuring honest cold-cache baseline.",
-    "percent": 55
+    "timestamp": "2026-10-05T20:22:57.589Z",
+    "status": "Census complete: 40 native-dialog hits in src (4 window.prompt + bare prompt, ~22 real alert(), rest are legitimate useConfirmDialog awaits). Building Cuba prompt-dialog primitive + inline notice primitive before surgical replacement.",
+    "percent": 20
   },
   "integrity": {
-    "ok": true,
-    "checked": 1965,
-    "legacy": 0,
-    "bad": 0
+    "ok": false,
+    "checked": 2051,
+    "legacy": 22,
+    "bad": 6
   }
 }

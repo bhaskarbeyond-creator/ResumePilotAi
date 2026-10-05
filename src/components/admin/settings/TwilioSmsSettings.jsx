@@ -3,8 +3,15 @@ import { sendSmsNotification } from '../../../services/api/platform';
 import { fetchAdminWithReauth } from '../../../services/adminReauth';
 import { useAdminSession } from '../AdminContext';
 import { FaCommentAlt, FaCheck, FaTimes, FaSpinner, FaPhoneAlt, FaEye, FaEyeSlash, FaPaperPlane } from 'react-icons/fa';
+import { usePromptDialog } from '../../../hooks/usePromptDialog';
 
 const TwilioSmsSettings = () => {
+    // DIR-048: the test-recipient field used window.prompt — unthemeable,
+    // unreachable by the automation suite, blocking, and rendered as an OS sheet
+    // on mobile. It is replaced by the product's own promise-based Cuba prompt
+    // dialog, which validates before it resolves. Failures in this panel already
+    // render through `statusMessage`, so no native alert was ever needed here.
+    const { prompt, promptDialog } = usePromptDialog();
     const { isSuperAdmin } = useAdminSession();
     const [twilioConfig, setTwilioConfig] = useState({
         accountSid: '',
@@ -190,7 +197,21 @@ const TwilioSmsSettings = () => {
                     type="button"
                     disabled={testing || !credentialStatus.configured || !isSuperAdmin}
                     onClick={async () => {
-                        const testNumber = prompt('Enter recipient mobile phone number with country code (e.g. +14155552671 or +919876543210):');
+                        // DIR-048: Cuba prompt dialog replaces window.prompt. The dialog
+                        // validates an E.164-shaped number BEFORE it resolves, so the
+                        // value is either a usable international number or null — the
+                        // unvalidated blank string window.prompt could return is gone.
+                        const testNumber = await prompt({
+                            title: 'Send a test SMS',
+                            description: 'Delivers a real security-alert test message to this number using the credentials saved below.',
+                            label: 'Recipient mobile number',
+                            placeholder: '+14155552671',
+                            confirmLabel: 'Send test SMS',
+                            maxLength: 20,
+                            testId: 'twilio-test-sms-prompt',
+                            validate: (candidate) => (/^\+[1-9]\d{7,14}$/.test(candidate)
+                                || 'Enter a full international number including the leading + (e.g. +14155552671).'),
+                        });
                         if (!testNumber) return;
                         setTesting(true);
                         try {
@@ -219,6 +240,10 @@ const TwilioSmsSettings = () => {
                     <span>{isSuperAdmin ? 'Save SMS Settings' : 'Super Admin only'}</span>
                 </button>
             </div>
+            {/* DIR-048: the prompt dialog replaces window.prompt. CubaModal portals
+                to document.body, so nesting it inside the form does not make it a
+                form control and it cannot submit the settings form. */}
+            {promptDialog}
         </form>
     );
 };

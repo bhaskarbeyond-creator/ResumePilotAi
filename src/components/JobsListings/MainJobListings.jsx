@@ -17,6 +17,7 @@ import fire from '../../conf/fire';
 import { SALARY_FILTER_BANDS, formatSalaryBandLabel, salaryRowMatchesBand } from '../../services/jobs/salaryFilters';
 import AuthWrapper from '../auth/authWrapper/AuthWrapper';
 import { getActiveJobs, getJobFavourites, toggleJobFavourite, getJobById, getSubscriptionStatus, checkIsEmployer } from '../../services/api/platform';
+import CubaInlineNotice from '../cuba/CubaInlineNotice';
 
 // Vacancy cards and counts are sourced only from public, active API results.
 // Normalize only facts returned by the public job API. Missing salary, company,
@@ -131,6 +132,10 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
     const [jobs, setJobs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [jobsError, setJobsError] = useState(false);
+    // DIR-048: favourite-toggle failures were reported with window.alert. The notice
+    // state renders the same message inline above the results so it is themeable,
+    // non-blocking and observable by the automation suite.
+    const [favouriteNotice, setFavouriteNotice] = useState('');
     const [expandedFilter, setExpandedFilter] = useState(null);
     const [selectedJob, setSelectedJob] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -463,7 +468,9 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
             });
         } catch (error) {
             console.error('Error toggling job favorite:', error);
-            alert('Failed to update favorites. Please try again.');
+            // DIR-048: replaces window.alert. The toggle has already been rolled back
+            // by the catch, so this only needs to tell the user to retry.
+            setFavouriteNotice('Failed to update favorites. Please try again.');
         }
     };
 
@@ -585,6 +592,17 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
 
                     {/* Right Content - Results & Listings */}
                     <div className="flex-1 min-w-0">
+                        {/* DIR-048: inline replacement for the favourite-toggle alert */}
+                        {favouriteNotice && (
+                            <div className="mb-4">
+                                <CubaInlineNotice
+                                    tone="error"
+                                    message={favouriteNotice}
+                                    onDismiss={() => setFavouriteNotice('')}
+                                    testId="job-favourite-notice"
+                                />
+                            </div>
+                        )}
                         {/* Results Toolbar */}
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 py-3.5 px-5 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl shadow-xs hover:shadow-sm transition-all duration-200">
                             <div className="flex items-center gap-2.5">

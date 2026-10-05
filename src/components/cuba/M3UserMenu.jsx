@@ -52,6 +52,31 @@ const AVATAR_STYLE = {
     backgroundImage: 'linear-gradient(135deg, var(--cuba-header-avatar-from), var(--cuba-header-avatar-to))',
 };
 
+/**
+ * DIR-048: shared menu-row styling.
+ *
+ * Two deliberate changes over the previous `rounded-cuba-sm px-3 py-2
+ * transition-colors`:
+ *
+ *   1. `min-h-[44px]` — the previous row measured 36px (8px padding + a 20px
+ *      line box). That is under the 44px minimum this platform holds every
+ *      pointer target to, and on a phone the rows were genuinely hard to hit.
+ *      A minimum height fixes it on every viewport without inflating the
+ *      desktop rhythm, because 44px is inside the M3 menu-row band anyway.
+ *
+ *   2. `transition-[background-color,color,transform]` + `hover:translate-x-0.5`
+ *      — a real micro-interaction: the row nudges toward the panel edge as it
+ *      lights up, which is the affordance M3 uses to signal "this row is the
+ *      one you are about to activate". Every transform is neutralised under
+ *      `motion-reduce` so the motion is an enhancement, never a requirement.
+ */
+const MENU_ITEM_CLASS = [
+    'cuba-focusable group flex min-h-[44px] w-full items-center gap-3 rounded-cuba-md px-3 py-2.5 text-left text-sm',
+    'transition-[background-color,color,transform] duration-150 ease-cuba',
+    'hover:translate-x-0.5 active:translate-y-px',
+    'motion-reduce:hover:translate-x-0 motion-reduce:active:translate-y-0 motion-reduce:transform-none',
+].join(' ');
+
 const M3UserMenu = ({ user, theme = 'light', onToggleTheme, onNavigate, onSignOut }) => {
     const [open, setOpen] = useState(false);
     const triggerRef = useRef(null);
@@ -127,7 +152,7 @@ const M3UserMenu = ({ user, theme = 'light', onToggleTheme, onNavigate, onSignOu
                         style={{ backgroundColor: 'var(--cuba-header-presence)' }}
                     />
                 </span>
-                <span className="hidden min-w-0 max-w-[9rem] flex-col items-start leading-tight sm:flex">
+                <span className="hidden min-w-0 max-w-[clamp(7rem,18vw,13rem)] flex-col items-start leading-tight sm:flex">
                     <span className="w-full truncate text-xs font-semibold text-cuba-ink">
                         {name || email}
                     </span>
@@ -152,7 +177,7 @@ const M3UserMenu = ({ user, theme = 'light', onToggleTheme, onNavigate, onSignOu
                     data-testid="cuba-user-menu"
                     onKeyDown={onMenuKeyDown}
                     style={{ zIndex: 'var(--cuba-z-popover)' }}
-                    className="absolute right-0 top-[calc(100%+0.5rem)] w-[min(19rem,calc(100vw-1.5rem))] overflow-hidden rounded-cuba-lg border border-cuba-header-menu-border bg-cuba-header-menu shadow-cuba-lg"
+                    className="cuba-popover absolute right-0 top-[calc(100%+0.5rem)] w-[min(21rem,calc(100vw-1.5rem))] overflow-hidden"
                 >
                     <div className="flex items-start gap-3 px-4 py-3.5">
                         <span
@@ -163,13 +188,19 @@ const M3UserMenu = ({ user, theme = 'light', onToggleTheme, onNavigate, onSignOu
                             {initials}
                         </span>
                         <div className="min-w-0 flex-1">
-                            <p data-testid="cuba-user-menu-name" className="truncate text-sm font-semibold text-cuba-ink">
+                            {/* DIR-048: the identity block WRAPS instead of truncating. A person's
+                                name and their mailbox are identity, not decoration — clipping
+                                "alexandra.vandenberg@…" to "alexandra.vand…" hides the very
+                                value the user opened the menu to confirm. `break-words` on the
+                                name and `break-all` on the mailbox (a single unbreakable token
+                                with no spaces) let both render in full within the 21rem panel. */}
+                            <p data-testid="cuba-user-menu-name" className="text-sm font-semibold leading-snug break-words text-cuba-ink">
                                 {name || '—'}
                             </p>
                             {email && (
-                                <p data-testid="cuba-user-menu-email" className="flex items-center gap-1.5 truncate text-xs text-cuba-ink-muted">
-                                    <FiMail className="h-3 w-3 flex-none" aria-hidden="true" />
-                                    <span className="truncate">{email}</span>
+                                <p data-testid="cuba-user-menu-email" className="mt-0.5 flex items-start gap-1.5 text-xs leading-snug text-cuba-ink-muted">
+                                    <FiMail className="mt-0.5 h-3 w-3 flex-none" aria-hidden="true" />
+                                    <span className="min-w-0 break-all">{email}</span>
                                 </p>
                             )}
                             {role && (
@@ -194,9 +225,12 @@ const M3UserMenu = ({ user, theme = 'light', onToggleTheme, onNavigate, onSignOu
                                     type="button"
                                     role="menuitem"
                                     onClick={closeThen(() => onNavigate?.(item.href))}
-                                    className="cuba-focusable flex w-full items-center gap-3 rounded-cuba-sm px-3 py-2 text-left text-sm text-cuba-ink-muted transition-colors hover:bg-cuba-primary-soft hover:text-cuba-ink"
+                                    className={cx(
+                                        MENU_ITEM_CLASS,
+                                        'text-cuba-ink-muted hover:bg-cuba-primary-soft hover:text-cuba-ink',
+                                    )}
                                 >
-                                    <Icon className="h-4 w-4 flex-none" aria-hidden="true" />
+                                    <Icon className="h-4 w-4 flex-none transition-transform duration-150 ease-cuba group-hover:scale-110" aria-hidden="true" />
                                     {item.label}
                                 </button>
                             );
@@ -209,7 +243,10 @@ const M3UserMenu = ({ user, theme = 'light', onToggleTheme, onNavigate, onSignOu
                                 role="menuitem"
                                 data-testid="cuba-user-menu-theme"
                                 onClick={closeThen(onToggleTheme)}
-                                className="cuba-focusable flex w-full items-center gap-3 rounded-cuba-sm px-3 py-2 text-left text-sm text-cuba-ink-muted transition-colors hover:bg-cuba-primary-soft hover:text-cuba-ink"
+                                className={cx(
+                                    MENU_ITEM_CLASS,
+                                    'text-cuba-ink-muted hover:bg-cuba-primary-soft hover:text-cuba-ink',
+                                )}
                             >
                                 {theme === 'dark'
                                     ? <FiSun className="h-4 w-4 flex-none text-amber-400" aria-hidden="true" />
@@ -228,7 +265,10 @@ const M3UserMenu = ({ user, theme = 'light', onToggleTheme, onNavigate, onSignOu
                             role="menuitem"
                             data-testid="cuba-user-menu-signout"
                             onClick={closeThen(onSignOut)}
-                            className="cuba-focusable flex w-full items-center gap-3 rounded-cuba-sm px-3 py-2 text-left text-sm font-medium text-cuba-danger transition-colors hover:bg-cuba-danger-soft"
+                            className={cx(
+                                MENU_ITEM_CLASS,
+                                'font-medium text-cuba-danger hover:bg-cuba-danger-soft',
+                            )}
                         >
                             <FiLogOut className="h-4 w-4 flex-none" aria-hidden="true" />
                             Sign out

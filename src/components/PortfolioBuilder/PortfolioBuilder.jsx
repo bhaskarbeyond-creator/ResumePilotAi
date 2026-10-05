@@ -15,6 +15,7 @@ import TemplateSelector from './TemplateSelector';
 import { SecurityUtils, loadTemplate } from './templateUtils';
 import Toasts from '../Toasts/Toats';
 import WebCvStudio from './WebCvStudio';
+import usePromptDialog from '../../hooks/usePromptDialog';
 
 // DIR-019 DEFECT 1: lazy boundary for the legacy Puck editor. Because this is a
 // dynamic import, Vite emits `puck.css` as its OWN async chunk that is only
@@ -216,6 +217,10 @@ const PortfolioBuilder = () => {
     const user = useContext(AuthContext);
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
+    // DIR-048: Cuba replacement for window.prompt. Rename used the native dialog,
+    // which cannot be themed to Cuba/M3, blocks the main thread and is not an
+    // element the automation suite can interact with.
+    const { prompt, promptDialog } = usePromptDialog();
     const wantsLegacyBuilder = searchParams.get('legacy') === '1';
     const [portfolioData, setPortfolioData] = useState(initialData);
     const [currentPortfolioId, setCurrentPortfolioId] = useState(null);
@@ -787,7 +792,18 @@ const PortfolioBuilder = () => {
     };
 
     const handleRenamePortfolio = async portfolio => {
-        const title = window.prompt('Rename portfolio', portfolio.draftTitle || portfolio.title || 'Portfolio');
+        // DIR-048: was window.prompt('Rename portfolio', ...). The Cuba dialog keeps
+        // the same semantics — cancel resolves null and the guard below bails out —
+        // while prefilling the real current draft title and capping it at the same
+        // length the persistence layer accepts.
+        const title = await prompt({
+            title: 'Rename portfolio',
+            message: 'Only the draft title changes. Published content stays exactly as it is until you publish.',
+            label: 'Portfolio title',
+            initialValue: portfolio.draftTitle || portfolio.title || 'Portfolio',
+            maxLength: 160,
+            confirmLabel: 'Save title',
+        });
         if (!title?.trim()) return;
         try {
             const result = await renamePortfolio(user.uid, portfolio.id, title, Number(portfolio.revision) || 0);
@@ -1598,6 +1614,8 @@ const PortfolioBuilder = () => {
                 {/* Toast Notifications */}
                 {toast.show && (
                     <div className="fixed top-4 right-4 z-50">
+                        {/* DIR-048: Cuba prompt dialog (replaces window.prompt for rename) */}
+                        {promptDialog}
                         <Toasts type={toast.type} message={toast.message} />
                     </div>
                 )}

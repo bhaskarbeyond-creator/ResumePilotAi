@@ -51,6 +51,11 @@ class Register extends Component {
             enableGitHub,
             oauthLoading: null,
             oauthError: '', // explanation for a social sign-up that failed and redirected back
+            // DIR-048: `alert(msg)` was the fallback when no `throwError` handler was
+            // passed in. A native dialog is unthemeable, blocks the thread and is
+            // invisible to the automation suite, so the same message now renders in
+            // the page using the notice pattern already established for oauthError.
+            formError: '',
             isSubmitting: false, // GAP-01: prevent double-submit
             errors: {}, // Validation errors
         };
@@ -355,14 +360,14 @@ class Register extends Component {
                 // registration attempt. The account owner must sign in or use password reset.
             }
             if (this.props.throwError) this.props.throwError(msg);
-            else alert(msg);
+            else this.setState({ formError: msg });
             console.error('[Register Error]:', error);
         }
     }
 
     render() {
         const { t } = this.props;
-        const { enableGoogle, enableFacebook, enableLinkedIn, enableGitHub, oauthLoading, oauthError } = this.state;
+        const { enableGoogle, enableFacebook, enableLinkedIn, enableGitHub, oauthLoading, oauthError, formError } = this.state;
         const anySocial = enableGoogle || enableFacebook || enableLinkedIn || enableGitHub;
 
         return (
@@ -378,6 +383,16 @@ class Register extends Component {
                             {oauthError}
                         </div>
                     )}
+                    {/* DIR-048: replaces `alert(msg)` for a registration failure when no
+                        throwError handler was supplied. Same message, same assertive
+                        role, but it lives in the page next to the fields it describes
+                        instead of in a blocking OS dialog the suite cannot observe. */}
+                    {formError && (
+                        <div className="oauthNotice" role="alert" data-testid="register-form-error-notice">
+                            {formError}
+                        </div>
+                    )}
+
                     <div className="socialAuth" role="group" aria-label="Register with social account">
                         {/* Google — GAP-07: button for keyboard/a11y */}
                         {enableGoogle && (

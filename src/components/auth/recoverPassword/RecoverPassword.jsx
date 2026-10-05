@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import Input from '../../Form/simple-input/SimpleInput';
 import fire from '../../../conf/fire';
 import { withTranslation } from 'react-i18next';
+import CubaInlineNotice from '../../cuba/CubaInlineNotice';
 
 class RecoverPassword extends Component {
     constructor(props) {
@@ -9,6 +10,12 @@ class RecoverPassword extends Component {
         this.state = {
             email: "",
             isSubmitting: false,
+            // DIR-048: this component used window.alert whenever the host did not
+            // supply throwError/throwSuccess handlers. A native dialog cannot be
+            // themed to Cuba/M3, blocks the main thread and is not an element the
+            // automation suite can assert on, so the message now renders in the page.
+            // Shape: { tone: 'error' | 'success', message: string } | null
+            notice: null,
         }
         this.handleInputs = this.handleInputs.bind(this);
         this.recoverPassword = this.recoverPassword.bind(this);
@@ -29,7 +36,7 @@ class RecoverPassword extends Component {
         const emailAddress = (this.state.email || '').trim();
         if (!emailAddress) {
             if (this.props.throwError) this.props.throwError("Please enter your email address.");
-            else alert("Please enter your email address.");
+            else this.setState({ notice: { tone: 'error', message: "Please enter your email address." } });
             return;
         }
 
@@ -50,7 +57,7 @@ class RecoverPassword extends Component {
 
             const successMsg = `Password reset link sent to ${emailAddress}! Please check your inbox.`;
             if (this.props.throwSuccess) this.props.throwSuccess(successMsg);
-            else alert(successMsg);
+            else this.setState({ notice: { tone: 'success', message: successMsg } });
 
             this.setState({ isSubmitting: false });
             // Delay closing so user can see the success toast
@@ -65,7 +72,7 @@ class RecoverPassword extends Component {
                 await fire.auth().sendPasswordResetEmail(emailAddress);
                 const fallbackMsg = `Password reset link sent to ${emailAddress}! Please check your inbox.`;
                 if (this.props.throwSuccess) this.props.throwSuccess(fallbackMsg);
-                else alert(fallbackMsg);
+                else this.setState({ notice: { tone: 'success', message: fallbackMsg } });
                 this.setState({ isSubmitting: false });
                 setTimeout(() => {
                     if (this.props.closeModal) this.props.closeModal();
@@ -74,13 +81,13 @@ class RecoverPassword extends Component {
                 this.setState({ isSubmitting: false });
                 const errMsg = fbErr.message || err.message;
                 if (this.props.throwError) this.props.throwError(errMsg);
-                else alert(errMsg);
+                else this.setState({ notice: { tone: 'error', message: errMsg } });
             }
         }
     }
     render() {
         const { t } = this.props;
-        const { isSubmitting } = this.state;
+        const { isSubmitting, notice } = this.state;
         return (
             <div className="auth">
                 <div className="head">
@@ -89,6 +96,16 @@ class RecoverPassword extends Component {
                     <p>Enter your email and we'll send you a reset link instantly.</p>
                 </div>
                 <div className="body">
+                    {/* DIR-048: inline replacement for the window.alert fallback used
+                        when no throwError/throwSuccess handler is supplied by the host. */}
+                    {notice && (
+                        <CubaInlineNotice
+                            tone={notice.tone}
+                            message={notice.message}
+                            onDismiss={() => this.setState({ notice: null })}
+                            testId="recover-password-notice"
+                        />
+                    )}
                     <form onSubmit={this.recoverPassword} className="w-full flex flex-col">
                         <Input name='Email' title={t("login.email")} value={this.state.email} handleInputs={this.handleInputs} />
                         <input

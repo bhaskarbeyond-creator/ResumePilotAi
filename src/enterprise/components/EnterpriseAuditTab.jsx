@@ -70,6 +70,12 @@ export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = n
   const [cursor, setCursor] = useState(null);
   const [accumulated, setAccumulated] = useState([]);
   const [linkCopied, setLinkCopied] = useState(false);
+  // DIR-048: when the async Clipboard API is unavailable (insecure context,
+  // denied permission, older browser) the link used to be handed to
+  // window.prompt so the user could select it manually. That native dialog is
+  // unthemeable, blocks the thread and cannot be observed by the automation
+  // suite, so the same link is now surfaced in an inline selectable field.
+  const [manualLink, setManualLink] = useState('');
 
   // Load tenant memberships to resolve raw UIDs into human identities
   const [membersState] = useAsyncResource(() => request('/api/enterprise/memberships'), [request]);
@@ -189,7 +195,10 @@ export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = n
       setLinkCopied(true);
       setTimeout(() => setLinkCopied(false), 2500);
     } catch {
-      window.prompt('Copy this investigation link:', url);
+      // Clipboard write refused: fall back to the inline selectable field rather
+      // than a native prompt dialog. The URL is real — exactly the deep link that
+      // was just built from the active filters — so nothing is fabricated here.
+      setManualLink(url);
     }
   };
 
@@ -263,6 +272,37 @@ export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = n
             </button>
           </div>
         </div>
+
+        {/* DIR-048: clipboard fallback UI. Rendered only when the async Clipboard
+            API refused the write, and it exposes the real deep link in a readonly,
+            auto-selected field with a labelled dismiss control — replacing the
+            window.prompt dialog that used to carry this exact string. */}
+        {manualLink && (
+          <div className="enterprise-inline-actions" style={{ alignItems: 'flex-start', gap: '10px' }}>
+            <label htmlFor="audit-deep-link-fallback" className="text-muted" style={{ fontSize: '0.8rem' }}>
+              Automatic copy was blocked by your browser. Select and copy this investigation link:
+            </label>
+            <input
+              id="audit-deep-link-fallback"
+              data-testid="audit-deep-link-fallback"
+              type="text"
+              readOnly
+              value={manualLink}
+              onFocus={(event) => event.target.select()}
+              onClick={(event) => event.target.select()}
+              className="enterprise-input"
+              style={{ flex: '1 1 320px', minWidth: 0 }}
+            />
+            <button
+              type="button"
+              className="enterprise-button enterprise-button-secondary enterprise-button-sm"
+              onClick={() => setManualLink('')}
+              aria-label="Dismiss investigation link"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
 
         <div className="enterprise-filter-bar" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
           <div className="enterprise-search-wrapper" style={{ flex: '1 1 200px' }}>

@@ -11,10 +11,10 @@ You work under the direct strategic supervision of **Antigravity (Google DeepMin
 - 🛡️ **Security Reviewer**: Enforces zero plaintext token leakage, strict RBAC, and sanitized inputs.
 - 🚦 **Release Gatekeeper**: Evaluates evidence, verifies baseline diffs (diff = 0), and freezes production releases.
 
-### 🔒 FROZEN MODEL & ENGINE INVARIANTS:
-- **Primary Model**: Locked to `qwen2.5-coder-14b-instruct-abliterated` via LM Studio (`http://localhost:1234/v1`).
+### 🔒 ACTIVE ENGINE INVARIANTS:
+- **Primary Engine**: Auto AI Cloud Router on `http://127.0.0.1:48200/v1` (NVIDIA Nemotron 3 Super 120B / Cohere Code / LLaMA 3.2 Vision).
 - **Tool Protocol**: Use exact XML tool blocks (`<replace_in_file>`, `<write_to_file>`, `<execute_command>`). Never simulate tool calls.
-- **Prohibited Models**: Do NOT switch to `DeepSeek-R1-0528-Qwen3-8B` or unapproved reasoning models for coding.
+- **Inference Mode**: High-speed cloud streaming with dynamic task routing and zero local GPU bottleneck.
 
 ### 📋 MANDATORY WORKFLOW INVARIANTS:
 1. **Check Bridge Directives First**:

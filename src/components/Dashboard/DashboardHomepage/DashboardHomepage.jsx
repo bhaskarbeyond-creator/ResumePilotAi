@@ -6,6 +6,7 @@ import { normalizeResumeData } from '../../../utils/resumeData';
 import LoaderAnimation from "../../../assets/animations/lottie-loader.json";
 import { withTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
+import usePromptDialog from "../../../hooks/usePromptDialog";
 import { useLottie } from "lottie-react";
 import { FaCheckCircle, FaChevronRight, FaPencilAlt, FaEllipsisH, FaEnvelope, FaPlus, FaBullseye, FaShareAlt, FaTrashAlt, FaFileAlt, FaClock, FaDownload, FaStar, FaCalendarAlt, FaUsers, FaBars, FaInbox, FaEye, FaSearch, FaTimes, FaChartLine, FaMagic, FaBolt, FaArrowRight, FaLightbulb } from "react-icons/fa";
 import axios from "axios";
@@ -550,7 +551,20 @@ class DashboardHomepage extends Component {
   async renameResume(document) {
     const userId = fire.auth().currentUser?.uid;
     const currentTitle = document.item?.title || 'Untitled Resume';
-    const title = window.prompt('Rename resume', currentTitle);
+    // DIR-048: `window.prompt('Rename resume', currentTitle)` is a native dialog —
+    // unstyled, unthemeable, blocking and invisible to the automation suite. It is
+    // replaced by the Cuba prompt dialog owned by DashboardHomepageWrapper. Cancel
+    // still resolves null, so the guard below behaves exactly as it did before.
+    const title = typeof this.props.prompt === 'function'
+      ? await this.props.prompt({
+          title: 'Rename resume',
+          message: 'Give this resume a title that describes the role you are targeting.',
+          label: 'Resume title',
+          initialValue: currentTitle,
+          maxLength: 160,
+          confirmLabel: 'Save title',
+        })
+      : null;
     if (!userId || !title?.trim() || title.trim() === currentTitle) return;
     try {
       const data = normalizeResumeData({ ...document.item, title: title.trim().slice(0, 160) });
@@ -1840,7 +1854,17 @@ class DashboardHomepage extends Component {
 // Wrapper component to provide navigation to class component
 const DashboardHomepageWrapper = (props) => {
   const navigate = useNavigate();
-  return <DashboardHomepage {...props} navigate={navigate} />;
+  // DIR-048: the dashboard itself is a class component and therefore cannot call
+  // hooks, so the Cuba prompt dialog is owned here and handed down as a prop.
+  // `renameResume` used window.prompt; it now awaits this instead. The dialog is
+  // rendered by this wrapper so it is part of the real component tree.
+  const { prompt, promptDialog } = usePromptDialog();
+  return (
+    <>
+      <DashboardHomepage {...props} navigate={navigate} prompt={prompt} />
+      {promptDialog}
+    </>
+  );
 };
 
 const MyComponent = withTranslation("common")(DashboardHomepageWrapper);
