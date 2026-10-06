@@ -41,6 +41,7 @@
     "test:dir024:browser": "playwright test --config=playwright.dir024.config.js",
     "test:dir026:browser": "playwright test --config=playwright.dir026.config.js",
     "test:dir040:browser": "playwright test --config=playwright.dir040.config.js",
+    "test:dir048:browser": "playwright test --config=playwright.dir048.config.js",
     "security:headers:sync": "node scripts/generate-security-headers.mjs",
     "security:headers:check": "node scripts/generate-security-headers.mjs --check && node scripts/verify-security-headers.mjs",
     "test:full-system-playwright": "node tests/full-system-audit.mjs",

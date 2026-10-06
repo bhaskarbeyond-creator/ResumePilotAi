@@ -60,8 +60,11 @@ test('S9: portal pages defer the gutter to the Cuba shell without regressing leg
 
 test('S10 tablet: the rail appears at md and is always compact in the tablet band', () => {
     const shell = read(SHELL);
-    assert.match(shell, /TABLET_RAIL_QUERY = '\(min-width: 768px\) and \(max-width: 1023\.98px\)'/);
+    assert.match(shell, /TABLET_RAIL_QUERY = '\(min-width: 768px\) and \(max-width: 1024px\)'/);
     assert.match(shell, /const railCollapsed = collapsed \|\| tabletRail;/);
+    // The collapse toggle is offered only ABOVE the tablet band: inside it the
+    // rail is forced compact, so a toggle there would be a dead control.
+    assert.match(shell, /hover:bg-cuba-primary-soft min-\[1025px\]:inline-flex/);
     // The sidebar is visible from md up, and the drawer/hamburger hand over there.
     assert.match(shell, /border-l-0 md:flex/);
     assert.match(shell, /hover:bg-cuba-primary-soft md:hidden/);

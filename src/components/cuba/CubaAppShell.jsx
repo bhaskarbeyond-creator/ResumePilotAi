@@ -44,7 +44,7 @@ const readCollapsed = () => {
  * `matchMedia` is feature-guarded so this module stays importable in plain
  * Node (source tests) where `window` does not exist.
  */
-const TABLET_RAIL_QUERY = '(min-width: 768px) and (max-width: 1023.98px)';
+const TABLET_RAIL_QUERY = '(min-width: 768px) and (max-width: 1024px)';
 const useTabletRail = () => {
     const read = () => typeof window !== 'undefined' && typeof window.matchMedia === 'function'
         ? window.matchMedia(TABLET_RAIL_QUERY).matches
@@ -280,7 +280,7 @@ const CubaAppShell = ({
                     onClick={() => setCollapsed((value) => !value)}
                     aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                     aria-pressed={collapsed}
-                    className="cuba-focusable hidden h-10 w-10 flex-none items-center justify-center rounded-cuba-sm text-cuba-ink-muted hover:bg-cuba-primary-soft lg:inline-flex"
+                    className="cuba-focusable hidden h-10 w-10 flex-none items-center justify-center rounded-cuba-sm text-cuba-ink-muted hover:bg-cuba-primary-soft min-[1025px]:inline-flex"
                 >
                     <FiChevronLeft
                         className={cx('h-5 w-5 transition-transform duration-200', collapsed && 'rotate-180')}
