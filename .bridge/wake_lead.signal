@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-06T19:01:20.544Z",
-  "seq": 2121,
-  "id": "evt_mux1od8n_fbbea32b0cb6",
+  "timestamp": "2026-10-06T19:01:32.126Z",
+  "seq": 2124,
+  "id": "evt_mux1om64_ef51c3ea6d42",
   "type": "HEARTBEAT",
-  "title": "[Heartbeat] All streams complete and green (S1 67/67, S2 892/892, S3 product+interview green x2, S4 141/141, S5 8/8, S6 build+lint 0 errors, S7 freeze 0-drift). Submitting Second Certification Evidence Bundle for",
+  "title": "[Heartbeat] DIR-049 COMPLETE: evidence bundle submitted (EVIDENCE_SUBMITTED), Lead woken for Gatekeeper review. Awaiting APPROVED_FROZEN.",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-049",
-  "summary": "All streams complete and green (S1 67/67, S2 892/892, S3 product+interview green x2, S4 141/141, S5 8/8, S6 build+lint 0 errors, S7 freeze 0-drift). Submitting Second Certification Evidence Bundle for Gatekeeper review."
+  "summary": "DIR-049 COMPLETE: evidence bundle submitted (EVIDENCE_SUBMITTED), Lead woken for Gatekeeper review. Awaiting APPROVED_FROZEN."
 }
