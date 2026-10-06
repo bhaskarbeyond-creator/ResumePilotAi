@@ -29,6 +29,11 @@ test('message writes reject non-participants and derive sender identity from the
   assert.match(send, /req\.user\.uid/);
   assert.doesNotMatch(send, /senderId\s*=\s*req\.body/);
   assert.match(send, /INSERT INTO conversation_messages/);
+  // DIR-048: the recipient's notification must carry WHO wrote and a preview of
+  // WHAT was written — the former generic literals made every row identical.
+  assert.match(send, /New message from \$\{senderName\}/);
+  assert.match(send, /const preview = String\(text\)/);
+  assert.doesNotMatch(send, /title: 'New message', message: 'You have a new message\.'/);
 });
 
 test('conversation creation is limited to the application parties and idempotent', async () => {

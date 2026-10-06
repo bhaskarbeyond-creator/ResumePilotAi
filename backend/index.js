@@ -2320,9 +2320,24 @@ app.post('/api/messages/send', async (req, res) => {
                 // data plane is never required.
                 const { getRepository } = require('./repositories');
                 const repo = getRepository();
+                // DIR-048: a generic "New message" bubble tells the recipient
+                // nothing and makes every row in the feed identical. Resolve the
+                // sender's display name and a bounded preview of the body at
+                // write time; both are best-effort, because the message row is
+                // already persisted and a profile read must not undo that.
+                let senderName = '';
+                try {
+                    const sender = (await repo.getUser(req.user.uid)) || {};
+                    const senderProfile = sender.profile || {};
+                    senderName = String(senderProfile.name || sender.displayName || `${sender.firstname || ''} ${sender.lastname || ''}`.trim() || '')
+                        .replace(/\p{Cc}/gu, ' ').trim().slice(0, 80);
+                } catch { senderName = ''; }
+                const preview = String(text).replace(/[\p{Cc}\s]+/gu, ' ').trim().slice(0, 120);
                 await repo.saveNotification(recipientUid, eventId, {
-                    eventId, state: 'NOTIFICATION_CREATED', deliveryState: 'NOT_REQUESTED', type: 'message', title: 'New message', message: 'You have a new message.',
-                    data: { conversationId }, read: false,
+                    eventId, state: 'NOTIFICATION_CREATED', deliveryState: 'NOT_REQUESTED', type: 'message',
+                    title: senderName ? `New message from ${senderName}` : 'New message',
+                    message: preview || 'You have a new message.',
+                    data: { conversationId, senderId: req.user.uid }, read: false,
                     createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
                 });
             } catch { notificationState = 'NOTIFICATION_CREATION_FAILED'; }

@@ -16,6 +16,7 @@ const nodemailer = require('nodemailer');
 const { getPool, getMigrationStatus } = require('../database/mysql');
 const { assertPublicNetworkTarget } = require('../security/network');
 const { getOutboxStatus } = require('../enterprise/enterpriseOutbox');
+const { getAiOperationalStatus } = require('./aiOperationalProbe');
 
 const STATE = Object.freeze({
   OPERATIONAL: 'OPERATIONAL',
@@ -437,12 +438,43 @@ async function buildServices(app) {
   const aiEnvKeys = ['NVIDIA_API_KEY', 'GEMINI_API_KEY', 'OPENAI_API_KEY', 'GROQ_API_KEY', 'OPENROUTER_API_KEY', 'DEEPSEEK_API_KEY'];
   const configuredAiCount = aiEnvKeys.filter(key => truthy(process.env[key])).length
     + Object.values(aiStored).filter(value => truthy(value?.apiKey || value?.key)).length;
+  // DIR-048: a non-billable model-catalog probe (`GET {base}/models`) turns the
+  // formerly unmeasurable `ai-providers` row into a real observation. It spends
+  // no tokens, publishes no credential, and is cached by its own TTL, so this
+  // costs at most one round per provider per probe TTL no matter how often the
+  // snapshot is rebuilt. The settings hint re-uses the rows this collector has
+  // ALREADY loaded, so the snapshot's query budget is unchanged. A probe
+  // failure is not a verdict: the row stays UNKNOWN.
+  const aiObservance = configuredAiCount > 0
+    ? await observe('ai.model-catalog', () => getAiOperationalStatus({
+      settings: {
+        secrets: aiStored,
+        publicConfig: settings.public_config || {},
+        systemSettings: settings.system_settings || {},
+      },
+    }))
+    : null;
+  const aiVerdict = aiObservance?.ok ? aiObservance.value : null;
+  const aiState = configuredAiCount === 0 ? STATE.NOT_CONFIGURED
+    : aiVerdict?.state === 'ready' ? STATE.OPERATIONAL
+      : aiVerdict?.state === 'degraded' ? STATE.DEGRADED
+        : aiVerdict?.state === 'unavailable' ? STATE.UNAVAILABLE
+          : STATE.UNKNOWN;
+  const aiConfigured = Number.isInteger(aiVerdict?.configured) ? aiVerdict.configured : configuredAiCount;
+  const aiReachable = Number.isInteger(aiVerdict?.reachable) ? aiVerdict.reachable : 0;
   services.push(service({ id: 'ai-providers', name: 'AI Providers', group: GROUP.INTEGRATIONS,
-    state: configuredAiCount > 0 ? STATE.UNKNOWN : STATE.NOT_CONFIGURED,
+    state: aiState,
     configuration: configuredAiCount > 0 ? CONFIG.CONFIGURED : CONFIG.NOT_CONFIGURED,
-    reason: configuredAiCount > 0 ? `${configuredAiCount} provider credential source(s) are configured, but no billable inference is run by health collection.` : 'No AI provider credential is configured.',
+    reason: configuredAiCount === 0 ? 'No AI provider credential is configured.'
+      : aiState === STATE.OPERATIONAL ? `${aiReachable} of ${aiConfigured} configured provider credential(s) answered a non-billable model-catalog probe; no billable inference is run by health collection.`
+        : aiState === STATE.DEGRADED ? `${aiConfigured} provider credential(s) are configured, but none could be confirmed: the model-catalog probe was inconclusive.`
+          : aiState === STATE.UNAVAILABLE ? `${aiConfigured} provider credential(s) are configured, but every provider endpoint rejected the model-catalog probe.`
+            : `${configuredAiCount} provider credential source(s) are configured, but the model-catalog probe could not be completed.`,
     dependency: 'Configured AI provider APIs', retryable: false,
-    errorCategory: configuredAiCount > 0 ? 'DATA_UNAVAILABLE' : 'CONFIGURATION_MISSING',
+    errorCategory: aiState === STATE.OPERATIONAL ? null
+      : aiState === STATE.UNAVAILABLE ? (aiVerdict?.cause === 'host-blocked' ? 'CONFIGURATION_MISSING' : 'AUTHENTICATION_REJECTED')
+        : configuredAiCount === 0 ? 'CONFIGURATION_MISSING' : 'DATA_UNAVAILABLE',
+    metrics: { configuredProviders: configuredAiCount, reachableProviders: aiReachable },
     affectedFeatures: ['AI writing', 'grammar', 'resume parsing'], affectedApis: ['/api/generate-*', '/api/ai/*'], affectedUiModules: ['/dashboard'], checkedAt }));
 
   const chromiumPath = process.env.PUPPETEER_EXECUTABLE_PATH || process.env.CHROMIUM_PATH || '';
@@ -675,6 +707,23 @@ async function getHealthSnapshot(app, { force = false } = {}) {
 }
 function resetHealthCache() { cachedSnapshot = null; cachedAt = 0; inFlight = null; }
 
+/**
+ * Projects the `ai-providers` health row onto the PUBLIC, secret-free ai signal
+ * consumed by `useAiEngineStatus`. Booleans and one bounded integer count only.
+ *
+ * An UNKNOWN row (configuration unreadable, or the probe not yet completed)
+ * withholds every boolean claim on purpose: the client can then answer UNKNOWN
+ * for an absent measurement instead of flattening it into "unavailable".
+ */
+function projectAiAvailability(aiService) {
+  const configured = Number(aiService?.metrics?.configuredProviders || 0);
+  const state = aiService?.state;
+  if (state === STATE.OPERATIONAL) return Object.freeze({ providers: true, available: true, degraded: false, configured });
+  if (state === STATE.DEGRADED) return Object.freeze({ providers: false, available: false, degraded: true, configured });
+  if (state === STATE.UNAVAILABLE || state === STATE.NOT_CONFIGURED) return Object.freeze({ providers: false, available: false, degraded: false, configured });
+  return Object.freeze({ configured });
+}
+
 async function getServiceAvailability(app) {
   const snapshot = await getHealthSnapshot(app);
   const byId = new Map(snapshot.services.map(item => [item.id, item]));
@@ -687,6 +736,7 @@ async function getServiceAvailability(app) {
       paytm: usable('payments-paytm'), phonepe: usable('payments-phonepe'),
     },
     enterpriseTenancy: usable('enterprise-tenancy'),
+    ai: projectAiAvailability(byId.get('ai-providers')),
   };
 }
 
@@ -739,6 +789,6 @@ async function runServiceTest(app, serviceId) {
 module.exports = {
   STATE, CONFIG, GROUP, TESTABLE_SERVICES,
   buildApiMatrix, categorizeError, collectRoutes, computeSnapshot, getHealthSnapshot,
-  getServiceAvailability, resetHealthCache, runServiceTest, summarize,
+  getServiceAvailability, projectAiAvailability, resetHealthCache, runServiceTest, summarize,
   __internal: { resolvePaymentProviders, resolveOAuthProviders, resolveSmtp, dependencyFor, moduleForPath, authRequirementFor, worstState },
 };

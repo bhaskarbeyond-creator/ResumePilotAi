@@ -253,6 +253,14 @@ describe('Cuba AI integrity — no fabricated telemetry', () => {
         assert.match(status, /DESCRIPTOR\[status\] \|\| DESCRIPTOR\[AI_STATUS\.UNKNOWN\]/);
     });
 
+    it('reads an explicit degraded verdict before any boolean can flatten it', () => {
+        const degradedRead = hook.indexOf('if (ai.degraded === true) return AI_STATUS.DEGRADED;');
+        const providersRead = hook.indexOf("if (typeof ai.providers === 'boolean')");
+        assert.ok(degradedRead !== -1, 'the hook must consume an explicit degraded verdict');
+        assert.ok(providersRead !== -1 && degradedRead < providersRead,
+            'a degraded verdict must be read before the providers boolean turns it into "unavailable"');
+    });
+
     it('uses the brand mark and states meaning to assistive technology', () => {
         assert.match(beacon, /✦/);
         assert.match(beacon, /cuba-sr-only/);

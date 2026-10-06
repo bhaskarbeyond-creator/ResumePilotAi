@@ -1599,17 +1599,19 @@ function resolveDiscoveryEnabled(environment = {}) {
     return process.env.NODE_ENV !== 'test';
 }
 
-async function loadProviderConfiguration(environment = process.env) {
-    if (configurationCache && configurationCache.expiresAt > Date.now()) {
-        return cloneConfiguration(configurationCache.configuration);
-    }
-    const { getRepository } = require('../repositories');
-    const repo = getRepository();
-    const [secrets, publicConfig, systemSettings] = await Promise.all([
-        repo.getSetting('ai_providers'),
-        repo.getSetting('public_config'),
-        repo.getSetting('system_settings'),
-    ]);
+/**
+ * Pure projection of provider configuration from settings the caller has
+ * ALREADY loaded (`ai_providers`, `public_config`, `system_settings` rows).
+ *
+ * WHY IT IS SEPARATE FROM loadProviderConfiguration: the credential-precedence
+ * rule (env over stored, stored over legacy) must exist exactly once, but not
+ * every caller can afford the three repository reads. Platform health
+ * (`getServiceAvailability`) already holds the same rows from its single
+ * `SELECT category, data FROM system_settings`, and its query budget forbids a
+ * duplicate read — so it calls THIS function with its existing snapshot and
+ * gets the exact configuration the runtime would have resolved.
+ */
+function buildProviderConfiguration(environment = {}, { secrets = null, publicConfig = null, systemSettings = null } = {}) {
     const providerSecrets = secrets || {};
     const publicAi = publicConfig?.ai || {};
     const legacyAi = systemSettings?.ai || {};
@@ -1631,7 +1633,7 @@ async function loadProviderConfiguration(environment = process.env) {
             enabled: effectiveAi[ENABLE_FIELDS[provider]] !== false && Boolean(key),
         };
     }
-    const configuration = {
+    return {
         primary: PROVIDERS.includes(effectiveAi.provider) ? effectiveAi.provider : (providers.nvidia?.enabled ? 'nvidia' : 'gemini'),
         enableFallback: effectiveAi.enableFallback !== false,
         temperature: clampNumber(effectiveAi.temperature, 0, 1, 0.7),
@@ -1642,6 +1644,20 @@ async function loadProviderConfiguration(environment = process.env) {
         tenantId: null,
         discoveryEnabled: resolveDiscoveryEnabled(environment),
     };
+}
+
+async function loadProviderConfiguration(environment = process.env) {
+    if (configurationCache && configurationCache.expiresAt > Date.now()) {
+        return cloneConfiguration(configurationCache.configuration);
+    }
+    const { getRepository } = require('../repositories');
+    const repo = getRepository();
+    const [secrets, publicConfig, systemSettings] = await Promise.all([
+        repo.getSetting('ai_providers'),
+        repo.getSetting('public_config'),
+        repo.getSetting('system_settings'),
+    ]);
+    const configuration = buildProviderConfiguration(environment, { secrets, publicConfig, systemSettings });
     configurationCache = { configuration, expiresAt: Date.now() + CONFIGURATION_CACHE_MS };
     return cloneConfiguration(configuration);
 }
@@ -2113,6 +2129,7 @@ module.exports = {
     computeProviderOrder,
     containsInstructionOverride,
     buildClarificationPrompt,
+    buildProviderConfiguration,
     buildGroundedPrompt,
     buildLegacyPrompt,
     buildResumeParsingPrompt,

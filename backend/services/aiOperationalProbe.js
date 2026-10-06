@@ -71,9 +71,19 @@ function resetAiProbeCache() {
  * runtime's own canonical resolver rather than re-deriving a second opinion
  * about which credential wins (env vs stored vs legacy).
  */
-async function resolveConfiguredProviders() {
-  const { loadProviderConfiguration } = require('./aiRuntime');
-  const configuration = await loadProviderConfiguration();
+/**
+ * Resolves which providers to probe.
+ *   - with an injected list (tests): validated in place, nothing is read
+ *   - with a settings hint (platform health): the caller's already-loaded
+ *     `system_settings` rows feed the runtime's canonical builder, so this
+ *     costs ZERO additional repository reads
+ *   - otherwise: the runtime's own repository-backed resolver
+ */
+async function resolveConfiguredProviders(settings = null) {
+  const { loadProviderConfiguration, buildProviderConfiguration } = require('./aiRuntime');
+  const configuration = settings
+    ? buildProviderConfiguration(process.env, settings)
+    : await loadProviderConfiguration();
   const providers = configuration?.providers || {};
   const configured = [];
   for (const [id, config] of Object.entries(providers)) {
@@ -97,27 +107,27 @@ async function probeProvider({ id, providerConfig }, fetchImpl) {
   const canProbe = adapter
     && typeof adapter.buildDiscoveryRequest === 'function'
     && typeof adapter.normalizeDiscoveryResponse === 'function';
-  if (!canProbe) return { id, reachable: false, inconclusive: true };
+  if (!canProbe) return { id, reachable: false, inconclusive: true, cause: 'unsupported-adapter' };
 
   let request;
   try {
     request = adapter.buildDiscoveryRequest({ providerConfig });
   } catch {
-    return { id, reachable: false, inconclusive: true };
+    return { id, reachable: false, inconclusive: true, cause: 'invalid-request' };
   }
 
   let parsed;
   try {
     parsed = new URL(String(request?.url || ''));
   } catch {
-    return { id, reachable: false, inconclusive: true };
+    return { id, reachable: false, inconclusive: true, cause: 'invalid-request' };
   }
 
   // A BYOK base URL is data, not a trusted constant: refuse internal targets.
   try {
     await assertPublicNetworkTarget(parsed.hostname);
   } catch {
-    return { id, reachable: false, inconclusive: false };
+    return { id, reachable: false, inconclusive: false, cause: 'host-blocked' };
   }
 
   try {
@@ -129,13 +139,122 @@ async function probeProvider({ id, providerConfig }, fetchImpl) {
     );
     const status = Number(response?.status);
     // A rejected credential is a definitive "not usable", not an unknown.
-    if (status === 401 || status === 403) return { id, reachable: false, inconclusive: false };
-    if (!response?.ok) return { id, reachable: false, inconclusive: true };
-    const body = await response.json().catch(() => null);
-    const models = adapter.normalizeDiscoveryResponse(body);
-    return { id, reachable: Array.isArray(models) && models.length > 0, inconclusive: false };
+    if (status === 401 || status === 403) return { id, reachable: false, inconclusive: false, cause: 'credential-rejected' };
+    if (!response?.ok) return { id, reachable: false, inconclusive: true, cause: 'transport' };
+    let body;
+    try {
+      body = await response.json();
+    } catch {
+      // HTTP 200 with an unreadable body: the answer could not be determined.
+      return { id, reachable: false, inconclusive: true, cause: 'unparseable-catalog' };
+    }
+    let models;
+    try {
+      models = adapter.normalizeDiscoveryResponse(body);
+    } catch {
+      return { id, reachable: false, inconclusive: true, cause: 'unparseable-catalog' };
+    }
+    if (!Array.isArray(models) || models.length === 0) {
+      // Well-formed but empty: the endpoint answered, and the answer is that it
+      // can serve no model. That is a determination, not an unknown.
+      return { id, reachable: false, inconclusive: false, cause: 'empty-catalog' };
+    }
+    return { id, reachable: true, inconclusive: false, cause: 'reachable' };
   } catch {
     // Timeout / DNS / TLS / abort: we learned nothing, so say so.
-    return { id, reachable: false, inconclusive: true };
+    return { id, reachable: false, inconclusive: true, cause: 'transport' };
   }
 }
+
+/**
+ * Folds the per-provider verdicts into ONE availability claim:
+ *   ready       — at least one configured provider positively answered
+ *   degraded    — nothing was confirmed, and at least one answer was inconclusive
+ *   unavailable — every configured provider was definitively rejected
+ * An inconclusive result can never be upgraded into "ready".
+ */
+function foldVerdict(results) {
+  const reachable = results.filter((item) => item.reachable).length;
+  if (reachable > 0) return { state: AI_AVAILABILITY.READY, cause: 'reachable' };
+  if (results.some((item) => item.inconclusive)) return { state: AI_AVAILABILITY.DEGRADED, cause: 'inconclusive' };
+  const hostBlocked = results.some((item) => item.cause === 'host-blocked');
+  return { state: AI_AVAILABILITY.UNAVAILABLE, cause: hostBlocked ? 'host-blocked' : 'credential-rejected' };
+}
+
+/**
+ * Resolves the transport this probe may use. An explicitly injected fetchImpl
+ * is always honored (unit tests inject stubs). An implicitly resolved transport
+ * is refused in test runs — the same posture as DiscoveryService — so a test
+ * that happens to inherit real credentials still makes no outbound connection;
+ * `AI_OPERATIONAL_PROBE_ALLOW=1` opts a harness in deliberately.
+ */
+function resolveProbeFetch(fetchImpl) {
+  if (typeof fetchImpl === 'function') return fetchImpl;
+  if (process.env.NODE_ENV === 'test' && process.env.AI_OPERATIONAL_PROBE_ALLOW !== '1') return null;
+  return typeof globalThis.fetch === 'function' ? globalThis.fetch : null;
+}
+
+/** Test seam: validates an injected provider list; malformed entries are skipped. */
+function normalizeInjectedProviders(providers) {
+  if (!Array.isArray(providers)) return null;
+  const out = [];
+  for (const entry of providers) {
+    const id = String(entry?.id || '').trim();
+    const key = typeof entry?.providerConfig?.key === 'string' ? entry.providerConfig.key.trim() : '';
+    if (!id || !key) continue;
+    out.push({ id, providerConfig: { key, baseUrl: String(entry.providerConfig.baseUrl || '') } });
+    if (out.length >= MAX_PROBED_PROVIDERS) break;
+  }
+  return out;
+}
+
+
+/**
+ * The one public read. Returns a verdict and never throws for provider-level
+ * outcomes: `{ state, cause, configured, reachable, checkedAt }`.
+ *
+ * A configuration-read failure (e.g. the settings store is unreachable) DOES
+ * propagate, so the caller publishes UNKNOWN rather than a fabricated verdict.
+ */
+async function getAiOperationalStatus({ fetchImpl = null, force = false, providers = null, settings = null } = {}) {
+  const now = Date.now();
+  if (!force && cached && (now - cachedAt) < PROBE_TTL_MS) return cached;
+  if (inFlight) return inFlight;
+  inFlight = (async () => {
+    try {
+      const injected = normalizeInjectedProviders(providers);
+      const configured = injected || await resolveConfiguredProviders(settings);
+      const fetcher = resolveProbeFetch(fetchImpl);
+      let verdict;
+      if (!configured.length) {
+        verdict = { state: AI_AVAILABILITY.UNAVAILABLE, cause: 'unconfigured', configured: 0, reachable: 0 };
+      } else if (!fetcher) {
+        // Configured, but this runtime refuses (or lacks) a transport. That is
+        // precisely "configured, not confirmed" — never "ready".
+        verdict = { state: AI_AVAILABILITY.DEGRADED, cause: 'no-transport', configured: configured.length, reachable: 0 };
+      } else {
+        const results = await Promise.all(configured.map((entry) => probeProvider(entry, fetcher)
+          .catch(() => ({ id: entry.id, reachable: false, inconclusive: true, cause: 'transport' }))));
+        verdict = {
+          ...foldVerdict(results),
+          configured: configured.length,
+          reachable: results.filter((item) => item.reachable).length,
+        };
+      }
+      cached = Object.freeze({ ...verdict, checkedAt: new Date().toISOString() });
+      cachedAt = Date.now();
+      return cached;
+    } finally {
+      inFlight = null;
+    }
+  })();
+  return inFlight;
+}
+
+module.exports = {
+  AI_AVAILABILITY,
+  getAiOperationalStatus,
+  probeProvider,
+  resetAiProbeCache,
+};
+

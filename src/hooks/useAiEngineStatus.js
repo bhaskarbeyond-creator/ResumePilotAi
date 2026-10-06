@@ -23,9 +23,13 @@ const readAiSignal = (payload) => {
     const ai = payload?.ai;
     if (typeof ai === 'boolean') return ai ? AI_STATUS.READY : AI_STATUS.UNAVAILABLE;
     if (ai && typeof ai === 'object') {
+        // An explicit degraded verdict is its own honest state — configured but
+        // not confirmed — and must be read BEFORE the `providers`/`available`
+        // booleans; otherwise it would be flattened into a hard "unavailable"
+        // claim the backend never made.
+        if (ai.degraded === true) return AI_STATUS.DEGRADED;
         if (typeof ai.providers === 'boolean') return ai.providers ? AI_STATUS.READY : AI_STATUS.UNAVAILABLE;
         if (typeof ai.available === 'boolean') return ai.available ? AI_STATUS.READY : AI_STATUS.UNAVAILABLE;
-        if (typeof ai.degraded === 'boolean' && ai.degraded) return AI_STATUS.DEGRADED;
     }
     // The contract does not (yet) carry an AI signal. That is an absent
     // measurement, so it maps to UNKNOWN rather than to a guess.

@@ -25,6 +25,7 @@ const files = {
   dashboard: 'src/components/admin/dashboard/dashboard.jsx',
   attention: 'src/components/admin/attention/PlatformAttention.jsx',
   availability: 'src/hooks/useServiceAvailability.js',
+  probe: 'backend/services/aiOperationalProbe.js',
   plans: 'src/components/Billing/Plans/Plans.jsx',
   oauth: 'src/utils/oauthResolver.js',
   login: 'src/components/auth/login/Login.jsx',
@@ -116,6 +117,32 @@ test('the public availability contract exposes booleans only, never configuratio
   assert.match(index, /\/api\/service-availability/);
   assert.match(index, /'\/service-availability'/, 'must be in publicApiPaths so signed-out login pages can read it');
   assert.match(index, /no-store/);
+});
+
+test('the availability payload publishes an honest ai signal from the probed row', async () => {
+  const engine = await source('engine');
+  const start = engine.indexOf('async function getServiceAvailability');
+  const body = engine.slice(start, engine.indexOf('\n}', start));
+  // The signal is projected from the collected row — a single source of truth —
+  // and an UNKNOWN row withholds every boolean so the client answers UNKNOWN.
+  assert.match(body, /ai: projectAiAvailability\(byId\.get\('ai-providers'\)\)/);
+  assert.match(engine, /function projectAiAvailability/);
+  assert.match(engine, /return Object\.freeze\(\{ configured \}\);/);
+  // The row is measured by the non-billable probe, never assumed from config.
+  assert.match(engine, /getAiOperationalStatus/);
+  // ...and the probe re-uses the settings this collector already loaded, so the
+  // snapshot's MariaDB round-trip budget is unchanged.
+  assert.match(engine, /secrets: aiStored/);
+
+  // One credential-precedence rule: the probe delegates to the runtime builder.
+  const probe = await source('probe');
+  assert.match(probe, /buildProviderConfiguration\(process\.env, settings\)/);
+  assert.match(probe, /await loadProviderConfiguration\(\)/);
+  // A rejected credential and a transport failure must stay distinguishable.
+  assert.match(probe, /credential-rejected/);
+  assert.match(probe, /inconclusive/);
+  // The probe may only claim "ready" from a parsed, non-empty catalog.
+  assert.match(probe, /normalizeDiscoveryResponse/);
 });
 
 test('presentation vocabulary never falls back to a healthy claim', async () => {
