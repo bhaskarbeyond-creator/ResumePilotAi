@@ -111,6 +111,12 @@ const M3NotificationCenter = ({ onNavigate, onOpenAll }) => {
                 )}
             </button>
 
+            {/* DIR-048: the panel floats above scrolling content, so it carries the
+                executive glass surface. `cuba-popover` composes the glass blur, the
+                header-menu border, the xl elevation and the xl radius in one class
+                (see cuba-tokens.css for why composition beats stacking `cuba-glass`
+                with utility overrides) so the menu never loses its edge against a
+                light backdrop. */}
             {open && (
                 <div
                     ref={panelRef}
@@ -119,7 +125,7 @@ const M3NotificationCenter = ({ onNavigate, onOpenAll }) => {
                     aria-label="Notifications"
                     data-testid="cuba-notification-panel"
                     style={{ zIndex: 'var(--cuba-z-popover)' }}
-                    className="absolute right-0 top-[calc(100%+0.5rem)] flex max-h-[26rem] w-[min(22rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-cuba-lg border border-cuba-header-menu-border bg-cuba-header-menu shadow-cuba-lg"
+                    className="cuba-popover absolute right-0 top-[calc(100%+0.5rem)] flex max-h-[26rem] w-[min(22rem,calc(100vw-1.5rem))] flex-col overflow-hidden"
                 >
                     <div className="flex flex-none items-center justify-between gap-3 px-4 py-3">
                         <h2 className="text-sm font-bold text-cuba-ink">Notifications</h2>
@@ -130,7 +136,9 @@ const M3NotificationCenter = ({ onNavigate, onOpenAll }) => {
                         )}
                     </div>
                     <div className="h-px flex-none" style={{ backgroundColor: 'var(--cuba-header-divider)' }} />
-                    <div className="min-h-0 flex-1 overflow-y-auto">
+                    {/* DIR-048: token-backed scrollbar — the OS default grey bar must
+                        never paint inside the executive surface. */}
+                    <div className="cuba-scrollbar min-h-0 flex-1 overflow-y-auto">
                         {error ? (
                             <p role="status" className="px-4 py-6 text-center text-sm text-cuba-danger">
                                 {error}
