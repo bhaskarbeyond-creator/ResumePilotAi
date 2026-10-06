@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { withTranslation } from 'react-i18next';
 import { FaBuilding, FaSearch, FaFilter, FaCalendar, FaGlobe, FaMapMarkerAlt, FaEnvelope, FaPhone, FaPlus, FaEdit, FaTrash, FaExternalLinkAlt, FaCheckCircle, FaClock, FaTimesCircle, FaExclamationTriangle, FaInfoCircle, FaUsers, FaIndustry, FaChevronDown, FaChevronUp, FaEye, FaImage } from 'react-icons/fa';
 import { getEmployerCompanies, deleteCompany } from '../../../services/api/platform';
+import { formatSafeDate } from '../../../utils/subscriptionUtils.js';
 import { AuthContext } from '../../../context/AuthContext';
 import AddCompanyModal from './AddCompanyModal';
 
@@ -182,20 +183,11 @@ const CompaniesManagement = ({ showToast, _sidebarCollapsed, t }) => {
         };
     };
 
+    // DIR-048: shared safe-date contract — no hand-rolled parsing, no
+    // "Invalid date" ever reaching the DOM.
     const formatDate = (dateInput) => {
         if (!dateInput) return 'Date not specified';
-        let date;
-        try {
-            date = dateInput.toDate && typeof dateInput.toDate === 'function' ? dateInput.toDate() : (dateInput instanceof Date ? dateInput : new Date(dateInput));
-        } catch {
-            return 'Invalid date';
-        }
-        if (!date || !Number.isFinite(date.getTime())) return 'Invalid date';
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-        });
+        return formatSafeDate(dateInput, 'en-US', { year: 'numeric', month: 'short', day: 'numeric' }) || 'Date unavailable';
     };
 
     if (loading) {

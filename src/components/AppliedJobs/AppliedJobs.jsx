@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaBriefcase, FaSearch, FaCalendar, FaMapMarkerAlt, FaDollarSign, FaClock, FaCheckCircle, FaTimesCircle, FaHourglass, FaInfoCircle, FaBuilding, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { AuthContext } from '../../context/AuthContext';
 import { getUserJobApplications } from '../../services/api/platform';
+import { formatSafeDate } from '../../utils/subscriptionUtils.js';
 
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -119,22 +120,11 @@ const AppliedJobs = ({ showToast, t }) => {
         }
     };
 
+    // DIR-048: shared safe-date contract — unparseable values fall back
+    // honestly instead of rendering "Invalid date".
     const formatDate = (date) => {
         if (!date) return 'Date not available';
-
-        const converted = date?.toDate?.() || date;
-        const dateObj = converted instanceof Date ? converted : new Date(converted);
-
-        // Check if date is valid
-        if (isNaN(dateObj.getTime())) {
-            return 'Invalid date';
-        }
-
-        return dateObj.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-        });
+        return formatSafeDate(date, 'en-US', { year: 'numeric', month: 'short', day: 'numeric' }) || 'Date unavailable';
     };
 
     const getStatusCount = (status) => {

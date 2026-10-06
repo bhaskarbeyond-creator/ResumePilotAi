@@ -8,6 +8,7 @@ import SendMessageDialog from './SendMessageDialog';
 import { updateApplicationStatusWithMessage } from '../../../services/api/platform';
 import RejectionReasonModal from './RejectionReasonModal';
 import CubaInlineNotice from '../../cuba/CubaInlineNotice';
+import { formatSafeDate } from '../../../utils/subscriptionUtils.js';
 import { FaTimes, FaUser, FaEnvelope, FaCalendar, FaFileAlt, FaDownload, FaCheckCircle, FaTimesCircle, FaUsers, FaClock, FaEye, FaChevronDown, FaChevronUp, FaSearch, FaFilter, FaExpand, FaCompress, FaCommentAlt } from 'react-icons/fa';
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -139,13 +140,11 @@ const [selectedApplication, setSelectedApplication] = useState(null);
     );
 };
 
-    const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-        });
-    };
+    // DIR-048: routed through the shared safe-date contract — a value the
+    // browser cannot parse renders an honest fallback, never "Invalid Date".
+    const formatDate = (dateString) => (
+        formatSafeDate(dateString, 'en-US', { year: 'numeric', month: 'short', day: 'numeric' }) || 'Date unavailable'
+    );
 
     const toggleApplicationExpansion = (applicationId) => {
         setExpandedApplication(expandedApplication === applicationId ? null : applicationId);

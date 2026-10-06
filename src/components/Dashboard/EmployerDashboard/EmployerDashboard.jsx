@@ -358,10 +358,10 @@ const EmployerDashboard = ({ showToast, _sidebarCollapsed, t }) => {
         return statusColors[status] || 'yellow';
     };
 
-    const formatDate = (dateInput) => {
-        const formatted = formatSafeDate(dateInput, 'en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-        return formatted || (dateInput ? 'Invalid date' : 'Date not specified');
-    };
+    // DIR-048: the shared safe-date contract replaces the local parser — a
+    // value the browser cannot parse must not surface as "Invalid date".
+    const formatDate = (dateInput) => formatSafeDate(dateInput, 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+        || (dateInput ? 'Date unavailable' : 'Date not specified');
 
     if (loading) {
         return (
