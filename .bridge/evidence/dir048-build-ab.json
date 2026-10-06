@@ -1,0 +1,57 @@
+{
+  "directive": "DIR-048",
+  "method": "A/B under identical host load: the SAME scripts/dir047-build-budget.mjs protocol (cold cache purge, median of N wall-clock npm run build) executed against (a) the DIR-047-certified tree 48f7ec3e in a detached git worktree and (b) the DIR-048 HEAD tree.",
+  "finding": "The certified tree ALSO fails the 4000ms bar on this host right now (median 4133ms vs its own historical 2982ms), so the ~1.1-1.4s inflation is environmental load, not a DIR-048 regression. DIR-048 adds ~236ms (~5.7%) over the certified tree in the same window, matching its ~1053-line source delta.",
+  "budgetMs": 4000,
+  "certifiedTree": {
+    "rev": "48f7ec3e",
+    "runs": [
+      {
+        "run": 1,
+        "wallMs": 4834,
+        "viteReportedMs": 3510,
+        "exitCode": 0
+      },
+      {
+        "run": 2,
+        "wallMs": 4133,
+        "viteReportedMs": 2940,
+        "exitCode": 0
+      },
+      {
+        "run": 3,
+        "wallMs": 4122,
+        "viteReportedMs": 3040,
+        "exitCode": 0
+      }
+    ],
+    "medianWallMs": 4133,
+    "verdict": "FAIL"
+  },
+  "dir048Tree": {
+    "rev": "HEAD",
+    "runs": [
+      {
+        "run": 1,
+        "wallMs": 4616,
+        "viteReportedMs": 3150,
+        "exitCode": 0
+      },
+      {
+        "run": 2,
+        "wallMs": 4216,
+        "viteReportedMs": 2990,
+        "exitCode": 0
+      },
+      {
+        "run": 3,
+        "wallMs": 4369,
+        "viteReportedMs": 3270,
+        "exitCode": 0
+      }
+    ],
+    "medianWallMs": 4369,
+    "verdict": "FAIL"
+  },
+  "deltaMs": 236
+}

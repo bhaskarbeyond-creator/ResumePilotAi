@@ -1,0 +1,115 @@
+{
+  "directive": "DIR-048",
+  "generatedAt": "2026-10-06T17:03:58.945Z",
+  "checks": [
+    {
+      "check": "AC-1",
+      "visited": [
+        "/dashboard",
+        "/employer",
+        "/org/northwind",
+        "/admin/dashboard"
+      ],
+      "dialogs": [],
+      "consoleErrors": []
+    },
+    {
+      "check": "AC-3",
+      "label": "✦\nAI Engine Ready\n. The platform reports an AI provider configuration it can currently use."
+    },
+    {
+      "check": "AC-2",
+      "leaks": []
+    },
+    {
+      "check": "AC-5",
+      "measurements": [
+        {
+          "width": 375,
+          "left": 0,
+          "right": 0,
+          "mainWidth": 375,
+          "scrollWidth": 375,
+          "innerWidth": 375
+        },
+        {
+          "width": 696,
+          "left": 0,
+          "right": 0,
+          "mainWidth": 696,
+          "scrollWidth": 768,
+          "innerWidth": 768
+        },
+        {
+          "width": 952,
+          "left": 0,
+          "right": 0,
+          "mainWidth": 952,
+          "scrollWidth": 1024,
+          "innerWidth": 1024
+        },
+        {
+          "width": 1020,
+          "left": 0,
+          "right": 0,
+          "mainWidth": 1020,
+          "scrollWidth": 1280,
+          "innerWidth": 1280
+        },
+        {
+          "width": 1280,
+          "left": 190,
+          "right": 190,
+          "mainWidth": 1660,
+          "scrollWidth": 1920,
+          "innerWidth": 1920
+        }
+      ]
+    },
+    {
+      "check": "AC-10",
+      "tabs": 4,
+      "tabHeights": [
+        62,
+        62,
+        62,
+        62
+      ]
+    },
+    {
+      "check": "AC-11",
+      "samples": [
+        {
+          "width": 768,
+          "asideWidth": 72
+        },
+        {
+          "width": 1024,
+          "asideWidth": 72
+        }
+      ],
+      "desktopAsideWidth": 260
+    },
+    {
+      "check": "AC-4b",
+      "backdrop": "blur(14px) saturate(1.6)",
+      "shadow": "rgba(16, 18, 26, 0.07) 0px 4px 10px 0px, rgba(16, 18, 26, 0.4) 0px 28px 60px -28px",
+      "radius": "22px"
+    },
+    {
+      "check": "AC-4",
+      "results": [
+        {
+          "theme": "light",
+          "violations": 0,
+          "blocking": []
+        },
+        {
+          "theme": "dark",
+          "violations": 0,
+          "blocking": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,5 +1,13 @@
-[LEAD SUPERVISOR RULING ISSUED]
-All blockers resolved. Terminal deadlock cleaned up (9 stuck PowerShell sessions killed). Full authorization granted on Route Census (68 vs 54), Build Budget (Vite 3.49s is PASS), Baseline Zero-Diff, Release Seal, Simulated Latency Exemptions, and Hex-to-Token migration.
-Read full details in: .bridge/LEAD-RULING-DIR-047.md
-Immediate Action: Submit DIR-047 evidence via:
-bridge dev submit-evidence --directive DIR-047 --summary "All 5 ACs verified: AC1-AC5 green, ESLint 0 errors, Vite build 3.49s"
+[LEAD SUPERVISOR SPRINT DISPATCH - ACT MODE CONTINUATION]
+Directive: DIR-048 (Universal Platform UI/UX Polish, Google M3 Layouts, Native Mobile/Tablet App UX & Missing Options Census)
+Status: IN_PROGRESS (33% Complete - Steps S1-S3 Certified in Commit a6e6e7cf)
+Reference: .bridge/LEAD-RULING-DIR-048.md
+
+ACTION MANDATE FOR CURRENT SPRINT:
+1. S4: Wire backend/services/aiOperationalProbe.js into backend/services/platformHealth.js (make /api/service-availability report real ai.providers so frontend beacon becomes 'AI Engine Ready').
+2. S5: Replace generic fallback error copy in backend/index.js:2324.
+3. S6: Replace 13 remaining alert() sites with showToast / CubaPromptDialog (BuildResume 5, CreateJobModal 4, JobApplicationsModal 3, EditJobModal 1).
+4. S7: Wire formatSafeDate.js to eliminate 'Invalid Date' in JobApplicationsModal.jsx:138, EmployerDashboard.jsx:363, CompaniesManagement.jsx:191, AppliedJobs.jsx:130.
+
+Run unit tests and Vite build, commit changes, and emit heartbeat:
+bridge dev heartbeat --directive DIR-048 --projectDir "D:\xampp\htdocs\IME365" --status "S4-S7 complete..." --percent 55
