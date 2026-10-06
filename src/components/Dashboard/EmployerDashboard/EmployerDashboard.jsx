@@ -5,6 +5,7 @@ import { FaBriefcase, FaSearch, FaFilter, FaCalendar, FaMapMarkerAlt, FaDollarSi
 import { getEmployerJobs, getJobApplications, updateJobPosting, deleteJobPosting } from '../../../services/api/platform';
 import { AuthContext } from '../../../context/AuthContext';
 import { formatSafeDate } from '../../../utils/subscriptionUtils.js';
+import { isCubaShellEnabled } from '../../cuba/cubaShellFlag';
 import JobApplicationsModal from './JobApplicationsModal';
 import AddCompanyModal from './AddCompanyModal';
 import EditJobModal from './EditJobModal';
@@ -363,10 +364,15 @@ const EmployerDashboard = ({ showToast, _sidebarCollapsed, t }) => {
     const formatDate = (dateInput) => formatSafeDate(dateInput, 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })
         || (dateInput ? 'Date unavailable' : 'Date not specified');
 
+    // DIR-048 S9: under the Cuba chrome the shell owns the uniform responsive
+    // gutter (max-w-7xl px-4 sm:px-6 lg:px-8), so this page contributes layout
+    // only; the legacy chrome keeps its own padding for a safe rollback.
+    const isCuba = isCubaShellEnabled();
+
     if (loading) {
         return (
-            <div className="min-h-screen bg-slate-50">
-                <div className="mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-3 sm:py-4">
+            <div className={isCuba ? 'w-full' : 'min-h-screen bg-slate-50'}>
+                <div className={isCuba ? 'w-full' : 'mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-3 sm:py-4'}>
                     <div className="flex items-center justify-center h-64">
                         <div className="text-center">
                             <div className="animate-spin rounded-full h-10 w-10 border-2 border-slate-200 border-t-slate-600 mx-auto mb-3"></div>
@@ -379,8 +385,8 @@ const EmployerDashboard = ({ showToast, _sidebarCollapsed, t }) => {
     }
 
     return (
-            <div className="min-h-screen bg-slate-50">
-                <div className="mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-3 sm:py-4">
+            <div className={isCuba ? 'w-full' : 'min-h-screen bg-slate-50'}>
+                <div className={isCuba ? 'w-full' : 'mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-3 sm:py-4'}>
                 {/* Header */}
                 <div className="mb-4 sm:mb-6">
                     <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">

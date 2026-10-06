@@ -38,6 +38,30 @@ const readCollapsed = () => {
 };
 
 /**
+ * DIR-048 S10: true while the viewport is in the tablet band (768–1023px).
+ * In that band the shell renders a COMPACT icon rail built from the same
+ * authorised navigation model — never a second, smaller opinion about routes.
+ * `matchMedia` is feature-guarded so this module stays importable in plain
+ * Node (source tests) where `window` does not exist.
+ */
+const TABLET_RAIL_QUERY = '(min-width: 768px) and (max-width: 1023.98px)';
+const useTabletRail = () => {
+    const read = () => typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+        ? window.matchMedia(TABLET_RAIL_QUERY).matches
+        : false;
+    const [isTabletRail, setIsTabletRail] = useState(read);
+    useEffect(() => {
+        if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return undefined;
+        const query = window.matchMedia(TABLET_RAIL_QUERY);
+        const onChange = (event) => setIsTabletRail(event.matches);
+        setIsTabletRail(query.matches);
+        query.addEventListener('change', onChange);
+        return () => query.removeEventListener('change', onChange);
+    }, []);
+    return isTabletRail;
+};
+
+/**
  * Sidebar / drawer navigation. Group headings are real headings so a screen
  * reader can navigate by structure, and the active item carries `aria-current`
  * rather than colour alone (§37).
@@ -145,6 +169,9 @@ const CubaAppShell = ({
     children,
 }) => {
     const [collapsed, setCollapsed] = useState(readCollapsed);
+    // DIR-048 S10: the tablet band always shows the compact rail, while the
+    // user's desktop preference is preserved for the lg+ band.
+    const tabletRail = useTabletRail();
     const [mobileOpen, setMobileOpen] = useState(false);
     const [paletteOpen, setPaletteOpen] = useState(false);
     // DIR-021: the copilot's chips are resolved from the REAL route, so the
@@ -179,6 +206,8 @@ const CubaAppShell = ({
 
     const groups = useMemo(() => navigation, [navigation]);
     const onMobileNavigate = useCallback(() => setMobileOpen(false), []);
+    // The rail is collapsed at tablet regardless of the stored desktop choice.
+    const railCollapsed = collapsed || tabletRail;
 
     /**
      * SPA route jump: intercept left-clicks on INTERNAL hrefs only and hand them
@@ -198,6 +227,28 @@ const CubaAppShell = ({
             onNavigate(href);
         }
     }, [onNavigate]);
+
+    /**
+     * DIR-048 S10: the mobile tab bar is derived from the SAME authorised
+     * navigation model the sidebar renders — real ids, real hrefs, real
+     * labels. Nothing is invented here, and a portal that supplies no internal
+     * destinations simply gets no tab bar.
+     */
+    const bottomNavItems = useMemo(() => {
+        const seen = new Set();
+        const items = [];
+        for (const group of groups) {
+            for (const item of group.items || []) {
+                const href = String(item?.href || '');
+                if (!href.startsWith('/') || href.startsWith('//')) continue;
+                if (seen.has(href)) continue;
+                seen.add(href);
+                items.push(item);
+                if (items.length >= 4) return items;
+            }
+        }
+        return items;
+    }, [groups]);
 
     return (
         <div className="w-full flex min-h-screen flex-col bg-cuba-canvas text-cuba-ink">
@@ -219,7 +270,7 @@ const CubaAppShell = ({
                     onClick={() => setMobileOpen(true)}
                     aria-label="Open navigation"
                     aria-expanded={mobileOpen}
-                    className="cuba-focusable inline-flex h-10 w-10 flex-none items-center justify-center rounded-cuba-sm text-cuba-ink-muted hover:bg-cuba-primary-soft lg:hidden"
+                    className="cuba-focusable inline-flex h-10 w-10 flex-none items-center justify-center rounded-cuba-sm text-cuba-ink-muted hover:bg-cuba-primary-soft md:hidden"
                 >
                     <FiMenu className="h-5 w-5" aria-hidden="true" />
                 </button>
@@ -352,8 +403,10 @@ const CubaAppShell = ({
             <div className="w-full flex min-h-0 flex-1">
                 <aside
                     className={cx(
-                        'cuba-glass sticky top-[var(--cuba-header-h)] hidden h-[calc(100vh-var(--cuba-header-h))] flex-none flex-col border-y-0 border-l-0 lg:flex',
-                        collapsed ? 'w-[var(--cuba-sidebar-w-collapsed)]' : 'w-[var(--cuba-sidebar-w)]',
+                        // DIR-048 S10: visible from md up — the tablet band gets the
+                        // compact icon rail instead of no navigation at all.
+                        'cuba-glass sticky top-[var(--cuba-header-h)] hidden h-[calc(100vh-var(--cuba-header-h))] flex-none flex-col border-y-0 border-l-0 md:flex',
+                        railCollapsed ? 'w-[var(--cuba-sidebar-w-collapsed)]' : 'w-[var(--cuba-sidebar-w)]',
                     )}
                     data-testid="cuba-sidebar"
                 >
@@ -395,11 +448,11 @@ const CubaAppShell = ({
                             <ContextSwitcher variant="sidebar" />
                         </div>
                     )}
-                    <CubaNavGroups groups={groups} collapsed={collapsed} onNavigate={handleNavClick} headingId="cuba-nav-heading" navigationLabel={navigationLabel} />
+                    <CubaNavGroups groups={groups} collapsed={railCollapsed} onNavigate={handleNavClick} headingId="cuba-nav-heading" navigationLabel={navigationLabel} />
                 </aside>
 
                 {mobileOpen && (
-                    <div className="fixed inset-0 lg:hidden" style={{ zIndex: 'var(--cuba-z-drawer)' }}>
+                    <div className="fixed inset-0 md:hidden" style={{ zIndex: 'var(--cuba-z-drawer)' }}>
                         <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-xs" onClick={() => setMobileOpen(false)} aria-hidden="true" />
                         <div
                             ref={panelRef}
@@ -443,9 +496,56 @@ const CubaAppShell = ({
                 )}
 
                 <main id="cuba-main-content" tabIndex={-1} className="w-full min-w-0 flex-1 overflow-x-hidden">
-                    <div className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">{children}</div>
+                    {/* DIR-048 S9: the single responsive gutter + width cap shared
+                        by every portal (max-w-7xl), with `pb-24` on mobile reserving
+                        room for the bottom tab bar so it can never cover content. */}
+                    <div className="mx-auto w-full max-w-7xl px-4 py-6 pb-24 sm:px-6 md:pb-6 lg:px-8">{children}</div>
                 </main>
             </div>
+
+            {/* ---- Mobile app tab bar (DIR-048 S10, <768px) --------------------
+                Native-app navigation: up to four REAL destinations from the
+                authorised model plus a "More" control that opens the full
+                drawer. Every target is ≥44px, and the bar is display:none from
+                md up so it never adds a second landmark at tablet/desktop. */}
+            {bottomNavItems.length > 0 && (
+                <nav
+                    aria-label="Primary mobile navigation"
+                    data-testid="cuba-bottom-nav"
+                    className="cuba-glass fixed inset-x-0 bottom-0 z-40 flex items-stretch border-x-0 border-b-0 md:hidden"
+                    style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+                >
+                    {bottomNavItems.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                            <a
+                                key={item.id}
+                                href={item.href}
+                                aria-current={item.active === true ? 'page' : undefined}
+                                onClick={(event) => handleNavClick(item, event)}
+                                className={cx(
+                                    'cuba-focusable flex min-h-[44px] flex-1 basis-0 flex-col items-center justify-center gap-0.5 px-1 py-2 text-[10px] font-semibold leading-tight',
+                                    item.active === true ? 'text-cuba-primary' : 'text-cuba-ink-muted',
+                                )}
+                            >
+                                {Icon
+                                    ? <Icon className="h-5 w-5" aria-hidden="true" />
+                                    : <span aria-hidden="true" className="text-base leading-none">•</span>}
+                                <span className="max-w-full truncate">{item.label}</span>
+                            </a>
+                        );
+                    })}
+                    <button
+                        type="button"
+                        onClick={() => setMobileOpen(true)}
+                        aria-label="More navigation options"
+                        className="cuba-focusable flex min-h-[44px] flex-1 basis-0 flex-col items-center justify-center gap-0.5 px-1 py-2 text-[10px] font-semibold leading-tight text-cuba-ink-muted"
+                    >
+                        <FiMenu className="h-5 w-5" aria-hidden="true" />
+                        <span>More</span>
+                    </button>
+                </nav>
+            )}
 
             <CubaCommandPalette
                 open={paletteOpen}

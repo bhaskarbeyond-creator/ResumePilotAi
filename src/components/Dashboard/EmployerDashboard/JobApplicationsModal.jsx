@@ -5,10 +5,13 @@ import { sanitizeRichText } from '../../../utils/sanitizeHtml';
 import { withTranslation } from 'react-i18next';
 import './JobApplicationsModal.css';
 import SendMessageDialog from './SendMessageDialog';
-import { updateApplicationStatusWithMessage } from '../../../services/api/platform';
+import { updateApplicationStatusWithMessage, getEmployerApplicationResume } from '../../../services/api/platform';
 import RejectionReasonModal from './RejectionReasonModal';
 import CubaInlineNotice from '../../cuba/CubaInlineNotice';
 import { formatSafeDate } from '../../../utils/subscriptionUtils.js';
+import { toValidatedPdfBlob, pdfFileName } from '../../../utils/pdfDownload';
+import axios from 'axios';
+import download from 'downloadjs';
 import { FaTimes, FaUser, FaEnvelope, FaCalendar, FaFileAlt, FaDownload, FaCheckCircle, FaTimesCircle, FaUsers, FaClock, FaEye, FaChevronDown, FaChevronUp, FaSearch, FaFilter, FaExpand, FaCompress, FaCommentAlt } from 'react-icons/fa';
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -54,6 +57,9 @@ const [selectedApplication, setSelectedApplication] = useState(null);
     // DIR-048: replacement for the native alert() fallback — an inline, themed
     // notice inside the dialog, shown only when the host supplies no showToast.
     const [actionNotice, setActionNotice] = useState('');
+    // DIR-048: the Download Resume control was a dead button; it tracks its own
+    // in-flight state so a double click cannot fire two exports.
+    const [downloadingResumeId, setDownloadingResumeId] = useState(null);
 
     const handleStatusUpdate = async (applicationId, newStatus, rejectionMessage = '') => {
         const target = filteredApplications.find(application => application.id === applicationId);
@@ -108,6 +114,56 @@ const [selectedApplication, setSelectedApplication] = useState(null);
         
         // Open the default email client
         window.location.href = mailtoLink;
+    };
+
+    /** True when any list filter is narrowing the pipeline. */
+    const filtersActive = searchTerm.trim().length > 0 || statusFilter !== 'all';
+    const clearFilters = () => {
+        setSearchTerm('');
+        setStatusFilter('all');
+    };
+
+    /**
+     * DIR-048 S8: the Download Resume control was a dead button (no handler).
+     * A candidate's resume is rendered for a non-owner by the PUBLIC export
+     * pipeline, which only serves resumes the candidate has published — so this
+     * downloads the real, high-fidelity PDF when one exists and states the
+     * situation honestly when it does not. No file is ever fabricated.
+     */
+    const handleDownloadResume = async (application) => {
+        if (downloadingResumeId) return;
+        setDownloadingResumeId(application.id);
+        setActionNotice('');
+        try {
+            const data = await getEmployerApplicationResume(job.id, application.id);
+            const resume = data?.resume || null;
+            const resumeId = String(resume?.id || application.resumeId || '');
+            const resumeName = String(resume?.template || application.selectedResume?.template || '');
+            const language = String(resume?.language || 'en');
+            if (!resumeId || !resumeName) {
+                setActionNotice('This applicant has no downloadable resume attached.');
+                return;
+            }
+            const response = await axios.post(
+                '/api/public-export',
+                { resumeId, resumeName, language },
+                { responseType: 'blob' }
+            );
+            const pdfBlob = await toValidatedPdfBlob(response.data);
+            const [first = '', last = ''] = String(application.applicantName || '').trim().split(/\s+/);
+            download(pdfBlob, pdfFileName(first, last), 'application/pdf');
+        } catch (error) {
+            const status = error?.response?.status;
+            if (status === 404) {
+                setActionNotice('This applicant has not published a downloadable copy of their resume yet.');
+            } else if (error?.code === 'EXPORT_NOT_PDF') {
+                setActionNotice(error.message);
+            } else {
+                setActionNotice('The resume could not be downloaded. Please try again.');
+            }
+        } finally {
+            setDownloadingResumeId(null);
+        }
     };
 
     const getStatusBadge = (status) => {
@@ -246,6 +302,20 @@ const [selectedApplication, setSelectedApplication] = useState(null);
                                     <option value="rejected">{t('JobsUpdate.JobApplicationsModal.filters.rejected', 'Rejected')}</option>
                                 </select>
                             </div>
+
+                            {/* DIR-048: a filter reset — the census flagged that a
+                                narrowed pipeline had no way back to the full list. */}
+                            {filtersActive && (
+                                <button
+                                    type="button"
+                                    onClick={clearFilters}
+                                    data-testid="job-applications-clear-filters"
+                                    className="flex items-center justify-center gap-1.5 rounded-md border border-cuba-line px-3 py-2.5 text-xs font-semibold text-cuba-primary transition-colors hover:bg-cuba-canvas sm:w-auto"
+                                >
+                                    <FaTimes className="w-3 h-3" />
+                                    {t('JobsUpdate.JobApplicationsModal.filters.clear', 'Clear filters')}
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -278,6 +348,17 @@ const [selectedApplication, setSelectedApplication] = useState(null);
                                         ? t('JobsUpdate.JobApplicationsModal.emptyState.noApplications', 'No one has applied to this job yet.') 
                                         : t('JobsUpdate.JobApplicationsModal.emptyState.noResults', 'No applications match your current filters.')}
                                 </p>
+                                {/* DIR-048: the reset lives where the dead end is noticed. */}
+                                {applications?.length > 0 && filtersActive && (
+                                    <button
+                                        type="button"
+                                        onClick={clearFilters}
+                                        className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-cuba-line px-3 py-1.5 text-xs font-semibold text-cuba-primary transition-colors hover:bg-cuba-canvas"
+                                    >
+                                        <FaTimes className="w-3 h-3" />
+                                        {t('JobsUpdate.JobApplicationsModal.filters.clear', 'Clear filters')}
+                                    </button>
+                                )}
                             </div>
                         ) : (
                             <div className="space-y-3">
@@ -422,9 +503,15 @@ const [selectedApplication, setSelectedApplication] = useState(null);
                                                     </div>
 
                                                     <div className="flex flex-col gap-2">
-                                                        <button className="flex items-center gap-2 px-3 py-2 bg-slate-50 text-slate-700 rounded-md hover:bg-slate-100 transition-colors text-xs font-medium border border-slate-200">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleDownloadResume(application)}
+                                                            disabled={Boolean(downloadingResumeId)}
+                                                            className="flex items-center gap-2 px-3 py-2 bg-slate-50 text-slate-700 rounded-md hover:bg-slate-100 transition-colors text-xs font-medium border border-slate-200 disabled:opacity-50 disabled:cursor-not-allowed">
                                                             <FaDownload className="w-3 h-3" />
-                                                            {t('JobsUpdate.JobApplicationsModal.buttons.downloadResume', 'Download Resume')}
+                                                            {downloadingResumeId === application.id
+                                                                ? t('JobsUpdate.JobApplicationsModal.buttons.preparingResume', 'Preparing…')
+                                                                : t('JobsUpdate.JobApplicationsModal.buttons.downloadResume', 'Download Resume')}
                                                         </button>
                                                         <button 
                                                             onClick={() => handleSendEmail(application)}

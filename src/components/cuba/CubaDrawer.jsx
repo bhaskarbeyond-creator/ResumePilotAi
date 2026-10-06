@@ -33,6 +33,14 @@ const CubaDrawer = ({
         ? 'left-0 top-0 h-full max-h-none border-r'
         : 'right-0 top-0 h-full max-h-none border-l';
 
+    /**
+     * DIR-048 S10: below 640px the slide-over presents as a native bottom
+     * sheet — anchored to the bottom edge, full width, top-rounded — while
+     * sm+ keeps the side geometry. Presentation only: the a11y contract
+     * (focus trap, Escape, restoration) is unchanged.
+     */
+    const MOBILE_SHEET = 'max-sm:inset-x-0 max-sm:bottom-0 max-sm:top-auto max-sm:h-auto max-sm:max-h-[85vh] max-sm:rounded-t-cuba-xl max-sm:border-x-0 max-sm:border-t';
+
     return (
         <CubaPortal>
             <div className="fixed inset-0" style={{ zIndex: 'var(--cuba-z-modal)' }}>
@@ -45,7 +53,7 @@ const CubaDrawer = ({
                     aria-describedby={description ? `${testId}-description` : undefined}
                     tabIndex={-1}
                     data-testid={testId}
-                    className={`cuba-glass-strong absolute ${position} flex w-full ${width} flex-col overflow-hidden shadow-cuba-lg`}
+                    className={`cuba-glass-strong absolute ${position} flex w-full ${width} flex-col overflow-hidden shadow-cuba-lg ${MOBILE_SHEET}`}
                 >
                     <header className="flex items-start gap-3 border-b border-cuba-line px-5 py-4">
                         <div className="min-w-0 flex-1">
