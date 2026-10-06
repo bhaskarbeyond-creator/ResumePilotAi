@@ -73,17 +73,20 @@ function resetAiProbeCache() {
  */
 /**
  * Resolves which providers to probe.
- *   - with an injected list (tests): validated in place, nothing is read
- *   - with a settings hint (platform health): the caller's already-loaded
- *     `system_settings` rows feed the runtime's canonical builder, so this
- *     costs ZERO additional repository reads
- *   - otherwise: the runtime's own repository-backed resolver
+ *   - with an injected list (unit tests): validated in place, nothing is read
+ *   - otherwise: the runtime's own canonical, repository-backed resolver
+ *     (`loadProviderConfiguration`) — the SAME credential precedence the live
+ *     routing engine uses, so the probe can never form a second opinion.
+ *
+ * NOTE: this module deliberately does NOT resolve configuration from a
+ * settings snapshot of its own. `backend/services/aiRuntime.js` is a FROZEN
+ * surface (DIR-021 INV-1 enforces a zero-byte diff), and its repository read
+ * is cached for CONFIGURATION_CACHE_MS, so the canonical call is also the
+ * cheapest correct one.
  */
-async function resolveConfiguredProviders(settings = null) {
-  const { loadProviderConfiguration, buildProviderConfiguration } = require('./aiRuntime');
-  const configuration = settings
-    ? buildProviderConfiguration(process.env, settings)
-    : await loadProviderConfiguration();
+async function resolveConfiguredProviders() {
+  const { loadProviderConfiguration } = require('./aiRuntime');
+  const configuration = await loadProviderConfiguration();
   const providers = configuration?.providers || {};
   const configured = [];
   for (const [id, config] of Object.entries(providers)) {
@@ -216,14 +219,14 @@ function normalizeInjectedProviders(providers) {
  * A configuration-read failure (e.g. the settings store is unreachable) DOES
  * propagate, so the caller publishes UNKNOWN rather than a fabricated verdict.
  */
-async function getAiOperationalStatus({ fetchImpl = null, force = false, providers = null, settings = null } = {}) {
+async function getAiOperationalStatus({ fetchImpl = null, force = false, providers = null } = {}) {
   const now = Date.now();
   if (!force && cached && (now - cachedAt) < PROBE_TTL_MS) return cached;
   if (inFlight) return inFlight;
   inFlight = (async () => {
     try {
       const injected = normalizeInjectedProviders(providers);
-      const configured = injected || await resolveConfiguredProviders(settings);
+      const configured = injected || await resolveConfiguredProviders();
       const fetcher = resolveProbeFetch(fetchImpl);
       let verdict;
       if (!configured.length) {
@@ -251,9 +254,20 @@ async function getAiOperationalStatus({ fetchImpl = null, force = false, provide
   return inFlight;
 }
 
+/**
+ * ZERO-COST cache read for callers that must not TRIGGER the probe (platform
+ * health's snapshot builder, which has a round-trip budget). Returns the last
+ * completed verdict, or null when nothing has been measured yet — an absent
+ * measurement is reported honestly as null, never as a fabricated verdict.
+ */
+function peekAiOperationalStatus() {
+  return cached;
+}
+
 module.exports = {
   AI_AVAILABILITY,
   getAiOperationalStatus,
+  peekAiOperationalStatus,
   probeProvider,
   resetAiProbeCache,
 };

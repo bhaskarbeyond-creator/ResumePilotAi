@@ -115,25 +115,37 @@ test('no configured providers is an honest unavailable with zero counts', async 
     assert.equal(verdict.reachable, 0);
 });
 
-test('the public projection maps every row state without overclaiming', () => {
+test('the public projection maps every verdict without overclaiming', () => {
     const { projectAiAvailability } = require('../backend/services/platformHealth.js');
-    const row = (state, configured) => ({ state, metrics: { configuredProviders: configured } });
+    const verdict = (state, configured) => ({ state, configured });
 
-    assert.deepEqual(projectAiAvailability(row('OPERATIONAL', 2)),
+    assert.deepEqual(projectAiAvailability(verdict('ready', 2)),
         { providers: true, available: true, degraded: false, configured: 2 });
-    assert.deepEqual(projectAiAvailability(row('DEGRADED', 2)),
+    assert.deepEqual(projectAiAvailability(verdict('degraded', 2)),
         { providers: false, available: false, degraded: true, configured: 2 });
-    assert.deepEqual(projectAiAvailability(row('UNAVAILABLE', 2)),
+    assert.deepEqual(projectAiAvailability(verdict('unavailable', 2)),
         { providers: false, available: false, degraded: false, configured: 2 });
-    assert.deepEqual(projectAiAvailability(row('NOT_CONFIGURED', 0)),
-        { providers: false, available: false, degraded: false, configured: 0 });
 
     // UNKNOWN: an absent measurement must NOT become a boolean claim. The
     // client then honestly answers "unknown" instead of "unavailable".
-    const unknown = projectAiAvailability(row('UNKNOWN', 3));
-    assert.equal(typeof unknown.providers, 'undefined');
-    assert.equal(typeof unknown.available, 'undefined');
-    assert.equal(typeof unknown.degraded, 'undefined');
-    assert.equal(unknown.configured, 3);
+    for (const absent of [null, undefined, {}]) {
+        const unknown = projectAiAvailability(absent);
+        assert.equal(typeof unknown.providers, 'undefined');
+        assert.equal(typeof unknown.available, 'undefined');
+        assert.equal(typeof unknown.degraded, 'undefined');
+        assert.equal(unknown.configured, 0);
+    }
+});
+
+test('peek never triggers a probe and reports an absent measurement as null', async () => {
+    probe.resetAiProbeCache();
+    assert.equal(probe.peekAiOperationalStatus(), null, 'nothing measured yet is null, not a guess');
+
+    const fetchImpl = fetchOnce(() => okCatalog());
+    await probe.getAiOperationalStatus({ providers: providers(), fetchImpl });
+    const peeked = probe.peekAiOperationalStatus();
+    assert.equal(peeked?.state, 'ready');
+    assert.equal(fetchImpl.calls.length, 1, 'peeking must not re-probe');
+    assert.equal(probe.peekAiOperationalStatus(), peeked, 'peek returns the cached verdict identity');
 });
 

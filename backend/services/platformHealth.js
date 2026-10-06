@@ -16,7 +16,7 @@ const nodemailer = require('nodemailer');
 const { getPool, getMigrationStatus } = require('../database/mysql');
 const { assertPublicNetworkTarget } = require('../security/network');
 const { getOutboxStatus } = require('../enterprise/enterpriseOutbox');
-const { getAiOperationalStatus } = require('./aiOperationalProbe');
+const { getAiOperationalStatus, peekAiOperationalStatus } = require('./aiOperationalProbe');
 
 const STATE = Object.freeze({
   OPERATIONAL: 'OPERATIONAL',
@@ -438,23 +438,13 @@ async function buildServices(app) {
   const aiEnvKeys = ['NVIDIA_API_KEY', 'GEMINI_API_KEY', 'OPENAI_API_KEY', 'GROQ_API_KEY', 'OPENROUTER_API_KEY', 'DEEPSEEK_API_KEY'];
   const configuredAiCount = aiEnvKeys.filter(key => truthy(process.env[key])).length
     + Object.values(aiStored).filter(value => truthy(value?.apiKey || value?.key)).length;
-  // DIR-048: a non-billable model-catalog probe (`GET {base}/models`) turns the
-  // formerly unmeasurable `ai-providers` row into a real observation. It spends
-  // no tokens, publishes no credential, and is cached by its own TTL, so this
-  // costs at most one round per provider per probe TTL no matter how often the
-  // snapshot is rebuilt. The settings hint re-uses the rows this collector has
-  // ALREADY loaded, so the snapshot's query budget is unchanged. A probe
-  // failure is not a verdict: the row stays UNKNOWN.
-  const aiObservance = configuredAiCount > 0
-    ? await observe('ai.model-catalog', () => getAiOperationalStatus({
-      settings: {
-        secrets: aiStored,
-        publicConfig: settings.public_config || {},
-        systemSettings: settings.system_settings || {},
-      },
-    }))
-    : null;
-  const aiVerdict = aiObservance?.ok ? aiObservance.value : null;
+  // DIR-048: the non-billable model-catalog probe measures this row, but the
+  // snapshot NEVER triggers it — collection has a round-trip budget and the
+  // probe owns repository reads of its own. The snapshot consumes the last
+  // completed verdict for FREE (`peekAiOperationalStatus`); until one exists
+  // the row stays honestly UNKNOWN, and the /api/service-availability route —
+  // whose contract this row feeds — is the caller that warms the verdict.
+  const aiVerdict = peekAiOperationalStatus();
   const aiState = configuredAiCount === 0 ? STATE.NOT_CONFIGURED
     : aiVerdict?.state === 'ready' ? STATE.OPERATIONAL
       : aiVerdict?.state === 'degraded' ? STATE.DEGRADED
@@ -469,7 +459,7 @@ async function buildServices(app) {
       : aiState === STATE.OPERATIONAL ? `${aiReachable} of ${aiConfigured} configured provider credential(s) answered a non-billable model-catalog probe; no billable inference is run by health collection.`
         : aiState === STATE.DEGRADED ? `${aiConfigured} provider credential(s) are configured, but none could be confirmed: the model-catalog probe was inconclusive.`
           : aiState === STATE.UNAVAILABLE ? `${aiConfigured} provider credential(s) are configured, but every provider endpoint rejected the model-catalog probe.`
-            : `${configuredAiCount} provider credential source(s) are configured, but the model-catalog probe could not be completed.`,
+            : `${configuredAiCount} provider credential source(s) are configured, but the non-billable model-catalog probe has not completed yet.`,
     dependency: 'Configured AI provider APIs', retryable: false,
     errorCategory: aiState === STATE.OPERATIONAL ? null
       : aiState === STATE.UNAVAILABLE ? (aiVerdict?.cause === 'host-blocked' ? 'CONFIGURATION_MISSING' : 'AUTHENTICATION_REJECTED')
@@ -708,19 +698,18 @@ async function getHealthSnapshot(app, { force = false } = {}) {
 function resetHealthCache() { cachedSnapshot = null; cachedAt = 0; inFlight = null; }
 
 /**
- * Projects the `ai-providers` health row onto the PUBLIC, secret-free ai signal
- * consumed by `useAiEngineStatus`. Booleans and one bounded integer count only.
+ * Projects a probe VERDICT onto the PUBLIC, secret-free ai signal consumed by
+ * `useAiEngineStatus`. Booleans and one bounded integer count only.
  *
- * An UNKNOWN row (configuration unreadable, or the probe not yet completed)
- * withholds every boolean claim on purpose: the client can then answer UNKNOWN
- * for an absent measurement instead of flattening it into "unavailable".
+ * An absent/unknown verdict withholds every boolean claim on purpose: the
+ * client can then answer UNKNOWN for an absent measurement instead of
+ * flattening it into a false "unavailable".
  */
-function projectAiAvailability(aiService) {
-  const configured = Number(aiService?.metrics?.configuredProviders || 0);
-  const state = aiService?.state;
-  if (state === STATE.OPERATIONAL) return Object.freeze({ providers: true, available: true, degraded: false, configured });
-  if (state === STATE.DEGRADED) return Object.freeze({ providers: false, available: false, degraded: true, configured });
-  if (state === STATE.UNAVAILABLE || state === STATE.NOT_CONFIGURED) return Object.freeze({ providers: false, available: false, degraded: false, configured });
+function projectAiAvailability(verdict) {
+  const configured = Number.isInteger(verdict?.configured) ? verdict.configured : 0;
+  if (verdict?.state === 'ready') return Object.freeze({ providers: true, available: true, degraded: false, configured });
+  if (verdict?.state === 'degraded') return Object.freeze({ providers: false, available: false, degraded: true, configured });
+  if (verdict?.state === 'unavailable') return Object.freeze({ providers: false, available: false, degraded: false, configured });
   return Object.freeze({ configured });
 }
 
@@ -728,6 +717,16 @@ async function getServiceAvailability(app) {
   const snapshot = await getHealthSnapshot(app);
   const byId = new Map(snapshot.services.map(item => [item.id, item]));
   const usable = id => byId.get(id)?.state === STATE.OPERATIONAL;
+  // DIR-048: this route is what WARMS the non-billable probe; the admin
+  // snapshot then reads the same cached verdict for free. A measurement that
+  // cannot run publishes no boolean claim at all, so the client honestly
+  // answers UNKNOWN rather than a fabricated "unavailable".
+  let ai;
+  try {
+    ai = projectAiAvailability(await getAiOperationalStatus());
+  } catch {
+    ai = Object.freeze({});
+  }
   return {
     checkedAt: snapshot.checkedAt,
     auth: { github: usable('github-oauth'), linkedin: usable('linkedin-oauth') },
@@ -736,7 +735,7 @@ async function getServiceAvailability(app) {
       paytm: usable('payments-paytm'), phonepe: usable('payments-phonepe'),
     },
     enterpriseTenancy: usable('enterprise-tenancy'),
-    ai: projectAiAvailability(byId.get('ai-providers')),
+    ai,
   };
 }
 

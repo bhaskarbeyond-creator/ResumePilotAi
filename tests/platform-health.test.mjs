@@ -123,21 +123,25 @@ test('the availability payload publishes an honest ai signal from the probed row
   const engine = await source('engine');
   const start = engine.indexOf('async function getServiceAvailability');
   const body = engine.slice(start, engine.indexOf('\n}', start));
-  // The signal is projected from the collected row — a single source of truth —
-  // and an UNKNOWN row withholds every boolean so the client answers UNKNOWN.
-  assert.match(body, /ai: projectAiAvailability\(byId\.get\('ai-providers'\)\)/);
+  // The signal is projected from the measured verdict — a single source of
+  // truth — and an UNKNOWN verdict withholds every boolean so the client
+  // answers UNKNOWN.
+  assert.match(body, /ai = projectAiAvailability\(await getAiOperationalStatus\(\)\)/);
   assert.match(engine, /function projectAiAvailability/);
   assert.match(engine, /return Object\.freeze\(\{ configured \}\);/);
-  // The row is measured by the non-billable probe, never assumed from config.
+  // The row is measured by the non-billable probe, never assumed from config…
   assert.match(engine, /getAiOperationalStatus/);
-  // ...and the probe re-uses the settings this collector already loaded, so the
-  // snapshot's MariaDB round-trip budget is unchanged.
-  assert.match(engine, /secrets: aiStored/);
+  // …and the snapshot consumes the cached verdict for FREE: collection has a
+  // round-trip budget that the probe's own repository reads would blow, so the
+  // snapshot must never TRIGGER the probe.
+  assert.match(engine, /peekAiOperationalStatus\(\)/);
+  assert.doesNotMatch(engine, /observe\('ai\.model-catalog'/);
 
-  // One credential-precedence rule: the probe delegates to the runtime builder.
+  // One credential-precedence rule: the probe delegates to the FROZEN runtime
+  // resolver and never re-derives a second opinion of its own.
   const probe = await source('probe');
-  assert.match(probe, /buildProviderConfiguration\(process\.env, settings\)/);
   assert.match(probe, /await loadProviderConfiguration\(\)/);
+  assert.doesNotMatch(probe, /buildProviderConfiguration/);
   // A rejected credential and a transport failure must stay distinguishable.
   assert.match(probe, /credential-rejected/);
   assert.match(probe, /inconclusive/);
