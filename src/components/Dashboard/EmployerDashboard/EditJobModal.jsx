@@ -5,6 +5,7 @@ import { FaBriefcase, FaMapMarkerAlt, FaDollarSign, FaCoins, FaFileAlt, FaSave, 
 import { AuthContext } from '../../../context/AuthContext';
 import { updateJobPosting, getApprovedEmployerCompanies } from '../../../services/api/platform';
 import CustomLocationAutocomplete from '../../JobsListings/CustomLocationAutocomplete';
+import CubaInlineNotice from '../../cuba/CubaInlineNotice';
 
 // eslint-disable-next-line react-refresh/only-export-components
 const EditJobModal = ({ isOpen, onClose, job, onJobUpdated, showToast, t }) => {
@@ -28,6 +29,9 @@ const EditJobModal = ({ isOpen, onClose, job, onJobUpdated, showToast, t }) => {
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    // DIR-048: replacement for the native alert() fallback — inline and themed,
+    // shown only when the host did not supply a showToast handler.
+    const [actionNotice, setActionNotice] = useState('');
     const [companies, setCompanies] = useState([]);
     const [loadingCompanies, setLoadingCompanies] = useState(false);
 
@@ -229,7 +233,8 @@ const EditJobModal = ({ isOpen, onClose, job, onJobUpdated, showToast, t }) => {
             if (showToast) {
                 showToast('error', 'Error', `Failed to update job posting: ${error.message}`);
             } else {
-                alert(`Failed to update job posting: ${error.message}`);
+                // DIR-048: inline notice replaces the native alert() fallback.
+                setActionNotice(`Failed to update job posting: ${error.message}`);
             }
         } finally {
             setIsSubmitting(false);
@@ -354,6 +359,15 @@ const EditJobModal = ({ isOpen, onClose, job, onJobUpdated, showToast, t }) => {
                             }}
                         >
                             <div className="p-6 space-y-6">
+                                {/* DIR-048: inline error notice replaces the alert() fallback. */}
+                                {actionNotice && (
+                                    <CubaInlineNotice
+                                        tone="error"
+                                        message={actionNotice}
+                                        onDismiss={() => setActionNotice('')}
+                                        testId="edit-job-notice"
+                                    />
+                                )}
                                 {/* Success Message */}
                                 {showSuccess && (
                                     <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-start gap-3">

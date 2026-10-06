@@ -38,6 +38,7 @@ import { createResumeDraft, loadResumeDraft, saveResumeDraft, publishResume, unp
 import { EMPTY_RESUME, DEFAULT_SECTION_ORDER, normalizeResumeData, buildCanonicalResumeDocument } from '../../utils/resumeData';
 import { getCandidateContext } from '../../utils/candidateContext';
 import { trackDownload, trackEvent, trackEngagement } from '../../utils/ga4';
+import CubaInlineNotice from '../cuba/CubaInlineNotice';
 import { toValidatedPdfBlob, pdfFileName } from '../../utils/pdfDownload';
 import { executeDocxDownload } from '../../utils/docxDownload';
 
@@ -112,6 +113,9 @@ const BuildResume = () => {
 
     const [resumeData, setResumeData] = useState(() => normalizeResumeData(EMPTY_RESUME));
     const [saveState, setSaveState] = useState({ status: 'idle', message: '' });
+    // DIR-048: inline replacement for the native alert() calls in export and
+    // completion flows. `null` means "no notice"; { tone, message } renders one.
+    const [actionNotice, setActionNotice] = useState(null);
     const [saveConflict, setSaveConflict] = useState(null);
     const [publicationState, setPublicationState] = useState({ isPublished: false, publicationRevision: 0, sourceRevision: 0, status: 'idle', message: '' });
     const saveConflictRef = useRef(null);
@@ -240,6 +244,17 @@ const BuildResume = () => {
             } catch (_e) {}
         }
     }, [authChecked, userData.user, userData.membership]);
+
+    // DIR-048: a login-gated export stores its explanation in sessionStorage
+    // before navigating away; it is claimed exactly once, on the return trip.
+    useEffect(() => {
+        let pendingNotice = '';
+        try {
+            pendingNotice = sessionStorage.getItem('pendingNoticeAfterAuth') || '';
+            if (pendingNotice) sessionStorage.removeItem('pendingNoticeAfterAuth');
+        } catch (_e) {}
+        if (pendingNotice) setActionNotice({ tone: 'warning', message: pendingNotice });
+    }, []);
 
     // Handle payment activation / membership update events
     useEffect(() => {
@@ -1025,7 +1040,11 @@ const BuildResume = () => {
                     resumeId: resumeIdRef.current
                 }));
             } catch (_e) {}
-            alert(t('BuildResume.errors.loginRequired', 'Please log in or sign up to download your resume. Your work has been saved.'));
+            // DIR-048: the alert is gone; the explanation is stored so the
+            // builder can show it on the return trip instead of a blocking,
+            // unthemeable OS dialog fired right before the navigation.
+            const loginNotice = t('BuildResume.errors.loginRequired', 'Please log in or sign up to download your resume. Your work has been saved.');
+            try { sessionStorage.setItem('pendingNoticeAfterAuth', loginNotice); } catch (_e) {}
             navigate('/?redirect=build-resume');
             return;
         }
@@ -1098,10 +1117,13 @@ const BuildResume = () => {
                 } catch (_) {}
             }
             // Prefer the server's reason (e.g. subscription required) over a generic string.
-            alert(serverErrorMsg
-                || (error?.code === 'EXPORT_NOT_PDF' && error.message ? error.message : null)
-                || error?.message
-                || t('BuildResume.errors.downloadFailed'));
+            setActionNotice({
+                tone: 'error',
+                message: serverErrorMsg
+                    || (error?.code === 'EXPORT_NOT_PDF' && error.message ? error.message : null)
+                    || error?.message
+                    || t('BuildResume.errors.downloadFailed'),
+            });
         } finally {
             setIsDownloading(false);
         }
@@ -1135,7 +1157,9 @@ const BuildResume = () => {
                     resumeId: resumeIdRef.current
                 }));
             } catch (_e) {}
-            alert(t('BuildResume.errors.loginRequired', 'Please log in or sign up to export your resume in Word (.docx) format. Your work has been saved.'));
+            // DIR-048: stored, then claimed by the builder on the return trip.
+            const loginNotice = t('BuildResume.errors.loginRequired', 'Please log in or sign up to export your resume in Word (.docx) format. Your work has been saved.');
+            try { sessionStorage.setItem('pendingNoticeAfterAuth', loginNotice); } catch (_e) {}
             navigate('/?redirect=build-resume');
             return;
         }
@@ -1182,10 +1206,13 @@ const BuildResume = () => {
                     serverErrorMsg = typeof parsed?.error === 'string' ? parsed.error : (parsed?.error?.message || null);
                 } catch (_) {}
             }
-            alert(serverErrorMsg
-                || (error?.code === 'EXPORT_NOT_DOCX' && error.message ? error.message : null)
-                || error?.message
-                || t('BuildResume.errors.downloadFailed'));
+            setActionNotice({
+                tone: 'error',
+                message: serverErrorMsg
+                    || (error?.code === 'EXPORT_NOT_DOCX' && error.message ? error.message : null)
+                    || error?.message
+                    || t('BuildResume.errors.downloadFailed'),
+            });
         } finally {
             setIsDownloadingDocx(false);
         }
@@ -1257,7 +1284,7 @@ const BuildResume = () => {
         }
         const userId = userIdRef.current;
         if (!userId) {
-            alert('Please sign in to save your resume');
+            setActionNotice({ tone: 'warning', message: 'Please sign in to save your resume' });
             return;
         }
         const saved = await persistLatest({ manual: true });
@@ -1674,6 +1701,18 @@ const BuildResume = () => {
                     </div>
                 ),
                 document.body
+            )}
+
+            {/* DIR-048: inline action notice replaces the native alert() calls. */}
+            {actionNotice?.message && (
+                <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[71] w-[calc(100%_-_2rem)] max-w-xl">
+                    <CubaInlineNotice
+                        tone={actionNotice.tone || 'info'}
+                        message={actionNotice.message}
+                        onDismiss={() => setActionNotice(null)}
+                        testId="builder-action-notice"
+                    />
+                </div>
             )}
 
             {/* Unified Top Studio Header */}

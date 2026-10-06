@@ -7,6 +7,7 @@ import './JobApplicationsModal.css';
 import SendMessageDialog from './SendMessageDialog';
 import { updateApplicationStatusWithMessage } from '../../../services/api/platform';
 import RejectionReasonModal from './RejectionReasonModal';
+import CubaInlineNotice from '../../cuba/CubaInlineNotice';
 import { FaTimes, FaUser, FaEnvelope, FaCalendar, FaFileAlt, FaDownload, FaCheckCircle, FaTimesCircle, FaUsers, FaClock, FaEye, FaChevronDown, FaChevronUp, FaSearch, FaFilter, FaExpand, FaCompress, FaCommentAlt } from 'react-icons/fa';
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -49,6 +50,9 @@ const JobApplicationsModal = ({ isOpen, onClose, job, applications, isLoadingApp
 
 const [selectedApplication, setSelectedApplication] = useState(null);
     const [isRejectionModalOpen, setRejectionModalOpen] = useState(false);
+    // DIR-048: replacement for the native alert() fallback — an inline, themed
+    // notice inside the dialog, shown only when the host supplies no showToast.
+    const [actionNotice, setActionNotice] = useState('');
 
     const handleStatusUpdate = async (applicationId, newStatus, rejectionMessage = '') => {
         const target = filteredApplications.find(application => application.id === applicationId);
@@ -74,12 +78,12 @@ const [selectedApplication, setSelectedApplication] = useState(null);
             } else {
                 const message = result.error || 'Failed to update application status.';
                 if (showToast) showToast('error', result.code === 'APPLICATION_CHANGED' ? 'Application changed' : 'Error', message);
-                else alert(message);
+                else setActionNotice(message);
             }
         } catch (error) {
             const message = error.message || 'An error occurred while updating the application status.';
             if (showToast) showToast('error', 'Error', message);
-            else alert(message);
+            else setActionNotice(message);
         } finally {
             setUpdatingStatus(null);
             setRejectionModalOpen(false);
@@ -176,6 +180,17 @@ const [selectedApplication, setSelectedApplication] = useState(null);
                     // in-modal candidate review).
                     className="bg-white rounded-lg shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden border border-slate-200 flex flex-col"
                     onClick={(e) => e.stopPropagation()}>
+                    {/* DIR-048: inline error notice replaces the alert() fallback. */}
+                    {actionNotice && (
+                        <div className="px-4 pt-3">
+                            <CubaInlineNotice
+                                tone="error"
+                                message={actionNotice}
+                                onDismiss={() => setActionNotice('')}
+                                testId="job-applications-notice"
+                            />
+                        </div>
+                    )}
                     {/* Header */}
                     <div className="flex items-center justify-between p-4 border-b border-slate-200">
                         <div>
@@ -428,7 +443,8 @@ const [selectedApplication, setSelectedApplication] = useState(null);
                                                                     }
                                                                     window.open(sanitizeUrl(resumeUrl), '_blank');
                                                                 } else {
-                                                                    alert('Resume link not available');
+                                                                    // DIR-048: inline notice replaces the native alert().
+                                                                    setActionNotice('Resume link not available');
                                                                 }
                                                             }}
                                                             className="flex items-center gap-2 px-3 py-2 bg-slate-50 text-slate-700 rounded-md hover:bg-slate-100 transition-colors text-xs font-medium border border-slate-200">

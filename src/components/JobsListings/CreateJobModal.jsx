@@ -7,6 +7,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { checkIsEmployer, submitEmployerApplication, createJobPosting, getApprovedEmployerCompanies } from '../../services/api/platform';
 import EmployerApplicationForm from './EmployerApplicationForm';
 import CustomLocationAutocomplete from './CustomLocationAutocomplete';
+import CubaInlineNotice from '../cuba/CubaInlineNotice';
 
 const CreateJobModal = ({ isOpen, onClose, onJobCreated, t }) => {
     const user = useContext(AuthContext);
@@ -35,6 +36,9 @@ const CreateJobModal = ({ isOpen, onClose, onJobCreated, t }) => {
     const [employerApplicationSuccess, setEmployerApplicationSuccess] = useState(false);
     const [companies, setCompanies] = useState([]);
     const [loadingCompanies, setLoadingCompanies] = useState(false);
+    // DIR-048: replacement for the native alert() calls — one inline, themed
+    // notice for both the job-posting and the employer-application flows.
+    const [submitNotice, setSubmitNotice] = useState('');
 
     // Prevent background scrolling when modal is open
     useEffect(() => {
@@ -234,7 +238,7 @@ const CreateJobModal = ({ isOpen, onClose, onJobCreated, t }) => {
             }
         } catch (error) {
             console.error('❌ Error creating job posting:', error);
-            alert(`Failed to create job posting: ${error.message}`);
+            setSubmitNotice(`Failed to create job posting: ${error.message}`);
         } finally {
             setIsSubmitting(false);
         }
@@ -270,7 +274,7 @@ const CreateJobModal = ({ isOpen, onClose, onJobCreated, t }) => {
     const handleEmployerApplicationSubmit = async (applicationData) => {
         if (!user) {
             console.error('User not logged in');
-            alert('Please log in to submit an application.');
+            setSubmitNotice('Please log in to submit an application.');
             return;
         }
 
@@ -286,11 +290,11 @@ const CreateJobModal = ({ isOpen, onClose, onJobCreated, t }) => {
                 }, 3000);
             } else {
                 console.error('Failed to submit application:', result.error);
-                alert(`Failed to submit application: ${result.error}`);
+                setSubmitNotice(`Failed to submit application: ${result.error}`);
             }
         } catch (error) {
             console.error('Error submitting employer application:', error);
-            alert(`Error submitting application: ${error.message}`);
+            setSubmitNotice(`Error submitting application: ${error.message}`);
         } finally {
             setIsSubmitting(false);
         }
@@ -401,6 +405,17 @@ const CreateJobModal = ({ isOpen, onClose, onJobCreated, t }) => {
                                             </div>
                                         )}
 
+                                        {/* DIR-048: inline notice replaces the alert() calls. */}
+                                        {submitNotice && (
+                                            <div className="mb-4">
+                                                <CubaInlineNotice
+                                                    tone="error"
+                                                    message={submitNotice}
+                                                    onDismiss={() => setSubmitNotice('')}
+                                                    testId="create-job-notice"
+                                                />
+                                            </div>
+                                        )}
                                         <form id="create-job-form" onSubmit={handleSubmit} className="space-y-6">
                                             {/* Job Basics */}
                                             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
