@@ -1,13 +1,23 @@
-[LEAD SUPERVISOR SPRINT DISPATCH - ACT MODE CONTINUATION]
-Directive: DIR-048 (Universal Platform UI/UX Polish, Google M3 Layouts, Native Mobile/Tablet App UX & Missing Options Census)
-Status: IN_PROGRESS (33% Complete - Steps S1-S3 Certified in Commit a6e6e7cf)
-Reference: .bridge/LEAD-RULING-DIR-048.md
+[LEAD SUPERVISOR RULING - ACT MODE AUTHORIZED]
+Directive: DIR-049 (Master Universal Platform Re-Verification & Second Certification — 2nd Review across DIR-001 through DIR-048)
+Status: IN_PROGRESS (Plan Approved 100/100 by Lead Supervisor)
+Reference: .bridge/LEAD-RULING-DIR-049.md
 
-ACTION MANDATE FOR CURRENT SPRINT:
-1. S4: Wire backend/services/aiOperationalProbe.js into backend/services/platformHealth.js (make /api/service-availability report real ai.providers so frontend beacon becomes 'AI Engine Ready').
-2. S5: Replace generic fallback error copy in backend/index.js:2324.
-3. S6: Replace 13 remaining alert() sites with showToast / CubaPromptDialog (BuildResume 5, CreateJobModal 4, JobApplicationsModal 3, EditJobModal 1).
-4. S7: Wire formatSafeDate.js to eliminate 'Invalid Date' in JobApplicationsModal.jsx:138, EmployerDashboard.jsx:363, CompaniesManagement.jsx:191, AppliedJobs.jsx:130.
+PLAN REVIEW SUMMARY:
+Plan is approved. S1 through S9 verification matrix is fully authorized.
+Zero source code modifications permitted (pure verification & certification directive).
 
-Run unit tests and Vite build, commit changes, and emit heartbeat:
-bridge dev heartbeat --directive DIR-048 --projectDir "D:\xampp\htdocs\IME365" --status "S4-S7 complete..." --percent 55
+ACTION MANDATE:
+Execute the 7 verification workstreams in ACT mode:
+1. S1: Security static sentinels (npm run test:security:static) -> capture output to .bridge/evidence/dir049-security.log
+2. S2: Backend integration matrix (npm --prefix backend test) -> capture output to .bridge/evidence/dir049-backend.log
+3. S3: Frontend product matrix (npm run test:product) + interview coach (npm run test:interview with --test-concurrency=1) -> capture output to .bridge/evidence/dir049-product.log
+4. S4: Cuba design system and 4-portal shells (npm run test:design-system) -> capture output to .bridge/evidence/dir049-design-system.log
+5. S5: Hermetic Playwright browser UAT (npm run test:dir048:browser) -> capture output to .bridge/evidence/dir049-playwright.log
+6. S6: Production build and lint (npm run build && npm run lint)
+7. S7: Frozen baseline audit (git diff e314f715 -- backend/services/aiRuntime.js -> assert 0 bytes; CERTIFIED_FREEZE_MANIFEST.json check)
+8. S8: Compile .bridge/evidence/DIR-049-EVIDENCE-SUMMARY.md and submit via:
+   bridge dev submit-evidence --directive DIR-049 --projectDir "D:\xampp\htdocs\IME365" --summary "<summary>" --tests "<tests.log>"
+
+Emit heartbeats after major steps:
+bridge dev heartbeat --directive DIR-049 --projectDir "D:\xampp\htdocs\IME365" --status "<status>" --percent <0-100>

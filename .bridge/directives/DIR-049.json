@@ -1,0 +1,34 @@
+{
+  "id": "DIR-049",
+  "title": "Master Universal Platform Re-Verification & Second Certification (2nd Review across all Directives DIR-001 through DIR-048)",
+  "priority": "P0",
+  "status": "IN_PROGRESS",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-06T18:32:39.903Z",
+  "updatedAt": "2026-10-06T18:42:55.441Z",
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "spec": "### 1. OBJECTIVE & MANDATE\nExecute an exhaustive, rigorous 2nd Review and full re-verification of the entire IME365 codebase against all platform directives (DIR-001 through DIR-048) and certified frozen baselines.\n\n### 2. VERIFICATION SCOPE\n1. Security & Static Sentinels: Run npm run test:security:static (assert 67/67 PASS, zero credentials in tracked files, canonical headers, and contrast tokens).\n2. Backend Core & Integration Matrix: Run npm --prefix backend test (assert 892/892 PASS, zero IDOR flaws, tenant isolation, master-key AES-256-GCM encryption, TOTP MFA freshness).\n3. Frontend Product Matrix: Run npm run test:product and npm run test:interview with --test-concurrency=1 (assert all suites pass, zero race conditions).\n4. Cuba Design System & 4-Portal Shells: Run npm run test:design-system (assert 141/141 PASS across Candidate, Employer, Enterprise, and Admin consoles).\n5. Hermetic Playwright Browser UAT: Run npm run test:dir048:browser (assert 8/8 PASS across 375px mobile, 768px tablet, and 1280px desktop with live dialog traps and zero Invalid Date strings).\n6. Production Build & Linter: Run npm run build (assert clean bundle compilation) and npm run lint (assert 0 errors).\n7. Frozen Invariant Verification: Audit git diffs against certified freeze commits (DIR-021 aiRuntime 0-byte diff, resume template parity, zero-simulated-latency allowlist).\n\n### 3. ACCEPTANCE CRITERIA\n- AC-1: Security static suite passes 67/67 with 0 errors.\n- AC-2: Backend integration suite passes 892/892 with 0 errors.\n- AC-3: Frontend product suite and interview coach suites pass 100%.\n- AC-4: Cuba design system and 4-portal architecture suites pass 141/141.\n- AC-5: Playwright browser UAT passes 8/8 with real DOM verification.\n- AC-6: Vite production build succeeds with zero errors.\n- AC-7: ESLint passes with 0 errors.\n- AC-8: All protected freeze baselines remain 100% intact with zero unintended drift.\n- AC-9: Compile and submit exhaustive Second Certification Evidence Bundle via bridge dev submit-evidence.",
+  "invariants": [],
+  "acceptanceCriteria": [],
+  "plan": {
+    "submittedAt": "2026-10-06T18:38:57.822Z",
+    "summary": "DIR-049 2nd Review re-verification plan: Re-run the certified full verification matrix on HEAD e4211a45 (DIR-048 certified freeze, dirty=false on source; only untracked .bridge state files). Streams: S1 npm run test:security:static (67/67); S2 npm --prefix backend test (892/892); S3 npm run test:product + npm run test:interview --test-concurrency=1; S4 npm run test:design-system (141/141); S5 npm run test:dir048:browser (8/8, 375/768/1280px, dialog traps + Invalid Date sweep); S6 npm run build + npm run lint (0 errors); S7 frozen baseline audit (DIR-021 backend/services/aiRuntime.js 0-byte diff vs e314f715, resume template parity .bridge/CERTIFIED_FREEZE_MANIFEST.json, zero-simulated-latency allowlist, pkg.json prod-deps drift check); S8 evidence bundle + bridge dev submit-evidence for Gatekeeper certification. Zero source modifications permitted - verification-only directive.",
+    "steps": [
+      "S1: Security static sentinels - npm run test:security:static, assert 67/67 PASS + capture log",
+      "S2: Backend integration matrix - npm --prefix backend test, assert 892/892 PASS + IDOR/tenant/AES-256-GCM/TOTP checks in log",
+      "S3: Frontend product matrix - npm run test:product then npm run test:interview (--test-concurrency=1), assert all suites PASS",
+      "S4: Cuba design system and 4-portal shells - npm run test:design-system, assert 141/141 PASS",
+      "S5: Hermetic Playwright UAT - npm run test:dir048:browser, assert 8/8 PASS at 375px/768px/1280px with dialog traps and zero Invalid Date",
+      "S6: Build and lint - npm run build (Vite clean) + npm run lint (0 errors)",
+      "S7: Frozen baseline audit - git diff e314f715 -- backend/services/aiRuntime.js (0 bytes), template/zero-latency-manifest checks vs CERTIFIED_FREEZE_MANIFEST.json, git status dirty check",
+      "S8: Compile Second Certification Evidence Bundle, write .bridge/evidence/DIR-049-EVIDENCE-SUMMARY.md, submit via bridge dev submit-evidence",
+      "S9: Heartbeats after each stream + await Gatekeeper APPROVED_FROZEN"
+    ],
+    "planHash": "342a30d67bb3c70130e6db25dfe59c4e319cc48bae64fa80f075ad92bf6ec718"
+  },
+  "evidence": null,
+  "reviews": [],
+  "freeze": null,
+  "lastTransitionReason": "lead approved plan; act mode authorized"
+}

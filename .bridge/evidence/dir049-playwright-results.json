@@ -1,0 +1,377 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "D:\\xampp\\htdocs\\IME365\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--config=playwright.dir048.config.js"
+    ],
+    "configFile": "D:\\xampp\\htdocs\\IME365\\playwright.dir048.config.js",
+    "rootDir": "D:/xampp/htdocs/IME365/tests/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/xampp/htdocs/IME365/.bridge/evidence/dir048-artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "dir048-uiux-polish",
+        "name": "dir048-uiux-polish",
+        "testDir": "D:/xampp/htdocs/IME365/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "/dir0048-uiux-polish\\.spec\\.js/"
+        ],
+        "timeout": 600000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": ".bridge/evidence/dir048-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "dir0048-uiux-polish.spec.js",
+      "file": "dir0048-uiux-polish.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "AC-1: the four portals render inside the Cuba shell with ZERO native dialogs",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 600000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "dir048-uiux-polish",
+              "projectName": "dir048-uiux-polish",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 15474,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [
+                    {
+                      "text": "\u001b[33m\u001b[1mDeprecation Warning\u001b[0m [\u001b[34mglobal-builtin\u001b[0m]: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.\nUse color.adjust instead.\n\nMore info and automated migrator: https://sass-lang.com/d/import\n\n\u001b[34m   ╷\u001b[0m\n\u001b[34m97 │\u001b[0m         background-color: \u001b[31mdarken($btn-default, 6%)\u001b[0m;\r\n\u001b[34m   │\u001b[0m \u001b[31m                          ^^^^^^^^^^^^^^^^^^^^^^^^\u001b[0m\n\u001b[34m   ╵\u001b[0m\n    ..\\..\\..\\..\\src\\index.scss 97:27  root stylesheet\n\n"
+                    },
+                    {
+                      "text": "\u001b[33m\u001b[1mDeprecation Warning\u001b[0m [\u001b[34mcolor-functions\u001b[0m]: darken() is deprecated. Suggestions:\n\ncolor.scale($color, $lightness: -9.5327102804%)\ncolor.adjust($color, $lightness: -6%)\n\nMore info: https://sass-lang.com/d/color-functions\n\n\u001b[34m   ╷\u001b[0m\n\u001b[34m97 │\u001b[0m         background-color: \u001b[31mdarken($btn-default, 6%)\u001b[0m;\r\n\u001b[34m   │\u001b[0m \u001b[31m                          ^^^^^^^^^^^^^^^^^^^^^^^^\u001b[0m\n\u001b[34m   ╵\u001b[0m\n    ..\\..\\..\\..\\src\\index.scss 97:27  root stylesheet\n\n"
+                    },
+                    {
+                      "text": "\u001b[33m\u001b[1mDeprecation Warning\u001b[0m [\u001b[34mglobal-builtin\u001b[0m]: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.\nUse color.adjust instead.\n\nMore info and automated migrator: https://sass-lang.com/d/import\n\n\u001b[34m    ╷\u001b[0m\n\u001b[34m153 │\u001b[0m         border-color: \u001b[31mdarken($btn-default, 10%)\u001b[0m;\r\n\u001b[34m    │\u001b[0m \u001b[31m                      ^^^^^^^^^^^^^^^^^^^^^^^^^\u001b[0m\n\u001b[34m    ╵\u001b[0m\n    ..\\..\\..\\..\\src\\index.scss 153:23  root stylesheet\n\n"
+                    },
+                    {
+                      "text": "\u001b[33m\u001b[1mDeprecation Warning\u001b[0m [\u001b[34mcolor-functions\u001b[0m]: darken() is deprecated. Suggestions:\n\ncolor.scale($color, $lightness: -15.8878504673%)\ncolor.adjust($color, $lightness: -10%)\n\nMore info: https://sass-lang.com/d/color-functions\n\n\u001b[34m    ╷\u001b[0m\n\u001b[34m153 │\u001b[0m         border-color: \u001b[31mdarken($btn-default, 10%)\u001b[0m;\r\n\u001b[34m    │\u001b[0m \u001b[31m                      ^^^^^^^^^^^^^^^^^^^^^^^^^\u001b[0m\n\u001b[34m    ╵\u001b[0m\n    ..\\..\\..\\..\\src\\index.scss 153:23  root stylesheet\n\n"
+                    },
+                    {
+                      "text": "\u001b[33m\u001b[1mDeprecation Warning\u001b[0m [\u001b[34mglobal-builtin\u001b[0m]: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.\nUse color.adjust instead.\n\nMore info and automated migrator: https://sass-lang.com/d/import\n\n\u001b[34m    ╷\u001b[0m\n\u001b[34m154 │\u001b[0m         color: \u001b[31mdarken($btn-default, 10%)\u001b[0m;\r\n\u001b[34m    │\u001b[0m \u001b[31m               ^^^^^^^^^^^^^^^^^^^^^^^^^\u001b[0m\n\u001b[34m    ╵\u001b[0m\n    ..\\..\\..\\..\\src\\index.scss 154:16  root stylesheet\n\n"
+                    },
+                    {
+                      "text": "\u001b[33m\u001b[1mDeprecation Warning\u001b[0m [\u001b[34mcolor-functions\u001b[0m]: darken() is deprecated. Suggestions:\n\ncolor.scale($color, $lightness: -15.8878504673%)\ncolor.adjust($color, $lightness: -10%)\n\nMore info: https://sass-lang.com/d/color-functions\n\n\u001b[34m    ╷\u001b[0m\n\u001b[34m154 │\u001b[0m         color: \u001b[31mdarken($btn-default, 10%)\u001b[0m;\r\n\u001b[34m    │\u001b[0m \u001b[31m               ^^^^^^^^^^^^^^^^^^^^^^^^^\u001b[0m\n\u001b[34m    ╵\u001b[0m\n    ..\\..\\..\\..\\src\\index.scss 154:16  root stylesheet\n\n"
+                    }
+                  ],
+                  "retry": 0,
+                  "startTime": "2026-10-06T18:58:18.218Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "80a633e6bd8aaae71678-8ec4dce3b2f1e0f2fe4e",
+          "file": "dir0048-uiux-polish.spec.js",
+          "line": 200,
+          "column": 1
+        },
+        {
+          "title": "AC-3: the AI beacon resolves Ready from the live availability contract",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 600000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "dir048-uiux-polish",
+              "projectName": "dir048-uiux-polish",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1815,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-06T18:58:34.895Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "80a633e6bd8aaae71678-a9c15644d70df404bf4d",
+          "file": "dir0048-uiux-polish.spec.js",
+          "line": 218,
+          "column": 1
+        },
+        {
+          "title": "AC-2: no Invalid Date / NaN / undefined string reaches any portal DOM",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 600000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "dir048-uiux-polish",
+              "projectName": "dir048-uiux-polish",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6911,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-06T18:58:36.721Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "80a633e6bd8aaae71678-fd90d23128f07cfd8eab",
+          "file": "dir0048-uiux-polish.spec.js",
+          "line": 227,
+          "column": 1
+        },
+        {
+          "title": "AC-5: uniform gutters and zero horizontal overflow at five breakpoints",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 600000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "dir048-uiux-polish",
+              "projectName": "dir048-uiux-polish",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 7015,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-06T18:58:43.642Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "80a633e6bd8aaae71678-a98cb66b6f5773861327",
+          "file": "dir0048-uiux-polish.spec.js",
+          "line": 241,
+          "column": 1
+        },
+        {
+          "title": "AC-10: the 375px mobile shell is a native app with a real bottom tab bar",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 600000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "dir048-uiux-polish",
+              "projectName": "dir048-uiux-polish",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2098,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-06T18:58:50.668Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "80a633e6bd8aaae71678-84e941351ba1eb9c02f1",
+          "file": "dir0048-uiux-polish.spec.js",
+          "line": 272,
+          "column": 1
+        },
+        {
+          "title": "AC-11: the tablet band renders the compact rail; the full sidebar returns at 1280",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 600000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "dir048-uiux-polish",
+              "projectName": "dir048-uiux-polish",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4367,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-06T18:58:52.776Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "80a633e6bd8aaae71678-5da32f38b61815641e95",
+          "file": "dir0048-uiux-polish.spec.js",
+          "line": 299,
+          "column": 1
+        },
+        {
+          "title": "AC-4b: the notification popover is an executive glass surface with a real activity row",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 600000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "dir048-uiux-polish",
+              "projectName": "dir048-uiux-polish",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1699,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-06T18:58:57.153Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "80a633e6bd8aaae71678-ae687490f33017acc906",
+          "file": "dir0048-uiux-polish.spec.js",
+          "line": 319,
+          "column": 1
+        },
+        {
+          "title": "AC-4: axe-core WCAG 2.1 AA on the candidate shell in light AND dark",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 600000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "dir048-uiux-polish",
+              "projectName": "dir048-uiux-polish",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5008,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-06T18:58:58.862Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "80a633e6bd8aaae71678-e399529265fc4cb75b81",
+          "file": "dir0048-uiux-polish.spec.js",
+          "line": 338,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-06T18:58:17.318Z",
+    "duration": 47409.761999999995,
+    "expected": 8,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

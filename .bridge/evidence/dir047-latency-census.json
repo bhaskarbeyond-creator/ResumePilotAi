@@ -1,20 +1,20 @@
 {
   "directive": "DIR-047",
   "vector": "SWOT-W zero simulated latency",
-  "generatedAt": "2026-10-05T17:40:01.083Z",
+  "generatedAt": "2026-10-06T19:00:14.397Z",
   "method": "comment-stripped source scan of src/**/*.{js,jsx,mjs,cjs}; balanced-paren argument split; every site classified",
   "definition": {
     "simulatedLatency": "a timer that gates completion of a user flow, stands in for network/AI/database work already performed, or delays first paint of content that is genuinely ready",
     "legitimate": "message auto-dismiss, debounce/throttle, retry backoff, sub-perceptual paint ordering, non-critical deferral"
   },
   "totals": {
-    "filesScanned": 614,
-    "timerSites": 238,
-    "userFlowSites": 238,
+    "filesScanned": 617,
+    "timerSites": 239,
+    "userFlowSites": 239,
     "infrastructureSites": 0,
     "byCategory": {
       "unclassified": 104,
-      "debounce": 43,
+      "debounce": 44,
       "auto-dismiss": 77,
       "deadline-guard": 5,
       "paint-deferral": 9
@@ -740,7 +740,7 @@
     },
     {
       "file": "src/components/auth/recoverPassword/RecoverPassword.jsx",
-      "line": 57,
+      "line": 64,
       "delay": "2500",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -751,7 +751,7 @@
     },
     {
       "file": "src/components/auth/recoverPassword/RecoverPassword.jsx",
-      "line": 70,
+      "line": 77,
       "delay": "2500",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -762,7 +762,7 @@
     },
     {
       "file": "src/components/auth/register/Register.jsx",
-      "line": 346,
+      "line": 351,
       "delay": "2000",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -938,7 +938,7 @@
     },
     {
       "file": "src/components/BuildResume/BuildResume.jsx",
-      "line": 469,
+      "line": 484,
       "delay": "3000",
       "category": "debounce",
       "simulatedLatency": false,
@@ -949,7 +949,7 @@
     },
     {
       "file": "src/components/BuildResume/BuildResume.jsx",
-      "line": 485,
+      "line": 500,
       "delay": "delay",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -960,7 +960,7 @@
     },
     {
       "file": "src/components/BuildResume/BuildResume.jsx",
-      "line": 790,
+      "line": 805,
       "delay": "2500",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -971,7 +971,7 @@
     },
     {
       "file": "src/components/BuildResume/BuildResume.jsx",
-      "line": 921,
+      "line": 936,
       "delay": "8000",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -982,7 +982,7 @@
     },
     {
       "file": "src/components/BuildResume/BuildResume.jsx",
-      "line": 927,
+      "line": 942,
       "delay": "8000",
       "category": "debounce",
       "simulatedLatency": false,
@@ -993,7 +993,7 @@
     },
     {
       "file": "src/components/BuildResume/BuildResume.jsx",
-      "line": 933,
+      "line": 948,
       "delay": "8000",
       "category": "debounce",
       "simulatedLatency": false,
@@ -1004,7 +1004,7 @@
     },
     {
       "file": "src/components/BuildResume/BuildResume.jsx",
-      "line": 951,
+      "line": 966,
       "delay": "4000",
       "category": "debounce",
       "simulatedLatency": false,
@@ -1015,7 +1015,7 @@
     },
     {
       "file": "src/components/BuildResume/BuildResume.jsx",
-      "line": 1377,
+      "line": 1404,
       "delay": "0",
       "category": "paint-deferral",
       "simulatedLatency": false,
@@ -1301,7 +1301,7 @@
     },
     {
       "file": "src/components/BuildResume/steps/ReviewStep.jsx",
-      "line": 98,
+      "line": 108,
       "delay": "600",
       "category": "debounce",
       "simulatedLatency": false,
@@ -1619,6 +1619,17 @@
       "callback": "async () => { try { const raw = await searchProvider(term); if (cancelled) return; const hits = Array.isArray(raw) ? raw.filter((hit) => hit && typeof hit === 'object' && typeof hit.run === 'function'"
     },
     {
+      "file": "src/components/cuba/CubaInlineNotice.jsx",
+      "line": 74,
+      "delay": "autoDismissMs",
+      "category": "debounce",
+      "simulatedLatency": false,
+      "reason": "trailing-edge debounce cancelled by clearTimeout; fires earlier as keystrokes arrive and never holds a completed action",
+      "scope": "user-flow",
+      "infrastructureNote": null,
+      "callback": "() => { setVisible(false); onDismiss(); }"
+    },
+    {
       "file": "src/components/Dashboard/CoversList/CoversList.jsx",
       "line": 42,
       "delay": "1300",
@@ -1807,7 +1818,7 @@
     },
     {
       "file": "src/components/Dashboard/EmployerDashboard/EditJobModal.jsx",
-      "line": 220,
+      "line": 224,
       "delay": "2000",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -2082,7 +2093,7 @@
     },
     {
       "file": "src/components/JobsListings/CreateJobModal.jsx",
-      "line": 228,
+      "line": 232,
       "delay": "3000",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -2093,7 +2104,7 @@
     },
     {
       "file": "src/components/JobsListings/CreateJobModal.jsx",
-      "line": 283,
+      "line": 287,
       "delay": "3000",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -2159,7 +2170,7 @@
     },
     {
       "file": "src/components/JobsListings/MainJobListings.jsx",
-      "line": 398,
+      "line": 403,
       "delay": "500",
       "category": "debounce",
       "simulatedLatency": false,
@@ -2203,7 +2214,7 @@
     },
     {
       "file": "src/components/PortfolioBuilder/PortfolioBuilder.jsx",
-      "line": 307,
+      "line": 312,
       "delay": "4000",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -2214,7 +2225,7 @@
     },
     {
       "file": "src/components/PortfolioBuilder/PortfolioBuilder.jsx",
-      "line": 1063,
+      "line": 1079,
       "delay": "4000",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -2225,7 +2236,7 @@
     },
     {
       "file": "src/components/PortfolioBuilder/PortfolioBuilder.jsx",
-      "line": 1074,
+      "line": 1090,
       "delay": "5000",
       "category": "debounce",
       "simulatedLatency": false,
@@ -2236,7 +2247,7 @@
     },
     {
       "file": "src/components/PortfolioBuilder/PortfolioBuilder.jsx",
-      "line": 1109,
+      "line": 1125,
       "delay": "100",
       "category": "debounce",
       "simulatedLatency": false,
@@ -2247,7 +2258,7 @@
     },
     {
       "file": "src/components/PortfolioBuilder/PortfolioBuilder.jsx",
-      "line": 1118,
+      "line": 1134,
       "delay": "2500",
       "category": "debounce",
       "simulatedLatency": false,
@@ -2401,7 +2412,7 @@
     },
     {
       "file": "src/enterprise/components/EnterpriseAuditTab.jsx",
-      "line": 190,
+      "line": 196,
       "delay": "2500",
       "category": "unclassified",
       "simulatedLatency": false,
