@@ -2,11 +2,11 @@
   "id": "DIR-050",
   "title": "DIR-050: Production Release — Push Arena Branch, Merge with Main, and Master Verification",
   "priority": "P0",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-06T19:41:41.259Z",
-  "updatedAt": "2026-10-06T20:03:03.980Z",
+  "updatedAt": "2026-10-06T20:03:11.114Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "### 1. OBJECTIVE & MANDATE\nExecute the official production release pipeline requested by User:\n1. Push all certified commits on branch arena/01a0e100-resumepilotai to origin/arena/01a0e100-resumepilotai.\n2. Checkout main branch, synchronize with origin/main, and merge arena/01a0e100-resumepilotai into main cleanly (fast-forward or clean merge, 0 conflicts).\n3. Push main to origin/main.\n4. Execute full platform verification battery on main:\n   - S1: npm run test:security:static (67/67 PASS)\n   - S2: npm --prefix backend test (892/892 PASS on live MariaDB)\n   - S3: npm run test:product and npm run test:interview -- --test-concurrency=1 (31/31 PASS)\n   - S4: npm run test:design-system (141/141 PASS)\n   - S5: npm run test:dir048:browser (8/8 PASS at 375px/768px/1280px)\n   - S6: npm run build (clean Vite bundle) and npm run lint (0 errors)\n   - S7: Frozen baseline invariant check (aiRuntime.js 0-byte diff vs e314f715, 51 templates 0 drift, 0 latency offenders)\n5. Submit complete production release evidence bundle via bridge dev submit-evidence for Gatekeeper certification.\n\n### 2. ACCEPTANCE CRITERIA\n- AC-1: arena/01a0e100-resumepilotai pushed to origin with zero errors.\n- AC-2: main cleanly merged and aligned with arena commits.\n- AC-3: main pushed to origin/main.\n- AC-4: All 7 verification test suites pass 100% on main.\n- AC-5: Formal evidence package submitted.",
   "invariants": [],
@@ -62,6 +62,12 @@
       "evidenceHash": "24f5d4aa0145123e3e751da6bcb14d044e4f91be8ac7cdcc972374bdf636510a"
     }
   ],
-  "freeze": null,
-  "lastTransitionReason": "lead review"
+  "freeze": {
+    "freezeHash": "cc231dfa562ee7645afcfe6bfc614cadec0c6852",
+    "certifiedAt": "2026-10-06T20:03:11.113Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "",
+    "evidenceHash": "24f5d4aa0145123e3e751da6bcb14d044e4f91be8ac7cdcc972374bdf636510a"
+  },
+  "lastTransitionReason": "gatekeeper certification"
 }
