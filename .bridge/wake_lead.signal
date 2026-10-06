@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-06T20:00:54.894Z",
-  "seq": 2150,
-  "id": "evt_mux3sz7x_4bacb6d6148b",
-  "type": "HEARTBEAT",
-  "title": "[Heartbeat] S3a product run1/run2 hit load-flakes (ats-score 82ms vs 80ms budget; lifecycle takeover wait). Isolation proof: ats 24/24 EXIT 0, lifecycle 1/1 EXIT 0 standalone. Cooldown + clean full-suite re-run i",
+  "timestamp": "2026-10-06T20:02:57.922Z",
+  "seq": 2151,
+  "id": "evt_mux3vm5f_a42fa742bd00",
+  "type": "EVIDENCE_SUBMITTED",
+  "title": "[Evidence] DIR-050: DIR-050: Production Release — Push Arena Branch, Merge with Main, and Master Verification",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-050",
-  "summary": "S3a product run1/run2 hit load-flakes (ats-score 82ms vs 80ms budget; lifecycle takeover wait). Isolation proof: ats 24/24 EXIT 0, lifecycle 1/1 EXIT 0 standalone. Cooldown + clean full-suite re-run in progress"
+  "summary": "DIR-050 Production Release verified: arena branch pushed, merged to main, main pushed to origin/main. All 7 verification streams pass on main: S1 67/67, S2 892/892 live MariaDB, S3 product 729/729 + interview 31/31, S4 141/141, S5 Playwright 8/8 real-DOM, S6 Vite build EXIT 0 7.63s + lint 0 errors, S7 frozen baselines 0-byte diff."
 }

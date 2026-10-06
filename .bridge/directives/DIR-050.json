@@ -2,11 +2,11 @@
   "id": "DIR-050",
   "title": "DIR-050: Production Release — Push Arena Branch, Merge with Main, and Master Verification",
   "priority": "P0",
-  "status": "IN_PROGRESS",
+  "status": "APPROVED",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-06T19:41:41.259Z",
-  "updatedAt": "2026-10-06T19:44:04.646Z",
+  "updatedAt": "2026-10-06T20:03:03.980Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "### 1. OBJECTIVE & MANDATE\nExecute the official production release pipeline requested by User:\n1. Push all certified commits on branch arena/01a0e100-resumepilotai to origin/arena/01a0e100-resumepilotai.\n2. Checkout main branch, synchronize with origin/main, and merge arena/01a0e100-resumepilotai into main cleanly (fast-forward or clean merge, 0 conflicts).\n3. Push main to origin/main.\n4. Execute full platform verification battery on main:\n   - S1: npm run test:security:static (67/67 PASS)\n   - S2: npm --prefix backend test (892/892 PASS on live MariaDB)\n   - S3: npm run test:product and npm run test:interview -- --test-concurrency=1 (31/31 PASS)\n   - S4: npm run test:design-system (141/141 PASS)\n   - S5: npm run test:dir048:browser (8/8 PASS at 375px/768px/1280px)\n   - S6: npm run build (clean Vite bundle) and npm run lint (0 errors)\n   - S7: Frozen baseline invariant check (aiRuntime.js 0-byte diff vs e314f715, 51 templates 0 drift, 0 latency offenders)\n5. Submit complete production release evidence bundle via bridge dev submit-evidence for Gatekeeper certification.\n\n### 2. ACCEPTANCE CRITERIA\n- AC-1: arena/01a0e100-resumepilotai pushed to origin with zero errors.\n- AC-2: main cleanly merged and aligned with arena commits.\n- AC-3: main pushed to origin/main.\n- AC-4: All 7 verification test suites pass 100% on main.\n- AC-5: Formal evidence package submitted.",
   "invariants": [],
@@ -29,8 +29,39 @@
     ],
     "planHash": "5d04c9067fc96fa10b84c8e1d8e5adaf003cd0d714d5ab249d033d511c2bf314"
   },
-  "evidence": null,
-  "reviews": [],
+  "evidence": {
+    "submittedAt": "2026-10-06T20:02:55.669Z",
+    "summary": "DIR-050 Production Release verified: arena branch pushed, merged to main, main pushed to origin/main. All 7 verification streams pass on main: S1 67/67, S2 892/892 live MariaDB, S3 product 729/729 + interview 31/31, S4 141/141, S5 Playwright 8/8 real-DOM, S6 Vite build EXIT 0 7.63s + lint 0 errors, S7 frozen baselines 0-byte diff.",
+    "tests": {
+      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\DIR-050-EVIDENCE-SUMMARY.md",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791316975675_DIR-050-EVIDENCE-SUMMARY.md",
+      "sha256": "af901a534199841529926e2b1ba1f7446cbcd2d9fe59348b9e9b0c10a00c548e",
+      "size": 4077
+    },
+    "domCrawl": {
+      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir048-uiux-results.json",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791316975682_dir048-uiux-results.json",
+      "sha256": "47f1103640200c1cfa4b637b7fe8834baef8e1bf3aa7a25e0ceaa6fba4a48659",
+      "size": 2294
+    },
+    "artifacts": [],
+    "git": {
+      "isGit": true,
+      "head": "603335d9cc2c3fb6badd90b844c1f3d98a899f09",
+      "branch": "main",
+      "dirty": false,
+      "status": ""
+    },
+    "manifestHash": "24f5d4aa0145123e3e751da6bcb14d044e4f91be8ac7cdcc972374bdf636510a"
+  },
+  "reviews": [
+    {
+      "reviewedAt": "2026-10-06T20:03:03.978Z",
+      "verdict": "APPROVED",
+      "feedback": "",
+      "evidenceHash": "24f5d4aa0145123e3e751da6bcb14d044e4f91be8ac7cdcc972374bdf636510a"
+    }
+  ],
   "freeze": null,
-  "lastTransitionReason": "lead approved plan; act mode authorized"
+  "lastTransitionReason": "lead review"
 }
