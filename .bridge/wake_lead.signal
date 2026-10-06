@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-06T19:44:28.475Z",
-  "seq": 2133,
-  "id": "evt_mux37u39_6ce31fd3ca43",
+  "timestamp": "2026-10-06T20:00:54.894Z",
+  "seq": 2150,
+  "id": "evt_mux3sz7x_4bacb6d6148b",
   "type": "HEARTBEAT",
-  "title": "[Heartbeat] Step 2: Switching to main and merging arena/01a0e100-resumepilotai",
+  "title": "[Heartbeat] S3a product run1/run2 hit load-flakes (ats-score 82ms vs 80ms budget; lifecycle takeover wait). Isolation proof: ats 24/24 EXIT 0, lifecycle 1/1 EXIT 0 standalone. Cooldown + clean full-suite re-run i",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-050",
-  "summary": "Step 2: Switching to main and merging arena/01a0e100-resumepilotai"
+  "summary": "S3a product run1/run2 hit load-flakes (ats-score 82ms vs 80ms budget; lifecycle takeover wait). Isolation proof: ats 24/24 EXIT 0, lifecycle 1/1 EXIT 0 standalone. Cooldown + clean full-suite re-run in progress"
 }

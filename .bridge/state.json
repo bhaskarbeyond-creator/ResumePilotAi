@@ -1,26 +1,26 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-06T19:43:53.292Z",
-  "eventCount": 2128,
+  "updatedAt": "2026-10-06T19:53:47.234Z",
+  "eventCount": 2140,
   "activeDirectiveId": "DIR-050",
   "activeDirectiveTitle": "DIR-050: Production Release — Push Arena Branch, Merge with Main, and Master Verification",
-  "activeDirectiveStatus": "ISSUED",
+  "activeDirectiveStatus": "IN_PROGRESS",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-06T19:01:32.092Z",
-  "unreadForLead": 159,
-  "unreadForDev": 279,
+  "stallDeadline": "2026-10-06T19:47:45.968Z",
+  "unreadForLead": 165,
+  "unreadForDev": 285,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-06T19:01:32.092Z",
-    "status": "DIR-049 COMPLETE: evidence bundle submitted (EVIDENCE_SUBMITTED), Lead woken for Gatekeeper review. Awaiting APPROVED_FROZEN.",
-    "percent": 100
+    "timestamp": "2026-10-06T19:47:45.968Z",
+    "status": "S1 PASSED (67/67). Running S2: Backend Core & Integration (892/892)",
+    "percent": 50
   },
   "integrity": {
-    "ok": false,
-    "checked": 2128,
-    "legacy": 22,
-    "bad": 6
+    "ok": true,
+    "checked": 2140,
+    "legacy": 0,
+    "bad": 0
   }
 }

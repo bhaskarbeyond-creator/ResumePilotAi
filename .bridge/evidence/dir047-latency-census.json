@@ -1,7 +1,7 @@
 {
   "directive": "DIR-047",
   "vector": "SWOT-W zero simulated latency",
-  "generatedAt": "2026-10-06T19:00:14.397Z",
+  "generatedAt": "2026-10-06T19:56:20.657Z",
   "method": "comment-stripped source scan of src/**/*.{js,jsx,mjs,cjs}; balanced-paren argument split; every site classified",
   "definition": {
     "simulatedLatency": "a timer that gates completion of a user flow, stands in for network/AI/database work already performed, or delays first paint of content that is genuinely ready",
