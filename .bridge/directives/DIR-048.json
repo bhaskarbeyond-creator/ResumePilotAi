@@ -2,11 +2,11 @@
   "id": "DIR-048",
   "title": "Universal Platform UI/UX Polish, Google M3 Layouts, Native Mobile/Tablet App UX & Missing Options Census (Strict 99+/100 Elite Gate)",
   "priority": "P0",
-  "status": "IN_PROGRESS",
+  "status": "EVIDENCE_SUBMITTED",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-05T06:57:37.313Z",
-  "updatedAt": "2026-10-05T19:39:07.978Z",
+  "updatedAt": "2026-10-06T17:05:01.761Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "### 1. OBJECTIVE & MANDATE\nExecute an exhaustive, platform-wide UI/UX enhancement, popup redesign, layout margin/padding calibration, and logic integration overhaul across all 4 portals (Candidate, Employer/Recruiter, Enterprise, SuperAdmin).\nStrict Quality Gate: Approval and Certification will ONLY be granted after achieving a verified score of 99+/100 against real-DOM visual, aesthetic, and functional criteria.\n\n### 2. FIVE USER-IDENTIFIED DEFECT CLUSTERS & CORE REQUIREMENTS\n\n1. CLUSTER 1: EXECUTIVE DROPDOWNS & POPUPS REDESIGN\n   - User Profile Dropdown (M3UserMenu.jsx): Eliminate text clipping/truncation in identity chip and popover panel. Upgrade container to Cuba executive glassmorphism (cuba-glass, border-cuba-header-menu-border, shadow-cuba-xl, rounded-2xl). Add refined hover states, micro-interactions, clean separators, and role-scoped navigational targets.\n   - Notifications Popover (M3NotificationCenter.jsx): Replace hardcoded repetitive dummy strings ('New message. You have a new message. 18h ago') with realistic, contextual platform activity feed. Replace default Windows grey scrollbar with sleek Cuba custom scrollbar tokens (scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700). Enhance header and empty state styling.\n   - AI Engine Status Beacon: Fix root cause of 'AI Engine Status Unknown' in top navbar. Update /api/service-availability on backend to emit real AI provider operational telemetry (payload.ai) so useAiEngineStatus correctly reflects 'AI Engine Ready' when configured.\n\n2. CLUSTER 2: DASHBOARD LAYOUTS, PADDING & MARGIN CALIBRATION\n   - Eliminate awkward edge-to-edge card stretching. Enforce uniform responsive container gutters (max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6) across Candidate, Employer, Enterprise, and Admin dashboards.\n   - EmployerDashboard.jsx / JobPostings: Refactor job cards from flat border cards into premium Cuba cards (cuba-card, rounded-xl, hover:shadow-cuba-md). Provide proper typographic hierarchy and replace raw unstyled fallback strings ('Salary not specified', 'Posted Date not specified') with elegant contextual badges/chips.\n\n3. CLUSTER 3: ELIMINATION OF NATIVE BROWSER DIALOGS (ZERO alert())\n   - JobApplicationsModal.jsx & throughout codebase: Completely ban native window.alert(), window.confirm(), and window.prompt(). Replace alert('Resume link not available') and any fallback alerts with Cuba toast notifications (showToast / toast.error) or an executive modal dialog.\n\n4. CLUSTER 4: ELIMINATION OF DATE LOGIC BUGS ('Applied: Invalid Date')\n   - In JobApplicationsModal.jsx, EmployerDashboard.jsx, and all application/interview review modals: Fix date parsing logic. Safely handle ISO dates, SQL timestamps, Unix epochs, null, and undefined values. Under no circumstances may 'Invalid Date' appear anywhere in the rendered DOM.\n\n5. CLUSTER 5: ACTION BUTTONS & MODAL STYLING UPGRADE\n   - Candidate Review & Application Modals: Upgrade plain unstyled action buttons ('Download Resume', 'Send Email', 'Show Resume') to Cuba M3 styled buttons with sleek icons, proper hover transitions, contrast compliance, and disabled states.\n\n### 3. AUTOMATED TESTING UPGRADE (ELIMINATING BLIND SPOTS)\n   - Author comprehensive Playwright UAT suite (tests/e2e/dir048-uiux-polish.spec.js) that actively checks for visual excellence:\n     a) Negative assertion: Rendered DOM must NEVER contain 'Invalid Date', 'NaN', 'undefined', or 'Status Unknown'.\n     b) Dialog trap: page.on('dialog') must assert that NO native alert dialog is fired.\n     c) Container margin/padding inspection: Evaluate bounding boxes of main dashboard containers across viewports (375px, 768px, 1280px, 1920px) to verify gutter compliance.\n     d) Visual popup verification: Open UserMenu and NotificationCenter, verify Cuba glassmorphism classes, custom scrollbar styling, and z-index ordering.\n\n### 4. ACCEPTANCE CRITERIA & 99+/100 GATE\n   - AC-1: Zero native window.alert() in entire client codebase.\n   - AC-2: Zero 'Invalid Date' occurrences across all portals and modals.\n   - AC-3: AI Engine status pill resolves to 'AI Engine Ready' in normal operational state.\n   - AC-4: M3UserMenu and M3NotificationCenter redesigned to Cuba Glass standard with custom scrollbars and realistic notifications.\n   - AC-5: Dashboard layouts across all 4 portals implement consistent responsive gutters and card margins.\n   - AC-6: Playwright E2E visual and functional suite passes 100% with real-DOM screenshot evidence.\n   - AC-7: Cognitive audit score >= 99/100 required before Gatekeeper certification.\n\n### 5. CLUSTER 6: GOOGLE-INSPIRED LAYOUT RESTRUCTURING & DASHBOARD MISSING OPTIONS CENSUS\n- Missing Options & Dead Controls Census: Audit every dashboard view across Candidate, Employer/Recruiter, Enterprise, and SuperAdmin portals. Identify all missing, unlinked, or dead control options (e.g. bulk actions, filter resets, export formats, resume preview options, application quick-actions, status toggles). Wire all options to real functional state or rich Cuba modals/toasts.\n- Google-Inspired Material 3 Layout Architecture: Restructure all internal dashboard pages and portal views into Google-inspired executive layouts:\n  a) Top Navigation Bar: Unified Google Cloud/Workspace style with floating identity chip, search palette (Cmd+K), presence indicators, and glassmorphic popovers.\n  b) Responsive Container Gutters: Generous whitespace hierarchy, eliminating edge-to-edge stretching (max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8).\n  c) Stat Cards & Data Widgets: Modern Google M3 tonal pastel surfaces, rounded-2xl elevation cards, trend indicators, and refined micro-interactions.\n  d) Tab & Table Navigation: Google-style pill tabs, clean table dividers, and subtle hover highlights.\n  e) Feedback & Overlays: Replace raw dialogs with Google M3 styled floating sheets, bottom sheets, and snackbars.\n\n### 6. CLUSTER 7: ADAPTIVE NATIVE DEVICE EXPERIENCE (MOBILE APP & TABLET APP UX)\n- Native Mobile App Experience (375px - 480px):\n  a) Bottom Navigation Bar / App Bar: Mobile navigation docks cleanly at the bottom with quick access to Home/Overview, Jobs, Applications, and Profile.\n  b) Bottom Sheet Overlays: All modals, filter menus, and action drawers on mobile open as native bottom sheets (rounded-t-3xl, swipe/drag indicator, backdrop blur) rather than desktop-centered boxes.\n  c) Touch Ergonomics: Minimum 44x44px - 48x48px tap targets, zero horizontal overflow, and full touch-first fluidity.\n  d) Streamlined Card Streams: Single-column feed with compact metric badges and floating action buttons (FAB) for primary creation actions.\n- Native Tablet App Experience (768px - 1024px):\n  a) Compact Navigation Rail: Slim collapsible icon sidebar maximizing horizontal canvas room for content.\n  b) Adaptive Master-Detail / Split Views: Utilize screen real estate for list + preview split panes (e.g. job list on left, candidate review/job detail on right).\n  c) Contextual Overlays: Floating contextual sheets and popovers positioned ergonomically for tablet touch interaction.",
   "invariants": [
@@ -63,8 +63,32 @@
     ],
     "planHash": "3d94577409fedb26a5fa5f3875033668dd43cd513371e97b16d376a6450935c1"
   },
-  "evidence": null,
+  "evidence": {
+    "submittedAt": "2026-10-06T17:04:59.913Z",
+    "summary": "DIR-048 S4-S12 implemented and verified. Tests: full frontend product suite EXIT 0; backend 892/892 pass; security-static EXIT 0; hermetic Playwright UAT 8/8 (dialog trap, negative-string census, AI beacon Ready, 5-breakpoint gutters, 375px bottom bar >=44px targets, 768-1024 compact rail, popover glass, axe WCAG AA light+dark). Freeze: aiRuntime.js restored to 0-byte diff vs e314f715 (DIR-021 INV-1 green); snapshot query budget still 7 (probe warms via /api/service-availability, snapshot peeks the cached verdict). Build budget: honest A/B - the DIR-047-certified tree ALSO fails 4.0s on this loaded host (median 4133ms); DIR-048 delta +236ms (~5.7%). Full package: .bridge/evidence/DIR-048-EVIDENCE-SUMMARY.md",
+    "tests": {
+      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir048-product-tests.log",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791306299917_dir048-product-tests.log",
+      "sha256": "bd7af02d8899f21e8dd061c7bf12395cc5eab821dc74d7192d676f06a79df604",
+      "size": 87442
+    },
+    "domCrawl": {
+      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir048-uiux-results.json",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791306299922_dir048-uiux-results.json",
+      "sha256": "bcf5ee044198b3ca3975b121777bf08940e56656c843c6cfdcc629efd21a5d95",
+      "size": 2294
+    },
+    "artifacts": [],
+    "git": {
+      "isGit": true,
+      "head": "b8e9925ae1f306e402345c96b0a42f7f2687da7a",
+      "branch": "arena/01a0e100-resumepilotai",
+      "dirty": false,
+      "status": ""
+    },
+    "manifestHash": "3f3bd74d35e8950fd357a2ef820dd84c5e45e3ae63d91afa7a3ce024336073c0"
+  },
   "reviews": [],
   "freeze": null,
-  "lastTransitionReason": "lead approved plan; act mode authorized"
+  "lastTransitionReason": "verification evidence submitted"
 }
