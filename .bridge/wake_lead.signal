@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-06T19:01:32.126Z",
-  "seq": 2124,
-  "id": "evt_mux1om64_ef51c3ea6d42",
+  "timestamp": "2026-10-06T19:44:28.475Z",
+  "seq": 2133,
+  "id": "evt_mux37u39_6ce31fd3ca43",
   "type": "HEARTBEAT",
-  "title": "[Heartbeat] DIR-049 COMPLETE: evidence bundle submitted (EVIDENCE_SUBMITTED), Lead woken for Gatekeeper review. Awaiting APPROVED_FROZEN.",
+  "title": "[Heartbeat] Step 2: Switching to main and merging arena/01a0e100-resumepilotai",
   "sender": "STAFF_DEVELOPER",
-  "directiveId": "DIR-049",
-  "summary": "DIR-049 COMPLETE: evidence bundle submitted (EVIDENCE_SUBMITTED), Lead woken for Gatekeeper review. Awaiting APPROVED_FROZEN."
+  "directiveId": "DIR-050",
+  "summary": "Step 2: Switching to main and merging arena/01a0e100-resumepilotai"
 }

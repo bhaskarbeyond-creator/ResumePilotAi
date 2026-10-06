@@ -1,0 +1,36 @@
+{
+  "id": "DIR-050",
+  "title": "DIR-050: Production Release — Push Arena Branch, Merge with Main, and Master Verification",
+  "priority": "P0",
+  "status": "IN_PROGRESS",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-06T19:41:41.259Z",
+  "updatedAt": "2026-10-06T19:44:04.646Z",
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "spec": "### 1. OBJECTIVE & MANDATE\nExecute the official production release pipeline requested by User:\n1. Push all certified commits on branch arena/01a0e100-resumepilotai to origin/arena/01a0e100-resumepilotai.\n2. Checkout main branch, synchronize with origin/main, and merge arena/01a0e100-resumepilotai into main cleanly (fast-forward or clean merge, 0 conflicts).\n3. Push main to origin/main.\n4. Execute full platform verification battery on main:\n   - S1: npm run test:security:static (67/67 PASS)\n   - S2: npm --prefix backend test (892/892 PASS on live MariaDB)\n   - S3: npm run test:product and npm run test:interview -- --test-concurrency=1 (31/31 PASS)\n   - S4: npm run test:design-system (141/141 PASS)\n   - S5: npm run test:dir048:browser (8/8 PASS at 375px/768px/1280px)\n   - S6: npm run build (clean Vite bundle) and npm run lint (0 errors)\n   - S7: Frozen baseline invariant check (aiRuntime.js 0-byte diff vs e314f715, 51 templates 0 drift, 0 latency offenders)\n5. Submit complete production release evidence bundle via bridge dev submit-evidence for Gatekeeper certification.\n\n### 2. ACCEPTANCE CRITERIA\n- AC-1: arena/01a0e100-resumepilotai pushed to origin with zero errors.\n- AC-2: main cleanly merged and aligned with arena commits.\n- AC-3: main pushed to origin/main.\n- AC-4: All 7 verification test suites pass 100% on main.\n- AC-5: Formal evidence package submitted.",
+  "invariants": [],
+  "acceptanceCriteria": [],
+  "plan": {
+    "submittedAt": "2026-10-06T19:43:59.686Z",
+    "summary": "Push arena branch, fast-forward merge to main, push main, and run complete 7-stream verification battery",
+    "steps": [
+      "S1: Push arena/01a0e100-resumepilotai to origin",
+      "S2: Switch to main and merge arena/01a0e100-resumepilotai",
+      "S3: Push main to origin/main",
+      "S4: Run static security suite (67/67 PASS)",
+      "S5: Run backend integration suite on MariaDB (892/892 PASS)",
+      "S6: Run frontend product & interview suites (31/31 PASS)",
+      "S7: Run design system suite (141/141 PASS)",
+      "S8: Run hermetic Playwright browser UAT (8/8 PASS)",
+      "S9: Run Vite build & lint (0 errors)",
+      "S10: Audit frozen baselines",
+      "S11: Submit production release evidence bundle"
+    ],
+    "planHash": "5d04c9067fc96fa10b84c8e1d8e5adaf003cd0d714d5ab249d033d511c2bf314"
+  },
+  "evidence": null,
+  "reviews": [],
+  "freeze": null,
+  "lastTransitionReason": "lead approved plan; act mode authorized"
+}
