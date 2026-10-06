@@ -1,99 +1,172 @@
-# 🚀 REMOTE DEVELOPER MASTER DISPATCH: 40 PRODUCTION DIRECTIVES (DIR-001 to DIR-040)
-# ResumePilotAI (IME365) — Complete Platform Directives, 10/10 Quality Ratings & Execution Mandate
+# 🛡️ RESUMEPILOTAI (IME365) — REMOTE MASTER DIRECTIVE
+# Autonomous Independent Verification & Production Certification Protocol
+**Directive ID:** `DIR-REMOTE-MASTER-001` · **Quality Rating:** `10/10`  
+**Governing Authority:** Executive Engineering Leadership (Antigravity)  
+**Target Engineer:** Remote Senior Staff Developer / Lead Verification Engineer
 
 ---
 
-## 📌 EXECUTIVE DISPATCH SUMMARY
+## 📌 1. EXECUTIVE MISSION & ZERO-TRUST MANDATE
 
-Welcome, Senior Staff Engineer. This directory (`remote-directives/`) contains the **complete, authoritative set of 40 engineering directives** (`DIR-001.json` through `DIR-040.json`) governing the full production transformation, feature completion, and release certification of **ResumePilotAI (IME365)**.
+Welcome, Senior Staff Engineer. This repository contains the complete production-grade codebase for **ResumePilotAI (IME365)**.
 
-Every single directive has been audited, upgraded, and certified at **10/10 Quality Rating**. No superficial or placeholder directives remain.
-
-### 🎯 YOUR PRIME MANDATES:
-1. **WORK ON ALL DIRECTIVES IN `remote-directives/`**:
-   - You are not limited to a subset. Execute through these directives methodically.
-   - For each directive, read the corresponding `DIR-XXX.json` file in this directory.
-2. **MAINTAIN 10/10 IMPLEMENTATION STANDARD**:
-   - Follow the **Supreme Engineering Mandate**: `BUILD IT → TEST IT → RUN IT → CRAWL IT → BREAK IT → FIX IT → RETEST IT → COMPARE IT → CLEAN IT → CHALLENGE IT → PROVE IT → THEN CERTIFY IT`.
-   - Never accept claims without real browser DOM or API evidence.
-3. **KEEP `.bridge/directives/` SYNCHRONIZED & ENHANCED**:
-   - As you execute each directive or make architectural discoveries, update both `remote-directives/DIR-XXX.json` and `.bridge/directives/DIR-XXX.json`.
-   - This ensures the local developer and supervisor can independently review your progress, inspect your evidence, and verify your implementation.
-4. **DISCOVER & IMPLEMENT UNMET SYSTEM POTENTIAL**:
-   - Directives `DIR-035` through `DIR-040` were added to maximize the platform's potential (Transactional Email Failover, Collaborative Editing, Real-User Monitoring, Offline PWA, Recruiter AI Sourcing, and Zero-Trust Security). Execute these with the same rigor as core directives.
+### ⚠️ THE PRIME MANDATE: ZERO TRUST IN PRIOR ARTIFACTS
+> **Do NOT assume or accept past documentation, test summaries, or historical evidence files as given truth.**  
+> You are commissioned to act as an **independent, adversarial auditor and release certifier**. You must clone/pull the updated code, setup your own local runtime and database from scratch, execute every single verification stream with your own eyes and tools, and independently prove that the platform is 100% production-ready.
 
 ---
 
-## 📋 COMPLETE DIRECTIVES CATALOG & QUALITY RATINGS
+## 🛠️ 2. REMOTE ENVIRONMENT & TOOLING SETUP
 
-| Directive ID | Category | Priority | Rating | Title |
-|:---|:---|:---:|:---:|:---|
-| **DIR-001** | Core Design System | **P0** | **10/10** | Cuba Executive UI/UX Master Transformation across 4 Portals |
-| **DIR-002** | Candidate Workspace | **P1** | **10/10** | Candidate Sub-Surfaces, ContextSwitcher & Command Palette Deep Polish |
-| **DIR-003** | Public Web & Marketing | **P1** | **10/10** | Public Secondary Pages & Marketing Header Harmonization |
-| **DIR-004** | Core Architecture | **P0** | **10/10** | Zero-FOUC Architecture & Instant Theme/Font Hydration Pipeline |
-| **DIR-005** | Public Web & Routing | **P2** | **10/10** | Semantic Marketing Consolidation & Dashboard2 Legacy Residue Purge |
-| **DIR-006** | Onboarding & Funnels | **P1** | **10/10** | Unified End-to-End User Funnel & Cross-Portal Conversion Verification |
-| **DIR-007** | ATS Pipeline | **P0** | **10/10** | Recruiter ATS Pipeline Overhaul & In-Modal Candidate Resume Review System |
-| **DIR-008** | Enterprise Console | **P0** | **10/10** | Enterprise Organization Dashboard & 12 Console Modules Deep Overhaul |
-| **DIR-009** | Candidate Workspace | **P0** | **10/10** | Candidate Dashboard 10/10 Overhaul, Duplicate Banner Purge & Cuba Tokens |
-| **DIR-010** | Recruiter Portal | **P0** | **10/10** | Recruiter Portal & ATS Candidate Pipeline 10/10 Overhaul |
-| **DIR-011** | Command Surface | **P1** | **10/10** | Google M3 Universal AppHeader & Command Surface across All Dashboards |
-| **DIR-012** | Admin Console | **P1** | **10/10** | Platform Admin System Console, Super Admin Role Simulator & Security Audit |
-| **DIR-013** | AI Engines | **P1** | **10/10** | AI Interview Coach & Audio/Voice CBT Simulator 10/10 Overhaul |
-| **DIR-014** | AI Engines | **P1** | **10/10** | AI Cover Letter Builder & Multi-Format Generator 10/10 Overhaul |
-| **DIR-015** | Admin Settings | **P0** | **10/10** | SuperAdmin Platform Settings 10/10 Overhaul & Google Cloud Control Center |
-| **DIR-016** | Cross-Portal Completeness | **P1** | **10/10** | Omitted Cross-Portal Surfaces & Navigation Completeness Freeze |
-| **DIR-017** | Security Center | **P0** | **10/10** | Candidate Account & Security Command Center 10/10 Overhaul |
-| **DIR-018** | Billing & Checkout | **P1** | **10/10** | Global Billing, Pricing & Checkout Experience 10/10 Overhaul (INR ₹) |
-| **DIR-019** | Career Studio | **P1** | **10/10** | Digital Portfolio & Web CV Studio 10/10 Overhaul |
-| **DIR-020** | Career Intelligence | **P1** | **10/10** | Interactive Job Application Kanban Tracker & Career Intelligence Suite |
-| **DIR-021** | AI Copilot | **P1** | **10/10** | Omnipresent ⌘K AI Career Copilot & Universal Command Surface |
-| **DIR-022** | Payment Infrastructure | **P0** | **10/10** | Payment Webhook Reconciler, Multi-Gateway Ledger & Entitlement Sentinel |
-| **DIR-023** | Accessibility & Contrast | **P1** | **10/10** | Universal Dark Mode Contrast Auditor & Real-DOM WCAG 2.1 AA Scanner |
-| **DIR-024** | SEO & Indexation | **P1** | **10/10** | Autonomous Geo-SEO Engine & Schema.org JSON-LD Career Landing System |
-| **DIR-025** | Navigation & Routing | **P0** | **10/10** | Universal Link Crawler, Route Completeness & Zero-404 Navigation Freeze |
-| **DIR-026** | Messaging Engine | **P1** | **10/10** | Real-Time In-App Candidate & Recruiter Messaging 10/10 Overhaul |
-| **DIR-027** | Architecture & Scraping | **P1** | **10/10** | Job Portal Clean Architecture & External Scraper Deprecation |
-| **DIR-028** | Codebase Hygiene | **P2** | **10/10** | Platform-Wide Orphaned Code, Dead Tests, Stale Docs & Transient File Hygiene |
-| **DIR-029** | Re-Audit & Hardening | **P1** | **10/10** | Phase 2 Second Review — Enterprise & Recruiter Portals (DIR-001, 7, 8, 10) |
-| **DIR-030** | Re-Audit & Hardening | **P1** | **10/10** | Phase 2 Second Review — Candidate Workspace & Navigation (DIR-002, 4, 9, 11) |
-| **DIR-031** | Re-Audit & Hardening | **P1** | **10/10** | Phase 2 Second Review — Public Marketing & Funnels (DIR-003, 5, 6) |
-| **DIR-032** | Re-Audit & Hardening | **P1** | **10/10** | Phase 2 Second Review — Admin Console & Security (DIR-012, 15, 16, 17) |
-| **DIR-033** | Re-Audit & Hardening | **P0** | **10/10** | Phase 2 Second Review — AI Engines & Billing (DIR-013, 14, 18, 19, 20) |
-| **DIR-034** | Master Certification | **P0** | **10/10** | Universal 10/10 Master Production Certification & Release Freeze |
-| **DIR-035** | System Enhancement | **P1** | **10/10** | Automated Email & Webhook Notification Engine with Multi-Provider Failover |
-| **DIR-036** | System Enhancement | **P1** | **10/10** | Real-Time Collaborative Resume Editing & Live Recruiter Feedback Loop |
-| **DIR-037** | System Enhancement | **P1** | **10/10** | Autonomous System Observability, OpenTelemetry Tracing & Client RUM |
-| **DIR-038** | System Enhancement | **P2** | **10/10** | Offline-First PWA Support & ServiceWorker Resume Cache Engine |
-| **DIR-039** | System Enhancement | **P1** | **10/10** | Recruiter AI Candidate Sourcing, Smart Boolean Search & Semantic Matcher |
-| **DIR-040** | System Enhancement | **P0** | **10/10** | Zero-Trust Security Hardening, Dynamic Rate Limiting & OWASP Top 10 Shield |
+Follow these exact steps to set up your remote verification environment:
 
----
+### 2.1 Clone / Pull the Latest Code
+```bash
+# Clone fresh or fetch the latest commits from main
+git clone git@github.com:bhaskarbeyond-creator/ResumePilotAi.git
+cd ResumePilotAi
 
-## 🛠️ HOW TO EXECUTE AS THE REMOTE DEVELOPER
+# Ensure you are on the authoritative main branch:
+git checkout main
+git pull origin main
 
-### Step 1: Pick a Directive File
-Open any directive JSON in `remote-directives/DIR-XXX.json`. Read the `spec`, `acceptanceCriteria`, `invariants`, and `verification` schema.
+# Verify clean working tree:
+git status
+```
 
-### Step 2: Implement Smallest Safe Changes
-- Modify existing React components in `src/` or backend services in `backend/`.
-- Respect Cuba Design Tokens (`src/styles/cuba-tokens.css`).
-- Never introduce hardcoded colors or ad-hoc inline styles.
+### 2.2 Install Runtime Dependencies
+```bash
+# 1. Install frontend / workspace dependencies
+npm install
 
-### Step 3: Run Validation & Verification
-- Compile and build: `npm run build`
-- Run test suites: `npm test` or `npx playwright test tests/e2e/dir-xxx.spec.js`
-- Verify real DOM behavior: Launch the local dev server (`npm run dev`) and test with real browser clicks.
+# 2. Install backend dependencies
+npm --prefix backend install
 
-### Step 4: Update Directives & Sync Back
-- Update the directive's status in `remote-directives/DIR-XXX.json` (e.g. `IN_PROGRESS` -> `COMPLETED` / `APPROVED_FROZEN`).
-- Sync the updated JSON into `.bridge/directives/DIR-XXX.json` so the local supervisor can independently certify it.
+# 3. Install Playwright browser binaries and OS dependencies
+npx playwright install --with-deps
+```
+
+### 2.3 Configure and Start Live Database (MariaDB / MySQL)
+The platform strictly forbids mock databases in its integration suites. You must have a live database instance:
+1. Ensure **MariaDB 10.5+** or **MySQL 8.0+** is running on port `3306`.
+2. Create the target database (default: `aime365` or as configured in `backend/.env`):
+   ```sql
+   CREATE DATABASE IF NOT EXISTS aime365 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   ```
+3. Run all migration scripts in sequence from `backend/database/migrations/`:
+   ```bash
+   # Run migration runner or apply migrations 001 through 024
+   node backend/database/runMigrations.js
+   ```
+4. Verify database connectivity:
+   ```bash
+   node -e "const mysql = require('mysql2/promise'); mysql.createConnection({host:'127.0.0.1',port:3306,user:'root',password:process.env.DB_PASSWORD||'',database:'aime365'}).then(()=>console.log('MARIADB CONNECTED OK')).catch(e=>console.error('DB ERR',e.message))"
+   ```
+
+### 2.4 Verify Environment Configuration
+Ensure `.env` in the root and `backend/.env` exist and contain necessary development variables:
+- `PORT=8080`
+- `DB_HOST=127.0.0.1`, `DB_PORT=3306`, `DB_USER=root`, `DB_NAME=aime365`
+- `JWT_SECRET` (minimum 32-byte string)
 
 ---
 
-## 🔒 NON-NEGOTIABLE SYSTEM INVARIANTS
-1. **Never Break Authentication**: Firebase Auth JWT tokens and session lifecycle must remain intact.
-2. **Never Expose Plaintext Secrets**: NVIDIA, OpenAI, Razorpay, or Stripe API keys must remain strictly server-side.
-3. **No Mocks as Final Proof**: Final acceptance criteria must be proven against real DOM and live API responses.
-4. **Preserve Backward Compatibility**: Never drop existing database columns or break existing resume IDs.
+## 🧪 3. INDEPENDENT 8-STREAM VERIFICATION PIPELINE
+
+Execute the following 8 verification streams sequentially. Every stream must exit code `0` with zero failures:
+
+### Stream 1: Static Security & Sentinels (67 / 67 PASS)
+```bash
+npm run test:security:static
+```
+- **What it verifies:** Canonical Apache `.htaccess` headers, `robots.txt`/`sitemap.xml` public discovery policies, credential leakage scanner, XSS sanitization, native TOTP MFA guards, unlayered-CSS isolation.
+
+### Stream 2: Backend Core & Integration on Live MariaDB (892 / 892 PASS)
+```bash
+npm --prefix backend test
+```
+- **What it verifies:** Live transactional outbox, AES-256-GCM envelope master-key encryption, P0 TOTP MFA freshness checks, tenant isolation, IDOR export boundaries, rate-limiting.
+
+### Stream 3: Frontend Product Suite (729 / 729 PASS)
+```bash
+npm run test:product
+```
+- **What it verifies:** Candidate workspace, ATS applicant review, enterprise organization console, platform admin command center, resume builder 11-step completion, and zero-fabrication assertions across all 58 product test suites.
+
+### Stream 4: AI Interview Coach & Audio/Voice CBT Simulator (31 / 31 PASS)
+```bash
+npm run test:interview -- --test-concurrency=1
+```
+- **What it verifies:** Multi-tab session takeover, duration bounds, refresh recovery pointers, text fallback, and role/type interview deduplication.  
+*(Note: Always pass `--test-concurrency=1` to prevent simulated multi-tab BroadcastChannel collision).*
+
+### Stream 5: Cuba Executive Design System & 4 Portals (141 / 141 PASS)
+```bash
+npm run test:design-system
+```
+- **What it verifies:** Candidate, Employer, Enterprise, and Admin consoles rendered in authentic Google Material 3 / Cuba glassmorphic tokens; unique navigation `aria-label` landmarks; honest AI telemetry ring (zero fake numbers).
+
+### Stream 6: Hermetic Playwright Real-DOM Browser Crawl (8 / 8 PASS)
+```bash
+npm run test:dir048:browser
+```
+- **What it verifies:** Headless browser real-DOM crawl across 375px (mobile native bottom-bar), 768px (tablet compact rail), 1024px, and 1280px (full desktop); live dialog traps confirming **ZERO native dialogs** (`window.alert/confirm/prompt`); zero `"Invalid Date"`, `NaN`, or `undefined` strings in any portal DOM; axe-core WCAG 2.1 AA in light AND dark modes.
+
+### Stream 7: Production Vite Bundle & Static Linter Gate (0 ERRORS)
+```bash
+npm run build
+npm run lint
+```
+- **What it verifies:** Vite bundle builds clean assets with correct chunk splitting; ESLint reports **0 fatal errors** (advisory warnings permitted).
+
+### Stream 8: Protected Frozen Invariants & Baseline Audits
+```bash
+# 1. aiRuntime.js must have 0-byte diff against certified commit e314f715
+git diff e314f715 -- backend/services/aiRuntime.js
+
+# 2. Template census: all 51 resume templates and 4 cover letters must be matched
+node scripts/dir047-template-census.mjs
+
+# 3. Latency census: zero simulated setTimeout/latency offenders
+node scripts/dir047-latency-census.mjs
+```
+
+---
+
+## 🔒 4. NON-NEGOTIABLE INVARIANTS
+
+1. **INV-1 (aiRuntime.js Freeze)**: `backend/services/aiRuntime.js` is certified and gatekeeper-locked. Never modify it without explicit supervisory instruction (`git diff e314f715` must be 0 bytes).
+2. **INV-2 (Template & ATS Parity)**: All 51 resume templates (`src/components/templates/Cv*.jsx`) and 4 cover letters must remain untouched.
+3. **INV-3 (Zero Synthetic Telemetry)**: Never fake metrics, latency delays, or placeholder counts. Always render genuine state.
+4. **INV-4 (Zero Plaintext Secrets)**: API keys and secret tokens must never appear in client bundles, logs, or unmasked DOM elements.
+
+---
+
+## 📋 5. CERTIFICATION & HANDOVER REPORT TEMPLATE
+
+Once all 8 streams pass with 100% green integrity on your remote machine, submit your certification report:
+
+```markdown
+### 📋 Remote Master Verification & Certification Report
+
+#### 1. Remote Environment
+- **Node Version**: [e.g., v20.18.0]
+- **Database**: [MariaDB 10.11 on 3306 — 24 migrations applied]
+- **Playwright**: [Browsers installed and verified]
+- **Git Commit**: [e.g., db2a7087]
+
+#### 2. Verification Battery Results
+- **S1 (Static Security)**: `67 / 67 PASS` (Output snippet + time)
+- **S2 (Backend Core Matrix)**: `892 / 892 PASS` on live MariaDB
+- **S3 (Frontend Product)**: `729 / 729 PASS` across 58 suites
+- **S4 (Interview Coach)**: `31 / 31 PASS` with `--test-concurrency=1`
+- **S5 (Cuba Design System)**: `141 / 141 PASS` across 4 portals
+- **S6 (Playwright Browser UAT)**: `8 / 8 PASS` real-DOM headless crawl
+- **S7 (Build & Lint)**: Vite build EXIT 0, ESLint 0 fatal errors
+- **S8 (Frozen Invariants)**: `aiRuntime.js` 0-byte diff, 51 templates verified, 0 latency offenders
+
+#### 3. Formal Certification
+- [x] All 8 streams independently verified from real runtime evidence
+- [x] Zero regressions or unauthorized file modifications
+- [x] Officially certified 10/10 production ready
+```
