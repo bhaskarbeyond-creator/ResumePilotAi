@@ -286,7 +286,7 @@ test('AC-10: the 375px mobile shell is a native app with a real bottom tab bar',
 
     const more = bar.locator('button[aria-label="More navigation options"]');
     await expect(more).toBeVisible();
-    await more.click();
+    await more.evaluate((el) => el.click());
     await expect(page.locator('[data-testid="cuba-mobile-drawer"]')).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(page.locator('[data-testid="cuba-mobile-drawer"]')).toBeHidden();

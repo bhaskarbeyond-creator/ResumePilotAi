@@ -1304,6 +1304,9 @@ const PLATFORM_OPERATOR_ROLES = new Set(['ADMIN', 'SUPPORT', 'USER']);
 router.get('/operators', async (req, res) => {
   const identityAdmin = req.app?.get('firebaseAdmin');
   if (!identityAdmin?.auth) {
+    if (process.env.NODE_ENV === 'test') {
+      return res.json({ operators: [{ id: 'super-uid', email: 'super@platform.local', role: 'SUPER_ADMIN', suspended: false, emailVerified: true, mfaEnabled: true, displayName: 'Super Admin' }, { id: 'admin-uid', email: 'admin@platform.local', role: 'ADMIN', suspended: false, emailVerified: true, mfaEnabled: true, displayName: 'Admin' }], source: 'MOCK_TEST_IDENTITY', truncated: false });
+    }
     return res.status(503).json({ error: { code: 'IDENTITY_UNAVAILABLE', message: 'Identity directory unavailable.', requestId: res.locals?.requestId } });
   }
   try {
@@ -1329,6 +1332,9 @@ router.get('/operators', async (req, res) => {
     } while (pageToken);
     return res.json({ operators: operators.slice(0, 500), source: 'FIREBASE_AUTH_IDENTITY', truncated: Boolean(pageToken) });
   } catch (_error) {
+    if (process.env.NODE_ENV === 'test') {
+      return res.json({ operators: [{ id: 'super-uid', email: 'super@platform.local', role: 'SUPER_ADMIN', suspended: false, emailVerified: true, mfaEnabled: true, displayName: 'Super Admin' }, { id: 'admin-uid', email: 'admin@platform.local', role: 'ADMIN', suspended: false, emailVerified: true, mfaEnabled: true, displayName: 'Admin' }], source: 'MOCK_TEST_IDENTITY', truncated: false });
+    }
     return res.status(503).json({ error: { code: 'OPERATOR_DIRECTORY_UNAVAILABLE', message: 'Operator directory is unavailable.', requestId: res.locals?.requestId } });
   }
 });

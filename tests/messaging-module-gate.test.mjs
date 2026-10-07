@@ -43,6 +43,15 @@ test('AC-4: the /api/messages module gate fails closed on anything but an explic
 
     // A settings read failure must NOT fall through to the routes.
     assert.match(gate, /APPLICATION_DATABASE_UNAVAILABLE/);
+
+    // The gate must sit after the global requireAuth middleware so an anonymous
+    // caller cannot even learn whether the module exists.
+    assert.ok(
+        source.indexOf("app.use('/api/messages', async") > source.indexOf('return requireAuth(req, res, next);'),
+        'module gate must be mounted after requireAuth',
+    );
+});
+
 test('AC-2: the conversations projection is participant-scoped and returns a server total', async () => {
     const source = await fs.readFile('backend/index.js', 'utf8');
     const list = routeBlock(source, "app.get('/api/messages/conversations'");
@@ -83,7 +92,6 @@ test('AC-2/INV-3: the read-cursor endpoint is membership-bound and monotonic', a
     assert.match(mark, /lastReadMessageId/);
 });
 
-    // The gate must sit after the global requireAuth middleware so an anonymous
 test('AC-2: the unread hook returns the object shape its consumers destructure', async () => {
     const hook = await fs.readFile('src/hooks/useUnreadMessages.js', 'utf8');
 
@@ -113,12 +121,6 @@ test('AC-2: the unread hook returns the object shape its consumers destructure',
 
     // The legacy Firebase auth listener is gone: read state is server-owned.
     assert.doesNotMatch(hook, /conf\/fire/);
-});
-    // caller cannot even learn whether the module exists.
-    assert.ok(
-        source.indexOf("app.use('/api/messages', async") > source.indexOf('return requireAuth(req, res, next);'),
-        'module gate must be mounted after requireAuth',
-    );
 });
 test('AC-2: the header badge and both sidebars are wired to the live hook', async () => {
     const [appShell, candidate, employer] = await Promise.all([
@@ -172,6 +174,15 @@ test('AC-3: the gate fails closed and redirects with a toast', async () => {
     // Fail-closed polarity, matching the AC-4 backend guard exactly.
     assert.match(gate, /resolveMessagesVisibility\(settings\) === true \? 'enabled' : 'disabled'/);
     // An unreadable settings document is NOT authorization to render the surface.
+    assert.match(gate, /setDecision\('disabled'\)/);
+    // Nothing renders until the authoritative flag is known.
+    assert.match(gate, /if \(decision !== 'enabled'\) return null;/);
+    // Redirect home, once, with an informational (not error) notification.
+    assert.match(gate, /notify\(message, 'info'\)/);
+    assert.match(gate, /navigate\(home, \{ replace: true \}\)/);
+    assert.match(gate, /notifiedRef/);
+});
+
 test('INV-4: the chat surface uses Cuba tokens and no hardcoded ramp', async () => {
     const source = await fs.readFile('src/components/Dashboard/DashboardMessages/DashboardMessages.jsx', 'utf8');
     // Strip comments so the documentation of the old colours is not mistaken
@@ -232,12 +243,4 @@ test('migration 024 declares the read cursor with a matching down migration', as
 
     // The enable flag is never touched by a schema migration.
     assert.doesNotMatch(stripSqlComments(up), /enableMessagesModule/);
-});
-    assert.match(gate, /setDecision\('disabled'\)/);
-    // Nothing renders until the authoritative flag is known.
-    assert.match(gate, /if \(decision !== 'enabled'\) return null;/);
-    // Redirect home, once, with an informational (not error) notification.
-    assert.match(gate, /notify\(message, 'info'\)/);
-    assert.match(gate, /navigate\(home, \{ replace: true \}\)/);
-    assert.match(gate, /notifiedRef/);
 });

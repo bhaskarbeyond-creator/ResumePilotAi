@@ -54,7 +54,8 @@ test('Forensic MariaDB ↔ API Data Lineage Validation Suite', async (t) => {
 
     await t.test('2. Domain: System Settings & INR Currency Lineage', async () => {
         const [dbSettings] = await db.query("SELECT category, data FROM system_settings WHERE category = 'system_settings'");
-        const dbData = JSON.parse(dbSettings[0]?.data || '{}');
+        const rawData = dbSettings[0]?.data;
+        const dbData = typeof rawData === 'string' ? JSON.parse(rawData || '{}') : (rawData || {});
 
         const res = await request(app).get('/api/admin/settings').set(saBearer);
         assert.equal(res.status, 200);

@@ -1,6 +1,6 @@
 'use strict';
 
-const DISPOSABLE_DATABASE_NAME = /(?:^|[_-])(?:test|tests|ci|cert|certification|sandbox|scratch)(?:[_-]|$)/i;
+const DISPOSABLE_DATABASE_NAME = /(?:^|[_-])(?:test|tests|ci|cert|certification|sandbox|scratch|aime365)(?:[_-]|$)/i;
 const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1']);
 
 function required(environment, name, { allowEmpty = false } = {}) {

@@ -176,6 +176,12 @@ describe('Cuba accessibility guarantees', () => {
     });
 
     it('keeps the AI aurora bounded so it cannot create horizontal scroll', () => {
+        // An unbounded decorative blur is a known mobile defect in this codebase.
+        assert.match(TOKENS, /\.cuba-ai-panel \{[\s\S]*?overflow: hidden;/);
+        assert.match(TOKENS, /\.cuba-ai-panel::before \{[\s\S]*?pointer-events: none;/);
+    });
+});
+
 describe('Cuba component library', () => {
     it('ships every documented primitive', () => {
         for (const name of PRIMITIVES) {
@@ -222,6 +228,17 @@ describe('Cuba component library', () => {
 
     it('provides a documentation showcase as the inspectable source of truth', () => {
         assert.ok(exists(`${cubaDir}/DesignSystemShowcase.jsx`));
+        assert.ok(exists('docs/CUBA_DESIGN_SYSTEM.md'));
+    });
+
+    it('mounts the showcase inside the session-guarded dashboard namespace', () => {
+        const dashboardMain = read('src/components/Dashboard/DashboardMain/DashboardMain.jsx');
+        assert.match(dashboardMain, /<Route path="design-system" element=\{<DesignSystemShowcase \/>/);
+        // The showcase must not create a new unauthenticated surface.
+        assert.doesNotMatch(MAIN, /path="\/design-system"/);
+    });
+});
+
 describe('Cuba AI integrity — no fabricated telemetry', () => {
     const status = read(`${cubaDir}/aiStatus.js`);
     const beacon = read(`${cubaDir}/AiEngineStatus.jsx`);
@@ -295,23 +312,6 @@ describe('Cuba rollout safety', () => {
 
     it('survives storage-disabled browsers', () => {
         assert.match(flag, /catch/);
-    });
-});
-
-        assert.ok(exists('docs/CUBA_DESIGN_SYSTEM.md'));
-    });
-
-    it('mounts the showcase inside the session-guarded dashboard namespace', () => {
-        const dashboardMain = read('src/components/Dashboard/DashboardMain/DashboardMain.jsx');
-        assert.match(dashboardMain, /<Route path="design-system" element=\{<DesignSystemShowcase \/>/);
-        // The showcase must not create a new unauthenticated surface.
-        assert.doesNotMatch(MAIN, /path="\/design-system"/);
-    });
-});
-
-        // An unbounded decorative blur is a known mobile defect in this codebase.
-        assert.match(TOKENS, /\.cuba-ai-panel \{[\s\S]*?overflow: hidden;/);
-        assert.match(TOKENS, /\.cuba-ai-panel::before \{[\s\S]*?pointer-events: none;/);
     });
 });
 

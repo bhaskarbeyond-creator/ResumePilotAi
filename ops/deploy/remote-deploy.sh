@@ -573,7 +573,7 @@ PY
   fi
 
   log "installing production dependencies in staging"
-  export PATH="$(dirname "$NODE_BIN"):$(dirname "$PM2_BIN"):/usr/local/bin:/usr/bin:/bin"
+  export PATH="$(dirname "$PM2_BIN"):$(dirname "$NODE_BIN"):/usr/local/bin:/usr/bin:/bin"
   (cd "$backend_stage" && "$NPM_BIN" ci --omit=dev --ignore-scripts --no-audit --no-fund)
   "$NODE_BIN" --check "$backend_stage/index.js"
 
