@@ -28,13 +28,29 @@ Your objective is to independently and deeply verify the entire **ResumePilotAI 
 
 Execute the following commands in your remote workspace:
 
-### 1.1 Pull Latest Codebase
+### 1.1 Target Branch & Commit Information
+- **Latest Commit SHA**: `86a3baf6` (`86a3baf64c41b07d40d4851a6fc43009707f3e5d`)
+- **Primary Release Branch**: `main`
+- **Arena Session Branch ID**: `arena/01a0e100-resumepilotai` (Active working branch)
+- **Certified Master Tag**: `v2.0.0-certified-master-release`
+
 ```bash
-# Clone fresh or pull the latest commits from main:
+# 1. Clone repository (or pull in existing clone):
 git clone git@github.com:bhaskarbeyond-creator/ResumePilotAi.git
 cd ResumePilotAi
+
+# 2. Checkout the target branch (Option A: main, or Option B: arena session branch):
+# Option A (Recommended):
 git checkout main
 git pull origin main
+
+# OR Option B (Arena Session Branch):
+# git checkout arena/01a0e100-resumepilotai
+# git pull origin arena/01a0e100-resumepilotai
+
+# 3. Verify you are on the exact certified HEAD commit:
+git rev-parse --short HEAD
+# MUST output: 86a3baf6
 git status
 ```
 

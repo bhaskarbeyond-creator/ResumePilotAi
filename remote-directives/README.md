@@ -21,16 +21,26 @@ Welcome, Senior Staff Engineer. This repository contains the complete production
 Follow these exact steps to set up your remote verification environment:
 
 ### 2.1 Clone / Pull the Latest Code
+- **Latest Commit SHA**: `86a3baf6` (`86a3baf64c41b07d40d4851a6fc43009707f3e5d`)
+- **Primary Release Branch**: `main`
+- **Arena Session Branch ID**: `arena/01a0e100-resumepilotai` (Active working branch)
+- **Certified Master Tag**: `v2.0.0-certified-master-release`
+
 ```bash
-# Clone fresh or fetch the latest commits from main
+# Clone fresh or fetch the latest commits:
 git clone git@github.com:bhaskarbeyond-creator/ResumePilotAi.git
 cd ResumePilotAi
 
-# Ensure you are on the authoritative main branch:
+# Checkout Option A (Recommended main):
 git checkout main
 git pull origin main
 
-# Verify clean working tree:
+# OR Checkout Option B (Arena session branch):
+# git checkout arena/01a0e100-resumepilotai
+# git pull origin arena/01a0e100-resumepilotai
+
+# Verify you are on the authoritative certified commit:
+git rev-parse --short HEAD # Must output: 86a3baf6
 git status
 ```
 
