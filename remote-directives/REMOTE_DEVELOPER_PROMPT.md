@@ -156,7 +156,7 @@ When all 8 streams pass 100% green on your remote machine, provide a formal cert
 - **Node Runtime**: [e.g. v20.18.0]
 - **Database**: [MariaDB 10.11 on 3306 — 24 migrations applied]
 - **Playwright**: [All browser engines installed & verified]
-- **Git Commit Tested**: [e.g. c979d027]
+- **Git Commit Tested**: [e.g. 51f6347f]
 
 #### 2. Independent Test Execution Proofs
 - **Stream 1 (Static Security)**: `67 / 67 PASS` (Execution time)
