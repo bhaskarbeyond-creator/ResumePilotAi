@@ -29,7 +29,7 @@ Your objective is to independently and deeply verify the entire **ResumePilotAI 
 Execute the following commands in your remote workspace:
 
 ### 1.1 Target Branch & Commit Information
-- **Latest Commit SHA**: `86a3baf6` (`86a3baf64c41b07d40d4851a6fc43009707f3e5d`)
+- **Certified Release Baseline**: `a343e63c` (or latest `HEAD` on `main`)
 - **Primary Release Branch**: `main`
 - **Arena Session Branch ID**: `arena/01a0e100-resumepilotai` (Active working branch)
 - **Certified Master Tag**: `v2.0.0-certified-master-release`
@@ -48,9 +48,8 @@ git pull origin main
 # git checkout arena/01a0e100-resumepilotai
 # git pull origin arena/01a0e100-resumepilotai
 
-# 3. Verify you are on the exact certified HEAD commit:
+# 3. Verify and record the exact HEAD commit you are testing:
 git rev-parse --short HEAD
-# MUST output: 86a3baf6
 git status
 ```
 

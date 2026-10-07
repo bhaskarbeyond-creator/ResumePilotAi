@@ -21,7 +21,7 @@ Welcome, Senior Staff Engineer. This repository contains the complete production
 Follow these exact steps to set up your remote verification environment:
 
 ### 2.1 Clone / Pull the Latest Code
-- **Latest Commit SHA**: `86a3baf6` (`86a3baf64c41b07d40d4851a6fc43009707f3e5d`)
+- **Certified Release Baseline**: `a343e63c` (or latest `HEAD` on `main`)
 - **Primary Release Branch**: `main`
 - **Arena Session Branch ID**: `arena/01a0e100-resumepilotai` (Active working branch)
 - **Certified Master Tag**: `v2.0.0-certified-master-release`
@@ -39,8 +39,8 @@ git pull origin main
 # git checkout arena/01a0e100-resumepilotai
 # git pull origin arena/01a0e100-resumepilotai
 
-# Verify you are on the authoritative certified commit:
-git rev-parse --short HEAD # Must output: 86a3baf6
+# Verify and record the exact HEAD commit you are testing:
+git rev-parse --short HEAD
 git status
 ```
 
