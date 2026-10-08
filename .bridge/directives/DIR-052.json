@@ -2,11 +2,11 @@
   "id": "DIR-052",
   "title": "DIR-052: Autonomous Self-Healing AI API Server & Zero-Drop Gateway Resilience",
   "priority": "P0",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-08T06:19:07.941Z",
-  "updatedAt": "2026-10-08T07:04:08.144Z",
+  "updatedAt": "2026-10-08T07:04:08.740Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "### 1. MANDATE & PROBLEM STATEMENT\nThe User reports that the local API Server (auto_ai_router.cjs on port 48200 / local_model_service on port 1234) experiences repeated drops, failed startups, and broken connections with Cline. We require an enterprise-grade, zero-crash, self-healing architecture so Cline stays continuously connected to the API server without drops or manual interventions.\n\n### 2. ROOT CAUSE ANALYSIS (RCA)\n1. Missing Process Guards: auto_ai_router.cjs lacks uncaughtException and unhandledRejection handlers. Socket disconnects and ECONNRESET from client or upstream abruptly crash the node process.\n2. Unprotected Stream Piping: When streaming chunks from upstream to client, writing to closed or aborted client sockets triggers ERR_STREAM_WRITE_AFTER_END, unlinking the PID file and halting the server.\n3. Premature Header Flush: clientRes.writeHead is called before stream verification, preventing failover if the first tokens fail.\n4. Passive Daemon Supervision: lead_watcher_daemon.cjs only checks netstat and PID existence rather than active HTTP /health pinging, leaving zombie/hung listeners undetected.\n5. LM Studio 10s Re-entry Loop: local_model_service.cjs triggers duplicate lms load calls every 10s while 14B model is still loading, overwhelming VRAM.\n\n### 3. TECHNICAL SPECIFICATION & IMPLEMENTATION STEPS\n- S1: Process Crash Immunization (auto_ai_router.cjs)\n  - Attach process.on('uncaughtException') and process.on('unhandledRejection') to prevent crashes from dropped sockets, client aborts, and transient network resets.\n  - Implement reusable HTTP/HTTPS Keep-Alive Agents (keepAlive: true, timeout: 60000).\n- S2: Resilient Stream Pipeline & Pre-Header Failover Buffer\n  - Buffer initial tokens before flushing HTTP 200 headers to client. If upstream aborts or fails immediately, cleanly failover to next candidate model without dropping client.\n  - Guard all clientRes.write calls: verify (!clientRes.destroyed && !clientRes.writableEnded) to prevent ERR_STREAM_WRITE_AFTER_END.\n  - Listen for clientReq.on('close') and clientRes.on('error') to gracefully terminate upstream requests.\n- S3: Active Health Probing & Auto-Restart in lead_watcher_daemon.cjs\n  - Upgrade supervisor to actively probe http://127.0.0.1:48200/health every 5s with 2000ms deadline.\n  - If 3 consecutive health checks fail, forcefully kill unresponsive PID, release port 48200, and cleanly respawn the router.\n  - Implement exponential backoff restart throttle to prevent CPU thrashing.\n- S4: Model Loader Debouncing (local_model_service.cjs)\n  - Extend loading state debounce to 90s when loading large models (14B) into GPU.\n  - Truncate log spam during model load.\n- S5: Comprehensive Self-Test & 50-Request Concurrency Battery\n  - Run test script with 50 rapid parallel inference requests and abrupt client terminations to prove zero drops, zero process exits, and instant self-recovery.\n\n### 4. ACCEPTANCE CRITERIA\n- AC-1: auto_ai_router.cjs survives 100 consecutive socket drops, aborted requests, and network resets without crashing.\n- AC-2: lead_watcher_daemon actively probes /health and auto-recovers any frozen or hung instance in < 6 seconds.\n- AC-3: Cline at http://127.0.0.1:48200/v1 achieves 100% connection uptime with zero manual restarts.\n- AC-4: All test evidence captured and submitted via bridge dev submit-evidence.",
   "invariants": [],
@@ -54,6 +54,12 @@
       "evidenceHash": "2fcbb0fa3c5c25c517dc82b99ddd30a1c4d87c02edd454c9a79de9842ab99d23"
     }
   ],
-  "freeze": null,
-  "lastTransitionReason": "lead review"
+  "freeze": {
+    "freezeHash": "4638f08c5bd7b04e92baf2312019c0a3d4764e74",
+    "certifiedAt": "2026-10-08T07:04:08.740Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "",
+    "evidenceHash": "2fcbb0fa3c5c25c517dc82b99ddd30a1c4d87c02edd454c9a79de9842ab99d23"
+  },
+  "lastTransitionReason": "gatekeeper certification"
 }

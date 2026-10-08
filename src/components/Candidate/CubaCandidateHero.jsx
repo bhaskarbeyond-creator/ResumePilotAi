@@ -1,12 +1,14 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { FiPlus, FiBriefcase, FiAward, FiFileText, FiZap } from 'react-icons/fi';
+import { FiPlus, FiBriefcase, FiAward, FiFileText, FiZap, FiRefreshCw } from 'react-icons/fi';
 import CubaStatCard from '../cuba/CubaStatCard';
-import { getResumes } from '../../services/api/platform';
+import { getResumes, getTrackedJobs } from '../../services/api/platform';
 import { summariseResumes } from './briefingLogic';
 
 const CubaCandidateHero = ({ displayName = 'Candidate' }) => {
     const [currentTime, setCurrentTime] = useState(new Date());
     const [resumes, setResumes] = useState(null);
+    const [trackedJobs, setTrackedJobs] = useState(null);
+    const [apiError, setApiError] = useState(false);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -14,25 +16,45 @@ const CubaCandidateHero = ({ displayName = 'Candidate' }) => {
         return () => clearInterval(timer);
     }, []);
 
+    // DIR-053 RCA-3 / S4: never mask an API outage as an empty account. A failed
+    // load sets `apiError` (rendered as a Cuba reconnect badge) and the loader
+    // auto-retries every 4s until the API server is back — no page refresh needed.
     useEffect(() => {
         let active = true;
-        setLoading(true);
-        getResumes()
-            .then((data) => {
-                if (active) {
-                    const list = Array.isArray(data)
-                        ? data
-                        : (data?.allResumes || data?.resumes || []);
-                    setResumes(list);
-                }
-            })
-            .catch(() => {
-                if (active) setResumes([]);
-            })
-            .finally(() => {
-                if (active) setLoading(false);
-            });
-        return () => { active = false; };
+        let retryTimer = null;
+        const stopRetry = () => { if (retryTimer) { clearInterval(retryTimer); retryTimer = null; } };
+        const load = async () => {
+            let resumesFailed = false;
+            let jobsFailed = false;
+            try {
+                const resumeData = await getResumes();
+                if (resumeData?.apiError) throw new Error('API server unreachable');
+                if (!active) return;
+                const list = Array.isArray(resumeData)
+                    ? resumeData
+                    : (resumeData?.allResumes || resumeData?.resumes || []);
+                setResumes(list);
+            } catch {
+                resumesFailed = true;
+            }
+            try {
+                const jobs = await getTrackedJobs();
+                if (active) setTrackedJobs(Array.isArray(jobs) ? jobs.length : 0);
+            } catch {
+                // trackedJobs stays null → the KPI renders an honest dash, never a fake 0.
+                jobsFailed = true;
+            }
+            if (!active) return;
+            setApiError(resumesFailed);
+            setLoading(false);
+            if (resumesFailed || jobsFailed) {
+                if (!retryTimer) retryTimer = setInterval(load, 4000);
+            } else {
+                stopRetry();
+            }
+        };
+        load();
+        return () => { active = false; stopRetry(); };
     }, []);
 
     const summary = useMemo(() => summariseResumes(resumes || []), [resumes]);
@@ -168,6 +190,26 @@ const CubaCandidateHero = ({ displayName = 'Candidate' }) => {
                 </div>
             </div>
 
+            {/* DIR-053 S4: honest connectivity banner. It only appears when the
+              * API server is unreachable — a genuinely empty account shows 0s,
+              * never this badge — and it self-heals with a 4s retry loop. */}
+            {apiError && (
+                <div
+                    data-testid="cuba-api-reconnect"
+                    role="status"
+                    aria-live="polite"
+                    className="flex items-center gap-3 rounded-[14px] border border-amber-300/70 bg-amber-50/95 px-4 py-3 text-sm font-semibold text-amber-900 shadow-[0_6px_18px_-8px_rgba(217,119,6,0.45)] dark:border-amber-400/40 dark:bg-amber-500/10 dark:text-amber-100"
+                >
+                    <FiRefreshCw className="h-4 w-4 shrink-0 animate-spin" aria-hidden="true" />
+                    <span>
+                        ✦ Connecting to API Server...
+                        <span className="ml-2 font-normal text-amber-800/90 dark:text-amber-100/80">
+                            Your data is safe — retrying automatically every 4 seconds.
+                        </span>
+                    </span>
+                </div>
+            )}
+
             {/* Row of 4 Cuba KPI Stat Cards with Authentic widget-1 styling */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
                 <CubaStatCard
@@ -190,12 +232,12 @@ const CubaCandidateHero = ({ displayName = 'Candidate' }) => {
                 />
                 <CubaStatCard
                     label="Job Applications"
-                    value="0"
-                    hint="Tracked roles in pipeline"
+                    value={loading ? '...' : trackedJobs !== null ? String(trackedJobs) : '—'}
+                    hint={trackedJobs !== null ? 'Tracked roles in pipeline' : 'Pipeline sync pending'}
                     icon={<FiBriefcase className="h-5 w-5" />}
                     accent="info"
-                    loading={false}
-                    trend={{ label: 'Pipeline active', tone: 'up' }}
+                    loading={loading && trackedJobs === null}
+                    trend={trackedJobs !== null && trackedJobs > 0 ? { label: 'Pipeline active', tone: 'up' } : null}
                 />
                 <CubaStatCard
                     label="AI Interview Coach"

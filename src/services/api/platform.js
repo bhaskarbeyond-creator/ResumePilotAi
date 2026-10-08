@@ -2427,12 +2427,28 @@ export async function getResumes(userId, page = 1, itemsPerPage = 5) {
                     hasNextPage: page < totalPages,
                     hasPreviousPage: page > 1,
                 },
+                apiError: false,
+                errorStatus: null,
             };
         }
     } catch (apiErr) {
         console.warn('[dbOperations] /api/resumes primary fetch failed:', apiErr.message);
+        // DIR-053: honest connectivity marker — an API outage (502/503/network)
+        // must never masquerade as a genuinely empty account. Consumers that only
+        // read `resumes`/`pagination` are unaffected (additive fields).
+        return {
+            resumes: [],
+            pagination: { totalItems: 0, totalPages: 1, currentPage: page, hasNextPage: false, hasPreviousPage: page > 1 },
+            apiError: true,
+            errorStatus: Number(apiErr?.status) || null,
+        };
     }
-    return { resumes: [], pagination: { totalItems: 0, totalPages: 1, currentPage: page, hasNextPage: false, hasPreviousPage: page > 1 } };
+    return {
+        resumes: [],
+        pagination: { totalItems: 0, totalPages: 1, currentPage: page, hasNextPage: false, hasPreviousPage: page > 1 },
+        apiError: true,
+        errorStatus: null,
+    };
 }
 
 export async function getCovers(_userId) {
