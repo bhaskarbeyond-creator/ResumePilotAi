@@ -1,25 +1,25 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-08T07:24:52.992Z",
-  "eventCount": 2206,
-  "activeDirectiveId": "DIR-053",
-  "activeDirectiveTitle": "Self-Healing Backend API Server, XAMPP Orchestration & Zero-Downtime Data Population Pipeline",
+  "updatedAt": "2026-10-08T16:50:36.389Z",
+  "eventCount": 2229,
+  "activeDirectiveId": "DIR-054",
+  "activeDirectiveTitle": "Eliminate 429 Storm on /api/messages/conversations, Shared Poller Architecture & Rate-Limit Alignment",
   "activeDirectiveStatus": "IN_PROGRESS",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-08T07:21:35.234Z",
-  "unreadForLead": 200,
-  "unreadForDev": 316,
+  "stallDeadline": "2026-10-08T16:49:45.277Z",
+  "unreadForLead": 3,
+  "unreadForDev": 15,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-08T07:21:35.234Z",
-    "status": "Recon verified: S1 bridge.cjs 3-tier live + BATs updated; S2 daemon helpers exist but NOT wired into checkAndHeal (gap found); S3 vhosts pending; S4/S5 pending. Executing now.",
+    "timestamp": "2026-10-08T16:49:45.277Z",
+    "status": "PLAN_SUBMITTED: forensic RCA validated in source - 4 hook instances (not 3), 30-req/5min budget, zero backoff, 3 unmapped amber classes at CubaCandidateHero.jsx:201/206; spec path src/components/cuba/ is incorrect",
     "percent": 15
   },
   "integrity": {
     "ok": true,
-    "checked": 2206,
+    "checked": 2229,
     "legacy": 0,
     "bad": 0
   }

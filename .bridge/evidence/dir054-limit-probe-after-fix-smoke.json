@@ -1,0 +1,79 @@
+{
+  "label": "after-fix-smoke",
+  "origin": "https://ime365.local",
+  "identity": {
+    "uid": "OhZdiSIFL7ePA1TMkfu9bnR935D3",
+    "email": "bhaskar.beyond@gmail.com"
+  },
+  "attempts": 3,
+  "startedAt": "2026-10-08T17:13:09.792Z",
+  "finishedAt": "2026-10-08T17:13:11.077Z",
+  "statuses": {
+    "200": 3
+  },
+  "tooManyRequests": 0,
+  "firstFailureAtRequest": null,
+  "advertisedLimit": "300",
+  "samples": [
+    {
+      "n": 1,
+      "status": 200,
+      "ms": 661,
+      "rateLimitLimit": "300",
+      "rateLimitRemaining": "299",
+      "retryAfter": null,
+      "totalUnread": 0,
+      "code": null
+    },
+    {
+      "n": 2,
+      "status": 200,
+      "ms": 304,
+      "rateLimitLimit": "300",
+      "rateLimitRemaining": "298",
+      "retryAfter": null,
+      "totalUnread": 0,
+      "code": null
+    },
+    {
+      "n": 3,
+      "status": 200,
+      "ms": 320,
+      "rateLimitLimit": "300",
+      "rateLimitRemaining": "297",
+      "retryAfter": null,
+      "totalUnread": 0,
+      "code": null
+    },
+    {
+      "n": 1,
+      "status": 200,
+      "ms": 661,
+      "rateLimitLimit": "300",
+      "rateLimitRemaining": "299",
+      "retryAfter": null,
+      "totalUnread": 0,
+      "code": null
+    },
+    {
+      "n": 2,
+      "status": 200,
+      "ms": 304,
+      "rateLimitLimit": "300",
+      "rateLimitRemaining": "298",
+      "retryAfter": null,
+      "totalUnread": 0,
+      "code": null
+    },
+    {
+      "n": 3,
+      "status": 200,
+      "ms": 320,
+      "rateLimitLimit": "300",
+      "rateLimitRemaining": "297",
+      "retryAfter": null,
+      "totalUnread": 0,
+      "code": null
+    }
+  ]
+}

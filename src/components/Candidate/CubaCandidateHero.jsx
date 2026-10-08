@@ -192,18 +192,23 @@ const CubaCandidateHero = ({ displayName = 'Candidate' }) => {
 
             {/* DIR-053 S4: honest connectivity banner. It only appears when the
               * API server is unreachable — a genuinely empty account shows 0s,
-              * never this badge — and it self-heals with a 4s retry loop. */}
+              * never this badge — and it self-heals with a 4s retry loop.
+              * DIR-054 S4: the fill/border/ink opacities are the MAPPED Cuba
+              * values (`bg-amber-50/90` at cuba-tokens.css:1941,
+              * `border-amber-300/80` at :2203, bare `dark:text-amber-100`) so the
+              * banner no longer carries unmapped light-shade classes into the
+              * dark-theme harmonisation block. */}
             {apiError && (
                 <div
                     data-testid="cuba-api-reconnect"
                     role="status"
                     aria-live="polite"
-                    className="flex items-center gap-3 rounded-[14px] border border-amber-300/70 bg-amber-50/95 px-4 py-3 text-sm font-semibold text-amber-900 shadow-[0_6px_18px_-8px_rgba(217,119,6,0.45)] dark:border-amber-400/40 dark:bg-amber-500/10 dark:text-amber-100"
+                    className="flex items-center gap-3 rounded-[14px] border border-amber-300/80 bg-amber-50/90 px-4 py-3 text-sm font-semibold text-amber-900 shadow-[0_6px_18px_-8px_rgba(217,119,6,0.45)] dark:border-amber-400/40 dark:bg-amber-500/10 dark:text-amber-100"
                 >
                     <FiRefreshCw className="h-4 w-4 shrink-0 animate-spin" aria-hidden="true" />
                     <span>
                         ✦ Connecting to API Server...
-                        <span className="ml-2 font-normal text-amber-800/90 dark:text-amber-100/80">
+                        <span className="ml-2 font-normal text-amber-800/90 dark:text-amber-100">
                             Your data is safe — retrying automatically every 4 seconds.
                         </span>
                     </span>

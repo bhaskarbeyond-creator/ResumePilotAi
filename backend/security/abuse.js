@@ -129,10 +129,45 @@ const contactAccountLimiter = accountRateLimit({
   windowMs: 60 * 60 * 1000
 });
 
+/**
+ * DIR-054: the MUTATION budget for messaging.
+ *
+ * Raised from 30 to 150 per five minutes. The 30 ceiling was never a mutation
+ * budget in practice: `app.use('/api/messages', messagingAccountLimiter)` applied
+ * it to the passive unread-badge reads too, so four dashboard components polling
+ * every 15 seconds (16 req/min) exhausted it in under two minutes and every later
+ * tick returned 429 — the console storm this directive exists to kill. Mutations
+ * are now measured separately from reads (see messagingReadAccountLimiter below),
+ * and 150 keeps a real anti-abuse ceiling on send/create/read-cursor traffic
+ * (30 messages per minute per account) while leaving legitimate use untouched.
+ */
 const messagingAccountLimiter = accountRateLimit({
   namespace: 'messaging',
-  limit: Number(process.env.MESSAGING_FIVE_MINUTE_LIMIT || 30),
+  limit: Number(process.env.MESSAGING_FIVE_MINUTE_LIMIT || 150),
   windowMs: 5 * 60 * 1000
+});
+
+/**
+ * DIR-054: the READ-ONLY budget for messaging — GET/HEAD only, which in practice
+ * means `GET /api/messages/conversations`, the unread-badge projection.
+ *
+ * 300 per five minutes (60/min) is a deliberate, generous ceiling: a single
+ * shared 15-second poller costs 20 requests per five minutes per open tab, so the
+ * budget absorbs ~15 concurrently open tabs before it can ever bind. It is
+ * therefore a real defence-in-depth limit against a runaway loop or a scraper,
+ * but it can no longer be tripped by the application's own polling cadence.
+ *
+ * failClosed:false — see accountRateLimit. This tier is stacked on top of the
+ * always-available in-memory global limiter and the account-keyed general API
+ * tier, so a brief MariaDB blip must not convert a passive badge read into a 503
+ * for the whole messaging surface. The route's own fail-closed module gate and
+ * the mutation limiter (which stays failClosed:true) are unaffected.
+ */
+const messagingReadAccountLimiter = accountRateLimit({
+  namespace: 'messaging-read',
+  limit: Number(process.env.MESSAGING_READ_FIVE_MINUTE_LIMIT || 300),
+  windowMs: 5 * 60 * 1000,
+  failClosed: false
 });
 
 /**
@@ -357,6 +392,7 @@ module.exports = {
   scraperAccountLimiter,
   contactAccountLimiter,
   messagingAccountLimiter,
+  messagingReadAccountLimiter,
   publicBrowseAccountLimiter,
   publicBrowseLimiter,
   generalApiAccountLimiter,

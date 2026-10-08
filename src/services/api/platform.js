@@ -167,6 +167,29 @@ export async function fetchPublicConfig() {
     return publicConfigInFlight;
 }
 
+/**
+ * DIR-054: the server's own back-off instruction, normalised to SECONDS.
+ *
+ * `Retry-After` is emitted by every durable limiter in
+ * `backend/security/abuse.js` alongside a 429, and is the only honest signal a
+ * client has for when the quota actually resets. Without it a poller can only
+ * guess, which is how a rate-limited endpoint gets hammered into a console storm.
+ *
+ * RFC 9110 allows either delta-seconds or an HTTP-date, so both are accepted.
+ * `null` means "the header was absent or unparseable" and is deliberately
+ * distinct from `0`, because 0 is a real instruction to retry immediately.
+ */
+function readRetryAfterSeconds(headers) {
+    if (!headers || typeof headers.get !== 'function') return null;
+    const raw = headers.get('Retry-After');
+    if (raw === null || raw === undefined || raw === '') return null;
+    const seconds = Number(raw);
+    if (Number.isFinite(seconds) && seconds >= 0) return seconds;
+    const at = Date.parse(raw);
+    if (!Number.isNaN(at)) return Math.max(0, Math.ceil((at - Date.now()) / 1000));
+    return null;
+}
+
 export async function apiJson(url, options = {}) {
     const headers = { ...(options.headers || {}) };
     const user = fire.auth().currentUser;
@@ -185,6 +208,10 @@ export async function apiJson(url, options = {}) {
         err.code = data?.error?.code || data?.code;
         err.remoteRevision = data?.remoteRevision ?? data?.error?.remoteRevision;
         err.remoteData = data?.remoteData ?? data?.error?.remoteData;
+        // DIR-054: additive only. Callers that ignore `retryAfter` behave exactly
+        // as before; the unread poller uses it to honour the server's deadline.
+        const retryAfterSeconds = readRetryAfterSeconds(response.headers);
+        if (retryAfterSeconds !== null) err.retryAfter = retryAfterSeconds;
         throw err;
     }
     return data;

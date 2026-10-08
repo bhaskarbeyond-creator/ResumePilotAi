@@ -123,6 +123,7 @@ const {
     scraperAccountLimiter,
     contactAccountLimiter,
     messagingAccountLimiter,
+    messagingReadAccountLimiter,
     publicBrowseLimiter,
     generalApiLimiter,
     enforceDailyAiQuota
@@ -551,7 +552,17 @@ app.use('/api/admin/ai/test-provider', requireRecentAdminAuthentication, aiAccou
 app.use(['/api/export', '/api/public-export', '/api/export-docx'], exportAccountLimiter);
 app.use('/api/linkedin-scraper', scraperAccountLimiter);
 app.use('/api/contact', contactAccountLimiter);
-app.use('/api/messages', messagingAccountLimiter);
+// DIR-054: the messaging budget is METHOD-AWARE. A passive unread-badge read
+// (GET/HEAD) is not the same traffic as sending a message, and charging both to
+// one 30-per-5-minute counter is what produced the 429 storm: four dashboard
+// components polling every 15s spent the entire budget in under two minutes and
+// every later tick was rejected. GET/HEAD now draw on the dedicated read budget
+// (300 per 5 min) while POST/PATCH/DELETE keep the tighter mutation budget
+// (150 per 5 min), so neither can exhaust the other.
+app.use('/api/messages', (req, res, next) => {
+    if (req.method === 'GET' || req.method === 'HEAD') return messagingReadAccountLimiter(req, res, next);
+    return messagingAccountLimiter(req, res, next);
+});
 
 // DIR-026 / AC-4: the administrator "Messages & Chat Module" toggle is enforced
 // SERVER-SIDE, not merely hidden in the UI. Mounted AFTER the `/api`

@@ -148,6 +148,7 @@ const SAFE_ENVIRONMENT = Object.freeze([
   ['EXPORT_HOURLY_LIMIT', 'Export hourly limit', 'security', false, true],
   ['SCRAPER_HOURLY_LIMIT', 'Scraper hourly limit', 'security', false, true],
   ['MESSAGING_FIVE_MINUTE_LIMIT', 'Messaging five-minute limit', 'security', false, true],
+  ['MESSAGING_READ_FIVE_MINUTE_LIMIT', 'Messaging read five-minute limit', 'security', false, true],
   ['CMS_SCHEDULER_INTERVAL_MS', 'CMS scheduler interval', 'workers', false, true],
   ['NOTIFICATION_OUTBOX_INTERVAL_MS', 'Notification worker interval', 'workers', false, true],
   ['ENTERPRISE_OUTBOX_INTERVAL_MS', 'Enterprise worker interval', 'workers', false, true],
