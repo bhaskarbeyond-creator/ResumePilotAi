@@ -2,11 +2,11 @@
   "id": "DIR-051",
   "title": "DIR-051: Strict XAMPP Server Initiation & Prohibition of Background Server Spawns",
   "priority": "P0",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-08T06:14:56.836Z",
-  "updatedAt": "2026-10-08T06:33:37.749Z",
+  "updatedAt": "2026-10-08T06:33:38.461Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "### 1. MANDATE & OPERATIONAL INVARIANT\nAll web, API, reverse proxy, and database servers must strictly be initiated and hosted via XAMPP (D:\\xampp). Spawning detached or rogue background server processes (e.g. background node index.js, background nodemon, background vite) is strictly prohibited to eliminate port (80, 443, 3306, 8080) and resource conflicts.\n\n### 2. ACCEPTANCE CRITERIA\n- AC-1: All servers run strictly under XAMPP (Apache ports 80/443, MySQL port 3306).\n- AC-2: Zero unmanaged background server processes.\n- AC-3: Bridge CLI provides first-class bridge xampp status/start/stop server management.\n- AC-4: Developer prompt and AGENTS.md Section 56 enforce zero background server policy.",
   "invariants": [],
@@ -47,6 +47,12 @@
       "evidenceHash": "4044dde9974c9ad555a0653c1cd96142bc8f0d1166f5f2505670a363910e973f"
     }
   ],
-  "freeze": null,
-  "lastTransitionReason": "lead review"
+  "freeze": {
+    "freezeHash": "531eb54a46a8bc4c2ca78ee063250882582ae906",
+    "certifiedAt": "2026-10-08T06:33:38.461Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "",
+    "evidenceHash": "4044dde9974c9ad555a0653c1cd96142bc8f0d1166f5f2505670a363910e973f"
+  },
+  "lastTransitionReason": "gatekeeper certification"
 }

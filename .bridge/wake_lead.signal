@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-08T06:33:04.897Z",
-  "seq": 2173,
-  "id": "evt_muz5tsv4_ce160274e53e",
-  "type": "WAKE_LEAD_REQUESTED",
-  "title": "[WAKE LEAD] DIR-051 [Status: EVIDENCE_SUBMITTED]",
+  "timestamp": "2026-10-08T07:02:00.123Z",
+  "seq": 2193,
+  "id": "evt_muz6uzs3_2d5fe8a655fa",
+  "type": "HEARTBEAT",
+  "title": "[Heartbeat] S6+S7 complete: daemon+router+model-svc+watcher all live, tasks re-enabled, logs rotated, battery 4/4 (21/21 checks), repo guards 4/4 PASS, live evidence refreshed (pid 29264, 27 models). Finalizing S",
   "sender": "STAFF_DEVELOPER",
-  "directiveId": "DIR-051",
-  "summary": "DIR-051 evidence submitted (EVIDENCE_SUBMITTED): 4/4 guard tests pass, lint 0 errors, frozen security baseline 67/67, build exit 0, live XAMPP httpd/mysqld ownership verified. Awaiting Gatekeeper review for APPROVED_FROZEN certification. Full bundle: .bridge/evidence/DIR-051-EVIDENCE-SUMMARY.md"
+  "directiveId": "DIR-052",
+  "summary": "S6+S7 complete: daemon+router+model-svc+watcher all live, tasks re-enabled, logs rotated, battery 4/4 (21/21 checks), repo guards 4/4 PASS, live evidence refreshed (pid 29264, 27 models). Finalizing S8 evidence summary."
 }
