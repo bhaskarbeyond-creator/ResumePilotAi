@@ -2,11 +2,11 @@
   "id": "DIR-053",
   "title": "Self-Healing Backend API Server, XAMPP Orchestration & Zero-Downtime Data Population Pipeline",
   "priority": "P0",
-  "status": "IN_PROGRESS",
+  "status": "APPROVED",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-08T06:59:32.352Z",
-  "updatedAt": "2026-10-08T07:09:38.244Z",
+  "updatedAt": "2026-10-08T07:32:08.596Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "### 1. MANDATE & PROBLEM STATEMENT\nThe User logged into Candidate Workspace Overview (https://ime365.local / http://localhost) and discovered that data was not populated: 0 Active Resumes, Not Scored ATS, 0 Job Applications, and header displaying '✦ AI Engine Status Unknown'.\nInvestigation proved that the MariaDB database ('ai_resume_builder') actually contains 15 active resumes and complete user account data for this user (user_id: OhZdiSIFL7ePA1TMkfu9bnR935D3, email: bhaskar.beyond@gmail.com).\nThe root cause is that the Node.js Express API server (backend/index.js on port 8080) was completely down and never started by XAMPP or startup scripts. All /api/* requests failed with HTTP 502/404, and the frontend silently swallowed the error with catch(() => setResumes([])) masquerading as an empty account.\nThe User strictly demands: 'why is data not being populated? Is it because of APi server? I dont want to see this happening again. give best directive to developer'.\nMandate: Architect an enterprise-grade, self-healing, unified lifecycle for the Node.js API server under XAMPP policy, ensure Apache and PHP proxies cleanly route /api/*, add an active 5-second watchdog to auto-heal port 8080 crashes, and upgrade the frontend to gracefully handle and report API connectivity states.\n\n### 2. ROOT CAUSE ANALYSIS (RCA)\n1. RCA-1 (Unsupervised API Server on Port 8080): START_ResumePilotAI_Services.bat and bridge xampp start all only execute apache_start.bat (ports 80/443) and mysql_start.bat (port 3306). Neither process launched or monitored backend/index.js on port 8080.\n2. RCA-2 (502 Bad Gateway via PHP Reverse Proxy): On https://ime365.local, Apache forwards /api/* to dist/api/index.php. The PHP script curls http://127.0.0.1:8080/api/*. When port 8080 is dead, curl fails with connection refused, returning 502 BACKEND_UNAVAILABLE.\n3. RCA-3 (Silent Frontend Error Swallowing): In CubaCandidateHero.jsx, getResumes().catch(() => setResumes([])) catches 502/network errors and silently defaults to an empty array. The user sees '0 Active Resumes' and fears data loss rather than seeing a server connectivity alert.\n4. RCA-4 (Apache localhost VirtualHost Misalignment): In D:\\xampp\\apache\\conf\\extra\\httpd-vhosts.conf, the localhost virtualhost maps to D:/xampp/htdocs (which serves default XAMPP files and has no /api routing), returning 404 for any direct http://localhost/api/* call.\n5. RCA-5 (Missing Port 8080 in Watchdog Daemon): lead_watcher_daemon.cjs actively monitors port 48200 and port 1234, but has zero health probing or self-healing for port 8080 (backend/index.js).\n\n### 3. TECHNICAL SPECIFICATION & IMPLEMENTATION STEPS\n- S1: 3-Tier XAMPP Service Lifecycle in bridge.cjs & Desktop BAT Scripts\n  - Update xamppControl in C:\\Users\\mbhas\\.ai-bridge\\bridge.cjs:\n    * xampp status: Report Apache (80/443), MySQL (3306), and Node.js Backend API Server (8080).\n    * xampp start: Atomically launch Apache, MySQL, and start backend/index.js as a background managed process (saving PID to backend_api.pid and verifying http://127.0.0.1:8080/readyz responds HTTP 200).\n    * xampp stop: Gracefully drain connections on port 8080 (via SIGTERM/taskkill) alongside Apache and MySQL.\n  - Update START_ResumePilotAI_Services.bat and STOP_ResumePilotAI_Services.bat to invoke bridge xampp start all and explicitly verify port 8080 readiness.\n- S2: Port 8080 Autonomous Self-Healing in lead_watcher_daemon.cjs\n  - Add active HTTP polling to lead_watcher_daemon.cjs targeting http://127.0.0.1:8080/readyz or /api/service-availability every 5 seconds (2000ms timeout).\n  - If port 8080 fails 3 consecutive probes or drops out:\n    * Log the outage to lead_watcher_daemon.log.\n    * Force-kill any lingering zombie process on port 8080.\n    * Cleanly respawn node backend/index.js in < 5 seconds.\n    * Enforce exponential backoff (5s -> 60s) and single-instance spawn mutex to prevent spawn loops.\n- S3: Apache VirtualHost Alignment & Proxy Resilience\n  - Update D:\\xampp\\apache\\conf\\extra\\httpd-vhosts.conf:\n    * Ensure localhost VirtualHost has DocumentRoot \"D:/xampp/htdocs/IME365/dist\" with AllowOverride All (matching ime365.local).\n    * Add native Apache proxy rules (ProxyPass /api http://127.0.0.1:8080/api and ProxyPassReverse /api http://127.0.0.1:8080/api) under <IfModule mod_proxy.c> so proxying is direct and ultra-fast.\n- S4: Honest Frontend Error State & Auto-Reconnect in Candidate Portal\n  - In CubaCandidateHero.jsx and dashboard data loaders:\n    * Distinguish between HTTP 200 empty array (user truly has 0 resumes) vs HTTP 502/503/network error.\n    * If the API server is unreachable, set apiError = true and display a sleek Cuba executive badge/banner: '✦ Connecting to API Server...' with automatic retry every 3-5 seconds.\n    * Once reconnected, smoothly fetch and display the user's actual resumes and statistics without requiring a full page refresh.\n- S5: End-to-End Resilience & Data Population Test Battery\n  - Author tests/test_api_server_e2e_resilience.cjs:\n    1. Assert port 8080 responds HTTP 200 on /healthz and /api/service-availability.\n    2. Assert Apache responds HTTP 200 on http://localhost/api/service-availability and https://ime365.local/api/service-availability.\n    3. Authenticate user OhZdiSIFL7ePA1TMkfu9bnR935D3 and assert /api/resumes returns 15 resumes.\n    4. Simulate an unexpected termination (Stop-Process on node port 8080) and measure time until lead_watcher_daemon recovers the listener -> assert recovery time < 6000ms.\n\n### 4. ACCEPTANCE CRITERIA\n- AC-1: Port 8080 (backend/index.js) is continuously running, managed via bridge xampp and protected by lead_watcher_daemon.cjs.\n- AC-2: http://localhost/api/service-availability and https://ime365.local/api/service-availability both return HTTP 200 with { operational: true }.\n- AC-3: Candidate Dashboard on both localhost and ime365.local populates the user's 15 real resumes and displays '✦ AI Engine Ready'.\n- AC-4: If port 8080 is killed, the supervisor daemon auto-recovers it in < 6 seconds with zero user intervention.\n- AC-5: Zero fake 0-data displays on frontend; connectivity errors are transparently presented and auto-recovered.",
   "invariants": [],
@@ -24,8 +24,34 @@
     ],
     "planHash": "dd6f4d25cc43728700826e6ae8a9a8cff7604267d23031ad5b1c1c9576fe3c2f"
   },
-  "evidence": null,
-  "reviews": [],
+  "evidence": {
+    "submittedAt": "2026-10-08T07:31:24.130Z",
+    "summary": "DIR-053 COMPLETE: S1 3-tier bridge xampp lifecycle (adopt-or-spawn :8080 + backend_api.pid + /readyz + graceful drain) + S2 lead_watcher_daemon :8080 self-heal verified live + S3 vhost ProxyPass /api on localhost and ime365.local 80/443 + S4 honest frontend apiError marker & 4s-retry reconnect badge shipped in rebuilt dist + S5 battery tests/test_api_server_e2e_resilience.cjs 6/6 PASS: anon /api/resumes 401, authenticated uid OhZdiSIFL7ePA1TMkfu9bnR935D3 -> exactly 15 resumes direct + via Apache proxy, taskkill PID 19084 -> daemon healed to NEW PID 38164 in CRASH_RECOVERY_MS=3972 (budget 6000), post-heal proxy->API->MariaDB re-serves 15 resumes; npm run test:xampp-policy 4/4 (httpd owns 80/443, mysqld 3306, zero spawn vectors); npm run build vite 2.89s; Playwright DOM crawl localhost + ime365.local 200 with in-page service-availability success + aiAvailable=true (only external Stripe telemetry reset noted). Full pack: .bridge/evidence/DIR-053-EVIDENCE-SUMMARY.md",
+    "tests": {
+      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir053-api-resilience.log",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791444684132_dir053-api-resilience.log",
+      "sha256": "d52bd40af5094f258a7c41966b34a452f38da3647332e8e9e974b45688dc7af2",
+      "size": 2094
+    },
+    "domCrawl": null,
+    "artifacts": [],
+    "git": {
+      "isGit": true,
+      "head": "f35f28a1c45e3a47911c8ae2e29a305245a9e154",
+      "branch": "arena/01a0e100-resumepilotai",
+      "dirty": false,
+      "status": ""
+    },
+    "manifestHash": "5262b591feca4a502a09691f570414875f54d0c7bc9f5191b5a7cc131cb81e9b"
+  },
+  "reviews": [
+    {
+      "reviewedAt": "2026-10-08T07:32:08.596Z",
+      "verdict": "APPROVED",
+      "feedback": "Automated verification check passed.",
+      "evidenceHash": "5262b591feca4a502a09691f570414875f54d0c7bc9f5191b5a7cc131cb81e9b"
+    }
+  ],
   "freeze": null,
-  "lastTransitionReason": "lead approved plan; act mode authorized"
+  "lastTransitionReason": "lead review"
 }

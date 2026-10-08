@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-08T07:31:24.042Z",
-  "seq": 2208,
-  "id": "evt_muz7wstz_f3629c94b7d6",
-  "type": "HEARTBEAT",
-  "title": "[Heartbeat] S5 battery 6/6 PASS (CRASH_RECOVERY_MS=3972 < 6000 budget; healed PID 38164; 15 resumes post-heal) + policy guard 4/4 + build 2.89s + Playwright crawl both hosts in-page aiAvailable=true. Submitting e",
+  "timestamp": "2026-10-08T07:31:24.776Z",
+  "seq": 2209,
+  "id": "evt_muz7wteg_799700aff5d5",
+  "type": "EVIDENCE_SUBMITTED",
+  "title": "[Evidence] DIR-053: Self-Healing Backend API Server, XAMPP Orchestration & Zero-Downtime Data Population Pipeline",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-053",
-  "summary": "S5 battery 6/6 PASS (CRASH_RECOVERY_MS=3972 < 6000 budget; healed PID 38164; 15 resumes post-heal) + policy guard 4/4 + build 2.89s + Playwright crawl both hosts in-page aiAvailable=true. Submitting evidence pack now."
+  "summary": "DIR-053 COMPLETE: S1 3-tier bridge xampp lifecycle (adopt-or-spawn :8080 + backend_api.pid + /readyz + graceful drain) + S2 lead_watcher_daemon :8080 self-heal verified live + S3 vhost ProxyPass /api on localhost and ime365.local 80/443 + S4 honest frontend apiError marker & 4s-retry reconnect badge shipped in rebuilt dist + S5 battery tests/test_api_server_e2e_resilience.cjs 6/6 PASS: anon /api/resumes 401, authenticated uid OhZdiSIFL7ePA1TMkfu9bnR935D3 -> exactly 15 resumes direct + via Apache proxy, taskkill PID 19084 -> daemon healed to NEW PID 38164 in CRASH_RECOVERY_MS=3972 (budget 6000), post-heal proxy->API->MariaDB re-serves 15 resumes; npm run test:xampp-policy 4/4 (httpd owns 80/443, mysqld 3306, zero spawn vectors); npm run build vite 2.89s; Playwright DOM crawl localhost + ime365.local 200 with in-page service-availability success + aiAvailable=true (only external Stripe telemetry reset noted). Full pack: .bridge/evidence/DIR-053-EVIDENCE-SUMMARY.md"
 }
