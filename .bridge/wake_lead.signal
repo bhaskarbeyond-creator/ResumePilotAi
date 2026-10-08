@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-08T07:02:00.123Z",
-  "seq": 2193,
-  "id": "evt_muz6uzs3_2d5fe8a655fa",
+  "timestamp": "2026-10-08T07:03:27.399Z",
+  "seq": 2195,
+  "id": "evt_muz6wv4j_141ffe74c2c1",
   "type": "HEARTBEAT",
-  "title": "[Heartbeat] S6+S7 complete: daemon+router+model-svc+watcher all live, tasks re-enabled, logs rotated, battery 4/4 (21/21 checks), repo guards 4/4 PASS, live evidence refreshed (pid 29264, 27 models). Finalizing S",
+  "title": "[Heartbeat] S8 complete: evidence submitted (manifest 2fcbb0fa). Awaiting Gatekeeper review/certification. Live stack stable: router 29264 + daemon 30916 + model-svc 23544 + watcher 22548 all healthy; watchdog ta",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-052",
-  "summary": "S6+S7 complete: daemon+router+model-svc+watcher all live, tasks re-enabled, logs rotated, battery 4/4 (21/21 checks), repo guards 4/4 PASS, live evidence refreshed (pid 29264, 27 models). Finalizing S8 evidence summary."
+  "summary": "S8 complete: evidence submitted (manifest 2fcbb0fa). Awaiting Gatekeeper review/certification. Live stack stable: router 29264 + daemon 30916 + model-svc 23544 + watcher 22548 all healthy; watchdog tasks armed."
 }
