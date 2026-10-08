@@ -2,11 +2,11 @@
   "id": "DIR-051",
   "title": "DIR-051: Strict XAMPP Server Initiation & Prohibition of Background Server Spawns",
   "priority": "P0",
-  "status": "IN_PROGRESS",
+  "status": "APPROVED",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-08T06:14:56.836Z",
-  "updatedAt": "2026-10-08T06:23:37.563Z",
+  "updatedAt": "2026-10-08T06:33:37.749Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "### 1. MANDATE & OPERATIONAL INVARIANT\nAll web, API, reverse proxy, and database servers must strictly be initiated and hosted via XAMPP (D:\\xampp). Spawning detached or rogue background server processes (e.g. background node index.js, background nodemon, background vite) is strictly prohibited to eliminate port (80, 443, 3306, 8080) and resource conflicts.\n\n### 2. ACCEPTANCE CRITERIA\n- AC-1: All servers run strictly under XAMPP (Apache ports 80/443, MySQL port 3306).\n- AC-2: Zero unmanaged background server processes.\n- AC-3: Bridge CLI provides first-class bridge xampp status/start/stop server management.\n- AC-4: Developer prompt and AGENTS.md Section 56 enforce zero background server policy.",
   "invariants": [],
@@ -19,8 +19,34 @@
     ],
     "planHash": "65ccd8a4bb97ce2e97ff978a9f8401d727f99f60fe791ab0b9c21355e6ec0b75"
   },
-  "evidence": null,
-  "reviews": [],
+  "evidence": {
+    "submittedAt": "2026-10-08T06:32:57.430Z",
+    "summary": "DIR-051 COMPLETE. AC-1: XAMPP Apache 80/443 + MySQL 3306 live-verified (httpd/mysqld ownership, bridge xampp status green, ime365.local HTTP/HTTPS 200). AC-2: zero forbidden spawn vectors repo-wide (guard test 1/1 static scan clean), rogue ports 8080/5173/3000/5000/8000 FREE. AC-3: bridge xampp status/start/stop live in bridge.cjs (xamppControl + CLI dispatch + MCP bridge_xampp). AC-4: zero-background-server mandate in bridge dev-prompt rule 14, .clinerules invariant 9, AGENTS.md Section 56, learnings invariant. Remediated scripts/START_RESUMEPILOT_SERVICES.bat (removed detached start /min node spawns + broken root index.js) and STOP bat (bridge xampp stop all). New tests/xampp-policy-guard.test.mjs = 4/4 pass incl. live port ownership + historical-offender canary; npm run test:xampp-policy standalone. Regression: lint 0 errors, frozen security baseline 67/67 intact, build exit 0. Full evidence: .bridge/evidence/DIR-051-EVIDENCE-SUMMARY.md",
+    "tests": {
+      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir051-policy-guard-run.log",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791441177432_dir051-policy-guard-run.log",
+      "sha256": "89ac040251c943c7cf0b072333b4be6dd41b64f6b25b4318c27e17aba994ced5",
+      "size": 649
+    },
+    "domCrawl": null,
+    "artifacts": [],
+    "git": {
+      "isGit": true,
+      "head": "1745e32f44ddf27c82fabb535edcce1405d65bf2",
+      "branch": "arena/01a0e100-resumepilotai",
+      "dirty": false,
+      "status": ""
+    },
+    "manifestHash": "4044dde9974c9ad555a0653c1cd96142bc8f0d1166f5f2505670a363910e973f"
+  },
+  "reviews": [
+    {
+      "reviewedAt": "2026-10-08T06:33:37.749Z",
+      "verdict": "APPROVED",
+      "feedback": "Automated verification check passed.",
+      "evidenceHash": "4044dde9974c9ad555a0653c1cd96142bc8f0d1166f5f2505670a363910e973f"
+    }
+  ],
   "freeze": null,
-  "lastTransitionReason": "lead approved plan; act mode authorized"
+  "lastTransitionReason": "lead review"
 }

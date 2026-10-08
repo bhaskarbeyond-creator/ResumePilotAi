@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-08T06:32:38.735Z",
-  "seq": 2171,
-  "id": "evt_muz5t8oo_cdca912ee6bd",
-  "type": "HEARTBEAT",
-  "title": "[Heartbeat] Implementation complete: scripts remediated, guard test 4/4 pass, lint 0 errors, security baseline 67/67, build exit 0, live XAMPP httpd/mysqld verified. Compiling evidence summary for submission.",
+  "timestamp": "2026-10-08T06:33:04.897Z",
+  "seq": 2173,
+  "id": "evt_muz5tsv4_ce160274e53e",
+  "type": "WAKE_LEAD_REQUESTED",
+  "title": "[WAKE LEAD] DIR-051 [Status: EVIDENCE_SUBMITTED]",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-051",
-  "summary": "Implementation complete: scripts remediated, guard test 4/4 pass, lint 0 errors, security baseline 67/67, build exit 0, live XAMPP httpd/mysqld verified. Compiling evidence summary for submission."
+  "summary": "DIR-051 evidence submitted (EVIDENCE_SUBMITTED): 4/4 guard tests pass, lint 0 errors, frozen security baseline 67/67, build exit 0, live XAMPP httpd/mysqld ownership verified. Awaiting Gatekeeper review for APPROVED_FROZEN certification. Full bundle: .bridge/evidence/DIR-051-EVIDENCE-SUMMARY.md"
 }
