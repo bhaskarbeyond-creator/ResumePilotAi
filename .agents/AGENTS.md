@@ -2339,3 +2339,32 @@ If blocked, state the exact blocker and continue all work that can safely be com
 **10/10 is not a motivational score.**
 
 **10/10 is a conclusion earned through evidence.**
+
+---
+
+# 56. MANDATORY XAMPP SERVER INITIATION & ZERO-BACKGROUND-SERVER INVARIANT
+
+## 56.1 Core Mandate & Authority
+Going forward, the AI Collaboration Bridge, Antigravity, Cline, and any autonomous execution agent **MUST STRICTLY use XAMPP (`D:\xampp`) to initiate and host servers**.
+
+Spawning ad-hoc, unmanaged, or detached background server processes is **STRICTLY PROHIBITED**.
+
+## 56.2 Authorized Server Runtimes
+1. **Web Server & Reverse Proxy**:
+   - **XAMPP Apache** (`D:\xampp\apache\bin\httpd.exe` / `D:\xampp\apache_start.bat`).
+   - Listens on port `80` (HTTP) and port `443` (HTTPS / `ime365.local`).
+   - Serves static assets, reverse-proxies API requests, and executes PHP.
+2. **Database Server**:
+   - **XAMPP MariaDB / MySQL** (`D:\xampp\mysql\bin\mysqld.exe` / `D:\xampp\mysql_start.bat`).
+   - Listens on port `3306`.
+   - Stores all application schemas and data (`D:\xampp\mysql\data`).
+
+## 56.3 Strictly Prohibited Actions (Zero Background Conflicts)
+- **NO DETACHED BACKGROUND NODE SERVERS**: Never run `start /min node index.js`, background `nodemon`, or background `vite preview/dev` processes that linger and conflict on ports 80, 443, 3306, 5000, 8000, or 8080.
+- **NO PARALLEL UNMANAGED DAEMONS**: All test suites must execute in foreground mode or bind directly to the running XAMPP Apache and MySQL instances.
+- **NO ROGUE TEST RUNNERS**: Any browser or test-server processes must terminate cleanly upon suite completion.
+
+## 56.4 Bridge Command Standards
+- Check server health: `bridge xampp status` (or `bridge server status`)
+- Start XAMPP servers: `bridge xampp start all` (or `apache` / `mysql`)
+- Stop XAMPP servers: `bridge xampp stop all` (or `apache` / `mysql`)

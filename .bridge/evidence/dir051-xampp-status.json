@@ -1,0 +1,13 @@
+﻿{
+  "xamppDir": "D:\\xampp",
+  "apache": {
+    "running": true,
+    "port80": true,
+    "port443": true
+  },
+  "mysql": {
+    "running": true,
+    "port3306": true
+  },
+  "policy": "STRICT_XAMPP_ENFORCED (No conflicting background servers permitted)"
+}

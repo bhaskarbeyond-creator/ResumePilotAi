@@ -64,4 +64,10 @@ You work under the direct strategic supervision of **Antigravity (Google DeepMin
    - Never touch files claimed by another lane without Lead authorization.
    - Emit lane-specific heartbeats: `bridge lane heartbeat --name <laneName> --status "<status>"`
    - Upon completing your lane, submit evidence and enqueue for merge: `bridge lane close --name <laneName> --merge`
+9. **STRICT XAMPP SERVER INITIATION - ZERO BACKGROUND SERVER SPAWNS (P0 Invariant)**:
+   All web, API, reverse-proxy, and database servers MUST be initiated and hosted strictly via XAMPP (`D:\xampp`) - Apache on ports 80/443, MariaDB/MySQL on port 3306. Spawning detached or rogue background server processes is strictly prohibited (`start /min node index.js`, background `nodemon`, background `vite`, `Start-Process` node servers, `spawn(..., { detached: true })`) to eliminate port (80, 443, 3306, 8080) and resource conflicts.
+   - Check server health: `bridge xampp status`
+   - Start servers: `bridge xampp start all` (or `apache` / `mysql`)
+   - Stop servers: `bridge xampp stop all` (or `apache` / `mysql`)
+   - Enforce with: `npm run test:xampp-policy` (static forbidden-spawn scan + live httpd/mysqld port-ownership assertions). Test suites run foreground only and must terminate cleanly.
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
