@@ -2,11 +2,11 @@
   "id": "DIR-054",
   "title": "Eliminate 429 Storm on /api/messages/conversations, Shared Poller Architecture & Rate-Limit Alignment",
   "priority": "P0",
-  "status": "IN_PROGRESS",
+  "status": "APPROVED",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-08T16:06:40.063Z",
-  "updatedAt": "2026-10-08T16:50:10.480Z",
+  "updatedAt": "2026-10-08T17:26:11.772Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "### 1. MANDATE & PROBLEM STATEMENT\\nThe User opened https://ime365.local/dashboard and observed 52 repeated red console errors:\\n'Failed to load resource: the server responded with a status of 429 (Too Many Requests) api/messages/conversations:1'.\\nThe User strictly demands: 'why am i seeing these errors? Ask developer to completely fix the pipeline.'\\nMandate: Architect an enterprise-grade fix eliminating the 429 rate limit storm on messaging endpoints, implement a shared singleton/coalesced poller with exponential backoff on the frontend, tune backend rate limiting budgets, and resolve the contrast token regression from DIR-053.\\n\\n### 2. ROOT CAUSE ANALYSIS (RCA)\\n1. RCA-1 (Uncoordinated Multi-Instance Polling Storm): Multiple dashboard components (CubaCandidateShell.jsx, MessagesNavBadge.jsx, and ProfileDisplay.jsx) each mount an independent instance of useUnreadMessages(). With POLL_INTERVAL_MS = 15000, 3 instances produce 12 req/min = 60 requests in 5 minutes.\\n2. RCA-2 (Overly Restrictive Global Messaging Rate Limiter): In backend/security/abuse.js, MESSAGING_FIVE_MINUTE_LIMIT defaults to 30 requests per 5 minutes (6 req/min). Because app.use('/api/messages', messagingAccountLimiter) is mounted globally on all messaging routes, legitimate unread badge polling exhausts the quota in 2.5 minutes.\\n3. RCA-3 (Absence of Backoff & 429 Circuit Breaker): In src/hooks/useUnreadMessages.js, when an HTTP 429 or network error occurs, setStatus('error') is set, but the 15-second setInterval continues indefinitely. There is zero Retry-After respect and zero exponential backoff, resulting in 52+ repeated 429 errors piling up in the DevTools console.\\n4. RCA-4 (Unshared In-Flight & Cache Deduplication): apiJson('/api/messages/conversations') lacks in-flight promise reuse and short-term caching across simultaneous component renders.\\n5. RCA-5 (DIR-023 Amber Token Regression from DIR-053): The reconnect banner classes introduced in CubaCandidateHero.jsx (bg-amber-50/95, border-amber-300/70, dark:text-amber-100/80) trip tests/dir023-contrast-tokens.test.mjs with 3 unmapped opacity classes.\\n\\n### 3. TECHNICAL SPECIFICATION & IMPLEMENTATION STEPS\\n- S1: Backend Rate Limiter Alignment & Sane Read Budget\\n  - In backend/security/abuse.js and backend/index.js, ensure read-only unread count/conversation polling (/api/messages/conversations) has a generous, realistic quota (e.g. raise MESSAGING_FIVE_MINUTE_LIMIT to at least 150 or separate heavy mutation endpoints from passive badge reads) so legitimate polling never hits 429.\\n- S2: Shared Singleton Poller / Coalescing in useUnreadMessages.js\\n  - Upgrade useUnreadMessages.js or platform.js to use an in-memory shared singleton subscriber / module-level broadcast pattern. Regardless of how many components mount useUnreadMessages(), exactly ONE network poll is dispatched per interval.\\n- S3: Dynamic Backoff & Retry-After Circuit Breaker\\n  - In useUnreadMessages.js, catch 429 status and network errors. When rate-limited or in error state, back off dynamically (15s -> 30s -> 60s) or pause until Retry-After expires, completely eliminating console error storms. Reset to 15s upon successful response.\\n- S4: Fix DIR-023 Amber Token Mapping\\n  - In src/components/cuba/CubaCandidateHero.jsx or contrast map, ensure reconnect banner classes use compliant Cuba design tokens, resolving the failure in tests/dir023-contrast-tokens.test.mjs.\\n- S5: Comprehensive E2E Verification & Regression Test Battery\\n  - Run npm test to verify all 67 tests pass (including contrast tokens and messaging gate tests).\\n  - Execute a multi-minute polling simulation on https://ime365.local/dashboard to guarantee zero 429 errors and clean badge synchronization.\\n\\n### 4. ACCEPTANCE CRITERIA\\n- AC-1: Zero 429 Too Many Requests errors on /api/messages/conversations during continuous dashboard usage.\\n- AC-2: useUnreadMessages() coalesces multiple mounted instances into a single coordinated network read.\\n- AC-3: If any transient 429 or transport error occurs, the frontend gracefully backs off and halts spamming.\\n- AC-4: tests/dir023-contrast-tokens.test.mjs passes 100% (67/67 tests green in npm test).\\n- AC-5: Production dist is cleanly rebuilt and verified via Playwright DOM crawl with 0 console errors.",
   "invariants": [],
@@ -30,8 +30,39 @@
     ],
     "planHash": "162da11c4ae6b484ce63759fc4c5577d7c9e30883ed9ee48f1f8fb230d0557c7"
   },
-  "evidence": null,
-  "reviews": [],
+  "evidence": {
+    "submittedAt": "2026-10-08T17:25:30.451Z",
+    "summary": "DIR-054 COMPLETE. RCA reproduced live then eliminated. (1) Backend: /api/messages is now METHOD-AWARE - GET/HEAD draw on a new messaging-read budget (MESSAGING_READ_FIVE_MINUTE_LIMIT default 300/5min, failClosed:false) while POST/PATCH/DELETE keep the mutation budget (MESSAGING_FIVE_MINUTE_LIMIT raised 30 to 150, still failClosed:true); both registered in platformConfiguration.js. LIVE DIFFERENTIAL: pre-fix 35 reads = 10x200 + 25x429 with RateLimit-Limit 30; post-fix 150 reads = 150x200, 0x429, RateLimit-Limit 300. (2) Frontend: new src/hooks/unreadMessagesPoller.js is a React-free SINGLETON scheduler shared by all consumers - one in-flight read, one shared snapshot, exponential ladder 15/30/60/120/240 capped 300s, Retry-After honoured as a floor, refresh() cannot jump the deadline, last-unsubscribe clears the timer. useUnreadMessages.js polls through it and also shares ONE module-flag read per minute (was 4). (3) apiJson additively attaches err.retryAfter from the Retry-After header. (4) DIR-023 amber regression fixed at src/components/Candidate/CubaCandidateHero.jsx (note: the directive's src/components/cuba/ path does not exist) by reusing already-mapped classes - dir023-contrast-tokens 15/15, zero new !important maps. GATES: test:security:static 67/67; lint exit 0 (0 errors, 253 warnings = DIR-047 baseline); npm test 1715 tests 0 failures; build 3.38s (<4.0s budget); new 15-test tests/dir054-shared-poller.test.mjs wired into test:product; combined battery 42/42. LIVE S10: 6.5 continuous minutes on https://ime365.local/dashboard as a real Firebase identity (enableMessagesModule=true, revision 58) = 26 requests for 26 expected ticks, ALL 200, ZERO 429, cadence min 15320/mean 15495ms, ZERO bursts (the old 4-instance signature), badge stable at 'Messages, 0 unread', reconnect banner absent, served chunk assets/useUnreadMessages-DGYs-KZh.js contains the shared poller. HONEST LIMITATION: 4 of the 5 console lines are a PRE-EXISTING non-messaging 404 (GET /api/resumes/<uid> from CubaCandidateShell.jsx:273) plus 1 Stripe telemetry ERR_CONNECTION_RESET - neither is a 429 and neither is in DIR-054 scope; recommend a follow-up directive. INV-1 frozen baseline diff = 0 bytes. All servers via bridge xampp only.",
+    "tests": {
+      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir054-final-battery.log",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791480330453_dir054-final-battery.log",
+      "sha256": "e4d4213adb42f4999391ac527cfc10b863288168a01eab85f6db927880b36b01",
+      "size": 7826
+    },
+    "domCrawl": {
+      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir054-live-capture.json",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791480330455_dir054-live-capture.json",
+      "sha256": "21491945af62c9f0b825d4f8da840f7c144519d71a4cc3cc476ab64c561bc4ce",
+      "size": 3621
+    },
+    "artifacts": [],
+    "git": {
+      "isGit": true,
+      "head": "398101ed55effb5b739e1ae27ee57faffb505b23",
+      "branch": "arena/01a0e100-resumepilotai",
+      "dirty": false,
+      "status": ""
+    },
+    "manifestHash": "11751bff870eeabf4a39ef4d479986cf5032f2fae69eddc5260309ae9f51c00d"
+  },
+  "reviews": [
+    {
+      "reviewedAt": "2026-10-08T17:26:11.771Z",
+      "verdict": "APPROVED",
+      "feedback": "Automated verification check passed.",
+      "evidenceHash": "11751bff870eeabf4a39ef4d479986cf5032f2fae69eddc5260309ae9f51c00d"
+    }
+  ],
   "freeze": null,
-  "lastTransitionReason": "lead approved plan; act mode authorized"
+  "lastTransitionReason": "lead review"
 }

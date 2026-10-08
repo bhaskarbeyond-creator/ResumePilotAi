@@ -1,25 +1,25 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-08T16:50:36.389Z",
-  "eventCount": 2229,
+  "updatedAt": "2026-10-08T17:25:38.357Z",
+  "eventCount": 2239,
   "activeDirectiveId": "DIR-054",
   "activeDirectiveTitle": "Eliminate 429 Storm on /api/messages/conversations, Shared Poller Architecture & Rate-Limit Alignment",
-  "activeDirectiveStatus": "IN_PROGRESS",
-  "awaitingHuman": false,
-  "awaitingHumanReason": null,
-  "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-08T16:49:45.277Z",
-  "unreadForLead": 3,
-  "unreadForDev": 15,
+  "activeDirectiveStatus": "EVIDENCE_SUBMITTED",
+  "awaitingHuman": true,
+  "awaitingHumanReason": "Awaiting Gatekeeper evidence certification (human gate)",
+  "awaitingHumanSince": "2026-10-08T17:25:31.016Z",
+  "stallDeadline": null,
+  "unreadForLead": 7,
+  "unreadForDev": 21,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-08T16:49:45.277Z",
-    "status": "PLAN_SUBMITTED: forensic RCA validated in source - 4 hook instances (not 3), 30-req/5min budget, zero backoff, 3 unmapped amber classes at CubaCandidateHero.jsx:201/206; spec path src/components/cuba/ is incorrect",
-    "percent": 15
+    "timestamp": "2026-10-08T17:21:49.456Z",
+    "status": "S9 gates green (security-static 67/67, lint 0 errors, npm test 1715/0 fail, build 3.38s). S10 live: pre-fix probe reproduced 25x429 at RateLimit-Limit 30; post-fix 150/150 x200 at RateLimit-Limit 300; 6.5-min dashboard capture running",
+    "percent": 80
   },
   "integrity": {
     "ok": true,
-    "checked": 2229,
+    "checked": 2239,
     "legacy": 0,
     "bad": 0
   }

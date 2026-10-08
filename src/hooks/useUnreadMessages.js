@@ -113,10 +113,6 @@ export function useUnreadMessages({ enabled: enabledOverride } = {}) {
 
     useEffect(() => { setOverride(enabledOverride); }, [enabledOverride]);
 
-    // Subscribe to the SHARED flag resolution; the cleanup unsubscribes, and the
-    // last subscriber out stops the settings timer.
-    useEffect(() => subscribeModuleFlag(setModuleEnabled), []);
-
     // The one place this hook's React state is written from the shared snapshot,
     // so every consumer renders exactly the same count and state.
     const applySnapshot = useCallback((snapshot) => {
