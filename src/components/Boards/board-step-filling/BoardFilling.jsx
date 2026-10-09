@@ -8,16 +8,13 @@ import { setResumePropertyPerUser, addEmployments, addEducations, IncrementDownl
 import { motion, AnimatePresence } from 'framer-motion';
 import { withTranslation } from 'react-i18next';
 
-import axios from 'axios';
-import download from 'downloadjs';
-import config from '../../../conf/configuration';
 import fire from '../../../conf/fire';
 
 // Icons
 import { FaEye, FaDownload, FaSave, FaPalette } from 'react-icons/fa';
 import { trackDownload, trackEvent, trackEngagement } from '../../../utils/ga4';
 import { evaluateDownloadAccess } from '../../../utils/subscriptionUtils';
-import { toValidatedPdfBlob } from '../../../utils/pdfDownload';
+import { downloadResumePdf } from '../../../utils/exportDownloader';
 import PremiumUpgradeModal from '../../common/PremiumUpgradeModal';
 import SubscriptionModal from '../../Dashboard/DashboardSettings/SubscriptionModal';
 
@@ -157,47 +154,34 @@ class BoardFilling extends Component {
 
         setJsonPb(localStorage.getItem('currentResumeId'), this.props.values);
 
-        const currentUser = fire.auth().currentUser;
-        const token = currentUser && typeof currentUser.getIdToken === 'function' ? await currentUser.getIdToken().catch(() => null) : null;
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
-        axios
-            .post(
-                config.provider + '://' + config.backendUrl + '/api/export',
-                {
-                    language: this.props.values.language,
-                    resumeId: localStorage.getItem('currentResumeId'),
-                    resumeName: this.props.currentResumeName,
-                },
-                {
-                    responseType: 'blob',
-                    headers,
-                }
-            )
-            .then(async function (response) {
-                // A blob response also carries JSON error bodies; verify the PDF magic
-                // bytes so a failed export is never saved as a corrupt resume.pdf.
-                const pdfBlob = await toValidatedPdfBlob(response.data);
-                download(pdfBlob, 'resume.pdf', 'application/pdf');
-
-                // Track the download only after a genuine PDF has been delivered.
-                trackDownload(templateName, documentType);
-                trackEvent('download_document', 'Documents', templateName, 1);
-                trackEngagement('document_downloaded', {
-                    template_name: templateName,
-                    document_type: documentType,
-                });
-            })
-            .catch((error) => {
-                // Track download failure
-                trackEvent('download_failed', 'Documents', templateName, 0);
-                // Surface the failure instead of leaving the user with a silent no-op.
-                this.setState({
-                    downloadError: error?.message?.startsWith('Download failed')
-                        ? error.message
-                        : 'The PDF could not be generated. Please try again.',
-                });
+        // DIR-064: the ONE centralized cross-platform export client. It resolves the
+        // Bearer token, validates the %PDF- magic bytes, sanitizes the filename and
+        // saves the file. Analytics stay here so the existing tracking order holds.
+        try {
+            await downloadResumePdf({
+                resumeId: localStorage.getItem('currentResumeId'),
+                resumeName: this.props.currentResumeName,
+                language: this.props.values.language,
+                analytics: false,
             });
+
+            // Track the download only after a genuine PDF has been delivered.
+            trackDownload(templateName, documentType);
+            trackEvent('download_document', 'Documents', templateName, 1);
+            trackEngagement('document_downloaded', {
+                template_name: templateName,
+                document_type: documentType,
+            });
+        } catch (error) {
+            // Track download failure
+            trackEvent('download_failed', 'Documents', templateName, 0);
+            // Surface the failure instead of leaving the user with a silent no-op.
+            this.setState({
+                downloadError: error?.message?.startsWith('Download failed')
+                    ? error.message
+                    : 'The PDF could not be generated. Please try again.',
+            });
+        }
     }
 
     ShowToast(type) {

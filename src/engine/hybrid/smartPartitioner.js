@@ -147,9 +147,39 @@ export function partitionResumeContent(values = {}, theme = {}) {
   const hobbiesCount = Array.isArray(hobbies) ? hobbies.length : (hobbies ? 1 : 0);
   const hobbiesHeight = hobbiesCount ? (Math.ceil(hobbiesCount / (hasSidebar ? 1.5 : 3)) * 20 + 24) : 0;
 
+  /**
+   * DIR-064 — certification card geometry estimator.
+   *
+   * Main-flow certifications render into a 2-column grid (`.smart-cert-grid`) where
+   * each `.smart-cert-item` is a bordered card holding a badge, a title that
+   * frequently wraps to two lines, and an issuer · date meta line. Measured on a
+   * real resume (e.g. "CCRN") those cards occupy 74–85px per grid row, but the
+   * estimator charged only 52px — a ~30px shortfall per row that pushed the tail
+   * of a certifications section straight through the page footer.
+   *
+   * This estimates the real per-row height from the title/meta line count and the
+   * active density scale, with a floor matching the measured card.
+   */
+  const CERT_ROW_MIN_PX = 76; // measured 2-col card: title + issuer/date + badge
+  const CERT_ROW_MAX_PX = 88; // long wrapping title / meta clamps here
+  const certRowHeightFor = (cert) => {
+    const title = String(typeof cert === 'string' ? cert : (cert?.title || cert?.name || ''));
+    const issuer = String(typeof cert === 'string' ? '' : (cert?.issuer || cert?.authority || ''));
+    const date = String(typeof cert === 'string' ? '' : (cert?.date || ''));
+    const meta = [issuer, date].filter(Boolean).join(' · ');
+    const titleLines = Math.max(1, Math.ceil(title.length / 26));
+    const metaLines = meta ? Math.max(1, Math.ceil(meta.length / 30)) : 0;
+    const extraLines = Math.max(0, titleLines - 1) + Math.max(0, metaLines - 1);
+    const rowPx = Math.min(CERT_ROW_MAX_PX, CERT_ROW_MIN_PX + extraLines * 12);
+    return Math.round(rowPx * densityScale);
+  };
+
   // Optional: If certifications are very few and sidebar is almost empty, place them in sidebar
   const certsInSidebar = hasSidebar && (skillCount + hobbiesCount) <= 4 && certifications.length <= 2;
-  const certsSidebarHeight = certsInSidebar ? (certifications.length * 30 + 24) : 0;
+  // The sidebar renders the same cards in a single column, so each item is its own row.
+  const certsSidebarHeight = certsInSidebar
+    ? (certifications.reduce((sum, cert) => sum + certRowHeightFor(cert), 0) + 24)
+    : 0;
 
   /**
    * Sidebar capacity guard.
@@ -210,9 +240,14 @@ export function partitionResumeContent(values = {}, theme = {}) {
   // Page 1 of a banner layout loses height to the full-width banner.
   // A ~5 % headroom absorbs residual estimator error (font metrics, wrapping)
   // so a page is never packed marginally past the sheet.
-  const P1_CAPACITY = (isBanner || isTechGrid) ? 815 : 900;
+  // DIR-064: reserve a hard clearance band above .smart-page-footer on every page.
+  // A certification card that under-estimated its own height used to be packed to
+  // the very last pixel and then clipped into the footer; this clearance — paired
+  // with the recalibrated certification estimator below — guarantees cards clear it.
+  const FOOTER_SAFETY_CLEARANCE = 22;
+  const P1_CAPACITY = ((isBanner || isTechGrid) ? 815 : 900) - FOOTER_SAFETY_CLEARANCE;
   // Continuation pages carry only the slim continuation header + footer.
-  const PN_CAPACITY = 930;
+  const PN_CAPACITY = 930 - FOOTER_SAFETY_CLEARANCE;
   // Must track --smart-section-gap in smartEngine.css (compact/standard/spacious).
   const SECTION_GAP_PX = density === 'compact' ? 11 : density === 'spacious' ? 18 : 14;
 
@@ -304,7 +339,9 @@ export function partitionResumeContent(values = {}, theme = {}) {
   if ((isSingleCol || !sidebarKeepsCerts) && certifications.length) {
     const certItems = certifications.map((cert, index) => {
       const isNewRow = index % 2 === 0;
-      const rowHeight = isNewRow ? 52 : 0;
+      // DIR-064: charge the real card height (76–88px) instead of the old 52px so a
+      // row of certification cards can never be packed into the page footer.
+      const rowHeight = isNewRow ? certRowHeightFor(cert) : 0;
       const titleHeight = index === 0 ? 28 : 0;
       return {
         type: 'certification',

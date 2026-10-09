@@ -65,6 +65,12 @@
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
+  /* DIR-064: a protective buffer above .smart-page-footer. The packer reserves a
+     matching FOOTER_SAFETY_CLEARANCE in smartPartitioner.js; this keeps the last
+     card physically clear of the footer rule even when a card wraps taller than
+     its estimate (2-line certification titles, long issuer lines). */
+  padding-bottom: 14px;
+  box-sizing: border-box;
 }
 
 /* ── Layout Archetypes ──────────────────────────────────────────────── */
@@ -923,6 +929,10 @@
   border: 1px solid #e2e8f0;
   min-width: 0;
   box-sizing: border-box;
+  /* DIR-064: a certification card is atomic — never split it across a page
+     boundary and never let it be clipped by the page-body edge. */
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .smart-cert-badge {

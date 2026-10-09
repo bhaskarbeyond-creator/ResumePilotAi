@@ -96,6 +96,19 @@
       .skip-link:focus {
         top: 0.75rem;
       }
+      /*
+       * DIR-064: the skip-link is a keyboard affordance for SCREEN media only.
+       * cuba-print.css neutralises `position: absolute` under @media print, which
+       * used to drop this link into normal flow at the very top of page 1 and
+       * print it as a stray "Skip to main content" banner — pushing the entire
+       * resume onto page 2 (the "blank first page" defect). Suppress it on paper
+       * while leaving the on-screen focus behaviour (top: 0.75rem above) intact.
+       */
+      @media print {
+        .skip-link {
+          display: none !important;
+        }
+      }
     </style>
 
     <!-- Synchronous Pre-Paint Theme Init (satisfies CSP script-src 'self' & static audit) -->

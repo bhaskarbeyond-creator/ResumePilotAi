@@ -23,7 +23,9 @@ test('Preview, Finalize, and Dashboard still share the executeDocxDownload journ
       assert.match(source, /resumeName/, `${file} must still send the selected template name`);
       continue;
     }
-    assert.match(source, /executeDocxDownload/, `${file} must use the shared DOCX helper`);
+    // DIR-064: DOCX export is now routed through the ONE centralized client
+    // (src/utils/exportDownloader.js), which re-exports the same helper.
+    assert.match(source, /downloadResumeDocx/, `${file} must use the shared DOCX helper`);
   }
 
   const preview = await fs.readFile('src/components/BuildResume/PreviewModal.jsx', 'utf8');

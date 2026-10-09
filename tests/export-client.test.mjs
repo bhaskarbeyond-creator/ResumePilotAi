@@ -91,6 +91,12 @@ test('download filenames are safe across Unicode, empty, and hostile inputs', ()
 });
 
 test('every PDF download surface validates the payload before saving it', async () => {
+  // DIR-064: the %PDF- validation now lives in the ONE centralized client
+  // (src/utils/exportDownloader.js). Each surface must delegate to it instead of
+  // hand-rolling axios + magic-byte checks, and must never save a raw response blob.
+  const downloader = await fs.readFile('src/utils/exportDownloader.js', 'utf8');
+  assert.match(downloader, /toValidatedPdfBlob/, 'the centralized client must validate the PDF payload');
+
   const surfaces = [
     'src/components/BuildResume/BuildResume.jsx',
     'src/components/Dashboard/DashboardHomepage/DashboardHomepage.jsx',
@@ -99,7 +105,7 @@ test('every PDF download surface validates the payload before saving it', async 
   ];
   for (const path of surfaces) {
     const source = await fs.readFile(path, 'utf8');
-    assert.match(source, /toValidatedPdfBlob/, `${path} must validate the PDF payload`);
+    assert.match(source, /downloadResumePdf/, `${path} must delegate to the centralized PDF downloader`);
     // Saving the raw axios blob straight to disk is what produced corrupt downloads.
     assert.doesNotMatch(source, /download\(\s*response\.data/, `${path} must not save an unvalidated blob`);
   }
@@ -120,7 +126,8 @@ test('export failures are surfaced to the user rather than silently swallowed', 
 test('success analytics are only emitted after a genuine PDF has been delivered', async () => {
   for (const path of ['src/components/BuildResume/BuildResume.jsx', 'src/components/Boards/board-step-filling/BoardFilling.jsx']) {
     const source = await fs.readFile(path, 'utf8');
-    const validated = source.indexOf('toValidatedPdfBlob');
+    // DIR-064: the validated download is now the delegated centralized client call.
+    const validated = source.indexOf('downloadResumePdf(');
     const tracked = source.indexOf("trackEvent('download_document'");
     assert.equal(validated > -1 && tracked > validated, true, `${path} must validate before tracking success`);
   }

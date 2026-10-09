@@ -1,16 +1,16 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-09T07:59:13.426Z",
-  "eventCount": 2510,
-  "activeDirectiveId": null,
-  "activeDirectiveTitle": null,
-  "activeDirectiveStatus": null,
+  "updatedAt": "2026-10-09T08:58:14.981Z",
+  "eventCount": 2516,
+  "activeDirectiveId": "DIR-064",
+  "activeDirectiveTitle": "DIR-064: Eliminate PDF Blank Page & Skip-Link Bleed, Fix Footer Overlap (Certification Card Geometry), and Centralized Cross-Platform Export Pipeline",
+  "activeDirectiveStatus": "CHANGES_REQUESTED",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
   "stallDeadline": "2026-10-09T06:02:21.462Z",
-  "unreadForLead": 54,
-  "unreadForDev": 72,
+  "unreadForLead": 55,
+  "unreadForDev": 77,
   "pendingBlockers": 0,
   "latestHeartbeat": {
     "timestamp": "2026-10-09T06:02:21.462Z",
@@ -19,7 +19,7 @@
   },
   "integrity": {
     "ok": false,
-    "checked": 2510,
+    "checked": 2516,
     "legacy": 2,
     "bad": 2
   }

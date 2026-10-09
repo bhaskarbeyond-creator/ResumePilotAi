@@ -2570,6 +2570,17 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
         }).catch(() => {});
         await page.waitForTimeout(250);
 
+        // DIR-064: the exported sheet is the resume, not the app shell. The
+        // document-level accessibility skip-link is meaningless on paper and — because
+        // the print contract neutralises absolute positioning under @media print —
+        // would otherwise render as a stray banner at the top of page 1 and push the
+        // entire resume onto page 2. Remove it from the live DOM before the print
+        // pass, and stamp an explicit export marker for print-only CSS targeting.
+        await page.evaluate(() => {
+            globalThis.document.querySelectorAll('.skip-link').forEach((el) => el.remove());
+            globalThis.document.documentElement.setAttribute('data-print-export', 'true');
+        });
+
         // Buffer the PDF instead of writing to disk. A temporary file on local disk is
         // not shared across instances, survives crashes as an orphan, and races when two
         // exports land in the same millisecond. Streaming the buffer removes all three.

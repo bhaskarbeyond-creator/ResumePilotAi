@@ -29,9 +29,7 @@ import SyncProfileModal from './SyncProfileModal';
 import { calculateAtsScore } from '../../utils/atsScore';
 
 // Import necessary modules for PDF export
-import axios from 'axios';
 import download from 'downloadjs';
-import config from '../../conf/configuration';
 import { getJsonById, IncrementDownloads, addOneToNumberOfDocumentsDownloaded, getProfileOfUser, getSystemSettings, getAccountInfo } from '../../services/api/platform';
 import { resolveAtsScoreVisibility } from '../../utils/moduleFlags';
 import { createResumeDraft, loadResumeDraft, saveResumeDraft, publishResume, unpublishResume, getResumePublication, writeResumeRecovery, readResumeRecovery, clearResumeRecovery } from '../../services/resumePersistence';
@@ -47,8 +45,8 @@ import CubaInlineNotice from '../cuba/CubaInlineNotice';
 import M3NotificationCenter from '../cuba/M3NotificationCenter';
 import M3UserMenu from '../cuba/M3UserMenu';
 import { useAuth } from '../../context/AuthContext';
-import { toValidatedPdfBlob, pdfFileName } from '../../utils/pdfDownload';
-import { executeDocxDownload } from '../../utils/docxDownload';
+// DIR-064: single centralized, cross-platform export client for PDF + DOCX.
+import { downloadResumePdf, downloadResumeDocx } from '../../utils/exportDownloader';
 
 // Import logo
 import logo from '../../assets/logo/logo.png';
@@ -1137,25 +1135,18 @@ const BuildResume = () => {
             await IncrementDownloads();
             await addOneToNumberOfDocumentsDownloaded(user);
 
-            const currentUser = fire.auth().currentUser;
-            const token = currentUser && typeof currentUser.getIdToken === 'function' ? await currentUser.getIdToken().catch(() => null) : null;
-            const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
-            const response = await axios.post(
-                `${config.provider}://${config.backendUrl}/api/export`,
-                {
-                    language: i18n.language,
-                    resumeId,
-                    resumeName: currentTemplate,
-                },
-                {
-                    responseType: 'blob',
-                    headers,
-                }
-            );
-
-            const pdfBlob = await toValidatedPdfBlob(response.data);
-            download(pdfBlob, pdfFileName(previewData?.firstname, previewData?.lastname), 'application/pdf');
+            // DIR-064: route the request through the ONE cross-platform export client.
+            // It resolves the Firebase Bearer token, validates the %PDF- magic bytes,
+            // sanitizes the filename and saves the file. The builder keeps its own
+            // analytics + counters so the existing tracking order is unchanged.
+            await downloadResumePdf({
+                resumeId,
+                resumeName: currentTemplate,
+                language: i18n.language,
+                firstname: previewData?.firstname,
+                lastname: previewData?.lastname,
+                analytics: false,
+            });
 
             // Track download analytics only once a genuine PDF has been delivered, so
             // success metrics cannot count failed exports.
@@ -1247,7 +1238,8 @@ const BuildResume = () => {
             const userId = userIdRef.current;
             if (!resumeId || !userId || !await persistLatest({ manual: true })) throw new Error('Resume must be saved before export');
 
-            await executeDocxDownload({
+            // DIR-064: the centralized client also owns DOCX export.
+            await downloadResumeDocx({
                 resumeId,
                 resumeName: currentTemplate,
                 language: i18n.language,
@@ -1255,6 +1247,7 @@ const BuildResume = () => {
                 lastname: previewData?.lastname,
                 colors: previewData?.colors || null,
                 userId,
+                incrementCounts: Boolean(userId),
             });
         } catch (error) {
             console.error('DOCX Download failed:', error);

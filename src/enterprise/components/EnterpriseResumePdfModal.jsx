@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { FiX, FiPrinter, FiDownload, FiZoomIn, FiZoomOut, FiMaximize2, FiStar, FiFileText, FiCheck, FiLayers, FiExternalLink } from 'react-icons/fi';
 import TemplateRenderer from '../../components/TemplateRenderer';
-import { executeDocxDownload } from '../../utils/docxDownload';
+import { downloadResumeDocx } from '../../utils/exportDownloader';
 import fire from '../../conf/fire';
 
 const TEMPLATE_NAMES = {
@@ -176,13 +176,15 @@ export default function EnterpriseResumePdfModal({
     setStatusMessage('Generating high-fidelity DOCX export…');
     try {
       const currentUid = fire.auth()?.currentUser?.uid || resume.ownerPrincipalId || 'enterprise-admin';
-      await executeDocxDownload({
+      // DIR-064: the centralized cross-platform export client.
+      await downloadResumeDocx({
         resumeId: resume.id,
         resumeName: selectedTemplate,
         language: 'en',
         firstname: normalizedData.firstname,
         lastname: normalizedData.lastname,
         userId: currentUid,
+        incrementCounts: Boolean(currentUid),
       });
       setStatusMessage('DOCX downloaded successfully!');
       setTimeout(() => setStatusMessage(null), 3000);

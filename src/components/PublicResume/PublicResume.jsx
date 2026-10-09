@@ -4,13 +4,11 @@ import { AiFillHome, AiOutlinePlus, AiOutlineMinus } from 'react-icons/ai';
 import { TbLetterCase } from 'react-icons/tb';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import axios from 'axios';
-import download from 'downloadjs';
 import { getPublicResume } from '../../services/api/resumes';
 import { getJsonById } from '../../services/api/platform';
 import { isKnownTemplate } from '../../utils/templateRegistry';
 import { trackDownload, trackEvent } from '../../utils/ga4';
-import { toValidatedPdfBlob } from '../../utils/pdfDownload';
+import { downloadResumePdf } from '../../utils/exportDownloader';
 import TemplateRenderer from '../TemplateRenderer';
 
 export default function PublicResume() {
@@ -67,14 +65,17 @@ export default function PublicResume() {
         setIsDownloading(true);
         setMessage('');
         try {
-            const response = await axios.post('/api/public-export', {
-                language: i18n.language || 'en',
+            // DIR-064: public export is a same-origin endpoint with no Bearer token;
+            // the centralized client still enforces %PDF- magic-byte validation.
+            await downloadResumePdf({
+                endpoint: '/api/public-export',
+                withAuth: false,
                 resumeId,
                 resumeName: templateId,
-            }, { responseType: 'blob' });
-            // Reject JSON error bodies delivered through the blob response type.
-            const pdfBlob = await toValidatedPdfBlob(response.data);
-            download(pdfBlob, 'resume.pdf', 'application/pdf');
+                language: i18n.language || 'en',
+                fileName: 'resume',
+                analytics: false,
+            });
             trackDownload(templateId, 'shared-resume');
             trackEvent('shared_resume_download', 'Documents', templateId, 1);
             setMessage('PDF downloaded successfully.');

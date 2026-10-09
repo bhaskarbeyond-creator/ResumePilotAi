@@ -9,12 +9,8 @@ import { useNavigate } from "react-router-dom";
 import usePromptDialog from "../../../hooks/usePromptDialog";
 import { useLottie } from "lottie-react";
 import { FaCheckCircle, FaChevronRight, FaPencilAlt, FaEllipsisH, FaEnvelope, FaPlus, FaBullseye, FaShareAlt, FaTrashAlt, FaFileAlt, FaClock, FaDownload, FaStar, FaCalendarAlt, FaUsers, FaBars, FaInbox, FaEye, FaSearch, FaTimes, FaChartLine, FaMagic, FaBolt, FaArrowRight, FaLightbulb } from "react-icons/fa";
-import axios from "axios";
-import download from "downloadjs";
-import config from "../../../conf/configuration";
 import { trackDownload, trackEvent, trackEngagement } from "../../../utils/ga4";
-import { toValidatedPdfBlob, pdfFileName } from "../../../utils/pdfDownload";
-import { executeDocxDownload } from "../../../utils/docxDownload";
+import { downloadResumePdf, downloadResumeDocx } from "../../../utils/exportDownloader";
 import { isPaidMembershipTier } from "../../../utils/subscriptionUtils";
 import { getTemplateComponent } from "../../../utils/templateRegistry";
 import { calculateAtsScore } from "../../../utils/atsScore";
@@ -761,25 +757,17 @@ class DashboardHomepage extends Component {
       const resumeId = document.id;
       const language = document?.item?.language || "en";
 
-      const currentUser = fire.auth().currentUser;
-      const token = currentUser && typeof currentUser.getIdToken === 'function' ? await currentUser.getIdToken().catch(() => null) : null;
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
-      const response = await axios.post(
-        `${config.provider}://${config.backendUrl}/api/export`,
-        {
-          language: language,
-          resumeId: resumeId,
-          resumeName: templateName,
-        },
-        {
-          responseType: "blob",
-          headers,
-        }
-      );
-
-      const pdfBlob = await toValidatedPdfBlob(response.data);
-      const fileName = pdfFileName(document.item?.firstname || document.firstname, document.item?.lastname || document.lastname);
+      // DIR-064: route through the ONE cross-platform export client. It resolves the
+      // Bearer token, validates the %PDF- magic bytes, sanitizes the filename and
+      // saves the file. Analytics + counters stay here (unchanged order).
+      await downloadResumePdf({
+        resumeId,
+        resumeName: templateName,
+        language,
+        firstname: document.item?.firstname || document.firstname,
+        lastname: document.item?.lastname || document.lastname,
+        analytics: false,
+      });
 
       trackDownload(templateName, "resume");
       trackEvent("download_document", "Documents", templateName, 1);
@@ -788,7 +776,6 @@ class DashboardHomepage extends Component {
         document_type: "resume",
       });
 
-      download(pdfBlob, fileName, "application/pdf");
       await Promise.allSettled([
         IncrementDownloads(),
         addOneToNumberOfDocumentsDownloaded(fire.auth().currentUser?.uid),
@@ -850,7 +837,8 @@ class DashboardHomepage extends Component {
       const language = document?.item?.language || "en";
       const userId = fire.auth().currentUser?.uid;
 
-      await executeDocxDownload({
+      // DIR-064: the centralized client also owns DOCX export.
+      await downloadResumeDocx({
         resumeId,
         resumeName: templateName,
         language,
@@ -858,6 +846,7 @@ class DashboardHomepage extends Component {
         lastname: document.item?.lastname || document.lastname,
         colors: document.item?.colors || null,
         userId,
+        incrementCounts: Boolean(userId),
       });
 
       this.props.showToast?.("DOCX downloaded successfully.", "success");

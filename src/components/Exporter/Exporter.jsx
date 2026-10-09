@@ -22,6 +22,14 @@ export default function Exporter({ resumeName }) {
         let active = true;
         document.documentElement.removeAttribute('data-export-ready');
         document.documentElement.removeAttribute('data-export-error');
+        // DIR-064: this route renders a single resume sheet, not the application
+        // shell, so the document-level accessibility skip-link has no target here.
+        // Under @media print the print contract neutralises absolute positioning,
+        // which would otherwise print the link as a stray banner on page 1. Hide
+        // it while the export surface is mounted and restore it on unmount so the
+        // rest of the SPA keeps its keyboard skip affordance.
+        const skipLinks = Array.from(document.querySelectorAll('.skip-link'));
+        skipLinks.forEach((el) => el.setAttribute('hidden', 'true'));
         const renderToken = readRenderToken(window.location.hash);
         const dataRequest = renderToken
             ? fetch(`/api/export-render-data?token=${encodeURIComponent(renderToken)}`, { cache: 'no-store' })
@@ -47,6 +55,8 @@ export default function Exporter({ resumeName }) {
             active = false;
             document.documentElement.removeAttribute('data-export-ready');
             document.documentElement.removeAttribute('data-export-error');
+            // DIR-064: restore the skip-link for the rest of the SPA.
+            skipLinks.forEach((el) => el.removeAttribute('hidden'));
         };
     }, [resumeId]);
 

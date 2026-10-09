@@ -26,9 +26,10 @@ test('S8: the Download Resume control is wired to a real export handler', () => 
     // …the handler exists and uses the REAL authorised endpoint…
     assert.match(modal, /const handleDownloadResume = async \(application\)/);
     assert.match(modal, /getEmployerApplicationResume\(job\.id, application\.id\)/);
-    // …downloads through the genuine render pipeline with PDF validation…
+    // …downloads through the genuine render pipeline with PDF validation (DIR-064:
+    // the %PDF- validation is owned by the centralized downloader).
     assert.match(modal, /\/api\/public-export/);
-    assert.match(modal, /toValidatedPdfBlob/);
+    assert.match(modal, /downloadResumePdf/);
     // …and never fabricates a file: the no-copy case is stated honestly.
     assert.match(modal, /has not published a downloadable copy/);
     // The control reports its own in-flight state and cannot double-fire.

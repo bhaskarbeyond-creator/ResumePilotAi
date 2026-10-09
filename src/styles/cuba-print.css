@@ -39,6 +39,10 @@
     /* ---- 2. Interactive chrome must never reach paper ------------------- */
     .no-print,
     [data-print="exclude"],
+    /* DIR-064: the document-level accessibility skip-link is chrome, not content.
+       Rule 3 below forces `position: static`, which would otherwise print the
+       off-screen link as a banner on page 1. It must never reach paper. */
+    .skip-link,
     nav,
     button,
     [role="button"],

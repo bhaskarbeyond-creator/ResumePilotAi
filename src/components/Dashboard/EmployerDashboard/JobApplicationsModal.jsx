@@ -9,9 +9,7 @@ import { updateApplicationStatusWithMessage, getEmployerApplicationResume } from
 import RejectionReasonModal from './RejectionReasonModal';
 import CubaInlineNotice from '../../cuba/CubaInlineNotice';
 import { formatSafeDate } from '../../../utils/subscriptionUtils.js';
-import { toValidatedPdfBlob, pdfFileName } from '../../../utils/pdfDownload';
-import axios from 'axios';
-import download from 'downloadjs';
+import { downloadResumePdf } from '../../../utils/exportDownloader';
 import { FaTimes, FaUser, FaEnvelope, FaCalendar, FaFileAlt, FaDownload, FaCheckCircle, FaTimesCircle, FaUsers, FaClock, FaEye, FaChevronDown, FaChevronUp, FaSearch, FaFilter, FaExpand, FaCompress, FaCommentAlt } from 'react-icons/fa';
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -144,14 +142,19 @@ const [selectedApplication, setSelectedApplication] = useState(null);
                 setActionNotice('This applicant has no downloadable resume attached.');
                 return;
             }
-            const response = await axios.post(
-                '/api/public-export',
-                { resumeId, resumeName, language },
-                { responseType: 'blob' }
-            );
-            const pdfBlob = await toValidatedPdfBlob(response.data);
             const [first = '', last = ''] = String(application.applicantName || '').trim().split(/\s+/);
-            download(pdfBlob, pdfFileName(first, last), 'application/pdf');
+            // DIR-064: same-origin public export via the ONE centralized client, which
+            // enforces %PDF- magic-byte validation before saving.
+            await downloadResumePdf({
+                endpoint: '/api/public-export',
+                withAuth: false,
+                resumeId,
+                resumeName,
+                language,
+                firstname: first,
+                lastname: last,
+                analytics: false,
+            });
         } catch (error) {
             const status = error?.response?.status;
             if (status === 404) {
