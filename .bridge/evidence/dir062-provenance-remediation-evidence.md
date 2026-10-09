@@ -539,6 +539,35 @@ because the guard iterates the **registry** — and a hermetic suite never regis
 * The 113 figure counts `DISPATCH` log events for `proj-*` keys; not all of them
   necessarily became user-visible prompts.
 
+### Round 7 — backlog quantified, and the IDE store is unreachable
+
+A sixth ghost (`DIR-001-mv0kvqs5-482f68`, `proj-MKjHCx-84205dbc`) arrived. Verified:
+
+```
+dispatch ts             = 2026-10-09T06:22:15.922Z   (the same burst, via=uri)
+dispatches after 06:45Z = 0                          (guards still hold)
+proj-MKjHCx in registry = 0 ; in live queue = 0
+ghost dispatch EVENTS   = 113
+DISTINCT ghost wake ids = 50        (each wake dispatched twice: via=uri + via=file)
+```
+
+So the backlog is **~50 distinct wakes**, of which 6 have surfaced. I searched for the
+IDE-side pending store and **could not find one**:
+
+* `%APPDATA%\Code\User\globalStorage\arena-bridge.arena-local-agent-bridge\` — only `audit.jsonl`
+* `%APPDATA%\Code\User\globalStorage\saoudrizwan.claude-dev\` — newest file is from the
+  previous day; nothing from this incident
+* no `*wake*` / `*bridge*` / `*pending*` files anywhere under `%APPDATA%\Code\User`
+
+The most consistent explanation is that the `06:22–06:33` burst issued ~50 **VS Code URI
+launches**, which the OS/IDE queued and is draining one at a time. **There is no
+bridge-side or filesystem action that can recall them.** They are stale by construction
+(missing prompt file, missing project) and should simply be dismissed.
+
+**This is the end of what DIR-062 can fix.** The generator is dead; the residual is a
+queue already handed to the IDE.
+
+
 
 
 
