@@ -1,7 +1,7 @@
 {
-  "certifiedAt": "2026-10-09T06:20:56.880Z",
-  "version": "3.1.0",
-  "architecture": "PROVENANCE_GATED_PRIVILEGED_ACTIONS_V1",
+  "certifiedAt": "2026-10-09T06:34:51.250Z",
+  "version": "3.0.0",
+  "architecture": "BIDIRECTIONAL_INSTANT_WAKE_V1",
   "status": "FROZEN_AND_CERTIFIED",
   "leadToDevWake": {
     "protocol": "short_uri_prompt_file_dual_dispatch",
@@ -43,8 +43,8 @@
   "certifiedFiles": [
     {
       "file": "bridge.cjs",
-      "sha256": "f410fae33db0b8ce0e66a73591d64c12fe857ea56f6f6107736191d4e7652413",
-      "bytes": 267961,
+      "sha256": "4af9ed780b4e268c660ab94f33ac929737476b5990dea628679f516d13a30b6a",
+      "bytes": 270493,
       "certifiedBackup": "bridge.cjs.certified.bak"
     },
     {
@@ -58,35 +58,6 @@
       "sha256": "d5c5ffb17ce819078b8d7d1d8e41923328965d3a3a22800995b98abe5934edf4",
       "bytes": 50627,
       "certifiedBackup": "autowake.cjs.certified.bak"
-    },
-    {
-      "file": "lead_watcher_session.cjs",
-      "sha256": "5261b013770ce59c693efb28697de86875024a6b739092feead48f3e32ef6e52",
-      "bytes": 14294,
-      "certifiedBackup": null,
-      "addedBy": "DIR-062"
-    }
-  ],
-  "rebaselineHistory": [
-    {
-      "at": "2026-10-09T06:20:56.879Z",
-      "by": "DIR-062",
-      "authority": "project owner (explicit §10.1 authorisation)",
-      "reason": "Closed the auto-certification gap: DIR-056..061 reached APPROVED_FROZEN with certifiedBy:LEAD_SUPERVISOR and no human review, because pipelineAdvance() (reached by the scheduled AIBridge-LeadWatcher via `bridge pipeline auto`) called reviewDirective({verdict:APPROVED}) then certify(), and lead_watcher_session.cjs asserted `--verdict APPROVED` without reading the evidence. Added provenance (declared / daemon-pid-registry / non-tty) plus opt-in --allow-automation gating to planApprove/reviewDirective/certify, and hardened the auto-certify gate to actually scan the submitted test artifact."
-    }
-  ],
-  "previousHashes": [
-    {
-      "file": "bridge.cjs",
-      "sha256": "7ff6241804ae0d1adb029fb7ed281ffca2920f2d98507a779d81ab5507149785"
-    },
-    {
-      "file": "lead_watcher.cjs",
-      "sha256": "a682309b4b5aff16373af6782a747bfbee503b0fcaa5db97971207eb1100cd00"
-    },
-    {
-      "file": "autowake.cjs",
-      "sha256": "d5c5ffb17ce819078b8d7d1d8e41923328965d3a3a22800995b98abe5934edf4"
     }
   ]
 }

@@ -177,6 +177,11 @@ function saveRegistry(reg) {
 }
 function registerProject(projectRoot, name = null) {
   if (!projectRoot) return;
+  // HERMETIC MODE. A test harness must never mutate the GLOBAL registry. Without
+  // this guard `tests/dir062-bridge-provenance.test.mjs` registered 8 scratch
+  // projects in registry.json and orphaned 30 `projects/proj-*` record dirs,
+  // because both ensureBridge() and notifyLeadSupervisor() funnel through here.
+  if (String(process.env.AI_BRIDGE_HERMETIC || '') === '1') return null;
   const root = path.resolve(projectRoot);
   const bDir = path.join(root, '.bridge');
   const reg = loadRegistry();
@@ -1315,7 +1320,15 @@ function findBridgeRoot(startDir = process.cwd()) {
     if (exists(b) && fs.statSync(b).isDirectory()) {
       try {
         const reg = loadRegistry();
-        if (path.resolve(reg.activeProject || '').toLowerCase() !== path.resolve(cur).toLowerCase()) {
+        // HERMETIC MODE — the true root cause of the DIR-062 test pollution.
+        // findBridgeRoot() runs on EVERY bridge call, so a scratch project silently
+        // repointed the GLOBAL activeProject at a temp dir. The always-on lead
+        // watcher then saw that dir as "the active project", called
+        // registerProject() on it, created a permanent ~/.ai-bridge/projects/proj-*
+        // record, and raised a REAL wake prompt for a project deleted moments later
+        // (e.g. proj-Oxqdsz-ba408264 -> E:\Temp\dir062-bridge-S6QhXL\proj-Oxqdsz).
+        if (String(process.env.AI_BRIDGE_HERMETIC || '') !== '1'
+          && path.resolve(reg.activeProject || '').toLowerCase() !== path.resolve(cur).toLowerCase()) {
           reg.activeProject = cur;
           const p = (reg.projects || []).find(x => path.resolve(x.projectRoot).toLowerCase() === path.resolve(cur).toLowerCase());
           if (p) p.lastActive = now();
@@ -1403,6 +1416,13 @@ function ledgerLastHash(bridgeDir) {
 }
 function notifyLeadSupervisor(bridgeDir, body) {
   try {
+    // HERMETIC MODE — the source of the ghost wake. This function did four global
+    // things: registerProject(), an append to the GLOBAL lead_wake_queue.jsonl,
+    // AW.deliver() (which creates a real projects/<key>/ record + wake prompt) and
+    // a UDP packet to the live lead watcher on port 48222. From a test harness that
+    // produced a genuine wake for a scratch project deleted moments later —
+    // e.g. `proj-Oxqdsz-ba408264 -> E:\Temp\dir062-bridge-S6QhXL\proj-Oxqdsz`.
+    if (String(process.env.AI_BRIDGE_HERMETIC || '') === '1') return;
     const signalFile = path.join(bridgeDir, 'wake_lead.signal');
     atomicWrite(signalFile, {
       timestamp: now(),
@@ -1419,13 +1439,19 @@ function notifyLeadSupervisor(bridgeDir, body) {
     const projectName = path.basename(projectRoot);
 
     const queueFile = path.join(GLOBAL, 'lead_wake_queue.jsonl');
-    appendLineAtomic(queueFile, JSON.stringify({
-      timestamp: now(),
-      bridgeDir,
-      projectRoot,
-      projectName,
-      event: body
-    }) + '\n');
+    // HERMETIC MODE. Never append to the GLOBAL wake queue from a test harness: a
+    // scratch project's events otherwise produce real wake prompts (and record
+    // dirs) for a project that is deleted moments later — ghost wakes such as
+    // `proj-Oxqdsz-ba408264 -> E:\Temp\dir062-bridge-S6QhXL\proj-Oxqdsz`.
+    if (String(process.env.AI_BRIDGE_HERMETIC || '') !== '1') {
+      appendLineAtomic(queueFile, JSON.stringify({
+        timestamp: now(),
+        bridgeDir,
+        projectRoot,
+        projectName,
+        event: body
+      }) + '\n');
+    }
 
     try {
       registerProject(projectRoot, projectName);
@@ -3884,6 +3910,13 @@ const WAKE_COOLDOWN_MS = 45000;
 
 function wakeCline(o = {}) {
   const { bridgeDir, projectRoot } = findBridgeRoot(o.projectDir);
+  // HERMETIC MODE. wakeCline -> autowake.cjs ensureScaffold() pushes the project
+  // into the GLOBAL registry and creates ~/.ai-bridge/projects/<key>/. That is how
+  // the 5 scratch projects per run of tests/dir062-bridge-provenance.test.mjs
+  // (each `createDirective` wakes the dev) leaked 5 permanent record dirs.
+  if (String(process.env.AI_BRIDGE_HERMETIC || '') === '1') {
+    return { success: true, suppressed: 'hermetic', projectRoot, directiveId: o.directiveId || o.directive || null };
+  }
   const target = (o.target || 'antigravity').toLowerCase();
   ensureExtensionWakeSupport();
   let promptText = o.prompt || '';

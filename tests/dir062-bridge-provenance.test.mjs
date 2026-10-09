@@ -30,6 +30,11 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 
 const require = createRequire(import.meta.url);
+// HERMETIC. This suite must never touch GLOBAL bridge state. Without this flag
+// bridge.initProject()/appendEvent() -> registerProject() wrote scratch projects
+// into ~/.ai-bridge/registry.json, orphaned ~/projects/proj-* record dirs, and
+// emitted a REAL wake prompt for a scratch project deleted moments later.
+process.env.AI_BRIDGE_HERMETIC = '1';
 const BRIDGE_CLI = path.join(os.homedir(), '.ai-bridge', 'bridge.cjs');
 const bridge = require(BRIDGE_CLI);
 
@@ -114,6 +119,11 @@ test.after(() => {
 });
 
 const bridgeDirOf = (dir) => path.join(dir, '.bridge');
+/**
+ * Scaffold a `.bridge` dir BY HAND. `bridge.initProject()` would additionally call
+ * registerProject()/setActiveProject(), mutating the GLOBAL registry — see the
+ * AI_BRIDGE_HERMETIC note above. requireBridge() only needs `bridge.json` to exist.
+ */
 function scratchProject() {
   const dir = fs.mkdtempSync(path.join(tmpRoot, 'proj-'));
   git(dir, ['init', '-q']);
@@ -122,7 +132,17 @@ function scratchProject() {
   fs.writeFileSync(path.join(dir, 'README.md'), '# scratch\n');
   git(dir, ['add', '.']);
   git(dir, ['commit', '-qm', 'init']);
-  bridge.initProject(dir, path.basename(dir), true); // noScaffold: keep the temp dir minimal
+  const b = bridgeDirOf(dir);
+  fs.mkdirSync(path.join(b, 'directives'), { recursive: true });
+  fs.mkdirSync(path.join(b, 'evidence'), { recursive: true });
+  fs.mkdirSync(path.join(b, 'lanes'), { recursive: true });
+  fs.writeFileSync(path.join(b, 'ledger.jsonl'), '');
+  fs.writeFileSync(path.join(b, 'bridge.json'), JSON.stringify({
+    bridgeVersion: '3.1.0',
+    projectName: path.basename(dir),
+    projectRoot: dir,
+    initializedAt: new Date().toISOString()
+  }, null, 2));
   return dir;
 }
 function seedDirective(dir, title) {

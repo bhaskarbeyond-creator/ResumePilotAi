@@ -213,3 +213,68 @@ The 14-test suite additionally proves end-to-end, on a scratch git project, that
 * `test:product` reported a spurious exit `1` once when piped through `Select-String`
   (a `$LASTEXITCODE` artifact); the unpiped re-run with `*>` redirection is **exit 0**.
 
+---
+
+## 7. ROUND 2 — THE TEST SUITE WAS POLLUTING GLOBAL BRIDGE STATE
+
+**Trigger:** a wake arrived for `DIR-001` in project `proj-Oxqdsz-ba408264`
+(`E:\Temp\dir062-bridge-S6QhXL\proj-Oxqdsz`) whose prompt file **did not exist** and
+whose root **no longer exists**. No such directive was ever issued.
+
+**It was self-inflicted.** The pre-fix `tests/dir062-bridge-provenance.test.mjs` leaked
+global state on every run, and one leak was a **real wake prompt** for a scratch project
+that was deleted moments later.
+
+### The four leak paths
+
+| # | Path | Effect |
+|---|---|---|
+| 1 | `initProject()` → `setActiveProject()` / `ensureBridge()` → `registerProject()` | scratch entries written into `~/.ai-bridge/registry.json` |
+| 2 | **`findBridgeRoot()` repointed the global `activeProject`** at the scratch dir (it runs on *every* bridge call) | the live lead watcher then treated the scratch dir as "the active project" |
+| 3 | `notifyLeadSupervisor()` → `AW.deliver()` + **UDP to port 48222** | created a real `projects/<key>/` record and told the daemon about it |
+| 4 | `wakeCline()` (via `createDirective`) → `autowake.cjs ensureScaffold()` | one `projects/<key>` record per scratch project |
+
+Measured damage: **8 scratch registry entries**, **40+ orphaned `projects/proj-*` record
+dirs**, and the ghost wake `DIR-001-mv0kvkak-843942`.
+
+Path 2 is the serious one — the test was **stealing the global `activeProject` pointer**
+from the real IME365 project for the duration of every run.
+
+### The fix — `AI_BRIDGE_HERMETIC=1`
+
+Guards at the four choke points (`registerProject`, `findBridgeRoot`'s activeProject
+write, `notifyLeadSupervisor`, `wakeCline`). The suite also now **scaffolds `.bridge` by
+hand** instead of calling `initProject()`.
+
+**Verified hermetic** — full suite run, measuring global state before/after:
+
+```
+BEFORE: dir062=16 projectDirs=221 queue=175
+AFTER:  dir062=16 projectDirs=221 queue=175
+DELTA dir062=0 projectDirs=0 queue=0   <- all zero
+```
+
+14/14 still pass. `activeProject` is preserved across the run.
+
+### Cleanup performed
+
+* registry `171 -> 163` projects (scratch entries removed; `IME365-a641d3a0` intact,
+  `activeProject` = `D:\xampp\htdocs\IME365`)
+* `projects/` `221 -> 171` dirs (0 `proj-*` leftovers)
+* backup written to `registry.json.dir062.bak`
+
+### Honest limits (round 2)
+
+* **I did not fabricate a `DIR-001` directive.** There was no project, no prompt and no
+  spec; inventing one would have been the exact "zero fabrication" violation. The wake
+  is reported as unresolvable.
+* The hermetic guards are **opt-in via an env var**. A future suite that forgets to set
+  `AI_BRIDGE_HERMETIC=1` will pollute again. A stronger design would isolate the registry
+  per-process or key it by an explicit test marker.
+* `autowake.cjs` remains **frozen and unmodified** — the guard sits in `bridge.cjs`'s
+  `wakeCline` instead, which is a broader choke point but leaves `autowake.cjs`'s own
+  `ensureScaffold()` reachable if called directly.
+* Round 2 moved the `bridge.cjs` hash again (`f410fae33db0` -> `4af9ed780b4e`) and
+  required a second unlock + re-freeze under the same §10.1 authorisation.
+
+
