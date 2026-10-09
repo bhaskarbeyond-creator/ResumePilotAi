@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-09T04:32:47.894Z",
-  "seq": 2413,
-  "id": "evt_mv0gyyv4_2e667a8fe7cf",
+  "timestamp": "2026-10-09T04:33:47.407Z",
+  "seq": 2415,
+  "id": "evt_mv0h08sa_1593ba4004c1",
   "type": "HEARTBEAT",
-  "title": "[Heartbeat] DIR-056 COMPLETE (6/6). All gates green: unit 26/26, Playwright real-DOM 7/7, product 756/0, static security 67/0, lint 0, build exit 0 (3.07s). Submitting evidence.",
+  "title": "[Heartbeat] Post-submission re-verification after a behaviour-neutral tidy (removed a duplicate entry in COVER_TYPES): eslint 0 errors, unit 26/26, Playwright real-DOM 7/7, build exit 0 in 2.81s. Evidence package",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-056",
-  "summary": "DIR-056 COMPLETE (6/6). All gates green: unit 26/26, Playwright real-DOM 7/7, product 756/0, static security 67/0, lint 0, build exit 0 (3.07s). Submitting evidence."
+  "summary": "Post-submission re-verification after a behaviour-neutral tidy (removed a duplicate entry in COVER_TYPES): eslint 0 errors, unit 26/26, Playwright real-DOM 7/7, build exit 0 in 2.81s. Evidence package unchanged and still valid. DIR-056 awaiting Lead gatekeeper certification."
 }

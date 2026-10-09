@@ -42,7 +42,7 @@ const TABS = Object.freeze([
     { id: 'jobs', label: 'Jobs' },
 ]);
 
-const COVER_TYPES = Object.freeze(['cover', 'coverletter', 'cover-letter', 'coverletter']);
+const COVER_TYPES = Object.freeze(['cover', 'coverletter', 'cover-letter']);
 
 const cleanText = (value) => (typeof value === 'string' ? value.trim() : '');
 const firstText = (...values) => values.map(cleanText).find(Boolean) || '';
