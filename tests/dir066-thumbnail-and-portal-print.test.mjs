@@ -83,7 +83,11 @@ test('DIR-066 S4 (portal A): the recruiter pipeline isolates print via buildPrin
     assert.match(src, /buildPrintableDocument/, 'the recruiter surface must use the shared print contract');
     assert.match(src, /createElement\('iframe'\)/, 'print must render into an isolated iframe');
     assert.match(src, /frame\.contentWindow\.print\(\)/, 'print must target the isolated frame');
-    assert.match(src, /new Blob\(\[buildPrintableDocument\(/, 'the HTML download must carry the contract too');
+    // DIR-067 superseded the raw `.html` blob download with real PDF/DOCX exports
+    // through the centralized client.
+    assert.match(src, /downloadResumePdf/, 'the recruiter must export a real PDF');
+    assert.match(src, /downloadResumeDocx/, 'the recruiter must export a real DOCX');
+    assert.doesNotMatch(src, /resume\.html/, 'the dead-end .html download must be gone');
 });
 
 test('DIR-066 S5 (portal B): the enterprise modal uses window.print and the centralized DOCX client', () => {

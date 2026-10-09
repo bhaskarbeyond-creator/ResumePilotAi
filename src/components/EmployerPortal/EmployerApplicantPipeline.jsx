@@ -12,6 +12,9 @@ import { sanitizeRichText } from '../../utils/sanitizeHtml';
 // a FRESH document, which inherits none of the app's CSS — so the stylesheets and
 // the print rules both have to be carried across explicitly.
 import { buildPrintableDocument } from '../../utils/printSurface';
+// DIR-067: the centralized cross-platform export client — the recruiter drawer now
+// produces real PDF/DOCX instead of a dead-end `.html` artefact.
+import { downloadResumePdf, downloadResumeDocx } from '../../utils/exportDownloader';
 
 /**
  * ATS stage -> Cuba status-pill tone (DIR-010).
@@ -109,6 +112,9 @@ const EmployerApplicantPipeline = ({ showToast }) => {
     const [resumeError, setResumeError] = useState(null);
     const [zoom, setZoom] = useState(100);
     const [stageBusyId, setStageBusyId] = useState(null);
+    const [exportBusy, setExportBusy] = useState(null);
+    const [exportError, setExportError] = useState('');
+    const [drawerTab, setDrawerTab] = useState('resume');
     const printFrameRef = useRef(null);
 
     const loadPipeline = useCallback(async (jobList) => {
@@ -263,26 +269,9 @@ const EmployerApplicantPipeline = ({ showToast }) => {
         setTimeout(() => { document.body.removeChild(frame); }, 1000);
     }, [resumeTarget]);
 
-    /** Exports the rendered resume as a self-contained HTML document. */
-    const handleDownload = useCallback(() => {
-        const node = printFrameRef.current;
-        if (!node || typeof document === 'undefined') return;
-        const name = (resumeTarget?.applicantName || 'candidate').replace(/[^A-Za-z0-9]+/g, '-').toLowerCase();
-        // Same defect as the print path: a bare document with no CSS produced an
-        // unstyled .html file. It now carries the stylesheets + print contract.
-        const blob = new Blob([buildPrintableDocument({
-            title: resumeTarget?.applicantName || 'Resume',
-            innerHTML: node.innerHTML,
-        })], { type: 'text/html;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${name}-resume.html`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-    }, [resumeTarget]);
+    // DIR-067: the hand-rolled `.html` blob export is gone. The drawer now produces
+    // real PDF/DOCX through the centralized client (see runExport below), so a
+    // recruiter gets a document they can actually use.
 
     /** The cover letter is applicant-authored HTML, so it is sanitized before it reaches the DOM. */
     const safeCoverLetter = useMemo(
@@ -307,6 +296,46 @@ const EmployerApplicantPipeline = ({ showToast }) => {
             role: resumeDocument.targetRole || resumeDocument.occupation || resumeTarget?.jobTitle || '',
         }
         : null;
+    /**
+     * DIR-067: the recruiter drawer exports the candidate's REAL resume through the
+     * centralized client, never a hand-rolled `.html` blob. A published candidate
+     * resume is served by the same-origin public export routes, so no owner Bearer
+     * token is needed and the payload is magic-byte validated before it is saved.
+     */
+    const runExport = useCallback(async (kind) => {
+        const doc = resumeDocument;
+        if (!doc?.id) return;
+        setExportError('');
+        setExportBusy(kind);
+        try {
+            const options = {
+                resumeId: String(doc.id),
+                resumeName: resumeTemplateId,
+                language: 'en',
+                firstname: doc.firstname || '',
+                lastname: doc.lastname || '',
+                withAuth: false,
+                analytics: false,
+            };
+            if (kind === 'docx') {
+                await downloadResumeDocx({ ...options, endpoint: '/api/public-export-docx' });
+            } else {
+                await downloadResumePdf({ ...options, endpoint: '/api/public-export' });
+            }
+        } catch (error) {
+            const validated = error?.code === 'EXPORT_NOT_PDF' || error?.code === 'EXPORT_NOT_DOCX';
+            setExportError(validated
+                ? error.message
+                : 'This resume could not be exported. The candidate may not have published it yet.');
+        } finally {
+            setExportBusy(null);
+        }
+    }, [resumeDocument, resumeTemplateId]);
+
+    const handleDownloadPdf = useCallback(() => { void runExport('pdf'); }, [runExport]);
+    const handleDownloadDocx = useCallback(() => { void runExport('docx'); }, [runExport]);
+
+
 
     if (status === EMPLOYER_DATA_STATUS.LOADING || status === EMPLOYER_DATA_STATUS.IDLE) {
         return <EmployerLoading label="Loading your applicant pipeline…" />;
@@ -552,12 +581,23 @@ const EmployerApplicantPipeline = ({ showToast }) => {
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={handleDownload}
-                                    disabled={!resumeValues}
+                                    onClick={handleDownloadPdf}
+                                    disabled={!resumeValues || exportBusy !== null}
+                                    aria-label="Download candidate resume as PDF"
                                     className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 cuba-focusable"
                                 >
                                     <FiDownload className="h-4 w-4" aria-hidden="true" />
-                                    Download
+                                    {exportBusy === 'pdf' ? 'Preparing…' : 'PDF'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleDownloadDocx}
+                                    disabled={!resumeValues || exportBusy !== null}
+                                    aria-label="Download candidate resume as Word DOCX"
+                                    className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 cuba-focusable"
+                                >
+                                    <FiFileText className="h-4 w-4" aria-hidden="true" />
+                                    {exportBusy === 'docx' ? 'Preparing…' : 'Word'}
                                 </button>
                                 <button
                                     type="button"
@@ -569,7 +609,53 @@ const EmployerApplicantPipeline = ({ showToast }) => {
                                 </button>
                             </div>
                         </header>
-                        <div className="min-h-0 flex-1 overflow-auto bg-slate-100 p-4">
+                        {/* DIR-067: the cover letter is decoupled from the A4 canvas and
+                            presented as a clean tabbed view beside it. */}
+                        {!resumeLoading && !resumeError && resumeValues && safeCoverLetter && (
+                            <div
+                                role="tablist"
+                                aria-label="Candidate documents"
+                                className="flex flex-none gap-1 border-b border-slate-200 bg-white px-4 pt-3"
+                            >
+                                {[{ id: 'resume', label: 'Resume' }, { id: 'cover', label: 'Cover letter' }].map((tab) => (
+                                    <button
+                                        key={tab.id}
+                                        type="button"
+                                        role="tab"
+                                        id={`recruiter-tab-${tab.id}`}
+                                        aria-selected={drawerTab === tab.id}
+                                        aria-controls={`recruiter-panel-${tab.id}`}
+                                        tabIndex={drawerTab === tab.id ? 0 : -1}
+                                        onClick={() => setDrawerTab(tab.id)}
+                                        onKeyDown={(event) => {
+                                            const order = ['resume', 'cover'];
+                                            if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+                                            event.preventDefault();
+                                            const at = order.indexOf(drawerTab);
+                                            const nextAt = event.key === 'Home' ? 0
+                                                : event.key === 'End' ? order.length - 1
+                                                    : (at + (event.key === 'ArrowRight' ? 1 : -1) + order.length) % order.length;
+                                            setDrawerTab(order[nextAt]);
+                                        }}
+                                        className={`-mb-px rounded-t-lg border border-b-0 px-3 py-2 text-xs font-bold transition-colors cuba-focusable ${drawerTab === tab.id ? 'border-slate-200 bg-slate-50 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+                                    >
+                                        {tab.label}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                        {exportError && (
+                            <p role="alert" className="flex-none border-b border-rose-200 bg-rose-50 px-5 py-2 text-xs font-bold text-rose-700">
+                                {exportError}
+                            </p>
+                        )}
+                        <div
+                            role="tabpanel"
+                            id="recruiter-panel-resume"
+                            aria-labelledby="recruiter-tab-resume"
+                            hidden={Boolean(safeCoverLetter) && drawerTab !== 'resume'}
+                            className="min-h-0 flex-1 overflow-auto bg-slate-100 p-4"
+                        >
                             {resumeLoading && (
                                 <p role="status" aria-live="polite" className="py-16 text-center text-sm text-slate-500">
                                     Loading candidate resume…
@@ -626,13 +712,21 @@ const EmployerApplicantPipeline = ({ showToast }) => {
                         </div>
 
                         {safeCoverLetter && (
-                            <footer className="max-h-40 overflow-y-auto border-t border-slate-200 px-5 py-4">
-                                <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">Cover letter</h3>
-                                <div
-                                    className="mt-2 max-w-none text-sm text-slate-700 [&_p]:mb-2"
-                                    dangerouslySetInnerHTML={{ __html: safeCoverLetter }}
-                                />
-                            </footer>
+                            <div
+                                role="tabpanel"
+                                id="recruiter-panel-cover"
+                                aria-labelledby="recruiter-tab-cover"
+                                hidden={drawerTab !== 'cover'}
+                                className="min-h-0 flex-1 overflow-auto bg-slate-100 p-4"
+                            >
+                                <section className="mx-auto max-w-3xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                                    <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">Cover letter</h3>
+                                    <div
+                                        className="mt-3 max-w-none text-sm leading-relaxed text-slate-700 [&_p]:mb-3"
+                                        dangerouslySetInnerHTML={{ __html: safeCoverLetter }}
+                                    />
+                                </section>
+                            </div>
                         )}
                     </div>
                 </div>

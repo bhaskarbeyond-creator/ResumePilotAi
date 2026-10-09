@@ -421,7 +421,7 @@ const retiredClientNotificationPaths = new Set([
 const publicApiPaths = new Set([
     '/healthz', '/readyz', '/health', '/health/databases', '/service-availability', '/platform/version', '/platform/public-config',
     '/enterprise/status',
-    '/stripe-webhook', '/public-export', '/export-render-data', '/contact', '/auth/custom-password-reset',
+    '/stripe-webhook', '/public-export', '/public-export-docx', '/export-render-data', '/contact', '/auth/custom-password-reset',
     '/auth/verify-email-token', '/auth/set-user-password', '/auth/linkedin', '/auth/linkedin/callback',
     '/auth/github', '/auth/github/callback', '/auth/oauth/exchange', '/auth/preview-login',
     '/public/custom-pages', '/public/custom-pages.json',
@@ -549,7 +549,7 @@ app.use('/api/ai', aiAccountLimiter, enforceDailyAiQuota);
 // Reject unauthorized operators before touching the durable admission store or
 // disclosing its availability. The route repeats this guard as defense in depth.
 app.use('/api/admin/ai/test-provider', requireRecentAdminAuthentication, aiAccountLimiter);
-app.use(['/api/export', '/api/public-export', '/api/export-docx'], exportAccountLimiter);
+app.use(['/api/export', '/api/public-export', '/api/export-docx', '/api/public-export-docx'], exportAccountLimiter);
 app.use('/api/linkedin-scraper', scraperAccountLimiter);
 app.use('/api/contact', contactAccountLimiter);
 // DIR-054: the messaging budget is METHOD-AWARE. A passive unread-badge read
@@ -4409,6 +4409,70 @@ app.post('/api/export-docx', async (req, res) => {
         return res.status(500).json({ error: { code: 'DOCX_EXPORT_FAILED', message: 'Unable to generate DOCX export', requestId: res.locals.requestId } });
     }
 });
+// DIR-067: the recruiter portal must be able to export a candidate's Word file.
+// The only DOCX route above is OWNER-scoped (req.user.uid), so a recruiter could
+// never download a candidate's DOCX. This route mirrors the public PDF
+// authorization exactly — the MariaDB publication row is the authority, no owner
+// session is trusted, so no IDOR is possible — and reuses the same builder,
+// template resolution and entitlement gate as /api/export-docx.
+app.post('/api/public-export-docx', async (req, res) => {
+    const { resumeName, resumeId } = req.body;
+    if (!/^[A-Za-z0-9_-]{4,128}$/.test(String(resumeId || ''))) return res.status(400).json({ error: 'Invalid resume' });
+    const requestedTemplate = String(resumeName || req.body.template || '').trim();
+    if (requestedTemplate && !EXPORTABLE_TEMPLATE.test(requestedTemplate)) {
+        return res.status(400).json({ error: 'Invalid export request' });
+    }
+    const { getRepository } = require('./repositories');
+    const repo = getRepository();
+    const published = await repo.getPublicResume(String(resumeId));
+    if (!published || published.isPublished !== true || published.publicationMode !== 'explicit') {
+        return res.status(404).json({ error: 'Resume not found' });
+    }
+    const stored = published.data;
+    if (!stored || typeof stored !== 'object' || Array.isArray(stored)) {
+        return res.status(422).json({ error: 'Resume data is invalid' });
+    }
+    const owner = await repo.getUser(published.ownerUid);
+    const publicConfig = (await repo.getSetting('public_config')) || {};
+    const systemSettings = (await repo.getSetting('system_settings')) || {};
+    const isGlobalFreeMode = publicConfig.subscriptions === false
+        || publicConfig.subscriptions?.state === false
+        || publicConfig.subscriptions?.enabled === false
+        || systemSettings.subscriptions?.state === false;
+    const allowFreeDocx = Boolean(publicConfig.watermark?.allowFreeDocxDownload);
+    if (!isGlobalFreeMode && !allowFreeDocx && !isMembershipActive(owner)) {
+        return res.status(402).json({ error: { code: 'ACTIVE_SUBSCRIPTION_REQUIRED', message: 'An active subscription is required for DOCX export', requestId: res.locals.requestId } });
+    }
+    try {
+        let resolvedTemplate;
+        try {
+            resolvedTemplate = resolveExportTemplate(stored, requestedTemplate);
+        } catch (templateError) {
+            return res.status(400).json({ error: templateError.code === 'TEMPLATE_MISMATCH' ? 'Template mismatch' : 'Invalid export request' });
+        }
+        // Theme presets are authoritative (same source as PDF). Client-supplied
+        // colors and resumeName cannot override template identity or inject styling.
+        const resumeData = {
+            ...stored,
+            template: resolvedTemplate,
+            resumeName: resolvedTemplate,
+            colors: null,
+        };
+        const personName = [stored.firstname, stored.lastname].filter(Boolean).join(' ');
+        const safeName = String(personName || stored.title || 'Resume').replace(/[^A-Za-z0-9 _-]/g, '').trim().slice(0, 80) || 'Resume';
+        const buffer = await createResumeDocx(resumeData);
+        res.setHeader('Cache-Control', 'no-store, private');
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        res.setHeader('Content-Disposition', `attachment; filename="${safeName.replace(/\s+/g, '_')}.docx"`);
+        res.setHeader('Content-Length', String(buffer.length));
+        return res.send(buffer);
+    } catch (error) {
+        console.error('[Public DOCX export]', error.message);
+        return res.status(500).json({ error: { code: 'DOCX_EXPORT_FAILED', message: 'Unable to generate DOCX export', requestId: res.locals.requestId } });
+    }
+});
+
+
 
 // Item 44: RTL Native Font Support (Arabic/Hebrew) Helper
 // Standard Health Check & RTL Font Config Helper

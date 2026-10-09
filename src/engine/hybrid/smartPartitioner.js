@@ -486,23 +486,29 @@ export function partitionResumeContent(values = {}, theme = {}) {
    *    where SmartFlowRenderer seamlessly renders a "... (Continued)" continuation header.
    * 3. If the current page does NOT have enough space to even start the section cleanly,
    *    it pushes the section to start at the top of the next page (avoiding orphan headers).
+   *
+   * DIR-067: extracted into a pure helper so the SAME deterministic packing can be
+   * re-run with a different section rhythm (adaptive micro-compaction) without
+   * touching the render path.
    */
-  const pageBuckets = [];
-  let current = [];
-  let currentHeight = 0;
-  let pageIndex = 0;
   const capacityFor = (index) => (index === 0 ? P1_CAPACITY : PN_CAPACITY);
 
-  const pushPage = () => {
-    pageBuckets.push(current);
-    current = [];
-    currentHeight = 0;
-    pageIndex += 1;
-  };
+  const packSections = (sectionGapPx) => {
+    const pageBuckets = [];
+    let current = [];
+    let currentHeight = 0;
+    let pageIndex = 0;
+
+    const pushPage = () => {
+      pageBuckets.push(current);
+      current = [];
+      currentHeight = 0;
+      pageIndex += 1;
+    };
 
   sections.forEach((section) => {
     const capacity = capacityFor(pageIndex);
-    const gapBefore = current.length ? SECTION_GAP_PX : 0;
+    const gapBefore = current.length ? sectionGapPx : 0;
 
     // Fast path: entire section fits in remaining space of current page
     if (currentHeight + gapBefore + section.estHeight <= capacity) {
@@ -529,7 +535,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
       const itemCapacity = capacityFor(pageIndex);
       const isFirstOnPage = current.length === 0;
       const continuationTitleHeight = (isFirstOnPage && itemIdx > 0) ? 26 : 0;
-      const interSectionGap = (isFirstOnPage || sectionStartedOnThisPage) ? 0 : SECTION_GAP_PX;
+      const interSectionGap = (isFirstOnPage || sectionStartedOnThisPage) ? 0 : sectionGapPx;
       const itemHeight = (item.estHeight || 0) + continuationTitleHeight + interSectionGap;
 
       if (current.length && currentHeight + itemHeight > itemCapacity) {
@@ -543,8 +549,95 @@ export function partitionResumeContent(values = {}, theme = {}) {
     });
   });
 
-  if (current.length) pushPage();
-  if (!pageBuckets.length) pageBuckets.push([]);
+    if (current.length) pushPage();
+    if (!pageBuckets.length) pageBuckets.push([]);
+    return pageBuckets;
+  };
+
+  /** Rendered height of one packed page: content + the inter-section gaps it will paint. */
+  const heightOfPage = (bucket, sectionGapPx) => {
+    const content = bucket.reduce((sum, item) => sum + (item.estHeight || 0), 0);
+    let groups = 0;
+    let previous = null;
+    for (const item of bucket) {
+      if (item.type !== previous) { groups += 1; previous = item.type; }
+    }
+    return content + Math.max(0, groups - 1) * sectionGapPx;
+  };
+
+  /** Stable identity of the section an item belongs to (custom sections key on sectionId). */
+  const sectionKeyOf = (item) => (item.sectionId ? `${item.type}:${item.sectionId}` : item.type);
+
+  // DIR-067 (A) Adaptive Micro-Compaction: a minor trailing overflow (<= 60px, or a
+  // single trailing row) is absorbed by a tighter 11px section rhythm instead of
+  // stranding content on a nearly empty page 2. Adopted ONLY when the whole resume
+  // then fits one page; the chosen rhythm is returned so the renderer paints
+  // exactly what was estimated (no footer overlap).
+  const COMPACT_SECTION_GAP_PX = 11;
+  const MINOR_OVERFLOW_PX = 60;
+  // DIR-067 (B) orphan threshold: a continuation title (26px) + one grid row (~85px).
+  const ORPHAN_MAX_PX = 130;
+
+  /**
+   * DIR-067 (B) Section Integrity & Orphan Guard.
+   *
+   * When two pages are genuinely required, a continuation must never strand a
+   * single isolated card on the last page (4 certifications on page 1 and 1 on a
+   * 85%-blank page 2). If the last page holds exactly one stranded section that
+   * continues from an earlier page, the WHOLE section moves onto the last page so
+   * it reads as a complete, intentional block. Reverts when that would overflow.
+   */
+  const applyOrphanGuard = (buckets, sectionGapPx) => {
+    if (buckets.length < 2) return buckets;
+    const lastIdx = buckets.length - 1;
+    const last = buckets[lastIdx];
+    if (!last.length) return buckets;
+    const keys = new Set(last.map(sectionKeyOf));
+    if (keys.size !== 1) return buckets;
+    const key = [...keys][0];
+    const isGrid = key.startsWith('certification') || key.startsWith('project');
+    const oneRow = isGrid ? last.length <= 2 : last.length <= 1;
+    if (!oneRow && heightOfPage(last, sectionGapPx) > ORPHAN_MAX_PX) return buckets;
+
+    const earlier = [];
+    for (let q = 0; q < lastIdx; q += 1) {
+      if (buckets[q].some((item) => sectionKeyOf(item) === key)) earlier.push(q);
+    }
+    if (!earlier.length) return buckets;
+
+    const next = buckets.map((bucket) => bucket.slice());
+    const moved = [];
+    for (const q of earlier) {
+      next[q] = next[q].filter((item) => {
+        if (sectionKeyOf(item) === key) { moved.push(item); return false; }
+        return true;
+      });
+    }
+    if (!moved.length) return buckets;
+    next[lastIdx] = [...moved, ...next[lastIdx]];
+    if (heightOfPage(next[lastIdx], sectionGapPx) > capacityFor(lastIdx)) return buckets;
+    const pruned = next.filter((bucket, index) => bucket.length > 0 || index === 0);
+    return pruned.length ? pruned : buckets;
+  };
+
+  let activeSectionGapPx = SECTION_GAP_PX;
+  let pageBuckets = packSections(activeSectionGapPx);
+
+  // (A) micro-compaction
+  if (pageBuckets.length === 2) {
+    const last = pageBuckets[pageBuckets.length - 1];
+    const minor = heightOfPage(last, activeSectionGapPx) <= MINOR_OVERFLOW_PX || last.length <= 2;
+    if (minor) {
+      const compacted = packSections(COMPACT_SECTION_GAP_PX);
+      if (compacted.length === 1) {
+        pageBuckets = compacted;
+        activeSectionGapPx = COMPACT_SECTION_GAP_PX;
+      }
+    }
+  }
+
+  // (B) orphan guard
+  pageBuckets = applyOrphanGuard(pageBuckets, activeSectionGapPx);
 
   const sidebarPayload = hasSidebar ? {
     skills: sidebarSkills,
@@ -557,6 +650,9 @@ export function partitionResumeContent(values = {}, theme = {}) {
   return {
     isMultiPage: totalPages > 1,
     totalPages,
+    // DIR-067: the section rhythm actually used to pack. The renderer applies it as
+    // an inline --smart-section-gap so the painted gap always equals the estimate.
+    sectionGapPx: activeSectionGapPx,
     pages: pageBuckets.map((flowItems, index) => ({
       pageNumber: index + 1,
       isFirstPage: index === 0,

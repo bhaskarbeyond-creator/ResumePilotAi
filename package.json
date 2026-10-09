@@ -24,6 +24,7 @@
     "test:dir066": "node --test tests/dir066-thumbnail-and-portal-print.test.mjs",
     "test:dir066:refresh": "node template-lab/regenerate-previews.mjs",
     "test:dir066:freshness": "node template-lab/run-probes.mjs --fixtures normal --probes freshness",
+    "test:dir067": "node --test tests/dir067-recruiter-export-partitioner-orphan.test.mjs",
     "test:dir064:visual": "node template-lab/docx-visual-parity.mjs",
     "test:api-resilience": "node tests/test_api_server_e2e_resilience.cjs",
     "test:ai-settings": "node --test tests/admin-ai-settings.test.mjs backend/test/ai-admin.test.js",

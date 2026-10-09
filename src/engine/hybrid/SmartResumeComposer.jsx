@@ -16,6 +16,10 @@ export default function SmartResumeComposer({ templateId = 'Cv1', _language = 'e
   const partitionResult = partitionResumeContent(values, theme);
   const totalPages = partitionResult.totalPages || 1;
   const pages = partitionResult.pages || [];
+  // DIR-067: honour the section rhythm the partitioner actually packed with. It is
+  // the density default unless adaptive micro-compaction tightened it to fit one
+  // page — and applying it here keeps the painted gap identical to the estimate.
+  const sectionGapPx = partitionResult.sectionGapPx;
 
   const isSingleCol = theme.archetype === ARCHETYPES.MINIMAL_ATS || theme.archetype === ARCHETYPES.COMPACT_EURO;
   const isBanner = theme.archetype === ARCHETYPES.EXECUTIVE_BANNER;
@@ -72,7 +76,13 @@ export default function SmartResumeComposer({ templateId = 'Cv1', _language = 'e
               data-template={templateId}
               data-archetype={theme.archetype}
               data-density={theme.density || 'standard'}
-              style={{ fontFamily: 'var(--font-family)', position: 'relative' }}
+              style={{
+                fontFamily: 'var(--font-family)',
+                position: 'relative',
+                // DIR-067: pin the packed section rhythm (density default, or the
+                // tighter micro-compacted rhythm) so render === estimate.
+                ...(Number.isFinite(sectionGapPx) ? { '--smart-section-gap': `${sectionGapPx}px` } : null),
+              }}
             >
               <ResumeWatermarkOverlay
                 watermark={values._watermark || values.watermark}

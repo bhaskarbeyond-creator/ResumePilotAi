@@ -218,10 +218,16 @@ test('bridge integrity: no directive record is left as an empty stub', async () 
   }
 });
 
-test('SUB-056-5: BOTH the print and the download path use the styled builder', async () => {
+test('SUB-056-5 / DIR-067: the print path uses the styled builder and the download is a real export', async () => {
   const src = await fs.readFile(PIPELINE, 'utf8');
   const uses = (src.match(/buildPrintableDocument\(/g) || []).length;
-  assert.equal(uses, 2, `expected the print AND download paths to both use it, found ${uses}`);
+  // DIR-067: the recruiter DOWNLOAD no longer builds a `.html` blob — it exports a
+  // real PDF/DOCX through the centralized client. Only the PRINT path keeps the
+  // styled builder.
+  assert.equal(uses, 1, `expected ONLY the print path to use the styled builder, found ${uses}`);
+  assert.match(src, /downloadResumePdf/, 'the download must be a real PDF export');
+  assert.match(src, /downloadResumeDocx/, 'the download must be a real DOCX export');
+  assert.doesNotMatch(src, /resume\.html/, 'the raw .html download must be gone');
   // The old bare-document writes must be gone.
   assert.doesNotMatch(src, /frameDoc\.write\(`<!DOCTYPE html><html><head><title>/, 'the unstyled iframe write must be gone');
   assert.doesNotMatch(src, /new Blob\(\[`<!DOCTYPE html>/, 'the unstyled download blob must be gone');
