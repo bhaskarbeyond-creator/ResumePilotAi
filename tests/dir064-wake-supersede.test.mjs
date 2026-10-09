@@ -39,7 +39,29 @@ function projectWith(status) {
 }
 
 const deliverFor = (root, id = 'DIR-001') =>
-  AW.deliver({ projectDir: root, toRole: 'dev', directiveId: id, mode: 'act', promptText: 'test wake' });
+  AW.deliver({ projectDir: assertScratch(root), toRole: 'dev', directiveId: id, mode: 'act', promptText: 'test wake' });
+
+/**
+ * HARD GUARD (DIR-064). A dedup *verification command* was once run against the live
+ * IME365 project instead of a scratch dir, which minted a real wake for the synthetic
+ * directive id `DIR-999` — leaking into wake_outbox.jsonl, seen_wakes.json,
+ * cline_wake_ack.json, cline_inbox.json and a real prompt file. That is the same class
+ * of leak DIR-062 fixed. This assertion makes it impossible to repeat from the suite:
+ * every delivery must target a directory under the OS temp root.
+ */
+function assertScratch(root) {
+  const resolved = path.resolve(root).toLowerCase();
+  const tmpRoot = path.resolve(os.tmpdir()).toLowerCase();
+  assert.ok(resolved.startsWith(tmpRoot),
+    `refusing to run a wake test against a non-temp project: ${root} (this would write REAL wake state)`);
+  return root;
+}
+
+test('DIR-064: the suite itself only ever targets temp projects', () => {
+  // Meta-test: proves the guard above is actually in force.
+  assert.throws(() => assertScratch('D:/xampp/htdocs/IME365'), /non-temp project/);
+  assert.equal(assertScratch(tmp), tmp);
+});
 
 test('DIR-064: a wake for an APPROVED_FROZEN directive is SUPPRESSED', () => {
   const r = deliverFor(projectWith('APPROVED_FROZEN'));
