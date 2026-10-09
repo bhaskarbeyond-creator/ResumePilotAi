@@ -1,0 +1,67 @@
+{
+  "id": "DIR-066",
+  "title": "DIR-066: Automated Headless Playwright Template Thumbnail Refresh (51 Catalog Images) & Cross-Portal Print/Download 10/10 Verification",
+  "priority": "P0",
+  "status": "IN_PROGRESS",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-09T10:06:13.538Z",
+  "updatedAt": "2026-10-09T10:08:12.740Z",
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "spec": "P0 ARCHITECTURAL MANDATES & 10/10 VERIFICATION DELIVERABLES: 1. AUTOMATED HEADLESS PLAYWRIGHT THUMBNAIL REFRESH: In src/assets/resumesNew/, the static catalog thumbnail images (Cv1.JPG through Cv51.JPG) displayed in TemplateSelectionModal.jsx and TemplateManagerSettings.jsx must be updated to match the certified 10/10 adaptive layout engine. Using template-lab and headless Chromium, crawl all 51 CV templates with a canonical profile, snapshot Page 1 at standard A4 aspect ratio, optimize to high-quality JPEG, and update src/assets/resumesNew/Cv1.JPG through Cv51.JPG so the gallery visuals 100% reflect the modern 2-column card layouts and typography. 2. CROSS-PORTAL PRINT & DOWNLOAD 10/10 VERIFICATION: Verify all 4 connected portal surfaces: (A) Recruiter Portal (EmployerApplicantPipeline.jsx): verify iframe print isolation via buildPrintableDocument without chrome or skip-link bleed; (B) Enterprise / Org Dashboard (EnterpriseResumePdfModal.jsx): verify window.print() and DOCX export via exportDownloader.js; (C) User Dashboard (DashboardHomepage.jsx): verify 1-click PDF and DOCX downloads; (D) Candidate Builder (BuildResume.jsx / PreviewModal.jsx): verify preview rendering and download transitions. 3. ENVIRONMENT & INTEGRITY GUARDS: 100% Linux server compatible, zero OS console windows, no winget/cmd/PowerShell popups. Frozen baseline in src/cv-templates/ remains git diff 0. Run full test suites, capture Playwright evidence, and submit for Gatekeeper certification.",
+  "invariants": [],
+  "acceptanceCriteria": [],
+  "plan": {
+    "submittedAt": "2026-10-09T10:08:09.939Z",
+    "summary": "DIR-066 P0, root causes confirmed by reading source. CONTRACTS/INVARIANTS: the preview gate (tests/template-previews.test.mjs) requires exactly 51 CvN.JPG files each 50KB-400KB with a valid JPEG magic header, the frozen src/cv-templates tree must stay git diff 0, and no detached/background server or Windows-only tooling may be introduced (XAMPP-only, xampp-policy guard). KEY FINDING: template-lab/regenerate-previews.mjs ALREADY renders all 51 previews from the real production path (TemplateRenderer to SmartResumeComposer) and writes src/assets/resumesNew/CvN.JPG, but it is NOT automated: it hardcodes executablePath to the Linux path /tmp/chromium-bin and requires an EXTERNAL dev server via LAB_BASE, so it cannot run here without a forbidden detached server. The stored thumbnails are currently 993x1404 (aspect 1.4139, i.e. true A4) but were captured before the DIR-064/065 2-column card geometry, so the gallery no longer proves it matches the certified engine. (1) THUMBNAIL REFRESH: make regenerate-previews.mjs fully automated and cross-platform by adding the same Playwright Chromium auto-detect that run-probes.mjs uses (LOCALAPPDATA ms-playwright, CHROMIUM_PATH override) and by hosting vite IN-PROCESS (createServer on port 0 plus a warm-up fetch) whenever LAB_BASE is unset, closing the server in a finally so no detached process can outlive the run. Keep the existing JPEG quality-stepping and 60KB-145KB size gate, and add an OPTIONAL guarded sharp post-pass (dynamic import, skipped if sharp is absent) that strips metadata and re-encodes a baseline JPEG only when the result stays inside the gate. Then actually RUN it to refresh Cv1.JPG through Cv51.JPG from the current 10/10 engine. (2) FRESHNESS PROOF: add template-lab/preview-freshness-probe.mjs, a headless Playwright probe that re-renders each template's live page 1 and compares a downscaled 16x16 grayscale signature of the live sheet against the stored CvN.JPG, asserting the gallery is NOT stale, and writes JSON evidence to template-lab/evidence/dir066/. (3) CROSS-PORTAL PRINT/DOWNLOAD 10/10 VERIFICATION of all four surfaces: (A) Recruiter EmployerApplicantPipeline.jsx already routes both the iframe print and the HTML download through buildPrintableDocument, so verify no chrome or skip-link bleed reaches paper. (B) Enterprise EnterpriseResumePdfModal.jsx uses window.print() and the centralized exportDownloader DOCX client. (C) User DashboardHomepage.jsx uses the centralized downloadResumePdf/downloadResumeDocx client. (D) Candidate BuildResume.jsx plus PreviewModal.jsx wire the PDF and DOCX download transitions and re-render the preview. UX STATES: the refresh and verification must not regress the TemplateSelectionModal loading state, the template-gallery empty state, or the preview error banner, and a failed thumbnail write must fail loudly rather than ship a stale or zero-byte image. ACCESSIBILITY: every thumbnail keeps a meaningful alt text, the gallery stays keyboard focusable with visible focus rings, and the new probe asserts nothing about pixels that would break screen-reader order. SECURITY: no secrets or tokens are introduced, the probe and refresh sanitize nothing user-controlled, and no Bearer token is logged. PERFORMANCE: the refresh is an offline asset-generation step (not on the render path), the thumbnail weight stays inside the 60KB-145KB gate so the 51-image gallery does not regress page weight, and the render budget and the sub-4.0s build budget are unaffected. QA: a static and functional dir066 suite plus the Playwright freshness probe plus the existing template-previews gate. No native OS console windows and no winget/cmd/PowerShell. All servers stay on XAMPP.",
+    "steps": [
+      "1. template-lab/regenerate-previews.mjs: add a findChromium() auto-detect (CHROMIUM_PATH override, then LOCALAPPDATA/ms-playwright chromium-* chrome-win64/chrome.exe or chrome-linux/chrome) replacing the hardcoded /tmp/chromium-bin default so the refresh is cross-platform and Linux-compatible",
+      "2. template-lab/regenerate-previews.mjs: when LAB_BASE is unset, host vite IN-PROCESS via createServer on port 0 with a warm-up fetch of the lab page, and close it in a finally block, so the refresh never needs a detached or background server (XAMPP invariant preserved)",
+      "3. template-lab/regenerate-previews.mjs: keep the JPEG quality-stepping loop and the 60KB-145KB gate, and add an OPTIONAL guarded sharp post-pass (dynamic import in try/catch, skipped when sharp is unavailable) that strips metadata and re-encodes a baseline JPEG only if the re-encoded buffer stays inside the gate and keeps the FFD8 magic bytes",
+      "4. run the refresh to regenerate src/assets/resumesNew/Cv1.JPG through Cv51.JPG from the current 10/10 engine and confirm all 51 land inside the gate",
+      "5. template-lab/preview-freshness-probe.mjs: add a headless Playwright probe that re-renders each template page 1, downscales the live sheet and the stored CvN.JPG to a 16x16 grayscale signature, compares them, asserts the gallery is not stale, and writes JSON evidence to template-lab/evidence/dir066/",
+      "6. tests/dir066-thumbnail-and-portal-print.test.mjs: assert all 51 thumbnails exist, are authentic JPEGs, sit inside the 50KB-400KB gate, and are true A4 page-1 snapshots (aspect ratio 1.414 plus or minus 0.02 and width at least 900px)",
+      "7. tests/dir066-thumbnail-and-portal-print.test.mjs: assert the four portal surfaces are wired, namely EmployerApplicantPipeline.jsx routes the iframe print AND the HTML download through buildPrintableDocument, EnterpriseResumePdfModal.jsx uses window.print() plus downloadResumeDocx, DashboardHomepage.jsx uses downloadResumePdf and downloadResumeDocx, and BuildResume.jsx plus PreviewModal.jsx wire the PDF and DOCX download transitions",
+      "8. tests/dir066-thumbnail-and-portal-print.test.mjs: assert the refresh and probe are pure Node with no detached server and no native console or Windows tooling (no winget, cmd, PowerShell, child_process, or spawn with detached true)",
+      "9. add npm scripts test:dir066, test:dir066:refresh and test:dir066:freshness so the refresh and the freshness proof are reproducible",
+      "10. evidence: run npm run lint, npm run test:security:static, npm run test:xampp-policy, npm run test:templates, the new dir066 suite, the preview-freshness probe, npm run build (verify sub-4.0s), confirm src/cv-templates git diff is 0, then submit the logs via bridge dev submit-evidence for Gatekeeper certification."
+    ],
+    "planHash": "f528c34d2f9337f0935856f3beb4fbd0dbfee3a4491286f6dcc96f9bf1c05af1"
+  },
+  "evidence": null,
+  "reviews": [],
+  "freeze": null,
+  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "continuationPending": false,
+  "revisionTarget": null,
+  "planApproval": {
+    "approvedAt": "2026-10-09T10:08:12.740Z",
+    "automated": true,
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "declared-automation",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "non-tty"
+      ],
+      "pid": 22016,
+      "parentPid": 17088,
+      "tty": false,
+      "at": "2026-10-09T10:08:12.739Z",
+      "explicitlyAllowed": true
+    },
+    "feedback": "Auto-approved by the autonomous plan-scorer (score 85/100, reviewer verdict approved). NOT a human Lead review."
+  },
+  "heartbeats": [
+    {
+      "at": "2026-10-09T10:27:56.221Z",
+      "status": "S1-S10 complete: automated cross-platform thumbnail refresh (51 images) + freshness probe PASS + 4-portal print/download verification. Submitting evidence.",
+      "percent": 95,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    }
+  ],
+  "lastHeartbeatAt": "2026-10-09T10:27:56.221Z"
+}

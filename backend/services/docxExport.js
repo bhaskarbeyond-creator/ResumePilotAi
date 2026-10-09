@@ -780,8 +780,23 @@ function buildEducationBlock(educations, style, options = {}) {
   ];
 }
 
+/**
+ * DIR-066: a project with no meaningful title, URL or description must NOT emit
+ * an empty "Projects" heading. Uses the canonical `hasMeaningfulDocxText` rule so
+ * a lone zero-width space / `&nbsp;` counts as blank, exactly like the PDF.
+ */
+function projectHasContent(proj) {
+  if (!proj) return false;
+  if (typeof proj === 'string') return hasMeaningfulDocxText(proj);
+  const rawUrl = typeof proj.url === 'string' ? proj.url : (typeof proj.link === 'string' ? proj.link : '');
+  return hasMeaningfulDocxText(proj.title)
+    || hasMeaningfulDocxText(proj.name)
+    || hasMeaningfulDocxText(rawUrl)
+    || hasMeaningfulDocxText(proj.description);
+}
+
 function buildProjectsBlock(projects, style, options = {}) {
-  const items = list(projects);
+  const items = list(projects).filter(projectHasContent);
   if (!items.length) return [];
   const totalWidth = options.contentWidth || CONTENT_WIDTH;
   const colWidth = Math.floor(totalWidth / 2);
@@ -918,14 +933,28 @@ function buildCertificationsBlock(certs, style, options = {}) {
   }
   // DIR-065: render real 2-column cards (shading #f8fafc, #e2e8f0 borders, cell
   // padding, bold title + issuer·date meta) matching `SmartCertifications.jsx`.
+  // DIR-066: a certification with no meaningful title, issuer or date must NOT
+  // emit an empty "Certifications" heading (canonical hasMeaningfulDocxText rule).
+  const meaningful = items.filter((cert) => {
+    if (!cert) return false;
+    if (typeof cert === 'string') return hasMeaningfulDocxText(cert);
+    return hasMeaningfulDocxText(cert.name)
+      || hasMeaningfulDocxText(cert.title)
+      || hasMeaningfulDocxText(cert.issuer)
+      || hasMeaningfulDocxText(cert.organization)
+      || hasMeaningfulDocxText(cert.authority)
+      || hasMeaningfulDocxText(cert.date)
+      || hasMeaningfulDocxText(cert.year);
+  });
+  if (!meaningful.length) return [];
   const totalWidth = options.contentWidth || CONTENT_WIDTH;
   const colWidth = Math.floor(totalWidth / 2);
   const rows = [];
-  for (let i = 0; i < items.length; i += 2) {
+  for (let i = 0; i < meaningful.length; i += 2) {
     rows.push(new TableRow({
       children: [
-        buildCertCardCell(items[i], style, colWidth),
-        buildCertCardCell(items[i + 1], style, colWidth),
+        buildCertCardCell(meaningful[i], style, colWidth),
+        buildCertCardCell(meaningful[i + 1], style, colWidth),
       ],
     }));
   }
