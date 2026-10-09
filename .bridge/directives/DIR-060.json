@@ -2,11 +2,11 @@
   "id": "DIR-060",
   "title": "DIR-060: Deep Audit of 51 Resume & 4 CV Templates (A4 Layout, 100% PDF/DOCX Parity, Watermarks & Master Profile Sync)",
   "priority": "P0",
-  "status": "IN_PROGRESS",
+  "status": "APPROVED",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-09T05:04:10.406Z",
-  "updatedAt": "2026-10-09T05:11:19.501Z",
+  "updatedAt": "2026-10-09T05:18:23.421Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "### 1. MISSION & ZERO-REGRESSION INVARIANT\nStaff Developer is commanded to execute a deep, systematic forensic audit of all 51 Resume Templates (cv1-cv51 in src/cv-templates/) and 4 Cover/CV Templates (cover1-cover4 in src/cv-templates/) individually, identifying and rectifying real formatting and export defects.\nABSOLUTE INVARIANT: NO NEW PROBLEMS OR REGRESSIONS INTRODUCED. Certified visual baselines must remain protected.\n\n### 2. INDIVIDUAL TEMPLATE AUDIT (51 RESUME + 4 CV TEMPLATES)\n- Individually inspect each template (cv1 through cv51, cover1 through cover4).\n- Audit A4 dimensions (210mm x 297mm), print page breaks, multi-page overflow, margin consistency, line-height, text truncation, and font hierarchy.\n- Eliminate awkward page breaks splitting headers or bullet lists across pages.\n\n### 3. EXPORT PIPELINE & 100% PDF VS DOCX PARITY\n- Deeply audit print/PDF generation vs DOCX export (src/utils/docxDownload.js and docx theme mappings).\n- Mandate 100% parity between PDF and DOCX: content hierarchy, sections, bullet styles, dates, and contact icons must match between formats.\n\n### 4. BILLING, PLAN ENTITLEMENTS & WATERMARK LOGIC\n- Verify export pipeline coordination with user billing plans (subscriptionUtils.js, ResumeWatermarkOverlay.jsx, WatermarkSettings.jsx).\n- Free Plan: Authoritative watermark overlay must reliably render in preview and export.\n- Paid/Pro Plans: Watermark must be completely and cleanly omitted. Zero bypass for free users, zero leakage for paid users.\n\n### 5. MASTER PROFILE DATA VS /build-resume/heading DATA SYNCHRONIZATION\n- Deeply audit data hydration between candidate Master Profile Data and HeadingStep.jsx (/build-resume/heading).\n- Target 100% synchronization: firstname, lastname, email, phone, location, occupation, website, linkedin, github, photo must seamlessly hydrate into the heading step without silent drops or stale overrides.\n\n### 6. MANDATORY METHODOLOGY\nEvery issue must strictly follow: IDENTIFY -> PROVE -> ROOT CAUSE ANALYSIS (RCA) -> FIX -> RECHECK -> EVIDENCE.\nDeliver comprehensive evidence report with automated tests and DOM verification before requesting certification.",
   "invariants": [],
@@ -25,10 +25,36 @@
     ],
     "planHash": "fef2ecf30fd918a726f38caad1b7e9413cfcd733ed22b2e17611d5b5a4282973"
   },
-  "evidence": null,
-  "reviews": [],
+  "evidence": {
+    "submittedAt": "2026-10-09T05:17:42.429Z",
+    "summary": "DIR-060 PHASE 2 COMPLETE (permanent fix) under the OPTION A ruling; templates remain AUDIT-ONLY and UNTOUCHED. IDENTIFY->PROVE: ResumeWatermarkOverlay decided purely on the global admin setting (watermark.enableFreeWatermark) with NO entitlement input; the render sites read values._watermark || values.watermark (TemplateRenderer.jsx:58, SmartResumeComposer.jsx:76) but _watermark is written NOWHERE in src/, and the builder preview view model (BuildResume.jsx:959) carried neither a watermark nor an entitlement, while removesWatermark existed ONLY in backend/. Consequence: FREE users got NO watermark in preview, and any caller supplying the global watermark would stamp a PAID document. RCA->FIX (non-frozen, permanent): new src/utils/watermarkEntitlement.js with a fail-closed shouldRenderWatermark() + resolvePreviewWatermark() + readEntitlement(); ResumeWatermarkOverlay now delegates to it and accepts an explicit entitlement; BOTH render sites pass entitlement={readEntitlement(values)}; BuildResume previewData now publishes _watermark (from public_config.watermark gated by isPaidMembershipTier) and _entitlement. FROZEN BOUNDARY RESPECTED: git status shows NO file under src/cv-templates/ modified - all 51 resume + 4 cover dirs untouched (asserted). EVIDENCE: new suite 9/9; template/export regression 70/70 (incl. server-rendering every template); full product matrix 756 pass/0 fail; eslint 0 errors; build exit 0 in 3.58s. HONEST LIMITS: the per-template A4/overflow audit matrix, the HeadingStep hydration audit and the PDF<->DOCX parity run are NOT yet done - head-start measurements recorded in the evidence doc (.bridge/evidence/dir060-implementation-evidence.md).",
+    "tests": {
+      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir060-product-regression.log",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791523062430_dir060-product-regression.log",
+      "sha256": "d5dfd80d5b8f59f93634b95a27d8e6765081b1922f710869f22fb17a8edf862d",
+      "size": 88650
+    },
+    "domCrawl": null,
+    "artifacts": [],
+    "git": {
+      "isGit": true,
+      "head": "17d699896f8205e1f16e5c7737050667bb7df485",
+      "branch": "arena/01a0e100-resumepilotai",
+      "dirty": false,
+      "status": ""
+    },
+    "manifestHash": "455afb8baac181a58b8e45b23fedc03a5b9c3388af05298f13b19ba3bed5f5f8"
+  },
+  "reviews": [
+    {
+      "reviewedAt": "2026-10-09T05:18:23.421Z",
+      "verdict": "APPROVED",
+      "feedback": "Automated verification check passed.",
+      "evidenceHash": "455afb8baac181a58b8e45b23fedc03a5b9c3388af05298f13b19ba3bed5f5f8"
+    }
+  ],
   "freeze": null,
-  "lastTransitionReason": "lead answered blocker questions and authorized act mode",
+  "lastTransitionReason": "lead review",
   "continuationPending": false,
   "revisionTarget": null,
   "heartbeats": [
