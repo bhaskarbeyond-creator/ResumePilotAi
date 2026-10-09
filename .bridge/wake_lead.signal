@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-09T06:26:54.813Z",
-  "seq": 2486,
-  "id": "evt_mv0l1pz7_5d6e58c7ded1",
-  "type": "PLAN_SUBMITTED",
-  "title": "[Plan] DIR-062: Bridge Privileged-Action Provenance & Auto-Certification Guard",
+  "timestamp": "2026-10-09T06:27:10.688Z",
+  "seq": 2488,
+  "id": "evt_mv0l228e_252ed4fdc6d3",
+  "type": "EVIDENCE_SUBMITTED",
+  "title": "[Evidence] DIR-062: Bridge Privileged-Action Provenance & Auto-Certification Guard",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-062",
-  "summary": "Add provenance + opt-in gating to privileged bridge verbs; harden the auto-certify gate; fix the blind-APPROVED daemon; re-audit DIR-056..061."
+  "summary": "DIR-062 COMPLETE. The Lead was RIGHT: DIR-056..061 were auto-certified, never reviewed. PROVEN CHAIN: scheduled AIBridge-LeadWatcher -> lead_watcher.cjs:632 spawn(bridge pipeline auto) -> pipelineAdvance() bridge.cjs:781 -> reviewDirective({verdict:APPROVED, feedback:Automated verification check passed.}) at bridge.cjs:799 -> certify({role:lead}) at :804 -> recursed to FROZEN. The literal string at :799 is verbatim the feedback on DIR-058/060. lead_watcher_session.cjs separately asserted --verdict APPROVED as a literal while logging the word Auditing. ROOT CAUSE: certifiedBy:LEAD_SUPERVISOR is a ROLE LABEL, not an identity, so a daemon invocation was indistinguishable from a human decision, and AUTO_CERTIFIED_RELEASE_FREEZE fired on hasEvidence&&isGit&&!dirty - presence, not truth, so fabricated evidence would certify identically. FIX: (1) actorProvenance() resolves provenance from signals the caller does not control - explicit declaration, a daemon PID registry matched on process.ppid, and absence of a TTY; (2) planApprove/reviewDirective(APPROVED)/certify are refused for automated callers unless --allow-automation, and then record automated:true + full provenance; (3) pipelineAdvance privileged branches are opt-in only and return HUMAN_*_REQUIRED, plus a depth guard; (4) evidenceLooksPassing() actually scans the test artifact for failure markers; (5) lead_watcher_session.cjs now really audits and issues CHANGES_REQUESTED on a bad log. A bug in my own first draft was caught by the new suite: \\s+ matches newlines so the PASSING log pass 756\\nfail 0 was rejected as a failure - fixed to [ \\t]+. RE-AUDIT: all six records stamped - DIR-056/058/060 AUTOMATED_NO_HUMAN_REVIEW, DIR-059/061 AUTOMATED_EMPTY_REVIEW, DIR-057 REVIEW_TEXT_PRESENT_AUTHORSHIP_UNVERIFIED. Status/freezeHash/artifacts untouched. GATES: dir062 suite 14/14; product exit 0 zero failures; security:static 67/67; lint 0 errors; build exit 0 in 2.73s; app frozen baseline src/cv-templates zero diff vs e314f715. HONEST LIMITS: provenance is tamper-EVIDENT not tamper-proof (a rogue process could unregister its PID and unset the env var); the daemon restart was verified by PID+registry rather than by observing a live refusal because no directive was in EVIDENCE_SUBMITTED at the time; DIR-057 authorship is unresolved; the DIR-056..061 deliverables themselves were re-verified only mechanically. DIR-062 is deliberately left at EVIDENCE_SUBMITTED awaiting a HUMAN review - bridge pipeline auto must now refuse to certify it."
 }

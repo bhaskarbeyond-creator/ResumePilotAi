@@ -2,11 +2,11 @@
   "id": "DIR-062",
   "title": "Bridge Privileged-Action Provenance & Auto-Certification Guard",
   "priority": "P0",
-  "status": "IN_PROGRESS",
+  "status": "EVIDENCE_SUBMITTED",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-09T06:26:45.196Z",
-  "updatedAt": "2026-10-09T06:26:54.819Z",
+  "updatedAt": "2026-10-09T06:27:10.645Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "Close the auto-certification gap: DIR-056..061 reached APPROVED_FROZEN with certifiedBy:LEAD_SUPERVISOR and no human review, because pipelineAdvance() (reached by the scheduled AIBridge-LeadWatcher via bridge pipeline auto) called reviewDirective({verdict:APPROVED}) then certify(), and lead_watcher_session.cjs asserted --verdict APPROVED without reading the evidence. Add provenance + opt-in gating to planApprove/reviewDirective/certify; harden the auto-certify gate to scan the test artifact; fix the daemon; re-audit DIR-056..061.",
   "invariants": [],
@@ -26,10 +26,29 @@
     ],
     "planHash": "3a600531bc8c9d90426eefa3a29d5c619601c438cc306777dfa3ebff3f6b585d"
   },
-  "evidence": null,
+  "evidence": {
+    "submittedAt": "2026-10-09T06:27:08.863Z",
+    "summary": "DIR-062 COMPLETE. The Lead was RIGHT: DIR-056..061 were auto-certified, never reviewed. PROVEN CHAIN: scheduled AIBridge-LeadWatcher -> lead_watcher.cjs:632 spawn(bridge pipeline auto) -> pipelineAdvance() bridge.cjs:781 -> reviewDirective({verdict:APPROVED, feedback:Automated verification check passed.}) at bridge.cjs:799 -> certify({role:lead}) at :804 -> recursed to FROZEN. The literal string at :799 is verbatim the feedback on DIR-058/060. lead_watcher_session.cjs separately asserted --verdict APPROVED as a literal while logging the word Auditing. ROOT CAUSE: certifiedBy:LEAD_SUPERVISOR is a ROLE LABEL, not an identity, so a daemon invocation was indistinguishable from a human decision, and AUTO_CERTIFIED_RELEASE_FREEZE fired on hasEvidence&&isGit&&!dirty - presence, not truth, so fabricated evidence would certify identically. FIX: (1) actorProvenance() resolves provenance from signals the caller does not control - explicit declaration, a daemon PID registry matched on process.ppid, and absence of a TTY; (2) planApprove/reviewDirective(APPROVED)/certify are refused for automated callers unless --allow-automation, and then record automated:true + full provenance; (3) pipelineAdvance privileged branches are opt-in only and return HUMAN_*_REQUIRED, plus a depth guard; (4) evidenceLooksPassing() actually scans the test artifact for failure markers; (5) lead_watcher_session.cjs now really audits and issues CHANGES_REQUESTED on a bad log. A bug in my own first draft was caught by the new suite: \\s+ matches newlines so the PASSING log pass 756\\nfail 0 was rejected as a failure - fixed to [ \\t]+. RE-AUDIT: all six records stamped - DIR-056/058/060 AUTOMATED_NO_HUMAN_REVIEW, DIR-059/061 AUTOMATED_EMPTY_REVIEW, DIR-057 REVIEW_TEXT_PRESENT_AUTHORSHIP_UNVERIFIED. Status/freezeHash/artifacts untouched. GATES: dir062 suite 14/14; product exit 0 zero failures; security:static 67/67; lint 0 errors; build exit 0 in 2.73s; app frozen baseline src/cv-templates zero diff vs e314f715. HONEST LIMITS: provenance is tamper-EVIDENT not tamper-proof (a rogue process could unregister its PID and unset the env var); the daemon restart was verified by PID+registry rather than by observing a live refusal because no directive was in EVIDENCE_SUBMITTED at the time; DIR-057 authorship is unresolved; the DIR-056..061 deliverables themselves were re-verified only mechanically. DIR-062 is deliberately left at EVIDENCE_SUBMITTED awaiting a HUMAN review - bridge pipeline auto must now refuse to certify it.",
+    "tests": {
+      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir062-product-regression.log",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791527228864_dir062-product-regression.log",
+      "sha256": "7d2177dd4c9d9c39dab78dd56908f9df2f65c1a432d3c6ab46c046f9e4100164",
+      "size": 171080
+    },
+    "domCrawl": null,
+    "artifacts": [],
+    "git": {
+      "isGit": true,
+      "head": "2cd1c05241d6404fedd7e674902ae536a4fcf911",
+      "branch": "arena/01a0e100-resumepilotai",
+      "dirty": false,
+      "status": ""
+    },
+    "manifestHash": "d3b01a0cf55aadd1648d36bf289afc45827c1e3ed470b8a157890d70422c2f1d"
+  },
   "reviews": [],
   "freeze": null,
-  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "lastTransitionReason": "verification evidence submitted",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {
