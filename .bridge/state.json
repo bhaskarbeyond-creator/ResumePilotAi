@@ -1,25 +1,25 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-09T04:30:44.752Z",
-  "eventCount": 2412,
-  "activeDirectiveId": "DIR-056",
-  "activeDirectiveTitle": "Master Directive: Autonomous System-Wide Forensic Audit, Remediation Backlog & Production 10/10 Certification",
-  "activeDirectiveStatus": "IN_PROGRESS",
-  "awaitingHuman": false,
-  "awaitingHumanReason": null,
-  "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-09T04:28:22.442Z",
-  "unreadForLead": 11,
-  "unreadForDev": 19,
+  "updatedAt": "2026-10-09T06:40:56.302Z",
+  "eventCount": 2488,
+  "activeDirectiveId": "DIR-062",
+  "activeDirectiveTitle": "Bridge Privileged-Action Provenance & Auto-Certification Guard",
+  "activeDirectiveStatus": "EVIDENCE_SUBMITTED",
+  "awaitingHuman": true,
+  "awaitingHumanReason": "Awaiting Gatekeeper evidence certification (human gate)",
+  "awaitingHumanSince": "2026-10-09T06:27:10.645Z",
+  "stallDeadline": null,
+  "unreadForLead": 48,
+  "unreadForDev": 58,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-09T04:28:22.442Z",
-    "status": "SUB-056-4 DONE + real-DOM verified: Playwright hermetic crawl 7/7 (AC-1 not blank, AC-2 real API + job enrichment, AC-3 tabs, AC-4a optimistic+persisted delete, AC-4b rollback, AC-5 empty state, AC-6 zero console errors). Unit 26/26. Build exit 0 (3.07s). Running full product regression suite now.",
-    "percent": 92
+    "timestamp": "2026-10-09T06:02:21.462Z",
+    "status": "Wake DIR-061-mv0jx73q-ae4f7a is STALE (already in seen_wakes) and its work is DONE + CERTIFIED: DIR-061 = APPROVED_FROZEN (lastTransition='gatekeeper certification', freezeHash 4ce6732f, commits 183762ed [EVIDENCE] -> 4ce6732f [CERTIFIED]). Correctly did NOT re-execute - re-running would modify a frozen baseline. Re-verified the frozen state: dir061 + INV-1 suites 34/34 pass, src/cv-templates byte-identical to e314f715 (zero diff), working tree clean. bridge turn = no active directive.",
+    "percent": 100
   },
   "integrity": {
     "ok": true,
-    "checked": 2412,
+    "checked": 2488,
     "legacy": 0,
     "bad": 0
   }

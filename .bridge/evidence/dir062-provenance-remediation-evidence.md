@@ -277,4 +277,78 @@ DELTA dir062=0 projectDirs=0 queue=0   <- all zero
 * Round 2 moved the `bridge.cjs` hash again (`f410fae33db0` -> `4af9ed780b4e`) and
   required a second unlock + re-freeze under the same §10.1 authorisation.
 
+---
+
+## 8. ROUND 3 — WHY THE GHOST WAKES KEPT ARRIVING
+
+After the round-2 cleanup, a **third** ghost wake arrived: `DIR-001-mv0kvlz7-b1047d`
+for `proj-NkRU3S-848c2893` — another scratch project deleted in the cleanup. So
+removing the projects was not sufficient; something was still *sourcing* the wakes.
+
+### The generator
+
+`checkQueue()` in the frozen `lead_watcher.cjs` reads new bytes of the **global**
+`lead_wake_queue.jsonl` and calls `emitLeadWake(ev, item)` for every dev→lead
+event — **without checking that `item.projectRoot` still exists**:
+
+```js
+for (const line of text.split(/\r?\n/).filter(Boolean)) {
+  const item = JSON.parse(line);
+  if (item && item.event) {
+    const ev = item.event;
+    if (ev.sender === 'STAFF_DEVELOPER' || ev.recipient === 'LEAD_SUPERVISOR') emitLeadWake(ev, item);
+  }
+}
+```
+
+It also **replays from offset 0 whenever the file shrinks**:
+
+```js
+if (st.size < queueByteOffset) queueByteOffset = 0;   // rotated/truncated
+```
+
+So the queue had become a durable reservoir of wakes for projects that no longer
+existed, re-emitted on every rotation.
+
+### Queue cleanup
+
+| | lines | bytes |
+|---|---|---|
+| original | 175 | 204 133 |
+| after dropping 67 `dir062-bridge-*` entries | 108 | 156 466 |
+| after also dropping 60 entries with dead roots | **48** | **113 918** |
+
+Cursor re-pointed to the new EOF (a byte offset; rewriting the file invalidates it).
+Verified **stable over 15 s** and with **0** surviving dead-root entries.
+Backups: `lead_wake_queue.jsonl.dir062.bak`, `registry.json.dir062.bak`.
+
+### Latent bug left OPEN (needs authorisation)
+
+`lead_watcher.cjs` is **frozen** and outside the file set authorised for DIR-062, so I
+did **not** patch it. The one-line fix is a root-existence guard before emitting:
+
+```js
+if (item.projectRoot && !fs.existsSync(item.projectRoot)) continue;  // dead project
+```
+
+Until that lands, any future queue entry for a deleted project will emit a ghost wake
+again — the cleanup removed the payload, not the mechanism.
+
+### Honest limits (round 3)
+
+* **I truncated the queue to 0 bytes mid-operation and had to restore from backup.**
+  The write and the watcher's read raced; the file briefly read as empty. I restored
+  it from `lead_wake_queue.jsonl.dir062.bak` and re-ran deterministically. I did not
+  fully root-cause the truncation — it may have been my own script's read/write racing
+  with `checkQueue()`.
+* The 60 dead-root entries I purged were **not mine** — they came from the bridge's own
+  `bridge-e2e-*` / `freeze-e2e-*` / `mcp-e2e-*` / `roles-e2e-*` suites. I removed them
+  because an entry pointing at a non-existent root can never be actioned, and disclosed
+  it here rather than doing it silently.
+* The `dir062-bridge-provenance` pattern match in my analysis was a **false positive** —
+  it matched IME365's own DIR-062 plan title, not a scratch root.
+* The wake plane is now quiet, but I have **not** proven the absence of further ghosts
+  over time; I only verified the queue is clean and stable at a point in time.
+
+
 
