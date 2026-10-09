@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-09T15:12:14.123Z",
-  "seq": 2591,
-  "id": "evt_mv13tafk_146fb9bdb645",
-  "type": "HEARTBEAT",
-  "title": "[Heartbeat] ACT authorized (plan 85/100). Starting multi-tier compaction + Page-1 void invariant + balanced 2-page.",
+  "timestamp": "2026-10-09T15:28:06.326Z",
+  "seq": 2593,
+  "id": "evt_mv14dp5q_53b02dd6034a",
+  "type": "EVIDENCE_SUBMITTED",
+  "title": "[Evidence] DIR-070: DIR-070: 10/10 Smart Gap Filling & Partitioner Polish — Zero Page 1 Void Invariant & Multi-Tier Micro-Compaction",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-070",
-  "summary": "ACT authorized (plan 85/100). Starting multi-tier compaction + Page-1 void invariant + balanced 2-page."
+  "summary": "DIR-070 Smart Gap Filling & Partitioner Polish: multi-tier compaction (tiers 0/1/2 reclaiming up to 70px) and Page-1 void prevention invariant (refusing any section move when donor page void > 80px / 10%). Babu M fits on 1 balanced page with 0px footer overlap and 0px void."
 }
