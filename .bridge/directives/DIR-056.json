@@ -164,5 +164,16 @@
   ],
   "lastHeartbeatAt": "2026-10-09T04:37:09.412Z",
   "continuationPending": false,
-  "revisionTarget": null
+  "revisionTarget": null,
+  "certificationAudit": {
+    "auditedAt": "2026-10-09T06:19:56.479Z",
+    "auditedBy": "DIR-062 bridge provenance remediation",
+    "finding": "AUTOMATED_NO_HUMAN_REVIEW",
+    "automated": true,
+    "humanReview": false,
+    "reviewFeedback": "Automated verification check passed.",
+    "reviewAutomatedFlagRecorded": false,
+    "certifiedByLabel": "LEAD_SUPERVISOR",
+    "note": "This freeze was produced WITHOUT human review. certifiedBy:LEAD_SUPERVISOR is a ROLE LABEL, not an identity — an autonomous daemon invoking `bridge gatekeeper certify` produced an indistinguishable record. The engineering artifacts were independently re-verified (frozen-tree zero-diff, test suites, build); it is the CERTIFICATION that carried no independent assurance. DIR-062 adds provenance + opt-in gating so this can no longer happen silently."
+  }
 }

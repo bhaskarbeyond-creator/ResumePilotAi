@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-09T05:59:04.580Z",
-  "seq": 2479,
-  "id": "evt_mv0k1x80_3c719e3e0792",
-  "type": "EVIDENCE_SUBMITTED",
-  "title": "[Evidence] DIR-061: DIR-061: Exhaustive A4 Formatting & Text Repair of 51 Resume & 4 CV Templates (100% PDF/DOCX Parity, Master Profile Heading Sync & DOM Crawl Evidence)",
+  "timestamp": "2026-10-09T06:26:54.813Z",
+  "seq": 2486,
+  "id": "evt_mv0l1pz7_5d6e58c7ded1",
+  "type": "PLAN_SUBMITTED",
+  "title": "[Plan] DIR-062: Bridge Privileged-Action Provenance & Auto-Certification Guard",
   "sender": "STAFF_DEVELOPER",
-  "directiveId": "DIR-061",
-  "summary": "DIR-061 COMPLETE for the two PROVEN defects; the directive's A4 premise was corrected rather than accepted. (1) CORRECTION: the '50/55 templates declare no 210mm/break-inside' metric measured the wrong layer - the A4 box is supplied by the engine (src/engine/hybrid/smartEngine.css: width 210mm, min/max-height 297mm; plus ResumePageComposer.jsx PAGE_H=297mm) and block pagination already exists in src/cv-templates/css/globalTemplateEnhancements.css with explicit RCA comments scoping it to [class*=-board] / [data-cv-board]; every template renders into a *-board container so those selectors DO apply. (2) THE ONE GENUINE GAP: li/ul/ol/tr had NO pagination rule anywhere (grep returned zero matches), so a bullet list could still be severed mid-item across a page boundary. Fixed with a new non-frozen stylesheet src/styles/template-pagination.css imported globally from main.jsx, using the same board scoping. It is deliberately NOT inside src/cv-templates/ because tests/copilot-command-surface.test.mjs:264 (INV-1) asserts a ZERO-BYTE git diff for that tree - my first attempt broke it, which the product matrix caught - and I will not re-baseline a frozen guard unilaterally. Verified: git diff e314f715 -- src/cv-templates/ backend/services/aiRuntime.js is EMPTY. (3) SECTION 3 SILENT DROPS FIXED: BuildResume.jsx prefill set firstname/lastname/email/phone/occupation/city/country/address/postalcode/photo but NEVER website/linkedin/github although HeadingStep.jsx:49-51 has form state for all three; the profile stores them as websiteUrl/linkedinUrl/githubUrl (DashboardSettings.jsx:489-490/711-712/2816/2831) and the prefill now maps those aliases. GATES: new suite 6/6; INV-1 PASS zero-byte diff; CERTIFIED VISUAL BASELINE PASSED 51 templates within tolerance (run locally via template-lab/visual-regression.mjs with CHROMIUM_PATH); template suites 72/72; full product matrix 756 pass/0 fail; eslint 0 errors; build exit 0 in 3.22s. HONEST LIMITS: the per-template overflow/print probe matrix was NOT completed (template-lab audit/overflow/print probes are configured for a CI/Linux Chromium and LAB_BASE:3000); PDF-vs-DOCX parity was NOT audited; field-by-field DOM verification of the heading sync was not performed. No intentional re-baseline was taken - if you want the pagination rule INSIDE the frozen sheet that needs an explicit re-baseline authorisation and I will also update INV-1 with your sign-off. Doc: .bridge/evidence/dir061-implementation-evidence.md."
+  "directiveId": "DIR-062",
+  "summary": "Add provenance + opt-in gating to privileged bridge verbs; harden the auto-certify gate; fix the blind-APPROVED daemon; re-audit DIR-056..061."
 }
