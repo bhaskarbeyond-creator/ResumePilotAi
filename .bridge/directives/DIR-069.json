@@ -1,0 +1,75 @@
+{
+  "id": "DIR-069",
+  "title": "DIR-069: True 10/10 Parity — DOCX Multi-Page Full-Width Reflow, Photo Embedding, Archetype 2-Col Certs, Recruiter Application Export Gate, and Free-Tier Watermark",
+  "priority": "P0",
+  "status": "IN_PROGRESS",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-09T13:38:01.910Z",
+  "updatedAt": "2026-10-09T13:40:55.491Z",
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "spec": "P0 ARCHITECTURAL MANDATES: 1. MULTI-PAGE DOCX FULL-WIDTH REFLOW: In backend/services/docxExport.js, eliminate the blank 34% sidebar column defect on Page 2+ in multi-page resumes for two-column templates (Modern Split, Executive Banner, Tech Grid). Structure document sections so Page 1 contains the two-column sidebar/hero table, and continuation content (experience/education overflow) reflows across 100% full-width paragraphs/tables matching the PDF smart-main-content--full layout. 2. ARCHETYPE CERTIFICATIONS 2-COLUMN PARITY: In docxExport.js lines 1257 and 1324, change columns: 1 to columns: 2 in buildCertificationsBlock for buildExecutiveBannerDocument and buildTechGridDocument when certifications are in the main body, ensuring all archetypes match the PDF 2-column card grid. 3. CANDIDATE PHOTO EMBEDDING IN DOCX: In docxExport.js, support resume.photo (base64 data URL or validated local/remote URL) using docx ImageRun in buildIdentityHeader and sidebar headers with proper dimensions, matching the PDF headshot display. Gracefully omit when no photo exists. 4. SKILLS VISUAL POLISH IN DOCX: In docxExport.js, upgrade non-inline skills from raw bullet points to modern shaded pill/badge representations (e.g. lightweight shaded table cells or shaded inline runs #F1F5F9 with subtle padding) reflecting the web badge design. 5. RECRUITER APPLICATION DOCX EXPORT GATE: In backend/index.js POST /api/public-export-docx, allow recruiters viewing candidate applications to export DOCX even if the candidate resume is in draft status, matching recruiter PDF export permissions while maintaining IDOR safety and rate limiting. 6. FREE-TIER WATERMARK PARITY IN DOCX: In docxExport.js, when stored._watermark?.enableFreeWatermark is true, inject a subtle Word watermark or branded footer tag ('Created with IME365 (Free Plan)') matching PDF free-tier behavior. 7. GUARDS & REGRESSION: src/cv-templates remains git diff 0, 100% Linux server compatible, zero OS console windows. Run new tests and all regression suites, capture Playwright evidence, and submit for Gatekeeper certification.",
+  "invariants": [],
+  "acceptanceCriteria": [],
+  "plan": {
+    "submittedAt": "2026-10-09T13:40:53.298Z",
+    "summary": "DIR-069 P0, reconnaissance complete. CONTRACTS/INVARIANTS: src/cv-templates stays git diff 0, the DIR-063..068 suites and the DOCX parity/preview/security gates stay green, no detached/background server and no Windows-only tooling may be introduced, and no security guard may be weakened to satisfy a parity goal. CONFIRMED FACTS: docxExport.js assembles ONE Section whose children are a single 2-column table, which is exactly why the 34% sidebar band persists on Page 2+; docx is v9.5.1 and exposes ImageRun, SectionType and ShadingType; the builder has NO image support today; and the employer-resume route GET /api/employer/jobs/:jobId/applications/:applicationId/resume already authorizes a recruiter by job.employerId === req.user.uid plus an application whose jobId matches and whose resumeId identifies the candidate resume, and it returns a DRAFT resume too. IMPORTANT CONFLICT I WILL NOT PAPER OVER: the mandate says the draft-status DOCX gate should 'match recruiter PDF export permissions', but the recruiter PDF path uses /api/public-export, which is PUBLISHED-ONLY. Simply deleting the published-only check on /api/public-export-docx would be a real IDOR hole (any authenticated stranger could export any draft by guessing a resumeId). I will therefore implement the gate as an explicit, verifiable employer claim instead: when the caller is authenticated AND supplies jobId plus applicationId, the server re-verifies ownership and the application-to-resume binding and then permits a draft export; every other request keeps the strict published-only rule. (1) MULTI-PAGE FULL-WIDTH REFLOW: split the 2-column builders into Section 1 (the sidebar|hero table carrying page-1 content) followed by a next-page section break, and Section 2 emitting the continuation content as FULL-WIDTH paragraphs/tables, matching the PDF smart-main-content--full and removing the blank sidebar band; a single section is kept when everything fits page 1. I will be explicit that the split is a conservative budget heuristic, not a true paginator. (2) ARCHETYPE CERT PARITY: flip the two buildCertificationsBlock calls in buildExecutiveBannerDocument and buildTechGridDocument from columns 1 to columns 2. (3) PHOTO EMBEDDING: resolve resume.photo from a validated base64 data URL (png/jpeg mime plus a byte cap) or a remote https URL fetched through a strict host allowlist with a byte cap and timeout, embed it with ImageRun in the identity/sidebar header at a bounded size, and omit it gracefully on any failure so a bad photo can never break an export. (4) SKILLS PILLS: render non-inline skills as shaded F1F5F9 pill runs with padding instead of raw bullets, keeping the inline and rating variants and a linear reading order. (5) FREE-TIER WATERMARK: when resume._watermark.enableFreeWatermark is true, add the branded 'Created with IME365 (Free Plan)' footer tag, and wire that flag into both DOCX routes exactly as the PDF route computes it. UX STATES: a missing photo, an absent watermark and an empty section must all degrade silently rather than emit a placeholder heading; a failed export must still fail loudly with the existing error contract. ACCESSIBILITY: shaded pills keep their text contrast at or above 4.5:1 against F1F5F9, the photo carries no meaning that is lost when omitted, and the DOCX reading order stays linear for screen readers. SECURITY: the recruiter gate requires an authenticated owner-of-the-job claim bound to the application and the exact resumeId, keeps the existing rate limiter, trusts no client-supplied identity or colors, never logs a Bearer token, and remote photo fetches are allowlisted and size-capped to prevent SSRF. PERFORMANCE: the photo fetch is bounded and memoized per export, the section split is a pure O(n) pass, and the render and build budgets stay sub-100ms and sub-4.0s. QA: a new dir069 suite plus backend DOCX tests plus the template-lab census and overflow probes. No native OS console windows and no winget/cmd/PowerShell; all servers stay on XAMPP.",
+    "steps": [
+      "1. backend/services/docxExport.js: import ImageRun, SectionType and ShadingType from docx and add a photo resolver that accepts a validated base64 data URL (png or jpeg mime plus a byte cap) or a remote https URL fetched through a strict host allowlist with a byte cap and timeout, returning null on any failure so the photo is gracefully omitted",
+      "2. backend/services/docxExport.js: embed the resolved photo with ImageRun in buildIdentityHeader and the sidebar header variant at a bounded A4-appropriate size, preserving the existing name and contact typography and never throwing when the photo is absent or invalid",
+      "3. backend/services/docxExport.js: implement multi-page full-width reflow by splitting the Modern Split, Executive Banner and Tech Grid builders into Section 1 (the sidebar|hero table carrying the page-1 content) with a next-page section break plus Section 2 emitting the continuation content as full-width paragraphs and tables matching the PDF smart-main-content--full, keeping a single section when everything fits page 1",
+      "4. backend/services/docxExport.js: flip the buildCertificationsBlock calls in buildExecutiveBannerDocument and buildTechGridDocument from columns 1 to columns 2 so every archetype matches the PDF 2-column card grid",
+      "5. backend/services/docxExport.js: render non-inline skills as shaded F1F5F9 pill runs with padding instead of raw bullets, keeping the inline and rating variants and a linear reading order",
+      "6. backend/services/docxExport.js: add the branded 'Created with IME365 (Free Plan)' footer tag when resume._watermark.enableFreeWatermark is true and omit it for paid owners, matching the PDF free-tier behaviour",
+      "7. backend/index.js: compute the free-tier watermark flag for the DOCX the same way the PDF route does and pass it into both the authenticated /api/export-docx and the public /api/public-export-docx so free-tier DOCX matches the PDF",
+      "8. backend/index.js: extend POST /api/public-export-docx so that an AUTHENTICATED caller supplying jobId and applicationId is admitted for a DRAFT export only after the server re-verifies job.employerId equals req.user.uid and the application belongs to that job and its resumeId equals the requested resumeId, while every other request keeps the strict published-only rule, preserving IDOR safety and the existing rate limiting",
+      "9. tests: author tests/dir069-docx-parity.test.mjs plus backend DOCX tests asserting the full-width continuation section, the 2-column archetype certifications, the photo embed and its graceful omission, the shaded skill pills, the footer watermark, and the recruiter gate admitting a draft ONLY with a verified employer claim while rejecting an unauthenticated or non-owner request, and add npm script test:dir069",
+      "10. evidence: run npm run lint, npm run test:security, npm run test:product, npm run test:templates, the DIR-063 through DIR-069 suites, the backend DOCX suites, the template-lab census and overflow probes, and npm run build (verify sub-4.0s), confirm src/cv-templates git diff is 0 and zero OS console windows, then submit the logs via bridge dev submit-evidence for Gatekeeper certification."
+    ],
+    "planHash": "bfd0cb4388e22f7cf81e41dd5a0d9cd8632f036e64f01a82775aace67ae9899b"
+  },
+  "evidence": null,
+  "reviews": [],
+  "freeze": null,
+  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "continuationPending": false,
+  "revisionTarget": null,
+  "planApproval": {
+    "approvedAt": "2026-10-09T13:40:55.491Z",
+    "automated": true,
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "declared-automation",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "non-tty"
+      ],
+      "pid": 7980,
+      "parentPid": 24052,
+      "tty": false,
+      "at": "2026-10-09T13:40:55.491Z",
+      "explicitlyAllowed": true
+    },
+    "feedback": "Auto-approved by the autonomous plan-scorer (score 70/100, reviewer verdict approved). NOT a human Lead review."
+  },
+  "heartbeats": [
+    {
+      "at": "2026-10-09T13:41:39.844Z",
+      "status": "ACT authorized (plan 70/100). Starting S1-S10: DOCX photo, full-width reflow, 2-col archetype certs, skill pills, watermark, recruiter draft gate.",
+      "percent": 10,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    },
+    {
+      "at": "2026-10-09T14:00:59.963Z",
+      "status": "S1-S10 complete: DOCX full-width reflow, photo embed, 2-col archetype certs, skill pills, free-tier watermark, verified recruiter draft gate. Submitting evidence.",
+      "percent": 95,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    }
+  ],
+  "lastHeartbeatAt": "2026-10-09T14:00:59.963Z"
+}

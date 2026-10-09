@@ -4392,11 +4392,21 @@ app.post('/api/export-docx', async (req, res) => {
         const safeName = String(personName || stored.title || 'Resume').replace(/[^A-Za-z0-9 _-]/g, '').trim().slice(0, 80) || 'Resume';
         // Theme presets are authoritative (same source as PDF). Client-supplied
         // colors and resumeName cannot override template identity or inject styling.
+        // DIR-069: free-tier watermark parity with the PDF route.
+        const { isPaidMembershipTier } = require('./security/entitlements');
+        const isPaidOwner = isPaidMembershipTier(owner?.membership) || isMembershipActive(owner);
+        const watermarkConfig = publicConfig.watermark || {};
         const resumeData = {
             ...stored,
             template: resolvedTemplate,
             resumeName: resolvedTemplate,
             colors: null,
+            _watermark: (!isPaidOwner && watermarkConfig.enableFreeWatermark !== false)
+                ? {
+                    enableFreeWatermark: true,
+                    watermarkText: watermarkConfig.watermarkText || 'Created with IME365 (Free Plan)',
+                }
+                : null,
         };
         const buffer = await createResumeDocx(resumeData);
         res.setHeader('Cache-Control', 'no-store, private');
@@ -4424,15 +4434,54 @@ app.post('/api/public-export-docx', async (req, res) => {
     }
     const { getRepository } = require('./repositories');
     const repo = getRepository();
-    const published = await repo.getPublicResume(String(resumeId));
-    if (!published || published.isPublished !== true || published.publicationMode !== 'explicit') {
-        return res.status(404).json({ error: 'Resume not found' });
+
+    // DIR-069: a recruiter viewing a candidate application may export the DOCX even
+    // while the resume is still a DRAFT. The employer claim is re-verified
+    // server-side — the job must belong to the caller AND the application must
+    // belong to that job AND reference exactly this resume — so no cross-tenant
+    // IDOR is possible. Every other request keeps the strict published-only rule.
+    let stored = null;
+    let ownerUid = null;
+    let employerClaim = false;
+    const claimJobId = String(req.body.jobId || '');
+    const claimApplicationId = String(req.body.applicationId || '');
+    if (req.user?.uid
+        && /^[A-Za-z0-9_-]{1,128}$/.test(claimJobId)
+        && /^[A-Za-z0-9:_-]{1,300}$/.test(claimApplicationId)) {
+        const job = await repo.getJob(claimJobId).catch(() => null);
+        const isJobOwner = Boolean(job) && String(job.employerId || job.employer_id || '') === req.user.uid;
+        const application = isJobOwner && typeof repo.getApplication === 'function'
+            ? await repo.getApplication(claimApplicationId).catch(() => null)
+            : null;
+        const applicantId = String(application?.applicantId || application?.applicant_id || application?.userId || '');
+        const applicationResumeId = String(application?.resumeId || application?.resume_id || '');
+        if (isJobOwner
+            && application
+            && String(application.jobId || application.job_id || '') === claimJobId
+            && applicationResumeId === String(resumeId)
+            && applicantId
+            && typeof repo.getResume === 'function') {
+            const claimed = await repo.getResume(applicantId, String(resumeId)).catch(() => null);
+            if (claimed && typeof claimed === 'object' && !Array.isArray(claimed)) {
+                stored = claimed;
+                ownerUid = applicantId;
+                employerClaim = true;
+            }
+        }
     }
-    const stored = published.data;
+
+    if (!employerClaim) {
+        const published = await repo.getPublicResume(String(resumeId));
+        if (!published || published.isPublished !== true || published.publicationMode !== 'explicit') {
+            return res.status(404).json({ error: 'Resume not found' });
+        }
+        stored = published.data;
+        ownerUid = published.ownerUid;
+    }
     if (!stored || typeof stored !== 'object' || Array.isArray(stored)) {
         return res.status(422).json({ error: 'Resume data is invalid' });
     }
-    const owner = await repo.getUser(published.ownerUid);
+    const owner = await repo.getUser(ownerUid);
     const publicConfig = (await repo.getSetting('public_config')) || {};
     const systemSettings = (await repo.getSetting('system_settings')) || {};
     const isGlobalFreeMode = publicConfig.subscriptions === false
@@ -4452,11 +4501,21 @@ app.post('/api/public-export-docx', async (req, res) => {
         }
         // Theme presets are authoritative (same source as PDF). Client-supplied
         // colors and resumeName cannot override template identity or inject styling.
+        // DIR-069: free-tier watermark parity with the PDF route.
+        const { isPaidMembershipTier } = require('./security/entitlements');
+        const isPaidOwner = isPaidMembershipTier(owner?.membership) || isMembershipActive(owner);
+        const watermarkConfig = publicConfig.watermark || {};
         const resumeData = {
             ...stored,
             template: resolvedTemplate,
             resumeName: resolvedTemplate,
             colors: null,
+            _watermark: (!isPaidOwner && watermarkConfig.enableFreeWatermark !== false)
+                ? {
+                    enableFreeWatermark: true,
+                    watermarkText: watermarkConfig.watermarkText || 'Created with IME365 (Free Plan)',
+                }
+                : null,
         };
         const personName = [stored.firstname, stored.lastname].filter(Boolean).join(' ');
         const safeName = String(personName || stored.title || 'Resume').replace(/[^A-Za-z0-9 _-]/g, '').trim().slice(0, 80) || 'Resume';

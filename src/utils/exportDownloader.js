@@ -167,6 +167,11 @@ export async function downloadResumeExport({
     userId = null,
     persistLatest = null,
     onStateChange = null,
+    // DIR-069: an optional verified employer claim. When present, the public DOCX
+    // route can export a DRAFT candidate resume for a recruiter who owns the job
+    // and whose application references exactly this resume.
+    jobId = null,
+    applicationId = null,
 } = {}) {
     const spec = EXPORT_SPECS[kind];
     if (!spec) throw new Error(`Unsupported export kind: ${kind}`);
@@ -190,6 +195,12 @@ export async function downloadResumeExport({
 
     const payload = { language, resumeId, resumeName };
     if (kind === EXPORT_KIND.DOCX && colors) payload.colors = colors;
+    // DIR-069: forward the employer claim only when BOTH identifiers are present;
+    // the server re-verifies ownership, so this is a request hint, not authority.
+    if (jobId && applicationId) {
+        payload.jobId = String(jobId);
+        payload.applicationId = String(applicationId);
+    }
 
     const response = await axios.post(target, payload, { responseType: 'blob', headers });
 

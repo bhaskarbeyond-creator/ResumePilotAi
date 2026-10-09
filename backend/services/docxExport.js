@@ -3,6 +3,7 @@ const {
   Packer,
   Paragraph,
   TextRun,
+  ImageRun,
   AlignmentType,
   Table,
   TableRow,
@@ -18,6 +19,7 @@ const {
   Footer,
   PageNumber,
   TabStopType,
+  SectionType,
 } = require('docx');
 
 const {
@@ -579,10 +581,73 @@ function occupationOf(resume) {
   return stripAllHtmlTags(resume.occupation || resume.jobTitle || '');
 }
 
+/**
+ * DIR-069 — candidate photo resolution for the DOCX headshot.
+ *
+ * Accepts ONLY a base64 `data:image/(png|jpeg)` URL or an https URL on the
+ * image-CDN allowlist. Anything else (including a loopback/private host) is
+ * refused, so a crafted photo value can never make the server fetch an internal
+ * address (SSRF). Failures are non-fatal: the photo is simply omitted.
+ */
+const PHOTO_HOST_ALLOWLIST = new Set([
+  'lh3.googleusercontent.com',
+  'firebasestorage.googleapis.com',
+  'storage.googleapis.com',
+]);
+const PHOTO_MAX_BYTES = 2 * 1024 * 1024;
+const PHOTO_MIME_TO_TYPE = { 'image/png': 'png', 'image/jpeg': 'jpg' };
+
+function decodeDataUrlPhoto(photo) {
+  const match = /^data:(image\/(?:png|jpeg|jpg));base64,([A-Za-z0-9+/=\s]+)$/i.exec(String(photo || '').trim());
+  if (!match) return null;
+  try {
+    const buffer = Buffer.from(match[2].replace(/\s+/g, ''), 'base64');
+    if (!buffer.length || buffer.length > PHOTO_MAX_BYTES) return null;
+    const mime = match[1].toLowerCase().replace('image/jpg', 'image/jpeg');
+    return { buffer, mime };
+  } catch { return null; }
+}
+
+async function fetchRemotePhoto(url) {
+  try {
+    const parsed = new URL(String(url));
+    if (parsed.protocol !== 'https:' || !PHOTO_HOST_ALLOWLIST.has(parsed.hostname)) return null;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+    const response = await fetch(parsed, { signal: controller.signal, redirect: 'error' });
+    clearTimeout(timer);
+    if (!response.ok) return null;
+    const mime = String(response.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+    if (!PHOTO_MIME_TO_TYPE[mime]) return null;
+    const buffer = Buffer.from(await response.arrayBuffer());
+    if (!buffer.length || buffer.length > PHOTO_MAX_BYTES) return null;
+    return { buffer, mime };
+  } catch { return null; }
+}
+
+/** The headshot paragraph, or null when no usable photo was resolved. */
+function buildPhotoParagraph(resume, options = {}) {
+  const photo = resume?._photoBuffer;
+  if (!photo || !photo.buffer || !PHOTO_MIME_TO_TYPE[photo.mime]) return null;
+  const size = options.photoSize || 92;
+  return new Paragraph({
+    alignment: options.alignment || AlignmentType.LEFT,
+    spacing: { before: 0, after: 60 },
+    children: [new ImageRun({
+      type: PHOTO_MIME_TO_TYPE[photo.mime],
+      data: photo.buffer,
+      transformation: { width: size, height: size },
+    })],
+  });
+}
+
 function buildIdentityHeader(resume, style, options = {}) {
   const nodes = [];
   const nameColor = options.nameColor || style.primary;
   const roleColor = options.roleColor || style.secondary || style.primary;
+  // DIR-069: the candidate headshot leads the identity block when present.
+  const photo = buildPhotoParagraph(resume, options);
+  if (photo) nodes.push(photo);
   nodes.push(new Paragraph({
     alignment: options.alignment || AlignmentType.LEFT,
     spacing: { before: 0, after: 40 },
@@ -698,13 +763,22 @@ function buildSkillsBlock(skills, style, options = {}) {
     }));
     return nodes;
   }
-  for (const name of names) {
-    nodes.push(new Paragraph({
-      numbering: { reference: BULLET_REF, level: 0 },
-      children: [new TextRun({ text: name, size: options.size || 19, font: style.font, color: options.color || '1E293B' })],
-      spacing: { before: 20, after: 20 },
+  // DIR-069: modern shaded pill/badge representation (#F1F5F9) instead of raw
+  // bullets, matching the web badge design. The padding is carried by the shaded
+  // run itself (leading/trailing spaces) so each skill reads as a discrete badge,
+  // and the reading order stays linear for screen readers.
+  const pillChildren = [];
+  names.forEach((name, index) => {
+    if (index) pillChildren.push(new TextRun({ text: '   ', size: options.size || 19, font: style.font }));
+    pillChildren.push(new TextRun({
+      text: ` ${name} `,
+      size: options.size || 19,
+      font: style.font,
+      color: options.color || '1E293B',
+      shading: { fill: 'F1F5F9' },
     }));
-  }
+  });
+  nodes.push(new Paragraph({ spacing: { before: 20, after: 40 }, children: pillChildren }));
   return nodes;
 }
 
@@ -1200,6 +1274,66 @@ function buildBottomStack(resume, style, options = {}) {
   return nodes;
 }
 
+/**
+ * DIR-069 — multi-page full-width reflow.
+ *
+ * A 2-column table reserves its 34% sidebar band for the WHOLE table, so once
+ * Word paginates the table the sidebar column is painted (empty) on every
+ * following page. We therefore keep only the page-1 content inside the table and
+ * emit the remainder as FULL-WIDTH nodes in a following section (a next-page
+ * break), mirroring the PDF `smart-main-content--full` continuation layout.
+ *
+ * The split is a CONSERVATIVE ESTIMATE, not a paginator: it budgets the hero
+ * column by node height and cuts before the budget is exceeded, so the table
+ * stays on page 1 in practice.
+ */
+const PAGE_ONE_HERO_BUDGET_TWIPS = 12_200;
+
+function estimateNodeHeight(node) {
+  try {
+    const opts = node && node.options ? node.options : {};
+    if (node && node.constructor && node.constructor.name === 'Table') {
+      const rows = Array.isArray(opts.rows) ? opts.rows.length : 1;
+      return rows * 320 + 160;
+    }
+    const children = Array.isArray(opts.children) ? opts.children : [];
+    const textLength = children.reduce((sum, run) => {
+      const value = run && run.options && typeof run.options.text === 'string' ? run.options.text : '';
+      return sum + value.length;
+    }, 0);
+    const lines = Math.max(1, Math.ceil(textLength / 92));
+    const before = (opts.spacing && opts.spacing.before) || 0;
+    const after = (opts.spacing && opts.spacing.after) || 0;
+    return lines * 300 + before + after;
+  } catch { return 320; }
+}
+
+/** Split a hero node list into page-1 content and full-width continuation. */
+function splitHeroForPageOne(hero) {
+  let used = 0;
+  let cut = 0;
+  for (let index = 0; index < hero.length; index += 1) {
+    const height = estimateNodeHeight(hero[index]);
+    if (cut > 0 && used + height > PAGE_ONE_HERO_BUDGET_TWIPS) break;
+    used += height;
+    cut = index + 1;
+  }
+  return { pageOne: hero.slice(0, cut), continuation: hero.slice(cut) };
+}
+
+/**
+ * The 2-column page-1 table plus (when needed) the full-width continuation that
+ * `resumeDocument` renders as a second, next-page section.
+ */
+function twoColumnWithReflow(sidebar, hero, style, sidebarPercent) {
+  const { pageOne, continuation } = splitHeroForPageOne(hero);
+  return {
+    children: [twoColumnTable(sidebar, pageOne, style, sidebarPercent)],
+    continuation,
+  };
+}
+
+
 function buildModernSplitDocument(resume, style) {
   const certsInSidebar = certsBelongInSidebar(resume);
   const sidebar = buildSidebarStack(resume, style, {
@@ -1218,9 +1352,8 @@ function buildModernSplitDocument(resume, style) {
     ...buildReferencesBlock(resume.references, style, { beforeSpacing: 140, contentWidth: width }),
     ...buildCustomSections(resume, style, { beforeSpacing: 140, contentWidth: width }),
   ];
-  return [
-    twoColumnTable(sidebar, main, style, style.sidebarWidth),
-  ];
+  // DIR-069: page-1 table + full-width continuation (no blank sidebar band on 2+).
+  return twoColumnWithReflow(sidebar, main, style, style.sidebarWidth);
 }
 
 function buildExecutiveBannerDocument(resume, style) {
@@ -1254,15 +1387,18 @@ function buildExecutiveBannerDocument(resume, style) {
     }),
     ...buildEducationBlock(resume.educations || resume.education, style, { beforeSpacing: 140, contentWidth: width }),
     ...buildProjectsBlock(resume.projects, style, { beforeSpacing: 140, contentWidth: width }),
-    ...(!certsInSidebar ? buildCertificationsBlock(resume.certifications, style, { beforeSpacing: 140, columns: 1, contentWidth: width }) : []),
+    ...(!certsInSidebar ? buildCertificationsBlock(resume.certifications, style, { beforeSpacing: 140, columns: 2, contentWidth: width }) : []),
     ...buildAchievementsBlock(resume.achievements || resume.awards, style, { beforeSpacing: 140, contentWidth: width }),
     ...buildReferencesBlock(resume.references, style, { beforeSpacing: 140, contentWidth: width }),
     ...buildCustomSections(resume, style, { beforeSpacing: 140, contentWidth: width }),
   ];
-  return [
-    bannerTable(banner, bannerFill),
-    twoColumnTable(sidebar, hero, { ...style, sidebarBg: style.sidebarBg || 'F8FAFC' }, style.sidebarWidth || 34),
-  ];
+  // DIR-069: the banner stays full-width on page 1; the 2-column body reflows its
+  // overflow full-width so page 2+ carries no empty sidebar band.
+  const reflow = twoColumnWithReflow(sidebar, hero, { ...style, sidebarBg: style.sidebarBg || 'F8FAFC' }, style.sidebarWidth || 34);
+  return {
+    children: [bannerTable(banner, bannerFill), ...reflow.children],
+    continuation: reflow.continuation,
+  };
 }
 
 function buildMinimalAtsDocument(resume, style) {
@@ -1321,15 +1457,18 @@ function buildTechGridDocument(resume, style) {
     ...buildHeroStack(resume, techStyle, { contentWidth: techWidth }),
     ...buildEducationBlock(resume.educations || resume.education, techStyle, { beforeSpacing: 140, contentWidth: techWidth }),
     ...buildProjectsBlock(resume.projects, techStyle, { beforeSpacing: 140, contentWidth: techWidth }),
-    ...(!certsInSidebar ? buildCertificationsBlock(resume.certifications, techStyle, { beforeSpacing: 140, columns: 1, contentWidth: techWidth }) : []),
+    ...(!certsInSidebar ? buildCertificationsBlock(resume.certifications, techStyle, { beforeSpacing: 140, columns: 2, contentWidth: techWidth }) : []),
     ...buildAchievementsBlock(resume.achievements || resume.awards, techStyle, { beforeSpacing: 140, contentWidth: techWidth }),
     ...buildReferencesBlock(resume.references, techStyle, { beforeSpacing: 140, contentWidth: techWidth }),
     ...buildCustomSections(resume, techStyle, { beforeSpacing: 140, contentWidth: techWidth }),
   ];
-  return [
-    ...header,
-    twoColumnTable(sidebar, hero, techStyle, techStyle.sidebarWidth),
-  ];
+  // DIR-069: the tech header stays full-width; the 2-column body reflows its
+  // overflow full-width so page 2+ carries no empty sidebar band.
+  const reflow = twoColumnWithReflow(sidebar, hero, techStyle, techStyle.sidebarWidth);
+  return {
+    children: [...header, ...reflow.children],
+    continuation: reflow.continuation,
+  };
 }
 
 function euroRow(leftNodes, rightNodes, leftWidth, rightWidth) {
@@ -1536,15 +1675,16 @@ function resumeDocument(input = {}) {
   const isCover = /^Cover[1-4]$/.test(String(templateName));
 
   let children;
+  let continuation = [];
   if (isCover) {
     children = buildCoverLetterDocument(resume, style);
   } else {
     switch (style.archetype) {
       case ARCHETYPES.EXECUTIVE_BANNER:
-        children = buildExecutiveBannerDocument(resume, style);
+        ({ children, continuation = [] } = buildExecutiveBannerDocument(resume, style));
         break;
       case ARCHETYPES.TECH_GRID:
-        children = buildTechGridDocument(resume, style);
+        ({ children, continuation = [] } = buildTechGridDocument(resume, style));
         break;
       case ARCHETYPES.COMPACT_EURO:
         children = buildCompactEuroDocument(resume, style);
@@ -1554,7 +1694,7 @@ function resumeDocument(input = {}) {
         break;
       case ARCHETYPES.MODERN_SPLIT:
       default:
-        children = buildModernSplitDocument(resume, style);
+        ({ children, continuation = [] } = buildModernSplitDocument(resume, style));
         break;
     }
   }
@@ -1594,6 +1734,20 @@ function resumeDocument(input = {}) {
                   new TextRun({ text: fullName, size: 16, color: '94A3B8', font: style.font }),
                   new TextRun({ text: '    ', size: 16 }),
                   new TextRun({ children: [PageNumber.CURRENT], size: 16, color: '94A3B8', font: style.font }),
+                  // DIR-069: free-tier watermark parity. The PDF stamps a diagonal
+                  // watermark; Word gets the equivalent branded footer tag.
+                  ...(resume._watermark && resume._watermark.enableFreeWatermark
+                    ? [
+                      new TextRun({ text: '    ', size: 16 }),
+                      new TextRun({
+                        text: resume._watermark.watermarkText || 'Created with IME365 (Free Plan)',
+                        size: 14,
+                        color: '94A3B8',
+                        italics: true,
+                        font: style.font,
+                      }),
+                    ]
+                    : []),
                 ],
               }),
             ],
@@ -1601,12 +1755,53 @@ function resumeDocument(input = {}) {
         },
         children: ensureChildren(children),
       },
+      // DIR-069: the full-width continuation of a 2-column template. A next-page
+      // section break makes Word render it 100% wide, so page 2+ has no empty 34%
+      // sidebar band — matching the PDF `smart-main-content--full` continuation.
+      ...(continuation.length
+        ? [{
+          properties: {
+            type: SectionType.NEXT_PAGE,
+            page: {
+              size: { width: PAGE_WIDTH, height: convertMillimetersToTwip(297) },
+              margin: {
+                top: PAGE_MARGIN,
+                bottom: PAGE_MARGIN,
+                left: PAGE_MARGIN,
+                right: PAGE_MARGIN,
+              },
+            },
+          },
+          children: ensureChildren(continuation),
+        }]
+        : []),
     ],
   });
 }
 
+/**
+ * DIR-069: resolve the candidate photo BEFORE the synchronous document build.
+ * A data URL decodes inline; an allowlisted https URL is fetched once with a
+ * bounded timeout and size. Any failure leaves the photo unresolved and the
+ * export simply omits it.
+ */
+async function resolveResumePhoto(resume) {
+  if (!resume || typeof resume !== 'object') return null;
+  if (resume.showPhoto === false || resume.hidePhoto === true || resume.includePhoto === false) return null;
+  const photo = resume.photo || resume.selectedImage || resume.image || resume.avatar || resume.picture;
+  if (!photo || typeof photo !== 'string') return null;
+  if (photo.startsWith('data:')) return decodeDataUrlPhoto(photo);
+  if (/^https:\/\//i.test(photo)) return fetchRemotePhoto(photo);
+  return null;
+}
+
 async function createResumeDocx(input) {
-  return Packer.toBuffer(resumeDocument(input));
+  const resume = { ...(input && typeof input === 'object' ? input : {}) };
+  if (!resume._photoBuffer) {
+    const resolved = await resolveResumePhoto(resume);
+    if (resolved) resume._photoBuffer = resolved;
+  }
+  return Packer.toBuffer(resumeDocument(resume));
 }
 
 module.exports = {

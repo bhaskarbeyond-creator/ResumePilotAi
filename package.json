@@ -26,6 +26,7 @@
     "test:dir066:freshness": "node template-lab/run-probes.mjs --fixtures normal --probes freshness",
     "test:dir067": "node --test tests/dir067-recruiter-export-partitioner-orphan.test.mjs",
     "test:dir068": "node --test tests/dir068-master-multiportal-uat.test.mjs",
+    "test:dir069": "node --test tests/dir069-docx-parity.test.mjs",
     "release:manifest": "node scripts/generate-certified-freeze-manifest.mjs",
     "test:dir064:visual": "node template-lab/docx-visual-parity.mjs",
     "test:api-resilience": "node tests/test_api_server_e2e_resilience.cjs",

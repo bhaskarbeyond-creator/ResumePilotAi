@@ -189,7 +189,12 @@ test('DIR-068 DOCX fidelity: 2-column card tables match the PDF and the public r
     const route = backend.slice(at, at + 3400);
     assert.match(route, /getPublicResume/, 'published-only authorization');
     assert.match(route, /publicationMode !== 'explicit'/, 'explicit publication required');
-    assert.doesNotMatch(route, /req\.user\.uid/, 'no owner session may be trusted');
+    // DIR-069: req.user.uid may be read ONLY inside the verified employer claim;
+    // the published-only rule stays the fallback for every other caller.
+    assert.match(route, /String\(job\.employerId \|\| job\.employer_id \|\| ''\) === req\.user\.uid/,
+        'the only owner read must be the verified job-ownership check');
+    assert.match(route, /if \(!employerClaim\) \{[\s\S]*?publicationMode !== 'explicit'/,
+        'the published-only rule must remain the fallback');
 });
 
 // ── Security & production release seal ───────────────────────────────────────

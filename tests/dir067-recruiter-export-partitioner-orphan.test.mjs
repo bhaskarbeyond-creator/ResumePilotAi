@@ -71,12 +71,17 @@ test('DIR-067 S4: the backend public DOCX route is published-only and rate-limit
     assert.match(src, /app\.post\('\/api\/public-export-docx'/, 'the public DOCX route must exist');
     assert.match(src, /'\/api\/public-export-docx'\]/, 'the public DOCX route must be rate-limited');
     const at = src.indexOf("app.post('/api/public-export-docx'");
-    const route = src.slice(at, at + 3400);
+    const route = src.slice(at, at + 5600);
     assert.match(route, /repo\.getPublicResume/, 'authorization must come from the publication row');
     assert.match(route, /isPublished !== true/, 'only published resumes may be exported');
     assert.match(route, /publicationMode !== 'explicit'/, 'only explicitly published resumes may be exported');
-    // No owner session is trusted on this route.
-    assert.doesNotMatch(route, /req\.user\.uid/, 'the public route must not trust an owner session');
+    // DIR-069: the route may read req.user.uid ONLY inside the verified employer
+    // claim (job ownership + application binding). The published-only rule must
+    // remain the fallback for every other caller.
+    assert.match(route, /String\(job\.employerId \|\| job\.employer_id \|\| ''\) === req\.user\.uid/,
+        'the only owner read must be the verified job-ownership check');
+    assert.match(route, /if \(!employerClaim\) \{[\s\S]*?publicationMode !== 'explicit'/,
+        'the published-only rule must remain the fallback');
     assert.match(route, /EXPORTABLE_TEMPLATE/, 'the template must be validated');
     assert.match(route, /resolveExportTemplate/, 'template identity must be resolved server-side');
     assert.match(route, /createResumeDocx/, 'the public route must reuse the DOCX builder');
