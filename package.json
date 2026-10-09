@@ -17,6 +17,8 @@
     "test:dir063": "node --test tests/dir063-docx-parity-and-print.test.mjs",
     "test:dir063:docx": "node --test backend/test/docx-parity.test.js backend/test/docx-export.test.js backend/test/export-pipeline.test.js",
     "test:dir063:probes": "node template-lab/run-probes.mjs --fixtures long,extreme --probes print,overflow",
+    "test:dir064": "node --test tests/dir064-wake-supersede.test.mjs",
+    "test:dir064:visual": "node template-lab/docx-visual-parity.mjs",
     "test:api-resilience": "node tests/test_api_server_e2e_resilience.cjs",
     "test:ai-settings": "node --test tests/admin-ai-settings.test.mjs backend/test/ai-admin.test.js",
     "test:interview": "node --test --test-concurrency=1 tests/interview-coach.test.mjs tests/interview-coach-hardening.test.mjs tests/interview-coach-lifecycle.test.mjs tests/live-interview-ui.test.mjs",

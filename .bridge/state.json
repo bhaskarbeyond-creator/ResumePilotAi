@@ -1,16 +1,16 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-09T06:40:56.302Z",
-  "eventCount": 2488,
-  "activeDirectiveId": "DIR-062",
-  "activeDirectiveTitle": "Bridge Privileged-Action Provenance & Auto-Certification Guard",
-  "activeDirectiveStatus": "EVIDENCE_SUBMITTED",
-  "awaitingHuman": true,
-  "awaitingHumanReason": "Awaiting Gatekeeper evidence certification (human gate)",
-  "awaitingHumanSince": "2026-10-09T06:27:10.645Z",
-  "stallDeadline": null,
-  "unreadForLead": 48,
-  "unreadForDev": 58,
+  "updatedAt": "2026-10-09T07:59:13.426Z",
+  "eventCount": 2510,
+  "activeDirectiveId": null,
+  "activeDirectiveTitle": null,
+  "activeDirectiveStatus": null,
+  "awaitingHuman": false,
+  "awaitingHumanReason": null,
+  "awaitingHumanSince": null,
+  "stallDeadline": "2026-10-09T06:02:21.462Z",
+  "unreadForLead": 54,
+  "unreadForDev": 72,
   "pendingBlockers": 0,
   "latestHeartbeat": {
     "timestamp": "2026-10-09T06:02:21.462Z",
@@ -18,9 +18,9 @@
     "percent": 100
   },
   "integrity": {
-    "ok": true,
-    "checked": 2488,
-    "legacy": 0,
-    "bad": 0
+    "ok": false,
+    "checked": 2510,
+    "legacy": 2,
+    "bad": 2
   }
 }
