@@ -482,6 +482,12 @@ Watchers restarted so the new code is live (`lead_watcher.cjs` 23004 -> **23704*
 * I did not audit `emitLeadWake`'s other callers for the same dead-root assumption.
 * `registry.json` remains at 163 with 0 scratch entries, but the bridge's own test
   suites keep adding `aw-selftest-*` / `bridge-e2e-*` / `A-*` entries continuously.
+* **`bridge freeze` overwrites `certifiedFiles` with its own hardcoded 3-file list**
+  (`bridge.cjs`, `lead_watcher.cjs`, `autowake.cjs`), silently dropping any entry added
+  to `CERTIFIED_FREEZE_MANIFEST.json` by other means. I re-added
+  `lead_watcher_session.cjs` *after* freezing (manifest now 4/4 OK), but the next
+  `bridge freeze` will drop it again. The 11-file **lock** does cover it, so drift is
+  still detected — only the manifest's own list is lossy.
 
 
 
