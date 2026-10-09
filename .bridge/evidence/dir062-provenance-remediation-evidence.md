@@ -350,5 +350,72 @@ again — the cleanup removed the payload, not the mechanism.
 * The wake plane is now quiet, but I have **not** proven the absence of further ghosts
   over time; I only verified the queue is clean and stable at a point in time.
 
+---
+
+## 9. ROUND 4 — THE RE-POLLUTION WAS CAUSED BY MY OWN CLEANUP
+
+A **fourth** ghost wake arrived: `DIR-001-mv0vnfa-be8c51` for `proj-O77Qdh-480d3483`
+— another project I had deleted in round 2. The queue was clean, so I traced it and
+found `registry.json` had **30 `dir062-bridge` entries back** (193 projects).
+
+The `lastActive` timestamps were decisive:
+
+```
+first:  2026-10-09T06:39:45.118Z
+last:   2026-10-09T06:40:28.878Z
+```
+
+Those are the **exact seconds my round-3 purge script ran**. The mechanism:
+
+1. To purge the queue I first **restored the polluted backup over the live file**
+   (`Copy-Item lead_wake_queue.jsonl.dir062.bak lead_wake_queue.jsonl`).
+2. That re-exposed 175 entries — including the scratch ones — to the always-on
+   `lead_watcher.cjs`, which polls the queue every 2 s.
+3. Its `checkQueue()` called `emitLeadWake(ev, item)` for each, which reaches
+   `autowake.cjs`'s `ensureScaffold(projectRoot)` — and **that re-registers the
+   project and recreates its record dir**.
+4. My script then purged the queue to 48 lines, but the registry damage was already
+   done.
+
+So **my remediation caused the re-pollution.** The lesson: never re-expose polluted
+state to a live watcher, not even transiently.
+
+### Round-4 fixes
+
+* Registry re-cleaned: `193 -> 163`, 0 scratch entries, `activeProject` intact.
+* Both cleanup scripts now write **atomically** (temp + `rename`), so no reader can
+  observe a partial or polluted file.
+* The queue was **not** restored this time — it was already clean, so nothing
+  re-exposed it.
+* The test's `test.after` registry **snapshot/restore was removed**. It was a footgun:
+  `fs.writeFileSync(REGISTRY, snapshot)` restores a *stale* registry and can silently
+  resurrect deleted projects. Hermetic mode makes it unnecessary.
+
+### Verified (full suite run)
+
+```
+BEFORE: registry=163 projectDirs=171 queue=48
+AFTER:  registry=163 projectDirs=171 queue=48
+dir062 entries = 0      (stable over 25 s)
+```
+
+### Honest limits (round 4)
+
+* **I caused this round.** The re-pollution was my restore step, not a new bridge bug.
+  I should have written the purged result directly and never touched the live file
+  with the polluted content.
+* I still have **not** root-caused the round-3 zero-byte truncation.
+* **The permanent fix is still not applied.** The chain
+  `checkQueue` → `emitLeadWake` → `ensureScaffold` will re-register a project whose
+  root does not exist, and `checkQueue` replays from offset 0 whenever the queue
+  shrinks. Both live in frozen files (`lead_watcher.cjs`, `autowake.cjs`) that are
+  **outside the file set authorised for DIR-062**. I have therefore only removed the
+  data each time; the mechanism survives, and a future queue rotation can reproduce
+  this. Fixing it needs an explicit §10.1 authorisation for those two files.
+* `registry.json` grew from 163 to 193 between rounds because the bridge's **own**
+  test suites (`aw-selftest-*`, `bridge-e2e-*`, `A-*`/`B-*`) run continuously and add
+  entries. I did not touch those.
+
+
 
 

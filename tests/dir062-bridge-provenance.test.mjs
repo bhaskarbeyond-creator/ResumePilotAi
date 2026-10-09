@@ -110,13 +110,13 @@ test('evidence sanity: a log with no pass marker is REJECTED', () => {
 
 
 // ── 4. END-TO-END: pipelineAdvance must not auto-certify ────────────────────
-// `initProject` calls setActiveProject(), which rewrites the GLOBAL registry.
-// Snapshot it so a scratch project can never hijack the real active project.
-const REGISTRY = path.join(os.homedir(), '.ai-bridge', 'registry.json');
-const registrySnapshot = (() => { try { return fs.readFileSync(REGISTRY, 'utf8'); } catch { return null; } })();
-test.after(() => {
-  if (registrySnapshot != null) { try { fs.writeFileSync(REGISTRY, registrySnapshot); } catch { } }
-});
+// NOTE: there used to be a snapshot/restore of registry.json here. It has been
+// REMOVED deliberately. `fs.writeFileSync(REGISTRY, snapshot)` restores a STALE
+// registry, so if the snapshot was taken while the registry was polluted (or
+// while the always-on lead watcher was mid-write) the test would silently
+// RESURRECT deleted projects. Hermetic mode makes the restore unnecessary: with
+// AI_BRIDGE_HERMETIC=1 the suite performs no global registry write at all.
+// Verified: dir062 / projectDirs / wakeQueue deltas are all 0 across a full run.
 
 const bridgeDirOf = (dir) => path.join(dir, '.bridge');
 /**
