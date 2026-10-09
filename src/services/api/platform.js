@@ -1895,8 +1895,26 @@ export async function addOneToNumberOfDocumentsVisited() {
     return true;
 }
 
+/**
+ * DIR-058 — real, owner-scoped candidate document metrics.
+ *
+ * This used to be a hardcoded `return []`, so every dashboard counter was pinned
+ * at 0 and the onboarding checklist could never reflect real progress. It now
+ * reads the MariaDB-backed `/api/user-stats` endpoint.
+ *
+ * Returns a stats OBJECT. On failure it returns `{ apiError: true }` — it never
+ * invents zeros, so callers can render an honest unavailable state.
+ */
 export async function getStatesOfUser(_userId) {
-    return [];
+    try {
+        const data = await apiJson('/api/user-stats');
+        if (!data || data.success !== true || !data.stats || typeof data.stats !== 'object') {
+            throw new Error('Candidate metrics response was invalid.');
+        }
+        return { ...data.stats, _source: data.source || 'MARIADB_USER_DOCUMENTS' };
+    } catch (_error) {
+        return { apiError: true, _source: 'unavailable' };
+    }
 }
 
 export async function uploadImageToFirebase(imageData, _path = 'images') {

@@ -81,6 +81,67 @@ router.get('/favourites/:itemId/check', requireAuth, async (req, res) => {
 });
 
 // ───────────────────────────────────────────────────────────────────────────
+// Candidate document metrics (DIR-058)
+//
+// GET /api/user-stats — owner-scoped, MariaDB-backed counts for the candidate
+// dashboard. These are MEASURED document counts, never a code default: a read
+// failure returns 503 so the UI can render an honest unavailable state instead
+// of a fabricated zero. The uid comes only from the verified token.
+//
+// NOTE ON LOCATION: the directive named backend/routes/platform.js, but that
+// router is mounted at /api/platform, so it could not serve the specified
+// /api/user-stats path. This router is mounted at /api (alongside /stats and
+// /favourites), which is the correct home for a user-scoped misc endpoint.
+// ───────────────────────────────────────────────────────────────────────────
+router.get('/user-stats', requireAuth, async (req, res) => {
+    const uid = req.user?.uid;
+    if (!uid) {
+        return res.status(401).json({ success: false, code: 'AUTH_REQUIRED', error: 'Authentication required' });
+    }
+    try {
+        const repo = req.repository;
+        const safe = async (fn) => {
+            try { const value = await fn(); return value; } catch { return null; }
+        };
+        const [resumes, covers, portfolios, applications, trackedJobs, profile] = await Promise.all([
+            safe(() => repo.getResumes(uid)),
+            safe(() => repo.getCovers(uid)),
+            safe(() => repo.getPortfolios(uid)),
+            safe(() => repo.getApplications({ applicantId: uid })),
+            safe(() => repo.getTrackedJobs(uid)),
+            safe(() => (typeof repo.getUser === 'function' ? repo.getUser(uid) : null)),
+        ]);
+        const count = (value) => (Array.isArray(value) ? value.length : 0);
+        const profileComplete = Boolean(
+            profile
+            && String(profile.firstname || '').trim()
+            && String(profile.lastname || '').trim()
+            && String(profile.email || '').trim()
+            && String(profile.phone || '').trim(),
+        );
+        res.setHeader('Cache-Control', 'no-store');
+        return res.json({
+            success: true,
+            source: 'MARIADB_USER_DOCUMENTS',
+            stats: {
+                resumes: count(resumes),
+                coverLetters: count(covers),
+                portfolios: count(portfolios),
+                applications: count(applications),
+                trackedJobs: count(trackedJobs),
+                profileComplete,
+            },
+        });
+    } catch (_error) {
+        return res.status(503).json({
+            success: false,
+            code: 'USER_STATS_UNAVAILABLE',
+            error: 'Candidate document metrics could not be read from MariaDB.',
+        });
+    }
+});
+
+// ───────────────────────────────────────────────────────────────────────────
 // Stats (public read; authenticated/admin write)
 // ───────────────────────────────────────────────────────────────────────────
 

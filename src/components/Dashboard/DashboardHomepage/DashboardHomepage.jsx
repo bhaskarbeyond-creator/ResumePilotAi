@@ -71,9 +71,28 @@ class DashboardHomepage extends Component {
       showSubscriptionModal: false,
       pendingDownloadDocument: null,
       pendingDownloadType: 'pdf',
+      // DIR-058: the four mandated onboarding steps. `key` maps each step to a
+      // MEASURED metric (see applyOnboardingProgress) so completion is derived
+      // from the candidate's real documents, never hardcoded.
       onboardingSteps: [
         {
           id: 1,
+          key: "profile",
+          title: props.t(
+            "DashboardHomepage.onboarding.steps.completeProfile.title",
+            "Complete your profile"
+          ),
+          description: props.t(
+            "DashboardHomepage.onboarding.steps.completeProfile.description",
+            "Add your name, email, phone and location so every document starts from an accurate master profile."
+          ),
+          completed: false,
+          route: "/dashboard/settings?tab=Profile",
+          score: 15,
+        },
+        {
+          id: 2,
+          key: "resume",
           title: props.t(
             "DashboardHomepage.onboarding.steps.createResume.title",
             "Create your first resume"
@@ -84,7 +103,37 @@ class DashboardHomepage extends Component {
           ),
           completed: false,
           route: "/build-resume/heading",
-          score: 15,
+          score: 35,
+        },
+        {
+          id: 3,
+          key: "cover",
+          title: props.t(
+            "DashboardHomepage.onboarding.steps.coverLetter.title",
+            "Write a cover letter"
+          ),
+          description: props.t(
+            "DashboardHomepage.onboarding.steps.coverLetter.description",
+            "Generate a role-specific cover letter that matches the resume you just built."
+          ),
+          completed: false,
+          route: "/dashboard/cover-letters",
+          score: 25,
+        },
+        {
+          id: 4,
+          key: "application",
+          title: props.t(
+            "DashboardHomepage.onboarding.steps.firstApplication.title",
+            "Apply to your first job"
+          ),
+          description: props.t(
+            "DashboardHomepage.onboarding.steps.firstApplication.description",
+            "Submit your first application from the job portal and track it in your pipeline."
+          ),
+          completed: false,
+          route: "/dashboard/jobs",
+          score: 25,
         },
       ],
       profile: {
@@ -98,10 +147,16 @@ class DashboardHomepage extends Component {
       },
       activeTab: "all",
       searchQuery: "",
+      // DIR-058: real, owner-scoped candidate metrics. `null` means "not yet
+      // measured" (rendered as an honest dash) — never a fabricated zero.
       userStats: {
-        documentsGenerated: 0,
-        documentsDownloaded: 0,
-        documentsVisited: 0,
+        resumes: null,
+        coverLetters: null,
+        portfolios: null,
+        applications: null,
+        trackedJobs: null,
+        profileComplete: false,
+        unavailable: false,
       },
       loadedTemplates: {}, // Store dynamically loaded template components
       downloadingResumeIds: new Set(), // Track which resumes are currently being downloaded
@@ -280,24 +335,50 @@ class DashboardHomepage extends Component {
     });
   }
 
+  // DIR-058: consume the real, owner-scoped metrics. A failed read is surfaced
+  // as `unavailable` (honest dash) — the dashboard never invents a zero.
   async getUserStats() {
-    try {
-      const userId = fire.auth().currentUser?.uid;
-      if (userId) {
-        const stats = await getStatesOfUser(userId);
-        if (stats) {
-          this.setState({
-            userStats: {
-              documentsGenerated: stats.documentsGenerated || 0,
-              documentsDownloaded: stats.documentsDownloaded || 0,
-              documentsVisited: stats.documentsVisited || 0,
-            },
-          });
-        }
-      }
-    } catch (_error) {
-      // Error handled silently
+    const userId = fire.auth().currentUser?.uid;
+    if (!userId) return;
+    const stats = await getStatesOfUser(userId);
+    if (!stats || stats.apiError) {
+      this.setState((prev) => ({
+        userStats: { ...prev.userStats, unavailable: true },
+      }));
+      return;
     }
+    const num = (value) => (typeof value === 'number' && Number.isFinite(value) ? value : 0);
+    const measured = {
+      resumes: num(stats.resumes),
+      coverLetters: num(stats.coverLetters),
+      portfolios: num(stats.portfolios),
+      applications: num(stats.applications),
+      trackedJobs: num(stats.trackedJobs),
+      profileComplete: stats.profileComplete === true,
+      unavailable: false,
+    };
+    this.setState({ userStats: measured });
+    this.applyOnboardingProgress(measured);
+  }
+
+  /**
+   * DIR-058: derive the onboarding checklist from the MEASURED counts, so the
+   * checklist reflects the candidate's real progress instead of a fixed step.
+   */
+  applyOnboardingProgress(measured) {
+    const done = {
+      profile: measured.profileComplete === true,
+      resume: measured.resumes > 0,
+      cover: measured.coverLetters > 0,
+      application: measured.applications > 0,
+    };
+    this.setState((prev) => ({
+      onboardingSteps: prev.onboardingSteps.map((step) => (
+        Object.prototype.hasOwnProperty.call(done, step.key)
+          ? { ...step, completed: done[step.key] }
+          : step
+      )),
+    }));
   }
 
   componentDidMount() {
@@ -1196,8 +1277,8 @@ class DashboardHomepage extends Component {
                 <div className="bg-white rounded-lg p-6 border border-slate-200 shadow-sm">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Downloads</p>
-                      <p className="text-xl font-semibold text-slate-900 mt-1">{this.state.userStats.documentsDownloaded}</p>
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Applications</p>
+                      <p className="text-xl font-semibold text-slate-900 mt-1">{this.state.userStats.applications === null ? '—' : this.state.userStats.applications}</p>
                     </div>
                     <div className="p-3 bg-blue-100 rounded-md">
                       <FaDownload className="w-5 h-5 text-blue-600" />

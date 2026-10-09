@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-09T05:17:44.095Z",
-  "seq": 2447,
-  "id": "evt_mv0ikr9q_ed31fe9b9ef8",
-  "type": "EVIDENCE_SUBMITTED",
-  "title": "[Evidence] DIR-060: DIR-060: Deep Audit of 51 Resume & 4 CV Templates (A4 Layout, 100% PDF/DOCX Parity, Watermarks & Master Profile Sync)",
+  "timestamp": "2026-10-09T05:29:20.903Z",
+  "seq": 2456,
+  "id": "evt_mv0izoxc_40fcccdc9bf3",
+  "type": "HEARTBEAT",
+  "title": "[Heartbeat] S1-S6 implemented. LIVE PROBE PROVES the contract: anon 401 AUTH_REQUIRED, authed 200 success=true source=MARIADB_USER_DOCUMENTS with real numeric counts. One documented deviation: the directive named",
   "sender": "STAFF_DEVELOPER",
-  "directiveId": "DIR-060",
-  "summary": "DIR-060 PHASE 2 COMPLETE (permanent fix) under the OPTION A ruling; templates remain AUDIT-ONLY and UNTOUCHED. IDENTIFY->PROVE: ResumeWatermarkOverlay decided purely on the global admin setting (watermark.enableFreeWatermark) with NO entitlement input; the render sites read values._watermark || values.watermark (TemplateRenderer.jsx:58, SmartResumeComposer.jsx:76) but _watermark is written NOWHERE in src/, and the builder preview view model (BuildResume.jsx:959) carried neither a watermark nor an entitlement, while removesWatermark existed ONLY in backend/. Consequence: FREE users got NO watermark in preview, and any caller supplying the global watermark would stamp a PAID document. RCA->FIX (non-frozen, permanent): new src/utils/watermarkEntitlement.js with a fail-closed shouldRenderWatermark() + resolvePreviewWatermark() + readEntitlement(); ResumeWatermarkOverlay now delegates to it and accepts an explicit entitlement; BOTH render sites pass entitlement={readEntitlement(values)}; BuildResume previewData now publishes _watermark (from public_config.watermark gated by isPaidMembershipTier) and _entitlement. FROZEN BOUNDARY RESPECTED: git status shows NO file under src/cv-templates/ modified - all 51 resume + 4 cover dirs untouched (asserted). EVIDENCE: new suite 9/9; template/export regression 70/70 (incl. server-rendering every template); full product matrix 756 pass/0 fail; eslint 0 errors; build exit 0 in 3.58s. HONEST LIMITS: the per-template A4/overflow audit matrix, the HeadingStep hydration audit and the PDF<->DOCX parity run are NOT yet done - head-start measurements recorded in the evidence doc (.bridge/evidence/dir060-implementation-evidence.md)."
+  "directiveId": "DIR-058",
+  "summary": "S1-S6 implemented. LIVE PROBE PROVES the contract: anon 401 AUTH_REQUIRED, authed 200 success=true source=MARIADB_USER_DOCUMENTS with real numeric counts. One documented deviation: the directive named backend/routes/platform.js but that router mounts at /api/platform and returned 404 for the specified path - the handler now lives in the miscData router which mounts at /api (proven by the probe). Gates: new suite 5/5, dashboard/Cuba regression 67/67, backend routes 24/0, product 756/0, lint 0 errors, build exit 0 (2.35s). Submitting evidence."
 }

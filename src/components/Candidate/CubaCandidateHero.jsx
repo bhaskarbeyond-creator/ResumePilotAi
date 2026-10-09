@@ -1,13 +1,16 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { FiPlus, FiBriefcase, FiAward, FiFileText, FiZap, FiRefreshCw } from 'react-icons/fi';
 import CubaStatCard from '../cuba/CubaStatCard';
-import { getResumes, getTrackedJobs } from '../../services/api/platform';
+import { getResumes, getTrackedJobs, getStatesOfUser } from '../../services/api/platform';
 import { summariseResumes } from './briefingLogic';
 
 const CubaCandidateHero = ({ displayName = 'Candidate' }) => {
     const [currentTime, setCurrentTime] = useState(new Date());
     const [resumes, setResumes] = useState(null);
     const [trackedJobs, setTrackedJobs] = useState(null);
+    // DIR-058: the real application count (was previously mislabelled — the
+    // "Job Applications" card used to show the Kanban TRACKED-jobs count).
+    const [applications, setApplications] = useState(null);
     const [apiError, setApiError] = useState(false);
     const [loading, setLoading] = useState(true);
 
@@ -43,6 +46,13 @@ const CubaCandidateHero = ({ displayName = 'Candidate' }) => {
             } catch {
                 // trackedJobs stays null → the KPI renders an honest dash, never a fake 0.
                 jobsFailed = true;
+            }
+            try {
+                // DIR-058: the REAL submitted-application count for the KPI card.
+                const stats = await getStatesOfUser();
+                if (active && stats && !stats.apiError) setApplications(stats.applications);
+            } catch {
+                // applications stays null → the KPI renders an honest dash.
             }
             if (!active) return;
             setApiError(resumesFailed);
@@ -235,14 +245,18 @@ const CubaCandidateHero = ({ displayName = 'Candidate' }) => {
                     loading={loading}
                     trend={bestScore ? { label: bestScore >= 75 ? 'Market Ready' : 'Needs Optimization', tone: bestScore >= 75 ? 'up' : 'down' } : null}
                 />
+                {/* DIR-058: this card is labelled "Job Applications", so it now
+                    shows the REAL submitted-application count. It previously
+                    showed the Kanban TRACKED-jobs count — a mislabel. Tracked
+                    roles are still surfaced, but in the hint where they belong. */}
                 <CubaStatCard
                     label="Job Applications"
-                    value={loading ? '...' : trackedJobs !== null ? String(trackedJobs) : '—'}
-                    hint={trackedJobs !== null ? 'Tracked roles in pipeline' : 'Pipeline sync pending'}
+                    value={loading ? '...' : applications !== null ? String(applications) : '—'}
+                    hint={trackedJobs !== null ? `${trackedJobs} tracked in pipeline` : 'Pipeline sync pending'}
                     icon={<FiBriefcase className="h-5 w-5" />}
                     accent="info"
-                    loading={loading && trackedJobs === null}
-                    trend={trackedJobs !== null && trackedJobs > 0 ? { label: 'Pipeline active', tone: 'up' } : null}
+                    loading={loading && applications === null}
+                    trend={applications !== null && applications > 0 ? { label: 'Applications sent', tone: 'up' } : null}
                 />
                 <CubaStatCard
                     label="AI Interview Coach"

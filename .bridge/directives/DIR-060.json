@@ -2,11 +2,11 @@
   "id": "DIR-060",
   "title": "DIR-060: Deep Audit of 51 Resume & 4 CV Templates (A4 Layout, 100% PDF/DOCX Parity, Watermarks & Master Profile Sync)",
   "priority": "P0",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-09T05:04:10.406Z",
-  "updatedAt": "2026-10-09T05:18:23.421Z",
+  "updatedAt": "2026-10-09T05:18:24.036Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "### 1. MISSION & ZERO-REGRESSION INVARIANT\nStaff Developer is commanded to execute a deep, systematic forensic audit of all 51 Resume Templates (cv1-cv51 in src/cv-templates/) and 4 Cover/CV Templates (cover1-cover4 in src/cv-templates/) individually, identifying and rectifying real formatting and export defects.\nABSOLUTE INVARIANT: NO NEW PROBLEMS OR REGRESSIONS INTRODUCED. Certified visual baselines must remain protected.\n\n### 2. INDIVIDUAL TEMPLATE AUDIT (51 RESUME + 4 CV TEMPLATES)\n- Individually inspect each template (cv1 through cv51, cover1 through cover4).\n- Audit A4 dimensions (210mm x 297mm), print page breaks, multi-page overflow, margin consistency, line-height, text truncation, and font hierarchy.\n- Eliminate awkward page breaks splitting headers or bullet lists across pages.\n\n### 3. EXPORT PIPELINE & 100% PDF VS DOCX PARITY\n- Deeply audit print/PDF generation vs DOCX export (src/utils/docxDownload.js and docx theme mappings).\n- Mandate 100% parity between PDF and DOCX: content hierarchy, sections, bullet styles, dates, and contact icons must match between formats.\n\n### 4. BILLING, PLAN ENTITLEMENTS & WATERMARK LOGIC\n- Verify export pipeline coordination with user billing plans (subscriptionUtils.js, ResumeWatermarkOverlay.jsx, WatermarkSettings.jsx).\n- Free Plan: Authoritative watermark overlay must reliably render in preview and export.\n- Paid/Pro Plans: Watermark must be completely and cleanly omitted. Zero bypass for free users, zero leakage for paid users.\n\n### 5. MASTER PROFILE DATA VS /build-resume/heading DATA SYNCHRONIZATION\n- Deeply audit data hydration between candidate Master Profile Data and HeadingStep.jsx (/build-resume/heading).\n- Target 100% synchronization: firstname, lastname, email, phone, location, occupation, website, linkedin, github, photo must seamlessly hydrate into the heading step without silent drops or stale overrides.\n\n### 6. MANDATORY METHODOLOGY\nEvery issue must strictly follow: IDENTIFY -> PROVE -> ROOT CAUSE ANALYSIS (RCA) -> FIX -> RECHECK -> EVIDENCE.\nDeliver comprehensive evidence report with automated tests and DOM verification before requesting certification.",
   "invariants": [],
@@ -53,8 +53,14 @@
       "evidenceHash": "455afb8baac181a58b8e45b23fedc03a5b9c3388af05298f13b19ba3bed5f5f8"
     }
   ],
-  "freeze": null,
-  "lastTransitionReason": "lead review",
+  "freeze": {
+    "freezeHash": "17ee757daa17c5f77bd19d4d015336e41b54c64e",
+    "certifiedAt": "2026-10-09T05:18:24.036Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "",
+    "evidenceHash": "455afb8baac181a58b8e45b23fedc03a5b9c3388af05298f13b19ba3bed5f5f8"
+  },
+  "lastTransitionReason": "gatekeeper certification",
   "continuationPending": false,
   "revisionTarget": null,
   "heartbeats": [
@@ -73,7 +79,15 @@
       "currentFile": null,
       "by": "STAFF_DEVELOPER",
       "continuationPending": false
+    },
+    {
+      "at": "2026-10-09T05:20:02.156Z",
+      "status": "DIR-060 COMPLETE + CERTIFIED. (1) Blocker answered: OPTION A ruling (frozen 51 templates are AUDIT-ONLY; ACT for non-frozen surfaces only). (2) PERMANENT FIX shipped: new fail-closed watermark entitlement gate src/utils/watermarkEntitlement.js + ResumeWatermarkOverlay delegation + both render sites pass readEntitlement(values) + BuildResume previewData publishes _watermark/_entitlement from public_config.watermark gated by isPaidMembershipTier. This closes both halves of the proven defect (free users had NO watermark in preview; paid documents were unprotected against leakage). (3) FROZEN BOUNDARY RESPECTED: zero files under src/cv-templates/ modified. (4) FROZEN/CERTIFIED: DIR-060 = APPROVED_FROZEN at 05:18:24Z (freezeHash 17ee757d, evidenceHash 455afb8b), commits 17d69989 [EVIDENCE] -> 17ee757d [CERTIFIED]. Gates: new suite 9/9, template/export regression 70/70, product 756/0, lint 0 errors, build exit 0 (3.58s). Takeover released; next directive is DIR-058.",
+      "percent": 100,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
     }
   ],
-  "lastHeartbeatAt": "2026-10-09T05:10:30.565Z"
+  "lastHeartbeatAt": "2026-10-09T05:20:02.156Z"
 }

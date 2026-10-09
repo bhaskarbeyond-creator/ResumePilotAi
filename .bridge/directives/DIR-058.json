@@ -2,17 +2,52 @@
   "id": "DIR-058",
   "title": "Candidate Dashboard Real MariaDB Metrics Aggregation & Multi-Step Onboarding",
   "priority": "P1",
-  "status": "ISSUED",
+  "status": "IN_PROGRESS",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-09T03:08:15.294Z",
-  "updatedAt": "2026-10-09T03:08:15.294Z",
+  "updatedAt": "2026-10-09T05:22:23.453Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "### 1. MANDATE & PROBLEM STATEMENT\nsrc/services/api/platform.js:1898 defines getStatesOfUser as a hardcoded stub returning [].\nConsequently, candidate counters for resumes, cover letters, and applications show 0 despite existing records.\nFurthermore, the candidate onboarding checklist contains only 1 single hardcoded step.\n\n### 2. ARCHITECTURAL SPECIFICATION\n1. Author GET /api/user-stats in backend aggregating user document counts (resumes, covers, portfolios, applications).\n2. Connect getStatesOfUser to call /api/user-stats.\n3. Update DashboardHomepage.jsx and CubaCandidateHero.jsx to render honest metrics.\n4. Expand candidate onboarding checklist to track completion of Profile, First Resume, Cover Letter, and First Job Application.\n\n### 3. IMPLEMENTATION PLAN\n- S1: Author GET /api/user-stats in backend/routes/platform.js.\n- S2: Connect getStatesOfUser in src/services/api/platform.js.\n- S3: Update DashboardHomepage.jsx to consume live stats.\n- S4: Update CubaCandidateHero.jsx to reflect live stats.\n- S5: Expand onboarding checklist.\n- S6: Author test suite tests/dir058-dashboard-stats.test.mjs.",
   "invariants": [],
   "acceptanceCriteria": [],
-  "plan": null,
+  "plan": {
+    "submittedAt": "2026-10-09T05:21:43.275Z",
+    "summary": "DIR-058 PLAN (P1). TARGET CHECK + PROVEN DEFECTS (read-only, zero code changed; every finding cites file:line). (1) src/services/api/platform.js:1898 getStatesOfUser(_userId) is a hardcoded stub that returns [] - NOT a stats object. Its two consumers can therefore never show a real number: DashboardHomepage.jsx:287 does stats.documentsGenerated || 0 so it is permanently 0, and DashboardActions.jsx:32 spreads the array ({...[]} = {}) so documentsGenerated/Downloaded are undefined and the dashboard action counters render 0 forever. (2) DashboardHomepage.jsx:74-89 onboardingSteps is a hardcoded array of EXACTLY ONE step (id 1, Create your first resume, completed:false, score:15) with no derivation from real data, so the checklist can never reflect actual progress. (3) CubaCandidateHero.jsx:238-246 renders a card LABELLED Job Applications but feeds it getTrackedJobs() (job_tracker rows) - a mislabel - and the hero carries no cover-letter, portfolio or application metric at all. AVAILABLE BUILDING BLOCKS: the repository exposes getResumes(uid), getCovers(uid), getPortfolios(uid) and getApplications(filters); backend/routes/platform.js already imports requireAuth and applies router.use(requireAuth) at line 261; backend/routes/miscData.js /stats is the established response shape ({success, stats, source}). PLAN: S1 author GET /api/user-stats in backend/routes/platform.js (owner-scoped via req.user.uid) returning honest counts {resumes, covers, portfolios, applications, trackedJobs} plus the existing generated/downloaded/visited counters, and a real 503 on read failure - never fabricated zeros; S2 make getStatesOfUser call /api/user-stats and return that object while keeping the legacy array-spread consumer working; S3 DashboardHomepage consumes the live stats; S4 CubaCandidateHero uses the live APPLICATION count for the Job Applications card (fixing the tracked-jobs mislabel) and adds cover-letter/portfolio metrics; S5 expand onboardingSteps to the four mandated steps (Profile, First Resume, Cover Letter, First Job Application) with completion DERIVED from the real counts; S6 author tests/dir058-dashboard-stats.test.mjs. Constraints: zero schema change, no frozen module touched, owner-scoped (no cross-user leakage), honest failure states. Awaiting your GREEN SIGNAL before ACT.",
+    "steps": [
+      "S1: author owner-scoped GET /api/user-stats in backend/routes/platform.js aggregating resumes/covers/portfolios/applications plus the existing generated/downloaded/visited counters via the repository, returning {success, stats, source} and a real 503 on failure",
+      "S2: connect getStatesOfUser in src/services/api/platform.js to /api/user-stats, returning the stats object while keeping the legacy array-spread consumer working",
+      "S3: update DashboardHomepage.jsx to consume the live stats and derive onboarding completion from them",
+      "S4: update CubaCandidateHero.jsx to show the real application count for the Job Applications card (fixing the getTrackedJobs mislabel) and add cover-letter and portfolio metrics",
+      "S5: expand onboardingSteps to Profile, First Resume, Cover Letter and First Job Application with completion derived from the real counts",
+      "S6: author tests/dir058-dashboard-stats.test.mjs (backend route contract + client wiring + onboarding derivation + no-fabricated-zero assertions)",
+      "S7: run lint, build and the product matrix, then submit evidence"
+    ],
+    "planHash": "2041dc1f4abf69e6c6d986d21fc83283b04cb8300ade34b8e859083778f49e30"
+  },
   "evidence": null,
   "reviews": [],
-  "freeze": null
+  "freeze": null,
+  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "continuationPending": false,
+  "revisionTarget": null,
+  "heartbeats": [
+    {
+      "at": "2026-10-09T05:21:53.906Z",
+      "status": "DIR-058 PLAN SUBMITTED (planHash 2041dc1f) - PLAN mode, zero code changed. PROVEN DEFECTS: (1) platform.js:1898 getStatesOfUser returns a hardcoded [] so DashboardHomepage.jsx:287 and DashboardActions.jsx:32 can never show a real counter (permanently 0); (2) DashboardHomepage.jsx:74-89 onboardingSteps has exactly ONE hardcoded step with no real-data derivation; (3) CubaCandidateHero.jsx:238-246 labels a card Job Applications but feeds it getTrackedJobs() - a mislabel - and shows no cover-letter/portfolio/application metric. Building blocks confirmed: repo getResumes/getCovers/getPortfolios/getApplications, requireAuth already imported and applied at platform.js:261, and miscData.js /stats is the established response shape. Plan: S1 owner-scoped GET /api/user-stats -> S2 getStatesOfUser wiring -> S3 DashboardHomepage live stats -> S4 hero fix + metrics -> S5 four-step onboarding derived from real counts -> S6 tests -> S7 gates. Awaiting Lead review before ACT.",
+      "percent": 10,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    },
+    {
+      "at": "2026-10-09T05:29:20.918Z",
+      "status": "S1-S6 implemented. LIVE PROBE PROVES the contract: anon 401 AUTH_REQUIRED, authed 200 success=true source=MARIADB_USER_DOCUMENTS with real numeric counts. One documented deviation: the directive named backend/routes/platform.js but that router mounts at /api/platform and returned 404 for the specified path - the handler now lives in the miscData router which mounts at /api (proven by the probe). Gates: new suite 5/5, dashboard/Cuba regression 67/67, backend routes 24/0, product 756/0, lint 0 errors, build exit 0 (2.35s). Submitting evidence.",
+      "percent": 85,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    }
+  ],
+  "lastHeartbeatAt": "2026-10-09T05:29:20.918Z"
 }
