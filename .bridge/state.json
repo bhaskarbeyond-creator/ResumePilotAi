@@ -1,26 +1,26 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-09T10:25:25.774Z",
-  "eventCount": 2547,
-  "activeDirectiveId": "DIR-066",
-  "activeDirectiveTitle": "DIR-066: Automated Headless Playwright Template Thumbnail Refresh (51 Catalog Images) & Cross-Portal Print/Download 10/10 Verification",
-  "activeDirectiveStatus": "IN_PROGRESS",
+  "updatedAt": "2026-10-09T11:03:55.631Z",
+  "eventCount": 2564,
+  "activeDirectiveId": "DIR-068",
+  "activeDirectiveTitle": "DIR-068: Master Platform-Wide UAT 10/10 Multi-Portal E2E Verification and Production Release Seal",
+  "activeDirectiveStatus": "ISSUED",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-09T09:56:51.386Z",
-  "unreadForLead": 65,
-  "unreadForDev": 94,
+  "stallDeadline": "2026-10-09T10:55:19.811Z",
+  "unreadForLead": 70,
+  "unreadForDev": 106,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-09T09:56:51.386Z",
-    "status": "S1-S10 complete: row-paired adaptive partitioner + dynamic >=36px clearance + DOCX card parity + 55-template DOM census (0 overlap). Submitting evidence.",
+    "timestamp": "2026-10-09T10:55:19.811Z",
+    "status": "S1-S10 complete: recruiter real PDF/DOCX export + public DOCX route, adaptive micro-compaction + orphan guard, tabbed cover letter, 55-template census PASS. Submitting evidence.",
     "percent": 95
   },
   "integrity": {
     "ok": false,
-    "checked": 2547,
+    "checked": 2564,
     "legacy": 6,
-    "bad": 4
+    "bad": 5
   }
 }

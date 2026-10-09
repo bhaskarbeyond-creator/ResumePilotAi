@@ -1,0 +1,75 @@
+{
+  "id": "DIR-068",
+  "title": "DIR-068: Master Platform-Wide UAT 10/10 Multi-Portal E2E Verification and Production Release Seal",
+  "priority": "P0",
+  "status": "IN_PROGRESS",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-09T11:01:44.511Z",
+  "updatedAt": "2026-10-09T11:04:31.443Z",
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "spec": "P0 ARCHITECTURAL MANDATES: 1. MASTER MULTI-PORTAL UAT VERIFICATION: Execute comprehensive end-to-end user journey verification across all 4 connected portals: (A) Candidate Builder (/build-resume, /resume-builder): resume composition, 2-column project and certification cards, export controls; (B) User Dashboard (/dashboard, /resumes): resume cards, quick PDF/DOCX downloads; (C) Recruiter Portal (EmployerApplicantPipeline.jsx): candidate preview drawer, tabbed cover letter, dedicated PDF/Word buttons calling public endpoints (/api/public-export, /api/public-export-docx), iframe printing; (D) Admin/Org Modal (JobApplicationsModal.jsx): candidate preview, pagination, export buttons. 2. 10/10 VISUAL INVARIANTS & FULL CENSUS: Run Playwright DOM census across all 55 templates (Minimal ATS, Modern Split, Creative, Executive + Cv1..Cv51). Assert 0px footer overlap on standard and dense fixtures, verify adaptive micro-compaction collapses minor overflow to 1 balanced page, and verify section integrity orphan guard prevents 1-card Page 2 orphans. Verify template catalog thumbnails (Cv1.JPG..Cv51.JPG) remain fresh. 3. DOCX VS PDF FIDELITY AUDIT: Validate OOXML 2-column card tables in DOCX export matching PDF design. Verify public DOCX route (/api/public-export-docx) security, rate-limiting, and published-only guards. 4. SECURITY & PRODUCTION RELEASE SEAL: Audit zero secret leakage, zero FOUC, zero dead routes, 100% Linux server compatibility, and src/cv-templates git diff 0. Generate final release manifest CERTIFIED_FREEZE_MANIFEST.json documenting all 68 certified baselines. Run all regression suites and submit evidence for final Gatekeeper certification.",
+  "invariants": [],
+  "acceptanceCriteria": [],
+  "plan": {
+    "submittedAt": "2026-10-09T11:04:29.408Z",
+    "summary": "DIR-068 P0, reconnaissance complete. CONTRACTS/INVARIANTS: src/cv-templates stays git diff 0, the DIR-064..067 suites and the preview/security/xampp-policy gates stay green, no detached/background server and no Windows-only tooling may be introduced, and every claim in the release seal must be backed by a real artifact. FINDINGS: (i) the directive names /resume-builder and /resumes as portal routes, but src/main.jsx declares only /build-resume/* and /dashboard/* - the only /resumes matches are backend API paths in src/services/api/resumes.js - so those two named URLs would hit the SPA fallback. (ii) scripts/dir047-route-census.mjs already derives the router census OFFLINE from main.jsx: 109 declared Route elements (54 static + 55 map-generated), 109 unique path strings, 143 crawlable targets, versus the directive's asserted 68 - a discrepancy the script documents rather than guesses. (iii) .bridge/directives holds 63 records of which 49 are APPROVED_FROZEN and only 23 carry a freezeHash, so a manifest claiming '68 certified baselines' must state the real numbers honestly. (iv) scripts/verify-zero-broken-routes.mjs and tests/full-system-audit.mjs both require a LIVE host (https://ai-resume-builder.local/ and a production URL), so the release seal will use the offline equivalents plus the in-process template-lab browser probes. (1) MASTER MULTI-PORTAL UAT: author tests/dir068-master-multiportal-uat.test.mjs covering all four portals - (A) Candidate Builder /build-resume/* with the 2-column smart-cards-grid and smart-cert-grid renderers plus the PDF/DOCX export controls, (B) User Dashboard /dashboard/* with resume cards and quick downloads, (C) Recruiter drawer with the tabbed cover letter, the dedicated PDF/Word buttons on /api/public-export and /api/public-export-docx and the iframe print, (D) Admin/Org JobApplicationsModal preview, pagination and export button - and assert the loading skeleton, empty state and error banner so no UX state is lost. (2) ROUTE SEAL: add legacy redirect aliases /resume-builder to /build-resume and /resumes to /dashboard in main.jsx, mirroring the existing /dashboard2 and /resume/:step redirects, so every portal path the directive names resolves to a declared route (zero dead routes), and assert both in the suite. (3) VISUAL INVARIANTS AND FULL CENSUS: run the headless Playwright DOM census on BOTH the normal and gridDense fixtures across all 55 templates and assert 0px footer overlap on each, plus assert adaptive micro-compaction collapses a minor overflow to one balanced page and the section-integrity orphan guard leaves no single-card Page 2 orphan, re-asserting the DIR-067 profile sweeps. (4) THUMBNAIL FRESHNESS: run template-lab/freshness-probe.mjs across all 51 catalog thumbnails and assert FRESHNESS PASS. (5) DOCX FIDELITY AUDIT: assert the DOCX emits equal-width 2-column OOXML card tables with F8FAFC fill and E2E8F0 borders for the grid profile, and re-assert the public DOCX route is published-only, rate-limited and trusts no owner session. (6) SECURITY AND RELEASE SEAL: assert zero secret leakage, zero FOUC, zero dead routes, 100 percent Linux compatibility and src/cv-templates git diff 0. (7) RELEASE MANIFEST: author scripts/generate-certified-freeze-manifest.mjs to build .bridge/CERTIFIED_FREEZE_MANIFEST.json from the .bridge/directives records - every APPROVED_FROZEN directive with its freezeHash, evidence hash and certification timestamp, plus certified source-file hashes and the route census - recording the honest counts (63 records, 49 frozen, 23 with a freezeHash) alongside the directive's asserted 68. ACCESSIBILITY: the tabbed drawer keeps role=tablist/tab with aria-selected, aria-controls, roving tabIndex and Arrow/Home/End keyboard navigation with visible focus rings, and contrast stays at or above 4.5:1. SECURITY: the seal verifies no plaintext token or secret is committed or logged, the public DOCX route is published-only and IDOR-safe, and no Bearer token is exposed. PERFORMANCE: the census, freshness and overflow probes run headless in-process with no detached server, the render budget stays sub-100ms and the build stays sub-4.0s. QA: the new dir068 suite plus the full regression sweep and the Playwright probes. No native OS console windows and no winget/cmd/PowerShell; all servers stay on XAMPP.",
+    "steps": [
+      "1. tests/dir068-master-multiportal-uat.test.mjs: author static and functional UAT contracts for all four portals (A Candidate Builder /build-resume with the 2-column smart-cards-grid and smart-cert-grid renderers and the PDF/DOCX export controls, B User Dashboard /dashboard with resume cards and quick PDF/DOCX downloads, C Recruiter drawer with the tabbed cover letter, the dedicated PDF and Word buttons on the public endpoints and the iframe print, D Admin/Org JobApplicationsModal preview plus pagination plus export button), including the loading, empty and error UX states",
+      "2. src/main.jsx: add legacy redirect aliases /resume-builder to /build-resume and /resumes to /dashboard mirroring the existing /dashboard2 and /resume/:step redirects so every portal path the directive names resolves to a declared route with zero dead routes, and assert both in the suite",
+      "3. route seal: assert every named portal path is a declared route using the offline router census (109 declared elements, 54 static plus 55 map-generated, 143 crawlable targets) and record the arithmetic in the evidence",
+      "4. visual invariants: run the headless Playwright DOM census on BOTH the normal and gridDense fixtures across all 55 templates and assert 0px footer overlap on each",
+      "5. partitioner invariants: assert adaptive micro-compaction collapses a minor overflow to one balanced page and the section-integrity orphan guard leaves no single-card Page 2 orphan, re-asserting the DIR-067 profile sweeps",
+      "6. thumbnail freshness: run template-lab/freshness-probe.mjs across all 51 catalog thumbnails and assert FRESHNESS PASS",
+      "7. DOCX fidelity audit: assert the DOCX emits equal-width 2-column OOXML card tables with F8FAFC fill and E2E8F0 borders for the grid profile and re-assert the public DOCX route is published-only, rate-limited and trusts no owner session",
+      "8. security and release seal: assert zero secret leakage, zero FOUC, zero dead routes, 100 percent Linux compatibility and src/cv-templates git diff 0",
+      "9. scripts/generate-certified-freeze-manifest.mjs: build .bridge/CERTIFIED_FREEZE_MANIFEST.json from the .bridge/directives records (every APPROVED_FROZEN directive with its freezeHash, evidence hash and certification timestamp, plus certified source-file hashes and the route census) and record the honest counts (63 records, 49 frozen, 23 with a freezeHash) alongside the directive's asserted 68",
+      "10. evidence: run npm run lint, npm run test:security, npm run test:product, npm run test:templates, npm run test:design-system, the DIR-064 through DIR-068 suites, the census on normal and gridDense, the freshness and overflow probes, the manifest generator and npm run build (verify sub-4.0s), confirm src/cv-templates git diff is 0, then submit the logs via bridge dev submit-evidence for final Gatekeeper certification."
+    ],
+    "planHash": "fe487f50ebf99bdc9c9480356fae2764fed5bca7bedb25119134204a1b62cc80"
+  },
+  "evidence": null,
+  "reviews": [],
+  "freeze": null,
+  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "continuationPending": false,
+  "revisionTarget": null,
+  "planApproval": {
+    "approvedAt": "2026-10-09T11:04:31.443Z",
+    "automated": true,
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "declared-automation",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "non-tty"
+      ],
+      "pid": 10836,
+      "parentPid": 23052,
+      "tty": false,
+      "at": "2026-10-09T11:04:31.442Z",
+      "explicitlyAllowed": true
+    },
+    "feedback": "Auto-approved by the autonomous plan-scorer (score 85/100, reviewer verdict approved). NOT a human Lead review."
+  },
+  "heartbeats": [
+    {
+      "at": "2026-10-09T11:05:29.573Z",
+      "status": "ACT authorized (plan 85/100). Starting S1-S10: portal UAT suite, route aliases, census normal+gridDense, freshness, DOCX fidelity, release manifest.",
+      "percent": 10,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    },
+    {
+      "at": "2026-10-09T11:24:03.857Z",
+      "status": "S1-S10 complete: 4-portal UAT + route seal + census on normal AND gridDense (0px overlap) + freshness + DOCX fidelity + release manifest. Submitting evidence.",
+      "percent": 95,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    }
+  ],
+  "lastHeartbeatAt": "2026-10-09T11:24:03.857Z"
+}

@@ -555,6 +555,13 @@ const AuthWrapper = () => {
                                 Keep old links useful, but route every variant into the maintained,
                                 MariaDB-backed builder rather than reviving two competing drafts. */}
                             <Route path="/resume/:step" element={<Navigate to="/build-resume/heading" replace />} />
+                            {/* DIR-068: portal entry points named by the release UAT. They must
+                                resolve to the maintained portals instead of dead-ending in the
+                                SPA fallback; the target routes keep their own session guards. */}
+                            <Route path="/resume-builder" element={<Navigate to="/build-resume" replace />} />
+                            <Route path="/resume-builder/*" element={<Navigate to="/build-resume" replace />} />
+                            <Route path="/resumes" element={<Navigate to="/dashboard" replace />} />
+                            <Route path="/resumes/*" element={<Navigate to="/dashboard" replace />} />
                             <Route path="/billing/plans" element={<Billing key={user?.uid || 'guest'} user={user} />} />
                             <Route path="/p/:custompage" element={<CustomePage user={user} />} />
                             <Route path="/shared/:resumeId" element={<PublicResume />} />
