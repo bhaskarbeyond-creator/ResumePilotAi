@@ -382,6 +382,23 @@ export const FIXTURE_ORDER = Object.freeze(['minimal', 'normal', 'long', 'extrem
 export const TEMPLATE_IDS = Object.freeze(Array.from({ length: 51 }, (_, i) => `Cv${i + 1}`));
 
 /**
+ * DIR-063 — the 4 cover-letter templates, so the A4 print/overflow probes can
+ * reach all 55 documents the directive requires.
+ *
+ * WHY THIS EXISTS: TEMPLATE_IDS is Cv1..Cv51 only, so print-probe.mjs and
+ * overflow-probe.mjs silently never tested a single cover template. The ids mirror
+ * `src/utils/templateRegistry.js` (Cover1..Cover4, capital C) so the lab and the
+ * app agree on the same identifier.
+ *
+ * TEMPLATE_IDS is deliberately LEFT AT 51: `visual-regression.mjs` iterates it and
+ * compares against `template-lab/visual-baseline.json`, which holds 51 certified
+ * entries. Widening TEMPLATE_IDS would invalidate that baseline; the probes opt in
+ * to the 55-template set explicitly instead.
+ */
+export const COVER_TEMPLATE_IDS = Object.freeze(Array.from({ length: 4 }, (_, i) => `Cover${i + 1}`));
+export const ALL_TEMPLATE_IDS = Object.freeze([...TEMPLATE_IDS, ...COVER_TEMPLATE_IDS]);
+
+/**
  * Mirrors BuildResume.getTemplateDefaultColors so the lab renders templates
  * with the same colors the production builder injects on template switch.
  * Cv21-Cv51 use their own hardcoded defaults (null here).

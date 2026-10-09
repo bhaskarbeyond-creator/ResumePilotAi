@@ -13,13 +13,15 @@ import { chromium } from '../backend/node_modules/playwright/index.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { TEMPLATE_IDS } from './fixtures.js';
+import { ALL_TEMPLATE_IDS } from './fixtures.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BASE = process.env.LAB_BASE || 'http://127.0.0.1:3000';
 const fixture = process.argv[2] && !process.argv[2].startsWith('--') ? process.argv[2] : 'long';
 const tIdx = process.argv.indexOf('--templates');
-const templates = tIdx >= 0 ? process.argv[tIdx + 1].split(',') : TEMPLATE_IDS;
+// DIR-063: default to ALL 55 templates (51 resumes + 4 covers). This used to be
+// TEMPLATE_IDS (51), so no cover template was ever probed.
+const templates = tIdx >= 0 ? process.argv[tIdx + 1].split(',') : ALL_TEMPLATE_IDS;
 
 const browser = await chromium.launch({
     executablePath: process.env.CHROMIUM_PATH || '/tmp/chromium-bin',
@@ -31,11 +33,19 @@ await ctx.route('**fonts.g**', (r) => r.abort());
 const rows = [];
 for (const templateId of templates) {
     const page = await ctx.newPage();
-    await page.goto(`${BASE}/template-lab/index.html?template=${templateId}&fixture=${fixture}&lang=en`, { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('.smart-resume-page', { timeout: 30000 });
+    await page.goto(`${BASE}/template-lab/index.html?template=${templateId}&fixture=${fixture}&lang=en`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await page.waitForSelector('.smart-resume-page, [class*="-board"]', { timeout: 30000 });
     await page.waitForTimeout(350);
     const r = await page.evaluate(() => {
-        const pages = [...document.querySelectorAll('.smart-resume-page')];
+        // DIR-063: resumes expose one `.smart-resume-page` per A4 sheet; cover
+        // templates are NOT composed by SmartResumeComposer and expose a single
+        // `[class*="-board"]` root. Normalise both to a list of sheets so the same
+        // geometry maths applies to all 55 documents.
+        let pages = [...document.querySelectorAll('.smart-resume-page')];
+        if (!pages.length) {
+            const board = document.querySelector('[class*="-board"]');
+            if (board) pages = [board];
+        }
         const out = [];
         for (const pg of pages) {
             const b = pg.getBoundingClientRect();

@@ -2,11 +2,11 @@
   "id": "DIR-062",
   "title": "Bridge Privileged-Action Provenance & Auto-Certification Guard",
   "priority": "P0",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-09T06:26:45.196Z",
-  "updatedAt": "2026-10-09T06:57:20.035Z",
+  "updatedAt": "2026-10-09T06:57:26.963Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "Close the auto-certification gap: DIR-056..061 reached APPROVED_FROZEN with certifiedBy:LEAD_SUPERVISOR and no human review, because pipelineAdvance() (reached by the scheduled AIBridge-LeadWatcher via bridge pipeline auto) called reviewDirective({verdict:APPROVED}) then certify(), and lead_watcher_session.cjs asserted --verdict APPROVED without reading the evidence. Add provenance + opt-in gating to planApprove/reviewDirective/certify; harden the auto-certify gate to scan the test artifact; fix the daemon; re-audit DIR-056..061.",
   "invariants": [],
@@ -68,8 +68,29 @@
       }
     }
   ],
-  "freeze": null,
-  "lastTransitionReason": "lead review",
+  "freeze": {
+    "freezeHash": "5d775e2925398bd934168e1a9f4b550b5da79f69",
+    "certifiedAt": "2026-10-09T06:57:26.963Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "",
+    "evidenceHash": "d3b01a0cf55aadd1648d36bf289afc45827c1e3ed470b8a157890d70422c2f1d",
+    "automated": true,
+    "certificationKind": "automated",
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "non-tty",
+      "automated": true,
+      "reasons": [
+        "non-tty"
+      ],
+      "pid": 12168,
+      "parentPid": 15956,
+      "tty": false,
+      "at": "2026-10-09T06:57:26.454Z",
+      "explicitlyAllowed": true
+    }
+  },
+  "lastTransitionReason": "gatekeeper certification",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {

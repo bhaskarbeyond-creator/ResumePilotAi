@@ -15,10 +15,13 @@ import '../src/cv-templates/css/globalTemplateEnhancements.css';
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import TemplateRenderer from '../src/components/TemplateRenderer';
-import { FIXTURES, FIXTURE_ORDER, TEMPLATE_IDS, TEMPLATE_DEFAULT_COLORS } from './fixtures.js';
+import { FIXTURES, FIXTURE_ORDER, TEMPLATE_IDS, ALL_TEMPLATE_IDS, TEMPLATE_DEFAULT_COLORS } from './fixtures.js';
 
 const params = new URLSearchParams(window.location.search);
-const templateId = TEMPLATE_IDS.includes(params.get('template')) ? params.get('template') : 'Cv1';
+// DIR-063: accept the 4 cover templates too. This check previously used
+// TEMPLATE_IDS (Cv1..Cv51), so ?template=Cover1 silently fell back to Cv1 and the
+// print/overflow probes would have measured Cv1 while claiming to test a cover.
+const templateId = ALL_TEMPLATE_IDS.includes(params.get('template')) ? params.get('template') : 'Cv1';
 const fixtureName = FIXTURE_ORDER.includes(params.get('fixture')) ? params.get('fixture') : 'normal';
 const language = String(params.get('lang') || 'en');
 // Mirror the production builder: template selection injects the template's
