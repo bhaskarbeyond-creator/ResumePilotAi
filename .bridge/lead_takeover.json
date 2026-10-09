@@ -1,5 +1,5 @@
 {
-  "active": true,
+  "active": false,
   "reason": "user-requested",
   "note": "User forwarded the Lead Liveness Guard wake (DIR-057-mv0hmpga-21c233) and instructed: execute it. Lead session unreachable (no lead.lease.json; all dispatches leaseLive=false). Assuming the Lead role to dispose of the DIR-057 blocker, declared and auditable per bridge.cjs:3886-3923.",
   "evidence": {
@@ -8,5 +8,7 @@
   "startedAt": "2026-10-09T04:56:31.744Z",
   "startedBy": "lead",
   "directiveId": null,
-  "projectRoot": "D:\\xampp\\htdocs\\IME365"
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "endedAt": "2026-10-09T05:01:17.066Z",
+  "endedBy": "lead"
 }

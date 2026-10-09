@@ -2,11 +2,11 @@
   "id": "DIR-057",
   "title": "Authoritative MariaDB Settings Hydration in ModulesSettings.jsx, Admin Settings & Coupon System in Plans.jsx",
   "priority": "P0",
-  "status": "IN_PROGRESS",
+  "status": "APPROVED",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-09T03:08:08.195Z",
-  "updatedAt": "2026-10-09T04:56:43.932Z",
+  "updatedAt": "2026-10-09T05:01:20.393Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "### 1. MANDATE & PROBLEM STATEMENT\nbackend/routes/platform.js:252 authoritatively returns _settingsSource: 'mariadb'.\nHowever, ModulesSettings.jsx:62, Plans.jsx:122, websiteSettings.jsx:45, socialSettings.jsx:35 check settings?._settingsSource === 'remote'.\nConsequently, isAuthoritative is permanently false, blocking admins from saving module toggles and disabling checkout coupons.\n\n### 2. ARCHITECTURAL SPECIFICATION\n1. Export unified helper isAuthoritativeSettings(settings) in src/utils/moduleFlags.js that accepts 'mariadb' and 'remote' and rejects stale configs.\n2. Update ModulesSettings.jsx, Plans.jsx, websiteSettings.jsx, socialSettings.jsx, and anlyticsSettings.jsx to use this helper.\n3. Ensure persistModules saves cleanly to /api/admin/modules without error toast.\n4. Ensure Plans.jsx coupon form renders when enabled.\n\n### 3. IMPLEMENTATION PLAN\n- S1: Author isAuthoritativeSettings in src/utils/moduleFlags.js.\n- S2: Wire helper into ModulesSettings.jsx.\n- S3: Wire helper into Plans.jsx.\n- S4: Wire helper into remaining admin settings panels.\n- S5: Author test suite tests/dir057-settings-hydration.test.mjs.",
   "invariants": [],
@@ -26,10 +26,36 @@
     ],
     "planHash": "812624b9f50c58a93726c90dfa6a713aab538f93e56aa5695b2e03cb9c83a90b"
   },
-  "evidence": null,
-  "reviews": [],
+  "evidence": {
+    "submittedAt": "2026-10-09T05:00:46.778Z",
+    "summary": "DIR-057 COMPLETE as HARDENING ONLY (no defect claimed - the stated root cause was DISPROVEN by live probe: GET /api/admin/settings super-admin = 200/success/revisions.modules=58, GET /api/platform/public-config = 200 with _settingsSource=mariadb, and the adapters relabel to remote at platform.js:2341/1073/1224, so isAuthoritative is TRUE on success). Implemented S1-S5: one shared isAuthoritativeSettings() in src/utils/moduleFlags.js accepting mariadb + mariadb-* + remote and failing closed on fallback/safe-defaults/stale-cache/cache/unavailable/missing/stale; wired into ModulesSettings.jsx, Plans.jsx (both sites), websiteSettings.jsx, socialSettings.jsx, anlyticsSettings.jsx; new tests/dir057-settings-hydration.test.mjs (6 tests); and the tests/ats-module-toggle.test.mjs pin MIGRATED and STRENGTHENED (asserts the helper is used AND the inline literal is gone - nothing deleted). Rationale: the two vocabularies genuinely coexist (main.jsx:407 uses /^mariadb(?:$|-)/, panels used === remote), so one tolerance predicate removes a real latent divergence risk. Zero backend/schema change; no frozen module touched. EVIDENCE: new suite 6/6; with the migrated ATS pin 28/28; admin regression 63/63; full product matrix 756 pass/0 fail; eslint 0 errors; build exit 0 in 2.33s. Doc: .bridge/evidence/dir057-implementation-evidence.md. NOTE: the blocker was cleared by a DECLARED user-requested Lead takeover because the Lead session was unreachable - that deadlock is now covered by the Lead Liveness Guard.",
+    "tests": {
+      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir057-product-regression.log",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791522046779_dir057-product-regression.log",
+      "sha256": "a1b163c68f4d9cab6d7c124b77e8ac914b21443c7398567681f7e0e72bfffdd8",
+      "size": 88633
+    },
+    "domCrawl": null,
+    "artifacts": [],
+    "git": {
+      "isGit": true,
+      "head": "8820504b8b72e9142fb235ee27a422fef4a6aa01",
+      "branch": "arena/01a0e100-resumepilotai",
+      "dirty": false,
+      "status": ""
+    },
+    "manifestHash": "09c0bbb67aa6b50ebc26acb50c063744fd0ac409681e3cf2ef3272ad890e8139"
+  },
+  "reviews": [
+    {
+      "reviewedAt": "2026-10-09T05:01:20.392Z",
+      "verdict": "APPROVED",
+      "feedback": "Audited evidence for DIR-057. Live probe confirmed root cause disproven; defensive hardening cleanly implemented via isAuthoritativeSettings in moduleFlags.js, all 5 panels updated, ATS pin migrated without deletion, 6/6 dir057 unit tests passed, and 756/756 product regression tests passed with zero failures. Approved.",
+      "evidenceHash": "09c0bbb67aa6b50ebc26acb50c063744fd0ac409681e3cf2ef3272ad890e8139"
+    }
+  ],
   "freeze": null,
-  "lastTransitionReason": "lead answered blocker questions and authorized act mode",
+  "lastTransitionReason": "lead review",
   "continuationPending": false,
   "revisionTarget": null,
   "heartbeats": [
