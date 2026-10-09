@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-09T05:00:47.617Z",
-  "seq": 2430,
-  "id": "evt_mv0hyyy6_b2bab6a36525",
-  "type": "EVIDENCE_SUBMITTED",
-  "title": "[Evidence] DIR-057: Authoritative MariaDB Settings Hydration in ModulesSettings.jsx, Admin Settings & Coupon System in Plans.jsx",
+  "timestamp": "2026-10-09T05:10:30.554Z",
+  "seq": 2441,
+  "id": "evt_mv0ibgqw_7a0a3315de55",
+  "type": "HEARTBEAT",
+  "title": "[Heartbeat] RCA on why the Lead does not answer: (1) STRUCTURAL - the only Lead-side processes are the bridge WATCHERS (lead_watcher_daemon.cjs/lead_watcher.cjs/lead_watcher_session.cjs); none is an LLM agent, an",
   "sender": "STAFF_DEVELOPER",
-  "directiveId": "DIR-057",
-  "summary": "DIR-057 COMPLETE as HARDENING ONLY (no defect claimed - the stated root cause was DISPROVEN by live probe: GET /api/admin/settings super-admin = 200/success/revisions.modules=58, GET /api/platform/public-config = 200 with _settingsSource=mariadb, and the adapters relabel to remote at platform.js:2341/1073/1224, so isAuthoritative is TRUE on success). Implemented S1-S5: one shared isAuthoritativeSettings() in src/utils/moduleFlags.js accepting mariadb + mariadb-* + remote and failing closed on fallback/safe-defaults/stale-cache/cache/unavailable/missing/stale; wired into ModulesSettings.jsx, Plans.jsx (both sites), websiteSettings.jsx, socialSettings.jsx, anlyticsSettings.jsx; new tests/dir057-settings-hydration.test.mjs (6 tests); and the tests/ats-module-toggle.test.mjs pin MIGRATED and STRENGTHENED (asserts the helper is used AND the inline literal is gone - nothing deleted). Rationale: the two vocabularies genuinely coexist (main.jsx:407 uses /^mariadb(?:$|-)/, panels used === remote), so one tolerance predicate removes a real latent divergence risk. Zero backend/schema change; no frozen module touched. EVIDENCE: new suite 6/6; with the migrated ATS pin 28/28; admin regression 63/63; full product matrix 756 pass/0 fail; eslint 0 errors; build exit 0 in 2.33s. Doc: .bridge/evidence/dir057-implementation-evidence.md. NOTE: the blocker was cleared by a DECLARED user-requested Lead takeover because the Lead session was unreachable - that deadlock is now covered by the Lead Liveness Guard."
+  "directiveId": "DIR-060",
+  "summary": "RCA on why the Lead does not answer: (1) STRUCTURAL - the only Lead-side processes are the bridge WATCHERS (lead_watcher_daemon.cjs/lead_watcher.cjs/lead_watcher_session.cjs); none is an LLM agent, and there is no bridge await --role lead consumer, so the blocker has no reader. (2) The Lead Liveness Guard DOES fire (LEAD_RELAUNCH via=uri for DIR-060) but the URI opens a DEV Cline task (proven on DIR-057), so it cannot conjure a Lead. (3) TWO REAL GUARD BUGS found and FIXED: attempt counters were not persisted (a tick logged LEAD_RELAUNCH then never reached the state write, pinning attempts at 1 so the Telegram escalation could never fire) and there was no single-flight lock. Fixes: persist the attempt BEFORE any child spawn, add an O_EXCL lock with stale takeover, add a 20s hard watchdog in --once, and skip the one-shot when a --loop daemon is alive. Verified: node --check OK, selftest 10/10, attempt now advances 1 -> 2 and persists, run exits cleanly in 161ms."
 }

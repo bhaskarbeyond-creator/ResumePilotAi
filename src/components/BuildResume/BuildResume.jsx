@@ -58,6 +58,7 @@ import Toasts from '../Toasts/Toats';
 
 // Import animation library for toast animations
 import { evaluateDownloadAccess, parseSafeDate, isPaidMembershipTier } from '../../utils/subscriptionUtils';
+import { resolvePreviewWatermark } from '../../utils/watermarkEntitlement';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Import user membership functions and modals
@@ -967,10 +968,19 @@ const BuildResume = () => {
         ].map(item => String(item || '').trim()).filter(Boolean);
         const formattedFullAddress = addressParts.join(', ');
 
+        // DIR-060: the preview view model now carries the AUTHORITATIVE watermark
+        // decision. `freeTierAccess` is `public_config.watermark` (BuildResume.jsx
+        // sets it from the settings read) and `isPaid` is the resolved membership,
+        // so a free document is stamped and a paid document can never be. Before
+        // this, neither key existed and the overlay was inert for everyone.
+        const isPaidPreview = isPaidMembershipTier(userData?.membership);
+
         return {
             ...resumeData,
             template: currentTemplate,
             fullAddress: formattedFullAddress,
+            _watermark: resolvePreviewWatermark({ watermark: freeTierAccess, isPaid: isPaidPreview }),
+            _entitlement: { isPaid: isPaidPreview },
             // Ensure arrays exist to prevent component errors
             employments: resumeData.employments || [],
             // Transform skills from new format (skillName) to old format (name) for Cv1 compatibility
@@ -984,7 +994,7 @@ const BuildResume = () => {
             // Include template-specific default colors
             colors: resumeData.colors || templateColors,
         };
-    }, [resumeData, currentTemplate]);
+    }, [resumeData, currentTemplate, freeTierAccess, userData?.membership]);
 
     // Show Toast function similar to BoardFilling.jsx
     const showToast = (type) => {

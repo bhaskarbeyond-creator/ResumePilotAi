@@ -1,14 +1,21 @@
 import React from 'react';
+import { shouldRenderWatermark } from '../../utils/watermarkEntitlement';
 
 /**
  * High-fidelity Resume Watermark Overlay for Free / Basic accounts.
  *
- * Governed by administrative system settings (`public_config.watermark`) and
- * resolved entitlements (`removesWatermark: false`).
- * Automatically omitted for Pro, Premium, Enterprise, and Admin users.
+ * DIR-060: the render decision is now delegated to the shared, unit-tested
+ * `shouldRenderWatermark()` gate, which combines the administrative setting
+ * (`public_config.watermark`) with the viewer's entitlement and FAILS CLOSED.
+ *
+ * Before this, the component only checked the global admin setting and had NO
+ * entitlement input — so it could neither reliably stamp a free document nor
+ * guarantee a paid document stayed clean. Callers pass the entitlement either
+ * as `entitlement={{ isPaid | removesWatermark }}` or as the flat props.
  */
-export default function ResumeWatermarkOverlay({ watermark }) {
-    if (!watermark || watermark.enableFreeWatermark === false) {
+export default function ResumeWatermarkOverlay({ watermark, entitlement, isPaid = false, removesWatermark = false }) {
+    const resolvedEntitlement = entitlement || { isPaid, removesWatermark };
+    if (!shouldRenderWatermark(watermark, resolvedEntitlement)) {
         return null;
     }
 

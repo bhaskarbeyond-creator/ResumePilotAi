@@ -1,14 +1,14 @@
 {
   "active": false,
   "reason": "user-requested",
-  "note": "User forwarded the Lead Liveness Guard wake (DIR-057-mv0hmpga-21c233) and instructed: execute it. Lead session unreachable (no lead.lease.json; all dispatches leaseLive=false). Assuming the Lead role to dispose of the DIR-057 blocker, declared and auditable per bridge.cjs:3886-3923.",
+  "note": "User forwarded the Lead Liveness Guard wake (DIR-060-mv0i96nf-b76c29) and instructed: execute it. No Lead agent is running (only the bridge watchers; no await --role lead consumer), so the DIR-060 blocker has no reader. Assuming the Lead role to rule on the frozen-template boundary, declared and auditable per bridge.cjs:3886-3923.",
   "evidence": {
-    "note": "User forwarded the Lead Liveness Guard wake (DIR-057-mv0hmpga-21c233) and instructed: execute it. Lead session unreachable (no lead.lease.json; all dispatches leaseLive=false). Assuming the Lead role to dispose of the DIR-057 blocker, declared and auditable per bridge.cjs:3886-3923."
+    "note": "User forwarded the Lead Liveness Guard wake (DIR-060-mv0i96nf-b76c29) and instructed: execute it. No Lead agent is running (only the bridge watchers; no await --role lead consumer), so the DIR-060 blocker has no reader. Assuming the Lead role to rule on the frozen-template boundary, declared and auditable per bridge.cjs:3886-3923."
   },
-  "startedAt": "2026-10-09T04:56:31.744Z",
+  "startedAt": "2026-10-09T05:11:07.280Z",
   "startedBy": "lead",
   "directiveId": null,
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
-  "endedAt": "2026-10-09T05:01:17.066Z",
+  "endedAt": "2026-10-09T05:17:42.226Z",
   "endedBy": "lead"
 }

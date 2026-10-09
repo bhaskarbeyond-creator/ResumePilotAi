@@ -2,11 +2,11 @@
   "id": "DIR-057",
   "title": "Authoritative MariaDB Settings Hydration in ModulesSettings.jsx, Admin Settings & Coupon System in Plans.jsx",
   "priority": "P0",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-09T03:08:08.195Z",
-  "updatedAt": "2026-10-09T05:01:20.393Z",
+  "updatedAt": "2026-10-09T05:01:25.040Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "### 1. MANDATE & PROBLEM STATEMENT\nbackend/routes/platform.js:252 authoritatively returns _settingsSource: 'mariadb'.\nHowever, ModulesSettings.jsx:62, Plans.jsx:122, websiteSettings.jsx:45, socialSettings.jsx:35 check settings?._settingsSource === 'remote'.\nConsequently, isAuthoritative is permanently false, blocking admins from saving module toggles and disabling checkout coupons.\n\n### 2. ARCHITECTURAL SPECIFICATION\n1. Export unified helper isAuthoritativeSettings(settings) in src/utils/moduleFlags.js that accepts 'mariadb' and 'remote' and rejects stale configs.\n2. Update ModulesSettings.jsx, Plans.jsx, websiteSettings.jsx, socialSettings.jsx, and anlyticsSettings.jsx to use this helper.\n3. Ensure persistModules saves cleanly to /api/admin/modules without error toast.\n4. Ensure Plans.jsx coupon form renders when enabled.\n\n### 3. IMPLEMENTATION PLAN\n- S1: Author isAuthoritativeSettings in src/utils/moduleFlags.js.\n- S2: Wire helper into ModulesSettings.jsx.\n- S3: Wire helper into Plans.jsx.\n- S4: Wire helper into remaining admin settings panels.\n- S5: Author test suite tests/dir057-settings-hydration.test.mjs.",
   "invariants": [],
@@ -54,8 +54,14 @@
       "evidenceHash": "09c0bbb67aa6b50ebc26acb50c063744fd0ac409681e3cf2ef3272ad890e8139"
     }
   ],
-  "freeze": null,
-  "lastTransitionReason": "lead review",
+  "freeze": {
+    "freezeHash": "7fb2c7718df6d952fe7e33402b82bc74036edcb4",
+    "certifiedAt": "2026-10-09T05:01:25.039Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "",
+    "evidenceHash": "09c0bbb67aa6b50ebc26acb50c063744fd0ac409681e3cf2ef3272ad890e8139"
+  },
+  "lastTransitionReason": "gatekeeper certification",
   "continuationPending": false,
   "revisionTarget": null,
   "heartbeats": [
@@ -82,7 +88,23 @@
       "currentFile": null,
       "by": "STAFF_DEVELOPER",
       "continuationPending": false
+    },
+    {
+      "at": "2026-10-09T05:01:26.182Z",
+      "status": "DIR-057 EVIDENCE_SUBMITTED as HARDENING ONLY. S1-S5 done: isAuthoritativeSettings() in moduleFlags.js + wired into 5 panels + new suite 6/6 + migrated/strengthened ATS pin. Gates: 28/28 (new+migrated), admin regression 63/63, product 756/0, lint 0 errors, build exit 0 (2.33s). Lead takeover ENDED - ball is back with the Lead for independent certification (I did NOT self-certify). The Lead Liveness Guard will wake it.",
+      "percent": 100,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    },
+    {
+      "at": "2026-10-09T05:03:12.011Z",
+      "status": "Wake DIR-057-mv0htqz1-c634c3 is STALE - it is the ACT delivery of my own ruling, but that work is already DONE and CERTIFIED (DIR-057 = APPROVED_FROZEN, freezeHash 7fb2c771, commits 8820504b [EVIDENCE] -> 7fb2c771 [CERTIFIED]). Correctly did NOT re-execute: re-editing would modify a frozen baseline. Re-verified the frozen artifacts: 5 panels wired at HEAD (git grep) + dir057/ATS suites 28/28. Next: DIR-058 (P1, ISSUED, ball with dev) - no wake dispatched yet.",
+      "percent": 100,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
     }
   ],
-  "lastHeartbeatAt": "2026-10-09T04:59:36.277Z"
+  "lastHeartbeatAt": "2026-10-09T05:03:12.011Z"
 }
