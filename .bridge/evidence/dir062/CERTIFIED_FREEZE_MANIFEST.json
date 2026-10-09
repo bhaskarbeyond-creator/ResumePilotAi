@@ -1,5 +1,5 @@
 {
-  "certifiedAt": "2026-10-09T06:34:51.250Z",
+  "certifiedAt": "2026-10-09T06:48:55.908Z",
   "version": "3.0.0",
   "architecture": "BIDIRECTIONAL_INSTANT_WAKE_V1",
   "status": "FROZEN_AND_CERTIFIED",
@@ -34,7 +34,7 @@
     "udpPort": 48222,
     "leadWatcher": {
       "running": true,
-      "pid": 23004,
+      "pid": 23704,
       "udpPort": 48222,
       "scriptExists": true,
       "certifiedBackupExists": true
@@ -49,14 +49,14 @@
     },
     {
       "file": "lead_watcher.cjs",
-      "sha256": "a682309b4b5aff16373af6782a747bfbee503b0fcaa5db97971207eb1100cd00",
-      "bytes": 39001,
+      "sha256": "f2feb0998afc031afa29b90e72cc7dd30f04c55bd3fc51ee8c6f0c651c27cebd",
+      "bytes": 39941,
       "certifiedBackup": "lead_watcher.cjs.certified.bak"
     },
     {
       "file": "autowake.cjs",
-      "sha256": "d5c5ffb17ce819078b8d7d1d8e41923328965d3a3a22800995b98abe5934edf4",
-      "bytes": 50627,
+      "sha256": "eee23341a3dc312285f5663539f94c397c91e8bb1a0ef8947ed19e7803d395be",
+      "bytes": 51272,
       "certifiedBackup": "autowake.cjs.certified.bak"
     }
   ]

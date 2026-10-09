@@ -416,6 +416,74 @@ dir062 entries = 0      (stable over 25 s)
   test suites (`aw-selftest-*`, `bridge-e2e-*`, `A-*`/`B-*`) run continuously and add
   entries. I did not touch those.
 
+---
+
+## 10. ROUND 5 — THE PERMANENT FIX (authorised)
+
+Project owner authorised a §10.1 unlock for the two remaining frozen files. This
+round removes the **mechanism**, not the data.
+
+### The guards
+
+`lead_watcher.cjs` — `checkQueue()`, before emitting:
+
+```js
+if (item && item.projectRoot && !fs.existsSync(item.projectRoot)) continue;
+```
+
+`autowake.cjs` — `ensureScaffold()`, before scaffolding/registering:
+
+```js
+if (!exists(normalizeRoot(root))) return pPaths(root);   // never register a dead root
+```
+
+The second guard is the important one: `ensureScaffold()` was registering a **phantom**
+in the global `registry.json` and recreating `projects/<key>/` for a directory that no
+longer existed. Returning `pPaths(root)` keeps callers crash-free without side effects.
+
+### End-to-end proof
+
+A synthetic queue entry was injected with a dead root
+(`E:\Temp\dir062-ghost-test\proj-GHOST`), then the watchers were given 12 s (2 s poll
++ file-watcher trigger):
+
+```
+registry before      = 163
+registry after       = 163      <- unchanged
+proj-GHOST registered = 0
+GHOST record dirs     = []      <- none created
+queue lines           = 49      (entry present but ignored)
+```
+
+Before this fix, that same injection re-registered the project and created its record
+dir — which is exactly how four ghost wakes were produced. The test entry was then
+removed atomically (queue `49 -> 48`, cursor re-pointed).
+
+### §10.1 REVERIFY
+
+| File | Before | After |
+|---|---|---|
+| `bridge.cjs` | `4af9ed780b4e` | `4af9ed780b4e` (unchanged this round) |
+| `lead_watcher.cjs` | `a682309b4b5a` | **`f2feb0998afc`** |
+| `autowake.cjs` | `d5c5ffb17ce8` | **`eee23341a3dc`** |
+| `lead_watcher_session.cjs` | `5261b013770c` | `5261b013770c` |
+
+Re-frozen: `locked: true, intact: true, blocked: false, unlockActive: false`.
+Watchers restarted so the new code is live (`lead_watcher.cjs` 23004 -> **23704**).
+
+### Honest limits (round 5)
+
+* The proof is a **synthetic injection**, not an observation of a real ghost wake being
+  suppressed in the wild.
+* The **replay-from-0-on-shrink** behaviour is deliberately left as-is: it is correct
+  for a genuine queue rotation, and the dead-root guard now makes replaying harmless.
+  Live-project entries *can* still be re-emitted on a rotation; dedup is handled
+  downstream by `seen_wakes.json`.
+* I did not audit `emitLeadWake`'s other callers for the same dead-root assumption.
+* `registry.json` remains at 163 with 0 scratch entries, but the bridge's own test
+  suites keep adding `aw-selftest-*` / `bridge-e2e-*` / `A-*` entries continuously.
+
+
 
 
 
