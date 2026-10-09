@@ -157,10 +157,18 @@ test('AC-3: both messages routes are wrapped in the module gate', async () => {
         fs.readFile('src/components/EmployerPortal/EmployerPortalCuba.jsx', 'utf8'),
     ]);
 
-    // Both route blocks in DashboardMain (Cuba + legacy) must be gated, or one
-    // of the two candidate shells would still expose the surface.
+    // DIR-056 SUB-056-1 collapsed the two VERBATIM route tables (Cuba + legacy)
+    // into ONE authoritative `renderRoutes()` consumed by both shells. The
+    // property that matters is unchanged — no candidate shell may expose the
+    // surface — but it is now guaranteed by a SINGLE gated route that both
+    // shells render, rather than by two identical copies.
     const candidateRoutes = main.match(/path="messages" element=\{<MessagesModuleGate/g) || [];
-    assert.equal(candidateRoutes.length, 2, 'both candidate messages routes must be gated');
+    assert.equal(candidateRoutes.length, 1, 'the one authoritative messages route must be gated');
+    assert.equal(
+        (main.match(/\{this\.renderRoutes\(\)\}/g) || []).length,
+        2,
+        'both candidate shells must render the one gated route table',
+    );
 
     for (const [name, source] of [['EmployerPortal', employerLegacy], ['EmployerPortalCuba', employerCuba]]) {
         assert.match(source, /import MessagesModuleGate from '\.\.\/cuba\/MessagesModuleGate'/, `${name} must import the gate`);

@@ -1,173 +1,360 @@
-import React from 'react';
-import './DashboardFavourites.scss';
-import { AiFillDelete } from 'react-icons/ai';
-import { useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { getCoverById, getFavourites, getResumeById } from '../../../services/api/platform';
-import { AiFillStar } from 'react-icons/ai';
-import { FaTrash } from 'react-icons/fa';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { withTranslation } from 'react-i18next';
-import fire from '../../../conf/fire';
+import { FaBriefcase, FaFileAlt, FaTrashAlt, FaExternalLinkAlt, FaStar } from 'react-icons/fa';
+import { AuthContext } from '../../../context/AuthContext';
+import {
+    getCoverById,
+    getFavourites,
+    getJobById,
+    getJobFavourites,
+    getResumeById,
+    removeFromFavourites,
+} from '../../../services/api/platform';
+import { formatSafeDate } from '../../../utils/subscriptionUtils.js';
+import {
+    CubaBadge,
+    CubaButton,
+    CubaCard,
+    CubaEmptyState,
+    CubaErrorState,
+    CubaLoadingState,
+    CubaPageHeader,
+} from '../../cuba';
 
-import { AiOutlineExclamationCircle } from 'react-icons/ai';
-function DashboardFavourites(props) {
-    // ids
-    const [_favourites, setFavourites] = React.useState([]);
-    // favourites content
-    const [favouritesContent, setFavouritesContent] = React.useState([]);
+/**
+ * DashboardFavourites — the candidate "Saved Favorites & Bookmarks" workspace.
+ *
+ * DIR-056 SUB-056-4. Before this rewrite the entire view was gated behind
+ * `props.isFavoritesShowed === true` (the old modal contract). The `favorites`
+ * route never passed that prop, so `/dashboard/favorites` rendered a completely
+ * blank white screen. It is now a first-class full-page Cuba workspace that
+ * always renders, reading BOTH saved documents (`/api/favourites`) and saved
+ * jobs (`/api/favourites?type=job`) from the real MariaDB-backed API.
+ *
+ * It never invents rows: a zero-result read is a real empty state (§46), and a
+ * failed read is a real error state with a working retry.
+ */
 
-    // log hello when this component is mounted
-    useEffect(() => {
-        if (props.isFavoritesShowed) { /* no-op */ }
+const TABS = Object.freeze([
+    { id: 'all', label: 'All' },
+    { id: 'documents', label: 'Documents' },
+    { id: 'jobs', label: 'Jobs' },
+]);
 
-        // clear favourites
-        setFavourites([]);
-        setFavouritesContent([]);
+const COVER_TYPES = Object.freeze(['cover', 'coverletter', 'cover-letter', 'coverletter']);
 
-        const userId = fire.auth().currentUser?.uid;
-        let active = true;
-        if (userId) getFavourites(userId).then((data) => {
-            if (!active || fire.auth().currentUser?.uid !== userId || data.length === 0) return;
-            setFavourites(data);
-            for (const id of data) {
-                if (id === undefined) continue;
-                const load = id.length > 9 ? getCoverById(userId, id) : getResumeById(userId, id);
-                load.then(item => {
-                    if (active && fire.auth().currentUser?.uid === userId && item !== null) setFavouritesContent(previous => [...previous, item]);
-                }).catch(() => {});
-            }
-        }).catch(() => {});
+const cleanText = (value) => (typeof value === 'string' ? value.trim() : '');
+const firstText = (...values) => values.map(cleanText).find(Boolean) || '';
 
-        // add event listener to handle click outside of modal
-        document.addEventListener('click', handleClickOutside);
-        // remove event listener when component is unmounted
-        return () => {
-            active = false;
-            document.removeEventListener('click', handleClickOutside);
+const isJobFavourite = (row) => String(row?.itemType || '').toLowerCase() === 'job';
+const isCoverFavourite = (row) => COVER_TYPES.includes(String(row?.itemType || '').toLowerCase());
+
+/** Newest first; rows without a timestamp sort last but never crash. */
+const byNewest = (a, b) => {
+    const aTime = a.createdAt ? Date.parse(a.createdAt) : 0;
+    const bTime = b.createdAt ? Date.parse(b.createdAt) : 0;
+    return (Number.isFinite(bTime) ? bTime : 0) - (Number.isFinite(aTime) ? aTime : 0);
+};
+
+/**
+ * Normalise a raw `/api/favourites` row into the view model this workspace
+ * renders. `entity` is an optional enriched record (the job/resume/cover) used
+ * only to fill fields the stored payload did not carry.
+ */
+const toViewModel = (row, { kind, entity }) => {
+    const payload = row || {};
+    const source = entity || payload;
+    if (kind === 'job') {
+        return {
+            key: `job:${payload.itemId}`,
+            kind: 'job',
+            documentType: null,
+            id: payload.itemId,
+            createdAt: payload.createdAt || null,
+            title: firstText(source.title, source.jobTitle, payload.title, payload.jobTitle) || 'Saved job',
+            company: firstText(source.company, source.companyName, payload.company, payload.companyName),
+            location: firstText(source.location, payload.location),
+            salary: firstText(source.salary, payload.salary),
+            summary: firstText(source.description, payload.description),
+            badge: 'Job',
+            badgeTone: 'info',
         };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [props.isFavoritesShowed]);
-
-    // handle click outside of modal to close it
-    const handleClickOutside = (e) => {
-        if (e.target.classList.contains('dashboard-favourites')) {
-            props.showFavorites();
-        }
+    }
+    const cover = isCoverFavourite(payload);
+    const personName = [firstText(payload.firstName, payload.firstname), firstText(payload.lastName, payload.lastname)]
+        .filter(Boolean)
+        .join(' ');
+    return {
+        key: `${cover ? 'cover' : 'resume'}:${payload.itemId}`,
+        kind: 'document',
+        documentType: cover ? 'cover' : 'resume',
+        id: payload.itemId,
+        createdAt: payload.createdAt || null,
+        title: firstText(source.title, source.resumeTitle, payload.title, payload.resumeTitle, personName)
+            || (cover ? 'Cover letter' : 'Resume'),
+        company: firstText(source.companyName, payload.companyName, source.company, payload.company),
+        location: '',
+        salary: '',
+        summary: firstText(source.summary, source.objective, payload.summary, payload.objective),
+        badge: cover ? 'Cover letter' : 'Resume',
+        badgeTone: cover ? 'warning' : 'primary',
     };
+};
 
-    // a resume doesnt contain a property named comapny name
-    // the cover letter does
+const EMPTY_COPY = Object.freeze({
+    all: {
+        title: 'Nothing saved yet',
+        description: 'Bookmark jobs or save documents and they will appear here for quick access.',
+    },
+    documents: {
+        title: 'No saved documents',
+        description: 'You have not saved any resumes or cover letters yet.',
+    },
+    jobs: {
+        title: 'No saved jobs',
+        description: 'Bookmark a job from the job portal and it will appear here.',
+    },
+});
 
-    const typeFinder = (favourite) => {
-        if (favourite.companyName !== undefined) {
-            return 'Cover Letter';
-        } else {
-            return 'Resume';
+const DashboardFavourites = ({ showToast, t }) => {
+    const user = useContext(AuthContext);
+    const navigate = useNavigate();
+    const userId = user?.uid || user?.uuid || null;
+
+    const [items, setItems] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState('');
+    const [tab, setTab] = useState('all');
+    const [pendingKey, setPendingKey] = useState(null);
+    const [reloadToken, setReloadToken] = useState(0);
+
+    const load = useCallback(async (active) => {
+        if (!userId) {
+            setItems([]);
+            setLoading(false);
+            return;
         }
-    };
+        setLoading(true);
+        setLoadError('');
+        try {
+            const [documentRows, jobRows] = await Promise.all([
+                getFavourites(userId),
+                getJobFavourites(userId),
+            ]);
+            if (!active()) return;
 
-    //return the summary of the favourite
+            const documents = (Array.isArray(documentRows) ? documentRows : []).filter((row) => !isJobFavourite(row));
+            const jobs = (Array.isArray(jobRows) ? jobRows : []).filter(isJobFavourite);
 
-    const summaryFinder = (favourite) => {
-        if (favourite.companyName !== undefined) {
-            if (favourite.components.length > 0) {
-                // we find a component with type Paragraph
-                const paragraph = favourite.components.find((component) => component.type === 'Paragraph');
-                if (paragraph !== undefined) {
-                    //return only the first 100 characters
-                    // make sure the paragraph has at least 100 characters
-                    if (paragraph.content.length > 100) {
-                        return paragraph.content.substring(0, 100);
-                    } else {
-                        return paragraph.content;
-                    }
-                } else {
-                    return 'No Summary';
+            // The stored payload is often empty (jobs are saved as `{}`), so
+            // enrich only the rows that genuinely lack a display title.
+            const enrichedDocuments = await Promise.all(documents.map(async (row) => {
+                let entity = null;
+                if (!firstText(row.title, row.resumeTitle, row.summary, row.objective, row.companyName)) {
+                    entity = await (isCoverFavourite(row) ? getCoverById(row.itemId) : getResumeById(row.itemId)).catch(() => null);
                 }
-            }
-        } else {
-            //return only the first 100 characters
-            // make sure the paragraph has at least 100 characters
-            if (favourite.summary.length > 100) {
-                return favourite.summary.substring(0, 100);
-            }
-            return favourite.summary;
+                return toViewModel(row, { kind: 'document', entity });
+            }));
+            if (!active()) return;
+
+            const enrichedJobs = await Promise.all(jobs.map(async (row) => {
+                let entity = null;
+                if (!firstText(row.title, row.jobTitle, row.company, row.companyName)) {
+                    entity = await getJobById(row.itemId).catch(() => null);
+                }
+                return toViewModel(row, { kind: 'job', entity });
+            }));
+            if (!active()) return;
+
+            setItems([...enrichedDocuments, ...enrichedJobs].sort(byNewest));
+        } catch (_error) {
+            if (!active()) return;
+            setLoadError('Your saved favourites could not be loaded. Please try again.');
+        } finally {
+            if (active()) setLoading(false);
         }
-    };
+    }, [userId]);
 
-    // handle favourites return jsx
-    const handleFavourites = () => {
-        if (favouritesContent.length > 0) {
-            return favouritesContent.map((favourite) => {
-                return (
-                    <div className="dashboard-favourites-modal-body-content-item">
-                        <div className="favourites-item-icon">
-                            <AiFillStar className="favourites-item-icon-svg" />
-                        </div>
+    useEffect(() => {
+        let alive = true;
+        load(() => alive);
+        return () => { alive = false; };
+    }, [load, reloadToken]);
 
-                        <div className="favourites-item-name">
-                            <div className="favourites-item-head">{t('dashNew.fullName')}</div>
-                            <div className="favourites-item-body">
-                                {favourite.firstname} {favourite.lastname}
-                            </div>
-                        </div>
+    const handleRetry = useCallback(() => setReloadToken((token) => token + 1), []);
 
-                        <div className="favourites-item-type">
-                            {' '}
-                            <div className="favourites-item-head">{t('dashNew.type')}</div>
-                            <div className="favourites-item-body">{typeFinder(favourite)}</div>
-                        </div>
-                        <div className="favourites-item-summary">
-                            <div className="favourites-item-head">{t('dashNew.summary')}</div>
-                            <div className="favourites-item-body-summary">{summaryFinder(favourite)}</div>
-                        </div>
+    const handleOpen = useCallback((item) => {
+        if (item.kind === 'job') {
+            navigate(`/dashboard/jobs/portal/${encodeURIComponent(item.id)}`);
+            return;
+        }
+        if (item.documentType === 'cover') {
+            navigate('/dashboard/cover-letters');
+            return;
+        }
+        // Resume: open it in the builder, mirroring the proven ResumeCard path.
+        try {
+            localStorage.setItem('currentResumeId', item.id);
+            localStorage.removeItem('currentResumeItem');
+        } catch (_error) { /* storage unavailable — navigation still works */ }
+        navigate('/build-resume/heading');
+    }, [navigate]);
 
-                        {/* <div className="favourites-item-delete">
-                        <div className="favourites-item-head">Action</div>
-                            <div  className="favourites-item-body favourites-item-delete-custom">
-                                <FaTrash onClick={()=>props.removeFavorite(favourite.id)} className="favourites-item-body-svg" />
-                                Delete</div>
-                        </div> */}
-                    </div>
-                );
-            });
-        } else {
+    const handleRemove = useCallback(async (item) => {
+        const snapshot = items;
+        setPendingKey(item.key);
+        // Optimistic: drop the row immediately, roll back if the server refuses.
+        setItems((current) => current.filter((row) => row.key !== item.key));
+        try {
+            const result = await removeFromFavourites(userId, item.id);
+            if (result && result.success === false) {
+                throw new Error(result.error || 'remove failed');
+            }
+            showToast?.('success', 'Removed from favourites', `${item.title} was removed from your saved favourites.`);
+        } catch (_error) {
+            setItems(snapshot);
+            showToast?.('error', 'Could not remove favourite', 'That favourite is still saved. Please try again.');
+        } finally {
+            setPendingKey(null);
+        }
+    }, [items, showToast, userId]);
+
+    const counts = useMemo(() => ({
+        all: items.length,
+        documents: items.filter((row) => row.kind === 'document').length,
+        jobs: items.filter((row) => row.kind === 'job').length,
+    }), [items]);
+
+    const visible = useMemo(() => {
+        if (tab === 'documents') return items.filter((row) => row.kind === 'document');
+        if (tab === 'jobs') return items.filter((row) => row.kind === 'job');
+        return items;
+    }, [items, tab]);
+
+    const emptyAction = tab === 'documents'
+        ? { label: 'View portfolios', onClick: () => navigate('/dashboard/portfolios'), variant: 'outline' }
+        : { label: 'Browse jobs', onClick: () => navigate('/dashboard/jobs'), variant: 'primary' };
+
+    const renderBody = () => {
+        if (loading) return <CubaLoadingState label="Loading saved favourites" rows={4} />;
+        if (loadError) return <CubaErrorState title="Could not load favourites" message={loadError} onRetry={handleRetry} />;
+        if (visible.length === 0) {
             return (
-                <div className="favorites-empty">
-                    <AiOutlineExclamationCircle className="empty-icon" />
-                    <p className="empty-text">{t('dashNew.noFavouritesFound')}</p>
-                </div>
+                <CubaEmptyState
+                    icon={<FaStar className="h-5 w-5" aria-hidden="true" />}
+                    title={EMPTY_COPY[tab].title}
+                    description={EMPTY_COPY[tab].description}
+                    action={<CubaButton variant={emptyAction.variant} onClick={emptyAction.onClick}>{emptyAction.label}</CubaButton>}
+                />
             );
         }
+        return (
+            <ul className="space-y-3" data-testid="favourites-list">
+                {visible.map((item) => {
+                    const savedLabel = formatSafeDate(item.createdAt);
+                    const meta = [item.company, item.location, item.salary].filter(Boolean).join(' · ');
+                    return (
+                        <li key={item.key}>
+                            <CubaCard
+                                as="article"
+                                className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+                                data-testid="favourite-row"
+                            >
+                                <div className="flex min-w-0 items-start gap-3">
+                                    <span
+                                        className="mt-0.5 flex h-10 w-10 flex-none items-center justify-center rounded-full bg-cuba-primary-soft text-cuba-primary"
+                                        aria-hidden="true"
+                                    >
+                                        {item.kind === 'job' ? <FaBriefcase className="h-4 w-4" /> : <FaFileAlt className="h-4 w-4" />}
+                                    </span>
+                                    <div className="min-w-0">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <h2 className="truncate text-sm font-semibold text-cuba-ink">{item.title}</h2>
+                                            <CubaBadge tone={item.badgeTone}>{item.badge}</CubaBadge>
+                                        </div>
+                                        {meta && <p className="mt-1 text-xs text-cuba-ink-muted">{meta}</p>}
+                                        {item.summary && (
+                                            <p
+                                                className="mt-1 text-xs text-cuba-ink-muted"
+                                                style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+                                            >
+                                                {item.summary}
+                                            </p>
+                                        )}
+                                        {savedLabel && <p className="mt-1 text-[11px] text-cuba-ink-subtle">Saved {savedLabel}</p>}
+                                    </div>
+                                </div>
+                                <div className="flex flex-none items-center gap-2">
+                                    <CubaButton
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleOpen(item)}
+                                        icon={<FaExternalLinkAlt className="h-3.5 w-3.5" aria-hidden="true" />}
+                                        aria-label={`Open ${item.title}`}
+                                    >
+                                        Open
+                                    </CubaButton>
+                                    <CubaButton
+                                        variant="ghost"
+                                        size="sm"
+                                        loading={pendingKey === item.key}
+                                        onClick={() => handleRemove(item)}
+                                        icon={<FaTrashAlt className="h-3.5 w-3.5" aria-hidden="true" />}
+                                        aria-label={`Remove ${item.title} from favourites`}
+                                    >
+                                        Remove
+                                    </CubaButton>
+                                </div>
+                            </CubaCard>
+                        </li>
+                    );
+                })}
+            </ul>
+        );
     };
-    const { t } = props;
 
     return (
-        <AnimatePresence>
-            {props.isFavoritesShowed === true && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="dashboard-favourites">
-                    <motion.div initial={{ opacity: 0, translateY: -100 }} animate={{ opacity: 1, translateY: 0 }} transition={{ delay: 0.3, duration: 0.2 }} className="dashboard-favourites-modal">
-                        <div className="dashboard-favourites-modal-header">
-                            <h2>{t('dashNew.favourites')}</h2>
-                            <p>{t('dashNew.favouitesDesc')}</p>
-                        </div>
-                        <div className="dashboard-favourites-modal-body">
-                            <div className="dashboard-favourites-modal-body-content">{handleFavourites()}</div>
-                        </div>
-                        <div className="dashboard-favourites-modal-footer">
-                            <button
-                                onClick={(_event) => {
-                                    props.showFavorites();
-                                }}>
-                                {t('dashNew.close')}
-                            </button>
-                        </div>
-                    </motion.div>
-                </motion.div>
-            )}
-        </AnimatePresence>
+        <section className="space-y-6" data-testid="dashboard-favourites">
+            <CubaPageHeader
+                eyebrow="Saved"
+                title={t('dashNew.favourites')}
+                subtitle={t('dashNew.favouitesDesc')}
+                actions={(
+                    <CubaButton variant="outline" size="sm" onClick={handleRetry} loading={loading}>
+                        Refresh
+                    </CubaButton>
+                )}
+            />
+            <div role="tablist" aria-label="Filter saved favourites" className="flex flex-wrap items-center gap-2">
+                {TABS.map((entry) => {
+                    const selected = tab === entry.id;
+                    return (
+                        <button
+                            key={entry.id}
+                            type="button"
+                            role="tab"
+                            id={`favourites-tab-${entry.id}`}
+                            aria-selected={selected}
+                            aria-controls="favourites-panel"
+                            tabIndex={selected ? 0 : -1}
+                            onClick={() => setTab(entry.id)}
+                            className={selected
+                                ? 'cuba-focusable inline-flex items-center gap-2 rounded-full bg-cuba-primary-fill px-4 py-1.5 text-[13px] font-semibold text-cuba-on-primary'
+                                : 'cuba-focusable inline-flex items-center gap-2 rounded-full border border-cuba-line-strong px-4 py-1.5 text-[13px] font-semibold text-cuba-ink-muted hover:bg-cuba-primary-soft hover:text-cuba-ink'}
+                        >
+                            {entry.label}
+                            <span className="text-[11px] opacity-80">{counts[entry.id]}</span>
+                        </button>
+                    );
+                })}
+            </div>
+            <div id="favourites-panel" role="tabpanel" aria-labelledby={`favourites-tab-${tab}`} aria-busy={loading}>
+                {renderBody()}
+            </div>
+        </section>
     );
-}
+};
 
 const MyComponent = withTranslation('common')(DashboardFavourites);
 export default MyComponent;

@@ -75,50 +75,37 @@ const AppliedJobs = ({ showToast, t }) => {
         }
     };
 
+    /**
+     * DIR-056 SUB-056-6: the status vocabulary is the CANONICAL one.
+     *
+     * This component used to carry its own switch over `pending` / `interview` /
+     * `accepted` / `rejected`, which overlapped the tracker's real enum
+     * (`utils/jobTracker.js` → JOB_TRACKER_STATUSES = wishlist, applied, interview,
+     * offer, rejected) on only TWO of five values. `applied` — the primary state a
+     * job is actually in after you apply — and `offer` both fell through to
+     * `default`, so this list mislabelled the two most important statuses, while
+     * `pending` / `accepted` were values the tracker never emits at all.
+     *
+     * One map derived from the canonical enum removes that entire class of drift.
+     */
+    const STATUS_PRESENTATION = {
+        wishlist: { icon: FaBriefcase, text: 'Saved', color: 'text-cuba-ink-muted bg-cuba-canvas border-cuba-line' },
+        applied: { icon: FaHourglass, text: 'Under Review', color: 'text-cuba-warning bg-cuba-warning-soft border-cuba-warning' },
+        interview: { icon: FaClock, text: 'Interview Scheduled', color: 'text-cuba-primary-ink-strong bg-cuba-primary-soft border-cuba-primary' },
+        offer: { icon: FaCheckCircle, text: 'Offer Received', color: 'text-cuba-success bg-cuba-success-soft border-cuba-success' },
+        rejected: { icon: FaTimesCircle, text: 'Not Selected', color: 'text-cuba-ink-muted bg-cuba-canvas border-cuba-line' },
+    };
+    const presentationFor = (status) => STATUS_PRESENTATION[String(status || '').toLowerCase()]
+        || { icon: FaInfoCircle, text: 'Unknown', color: 'text-cuba-ink-muted bg-cuba-canvas border-cuba-line' };
+
     const getStatusIcon = (status) => {
-        switch (status) {
-            case 'pending':
-                return <FaHourglass className="w-4 h-4" />;
-            case 'interview':
-                return <FaClock className="w-4 h-4" />;
-            case 'accepted':
-                return <FaCheckCircle className="w-4 h-4" />;
-            case 'rejected':
-                return <FaTimesCircle className="w-4 h-4" />;
-            default:
-                return <FaInfoCircle className="w-4 h-4" />;
-        }
+        const Icon = presentationFor(status).icon;
+        return <Icon className="w-4 h-4" />;
     };
 
-    const getStatusText = (status) => {
-        switch (status) {
-            case 'pending':
-                return 'Under Review';
-            case 'interview':
-                return 'Interview Scheduled';
-            case 'accepted':
-                return 'Offer Received';
-            case 'rejected':
-                return 'Not Selected';
-            default:
-                return 'Unknown';
-        }
-    };
+    const getStatusText = (status) => presentationFor(status).text;
 
-    const getStatusColor = (status) => {
-        switch (status) {
-            case 'pending':
-                return 'text-cuba-warning bg-cuba-warning-soft border-cuba-warning';
-            case 'interview':
-                return 'text-cuba-primary-ink-strong bg-cuba-primary-soft border-cuba-primary';
-            case 'accepted':
-                return 'text-cuba-success bg-cuba-success-soft border-cuba-success';
-            case 'rejected':
-                return 'text-cuba-ink-muted bg-cuba-canvas border-cuba-line';
-            default:
-                return 'text-cuba-ink-muted bg-cuba-canvas border-cuba-line';
-        }
-    };
+    const getStatusColor = (status) => presentationFor(status).color;
 
     // DIR-048: shared safe-date contract — unparseable values fall back
     // honestly instead of rendering "Invalid date".

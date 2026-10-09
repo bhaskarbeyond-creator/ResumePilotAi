@@ -7,6 +7,11 @@ import './tailwind.css';
 import './index.scss';
 import './index.css';
 import './components/Marketing/public-site.css';
+// DIR-056 SUB-056-5: the ONE print contract. Imported here so `@media print`
+// applies globally (Ctrl+P on any page), and ALSO imported with `?raw` by
+// src/utils/printSurface.js so it survives the iframe/Blob boundary used by the
+// export surfaces. One source, two consumption modes.
+import './styles/cuba-print.css';
 import './cv-templates/css/globalTemplateEnhancements.css';
 import './i18n'; // Import i18n configuration
 

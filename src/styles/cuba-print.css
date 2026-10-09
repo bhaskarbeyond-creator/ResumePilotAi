@@ -1,0 +1,128 @@
+/**
+ * Cuba print contract — DIR-056 SUB-056-5
+ *
+ * WHY THIS FILE EXISTS
+ *   Every print/export surface in this app renders a SUBTREE into a fresh
+ *   document (an iframe for printing, a Blob for the HTML download). A fresh
+ *   document inherits NONE of the application's CSS, and the resume markup is
+ *   written with utility classes — so without carrying the styles across, the
+ *   output is genuinely unstyled. That is the "unstyled iframe / unconstrained
+ *   avatars / multi-page whitespace sprawl" defect named in the mandate.
+ *
+ *   This file is the ONE print contract. It is consumed two ways:
+ *     • as a normal stylesheet for in-app `@media print` behaviour, and
+ *     • via `?raw` by src/utils/printSurface.js, which inlines it into the
+ *       generated document so it survives the iframe/Blob boundary.
+ *
+ * SCOPE / EXCLUSIONS
+ *   This file never touches `src/cv-templates/**` — those 51 templates are
+ *   FROZEN and must stay `git diff = 0`.
+ */
+
+@page {
+    size: auto;
+    margin: 12mm;
+}
+
+@media print {
+    /* ---- 1. A printable document is white paper with black ink ---------- */
+    html,
+    body {
+        background: #fff !important;
+        color: #000 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* ---- 2. Interactive chrome must never reach paper ------------------- */
+    .no-print,
+    [data-print="exclude"],
+    nav,
+    button,
+    [role="button"],
+    input[type="checkbox"],
+    select {
+        display: none !important;
+    }
+
+    /* ---- 3. No multi-page whitespace sprawl ----------------------------- */
+    /* `position: sticky/fixed` repeats or leaves gaps across page breaks, and
+       `box-shadow` prints as grey smear. Both are neutralised outright. */
+    * {
+        position: static !important;
+        box-shadow: none !important;
+        text-shadow: none !important;
+    }
+
+    /* Keep a logical block together instead of orphaning one line on a page. */
+    section,
+    article,
+    li,
+    tr,
+    td,
+    th,
+    .print-avoid-break {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    /* A heading must never be the last thing on a page. */
+    h1, h2, h3, h4, h5, h6 {
+        break-after: avoid;
+        page-break-after: avoid;
+    }
+
+    /* Explicit opt-in page break. */
+    .print-break-before {
+        break-before: page;
+        page-break-before: always;
+    }
+
+    /* ---- 4. Images and avatars stay bounded ----------------------------- */
+    /* An unconstrained photo is what blows a single-page resume onto three. */
+    img,
+    svg,
+    canvas,
+    video {
+        max-width: 100% !important;
+        max-height: 42mm !important;
+        object-fit: contain !important;
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    /* Portrait avatars get a fixed physical box so the header cannot stretch. */
+    [class*="avatar"],
+    [class*="photo"],
+    [class*="profile-image"],
+    [data-print="avatar"] {
+        width: 28mm !important;
+        height: 28mm !important;
+        max-width: 28mm !important;
+        max-height: 28mm !important;
+        object-fit: cover !important;
+        border-radius: 50% !important;
+        flex: 0 0 auto !important;
+    }
+
+    /* ---- 5. Links and tables read correctly on paper -------------------- */
+    a,
+    a:visited {
+        color: #000 !important;
+        text-decoration: none !important;
+    }
+
+    table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+    }
+
+    /* ---- 6. Backgrounds that would otherwise print as solid blocks ------ */
+    [class*="bg-gradient"],
+    [class*="backdrop-blur"] {
+        background: transparent !important;
+        backdrop-filter: none !important;
+    }
+}

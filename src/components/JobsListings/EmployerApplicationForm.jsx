@@ -212,11 +212,17 @@ const EmployerApplicationForm = ({ onSubmit, _isSubmitting, showSuccess }) => {
                             <input type="checkbox" id="agreeToTerms" checked={formData.agreeToTerms} onChange={(e) => handleInputChange('agreeToTerms', e.target.checked)} className="mt-1" />
                             <label htmlFor="agreeToTerms" className="text-sm text-slate-700">
                                 I agree to the{' '}
-                                <a href="#" className="text-teal-600 hover:underline">
+                                {/* DIR-056 SUB-056-2: these were `href="#"`, so the employer
+                                    was required to accept documents they could not open — a
+                                    real compliance defect, not a cosmetic one. `/terms` and
+                                    `/privacy` are REAL mounted routes (main.jsx redirects them
+                                    to /p/terms-of-service and /p/privacy-policy). Opened in a
+                                    new tab so a half-completed application form is never lost. */}
+                                <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-teal-600 hover:underline">
                                     Terms and Conditions
                                 </a>{' '}
                                 and
-                                <a href="#" className="text-teal-600 hover:underline ml-1">
+                                <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-teal-600 hover:underline ml-1">
                                     Privacy Policy
                                 </a>{' '}
                                 *

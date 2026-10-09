@@ -8,6 +8,10 @@ import SendMessageDialog from '../Dashboard/EmployerDashboard/SendMessageDialog'
 import TemplateRenderer from '../TemplateRenderer';
 import { normalizeResumeData } from '../../utils/resumeData';
 import { sanitizeRichText } from '../../utils/sanitizeHtml';
+// DIR-056 SUB-056-5: the shared print contract. Printing renders a subtree into
+// a FRESH document, which inherits none of the app's CSS — so the stylesheets and
+// the print rules both have to be carried across explicitly.
+import { buildPrintableDocument } from '../../utils/printSurface';
 
 /**
  * ATS stage -> Cuba status-pill tone (DIR-010).
@@ -245,7 +249,14 @@ const EmployerApplicantPipeline = ({ showToast }) => {
         document.body.appendChild(frame);
         const frameDoc = frame.contentDocument;
         frameDoc.open();
-        frameDoc.write(`<!DOCTYPE html><html><head><title>${resumeTarget?.applicantName || 'Resume'}</title></head><body>${node.innerHTML}</body></html>`);
+        // DIR-056 SUB-056-5: a fresh document inherits NO application CSS, so the
+        // resume used to print completely unstyled (no page breaks, unbounded
+        // photos). buildPrintableDocument carries the live stylesheets AND the
+        // shared print contract across the boundary.
+        frameDoc.write(buildPrintableDocument({
+            title: resumeTarget?.applicantName || 'Resume',
+            innerHTML: node.innerHTML,
+        }));
         frameDoc.close();
         frame.contentWindow.focus();
         frame.contentWindow.print();
@@ -257,7 +268,12 @@ const EmployerApplicantPipeline = ({ showToast }) => {
         const node = printFrameRef.current;
         if (!node || typeof document === 'undefined') return;
         const name = (resumeTarget?.applicantName || 'candidate').replace(/[^A-Za-z0-9]+/g, '-').toLowerCase();
-        const blob = new Blob([`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${resumeTarget?.applicantName || 'Resume'}</title></head><body>${node.innerHTML}</body></html>`], { type: 'text/html;charset=utf-8' });
+        // Same defect as the print path: a bare document with no CSS produced an
+        // unstyled .html file. It now carries the stylesheets + print contract.
+        const blob = new Blob([buildPrintableDocument({
+            title: resumeTarget?.applicantName || 'Resume',
+            innerHTML: node.innerHTML,
+        })], { type: 'text/html;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;

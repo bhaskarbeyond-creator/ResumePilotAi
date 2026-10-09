@@ -216,6 +216,41 @@ const d5 = AW.deliver({ projectDir: D, toRole: 'dev', directiveId: 'DIR-900', mo
 check('an ACKED wake releases the guard (new id, no wedge)', d5.wakeId !== d1.wakeId && d5.deduped === false, `${d1.wakeId} vs ${d5.wakeId}`);
 check('supersede:false opts out of the guard', AW.deliver({ projectDir: D, toRole: 'dev', directiveId: 'DIR-900', mode: 'act', promptText: 'forced', noUri: true, supersede: false }).deduped === false);
 
+/* ── 9. Queue reconciliation: ownership-aware retirement + artifact pruning ── */
+// Regression guard for a directive that reached APPROVED_FROZEN while THREE
+// wakes for it were still queued, forcing every `await` to skip them.
+const Q = mkProject('queue-' + Date.now().toString(36));
+const pQ = AW.pPaths(Q);
+const dDir = path.join(Q, '.bridge', 'directives');
+fs.mkdirSync(dDir, { recursive: true });
+const seedDirective = (id, status) => fs.writeFileSync(path.join(dDir, `${id}.json`), JSON.stringify({ id, status }), 'utf8');
+seedDirective('DIR-900', 'APPROVED_FROZEN');     // terminal — the work is done
+seedDirective('DIR-901', 'EVIDENCE_SUBMITTED');  // ball is with the LEAD
+seedDirective('DIR-902', 'IN_PROGRESS');         // the dev still owns the ball
+
+const qFrozen = AW.deliver({ projectDir: Q, toRole: 'dev', directiveId: 'DIR-900', mode: 'act', promptText: 'frozen', noUri: true });
+const qLead = AW.deliver({ projectDir: Q, toRole: 'dev', directiveId: 'DIR-901', mode: 'act', promptText: 'lead-owned', noUri: true });
+const qLive = AW.deliver({ projectDir: Q, toRole: 'dev', directiveId: 'DIR-902', mode: 'act', promptText: 'live', noUri: true });
+
+const rec = AW.retireStaleWakes(Q);
+check('reconcile retires the TERMINAL-directive wake', rec.reasons.some(r => r.id === qFrozen.wakeId && r.reason === 'DIRECTIVE_APPROVED_FROZEN'), JSON.stringify(rec.reasons));
+check('reconcile retires the LEAD-OWNED wake', rec.reasons.some(r => r.id === qLead.wakeId && r.reason === 'BALL_WITH_LEAD_EVIDENCE_SUBMITTED'), JSON.stringify(rec.reasons));
+check('reconcile KEEPS the wake the dev still owns', rec.kept === 1 && !rec.reasons.some(r => r.id === qLive.wakeId));
+check('reconcile pruned the retired prompt artifacts', rec.prunedArtifacts >= 2, 'pruned=' + rec.prunedArtifacts);
+check('the LIVE prompt artifact survived', fs.readdirSync(pQ.prompts).some(f => f.includes('DIR-902')), fs.readdirSync(pQ.prompts).join(','));
+
+const qs = AW.queueStatus(Q);
+check('queueStatus reports exactly one live wake', qs.dev.live.length === 1 && qs.dev.live[0].directiveId === 'DIR-902', JSON.stringify(qs.dev.live.map(e => e.directiveId)));
+check('queueStatus exposes each live wake\'s directive status', qs.dev.liveEntries[0] && qs.dev.liveEntries[0].directiveStatus === 'IN_PROGRESS', JSON.stringify(qs.dev.liveEntries));
+
+const rec2 = AW.retireStaleWakes(Q);
+check('reconciliation is IDEMPOTENT', rec2.retired === 0 && rec2.prunedArtifacts === 0, JSON.stringify({ retired: rec2.retired, pruned: rec2.prunedArtifacts }));
+check('dryRun reports without writing', (() => {
+  const before = fs.readFileSync(pQ.devOutbox, 'utf8');
+  const dry = AW.retireStaleWakes(Q, { dryRun: true });
+  return dry.success === true && fs.readFileSync(pQ.devOutbox, 'utf8') === before;
+})());
+
 console.log('\n' + '-'.repeat(72));
 console.log(`  RESULT: ${pass}/${pass + fail} checks passed`);
 console.log('-'.repeat(72) + '\n');

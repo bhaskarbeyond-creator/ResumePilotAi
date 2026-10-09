@@ -49,11 +49,11 @@ import { AiOutlineLoading3Quarters } from 'react-icons/ai';
                     <Link onClick={() => clearStorage()} to="/build-resume/heading" className="dashboard-action-btn">
                     {t('dashNew.createDocument')}                        
                     </Link>
+                    {/* DIR-056 SUB-056-4: pointed at the REAL favourites page.
+                        It previously rendered `to="#"` and toggled a modal that
+                        no longer exists, which was a dead link by construction. */}
                     <Link
-                        to="#"
-                        onClick={() => {
-                            props.showFavorites();
-                        }}
+                        to="/dashboard/favorites"
                         className="dashboard-action-btn">
                         {t('dashNew.favourites')}
                     </Link>

@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-09T03:23:46.349Z",
-  "seq": 2385,
-  "id": "evt_mv0ei78b_caa8ade326a7",
-  "type": "EVIDENCE_SUBMITTED",
-  "title": "[Evidence] DIR-055: Unified Executive Builder Header (\"Best of Both Worlds\") & Real Interactive Notifications Pipeline",
+  "timestamp": "2026-10-09T04:32:47.894Z",
+  "seq": 2413,
+  "id": "evt_mv0gyyv4_2e667a8fe7cf",
+  "type": "HEARTBEAT",
+  "title": "[Heartbeat] DIR-056 COMPLETE (6/6). All gates green: unit 26/26, Playwright real-DOM 7/7, product 756/0, static security 67/0, lint 0, build exit 0 (3.07s). Submitting evidence.",
   "sender": "STAFF_DEVELOPER",
-  "directiveId": "DIR-055",
-  "summary": "DIR-055 COMPLETE (S1-S12). S1 pure resolveNotificationHref (type->real mounted route, 20+ types, zero dead hrefs). S2 M3NotificationCenter rebuilt: derived routes (item.href never existed), per-row PATCH read toggle, mark-all-read, contextual kind icons, honest timestamps, dead View-all-activity footer removed. S3 owner-scoped POST /api/notifications-data/mark-all-read. S4+S5 hideTopBar prop skips ONLY the <header>; driven by isApplicationShellRoute(location.pathname) - the predicate first production consumer (was test-only). S6 builder top bar -> cuba-glass + shadow-cuba-xl + cuba-focusable, all legacy controls retained, 11-step ribbon intact. S7 builder header self-hosts M3NotificationCenter + M3UserMenu from AuthContext. S8 CubaSkeleton/CubaEmptyState/CubaErrorState + optimistic mark-read with rollback. S9 guarded remediation script, dry-run proven on LIVE MariaDB: 17/17 placeholder rows resolvable (real senderId + real name + real snippet), 0 fabricated, 0 written, no DELETE. S10 tests 35/35. S11 Playwright 7 passed/1 skipped/0 failed. GATES: unit 35/35, regression 80/80, lint 0 errors, build exit 0, e2e 0 console errors + 0 native dialogs at 375/768/1280. TWO REAL DEFECTS FOUND AND FIXED DURING CERT: (1) e2e fixture omitted _settingsSource, which main.jsx:402 gates the whole app on -> maintenance screen; (2) REAL PRODUCT BUG: truncate sets overflow:hidden so a flex item min-size resolves to 0, and once the right rail gained the notification+identity controls the resume title was squeezed to a ZERO-SIZE box and vanished at 1280px - fixed with explicit min-width floors + regression test. LIMITS: AC-4 (ATS drawer) SKIPPED because the ATS flag is off in the hermetic fixture (recorded, not asserted); S9 was DRY-RUN only - --apply mutates live data and awaits authorization."
+  "directiveId": "DIR-056",
+  "summary": "DIR-056 COMPLETE (6/6). All gates green: unit 26/26, Playwright real-DOM 7/7, product 756/0, static security 67/0, lint 0, build exit 0 (3.07s). Submitting evidence."
 }
