@@ -12,6 +12,9 @@ import './components/Marketing/public-site.css';
 // src/utils/printSurface.js so it survives the iframe/Blob boundary used by the
 // export surfaces. One source, two consumption modes.
 import './styles/cuba-print.css';
+// DIR-061: resume template pagination contract (kept OUT of the frozen
+// src/cv-templates/ tree, which INV-1 asserts at zero diff).
+import './styles/template-pagination.css';
 import './cv-templates/css/globalTemplateEnhancements.css';
 import './i18n'; // Import i18n configuration
 

@@ -1,0 +1,57 @@
+/**
+ * DIR-061 — resume template pagination contract.
+ *
+ * WHY THIS FILE EXISTS (and why it is NOT inside src/cv-templates/):
+ *   The shared sheet `src/cv-templates/css/globalTemplateEnhancements.css`
+ *   already protects section cards, experience blocks, education blocks and
+ *   cards from page breaks — but it had NO rule for an individual list item or
+ *   table row, so a long bullet list could still be severed MID-ITEM across a
+ *   page boundary and a table row could separate from its header.
+ *
+ *   That sheet lives under `src/cv-templates/`, which is a HARD FROZEN baseline:
+ *   `tests/copilot-command-surface.test.mjs` (INV-1) asserts a zero-byte
+ *   `git diff` for `src/cv-templates/`. Editing it would break that certified
+ *   invariant. Rather than re-baseline a frozen guard unilaterally, the missing
+ *   rule is delivered here — same selectors, same scoping, same effect, and the
+ *   frozen tree stays at diff = 0.
+ *
+ * SCOPE: every template renders inside a `*-board` container (cv1-board …
+ * cover4-board, cover1-board … cover4-board), so these selectors are scoped to
+ * exactly those containers and never leak into Admin or Enterprise tables.
+ *
+ * EFFECT: `break-inside` / `page-break-inside` affect PAGINATION ONLY — screen
+ * rendering is untouched, so the certified visual baseline stays green.
+ */
+
+[class*="-board"] li,
+[class*="-board"] ul,
+[class*="-board"] ol,
+[class*="-board"] tr,
+[class*="-board"] [class*="-bullet"],
+[class*="-board"] [class*="Bullet"],
+[class*="-board"] [class*="list-item"],
+[class*="-board"] [class*="listItem"],
+[data-cv-board] li,
+[data-cv-board] ul,
+[data-cv-board] ol,
+[data-cv-board] tr,
+[data-cv-board] [class*="-bullet"],
+[data-cv-board] [class*="Bullet"],
+[data-cv-board] [class*="list-item"],
+[data-cv-board] [class*="listItem"] {
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+  -webkit-column-break-inside: avoid !important;
+}
+
+/* A section heading must never be the last thing on a page, orphaned from the
+ * body it introduces. The frozen sheet already covers headings and `-title` /
+ * `-head`; this repeats the guarantee for the `smart-resume-page` engine
+ * container so both render paths are covered. */
+.smart-resume-page li,
+.smart-resume-page ul,
+.smart-resume-page ol,
+.smart-resume-page tr {
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+}

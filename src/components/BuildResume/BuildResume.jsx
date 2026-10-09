@@ -1577,6 +1577,15 @@ const BuildResume = () => {
                         email: profile.email || '', phone: profile.phone || '', occupation: profile.occupation || '',
                         city: profile.city || '', country: profile.country || '', address: profile.address || '',
                         postalcode: profile.postalCode || profile.postalcode || '', photo: profile.selectedImage || profile.photo || null,
+                        // DIR-061: these three were SILENTLY DROPPED by this prefill.
+                        // HeadingStep has form state for website/linkedin/github, but
+                        // nothing ever supplied them here, so a master-profile website,
+                        // LinkedIn or GitHub never reached /build-resume/heading.
+                        // Each alias the profile contract may use is accepted so the
+                        // value is never lost to a naming difference.
+                        website: profile.website || profile.websiteUrl || profile.portfolioUrl || '',
+                        linkedin: profile.linkedin || profile.linkedinUrl || profile.linkedin_url || '',
+                        github: profile.github || profile.githubUrl || profile.github_url || '',
                         employments: profile.employments || profile.workExperiences || [], educations: profile.educations || profile.education || [],
                         skills: profile.skills || [], languages: profile.languages || [], projects: profile.projects || [],
                         certifications: profile.certifications || [], achievements: profile.achievements || profile.awards || [],

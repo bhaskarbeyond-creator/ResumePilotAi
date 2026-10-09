@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-09T05:39:34.062Z",
-  "seq": 2467,
-  "id": "evt_mv0jcu1p_55c9c2876c11",
-  "type": "EVIDENCE_SUBMITTED",
-  "title": "[Evidence] DIR-059: Job Applications (/dashboard/applied-jobs) Real Data Pipeline, Kanban Synchronization & Candidate Withdrawal",
+  "timestamp": "2026-10-09T05:59:03.014Z",
+  "seq": 2478,
+  "id": "evt_mv0k1w0g_bb75dc844b6a",
+  "type": "HEARTBEAT",
+  "title": "[Heartbeat] S2/S3/S4 delivered. IMPORTANT CORRECTION: the 'per-template A4/break-inside missing' premise measured the WRONG layer - the A4 box comes from the engine (smartEngine.css/ResumePageComposer) and block ",
   "sender": "STAFF_DEVELOPER",
-  "directiveId": "DIR-059",
-  "summary": "DIR-059 COMPLETE (S1-S5), zero backend/schema change. PROVEN DEFECTS FIXED: (1) platform.js:956 getUserJobApplications was literally 'return getTrackedJobs(userId)' so /dashboard/applied-jobs rendered KANBAN rows instead of the applications table - it now reads GET /api/jobs-data/applications/list; (2) the applications table has NO jobTitle/company/location/salary and getApplications() does a bare SELECT with no join, so AppliedJobs.jsx:55-63 read undefined fields and every row rendered blank - rows are now normalised AND enriched via getJobById(job_id) with appliedDate from created_at; (3) the table defaults status to PENDING (uppercase) while the UI counted === 'pending' (lowercase) so the tile could never match - an APPLICATION_STATUS_MAP now canonicalises the stored vocabulary and the tile counts the canonical 'applied' (Under Review); (4) withdrawal and Kanban promotion did not exist - withdrawal is now confirm-gated through the shared Cuba dialog (useConfirmDialog -> EnterpriseConfirmModal, no native window.confirm) calling DELETE /api/jobs-data/applications/:id with optimistic removal and rollback, and Track in Kanban uses createTrackedJob with the canonical applied status and is idempotent. BACKEND: no new route was needed - jobsData.js already exposes the owner-scoped list (:277), delete (:319, 404/403) and tracker routes. GATES: new suite 7/7; job regression 33/33; product matrix 756 pass/0 fail; eslint 0 errors; build exit 0 in 2.41s. HONEST LIMITS: enrichment is one getJobById per row (a joined backend projection would be cheaper); the Kanban already-tracked set is session-scoped because tracker ids differ from application ids. Doc: .bridge/evidence/dir059-implementation-evidence.md."
+  "directiveId": "DIR-061",
+  "summary": "S2/S3/S4 delivered. IMPORTANT CORRECTION: the 'per-template A4/break-inside missing' premise measured the WRONG layer - the A4 box comes from the engine (smartEngine.css/ResumePageComposer) and block pagination already exists in globalTemplateEnhancements.css with RCA comments scoping it to [class*=-board]; every template renders in a *-board container so those rules DO apply. The ONE genuine gap was that li/ul/tr had NO rule at all (a bullet list could be severed mid-item). Fixed in a NEW non-frozen sheet src/styles/template-pagination.css imported globally, because editing src/cv-templates/ broke INV-1 (copilot-command-surface.test.mjs asserts a zero-byte git diff on the frozen tree) - I did NOT re-baseline a frozen guard unilaterally. S4: BuildResume prefill silently dropped website/linkedin/github (profile stores them as websiteUrl/linkedinUrl/githubUrl) - now mapped. GATES: dir061 6/6; INV-1 PASS zero diff; VISUAL REGRESSION PASSED 51 templates; templates 72/72; product 756/0; lint 0; build exit 0. Submitting evidence."
 }
