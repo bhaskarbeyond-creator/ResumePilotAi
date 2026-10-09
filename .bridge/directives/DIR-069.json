@@ -2,11 +2,11 @@
   "id": "DIR-069",
   "title": "DIR-069: True 10/10 Parity — DOCX Multi-Page Full-Width Reflow, Photo Embedding, Archetype 2-Col Certs, Recruiter Application Export Gate, and Free-Tier Watermark",
   "priority": "P0",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-09T13:38:01.910Z",
-  "updatedAt": "2026-10-09T14:01:03.539Z",
+  "updatedAt": "2026-10-09T14:01:04.706Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "P0 ARCHITECTURAL MANDATES: 1. MULTI-PAGE DOCX FULL-WIDTH REFLOW: In backend/services/docxExport.js, eliminate the blank 34% sidebar column defect on Page 2+ in multi-page resumes for two-column templates (Modern Split, Executive Banner, Tech Grid). Structure document sections so Page 1 contains the two-column sidebar/hero table, and continuation content (experience/education overflow) reflows across 100% full-width paragraphs/tables matching the PDF smart-main-content--full layout. 2. ARCHETYPE CERTIFICATIONS 2-COLUMN PARITY: In docxExport.js lines 1257 and 1324, change columns: 1 to columns: 2 in buildCertificationsBlock for buildExecutiveBannerDocument and buildTechGridDocument when certifications are in the main body, ensuring all archetypes match the PDF 2-column card grid. 3. CANDIDATE PHOTO EMBEDDING IN DOCX: In docxExport.js, support resume.photo (base64 data URL or validated local/remote URL) using docx ImageRun in buildIdentityHeader and sidebar headers with proper dimensions, matching the PDF headshot display. Gracefully omit when no photo exists. 4. SKILLS VISUAL POLISH IN DOCX: In docxExport.js, upgrade non-inline skills from raw bullet points to modern shaded pill/badge representations (e.g. lightweight shaded table cells or shaded inline runs #F1F5F9 with subtle padding) reflecting the web badge design. 5. RECRUITER APPLICATION DOCX EXPORT GATE: In backend/index.js POST /api/public-export-docx, allow recruiters viewing candidate applications to export DOCX even if the candidate resume is in draft status, matching recruiter PDF export permissions while maintaining IDOR safety and rate limiting. 6. FREE-TIER WATERMARK PARITY IN DOCX: In docxExport.js, when stored._watermark?.enableFreeWatermark is true, inject a subtle Word watermark or branded footer tag ('Created with IME365 (Free Plan)') matching PDF free-tier behavior. 7. GUARDS & REGRESSION: src/cv-templates remains git diff 0, 100% Linux server compatible, zero OS console windows. Run new tests and all regression suites, capture Playwright evidence, and submit for Gatekeeper certification.",
   "invariants": [],
@@ -71,8 +71,30 @@
       }
     }
   ],
-  "freeze": null,
-  "lastTransitionReason": "lead review",
+  "freeze": {
+    "freezeHash": "2d08fb0393ee20ea851fd887ad16e6485b7cc2de",
+    "certifiedAt": "2026-10-09T14:01:04.705Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "Autonomous Lead (Antigravity): evidence audit passed, no human review.",
+    "evidenceHash": "1a97f9fe04c4b3b98ba01c30bdd58b5463eeb4fd382d1f45340e2a64e67ee803",
+    "automated": true,
+    "certificationKind": "automated",
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "declared-automation",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "non-tty"
+      ],
+      "pid": 23360,
+      "parentPid": 14724,
+      "tty": false,
+      "at": "2026-10-09T14:01:04.016Z",
+      "explicitlyAllowed": true
+    }
+  },
+  "lastTransitionReason": "gatekeeper certification",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {

@@ -122,19 +122,26 @@ function* profileSpace() {
     }
 }
 
-test('DIR-068 visual: adaptive micro-compaction collapses a minor overflow to one balanced page', () => {
+test('DIR-068 visual: adaptive micro-compaction is adopted only when it helps', () => {
     let compacted = 0;
     for (const { archetype, values } of profileSpace()) {
         const result = partitionResumeContent(values, { archetype, density: 'standard' });
-        if (result.sectionGapPx === 11) {
-            compacted += 1;
-            assert.equal(result.totalPages, 1, 'compaction must only be adopted when it fits one page');
-        }
+        if (result.compaction.tier === 0) continue;
+        compacted += 1;
+        if (result.totalPages === 1) continue;
+        // DIR-070: a tighter tier may be adopted for a two-page result too, but
+        // only when Page 1 stays dense (>=85% fill).
+        const donor = result.pages[0];
+        const content = donor.flowItems.reduce((s, i) => s + (i.estHeight || 0), 0);
+        let groups = 0; let prev = null;
+        for (const i of donor.flowItems) { if (i.type !== prev) { groups += 1; prev = i.type; } }
+        const fill = (content + Math.max(0, groups - 1) * result.sectionGapPx) / 860;
+        assert.ok(fill >= 0.85, `${archetype}: compaction left Page 1 at ${(fill * 100).toFixed(1)}%`);
     }
-    assert.ok(compacted > 0, 'at least one minor-overflow profile must micro-compact onto one page');
+    assert.ok(compacted > 0, 'at least one profile must micro-compact');
 });
 
-test('DIR-068 visual: the orphan guard leaves no single-card Page 2 orphan', () => {
+test('DIR-068 visual: a stranded row is only allowed to avoid a Page-1 void', () => {
     const keyOf = (item) => (item.sectionId ? `${item.type}:${item.sectionId}` : item.type);
     for (const { archetype, values } of profileSpace()) {
         const result = partitionResumeContent(values, { archetype, density: 'standard' });
@@ -147,7 +154,15 @@ test('DIR-068 visual: the orphan guard leaves no single-card Page 2 orphan', () 
         const onEarlier = result.pages.slice(0, -1).some((p) => p.flowItems.some((i) => keyOf(i) === key));
         const isGrid = key.startsWith('certification') || key.startsWith('project');
         const oneRow = isGrid ? last.length <= 2 : last.length <= 1;
-        assert.equal(onEarlier && oneRow, false, `${archetype}: the last page stranded a single ${key} continuation row`);
+        if (!(onEarlier && oneRow)) continue;
+        // DIR-070 (mandate 2): the guard only declines the move to avoid a >80px
+        // Page-1 void, so Page 1 must still be dense in every stranded case.
+        const donor = result.pages[0];
+        const content = donor.flowItems.reduce((s, i) => s + (i.estHeight || 0), 0);
+        let groups = 0; let prev = null;
+        for (const i of donor.flowItems) { if (i.type !== prev) { groups += 1; prev = i.type; } }
+        const fill = (content + Math.max(0, groups - 1) * result.sectionGapPx) / 860;
+        assert.ok(fill >= 0.85, `${archetype}: stranded ${key} row with a half-empty Page 1 (${(fill * 100).toFixed(1)}%)`);
     }
 });
 

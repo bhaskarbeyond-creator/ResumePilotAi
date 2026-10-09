@@ -160,9 +160,15 @@ export function partitionResumeContent(values = {}, theme = {}) {
    * This estimates the real per-row height from the title/meta line count and the
    * active density scale, with a floor matching the measured card.
    */
+  // DIR-070 — compaction geometry. These are the tier-0 (default) values and the
+  // baselines every multi-tier micro-compaction delta is measured against.
+  const CARD_PAD_PX = 7;      // .smart-card-item / .smart-cert-item padding (7px 9px)
+  const GRID_ROW_GAP = 7;     // .smart-cards-grid / .smart-cert-grid row gap
+  const TITLE_MARGIN_PX = 28; // reserved above the first grid row of a section
+  const TITLE_GAP_PX = 3;     // .smart-section-title margin-bottom (3px)
   const CERT_ROW_MIN_PX = 76; // measured 2-col card: title + issuer/date + badge
   const CERT_ROW_MAX_PX = 88; // long wrapping title / meta clamps here
-  const certRowHeightFor = (cert) => {
+  const certRowHeightFor = (cert, padPx = CARD_PAD_PX) => {
     const title = String(typeof cert === 'string' ? cert : (cert?.title || cert?.name || ''));
     const issuer = String(typeof cert === 'string' ? '' : (cert?.issuer || cert?.authority || ''));
     const date = String(typeof cert === 'string' ? '' : (cert?.date || ''));
@@ -170,7 +176,10 @@ export function partitionResumeContent(values = {}, theme = {}) {
     const titleLines = Math.max(1, Math.ceil(title.length / 26));
     const metaLines = meta ? Math.max(1, Math.ceil(meta.length / 30)) : 0;
     const extraLines = Math.max(0, titleLines - 1) + Math.max(0, metaLines - 1);
-    const rowPx = Math.min(CERT_ROW_MAX_PX, CERT_ROW_MIN_PX + extraLines * 12);
+    // DIR-070: a tighter card padding shrinks the real card, so the estimate moves
+    // with it (2x pad delta per card).
+    const padDelta = (padPx - CARD_PAD_PX) * 2;
+    const rowPx = Math.max(48, Math.min(CERT_ROW_MAX_PX, CERT_ROW_MIN_PX + extraLines * 12) + padDelta);
     return Math.round(rowPx * densityScale);
   };
 
@@ -186,14 +195,15 @@ export function partitionResumeContent(values = {}, theme = {}) {
    */
   const PROJECT_CARD_MIN_PX = 65; // measured 2-col card: title + url + description
   const PROJECT_CARD_MAX_PX = 92; // long wrapping description clamps here
-  const projectCardHeightFor = (proj) => {
+  const projectCardHeightFor = (proj, padPx = CARD_PAD_PX) => {
     const title = String(proj?.title || proj?.name || '');
     const url = String(proj?.url || proj?.link || '').replace(/^https?:\/\//i, '');
     const descLen = getTextLength(proj?.description);
     const titleLines = Math.max(1, Math.ceil(title.length / 34));
     const descLines = Math.max(1, Math.ceil(descLen / 40));
-    // 14px padding (7+7) + 2px border + 2px gap + title line + url line + desc lines.
-    const base = 18 + titleLines * 14 + (url ? 13 : 0) + descLines * 14;
+    // 2px border + 2px gap + 2x padding + title line + url line + desc lines.
+    // DIR-070: the padding term moves with the compaction tier.
+    const base = 4 + padPx * 2 + titleLines * 14 + (url ? 13 : 0) + descLines * 14;
     return Math.round(Math.min(PROJECT_CARD_MAX_PX, Math.max(PROJECT_CARD_MIN_PX, base)) * densityScale);
   };
 
@@ -312,10 +322,22 @@ export function partitionResumeContent(values = {}, theme = {}) {
   const PN_CAPACITY = 930 - FOOTER_SAFETY_CLEARANCE;
   // Must track --smart-section-gap in smartEngine.css (compact/standard/spacious).
   const SECTION_GAP_PX = density === 'compact' ? 11 : density === 'spacious' ? 18 : 14;
-  // Grid row gap — must track `.smart-cards-grid` / `.smart-cert-grid` (7px 10px).
-  const GRID_ROW_GAP = 7;
 
-  // 1. Build All Main Flow Sections in Priority Sequence
+  // DIR-070 — MULTI-TIER ADAPTIVE MICRO-COMPACTION.
+  // Tier 0 is the density default. Tier 1 tightens the section rhythm only.
+  // Tier 2 additionally tightens the grid row gap, the card padding and the
+  // section-title margin, reclaiming up to ~70px on a grid-heavy profile.
+  const COMPACTION_TIERS = [
+    { id: 0, sectionGapPx: SECTION_GAP_PX, gridRowGapPx: GRID_ROW_GAP, cardPadPx: CARD_PAD_PX, titleMarginPx: TITLE_MARGIN_PX, titleGapPx: TITLE_GAP_PX },
+    { id: 1, sectionGapPx: Math.max(10, SECTION_GAP_PX - 3), gridRowGapPx: GRID_ROW_GAP, cardPadPx: CARD_PAD_PX, titleMarginPx: TITLE_MARGIN_PX, titleGapPx: TITLE_GAP_PX },
+    { id: 2, sectionGapPx: Math.max(9, SECTION_GAP_PX - 5), gridRowGapPx: 5, cardPadPx: 5, titleMarginPx: TITLE_MARGIN_PX - TITLE_GAP_PX, titleGapPx: 0 },
+  ];
+  const TIGHTEST_TIER = COMPACTION_TIERS[COMPACTION_TIERS.length - 1];
+
+  // 1. Build All Main Flow Sections in Priority Sequence.
+  // DIR-070: this is a function of the compaction tier, because a tighter card
+  // padding / grid row gap / title margin changes the estimated geometry.
+  const buildSections = (tier) => {
   const sections = [];
 
   // Summary (split into page-sized blocks so it can never be atomic-clipped)
@@ -388,16 +410,16 @@ export function partitionResumeContent(values = {}, theme = {}) {
     sections.push({ type: 'skills', items: skillChunkItems, estHeight: totalSkillsHeight });
   }
 
-  // Projects — 2-column card grid (row-paired, DIR-065)
+  // Projects — 2-column card grid (row-paired, DIR-065/070)
   if (projects && projects.length) {
-    const projItems = pairGridRows(projects, projectCardHeightFor, GRID_ROW_GAP, 28, 'project');
+    const projItems = pairGridRows(projects, (p) => projectCardHeightFor(p, tier.cardPadPx), tier.gridRowGapPx, tier.titleMarginPx, 'project');
     const sectionHeight = projItems.reduce((sum, it) => sum + it.estHeight, 0);
     sections.push({ type: 'project', items: projItems, estHeight: sectionHeight });
   }
 
   // Certifications (when in Main Flow) — 2-column card grid (row-paired, DIR-065)
   if ((isSingleCol || !sidebarKeepsCerts) && certifications.length) {
-    const certItems = pairGridRows(certifications, certRowHeightFor, GRID_ROW_GAP, 28, 'certification');
+    const certItems = pairGridRows(certifications, (c) => certRowHeightFor(c, tier.cardPadPx), tier.gridRowGapPx, tier.titleMarginPx, 'certification');
     const sectionHeight = certItems.reduce((sum, it) => sum + it.estHeight, 0);
     sections.push({ type: 'certification', items: certItems, estHeight: sectionHeight });
   }
@@ -473,6 +495,8 @@ export function partitionResumeContent(values = {}, theme = {}) {
     });
   }
 
+  return sections;
+  };
 
   /**
    * Greedy multi-page packer.
@@ -493,7 +517,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
    */
   const capacityFor = (index) => (index === 0 ? P1_CAPACITY : PN_CAPACITY);
 
-  const packSections = (sectionGapPx) => {
+  const packSections = (sectionsArg, sectionGapPx) => {
     const pageBuckets = [];
     let current = [];
     let currentHeight = 0;
@@ -506,7 +530,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
       pageIndex += 1;
     };
 
-  sections.forEach((section) => {
+  sectionsArg.forEach((section) => {
     const capacity = capacityFor(pageIndex);
     const gapBefore = current.length ? sectionGapPx : 0;
 
@@ -573,10 +597,13 @@ export function partitionResumeContent(values = {}, theme = {}) {
   // stranding content on a nearly empty page 2. Adopted ONLY when the whole resume
   // then fits one page; the chosen rhythm is returned so the renderer paints
   // exactly what was estimated (no footer overlap).
-  const COMPACT_SECTION_GAP_PX = 11;
-  const MINOR_OVERFLOW_PX = 60;
   // DIR-067 (B) orphan threshold: a continuation title (26px) + one grid row (~85px).
   const ORPHAN_MAX_PX = 130;
+  // DIR-070 (mandate 2): a section may only be moved off a page when doing so
+  // leaves at most this much empty space behind. Page 1 must never look
+  // half-empty, so a move that would strand a big void is STRICTLY FORBIDDEN.
+  const PAGE_VOID_MAX_PX = 80;
+  const PAGE_VOID_MAX_FRACTION = 0.10;
 
   /**
    * DIR-067 (B) Section Integrity & Orphan Guard.
@@ -616,28 +643,65 @@ export function partitionResumeContent(values = {}, theme = {}) {
     if (!moved.length) return buckets;
     next[lastIdx] = [...moved, ...next[lastIdx]];
     if (heightOfPage(next[lastIdx], sectionGapPx) > capacityFor(lastIdx)) return buckets;
+
+    // DIR-070 (mandate 2) VOID PREVENTION: refuse the move when it would leave a
+    // half-empty donor page (the 250-300px void under Projects on Babu M).
+    const voidLimit = Math.max(PAGE_VOID_MAX_PX, Math.round(capacityFor(0) * PAGE_VOID_MAX_FRACTION));
+    for (const q of earlier) {
+      const donorVoid = capacityFor(q) - heightOfPage(next[q], sectionGapPx);
+      if (donorVoid > voidLimit) return buckets;
+    }
+
     const pruned = next.filter((bucket, index) => bucket.length > 0 || index === 0);
     return pruned.length ? pruned : buckets;
   };
 
-  let activeSectionGapPx = SECTION_GAP_PX;
-  let pageBuckets = packSections(activeSectionGapPx);
-
-  // (A) micro-compaction
-  if (pageBuckets.length === 2) {
-    const last = pageBuckets[pageBuckets.length - 1];
-    const minor = heightOfPage(last, activeSectionGapPx) <= MINOR_OVERFLOW_PX || last.length <= 2;
-    if (minor) {
-      const compacted = packSections(COMPACT_SECTION_GAP_PX);
-      if (compacted.length === 1) {
-        pageBuckets = compacted;
-        activeSectionGapPx = COMPACT_SECTION_GAP_PX;
+  /**
+   * DIR-070 (mandate 3) MULTI-TIER ADAPTIVE MICRO-COMPACTION.
+   *
+   * Each tier rebuilds the sections with its OWN card geometry (padding, grid row
+   * gap, title margin) and re-packs. The first tier that fits ONE page wins —
+   * otherwise the tier that packs the fewest pages is kept. The adopted tier is
+   * returned so the composer paints exactly what was estimated.
+   */
+  const packWithTiers = () => {
+    let best = null;
+    for (const tier of COMPACTION_TIERS) {
+      const tierSections = buildSections(tier);
+      const buckets = packSections(tierSections, tier.sectionGapPx);
+      // A single-page fit always wins.
+      if (buckets.length === 1) return { tier, buckets };
+      // Otherwise prefer fewer pages; on a tie adopt the tighter tier ONLY when it
+      // genuinely packs MORE onto page 1 (a denser page 1 = less void), never a
+      // cosmetic change.
+      if (!best
+          || buckets.length < best.buckets.length
+          || (buckets.length === best.buckets.length && buckets[0].length > best.buckets[0].length)) {
+        best = { tier, buckets };
       }
     }
+    return best;
+  };
+
+  const packed = packWithTiers();
+  let activeTier = packed.tier;
+  let pageBuckets = packed.buckets;
+
+  // DIR-070 (mandate 4) BALANCED 2-PAGE DISTRIBUTION: the packer already fills
+  // page 1 greedily (splitting a section whenever at least one row fits), so a
+  // two-page result keeps page 1 dense. The orphan guard then only rebalances a
+  // stranded single row when doing so cannot leave a half-empty page 1.
+  pageBuckets = applyOrphanGuard(pageBuckets, activeTier.sectionGapPx);
+
+  // If the guard changed the page count, re-run the tier search so the adopted
+  // rhythm still matches the final layout.
+  if (pageBuckets.length !== packed.buckets.length) {
+    const rePacked = packWithTiers();
+    activeTier = rePacked.tier;
+    pageBuckets = applyOrphanGuard(rePacked.buckets, rePacked.tier.sectionGapPx);
   }
 
-  // (B) orphan guard
-  pageBuckets = applyOrphanGuard(pageBuckets, activeSectionGapPx);
+  const activeSectionGapPx = activeTier.sectionGapPx;
 
   const sidebarPayload = hasSidebar ? {
     skills: sidebarSkills,
@@ -653,6 +717,16 @@ export function partitionResumeContent(values = {}, theme = {}) {
     // DIR-067: the section rhythm actually used to pack. The renderer applies it as
     // an inline --smart-section-gap so the painted gap always equals the estimate.
     sectionGapPx: activeSectionGapPx,
+    // DIR-070: the full compaction descriptor, so the renderer paints the same
+    // grid row gap / card padding / title margin that the estimate used.
+    compaction: {
+      tier: activeTier.id,
+      sectionGapPx: activeTier.sectionGapPx,
+      gridRowGapPx: activeTier.gridRowGapPx,
+      cardPadPx: activeTier.cardPadPx,
+      titleMarginPx: activeTier.titleMarginPx,
+      titleGapPx: activeTier.titleGapPx,
+    },
     pages: pageBuckets.map((flowItems, index) => ({
       pageNumber: index + 1,
       isFirstPage: index === 0,

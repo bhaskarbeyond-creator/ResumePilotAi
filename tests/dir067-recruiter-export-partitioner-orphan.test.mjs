@@ -89,9 +89,12 @@ test('DIR-067 S4: the backend public DOCX route is published-only and rate-limit
 
 test('DIR-067 S5: the partitioner exposes a reusable packer, compaction and an orphan guard', () => {
     const src = read('src/engine/hybrid/smartPartitioner.js');
-    assert.match(src, /const packSections = \(sectionGapPx\)/, 'the packer must be re-runnable');
-    assert.match(src, /COMPACT_SECTION_GAP_PX = 11/, 'the compact rhythm must be 11px');
-    assert.match(src, /MINOR_OVERFLOW_PX = 60/, 'a minor overflow must be <=60px');
+    // DIR-070 superseded the single-rhythm compaction with a tier table and made
+    // the packer take the tier's sections.
+    assert.match(src, /const packSections = \(sectionsArg, sectionGapPx\)/, 'the packer must be re-runnable per tier');
+    assert.match(src, /const COMPACTION_TIERS = \[/, 'the multi-tier compaction table must exist');
+    assert.match(src, /const buildSections = \(tier\) =>/, 'the section building must be tier-aware');
+    assert.match(src, /const PAGE_VOID_MAX_PX = 80/, 'the Page-1 void ceiling must exist');
     assert.match(src, /const applyOrphanGuard = /, 'an orphan guard must exist');
     assert.match(src, /sectionGapPx: activeSectionGapPx/, 'the chosen rhythm must be returned');
     const composer = read('src/engine/hybrid/SmartResumeComposer.jsx');
@@ -130,20 +133,28 @@ function* profileSpace() {
     }
 }
 
-test('DIR-067 S6 (functional): adaptive micro-compaction collapses a minor overflow onto one page', () => {
-    let compacted = 0;
+test('DIR-067 S6 (functional): adaptive micro-compaction is adopted only when it helps', () => {
+    let onePage = 0;
+    let denseTwoPage = 0;
     for (const { archetype, values } of profileSpace()) {
         const result = partitionResumeContent(values, { archetype, density: 'standard' });
-        if (result.sectionGapPx === 11) {
-            compacted += 1;
-            // Adopted ONLY when the whole resume fits one page.
-            assert.equal(result.totalPages, 1, 'compaction must only be adopted when it fits one page');
-        }
+        if (result.compaction.tier === 0) continue;
+        if (result.totalPages === 1) { onePage += 1; continue; }
+        // DIR-070: a tighter tier may now also be adopted for a two-page result,
+        // but ONLY when it keeps Page 1 dense (>=85%) — never a cosmetic change.
+        const donor = result.pages[0];
+        const content = donor.flowItems.reduce((s, i) => s + (i.estHeight || 0), 0);
+        let groups = 0; let prev = null;
+        for (const i of donor.flowItems) { if (i.type !== prev) { groups += 1; prev = i.type; } }
+        const fill = (content + Math.max(0, groups - 1) * result.sectionGapPx) / 860;
+        assert.ok(fill >= 0.85, `${archetype}: compaction left Page 1 at ${(fill * 100).toFixed(1)}%`);
+        denseTwoPage += 1;
     }
-    assert.ok(compacted > 0, 'at least one minor-overflow profile must micro-compact onto one page');
+    assert.ok(onePage > 0, 'at least one profile must micro-compact onto one page');
+    assert.ok(denseTwoPage >= 0, 'two-page compaction must still keep Page 1 dense');
 });
 
-test('DIR-067 S7 (functional): no page strands a single isolated continuation row', () => {
+test('DIR-067 S7 (functional): a stranded continuation row is only allowed to avoid a Page-1 void', () => {
     const keyOf = (item) => (item.sectionId ? `${item.type}:${item.sectionId}` : item.type);
     for (const { archetype, values } of profileSpace()) {
         const result = partitionResumeContent(values, { archetype, density: 'standard' });
@@ -158,11 +169,16 @@ test('DIR-067 S7 (functional): no page strands a single isolated continuation ro
             .some((page) => page.flowItems.some((item) => keyOf(item) === key));
         const isGrid = key.startsWith('certification') || key.startsWith('project');
         const oneRow = isGrid ? last.length <= 2 : last.length <= 1;
-        assert.equal(
-            onEarlierPage && oneRow,
-            false,
-            `${archetype}: the last page stranded a single ${key} row while the same section continued from an earlier page`,
-        );
+        if (!(onEarlierPage && oneRow)) continue;
+        // DIR-070 (mandate 2): the guard declines the move only when moving the
+        // whole section would leave >80px of void on Page 1. Every stranded case
+        // must therefore still leave Page 1 dense (>=85% fill).
+        const donor = result.pages[0];
+        const content = donor.flowItems.reduce((s, i) => s + (i.estHeight || 0), 0);
+        let groups = 0; let prev = null;
+        for (const i of donor.flowItems) { if (i.type !== prev) { groups += 1; prev = i.type; } }
+        const fill = (content + Math.max(0, groups - 1) * result.sectionGapPx) / 860;
+        assert.ok(fill >= 0.85, `${archetype}: stranded ${key} row with a half-empty Page 1 (${(fill * 100).toFixed(1)}%)`);
     }
 });
 

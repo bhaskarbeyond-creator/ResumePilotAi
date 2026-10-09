@@ -549,7 +549,7 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--primary, #0891b2);
-  margin: 0 0 3px;
+  margin: 0 0 var(--smart-title-gap, 3px);
   padding: 0;
   border: none;
 }
@@ -910,7 +910,8 @@
 .smart-cert-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 7px 10px;
+  /* DIR-070: the row gap is a compaction lever, matching .smart-cards-grid. */
+  gap: var(--smart-grid-row-gap, 7px) 10px;
   width: 100%;
 }
 
@@ -923,7 +924,8 @@
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  padding: 6px 9px;
+  /* DIR-070: the vertical card padding is a compaction lever (6px default). */
+  padding: var(--smart-card-pad, 6px) 9px;
   background-color: #f8fafc;
   border-radius: 6px;
   border: 1px solid #e2e8f0;
@@ -1072,7 +1074,9 @@
 .smart-cards-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 7px 10px;
+  /* DIR-070: the row gap is a compaction lever (7px default, 5px when compacted),
+     so the estimate and the painted grid always agree. */
+  gap: var(--smart-grid-row-gap, 7px) 10px;
   width: 100%;
 }
 
@@ -1081,7 +1085,8 @@
 }
 
 .smart-card-item {
-  padding: 7px 9px;
+  /* DIR-070: the vertical card padding is a compaction lever (7px default). */
+  padding: var(--smart-card-pad, 7px) 9px;
   background-color: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 5px;

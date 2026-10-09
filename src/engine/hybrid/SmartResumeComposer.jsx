@@ -20,6 +20,10 @@ export default function SmartResumeComposer({ templateId = 'Cv1', _language = 'e
   // the density default unless adaptive micro-compaction tightened it to fit one
   // page — and applying it here keeps the painted gap identical to the estimate.
   const sectionGapPx = partitionResult.sectionGapPx;
+  // DIR-070: the multi-tier compaction descriptor. The grid row gap and card
+  // padding are painted from the SAME numbers the estimator used, so a compacted
+  // tier cannot introduce footer overlap.
+  const compaction = partitionResult.compaction;
 
   const isSingleCol = theme.archetype === ARCHETYPES.MINIMAL_ATS || theme.archetype === ARCHETYPES.COMPACT_EURO;
   const isBanner = theme.archetype === ARCHETYPES.EXECUTIVE_BANNER;
@@ -82,6 +86,12 @@ export default function SmartResumeComposer({ templateId = 'Cv1', _language = 'e
                 // DIR-067: pin the packed section rhythm (density default, or the
                 // tighter micro-compacted rhythm) so render === estimate.
                 ...(Number.isFinite(sectionGapPx) ? { '--smart-section-gap': `${sectionGapPx}px` } : null),
+                // DIR-070: pin the compacted grid geometry too.
+                ...(compaction ? {
+                  '--smart-grid-row-gap': `${compaction.gridRowGapPx}px`,
+                  '--smart-card-pad': `${compaction.cardPadPx}px`,
+                  '--smart-title-gap': `${compaction.titleGapPx}px`,
+                } : null),
               }}
             >
               <ResumeWatermarkOverlay
