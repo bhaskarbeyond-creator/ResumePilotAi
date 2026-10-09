@@ -489,6 +489,57 @@ Watchers restarted so the new code is live (`lead_watcher.cjs` 23004 -> **23704*
   `bridge freeze` will drop it again. The 11-file **lock** does cover it, so drift is
   still detected — only the manifest's own list is lossy.
 
+---
+
+## 11. ROUND 6 — THE TRUE ORIGIN OF THE 113 GHOST DISPATCHES
+
+A fifth ghost wake (`DIR-001-mv0kvpjw-dd568a`, `proj-XwSbw1-6c8f778e`) arrived *after*
+the round-5 guards. Rather than assume it was residual, I checked whether new wakes
+were still being produced:
+
+```
+last ghost dispatch : 2026-10-09T06:33:00.551Z  (proj-fEcaTC-df685efb)
+after that         : only IME365-a641d3a0 DIR-062 (legitimate)
+dispatches after 06:45Z : 0        <- round-5 guards hold
+```
+
+So the bridge had **stopped** producing ghosts. The wake I received was from the
+`06:22–06:33` burst — an **already-queued IDE task**, not a new dispatch.
+
+### How 113 wakes were produced
+
+Counting every `DISPATCH` for a `proj-*` scratch project: **113**, with distinct wake
+ids spanning `mv0kpoal` … `mv0l9k6m`. The dispatcher was **`lead_liveness_guard.cjs`**
+(the component added earlier to fix the "Lead never auto-responds" stall).
+
+It was not misbehaving: `readProjects()` requires root + `.bridge/ledger.jsonl` + `.git`,
+and `guardProject()` guards on `missing-root`. **My test suite satisfied every one of
+those conditions** — it ran `git init`, scaffolded a real `.bridge` with a ledger, and
+(before hermetic mode) registered the project. To the always-on automation it was
+indistinguishable from a genuine project, so the guard legitimately dispatched a
+`DIR-001` wake for each one it saw.
+
+**This is the real lesson of DIR-062:** the hermetic fix is what closes this path too,
+because the guard iterates the **registry** — and a hermetic suite never registers.
+
+### Cleanup
+
+* `lead_liveness_guard_state.json` purged of dead-project entries (`5 -> 3` keys; only
+  `IME365-a641d3a0:DIR-059/060/062` remain).
+* No code change needed in `lead_liveness_guard.cjs` — it already guards `missing-root`.
+
+### Honest limits (round 6)
+
+* **I cannot clean the remaining backlog.** Up to ~113 wake prompts were handed to the
+  IDE during `06:22–06:33`; those are pending IDE tasks and no bridge-side action can
+  recall them. Further ghost prompts may still surface until that backlog drains.
+* The wake ids appear **only in `logs/bridge.jsonl`** — not in the queue, registry or any
+  per-project dir — which is consistent with the dispatch already having been handed off.
+  I could not prove the exact IDE-side store that holds them.
+* The 113 figure counts `DISPATCH` log events for `proj-*` keys; not all of them
+  necessarily became user-visible prompts.
+
+
 
 
 
