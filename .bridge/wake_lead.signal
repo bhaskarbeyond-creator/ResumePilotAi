@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-09T05:29:20.903Z",
-  "seq": 2456,
-  "id": "evt_mv0izoxc_40fcccdc9bf3",
-  "type": "HEARTBEAT",
-  "title": "[Heartbeat] S1-S6 implemented. LIVE PROBE PROVES the contract: anon 401 AUTH_REQUIRED, authed 200 success=true source=MARIADB_USER_DOCUMENTS with real numeric counts. One documented deviation: the directive named",
+  "timestamp": "2026-10-09T05:29:22.323Z",
+  "seq": 2457,
+  "id": "evt_mv0izq0x_e307c0da5498",
+  "type": "EVIDENCE_SUBMITTED",
+  "title": "[Evidence] DIR-058: Candidate Dashboard Real MariaDB Metrics Aggregation & Multi-Step Onboarding",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-058",
-  "summary": "S1-S6 implemented. LIVE PROBE PROVES the contract: anon 401 AUTH_REQUIRED, authed 200 success=true source=MARIADB_USER_DOCUMENTS with real numeric counts. One documented deviation: the directive named backend/routes/platform.js but that router mounts at /api/platform and returned 404 for the specified path - the handler now lives in the miscData router which mounts at /api (proven by the probe). Gates: new suite 5/5, dashboard/Cuba regression 67/67, backend routes 24/0, product 756/0, lint 0 errors, build exit 0 (2.35s). Submitting evidence."
+  "summary": "DIR-058 COMPLETE (S1-S6). PROVEN DEFECTS FIXED: (1) platform.js:1898 getStatesOfUser was a hardcoded return [] so every dashboard counter was pinned at 0 (DashboardHomepage.jsx:287 and DashboardActions.jsx:32 spread/Access it); it now reads the real owner-scoped endpoint and returns apiError (never fabricated zeros) on failure. (2) DashboardHomepage.jsx:74-89 onboardingSteps held exactly ONE hardcoded step; it now has the four mandated steps (Profile, First Resume, Cover Letter, First Job Application) with completion DERIVED from measured counts via applyOnboardingProgress. (3) CubaCandidateHero.jsx:238-246 labelled a card Job Applications but fed it getTrackedJobs() - a mislabel - it now shows the REAL application count with tracked jobs moved to the hint. NEW ENDPOINT: GET /api/user-stats - owner-scoped via req.user.uid, aggregating getResumes/getCovers/getPortfolios/getApplications({applicantId})/getTrackedJobs plus derived profileComplete, returning {success, stats, source} and a real 503 on failure. LIVE PROOF (.bridge/evidence/dir058-live-probe.log): ANON 401 AUTH_REQUIRED; AUTHED 200 success=true source=MARIADB_USER_DOCUMENTS with numeric stats and boolean profileComplete. DOCUMENTED DEVIATION: the directive named backend/routes/platform.js, but that router is mounted at /api/platform (index.js:510) so it returned 404 for the specified /api/user-stats path (proven by probe, then removed); the handler lives in backend/routes/miscData.js which is mounted at /api (index.js:511) alongside /stats and /favourites. GATES: new suite 5/5; dashboard+Cuba regression 67/67; backend routes.integration 24 pass/0 fail; product matrix 756 pass/0 fail; eslint 0 errors; build exit 0 in 2.35s. Doc: .bridge/evidence/dir058-implementation-evidence.md."
 }

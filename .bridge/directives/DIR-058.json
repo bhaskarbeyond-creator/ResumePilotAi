@@ -2,11 +2,11 @@
   "id": "DIR-058",
   "title": "Candidate Dashboard Real MariaDB Metrics Aggregation & Multi-Step Onboarding",
   "priority": "P1",
-  "status": "IN_PROGRESS",
+  "status": "APPROVED",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-09T03:08:15.294Z",
-  "updatedAt": "2026-10-09T05:22:23.453Z",
+  "updatedAt": "2026-10-09T05:29:53.491Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "### 1. MANDATE & PROBLEM STATEMENT\nsrc/services/api/platform.js:1898 defines getStatesOfUser as a hardcoded stub returning [].\nConsequently, candidate counters for resumes, cover letters, and applications show 0 despite existing records.\nFurthermore, the candidate onboarding checklist contains only 1 single hardcoded step.\n\n### 2. ARCHITECTURAL SPECIFICATION\n1. Author GET /api/user-stats in backend aggregating user document counts (resumes, covers, portfolios, applications).\n2. Connect getStatesOfUser to call /api/user-stats.\n3. Update DashboardHomepage.jsx and CubaCandidateHero.jsx to render honest metrics.\n4. Expand candidate onboarding checklist to track completion of Profile, First Resume, Cover Letter, and First Job Application.\n\n### 3. IMPLEMENTATION PLAN\n- S1: Author GET /api/user-stats in backend/routes/platform.js.\n- S2: Connect getStatesOfUser in src/services/api/platform.js.\n- S3: Update DashboardHomepage.jsx to consume live stats.\n- S4: Update CubaCandidateHero.jsx to reflect live stats.\n- S5: Expand onboarding checklist.\n- S6: Author test suite tests/dir058-dashboard-stats.test.mjs.",
   "invariants": [],
@@ -25,10 +25,36 @@
     ],
     "planHash": "2041dc1f4abf69e6c6d986d21fc83283b04cb8300ade34b8e859083778f49e30"
   },
-  "evidence": null,
-  "reviews": [],
+  "evidence": {
+    "submittedAt": "2026-10-09T05:29:21.157Z",
+    "summary": "DIR-058 COMPLETE (S1-S6). PROVEN DEFECTS FIXED: (1) platform.js:1898 getStatesOfUser was a hardcoded return [] so every dashboard counter was pinned at 0 (DashboardHomepage.jsx:287 and DashboardActions.jsx:32 spread/Access it); it now reads the real owner-scoped endpoint and returns apiError (never fabricated zeros) on failure. (2) DashboardHomepage.jsx:74-89 onboardingSteps held exactly ONE hardcoded step; it now has the four mandated steps (Profile, First Resume, Cover Letter, First Job Application) with completion DERIVED from measured counts via applyOnboardingProgress. (3) CubaCandidateHero.jsx:238-246 labelled a card Job Applications but fed it getTrackedJobs() - a mislabel - it now shows the REAL application count with tracked jobs moved to the hint. NEW ENDPOINT: GET /api/user-stats - owner-scoped via req.user.uid, aggregating getResumes/getCovers/getPortfolios/getApplications({applicantId})/getTrackedJobs plus derived profileComplete, returning {success, stats, source} and a real 503 on failure. LIVE PROOF (.bridge/evidence/dir058-live-probe.log): ANON 401 AUTH_REQUIRED; AUTHED 200 success=true source=MARIADB_USER_DOCUMENTS with numeric stats and boolean profileComplete. DOCUMENTED DEVIATION: the directive named backend/routes/platform.js, but that router is mounted at /api/platform (index.js:510) so it returned 404 for the specified /api/user-stats path (proven by probe, then removed); the handler lives in backend/routes/miscData.js which is mounted at /api (index.js:511) alongside /stats and /favourites. GATES: new suite 5/5; dashboard+Cuba regression 67/67; backend routes.integration 24 pass/0 fail; product matrix 756 pass/0 fail; eslint 0 errors; build exit 0 in 2.35s. Doc: .bridge/evidence/dir058-implementation-evidence.md.",
+    "tests": {
+      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir058-product-regression.log",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791523761158_dir058-product-regression.log",
+      "sha256": "f06a871cb90fc39bbd5a0785b6d62e284c9a466e84b6d5992709d8c112a90768",
+      "size": 88664
+    },
+    "domCrawl": null,
+    "artifacts": [],
+    "git": {
+      "isGit": true,
+      "head": "7b48366a10402c14a37685728decadc0dd4df241",
+      "branch": "arena/01a0e100-resumepilotai",
+      "dirty": false,
+      "status": ""
+    },
+    "manifestHash": "2328dde56be7fa13bd666f3f410fd6f0d160493d9ba5538dec95113a0f82670f"
+  },
+  "reviews": [
+    {
+      "reviewedAt": "2026-10-09T05:29:53.491Z",
+      "verdict": "APPROVED",
+      "feedback": "Automated verification check passed.",
+      "evidenceHash": "2328dde56be7fa13bd666f3f410fd6f0d160493d9ba5538dec95113a0f82670f"
+    }
+  ],
   "freeze": null,
-  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "lastTransitionReason": "lead review",
   "continuationPending": false,
   "revisionTarget": null,
   "heartbeats": [
