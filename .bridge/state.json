@@ -1,26 +1,26 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-09T08:58:14.981Z",
-  "eventCount": 2516,
-  "activeDirectiveId": "DIR-064",
-  "activeDirectiveTitle": "DIR-064: Eliminate PDF Blank Page & Skip-Link Bleed, Fix Footer Overlap (Certification Card Geometry), and Centralized Cross-Platform Export Pipeline",
-  "activeDirectiveStatus": "CHANGES_REQUESTED",
+  "updatedAt": "2026-10-09T09:42:42.093Z",
+  "eventCount": 2533,
+  "activeDirectiveId": "DIR-065",
+  "activeDirectiveTitle": "DIR-065: 10/10 Adaptive Smart Partitioner (Fix PDF Footer Overlap) & High-Fidelity DOCX<->PDF Card Parity",
+  "activeDirectiveStatus": "IN_PROGRESS",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-09T06:02:21.462Z",
-  "unreadForLead": 55,
-  "unreadForDev": 77,
+  "stallDeadline": "2026-10-09T09:41:55.658Z",
+  "unreadForLead": 62,
+  "unreadForDev": 86,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-09T06:02:21.462Z",
-    "status": "Wake DIR-061-mv0jx73q-ae4f7a is STALE (already in seen_wakes) and its work is DONE + CERTIFIED: DIR-061 = APPROVED_FROZEN (lastTransition='gatekeeper certification', freezeHash 4ce6732f, commits 183762ed [EVIDENCE] -> 4ce6732f [CERTIFIED]). Correctly did NOT re-execute - re-running would modify a frozen baseline. Re-verified the frozen state: dir061 + INV-1 suites 34/34 pass, src/cv-templates byte-identical to e314f715 (zero diff), working tree clean. bridge turn = no active directive.",
-    "percent": 100
+    "timestamp": "2026-10-09T09:41:55.658Z",
+    "status": "ACT authorized (plan 85/100). Starting S1-S4 adaptive row-paired partitioner (Projects/Certs grid rows, dynamic >=36px footer clearance).",
+    "percent": 10
   },
   "integrity": {
     "ok": false,
-    "checked": 2516,
-    "legacy": 2,
-    "bad": 2
+    "checked": 2533,
+    "legacy": 3,
+    "bad": 3
   }
 }

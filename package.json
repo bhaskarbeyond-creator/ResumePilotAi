@@ -19,6 +19,8 @@
     "test:dir063:probes": "node template-lab/run-probes.mjs --fixtures long,extreme --probes print,overflow",
     "test:dir064": "node --test tests/dir064-wake-supersede.test.mjs",
     "test:dir064:print": "node --test tests/dir064-pdf-print-export-pipeline.test.mjs",
+    "test:dir065": "node --test tests/dir065-adaptive-partitioner-docx-parity.test.mjs",
+    "test:dir065:census": "node template-lab/run-probes.mjs --fixtures gridDense --probes census",
     "test:dir064:visual": "node template-lab/docx-visual-parity.mjs",
     "test:api-resilience": "node tests/test_api_server_e2e_resilience.cjs",
     "test:ai-settings": "node --test tests/admin-ai-settings.test.mjs backend/test/ai-admin.test.js",

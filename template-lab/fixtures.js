@@ -375,9 +375,48 @@ export const FIXTURES = Object.freeze({
       { name: 'Katrin Weber', reference: 'VP Infrastructure — katrin@refs.example' },
     ],
   },
+  /**
+   * DIR-065 — the "5 projects + 5 certifications" profile (Babu M) that used to
+   * fast-path all ten grid cards onto page 1 while the real DOM overflowed into
+   * the footer. Deliberately TIGHT: a two-line summary and four roles push the
+   * row-paired grid estimate right up to the A4 budget so the packer must flow
+   * the last row onto page 2 with a continuation header.
+   */
+  gridDense: {
+    firstname: 'Babu',
+    lastname: 'M',
+    occupation: 'Senior Critical Care Nurse',
+    email: 'babu.m@example.com',
+    phone: '+91 90000 00000',
+    city: 'Hyderabad',
+    country: 'India',
+    summary: '<p>Senior critical-care nurse with a decade of ICU experience and a track record of leading rapid-response teams across multiple hospitals.</p>',
+    employments: Array.from({ length: 4 }, (_, i) => ({
+      jobTitle: `Registered Nurse ${i + 1}`,
+      employer: `City Hospital ${i + 1}`,
+      begin: `${2013 + i}`,
+      end: `${2015 + i}`,
+      description: '<p>Delivered critical care to patients and coordinated multidisciplinary teams across a busy unit, mentoring new staff.</p>',
+    })),
+    educations: [{ school: 'Osmania University', degree: 'B.Sc. Nursing', started: '2009', finished: '2013' }],
+    skills: [{ name: 'Critical Care' }, { name: 'Patient Triage' }, { name: 'ACLS' }],
+    languages: [{ name: 'English', level: 'Fluent' }, { name: 'తెలుగు', level: 'Native' }],
+    projects: Array.from({ length: 5 }, (_, i) => ({
+      title: `Clinical Quality Initiative ${i + 1}`,
+      description: 'Built and shipped a standardised care bundle used across the unit.',
+      url: `https://github.com/babu/quality-${i + 1}`,
+    })),
+    certifications: [
+      { title: 'CCRN', issuer: 'AACN', date: '2018' },
+      { title: 'ACLS', issuer: 'AHA', date: '2019' },
+      { title: 'BLS', issuer: 'AHA', date: '2020' },
+      { title: 'PALS', issuer: 'AHA', date: '2021' },
+      { title: 'TNCC', issuer: 'ENA', date: '2022' },
+    ],
+  },
 });
 
-export const FIXTURE_ORDER = Object.freeze(['minimal', 'normal', 'long', 'extreme', 'unicode', 'sparse', 'senior', 'executive', 'academic', 'technical']);
+export const FIXTURE_ORDER = Object.freeze(['minimal', 'normal', 'long', 'extreme', 'unicode', 'sparse', 'senior', 'executive', 'academic', 'technical', 'gridDense']);
 
 export const TEMPLATE_IDS = Object.freeze(Array.from({ length: 51 }, (_, i) => `Cv${i + 1}`));
 

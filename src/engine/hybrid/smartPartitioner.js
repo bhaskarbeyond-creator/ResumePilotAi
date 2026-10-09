@@ -174,6 +174,69 @@ export function partitionResumeContent(values = {}, theme = {}) {
     return Math.round(rowPx * densityScale);
   };
 
+  /**
+   * DIR-065 — project card geometry estimator.
+   *
+   * Projects render into the same 2-column grid pattern as certifications
+   * (`.smart-cards-grid` → `.smart-card-item`): a bordered card with a bold title,
+   * an optional repository URL and a description. The old estimator treated a
+   * project as linear text (28 + textHeight + 8/26), i.e. ~36px, even though the
+   * real card is a >=65px grid row — which is what let 5 projects + 5
+   * certifications fast-path onto page 1 while the real DOM overflowed by ~89px.
+   */
+  const PROJECT_CARD_MIN_PX = 65; // measured 2-col card: title + url + description
+  const PROJECT_CARD_MAX_PX = 92; // long wrapping description clamps here
+  const projectCardHeightFor = (proj) => {
+    const title = String(proj?.title || proj?.name || '');
+    const url = String(proj?.url || proj?.link || '').replace(/^https?:\/\//i, '');
+    const descLen = getTextLength(proj?.description);
+    const titleLines = Math.max(1, Math.ceil(title.length / 34));
+    const descLines = Math.max(1, Math.ceil(descLen / 40));
+    // 14px padding (7+7) + 2px border + 2px gap + title line + url line + desc lines.
+    const base = 18 + titleLines * 14 + (url ? 13 : 0) + descLines * 14;
+    return Math.round(Math.min(PROJECT_CARD_MAX_PX, Math.max(PROJECT_CARD_MIN_PX, base)) * densityScale);
+  };
+
+  /**
+   * DIR-065 — row-paired grid estimation.
+   *
+   * Both grid sections lay their cards out two per row, and a CSS grid row is as
+   * tall as its TALLEST card plus the row gap. Charging each card independently —
+   * and the odd card of a pair zero — under-counted every row whose partner was
+   * taller. This pairs the cards into rows and charges each row
+   * `Math.max(cardA, cardB) + rowGap`, carrying the row height on the row-start
+   * card while its partner carries 0. The row is therefore atomic: the packer's
+   * per-item sum always equals the true row sum, and a row can never be split
+   * across a page boundary (which would otherwise re-flow it as two half rows).
+   */
+  const pairGridRows = (cards, heightOf, rowGap, titleHeight, type) => {
+    const items = [];
+    for (let i = 0; i < cards.length; i += 2) {
+      const first = cards[i];
+      const second = cards[i + 1];
+      const rowHeight = Math.max(heightOf(first), second ? heightOf(second) : 0) + rowGap;
+      items.push({
+        type,
+        item: first,
+        index: i,
+        isFirst: i === 0,
+        rowStart: true,
+        estHeight: Math.round(rowHeight + (i === 0 ? titleHeight : 0)),
+      });
+      if (second) {
+        items.push({
+          type,
+          item: second,
+          index: i + 1,
+          isFirst: false,
+          rowStart: false,
+          estHeight: 0,
+        });
+      }
+    }
+    return items;
+  };
+
   // Optional: If certifications are very few and sidebar is almost empty, place them in sidebar
   const certsInSidebar = hasSidebar && (skillCount + hobbiesCount) <= 4 && certifications.length <= 2;
   // The sidebar renders the same cards in a single column, so each item is its own row.
@@ -240,16 +303,17 @@ export function partitionResumeContent(values = {}, theme = {}) {
   // Page 1 of a banner layout loses height to the full-width banner.
   // A ~5 % headroom absorbs residual estimator error (font metrics, wrapping)
   // so a page is never packed marginally past the sheet.
-  // DIR-064: reserve a hard clearance band above .smart-page-footer on every page.
-  // A certification card that under-estimated its own height used to be packed to
-  // the very last pixel and then clipped into the footer; this clearance — paired
-  // with the recalibrated certification estimator below — guarantees cards clear it.
-  const FOOTER_SAFETY_CLEARANCE = 22;
+  // DIR-064 / DIR-065: reserve a hard clearance band above .smart-page-footer on
+  // every page. DIR-065 raises the floor to >=36px (density-scaled) so a grid row
+  // whose card wraps taller than its estimate can never be packed into the footer.
+  const FOOTER_SAFETY_CLEARANCE = Math.max(36, Math.round(40 * densityScale));
   const P1_CAPACITY = ((isBanner || isTechGrid) ? 815 : 900) - FOOTER_SAFETY_CLEARANCE;
   // Continuation pages carry only the slim continuation header + footer.
   const PN_CAPACITY = 930 - FOOTER_SAFETY_CLEARANCE;
   // Must track --smart-section-gap in smartEngine.css (compact/standard/spacious).
   const SECTION_GAP_PX = density === 'compact' ? 11 : density === 'spacious' ? 18 : 14;
+  // Grid row gap — must track `.smart-cards-grid` / `.smart-cert-grid` (7px 10px).
+  const GRID_ROW_GAP = 7;
 
   // 1. Build All Main Flow Sections in Priority Sequence
   const sections = [];
@@ -324,33 +388,16 @@ export function partitionResumeContent(values = {}, theme = {}) {
     sections.push({ type: 'skills', items: skillChunkItems, estHeight: totalSkillsHeight });
   }
 
-  // Projects
+  // Projects — 2-column card grid (row-paired, DIR-065)
   if (projects && projects.length) {
-    const projItems = projects.map((proj, index) => {
-      const textLen = getTextLength(proj.description);
-      const estHeight = Math.round(28 + calcTextHeight(textLen) + (index === 0 ? 26 : 8));
-      return { type: 'project', item: proj, index, isFirst: index === 0, estHeight };
-    });
+    const projItems = pairGridRows(projects, projectCardHeightFor, GRID_ROW_GAP, 28, 'project');
     const sectionHeight = projItems.reduce((sum, it) => sum + it.estHeight, 0);
     sections.push({ type: 'project', items: projItems, estHeight: sectionHeight });
   }
 
-  // Certifications (when in Main Flow)
+  // Certifications (when in Main Flow) — 2-column card grid (row-paired, DIR-065)
   if ((isSingleCol || !sidebarKeepsCerts) && certifications.length) {
-    const certItems = certifications.map((cert, index) => {
-      const isNewRow = index % 2 === 0;
-      // DIR-064: charge the real card height (76–88px) instead of the old 52px so a
-      // row of certification cards can never be packed into the page footer.
-      const rowHeight = isNewRow ? certRowHeightFor(cert) : 0;
-      const titleHeight = index === 0 ? 28 : 0;
-      return {
-        type: 'certification',
-        item: cert,
-        index,
-        isFirst: index === 0,
-        estHeight: rowHeight + titleHeight,
-      };
-    });
+    const certItems = pairGridRows(certifications, certRowHeightFor, GRID_ROW_GAP, 28, 'certification');
     const sectionHeight = certItems.reduce((sum, it) => sum + it.estHeight, 0);
     sections.push({ type: 'certification', items: certItems, estHeight: sectionHeight });
   }

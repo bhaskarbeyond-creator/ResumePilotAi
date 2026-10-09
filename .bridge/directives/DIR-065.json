@@ -1,0 +1,80 @@
+{
+  "id": "DIR-065",
+  "title": "DIR-065: 10/10 Adaptive Smart Partitioner (Fix PDF Footer Overlap) & High-Fidelity DOCX<->PDF Card Parity",
+  "priority": "P0",
+  "status": "IN_PROGRESS",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-09T09:38:46.432Z",
+  "updatedAt": "2026-10-09T09:40:48.374Z",
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "spec": "P0 DEFECTS & ARCHITECTURAL MANDATES: 1. ADAPTIVE SMART PARTITIONER (10/10 RATIO): In src/engine/hybrid/smartPartitioner.js, eliminate the 2-column grid height undercounting defect. Root cause: Certifications gave odd indices estHeight = 0 and Projects were estimated as linear 36px text instead of 70px 2-column card grid rows. For 5 projects + 5 certifications (e.g. Babu M), the partitioner fast-pathed all 10 items onto Page 1 (868px vs 878px capacity) when real DOM is 967px (+89px overflow), crushing the 5th certification card into the footer. Implement row-paired grid estimation (Math.max(cardA, cardB) + gap), calibrated card minimums (Projects >=65px, Certifications >=76px), and dynamic footer clearance (>=36px). Ensure tight profiles naturally flow multi-row cards onto Page 2 with authentic continuation headers in SmartFlowRenderer.jsx. 2. DOCX VS PDF HIGH-FIDELITY PARITY: In backend/services/docxExport.js, eliminate the visual disparity between DOCX and PDF. Upgrade buildProjectsBlock and buildCertificationsBlock to render structured 2-column OOXML tables with #f8fafc shading, subtle #e2e8f0 borders, padding, and title/meta hierarchy matching SmartProjects.jsx and SmartCertifications.jsx. Update buildModernSplitDocument to enable 2-column card mode. 3. ENVIRONMENT & CROSS-PLATFORM HYGIENE: Pure Linux-server compatible execution. Zero native OS console windows, no winget/cmd/PowerShell popups, zero diff in src/cv-templates/. Run full test suites and capture headless Playwright DOM census evidence before submitting.",
+  "invariants": [],
+  "acceptanceCriteria": [],
+  "plan": {
+    "submittedAt": "2026-10-09T09:40:46.298Z",
+    "summary": "DIR-065 P0, root causes confirmed by reading source. CONTRACTS/INVARIANTS: the partitioner page budget and the SmartFlowRenderer continuation-header contract must stay stable for all 55 templates, frozen src/cv-templates stays at git diff 0, and no native OS console/Windows tooling may be introduced (XAMPP-only, xampp-policy guard). (1) ADAPTIVE PARTITIONER: smartPartitioner.js estimates Projects as LINEAR text (28 + textHeight + 8/26) although SmartProjects.jsx renders them into the 2-column .smart-cards-grid, and Certifications only charge the row-start card (odd indices get 0) with no max() across the pair. For 5 projects + 5 certifications the fast-path packs all 10 items at 868px vs 878px capacity while the real DOM is 967px (+89px), crushing the 5th card into the footer. Fix: a shared pairGridRows row-paired estimator where each row costs Math.max(cardA, cardB) + rowGap, calibrated card floors (Projects >=65px, Certifications >=76px), and a dynamic density-scaled footer clearance >=36px. (2) DOCX<->PDF PARITY: backend/services/docxExport.js buildProjectsBlock renders a linear entry header and buildCertificationsBlock renders borderless bullet cells, so DOCX looks nothing like the PDF cards. Fix: structured 2-column OOXML card tables with #f8fafc shading, #e2e8f0 borders, cell padding and a title/meta hierarchy matching SmartProjects.jsx and SmartCertifications.jsx, plus 2-column card mode enabled in buildModernSplitDocument. UX STATES: no regression to the export surface loading state or the resume empty-section state, and a split grid row must never render an orphan or blank card (an authentic continuation header is shown instead). ACCESSIBILITY: card title/meta contrast (#0f172a / #64748b on #f8fafc) stays >=4.5:1, the project link keeps its aria semantics and keyboard focus ring, and DOCX tables stay reading-order linear for screen readers. SECURITY: every DOCX builder continues to sanitize user text via stripAllHtmlTags/safeUrl, no secrets or tokens are emitted, and colors are never taken from the client as authoritative. PERFORMANCE: row-pairing is a pure O(n) computation on the render path with no extra re-renders, keeping the sub-100ms render budget and the sub-4.0s build budget. QA: a functional partitioner suite, the DOCX parity suite, a headless Playwright DOM census that measures real card rects against the page-footer top, and the template-lab print/overflow probes over the 55 templates. No native console windows and no Windows-only tooling; all servers stay on XAMPP.",
+    "steps": [
+      "1. smartPartitioner.js: add one shared pairGridRows(cards, heightOf, rowGap, titleHeight) row-paired estimator that groups cards into rows of two and charges each row Math.max(cardA, cardB) + rowGap, with the row-start item carrying the row height and its partner carrying 0 so a row is atomic and the packer per-item sum equals the true row sum",
+      "2. smartPartitioner.js: add projectCardHeightFor(proj) calibrated to the real .smart-card-item (title 11px + url 9.5px + desc 10px/1.35, padding 7/9, 1px border, 2px gap) with a >=65px floor and ~92px ceiling, density-scaled, and replace the linear project estimate with row-paired estimation",
+      "3. smartPartitioner.js: route Certifications through the same pairGridRows estimator using certRowHeightFor (>=76px floor) so a taller partner card can no longer be under-counted (replaces the odd-index-0-without-max defect)",
+      "4. smartPartitioner.js: raise FOOTER_SAFETY_CLEARANCE to a dynamic density-scaled value >=36px and subtract it from P1_CAPACITY/PN_CAPACITY so the mandated clearance above .smart-page-footer is always reserved",
+      "5. smartEngine.css: match the .smart-page-body bottom buffer to the new clearance and add break-inside:avoid to .smart-card-item so project cards are atomic like .smart-cert-item",
+      "6. SmartFlowRenderer.jsx: verify and, if needed, tighten the group/continuation contract so a grid section that overflows Page 1 renders an authentic Projects (Continued)/Certifications (Continued) header on Page 2 with no orphan or blank card",
+      "7. backend/services/docxExport.js: add a CARD_BORDER (E2E8F0) plus a card-cell factory (shading F8FAFC, cell margins for padding) and rewrite buildProjectsBlock as a 2-column card table with title/url/description hierarchy matching SmartProjects.jsx",
+      "8. backend/services/docxExport.js: rewrite the two-column branch of buildCertificationsBlock from borderless bullet cells to real cards (bold title + issuer/date meta, F8FAFC fill, E2E8F0 border) and enable 2-column card mode for projects and certifications in buildModernSplitDocument while preserving certsBelongInSidebar",
+      "9. tests: author tests/dir065-adaptive-partitioner-docx-parity.test.mjs with functional assertions (the 5-project + 5-certification fixture must NOT fast-path all items onto Page 1",
+      "row heights >=65px projects and >=76px certs",
+      "clearance >=36px",
+      "DOCX emits F8FAFC card tables) plus npm script test:dir065, and add a template-lab gridDense (Babu M) fixture with a headless Playwright partitioner-census.mjs that measures real card rects against the page-footer top and asserts zero overlap with a page-count/overflow report",
+      "10. evidence: run npm run lint, npm run test:security:static, npm run test:xampp-policy, the new suite, the DOCX/export backend suites, a test:product slice, node template-lab/run-probes.mjs --fixtures long,extreme --probes print,overflow and the census probe, and npm run build (verify sub-4.0s)",
+      "confirm src/cv-templates diff = 0",
+      "then submit the logs via bridge dev submit-evidence for Gatekeeper certification."
+    ],
+    "planHash": "5d07d1e47742da1dc5d5db12715c155da51aaac31496782188091f0098b1bed2"
+  },
+  "evidence": null,
+  "reviews": [],
+  "freeze": null,
+  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "continuationPending": false,
+  "revisionTarget": null,
+  "planApproval": {
+    "approvedAt": "2026-10-09T09:40:48.374Z",
+    "automated": true,
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "declared-automation",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "non-tty"
+      ],
+      "pid": 18276,
+      "parentPid": 4416,
+      "tty": false,
+      "at": "2026-10-09T09:40:48.373Z",
+      "explicitlyAllowed": true
+    },
+    "feedback": "Auto-approved by the autonomous plan-scorer (score 85/100, reviewer verdict approved). NOT a human Lead review."
+  },
+  "heartbeats": [
+    {
+      "at": "2026-10-09T09:41:55.692Z",
+      "status": "ACT authorized (plan 85/100). Starting S1-S4 adaptive row-paired partitioner (Projects/Certs grid rows, dynamic >=36px footer clearance).",
+      "percent": 10,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    },
+    {
+      "at": "2026-10-09T09:56:51.419Z",
+      "status": "S1-S10 complete: row-paired adaptive partitioner + dynamic >=36px clearance + DOCX card parity + 55-template DOM census (0 overlap). Submitting evidence.",
+      "percent": 95,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    }
+  ],
+  "lastHeartbeatAt": "2026-10-09T09:56:51.419Z"
+}

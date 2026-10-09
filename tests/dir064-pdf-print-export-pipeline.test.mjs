@@ -55,13 +55,15 @@ test('DIR-064 S5: the certification estimator is recalibrated to real card geome
     assert.doesNotMatch(src, /isNewRow \? 52 : 0/, 'the 52px under-estimate must be gone');
     assert.match(src, /CERT_ROW_MIN_PX = 76/, 'the estimator floor must match the measured 74-85px card');
     assert.match(src, /CERT_ROW_MAX_PX = 88/, 'the estimator must clamp long titles');
-    assert.match(src, /certRowHeightFor\(cert\)/, 'cert rows must use the calibrated estimator');
-    assert.match(src, /FOOTER_SAFETY_CLEARANCE = 22/, 'the packer must reserve a footer clearance');
+    // DIR-065 superseded the flat 22px clearance with a dynamic, >=36px one and
+    // routed certifications through the shared row-paired estimator.
+    assert.match(src, /certRowHeightFor/, 'cert rows must use the calibrated estimator');
+    assert.match(src, /FOOTER_SAFETY_CLEARANCE = Math\.max\(36,/, 'the packer must reserve a >=36px footer clearance');
 });
 
 test('DIR-064 S6: smartEngine.css buffers the page body and keeps cards atomic', () => {
     const css = read('src/engine/hybrid/smartEngine.css');
-    assert.match(css, /\.smart-page-body\s*\{[\s\S]*?padding-bottom:\s*14px/, '.smart-page-body needs a bottom buffer');
+    assert.match(css, /\.smart-page-body\s*\{[\s\S]*?padding-bottom:\s*\d+px/, '.smart-page-body needs a bottom buffer');
     assert.match(css, /\.smart-cert-item\s*\{[\s\S]*?break-inside:\s*avoid/, '.smart-cert-item must never split across pages');
 });
 

@@ -262,7 +262,18 @@ test('two-column templates stay two-column and ATS stays single-column', async (
   }
   for (const template of ats) {
     const xml = (await loadDoc(await createResumeDocx({ ...RICH_SAMPLE, template }))).documentXml;
-    assert.doesNotMatch(xml, /w:fill="F8FAFC"/i, `${template} must not invent a split sidebar`);
+    // DIR-065: `F8FAFC` is now also the mandated project/certification CARD fill, so
+    // it can no longer stand in for "a sidebar was invented". Assert the real thing
+    // instead: an ATS template must emit no ~34/66 split layout table (a 2-column
+    // grid whose first column is a sidebar-width fraction). Card tables are 50/50.
+    const splitGrids = [...xml.matchAll(/<w:tblGrid>([\s\S]*?)<\/w:tblGrid>/g)]
+      .map((match) => [...match[1].matchAll(/w:w="(\d+)"/g)].map((col) => Number(col[1])))
+      .filter((cols) => {
+        if (cols.length !== 2) return false;
+        const ratio = cols[0] / (cols[0] + cols[1]);
+        return ratio > 0.3 && ratio < 0.4;
+      });
+    assert.equal(splitGrids.length, 0, `${template} must not invent a split sidebar`);
     assert.match(visibleText(xml), /Professional Summary|Experience|Skills/i);
   }
 });

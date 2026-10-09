@@ -47,6 +47,20 @@ const NO_BORDERS = {
 const BULLET_REF = 'resume-bullets';
 const NUMBER_REF = 'resume-numbers';
 
+// DIR-065 — card chrome shared by the 2-column project / certification tables so
+// the DOCX matches the PDF `.smart-card-item` / `.smart-cert-item` cards
+// (background #f8fafc, 1px #e2e8f0 border, inner padding).
+const CARD_FILL = 'F8FAFC';
+const CARD_BORDER_COLOR = 'E2E8F0';
+const CARD_BORDER = { style: BorderStyle.SINGLE, size: 4, color: CARD_BORDER_COLOR };
+const CARD_BORDERS = {
+  top: CARD_BORDER,
+  bottom: CARD_BORDER,
+  left: CARD_BORDER,
+  right: CARD_BORDER,
+};
+const CARD_CELL_MARGINS = { top: 90, bottom: 90, left: 110, right: 110 };
+
 function cleanText(value, maximum = 10_000) {
   return String(value ?? '')
     .replace(/[\u0000-\u001f\u007f]/g, ' ')
@@ -769,23 +783,113 @@ function buildEducationBlock(educations, style, options = {}) {
 function buildProjectsBlock(projects, style, options = {}) {
   const items = list(projects);
   if (!items.length) return [];
-  const entryNodes = [];
-  for (const proj of items) {
-    const title = stripAllHtmlTags(proj.title || proj.name || '');
-    const rawUrl = typeof proj.url === 'string' ? proj.url : (typeof proj.link === 'string' ? proj.link : '');
-    const url = stripAllHtmlTags(rawUrl);
-    const href = safeUrl(url);
-    const displayUrl = url.replace(/^https?:\/\//i, '');
-    if (title || displayUrl) {
-      entryNodes.push(...createEntryHeader(title, displayUrl, '', style, { ...options, subTitleHref: href }));
-    }
-    if (proj.description) entryNodes.push(...parseRichTextToParagraphs(proj.description, style, { size: 20 }));
+  const totalWidth = options.contentWidth || CONTENT_WIDTH;
+  const colWidth = Math.floor(totalWidth / 2);
+  const rows = [];
+  for (let i = 0; i < items.length; i += 2) {
+    rows.push(new TableRow({
+      children: [
+        buildProjectCardCell(items[i], style, colWidth),
+        buildProjectCardCell(items[i + 1], style, colWidth),
+      ],
+    }));
   }
-  if (!entryNodes.length) return [];
   return [
     createSectionHeading(options.title || 'Projects', style, { beforeSpacing: options.beforeSpacing ?? 160, color: options.headingColor, underlined: options.underlined }),
-    ...entryNodes,
+    new Table({
+      width: { size: totalWidth, type: WidthType.DXA },
+      columnWidths: [colWidth, colWidth],
+      layout: TableLayoutType.FIXED,
+      borders: NO_BORDERS,
+      rows,
+    }),
   ];
+}
+
+/**
+ * DIR-065 — one project card cell matching `SmartProjects.jsx`:
+ * bold title, then a linked repository URL, then the description.
+ */
+function buildProjectCardCell(proj, style, width) {
+  if (!proj) {
+    return new TableCell({
+      width: { size: width, type: WidthType.DXA },
+      borders: NO_BORDERS,
+      children: [emptyParagraph()],
+    });
+  }
+  const title = stripAllHtmlTags(proj.title || proj.name || '');
+  const rawUrl = typeof proj.url === 'string' ? proj.url : (typeof proj.link === 'string' ? proj.link : '');
+  const url = stripAllHtmlTags(rawUrl);
+  const href = safeUrl(url);
+  const displayUrl = url.replace(/^https?:\/\//i, '');
+  const children = [];
+  if (title) {
+    children.push(new Paragraph({
+      spacing: { after: 20 },
+      children: [new TextRun({ text: title, bold: true, size: 21, font: style.font, color: '0F172A' })],
+    }));
+  }
+  if (displayUrl) {
+    const linkRun = new TextRun({
+      text: displayUrl,
+      size: 18,
+      font: style.font,
+      color: style.secondary || '06B6D4',
+      underline: href ? { type: UnderlineType.SINGLE } : undefined,
+    });
+    children.push(new Paragraph({
+      spacing: { after: 30 },
+      children: href ? [new ExternalHyperlink({ link: href, children: [linkRun] })] : [linkRun],
+    }));
+  }
+  if (proj.description) children.push(...parseRichTextToParagraphs(proj.description, style, { size: 19 }));
+  if (!children.length) children.push(emptyParagraph());
+  return new TableCell({
+    width: { size: width, type: WidthType.DXA },
+    borders: CARD_BORDERS,
+    shading: { fill: CARD_FILL },
+    margins: CARD_CELL_MARGINS,
+    children,
+  });
+}
+
+/**
+ * DIR-065 — one certification card cell matching `SmartCertifications.jsx`:
+ * a bold title with an `issuer · date` meta line beneath it.
+ */
+function buildCertCardCell(cert, style, width) {
+  if (!cert) {
+    return new TableCell({
+      width: { size: width, type: WidthType.DXA },
+      borders: NO_BORDERS,
+      children: [emptyParagraph()],
+    });
+  }
+  const title = stripAllHtmlTags(cert.name || cert.title || '');
+  const issuer = stripAllHtmlTags(cert.issuer || cert.organization || cert.authority || '');
+  const date = stripAllHtmlTags(cert.date || cert.year || '');
+  const meta = [issuer, date].filter(Boolean).join(' · ');
+  const children = [];
+  if (title) {
+    children.push(new Paragraph({
+      spacing: { after: meta ? 10 : 0 },
+      children: [new TextRun({ text: title, bold: true, size: 21, font: style.font, color: '0F172A' })],
+    }));
+  }
+  if (meta) {
+    children.push(new Paragraph({
+      children: [new TextRun({ text: meta, size: 18, font: style.font, color: '64748B' })],
+    }));
+  }
+  if (!children.length) children.push(emptyParagraph());
+  return new TableCell({
+    width: { size: width, type: WidthType.DXA },
+    borders: CARD_BORDERS,
+    shading: { fill: CARD_FILL },
+    margins: CARD_CELL_MARGINS,
+    children,
+  });
 }
 
 function buildCertificationsBlock(certs, style, options = {}) {
@@ -812,45 +916,23 @@ function buildCertificationsBlock(certs, style, options = {}) {
       ...entryNodes,
     ];
   }
-  const colWidth = Math.floor(CONTENT_WIDTH / 2);
+  // DIR-065: render real 2-column cards (shading #f8fafc, #e2e8f0 borders, cell
+  // padding, bold title + issuer·date meta) matching `SmartCertifications.jsx`.
+  const totalWidth = options.contentWidth || CONTENT_WIDTH;
+  const colWidth = Math.floor(totalWidth / 2);
   const rows = [];
   for (let i = 0; i < items.length; i += 2) {
-    const cellText = (cert) => {
-      if (!cert) return '';
-      return [stripAllHtmlTags(cert.name || cert.title || ''), stripAllHtmlTags(cert.issuer || cert.organization || ''), stripAllHtmlTags(cert.date || cert.year || '')].filter(Boolean).join(' — ');
-    };
-    const left = cellText(items[i]);
-    const right = cellText(items[i + 1]);
-    if (left || right) {
-      rows.push(new TableRow({
-        children: [
-          new TableCell({
-            width: { size: colWidth, type: WidthType.DXA },
-            borders: NO_BORDERS,
-            children: left ? [new Paragraph({
-              numbering: { reference: BULLET_REF, level: 0 },
-              children: [new TextRun({ text: left, size: 20, font: style.font, color: '333333' })],
-              spacing: { before: 20, after: 20 },
-            })] : [emptyParagraph()],
-          }),
-          new TableCell({
-            width: { size: colWidth, type: WidthType.DXA },
-            borders: NO_BORDERS,
-            children: right ? [new Paragraph({
-              numbering: { reference: BULLET_REF, level: 0 },
-              children: [new TextRun({ text: right, size: 20, font: style.font, color: '333333' })],
-              spacing: { before: 20, after: 20 },
-            })] : [emptyParagraph()],
-          }),
-        ],
-      }));
-    }
+    rows.push(new TableRow({
+      children: [
+        buildCertCardCell(items[i], style, colWidth),
+        buildCertCardCell(items[i + 1], style, colWidth),
+      ],
+    }));
   }
-  if (!rows.length) return [];
   return [
     createSectionHeading(options.title || 'Certifications', style, { beforeSpacing: options.beforeSpacing ?? 160, color: options.headingColor, underlined: options.underlined }),
     new Table({
-      width: { size: CONTENT_WIDTH, type: WidthType.DXA },
+      width: { size: totalWidth, type: WidthType.DXA },
       columnWidths: [colWidth, colWidth],
       layout: TableLayoutType.FIXED,
       borders: NO_BORDERS,
@@ -1101,7 +1183,8 @@ function buildModernSplitDocument(resume, style) {
     ...buildHeroStack(resume, style, { contentWidth: width }),
     ...buildEducationBlock(resume.educations || resume.education, style, { beforeSpacing: 140, contentWidth: width }),
     ...buildProjectsBlock(resume.projects, style, { beforeSpacing: 140, contentWidth: width }),
-    ...(!certsInSidebar ? buildCertificationsBlock(resume.certifications, style, { beforeSpacing: 140, columns: 1, contentWidth: width }) : []),
+    // DIR-065: 2-column card mode for certifications so DOCX matches the PDF grid.
+    ...(!certsInSidebar ? buildCertificationsBlock(resume.certifications, style, { beforeSpacing: 140, columns: 2, contentWidth: width }) : []),
     ...buildAchievementsBlock(resume.achievements || resume.awards, style, { beforeSpacing: 140, contentWidth: width }),
     ...buildReferencesBlock(resume.references, style, { beforeSpacing: 140, contentWidth: width }),
     ...buildCustomSections(resume, style, { beforeSpacing: 140, contentWidth: width }),

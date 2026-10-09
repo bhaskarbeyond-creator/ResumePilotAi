@@ -65,11 +65,11 @@
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
-  /* DIR-064: a protective buffer above .smart-page-footer. The packer reserves a
-     matching FOOTER_SAFETY_CLEARANCE in smartPartitioner.js; this keeps the last
-     card physically clear of the footer rule even when a card wraps taller than
-     its estimate (2-line certification titles, long issuer lines). */
-  padding-bottom: 14px;
+  /* DIR-064 / DIR-065: a protective buffer above .smart-page-footer. The packer
+     reserves a matching (>=36px) FOOTER_SAFETY_CLEARANCE in smartPartitioner.js;
+     this keeps the last card physically clear of the footer rule even when a grid
+     card wraps taller than its estimate (2-line project/certification titles). */
+  padding-bottom: 18px;
   box-sizing: border-box;
 }
 
@@ -1088,6 +1088,10 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  /* DIR-065: a project card is atomic — never split it across a page boundary
+     and never let it be clipped by the page-body edge. */
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .smart-card-header {

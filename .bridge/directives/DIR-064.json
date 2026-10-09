@@ -2,11 +2,11 @@
   "id": "DIR-064",
   "title": "DIR-064: Eliminate PDF Blank Page & Skip-Link Bleed, Fix Footer Overlap (Certification Card Geometry), and Centralized Cross-Platform Export Pipeline",
   "priority": "P0",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-09T08:37:14.518Z",
-  "updatedAt": "2026-10-09T09:17:32.508Z",
+  "updatedAt": "2026-10-09T09:17:33.524Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "### 1. EXECUTIVE MISSION & PROBLEM STATEMENT\nLive user inspection identified three critical defects in resume export and visual pagination:\n1. PDF Export First Page Blank with Skip-link Banner: In generated PDFs, Page 1 is almost entirely blank except for an accessibility button Skip to main content rendered at the top, pushing the entire resume to Page 2. Root Cause: .skip-link in index.html has no @media print suppression rules.\n2. Content Overlapping and Bleeding Under Page Footer: Multi-item cards (such as Certifications with 2-line titles, issuer lines, and badges e.g. CCRN) bleed directly into and behind .smart-page-footer (Babu M ... 1/1). Root Cause: smartPartitioner.js estimates certification row height at only 52px whereas actual cards take 74px-85px, and .smart-page-body lacks a protective safety buffer above the footer.\n3. Cross-Platform Centralized Single-Source Downloader Pipeline: Production deployment is on a standard Linux server. The codebase must NEVER depend on Windows-native tools (winget, PowerShell scripts, Windows-only paths). Downloader logic must be unified into a single cross-platform client (src/utils/exportDownloader.js) for both PDF and DOCX.\n\n### 2. DELIVERABLES\n1. Eliminate skip-link and leading blank page in PDF export (add @media print display:none, remove in Exporter.jsx and backend/index.js before page.pdf()).\n2. Recalibrate certification row height estimator in smartPartitioner.js (~76px-84px per row + title margin) and add safe bottom clearance in smartEngine.css so cards never collide with the footer.\n3. Create centralized single-source downloader src/utils/exportDownloader.js with magic-byte validation (%PDF- and PK zip) and refactor all consumer portals to use it.\n4. Verify 100% Linux server compatibility with pure Node.js and Playwright Chromium headless flags.\n\n### 3. ACCEPTANCE CRITERIA & EVIDENCE\n- Exported PDF starts on Page 1 with resume content and zero blank pages or skip-link text.\n- Certification cards have zero overlap or clipping with page footer.\n- Centralized export downloader module created and integrated across all portal surfaces.\n- 100% test pass on PDF and DOCX export suites with clean build.",
   "invariants": [],
@@ -71,8 +71,30 @@
       }
     }
   ],
-  "freeze": null,
-  "lastTransitionReason": "lead review",
+  "freeze": {
+    "freezeHash": "5596f35b1f55cfc68ce226846b56009af57a64c0",
+    "certifiedAt": "2026-10-09T09:17:33.523Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "Autonomous Lead (Antigravity): evidence audit passed, no human review.",
+    "evidenceHash": "57bec660f17f2371bd86affd72a83ddb912cc4cd1265eeecefdcba8534d7126c",
+    "automated": true,
+    "certificationKind": "automated",
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "declared-automation",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "non-tty"
+      ],
+      "pid": 16700,
+      "parentPid": 17832,
+      "tty": false,
+      "at": "2026-10-09T09:17:32.959Z",
+      "explicitlyAllowed": true
+    }
+  },
+  "lastTransitionReason": "gatekeeper certification",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {
@@ -110,7 +132,15 @@
       "currentFile": null,
       "by": "STAFF_DEVELOPER",
       "continuationPending": false
+    },
+    {
+      "at": "2026-10-09T09:17:42.499Z",
+      "status": "S1-S10 complete. Evidence submitted (dir064-verification.log). Awaiting Gatekeeper certification.",
+      "percent": 95,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
     }
   ],
-  "lastHeartbeatAt": "2026-10-09T09:00:40.399Z"
+  "lastHeartbeatAt": "2026-10-09T09:17:42.499Z"
 }
