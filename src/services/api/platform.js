@@ -953,8 +953,30 @@ export async function checkUserApplicationStatus(userId, jobId) {
     }
 }
 
-export async function getUserJobApplications(userId) {
-    return getTrackedJobs(userId);
+/**
+ * DIR-059 — the candidate's REAL submitted applications.
+ *
+ * This used to be `return getTrackedJobs(userId)`, so /dashboard/applied-jobs
+ * rendered KANBAN tracker rows instead of the `applications` table. It now reads
+ * the owner-scoped endpoint (the uid is taken from the verified token server
+ * side, never from this argument).
+ */
+export async function getUserJobApplications(_userId) {
+    const data = await apiJson('/api/jobs-data/applications/list');
+    return Array.isArray(data?.applications) ? data.applications : [];
+}
+
+/**
+ * DIR-059 — candidate withdrawal. Owner-scoped server side: the endpoint returns
+ * 404 when the application is missing and 403 when the caller is not its owner.
+ */
+export async function withdrawJobApplication(applicationId) {
+    if (!applicationId) throw new Error('An application id is required to withdraw.');
+    await apiJson(`/api/jobs-data/applications/${encodeURIComponent(applicationId)}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+    });
+    return true;
 }
 
 export async function updateApplicationStatus(applicationId, status, notes = '', expected = {}) {

@@ -2,10 +2,58 @@ import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { withTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { FaBriefcase, FaSearch, FaCalendar, FaMapMarkerAlt, FaDollarSign, FaClock, FaCheckCircle, FaTimesCircle, FaHourglass, FaInfoCircle, FaBuilding, FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { FaBriefcase, FaSearch, FaCalendar, FaMapMarkerAlt, FaDollarSign, FaClock, FaCheckCircle, FaTimesCircle, FaHourglass, FaInfoCircle, FaBuilding, FaChevronDown, FaChevronUp, FaTrashAlt, FaColumns } from 'react-icons/fa';
 import { AuthContext } from '../../context/AuthContext';
-import { getUserJobApplications } from '../../services/api/platform';
+import { getUserJobApplications, getJobById, withdrawJobApplication, createTrackedJob, getTrackedJobs } from '../../services/api/platform';
 import { formatSafeDate } from '../../utils/subscriptionUtils.js';
+import useConfirmDialog from '../../hooks/useConfirmDialog';
+
+/**
+ * DIR-059: the `applications` table stores its own status vocabulary (default
+ * `PENDING`, uppercase) while this component presents the CANONICAL tracker
+ * vocabulary. Without this map the "Pending" tile counted `=== 'pending'` and
+ * could never match the stored `PENDING`, so it always read 0.
+ */
+const APPLICATION_STATUS_MAP = Object.freeze({
+    pending: 'applied',
+    applied: 'applied',
+    submitted: 'applied',
+    review: 'applied',
+    reviewing: 'applied',
+    shortlisted: 'interview',
+    interview: 'interview',
+    interviewing: 'interview',
+    offer: 'offer',
+    accepted: 'offer',
+    hired: 'offer',
+    rejected: 'rejected',
+    declined: 'rejected',
+});
+const canonicalApplicationStatus = (raw) => APPLICATION_STATUS_MAP[String(raw || '').trim().toLowerCase()] || 'applied';
+
+/**
+ * DIR-059: the `applications` row carries `job_id` but NO jobTitle/company/
+ * location/salary — those live on the `jobs` table and `getApplications()` does a
+ * bare SELECT with no join. Without enrichment every row rendered blank. The job
+ * record is fetched per row and folded into the view model this list renders.
+ */
+const normaliseApplication = (row, jobRecord) => {
+    const job = jobRecord && typeof jobRecord === 'object' ? jobRecord : {};
+    const source = job.job && typeof job.job === 'object' ? job.job : job;
+    return {
+        id: row?.id,
+        jobId: row?.job_id || row?.jobId || '',
+        jobTitle: source.title || source.jobTitle || 'Job',
+        company: source.company || source.companyName || '',
+        location: source.location || '',
+        salary: source.salary || '',
+        jobType: source.jobType || source.type || '',
+        workMode: source.workMode || '',
+        status: canonicalApplicationStatus(row?.status),
+        appliedDate: row?.created_at || row?.createdAt || row?.appliedDate || null,
+        notes: row?.notes || '',
+    };
+};
 
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -19,6 +67,12 @@ const AppliedJobs = ({ showToast, t }) => {
     const [loadError, setLoadError] = useState('');
     const [retryCount, setRetryCount] = useState(0);
     const [expandedJobId, setExpandedJobId] = useState(null);
+    // DIR-059: per-row busy state for the withdraw / track actions, plus the set
+    // of applications already promoted to the Kanban tracker (so the action is
+    // idempotent instead of creating duplicates).
+    const [pendingActionId, setPendingActionId] = useState(null);
+    const [trackedJobIds, setTrackedJobIds] = useState(() => new Set());
+    const { confirm, confirmationDialog } = useConfirmDialog();
     const navigate = useNavigate();
     // Fetch user's job applications without allowing a stale account request to win.
     useEffect(() => {
@@ -33,7 +87,15 @@ const AppliedJobs = ({ showToast, t }) => {
             setLoadError('');
             try {
                 const applications = await getUserJobApplications(user.uid);
-                if (active) setAppliedJobs(applications);
+                // DIR-059: enrich each row with its job record — the applications
+                // table stores only job_id, so title/company/location/salary must
+                // come from the jobs table or every row renders blank.
+                const normalised = await Promise.all(applications.map(async (row) => {
+                    const jobId = row?.job_id || row?.jobId;
+                    const job = jobId ? await getJobById(jobId).catch(() => null) : null;
+                    return normaliseApplication(row, job);
+                }));
+                if (active) setAppliedJobs(normalised);
             } catch (error) {
                 if (!active) return;
                 console.error('Error fetching applications:', error);
@@ -74,6 +136,77 @@ const AppliedJobs = ({ showToast, t }) => {
             setExpandedJobId(job.id);
         }
     };
+
+    /**
+     * DIR-059 S3: withdraw an application. Confirmation goes through the shared
+     * Cuba confirm dialog (never a native window.confirm). The row is removed
+     * optimistically and restored if the server refuses, so a failure never
+     * silently loses the candidate's application.
+     */
+    const handleWithdraw = async (job) => {
+        const approved = await confirm({
+            title: t('JobsUpdate.AppliedJobs.withdraw.title', 'Withdraw this application?'),
+            message: `${t('JobsUpdate.AppliedJobs.withdraw.message', 'This permanently removes your application for')} ${job.jobTitle}${job.company ? ` — ${job.company}` : ''}.`,
+            confirmLabel: t('JobsUpdate.AppliedJobs.withdraw.confirm', 'Withdraw application'),
+            variant: 'danger',
+        });
+        if (!approved) return;
+
+        const snapshot = appliedJobs;
+        setPendingActionId(job.id);
+        setAppliedJobs((current) => current.filter((row) => row.id !== job.id));
+        try {
+            await withdrawJobApplication(job.id);
+            showToast?.('Application withdrawn', 'success');
+        } catch (_error) {
+            setAppliedJobs(snapshot);
+            showToast?.('Could not withdraw the application', 'error');
+        } finally {
+            setPendingActionId(null);
+        }
+    };
+
+    /**
+     * DIR-059 S4: promote an application into the Kanban tracker with the
+     * canonical `applied` status. Idempotent — a second click opens the tracker
+     * instead of creating a duplicate row.
+     */
+    const handleTrackInKanban = async (job) => {
+        if (trackedJobIds.has(job.id) || (job.jobId && trackedJobIds.has(job.jobId))) {
+            navigate('/dashboard/job-tracker');
+            return;
+        }
+        setPendingActionId(job.id);
+        try {
+            await createTrackedJob(user?.uid, {
+                title: job.jobTitle,
+                company: job.company,
+                location: job.location,
+                salary: job.salary,
+                status: 'applied',
+            });
+            setTrackedJobIds((current) => new Set(current).add(job.id));
+            showToast?.('Added to your Kanban tracker', 'success');
+        } catch (_error) {
+            showToast?.('Could not add this application to the tracker', 'error');
+        } finally {
+            setPendingActionId(null);
+        }
+    };
+
+    // DIR-059: which applications are already on the Kanban board, so the button
+    // reflects reality rather than a guess.
+    useEffect(() => {
+        if (!user?.uid) return undefined;
+        let active = true;
+        getTrackedJobs(user.uid)
+            .then((rows) => {
+                if (!active || !Array.isArray(rows)) return;
+                setTrackedJobIds(new Set(rows.map((row) => row.id).filter(Boolean)));
+            })
+            .catch(() => { /* the button simply stays in its "add" state */ });
+        return () => { active = false; };
+    }, [user?.uid]);
 
     /**
      * DIR-056 SUB-056-6: the status vocabulary is the CANONICAL one.
@@ -208,8 +341,8 @@ const AppliedJobs = ({ showToast, t }) => {
                     <div className="bg-cuba-card rounded-lg p-4 border border-cuba-line shadow-sm">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-xs font-medium text-cuba-ink-muted uppercase tracking-wide">{t('JobsUpdate.AppliedJobs.stats.pending', 'Pending')}</p>
-                                <p className="text-lg font-semibold text-cuba-ink mt-1">{getStatusCount('pending')}</p>
+                                <p className="text-xs font-medium text-cuba-ink-muted uppercase tracking-wide">{t('JobsUpdate.AppliedJobs.stats.pending', 'Under Review')}</p>
+                                <p className="text-lg font-semibold text-cuba-ink mt-1">{getStatusCount('applied')}</p>
                             </div>
                             <div className="p-2 bg-cuba-warning-soft rounded-md">
                                 <FaHourglass className="w-4 h-4 text-cuba-warning" />
@@ -362,6 +495,28 @@ const AppliedJobs = ({ showToast, t }) => {
                                         </div>
 
                                         <div className="flex items-center gap-2 ml-3 flex-shrink-0">
+                                            {/* DIR-059 S4: 1-click Kanban promotion. */}
+                                            <button
+                                                type="button"
+                                                onClick={() => handleTrackInKanban(job)}
+                                                disabled={pendingActionId === job.id}
+                                                data-testid="track-in-kanban"
+                                                aria-label={`${trackedJobIds.has(job.id) ? 'Open in Kanban' : 'Track in Kanban'}: ${job.jobTitle || 'application'}`}
+                                                title={trackedJobIds.has(job.id) ? 'Open in Kanban' : 'Track in Kanban'}
+                                                className="p-2 text-cuba-ink-muted hover:text-cuba-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cuba-primary transition-colors rounded-md hover:bg-cuba-canvas disabled:opacity-50 disabled:cursor-not-allowed">
+                                                <FaColumns aria-hidden="true" className="w-4 h-4" />
+                                            </button>
+                                            {/* DIR-059 S3: candidate withdrawal. */}
+                                            <button
+                                                type="button"
+                                                onClick={() => handleWithdraw(job)}
+                                                disabled={pendingActionId === job.id}
+                                                data-testid="withdraw-application"
+                                                aria-label={`Withdraw application for ${job.jobTitle || 'job'}`}
+                                                title="Withdraw application"
+                                                className="p-2 text-cuba-ink-muted hover:text-cuba-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cuba-primary transition-colors rounded-md hover:bg-cuba-canvas disabled:opacity-50 disabled:cursor-not-allowed">
+                                                <FaTrashAlt aria-hidden="true" className="w-4 h-4" />
+                                            </button>
                                             <button
                                                 type="button"
                                                 onClick={() => handleViewDetails(job)}
@@ -451,6 +606,8 @@ const AppliedJobs = ({ showToast, t }) => {
                 </div>
 
             </div>
+            {/* DIR-059: the shared Cuba confirmation dialog for withdrawal. */}
+            {confirmationDialog}
         </div>
     );
 };

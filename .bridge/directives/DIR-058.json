@@ -2,11 +2,11 @@
   "id": "DIR-058",
   "title": "Candidate Dashboard Real MariaDB Metrics Aggregation & Multi-Step Onboarding",
   "priority": "P1",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-09T03:08:15.294Z",
-  "updatedAt": "2026-10-09T05:29:53.491Z",
+  "updatedAt": "2026-10-09T05:29:54.095Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "### 1. MANDATE & PROBLEM STATEMENT\nsrc/services/api/platform.js:1898 defines getStatesOfUser as a hardcoded stub returning [].\nConsequently, candidate counters for resumes, cover letters, and applications show 0 despite existing records.\nFurthermore, the candidate onboarding checklist contains only 1 single hardcoded step.\n\n### 2. ARCHITECTURAL SPECIFICATION\n1. Author GET /api/user-stats in backend aggregating user document counts (resumes, covers, portfolios, applications).\n2. Connect getStatesOfUser to call /api/user-stats.\n3. Update DashboardHomepage.jsx and CubaCandidateHero.jsx to render honest metrics.\n4. Expand candidate onboarding checklist to track completion of Profile, First Resume, Cover Letter, and First Job Application.\n\n### 3. IMPLEMENTATION PLAN\n- S1: Author GET /api/user-stats in backend/routes/platform.js.\n- S2: Connect getStatesOfUser in src/services/api/platform.js.\n- S3: Update DashboardHomepage.jsx to consume live stats.\n- S4: Update CubaCandidateHero.jsx to reflect live stats.\n- S5: Expand onboarding checklist.\n- S6: Author test suite tests/dir058-dashboard-stats.test.mjs.",
   "invariants": [],
@@ -53,8 +53,14 @@
       "evidenceHash": "2328dde56be7fa13bd666f3f410fd6f0d160493d9ba5538dec95113a0f82670f"
     }
   ],
-  "freeze": null,
-  "lastTransitionReason": "lead review",
+  "freeze": {
+    "freezeHash": "386a37f2647e0c8e94903c2f9d6f577c01511938",
+    "certifiedAt": "2026-10-09T05:29:54.095Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "",
+    "evidenceHash": "2328dde56be7fa13bd666f3f410fd6f0d160493d9ba5538dec95113a0f82670f"
+  },
+  "lastTransitionReason": "gatekeeper certification",
   "continuationPending": false,
   "revisionTarget": null,
   "heartbeats": [
@@ -73,7 +79,15 @@
       "currentFile": null,
       "by": "STAFF_DEVELOPER",
       "continuationPending": false
+    },
+    {
+      "at": "2026-10-09T05:30:58.057Z",
+      "status": "DIR-058 COMPLETE + CERTIFIED (APPROVED_FROZEN). Commits 7b48366a [EVIDENCE] -> 386a37f2 [CERTIFIED], evidenceHash 2328dde5. Delivered: owner-scoped GET /api/user-stats (live-proven: anon 401, authed 200 source=MARIADB_USER_DOCUMENTS), getStatesOfUser un-stubbed, DashboardHomepage honest metrics + 4-step data-derived onboarding, and the hero's Job Applications card de-mislabelled. Gates: 5/5 new, 67/67 dashboard+Cuba, 24/0 backend routes, 756/0 product, lint 0 errors, build exit 0 (2.35s). Next directive: DIR-059.",
+      "percent": 100,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
     }
   ],
-  "lastHeartbeatAt": "2026-10-09T05:29:20.918Z"
+  "lastHeartbeatAt": "2026-10-09T05:30:58.057Z"
 }

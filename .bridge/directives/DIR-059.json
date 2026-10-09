@@ -2,17 +2,51 @@
   "id": "DIR-059",
   "title": "Job Applications (/dashboard/applied-jobs) Real Data Pipeline, Kanban Synchronization & Candidate Withdrawal",
   "priority": "P1",
-  "status": "ISSUED",
+  "status": "IN_PROGRESS",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-09T03:08:21.373Z",
-  "updatedAt": "2026-10-09T03:08:21.373Z",
+  "updatedAt": "2026-10-09T05:33:23.517Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "### 1. MANDATE & PROBLEM STATEMENT\nsrc/services/api/platform.js:956 defines getUserJobApplications as calling getTrackedJobs(userId).\nReal job applications submitted via JobApplicationModal.jsx are stored in table applications, but never appear in /dashboard/applied-jobs.\nIn addition, candidates have no withdrawal mechanism, and applications are not synchronized with the Kanban tracker.\n\n### 2. ARCHITECTURAL SPECIFICATION\n1. Connect getUserJobApplications to GET /api/jobs-data/applications/list.\n2. Normalize application fields (jobTitle, company, appliedDate, salary, status) in AppliedJobs.jsx.\n3. Add candidate withdrawal with confirmation modal calling DELETE /api/jobs-data/applications/:id.\n4. Add 1-click 'Track in Kanban' promoting an application to job_tracker with status 'applied'.\n\n### 3. IMPLEMENTATION PLAN\n- S1: Update getUserJobApplications in src/services/api/platform.js to fetch from /api/jobs-data/applications/list.\n- S2: Update AppliedJobs.jsx field mapping and empty/error states.\n- S3: Implement candidate withdrawal flow with confirmation dialog.\n- S4: Implement 'Track in Kanban' action in AppliedJobs.jsx.\n- S5: Author test suite tests/dir059-applied-jobs.test.mjs.",
   "invariants": [],
   "acceptanceCriteria": [],
-  "plan": null,
+  "plan": {
+    "submittedAt": "2026-10-09T05:32:27.892Z",
+    "summary": "DIR-059 PLAN (P1). TARGET CHECK + PROVEN DEFECTS (read-only, zero code changed; every finding cites file:line). KEY FINDING: the BACKEND IS ALREADY COMPLETE - every route the spec asks for exists and is owner-scoped: GET /api/jobs-data/applications/list (backend/routes/jobsData.js:277, applicantId taken from req.user.uid and never client-controlled), DELETE /api/jobs-data/applications/:id (jobsData.js:319, 404 when missing and 403 when not the owner), PATCH /api/jobs-data/applications/:id (jobsData.js:300), plus GET/POST/DELETE /api/jobs-data/tracker (179/186/213). So DIR-059 is a CLIENT-side fix; no new backend route is needed. PROVEN DEFECTS: (1) src/services/api/platform.js:956 getUserJobApplications(userId) is literally 'return getTrackedJobs(userId)' - it returns KANBAN tracker rows instead of the applications table, so /dashboard/applied-jobs renders the wrong entity entirely. (2) DATA-SHAPE GAP: the applications table has id, job_id, employer_id, applicant_id, applicant_name, applicant_email, applicant_phone, resume_id, resume_url, cover_letter, status, rating, notes, revision, extra_json, created_at, updated_at - it has NO jobTitle, company, location or salary (those live on jobs via job_id) and repository getApplications() does a bare SELECT * FROM applications with no join. AppliedJobs.jsx:55-63 therefore reads job.jobTitle/job.company/job.location/job.appliedDate which are all undefined, so rows render blank and search/sort by company and date are inert. Enrichment is required. (3) STATUS VOCABULARY MISMATCH: the applications table defaults status to PENDING (uppercase) while AppliedJobs.jsx:118 and :212 count job.status === 'pending' (lowercase), so the Pending tile can never match. (4) No withdrawal and no Kanban promotion exist. PLAN: S1 repoint getUserJobApplications at GET /api/jobs-data/applications/list; S2 normalize each row into the AppliedJobs view model (jobTitle/company/location/salary enriched via getJobById, appliedDate from created_at, status lower-cased) with honest empty/error/unavailable states; S3 add candidate withdrawal behind the Cuba confirm dialog calling DELETE /api/jobs-data/applications/:id with optimistic removal and rollback; S4 add a 1-click Track in Kanban action using the existing createTrackedJob with status applied, made idempotent by detecting an existing tracker row; S5 author tests/dir059-applied-jobs.test.mjs. Constraints: zero schema change, backend routes are already owner-scoped so no RBAC change, and honest failure states (no fabricated rows). Awaiting your GREEN SIGNAL before ACT.",
+    "steps": [
+      "S1: update getUserJobApplications in src/services/api/platform.js to fetch GET /api/jobs-data/applications/list and return the applications array instead of getTrackedJobs",
+      "S2: normalize application rows in AppliedJobs.jsx (jobTitle, company, location, salary enriched from getJobById(job_id), appliedDate from created_at, status lower-cased) and add honest empty/error/unavailable states",
+      "S3: implement candidate withdrawal with a Cuba confirmation dialog calling DELETE /api/jobs-data/applications/:id, with optimistic removal and rollback on failure",
+      "S4: implement the 1-click Track in Kanban action using createTrackedJob with status applied, idempotent against an existing tracker row",
+      "S5: author tests/dir059-applied-jobs.test.mjs (client wiring, field normalization, status vocabulary parity, withdrawal ownership, tracker promotion)",
+      "S6: run lint, build and the product matrix, then submit evidence"
+    ],
+    "planHash": "3291d2289c0816f7dae81714847827183e1424b0466088ff18c082799640016e"
+  },
   "evidence": null,
   "reviews": [],
-  "freeze": null
+  "freeze": null,
+  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "continuationPending": false,
+  "revisionTarget": null,
+  "heartbeats": [
+    {
+      "at": "2026-10-09T05:32:38.378Z",
+      "status": "DIR-059 PLAN SUBMITTED (planHash 3291d228) - PLAN mode, zero code changed. KEY FINDING: the backend is ALREADY COMPLETE and owner-scoped (jobsData.js:277 list, :319 delete with 404/403, :300 patch, tracker 179/186/213), so this is a CLIENT-side fix. PROVEN DEFECTS: (1) platform.js:956 getUserJobApplications is literally return getTrackedJobs(userId) - it renders KANBAN rows in the applications page; (2) the applications table has no jobTitle/company/location/salary and getApplications() does a bare SELECT with no join, so AppliedJobs.jsx:55-63 reads undefined fields - rows render blank and search/sort are inert (enrichment needed); (3) status vocabulary mismatch - the table defaults to PENDING (uppercase) while AppliedJobs.jsx:118/212 counts === 'pending' (lowercase); (4) no withdrawal and no Kanban promotion exist. Plan: S1 repoint -> S2 normalize+enrich -> S3 withdrawal with confirm dialog -> S4 Track in Kanban (idempotent) -> S5 tests -> S6 gates. Awaiting Lead review before ACT.",
+      "percent": 10,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    },
+    {
+      "at": "2026-10-09T05:39:32.231Z",
+      "status": "S1-S5 implemented. S1 getUserJobApplications now reads /api/jobs-data/applications/list + new withdrawJobApplication (DELETE). S2 rows enriched via getJobById and normalised, with an APPLICATION_STATUS_MAP fixing the PENDING vs pending vocabulary mismatch (the tile counted a value the table never stored). S3 withdrawal behind the shared Cuba confirm dialog with optimistic removal + rollback. S4 1-click Track in Kanban via createTrackedJob status applied, idempotent. Zero backend/schema change - the routes already existed and are owner-scoped. Gates: new suite 7/7, job regression 33/33, product 756/0, lint 0 errors, build exit 0 (2.41s). Submitting evidence.",
+      "percent": 90,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    }
+  ],
+  "lastHeartbeatAt": "2026-10-09T05:39:32.231Z"
 }
