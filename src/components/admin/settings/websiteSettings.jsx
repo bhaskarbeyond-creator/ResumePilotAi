@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { getWebsiteData, settWebsiteData } from '../../../services/api/platform';
+import { isAuthoritativeSettings } from '../../../utils/moduleFlags';
 import { FaCheck, FaTimes, FaGlobe, FaTag, FaLanguage, FaFileAlt, FaToggleOn, FaToggleOff, FaCheckCircle, FaBan } from 'react-icons/fa';
 
 const ALL_LANGUAGES = [
@@ -42,7 +43,7 @@ class WebsiteSettings extends Component {
 
     componentDidMount() {
         getWebsiteData().then((data) => {
-            if (!data || data._settingsStale === true || data._settingsSource !== 'remote') {
+            if (!isAuthoritativeSettings(data)) {
                 this.setState({
                     authoritativeLoaded: false,
                     error: data?._settingsError || 'Authoritative website metadata is unavailable. Reload after MariaDB recovery.',

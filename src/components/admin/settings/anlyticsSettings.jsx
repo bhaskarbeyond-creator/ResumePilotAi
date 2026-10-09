@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { editTrackingCode, getWebsiteData } from '../../../services/api/platform';
+import { isAuthoritativeSettings } from '../../../utils/moduleFlags';
 import { initGA, isGA4Initialized } from '../../../utils/ga4';
 import { FaCheck, FaTimes, FaGoogle, FaCode, FaInfoCircle, FaExclamationTriangle } from 'react-icons/fa';
 
@@ -17,7 +18,7 @@ class AnalyticsSettings extends Component {
     }
     componentDidMount() {
         getWebsiteData().then((data) => {
-            if (!data || data._settingsStale === true || data._settingsSource !== 'remote') {
+            if (!isAuthoritativeSettings(data)) {
                 this.setState({ authoritativeLoaded: false, error: 'Authoritative analytics configuration is unavailable.' });
                 return;
             }

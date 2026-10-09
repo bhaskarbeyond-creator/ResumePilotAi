@@ -10,6 +10,7 @@ import { useServiceAvailability, resolveUsable } from '../../../hooks/useService
 import { getUserMembership } from '../../../data/entitlements';
 import { parseSafeDate, isUserPremium } from '../../../utils/subscriptionUtils';
 import { printAuthoritativeCreditNote, printAuthoritativeInvoice } from '../../../utils/authoritativeInvoice';
+import { isAuthoritativeSettings } from '../../../utils/moduleFlags';
 import {
     formatCurrencyAmount,
     formatPlanPrice,
@@ -119,8 +120,9 @@ const PlansPage = (props) => {
         // Fetch System Addon Modules Settings for enableCouponsModule toggle
         getSystemSettings().then((settings) => {
             const mods = (settings && settings.modules) || {};
-            const isCouponsOn = settings?._settingsSource === 'remote'
-                && settings?._settingsStale !== true
+            // DIR-057: shared provenance predicate (accepts the raw `mariadb*`
+            // and the adapter-relabelled `remote` vocabularies).
+            const isCouponsOn = isAuthoritativeSettings(settings)
                 && mods.enableCouponsModule === true;
             setEnableCouponsModule(isCouponsOn);
             if (!isCouponsOn) {
@@ -252,7 +254,7 @@ const PlansPage = (props) => {
         // Global Subscription Config. Prices, provider flags, and supplier legal
         // data are displayed only when confirmed by the MariaDB projection.
         getSubscriptionStatus().then((data) => {
-            if (data?._settingsSource !== 'remote' || data?._settingsStale === true) {
+            if (!isAuthoritativeSettings(data)) {
                 setSubscriptionConfig(current => ({
                     ...current,
                     isLoading: false,

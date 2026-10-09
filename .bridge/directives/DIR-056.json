@@ -2,11 +2,11 @@
   "id": "DIR-056",
   "title": "Master Directive: Autonomous System-Wide Forensic Audit, Remediation Backlog & Production 10/10 Certification",
   "priority": "P0",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-09T03:30:42.381Z",
-  "updatedAt": "2026-10-09T04:33:51.804Z",
+  "updatedAt": "2026-10-09T04:33:52.852Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "### 1. MISSION & MANDATE (EXECUTIVE LEADERSHIP DIRECTIVE)\nThe Staff Developer is tasked with executing a comprehensive, autonomous, end-to-end forensic audit of the entire existing IME365 codebase within its established scope, discovering all defects, gaps, unstyled exports, and broken workflows, and independently constructing actionable engineering sub-directives for Lead Supervisor review and approval.\n\n### 2. CORE RESPONSIBILITY (DEVELOPER-AUTHORED SUB-DIRECTIVES)\nThe Developer must NOT wait for the user or Lead to hand over individual bug reports. The Developer must:\n1. Conduct deep forensic discovery across the real codebase, database, routes, and UI.\n2. Formulate and construct specific, actionable engineering sub-directives for every discovered defect.\n3. Submit the sub-directives to the Lead Supervisor for formal review.\n4. STRICT APPROVAL GATE: The Developer must NOT begin unapproved implementation until the Lead Supervisor verifies the findings, evaluates trade-offs, and issues the explicit GREEN SIGNAL approval for each sub-directive.\n\n### 3. MANDATORY DISCOVERY SURFACES\nA. Architecture & Backend Boundaries: API contracts, authentication/authorization, tenant isolation, database integrity, error responses.\nB. Dashboard Completeness: Candidate, Employer, and Admin dashboards; verify real MariaDB data hydration vs hardcoded/empty stubs, accurate KPIs, and responsive layouts.\nC. UI/UX, Interaction & Modals: Every route, button, modal, popup, and navigation link must have a verified outcome (zero dead views, blank screens, or unstyled dialogs).\nD. System-Wide Document Print, PDF & Export Pipelines: Audit all print and export surfaces across the codebase (including recruiter applicant resume printing in EmployerApplicantPipeline, cover letters, invoices, interview coaching, and all 51 CV templates) to eliminate unstyled iframes, unconstrained avatars/photos, and multi-page whitespace sprawl.\nE. Business Logic & Integrations: End-to-end data flow (e.g. Job Applications vs Kanban Job Tracker, saved favorites across documents and jobs, billing coupons vs module toggles).\n\n### 4. MANDATORY 10-POINT FORMAT FOR EACH SUB-DIRECTIVE\nEvery sub-directive proposed by the Developer must provide:\n1. Directive Title & Proposed ID\n2. Evidence & Findings (exact file paths, line numbers, routes, reproduction steps, current vs expected)\n3. Objective\n4. Scope (files/modules changed, boundaries, exclusions)\n5. Implementation Strategy\n6. Acceptance Criteria (measurable, observable conditions)\n7. Verification Plan (unit, integration, Playwright E2E, DOM crawl)\n8. Risks & Dependencies\n9. Priority & Severity (P0, P1, P2, P3)\n10. Estimated Effort\n\n### 5. EXECUTION SEQUENCE\n- Step 1: Execute systematic forensic discovery across the codebase.\n- Step 2: Author the Master Enhancement Backlog and detailed sub-directives.\n- Step 3: Submit the proposed sub-directives via bridge dev plan for Lead review.\n- Step 4: Await Lead approval before writing implementation code.",
   "invariants": [],
@@ -57,8 +57,14 @@
       "evidenceHash": "225fb5577793bb40787e6ebdc2776096f08b25435db4d6b7405b73d058a85071"
     }
   ],
-  "freeze": null,
-  "lastTransitionReason": "lead review",
+  "freeze": {
+    "freezeHash": "12fd98290111bbd21395696f7ab79dd491770710",
+    "certifiedAt": "2026-10-09T04:33:52.852Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "",
+    "evidenceHash": "225fb5577793bb40787e6ebdc2776096f08b25435db4d6b7405b73d058a85071"
+  },
+  "lastTransitionReason": "gatekeeper certification",
   "heartbeats": [
     {
       "at": "2026-10-09T03:39:58.465Z",
@@ -146,9 +152,17 @@
       "currentFile": null,
       "by": "STAFF_DEVELOPER",
       "continuationPending": false
+    },
+    {
+      "at": "2026-10-09T04:37:09.412Z",
+      "status": "DIR-056 confirmed APPROVED_FROZEN (certified 04:33:52Z). The DIR-056 wake I was handed (mv0g4ths) is stale/consumed and predates certification - no further DIR-056 action taken (frozen). Pivoting to the live ISSUED directive DIR-057 (PLAN mode): forensic pre-flight done; the spec's stated root cause is contradicted by the code - submitting an honest plan.",
+      "percent": 100,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
     }
   ],
-  "lastHeartbeatAt": "2026-10-09T04:33:47.421Z",
+  "lastHeartbeatAt": "2026-10-09T04:37:09.412Z",
   "continuationPending": false,
   "revisionTarget": null
 }

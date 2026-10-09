@@ -2,17 +2,61 @@
   "id": "DIR-057",
   "title": "Authoritative MariaDB Settings Hydration in ModulesSettings.jsx, Admin Settings & Coupon System in Plans.jsx",
   "priority": "P0",
-  "status": "ISSUED",
+  "status": "IN_PROGRESS",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-09T03:08:08.195Z",
-  "updatedAt": "2026-10-09T03:08:08.195Z",
+  "updatedAt": "2026-10-09T04:56:43.932Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "### 1. MANDATE & PROBLEM STATEMENT\nbackend/routes/platform.js:252 authoritatively returns _settingsSource: 'mariadb'.\nHowever, ModulesSettings.jsx:62, Plans.jsx:122, websiteSettings.jsx:45, socialSettings.jsx:35 check settings?._settingsSource === 'remote'.\nConsequently, isAuthoritative is permanently false, blocking admins from saving module toggles and disabling checkout coupons.\n\n### 2. ARCHITECTURAL SPECIFICATION\n1. Export unified helper isAuthoritativeSettings(settings) in src/utils/moduleFlags.js that accepts 'mariadb' and 'remote' and rejects stale configs.\n2. Update ModulesSettings.jsx, Plans.jsx, websiteSettings.jsx, socialSettings.jsx, and anlyticsSettings.jsx to use this helper.\n3. Ensure persistModules saves cleanly to /api/admin/modules without error toast.\n4. Ensure Plans.jsx coupon form renders when enabled.\n\n### 3. IMPLEMENTATION PLAN\n- S1: Author isAuthoritativeSettings in src/utils/moduleFlags.js.\n- S2: Wire helper into ModulesSettings.jsx.\n- S3: Wire helper into Plans.jsx.\n- S4: Wire helper into remaining admin settings panels.\n- S5: Author test suite tests/dir057-settings-hydration.test.mjs.",
   "invariants": [],
   "acceptanceCriteria": [],
-  "plan": null,
+  "plan": {
+    "submittedAt": "2026-10-09T04:40:04.138Z",
+    "summary": "DIR-057 PLAN v2 - the stated root cause is now DISPROVEN by live evidence against the running XAMPP stack (.bridge/evidence/dir057-live-probe.log). PROOF (read-only in-process supertest GETs, no writes, no product code changed): (1) GET /api/admin/settings with a super-admin bearer returns HTTP 200, success=true, settings is an object, revisions.modules=58, enableCouponsModule=true, enableAtsScoreModule=true; (2) GET /api/platform/public-config returns HTTP 200 with _settingsSource=mariadb. Therefore getSystemSettings({admin:true}) relabels to remote (platform.js:2341) -> isAuthoritative TRUE -> settingsHydrated TRUE -> admins CAN save module toggles, and Plans.jsx coupons render (enableCouponsModule true + subscriptions.state true). The remote literal is a PINNED contract (tests/ats-module-toggle.test.mjs:167) and backend index.js:2898 confirms modules is a supported POST category, so the save path is valid too. The spec claim that isAuthoritative is permanently false is not supported by the code OR by the live stack. RECOMMENDATION - pick one: (A) CLOSE DIR-057 as NOT REPRODUCIBLE (no code change; strongest honest option), or (B) authorise ONLY the defensive hardening (S1-S5: a single isAuthoritativeSettings() that accepts BOTH mariadb* and remote and rejects stale/fallback, wired into the five panels, with the ats-module-toggle pin MIGRATED to assert the helper) - pure hygiene that keeps the pinned contract green and prevents a future divergence, but fixes no observable defect. I will NOT ship a fix for a defect I cannot reproduce. My earlier QUESTION_ASKED on this is still OPEN; awaiting your ruling before ACT.",
+    "steps": [
+      "S1: author isAuthoritativeSettings(settings) in src/utils/moduleFlags.js - accepts mariadb and mariadb-* and remote, rejects fallback/safe-defaults/stale-cache/cache/unavailable and _settingsStale===true (ONLY if option B is authorised)",
+      "S2: wire the helper into ModulesSettings.jsx:62 and MIGRATE the tests/ats-module-toggle.test.mjs:167 pin from the bare literal to the helper",
+      "S3: wire the helper into Plans.jsx:122 and Plans.jsx:255",
+      "S4: wire the helper into websiteSettings.jsx:45, socialSettings.jsx:35 and anlyticsSettings.jsx:20",
+      "S5: author tests/dir057-settings-hydration.test.mjs pinning both vocabularies accepted, stale/fallback/unavailable rejected, and all five panels consuming the helper",
+      "S6: DONE - read-only live probe recorded in .bridge/evidence/dir057-live-probe.log (admin read 200/success/revisions.modules=58",
+      "public source mariadb",
+      "coupons and ATS enabled)"
+    ],
+    "planHash": "812624b9f50c58a93726c90dfa6a713aab538f93e56aa5695b2e03cb9c83a90b"
+  },
   "evidence": null,
   "reviews": [],
-  "freeze": null
+  "freeze": null,
+  "lastTransitionReason": "lead answered blocker questions and authorized act mode",
+  "continuationPending": false,
+  "revisionTarget": null,
+  "heartbeats": [
+    {
+      "at": "2026-10-09T04:40:13.760Z",
+      "status": "DIR-057 ROOT CAUSE DISPROVEN LIVE (PLAN mode, no code changed). Read-only in-process probe (.bridge/evidence/dir057-live-probe.log): GET /api/admin/settings with a super-admin bearer = HTTP 200, success=true, settings object, revisions.modules=58, enableCouponsModule=true, enableAtsScoreModule=true; GET /api/platform/public-config = HTTP 200, _settingsSource=mariadb. So the client relabels to remote (platform.js:2341) -> isAuthoritative TRUE -> admins CAN save and Plans coupons render. The spec premise (permanently false) is not supported by code or the live stack. Plan v2 submitted (planHash 812624b9): recommends (A) CLOSE as not reproducible, or (B) hardening only. Awaiting ruling; I will not ship a fix for a defect I cannot reproduce.",
+      "percent": 100,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    },
+    {
+      "at": "2026-10-09T04:57:13.684Z",
+      "status": "ACT authorised. Implementing S1-S5 as HARDENING ONLY (stated root cause disproven by live probe). S1: isAuthoritativeSettings() in moduleFlags.js; S2-S4: wire into ModulesSettings/Plans/websiteSettings/socialSettings/anlyticsSettings; S5: migrate the ats-module-toggle pin + author tests/dir057-settings-hydration.test.mjs.",
+      "percent": 10,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    },
+    {
+      "at": "2026-10-09T04:59:36.277Z",
+      "status": "S1-S5 implemented (hardening). New suite tests/dir057-settings-hydration.test.mjs 6/6; migrated ats-module-toggle pin 22/22; admin regression 63/63; eslint 0 errors (2 pre-existing warnings in Plans.jsx). Running the full product matrix + build now.",
+      "percent": 70,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    }
+  ],
+  "lastHeartbeatAt": "2026-10-09T04:59:36.277Z"
 }

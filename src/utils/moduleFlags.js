@@ -29,6 +29,37 @@ export function isFallbackSettings(settings) {
 }
 
 /**
+ * DIR-057 hardening: is this payload an AUTHORITATIVE settings read?
+ *
+ * Two provenance vocabularies legitimately coexist in this codebase, and a
+ * caller must not have to know which layer it is holding:
+ *   • the RAW backend value on `/api/platform/public-config` is `mariadb`
+ *     (`backend/routes/platform.js`), and `mariadb-*` for the in-memory
+ *     repository (`mariadb-inmemory`);
+ *   • the CLIENT ADAPTERS relabel a successful read to `remote`
+ *     (`services/api/platform.js` → getSystemSettings / getWebsiteData /
+ *     getSubscriptionStatus).
+ *
+ * The `remote` literal used to be duplicated inline in five admin panels, which
+ * meant a change to either vocabulary could silently disable module toggles,
+ * coupon rendering or settings hydration. This single predicate removes that
+ * divergence risk.
+ *
+ * It FAILS CLOSED: anything unknown, absent, explicitly stale, or in the
+ * fallback vocabulary is NOT authoritative.
+ */
+const AUTHORITATIVE_EXACT_SOURCES = Object.freeze(['remote']);
+const AUTHORITATIVE_PREFIX_SOURCES = /^mariadb(?:$|-)/;
+
+export function isAuthoritativeSettings(settings) {
+    if (!settings || typeof settings !== 'object' || Array.isArray(settings)) return false;
+    if (settings._settingsStale === true) return false;
+    const source = String(settings._settingsSource || '');
+    if (AUTHORITATIVE_PREFIX_SOURCES.test(source)) return true;
+    return AUTHORITATIVE_EXACT_SOURCES.includes(source);
+}
+
+/**
  * Resolve ATS visibility for a settings payload.
  * Returns `null` when a partial modules patch omitted the flag so the
  * caller can keep the last known remote value instead of defaulting ON.

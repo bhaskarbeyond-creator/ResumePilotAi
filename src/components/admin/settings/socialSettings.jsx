@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { getAdminSystemSettings, addSocial } from '../../../services/api/platform';
+import { isAuthoritativeSettings } from '../../../utils/moduleFlags';
 import { FaCheck, FaTimes, FaFacebook, FaTwitter, FaInstagram, FaPinterest, FaYoutube, FaLink } from 'react-icons/fa';
 
 class SocialSettings extends Component {
@@ -32,7 +33,7 @@ class SocialSettings extends Component {
     loadSocialLinks() {
         this.setState({ authoritativeLoaded: false, saveError: null });
         return getAdminSystemSettings().then((settings) => {
-            if (settings?._settingsStale === true || settings?._settingsSource !== 'remote') {
+            if (!isAuthoritativeSettings(settings)) {
                 throw new Error(settings?._settingsError || 'Authoritative social links are unavailable.');
             }
             const element = settings.social || {};

@@ -164,7 +164,11 @@ test('Modules Manager auto-saves the same flag users consume and reverts a faile
   assert.match(modules, /moduleSave\.settings/);
   assert.doesNotMatch(modules, /saveSystemSettings\('ai'/);
   assert.match(modules, /settingsHydrated/);
-  assert.match(modules, /_settingsSource === 'remote'/);
+  // DIR-057 MIGRATION (strengthened, not deleted): the provenance check now goes
+  // through the shared predicate, so this pin asserts the helper IS used AND the
+  // divergent inline literal is GONE — a strictly stronger guarantee than before.
+  assert.match(modules, /isAuthoritativeSettings\(settings\)/);
+  assert.doesNotMatch(modules, /_settingsSource === 'remote'/);
 });
 
 test('getSystemSettings returns an explicitly unavailable, default-OFF module payload on outage', () => {

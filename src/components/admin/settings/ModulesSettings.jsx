@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaCubes, FaDownload, FaBriefcase, FaGlobe, FaFileAlt, FaMagic, FaChartLine, FaShareAlt, FaCheckCircle, FaSave, FaSpinner, FaInfoCircle, FaTag, FaGoogle, FaFacebook, FaLinkedin, FaGithub, FaEnvelope, FaShieldAlt, FaComments, FaClipboardList, FaBookOpen } from 'react-icons/fa';
 import { getAdminSystemSettings, saveSystemSettings } from '../../../services/api/platform';
-import { buildModuleSettingsPatch } from '../../../utils/moduleFlags';
+import { buildModuleSettingsPatch, isAuthoritativeSettings } from '../../../utils/moduleFlags';
 
 const ModulesSettings = () => {
     const [modulesConfig, setModulesConfig] = useState({
@@ -59,7 +59,9 @@ const ModulesSettings = () => {
                 enableSalesTaxModule: mods.enableSalesTaxModule !== undefined ? mods.enableSalesTaxModule : false,
                 enableBlogModule: mods.enableBlogModule !== undefined ? mods.enableBlogModule : (mods.blog !== undefined ? mods.blog : true),
             });
-            const isAuthoritative = settings?._settingsSource === 'remote' && settings?._settingsStale !== true;
+            // DIR-057: one shared predicate for the provenance check, so the
+            // admin panels cannot drift from the vocabulary the adapters emit.
+            const isAuthoritative = isAuthoritativeSettings(settings);
             setSettingsHydrated(isAuthoritative);
             setLoading(false);
             if (!isAuthoritative) {
