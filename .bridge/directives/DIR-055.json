@@ -2,11 +2,11 @@
   "id": "DIR-055",
   "title": "Unified Executive Builder Header (\"Best of Both Worlds\") & Real Interactive Notifications Pipeline",
   "priority": "P0",
-  "status": "IN_PROGRESS",
+  "status": "APPROVED",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-08T17:32:55.872Z",
-  "updatedAt": "2026-10-08T17:59:12.232Z",
+  "updatedAt": "2026-10-09T03:24:25.278Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "### 1. MANDATE & PROBLEM STATEMENT\nThe User compared the legacy Resume Builder header with the current interface and inspected the Notifications popover on https://ime365.local/dashboard.\nThe User strictly commands:\n'this is my old header but new one is not as good as this. can you get the best of both worlds? Add New directive. Also Notifications are not real, not working. ask developer to fix this pipeline After the current one is done'.\nMandate:\n1. Merge the rich functional ergonomics of the legacy Resume Builder header (prominent Dashboard exit, editable title, template selector dropdown pill, live save beacon, ATS score pill with drawer trigger, Share, Sync Profile, Preview, and Download CTAs, plus the horizontal step ribbon with completed checkmarks and progress overview) with the modern Cuba glassmorphic design system ('best of both worlds'), eliminating any double-header clutter.\n2. Completely overhaul the Notifications pipeline: eliminate stale duplicate placeholders ('New message 4d ago'), resolve real navigable hrefs per notification type, add working 'Mark all as read' and per-row read toggles, and wire real MariaDB notification generation with sender/snippet grounding.\n\n### 2. ROOT CAUSE & ARCHITECTURAL SPECIFICATION\n1. RCA-1 (Builder Header Layout & Feature Regression):\n   In BuildResume.jsx and AuthenticatedAppShell.jsx, mounting inside CubaCandidateShell can lead to dual topbar crowding or suppression of dedicated builder controls. The legacy header provided superior density:\n   - Left: '<- Dashboard' pill, title rename, template selector dropdown pill ('Professional Classic v'), and live 'Saved' beacon.\n   - Center: Interactive ATS pill ('ATS: 39/100 | Getting Started v') opening the ATS score breakdown drawer.\n   - Right: 'Share', 'Sync Profile', 'Preview' (eye icon), and high-contrast 'Download' CTA.\n   - Ribbon: Horizontal stepper with '<' / '>' scroll arrows, completed green checkmarks '(v)', active step pill, and 'X of 10 complete - XX% v' overview trigger.\n2. RCA-2 (Dead & Fake Notifications Pipeline):\n   - In MariaDB 'notifications', 25 stale identical rows ('New message / You have a new message' 4d ago) exist without sender attribution.\n   - In M3NotificationCenter.jsx, 'onClick={() => onNavigate?.(item.href)}' is completely dead because 'notifications' rows do NOT store or return an 'href'. Clicks fail silently.\n   - No 'Mark all as read' action exists in the UI; unread badge remains permanently stuck at 25.\n   - 'onOpenAll' redirects blindly to '/dashboard' instead of a real notifications/activity destination.\n\n### 3. TECHNICAL IMPLEMENTATION STEPS (S1 - S6)\n- S1: Unified 'Best of Both Worlds' Builder Header in BuildResume.jsx\n  - Redesign BuildResume header into a premium Cuba glassmorphic surface (backdrop-blur, refined slate/cuba border tokens, full dark-mode compatibility).\n  - Cleanly integrate or adapt the shell so the builder presents a dedicated, un-crowded topbar with:\n    * '<- Dashboard' exit pill.\n    * Click-to-edit resume title + template selector dropdown pill (Cv1-Cv51 with search/preview).\n    * Live auto-save beacon ('* Saved' / 'Saving...' / 'Error').\n    * Interactive ATS score pill with tone color and drawer trigger.\n    * Quick Actions: 'Share', 'Sync Profile', 'Preview' (eye icon), and high-contrast primary 'Download'.\n  - Elevate the Horizontal Step Navigation Ribbon: '<' and '>' scroll arrows, completed green checkmark pills, active step highlighting, and 'X of 10 complete - XX%' overview trigger.\n- S2: Real Navigable Hrefs & Bulk Read in Backend\n  - In backend/routes/notificationsData.js and backend/repositories/MySQLRepository.js:\n    * Map each notification row to a real client 'href':\n      - message -> '/dashboard/messages?conversation=' + (data.conversationId || '')\n      - application -> '/dashboard/jobs'\n      - interview -> '/dashboard/interviews'\n      - system -> '/dashboard'\n    * Add 'POST /api/notifications-data/mark-all-read' marking all rows for req.user.uid as is_read = 1.\n- S3: Interactive Notifications UI in M3NotificationCenter.jsx\n  - Add 'Mark all as read' button in popover header calling 'POST /api/notifications-data/mark-all-read'.\n  - Make notification rows interactive: clicking marks the individual notification as read ('PATCH /api/notifications-data/:id') and routes to 'item.href'.\n  - Render contextual icons (message icon for messages, briefcases for job applications, calendars for interviews).\n  - Format honest relative timestamps and clean empty state ('You are all caught up') when all are read.\n- S4: Real Notification Generation in Backend\n  - In backend/index.js message sending route ('POST /api/messages/conversations/:id/messages'), ensure notifications include real sender name, conversation ID, and message snippet in data.\n  - Mark or clean up the stale 4-day-old duplicate test notifications in MariaDB for uid OhZdiSIFL7ePA1TMkfu9bnR935D3.\n- S5: Responsive Validation & Accessibility\n  - Verify builder header and step ribbon across 375px, 768px, and 1280px viewports with zero horizontal overflow or clipping.\n  - Ensure all buttons have unique aria-labels and keyboard focus rings.\n- S6: E2E Verification & Evidence Pack\n  - Author regression tests for notification routes (href resolution, mark-all-read).\n  - Run npm test, npm run lint, and Playwright DOM crawl verifying:\n    1. Builder header renders 'best of both worlds' controls cleanly.\n    2. Notifications open, navigate to real links, mark as read, and update badge in real time.\n\n### 4. ACCEPTANCE CRITERIA\n- AC-1: Resume Builder presents the complete 'best of both worlds' header (Dashboard exit, title, template selector, live save status, ATS pill, Share, Sync Profile, Preview, Download, and completed checkmark stepper ribbon) in premium Cuba styling.\n- AC-2: Notifications popover displays real, non-placeholder notifications with actionable navigation hrefs.\n- AC-3: Clicking a notification navigates to its destination and marks it as read.\n- AC-4: 'Mark all as read' clears the unread badge and updates MariaDB state.\n- AC-5: 0 console errors, 100% test pass in npm test, and zero regression against frozen baselines.",
   "invariants": [],
@@ -30,8 +30,34 @@
     ],
     "planHash": "34071c8c65d7b4917eb31674016fb7ee53cf362bf784b2e915d11a9e48230d61"
   },
-  "evidence": null,
-  "reviews": [],
+  "evidence": {
+    "submittedAt": "2026-10-09T03:23:43.968Z",
+    "summary": "DIR-055 COMPLETE (S1-S12). S1 pure resolveNotificationHref (type->real mounted route, 20+ types, zero dead hrefs). S2 M3NotificationCenter rebuilt: derived routes (item.href never existed), per-row PATCH read toggle, mark-all-read, contextual kind icons, honest timestamps, dead View-all-activity footer removed. S3 owner-scoped POST /api/notifications-data/mark-all-read. S4+S5 hideTopBar prop skips ONLY the <header>; driven by isApplicationShellRoute(location.pathname) - the predicate first production consumer (was test-only). S6 builder top bar -> cuba-glass + shadow-cuba-xl + cuba-focusable, all legacy controls retained, 11-step ribbon intact. S7 builder header self-hosts M3NotificationCenter + M3UserMenu from AuthContext. S8 CubaSkeleton/CubaEmptyState/CubaErrorState + optimistic mark-read with rollback. S9 guarded remediation script, dry-run proven on LIVE MariaDB: 17/17 placeholder rows resolvable (real senderId + real name + real snippet), 0 fabricated, 0 written, no DELETE. S10 tests 35/35. S11 Playwright 7 passed/1 skipped/0 failed. GATES: unit 35/35, regression 80/80, lint 0 errors, build exit 0, e2e 0 console errors + 0 native dialogs at 375/768/1280. TWO REAL DEFECTS FOUND AND FIXED DURING CERT: (1) e2e fixture omitted _settingsSource, which main.jsx:402 gates the whole app on -> maintenance screen; (2) REAL PRODUCT BUG: truncate sets overflow:hidden so a flex item min-size resolves to 0, and once the right rail gained the notification+identity controls the resume title was squeezed to a ZERO-SIZE box and vanished at 1280px - fixed with explicit min-width floors + regression test. LIMITS: AC-4 (ATS drawer) SKIPPED because the ATS flag is off in the hermetic fixture (recorded, not asserted); S9 was DRY-RUN only - --apply mutates live data and awaits authorization.",
+    "tests": {
+      "inline": true,
+      "sha256": "b59dcfd3cb6655a465ec0d94a7db0980cb361880c12b3a8d32ccd53bb9380e5a",
+      "size": 32,
+      "content": ".bridge/evidence/dir055-unit.log"
+    },
+    "domCrawl": null,
+    "artifacts": [],
+    "git": {
+      "isGit": true,
+      "head": "c68bf55db87417e76234f15838733853ad9dc22b",
+      "branch": "arena/01a0e100-resumepilotai",
+      "dirty": false,
+      "status": ""
+    },
+    "manifestHash": "3f983bf5c249dee7fd4ea2b5501132584da4d5278371af1604670ee9ca0daf04"
+  },
+  "reviews": [
+    {
+      "reviewedAt": "2026-10-09T03:24:25.277Z",
+      "verdict": "APPROVED",
+      "feedback": "Automated verification check passed.",
+      "evidenceHash": "3f983bf5c249dee7fd4ea2b5501132584da4d5278371af1604670ee9ca0daf04"
+    }
+  ],
   "freeze": null,
-  "lastTransitionReason": "lead approved plan; act mode authorized"
+  "lastTransitionReason": "lead review"
 }
