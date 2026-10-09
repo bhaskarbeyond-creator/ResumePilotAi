@@ -89,11 +89,15 @@ test('DIR-069 S6: the recruiter draft gate re-verifies the employer claim', () =
     const at = backend.indexOf("app.post('/api/public-export-docx'");
     const route = backend.slice(at, at + 5200);
     assert.match(route, /let employerClaim = false/, 'an employer-claim branch must exist');
-    assert.match(route, /repo\.getJob\(claimJobId\)/, 'the job must be loaded');
-    assert.match(route, /String\(job\.employerId \|\| job\.employer_id \|\| ''\) === req\.user\.uid/, 'job ownership must be verified');
-    assert.match(route, /repo\.getApplication\(claimApplicationId\)/, 'the application must be loaded');
-    assert.match(route, /applicationResumeId === String\(resumeId\)/, 'the application must reference exactly this resume');
-    assert.match(route, /repo\.getResume\(applicantId, String\(resumeId\)\)/, 'the draft resume is fetched only after the claim holds');
+    // DIR-071: the claim RULES live in one shared, unit-tested module so the PDF and
+    // DOCX routes cannot drift; the route only delegates to it.
+    assert.match(route, /resolveEmployerClaim\(\{/, 'the route must delegate to the shared employer-claim verifier');
+    const claimModule = read('backend/security/employerClaim.js');
+    assert.match(claimModule, /repo\.getJob\(claimJobId\)/, 'the job must be loaded');
+    assert.match(claimModule, /String\(job\.employerId \|\| job\.employer_id \|\| ''\) !== user\.uid/, 'job ownership must be verified');
+    assert.match(claimModule, /repo\.getApplication\(claimApplicationId\)/, 'the application must be loaded');
+    assert.match(claimModule, /applicationResumeId !== String\(resumeId\)/, 'the application must reference exactly this resume');
+    assert.match(claimModule, /repo\.getResume\(applicantId, String\(resumeId\)\)/, 'the draft resume is fetched only after the claim holds');
     // The published-only rule must remain the fallback.
     assert.match(route, /if \(!employerClaim\) \{[\s\S]*?publicationMode !== 'explicit'/, 'the published-only rule must remain the fallback');
 });
@@ -101,7 +105,8 @@ test('DIR-069 S6: the recruiter draft gate re-verifies the employer claim', () =
 test('DIR-069 S7: the recruiter drawer forwards the employer claim to the DOCX route', () => {
     const src = read('src/components/EmployerPortal/EmployerApplicantPipeline.jsx');
     assert.match(src, /jobId: resumeTarget\?\.jobId/, 'the drawer must forward the job id');
-    assert.match(src, /applicationId: resumeTarget\?\.id/, 'the drawer must forward the application id');
+    assert.match(src, /applicationId: resumeTarget\?\.applicationId \?\? resumeTarget\?\.application_id \?\? resumeTarget\?\.id/,
+        'the drawer must forward the application id (both row shapes)');
     const downloader = read('src/utils/exportDownloader.js');
     assert.match(downloader, /if \(jobId && applicationId\)/, 'the claim must require BOTH identifiers');
     assert.match(downloader, /payload\.jobId = String\(jobId\)/, 'the downloader must forward the claim');

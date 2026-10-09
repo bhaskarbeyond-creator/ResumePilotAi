@@ -28,6 +28,11 @@ export default [
       // this entry `npm run lint` fails on foreign JSX/pug and minified vendor
       // files rather than on IME365 code.
       'dashboardTemplate/**', 'temp_inspect/**',
+      // DIR-070 probe build output: a minified Vite bundle generated on demand by
+      // `npm run test:dir070:build-probe`. It is reproducible build output, already
+      // excluded from git, and linting minified vendor code only reports foreign
+      // findings (getter-return, no-cond-assign, prototype builtins).
+      'template-lab/dir070-dist/**',
     ],
   },
   {

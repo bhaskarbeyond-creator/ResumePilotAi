@@ -163,7 +163,14 @@ class MySQLRepository {
     _resumeSnapshot(row) {
         const snapshot = this._parseJsonRow(row, this.jsonResumeFields);
         if (!snapshot) return null;
-        snapshot.showPhoto = snapshot.showPhoto === 1 || snapshot.showPhoto === true;
+        // DIR-071 — GLOBAL PHOTO VISIBILITY SUPPRESSION.
+        // This snapshot feeds the public publication row, so a hidden photo must be
+        // nulled HERE rather than trusting every downstream render, export and
+        // publication path to consult the visibility flag.
+        const photoHidden = snapshot.showPhoto === 0 || snapshot.showPhoto === false
+            || snapshot.hidePhoto === true || snapshot.includePhoto === false;
+        snapshot.showPhoto = !photoHidden && (snapshot.showPhoto === 1 || snapshot.showPhoto === true);
+        if (!snapshot.showPhoto) snapshot.photo = null;
         // Storage/ownership metadata is not resume content and must never be copied
         // into a public publication snapshot or conflict recovery payload.
         for (const key of ['user_id', 'deleted_at', 'created_at', 'updated_at']) delete snapshot[key];

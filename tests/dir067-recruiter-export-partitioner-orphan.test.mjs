@@ -35,7 +35,10 @@ test('DIR-067 S1: the recruiter drawer exports real PDF/DOCX, never a raw .html 
     assert.match(src, /downloadResumeDocx\(/, 'must export a real DOCX');
     assert.match(src, /endpoint: '\/api\/public-export'/, 'PDF must use the public export route');
     assert.match(src, /endpoint: '\/api\/public-export-docx'/, 'DOCX must use the public DOCX route');
-    assert.match(src, /withAuth: false/, 'a recruiter has no owner session for a candidate resume');
+    // DIR-071 superseded this: the recruiter IS authenticated so the public export
+    // routes can decode the Bearer token and evaluate the employer claim. Without a
+    // token the claim can never fire and a draft application export dead-ends 404.
+    assert.match(src, /withAuth: true/, 'the recruiter must send a Bearer token so the claim can be verified');
     // The hand-rolled HTML artefact must be gone.
     assert.doesNotMatch(src, /resume\.html/, 'the raw .html download must be gone');
     assert.doesNotMatch(src, /URL\.createObjectURL/, 'no hand-rolled blob download may remain');
@@ -78,7 +81,11 @@ test('DIR-067 S4: the backend public DOCX route is published-only and rate-limit
     // DIR-069: the route may read req.user.uid ONLY inside the verified employer
     // claim (job ownership + application binding). The published-only rule must
     // remain the fallback for every other caller.
-    assert.match(route, /String\(job\.employerId \|\| job\.employer_id \|\| ''\) === req\.user\.uid/,
+    // DIR-071 moved the claim rules into ONE shared module so the PDF and DOCX
+    // routes cannot drift apart; the route delegates to it and keeps the
+    // published-only rule as the fallback.
+    assert.match(route, /resolveEmployerClaim\(\{/, 'the route must delegate to the shared employer-claim verifier');
+    assert.match(read('backend/security/employerClaim.js'), /String\(job\.employerId \|\| job\.employer_id \|\| ''\) !== user\.uid/,
         'the only owner read must be the verified job-ownership check');
     assert.match(route, /if \(!employerClaim\) \{[\s\S]*?publicationMode !== 'explicit'/,
         'the published-only rule must remain the fallback');

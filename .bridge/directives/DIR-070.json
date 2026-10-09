@@ -2,11 +2,11 @@
   "id": "DIR-070",
   "title": "DIR-070: 10/10 Smart Gap Filling & Partitioner Polish — Zero Page 1 Void Invariant & Multi-Tier Micro-Compaction",
   "priority": "P0",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-09T15:07:55.184Z",
-  "updatedAt": "2026-10-09T15:28:08.493Z",
+  "updatedAt": "2026-10-09T15:28:09.696Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "P0 ARCHITECTURAL MANDATES: 1. ROOT CAUSE OF PAGE 1 VOID: In src/engine/hybrid/smartPartitioner.js, applyOrphanGuard was moving the entire Certifications section off Page 1 when only 1 trailing card (CCRN) spilled onto Page 2, leaving Page 1 with a massive ~250px-300px blank white void below Projects. This is unacceptable. 2. PAGE 1 VOID PREVENTION INVARIANT: If moving a section off Page 1 leaves more than 80px (or >10% of usable page capacity) of empty space on Page 1, moving the section is STRICTLY FORBIDDEN. Page 1 must NEVER look half-empty. 3. MULTI-TIER ADAPTIVE MICRO-COMPACTION: Expand adaptive micro-compaction beyond just sectionGapPx (which only saved ~12px). Implement multi-tier compaction: (A) tighter section gaps (14px -> 9-10px), (B) compact grid card padding and row gap (7px -> 5px), (C) reduced title/item margins, reclaiming up to 70px. Profiles like Babu M (which overflow by ~27px) MUST fit onto 1 perfectly balanced page with zero footer overlap and zero wasted space. 4. BALANCED 2-PAGE DISTRIBUTION: When 2 pages are genuinely required, Page 1 must fill to >=85% capacity; pack items greedily on Page 1 and cleanly continue remaining items onto Page 2 with continuation headers, rather than stranding huge voids on Page 1. 5. ZERO REGRESSION GUARDS: src/cv-templates remains git diff 0, 100% Linux server compatible, zero OS console windows. Run full test suites, capture Playwright evidence of Babu M profile on Cv1/Modern Split proving zero blank void, and submit for Gatekeeper certification.",
   "invariants": [],
@@ -71,8 +71,30 @@
       }
     }
   ],
-  "freeze": null,
-  "lastTransitionReason": "lead review",
+  "freeze": {
+    "freezeHash": "1ae64c9907482d567cfa4af9d620a4a8fb406b6b",
+    "certifiedAt": "2026-10-09T15:28:09.696Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "Autonomous Lead (Antigravity): evidence audit passed, no human review.",
+    "evidenceHash": "f180d86b224d2d2e89510b014da883f409b00c7bab5787ccba472646fd2d1ae6",
+    "automated": true,
+    "certificationKind": "automated",
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "declared-automation",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "non-tty"
+      ],
+      "pid": 24580,
+      "parentPid": 19596,
+      "tty": false,
+      "at": "2026-10-09T15:28:09.054Z",
+      "explicitlyAllowed": true
+    }
+  },
+  "lastTransitionReason": "gatekeeper certification",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {

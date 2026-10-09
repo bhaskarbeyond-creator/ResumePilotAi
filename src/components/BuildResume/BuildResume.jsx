@@ -1146,6 +1146,11 @@ const BuildResume = () => {
                 firstname: previewData?.firstname,
                 lastname: previewData?.lastname,
                 analytics: false,
+                // DIR-071: let the export client persist the draft immediately before
+                // the request, so the exported payload always carries the CURRENT
+                // photo-visibility state and a photo hidden mid-edit can never be
+                // exported from a stale save.
+                persistLatest,
             });
 
             // Track download analytics only once a genuine PDF has been delivered, so
@@ -1248,6 +1253,8 @@ const BuildResume = () => {
                 colors: previewData?.colors || null,
                 userId,
                 incrementCounts: Boolean(userId),
+                // DIR-071: same photo-visibility guarantee as the PDF path.
+                persistLatest,
             });
         } catch (error) {
             console.error('DOCX Download failed:', error);

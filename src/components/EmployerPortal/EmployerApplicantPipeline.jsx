@@ -314,14 +314,21 @@ const EmployerApplicantPipeline = ({ showToast }) => {
                 language: 'en',
                 firstname: doc.firstname || '',
                 lastname: doc.lastname || '',
-                withAuth: false,
+                // DIR-071: the recruiter IS authenticated, so the public export
+                // routes can decode the Bearer token and verify the employer claim
+                // server-side. Without this the claim can never be evaluated and a
+                // draft application export dead-ends in a 404.
+                withAuth: true,
                 analytics: false,
-                // DIR-069: the employer claim lets a recruiter export the candidate's
-                // DOCX even while it is still a draft. The server re-verifies that the
-                // job belongs to this recruiter and that the application references
-                // exactly this resume, so the client value is never trusted as authority.
-                jobId: resumeTarget?.jobId || null,
-                applicationId: resumeTarget?.id || null,
+                // DIR-069/071: the employer claim lets a recruiter export the
+                // candidate's resume even while it is still a draft. The server
+                // re-verifies that the job belongs to this recruiter and that the
+                // application references exactly this resume, so the client value is
+                // never trusted as authority. Both snake_case and camelCase row
+                // shapes are accepted because the pipeline row is normalised by more
+                // than one backend surface.
+                jobId: resumeTarget?.jobId ?? resumeTarget?.job_id ?? null,
+                applicationId: resumeTarget?.applicationId ?? resumeTarget?.application_id ?? resumeTarget?.id ?? null,
             };
             if (kind === 'docx') {
                 await downloadResumeDocx({ ...options, endpoint: '/api/public-export-docx' });

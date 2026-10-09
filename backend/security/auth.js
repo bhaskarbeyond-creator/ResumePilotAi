@@ -110,33 +110,76 @@ let verifyToken = async token => {
 };
 let lookupUser = uid => admin.auth().getUser(uid);
 
-async function requireAuth(req, res, next) {
-  if (req.user) return next();
+/**
+ * DIR-071 — the single Bearer extraction shared by `requireAuth` and `optionalAuth`.
+ * Returns the raw token or null. It never throws and never logs the value.
+ */
+function bearerTokenFrom(req) {
   const header = req.get('authorization') || '';
   const match = /^Bearer\s+([^\s]{1,8192})$/i.exec(header);
-  if (!match) return unauthorized(res);
-  try {
-    const decoded = await verifyToken(match[1]);
-    let emailVerified = decoded.email_verified === true;
+  return match ? match[1] : null;
+}
 
-    // Real-time verification fallback: If client JWT was minted prior to verification,
-    // check live Firebase Auth record so verified users are not blocked by token cache lag.
-    if (!emailVerified && decoded.uid && typeof lookupUser === 'function') {
-      try {
-        const userRecord = await lookupUser(decoded.uid);
-        if (userRecord?.emailVerified === true) {
-          emailVerified = true;
-        }
-      } catch (_) {
-        // Non-fatal: preserve token-derived state
+/**
+ * DIR-071 — build the frozen `req.user` shape from a decoded token.
+ *
+ * `requireAuth` and `optionalAuth` MUST produce the identical shape, otherwise a
+ * public route and a private route would disagree about the very same caller and
+ * the employer-ownership checks would drift apart.
+ */
+async function resolveUser(decoded) {
+  let emailVerified = decoded.email_verified === true;
+
+  // Real-time verification fallback: If client JWT was minted prior to verification,
+  // check live Firebase Auth record so verified users are not blocked by token cache lag.
+  if (!emailVerified && decoded.uid && typeof lookupUser === 'function') {
+    try {
+      const userRecord = await lookupUser(decoded.uid);
+      if (userRecord?.emailVerified === true) {
+        emailVerified = true;
       }
+    } catch (_) {
+      // Non-fatal: preserve token-derived state
     }
+  }
 
-    req.user = Object.freeze({ uid: decoded.uid, email: decoded.email || null, emailVerified, claims: decoded });
+  return Object.freeze({ uid: decoded.uid, email: decoded.email || null, emailVerified, claims: decoded });
+}
+
+async function requireAuth(req, res, next) {
+  if (req.user) return next();
+  const token = bearerTokenFrom(req);
+  if (!token) return unauthorized(res);
+  try {
+    req.user = await resolveUser(await verifyToken(token));
     return next();
   } catch (_) {
     return unauthorized(res, 'INVALID_AUTH_TOKEN');
   }
+}
+
+/**
+ * DIR-071 — optional authentication for genuinely public routes.
+ *
+ * Decodes a Bearer token WHEN ONE IS PRESENT so `req.user` is available to
+ * server-side ownership checks (the recruiter employer claim on the public export
+ * routes), and ALWAYS calls `next()`. An absent or invalid token is not an error:
+ * the surface stays public and simply runs with `req.user` undefined.
+ *
+ * It can never elevate a request — it only populates the caller identity and
+ * grants no permission, so it is safe to run ahead of every public path.
+ */
+async function optionalAuth(req, res, next) {
+  if (req.user) return next();
+  const token = bearerTokenFrom(req);
+  if (!token) return next();
+  try {
+    req.user = await resolveUser(await verifyToken(token));
+  } catch (_) {
+    // A stale or malformed token must never break a public surface.
+    req.user = undefined;
+  }
+  return next();
 }
 
 function requireVerifiedEmail(req, res, next) {
@@ -265,6 +308,9 @@ function requireRecentAdminAuthentication(req, res, next) {
 const requireAdmin = requirePermission('system.config.write');
 module.exports = {
   requireAuth,
+  // DIR-071: public routes decode a Bearer token when present without rejecting
+  // an anonymous caller, so a recruiter's ownership claim can be verified.
+  optionalAuth,
   requireVerifiedEmail,
   requirePermission,
   requireAdmin,

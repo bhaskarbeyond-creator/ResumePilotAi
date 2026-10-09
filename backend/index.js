@@ -86,7 +86,7 @@ const { getRepository } = require('./repositories');
 const app = express();
 const cors = require('cors');
 const cryptoRandom = require('crypto');
-const { requireAuth, requirePermission, _permissionsFor, requireRecentAdminAuthentication, isSuperAdmin, testVerifierEnabled, issueLocalTestToken } = require('./security/auth');
+const { requireAuth, optionalAuth, requirePermission, _permissionsFor, requireRecentAdminAuthentication, isSuperAdmin, testVerifierEnabled, issueLocalTestToken } = require('./security/auth');
 const { enforceApiPolicy } = require('./security/policy');
 const { createEnterpriseAuthMiddleware } = require('./enterprise/enterpriseAuth');
 const {
@@ -462,7 +462,11 @@ app.use('/api', (req, res, next) => {
             replacement: req.method === 'GET' ? '/api/public/custom-pages' : '/api/admin/pages/:slug',
         });
     }
-    if (isPublicApiPath(req.path)) return next();
+    // DIR-071: a public path is never BLOCKED for an anonymous caller, but a
+    // present Bearer token is still decoded so server-side ownership checks (the
+    // recruiter employer claim on the public export routes) can see who is
+    // calling. optionalAuth only ever populates req.user and grants no permission.
+    if (isPublicApiPath(req.path)) return optionalAuth(req, res, next);
     if (req.path.startsWith('/enterprise/')) return requireEnterpriseAuth(req, res, next);
     return requireAuth(req, res, next);
 });
@@ -2411,6 +2415,15 @@ const MAX_CONCURRENT_EXPORTS = 5;
 // rendered by /export/:template/:resumeId/:language.
 const EXPORTABLE_TEMPLATE = /^(?:Cv(?:[1-9]|[1-4][0-9]|5[0-1])|Cover[1-4])$/;
 
+/**
+ * DIR-071 — the server-verified recruiter employer claim.
+ *
+ * The implementation lives in `./security/employerClaim.js` so the IDOR rules are
+ * unit-testable with a fake repository. Both the PDF and the DOCX public export
+ * routes call it, so their authorization can never drift apart.
+ */
+const { resolveEmployerClaim } = require('./security/employerClaim');
+
 app.post(['/api/export', '/api/public-export'], async (req, res) => {
     // The slot is claimed before any await so concurrent requests cannot all observe a
     // free counter and overshoot the Chromium concurrency ceiling.
@@ -2439,12 +2452,29 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
         // Public exports require an explicit MariaDB publication row. Private
         // exports use only the authenticated owner's canonical draft table.
         if (req.path.endsWith('/public-export')) {
-            const published = await repo.getPublicResume(resumeId);
-            if (!published || published.isPublished !== true || published.publicationMode !== 'explicit') {
-                return res.status(404).json({ error: 'Resume not found' });
+            // DIR-071: a recruiter exporting an applicant may read the candidate's
+            // ACTUAL applied resume — even while it is still a draft — when the
+            // server re-verifies that this job belongs to the caller AND that the
+            // application references exactly this resume. Otherwise the strict
+            // published-only rule below still applies, unchanged.
+            const claim = await resolveEmployerClaim({
+                repo,
+                user: req.user,
+                jobId: req.body.jobId,
+                applicationId: req.body.applicationId,
+                resumeId,
+            });
+            if (claim) {
+                stored = claim.stored;
+                ownerUid = claim.ownerUid;
+            } else {
+                const published = await repo.getPublicResume(resumeId);
+                if (!published || published.isPublished !== true || published.publicationMode !== 'explicit') {
+                    return res.status(404).json({ error: 'Resume not found' });
+                }
+                ownerUid = published.ownerUid;
+                stored = published.data;
             }
-            ownerUid = published.ownerUid;
-            stored = published.data;
             if (!stored || typeof stored !== 'object' || Array.isArray(stored)) {
                 return res.status(422).json({ error: 'Resume data is invalid' });
             }
@@ -4435,39 +4465,25 @@ app.post('/api/public-export-docx', async (req, res) => {
     const { getRepository } = require('./repositories');
     const repo = getRepository();
 
-    // DIR-069: a recruiter viewing a candidate application may export the DOCX even
-    // while the resume is still a DRAFT. The employer claim is re-verified
-    // server-side — the job must belong to the caller AND the application must
-    // belong to that job AND reference exactly this resume — so no cross-tenant
+    // DIR-069/071: a recruiter viewing a candidate application may export the DOCX
+    // even while the resume is still a DRAFT. The claim is re-verified by the ONE
+    // shared helper (the job must belong to the caller AND the application must
+    // belong to that job AND reference exactly this resume) so no cross-tenant
     // IDOR is possible. Every other request keeps the strict published-only rule.
     let stored = null;
     let ownerUid = null;
     let employerClaim = false;
-    const claimJobId = String(req.body.jobId || '');
-    const claimApplicationId = String(req.body.applicationId || '');
-    if (req.user?.uid
-        && /^[A-Za-z0-9_-]{1,128}$/.test(claimJobId)
-        && /^[A-Za-z0-9:_-]{1,300}$/.test(claimApplicationId)) {
-        const job = await repo.getJob(claimJobId).catch(() => null);
-        const isJobOwner = Boolean(job) && String(job.employerId || job.employer_id || '') === req.user.uid;
-        const application = isJobOwner && typeof repo.getApplication === 'function'
-            ? await repo.getApplication(claimApplicationId).catch(() => null)
-            : null;
-        const applicantId = String(application?.applicantId || application?.applicant_id || application?.userId || '');
-        const applicationResumeId = String(application?.resumeId || application?.resume_id || '');
-        if (isJobOwner
-            && application
-            && String(application.jobId || application.job_id || '') === claimJobId
-            && applicationResumeId === String(resumeId)
-            && applicantId
-            && typeof repo.getResume === 'function') {
-            const claimed = await repo.getResume(applicantId, String(resumeId)).catch(() => null);
-            if (claimed && typeof claimed === 'object' && !Array.isArray(claimed)) {
-                stored = claimed;
-                ownerUid = applicantId;
-                employerClaim = true;
-            }
-        }
+    const claim = await resolveEmployerClaim({
+        repo,
+        user: req.user,
+        jobId: req.body.jobId,
+        applicationId: req.body.applicationId,
+        resumeId,
+    });
+    if (claim) {
+        stored = claim.stored;
+        ownerUid = claim.ownerUid;
+        employerClaim = true;
     }
 
     if (!employerClaim) {

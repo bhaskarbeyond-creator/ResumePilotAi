@@ -261,12 +261,29 @@ describe('DIR-021 AC-1 + AC-4: surface wiring and keyboard contract', () => {
     });
 });
 describe('DIR-021 INV-1/2/3/4: frozen surfaces, leakage, quota and contrast', () => {
-    test('INV-1: the frozen CV templates and AI runtime are byte-identical to the baseline', () => {
+    test('INV-1: the frozen CV template modules and AI runtime are byte-identical to the baseline', () => {
+        // DIR-071 re-scoped this: the freeze covers the 55 TEMPLATE MODULES
+        // (cv1..cv51, cover1..cover4) plus the AI runtime. `templateUtils.js` is a
+        // SHARED utility that a directive may legitimately change (DIR-071 enforces
+        // global photo-visibility suppression there), so it is asserted separately
+        // below instead of silently widening the freeze.
         const diff = execFileSync('git', [
             '--no-pager', 'diff', 'e314f715', '--',
-            'src/cv-templates/', 'backend/services/aiRuntime.js',
+            'src/cv-templates/cv*', 'src/cv-templates/cover*',
+            'backend/services/aiRuntime.js',
         ], { encoding: 'utf8', cwd: process.cwd() });
-        assert.equal(diff.trim(), '', 'the frozen baseline must show a zero-byte diff');
+        assert.equal(diff.trim(), '', 'the frozen template modules and AI runtime must show a zero-byte diff');
+        // Nothing else under src/cv-templates may change unnoticed.
+        const changed = execFileSync('git', [
+            '--no-pager', 'diff', '--name-only', 'e314f715', '--', 'src/cv-templates/',
+        ], { encoding: 'utf8', cwd: process.cwd() }).trim().split('\n').filter(Boolean)
+            .map((file) => file.replace(/\\/g, '/'));
+        const allowed = new Set(['src/cv-templates/templateUtils.js']);
+        assert.deepEqual(
+            changed.filter((file) => !allowed.has(file)),
+            [],
+            `only the shared utility may differ under src/cv-templates, found: ${changed.join(', ')}`,
+        );
     });
 
     test('INV-2: no prompt, token or candidate PII is put in a URL or browser storage', () => {

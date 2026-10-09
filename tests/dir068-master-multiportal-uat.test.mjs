@@ -206,7 +206,10 @@ test('DIR-068 DOCX fidelity: 2-column card tables match the PDF and the public r
     assert.match(route, /publicationMode !== 'explicit'/, 'explicit publication required');
     // DIR-069: req.user.uid may be read ONLY inside the verified employer claim;
     // the published-only rule stays the fallback for every other caller.
-    assert.match(route, /String\(job\.employerId \|\| job\.employer_id \|\| ''\) === req\.user\.uid/,
+    // DIR-071 moved the claim rules into ONE shared module so the PDF and DOCX
+    // routes cannot drift; the route delegates to it.
+    assert.match(route, /resolveEmployerClaim\(\{/, 'the route must delegate to the shared employer-claim verifier');
+    assert.match(read('backend/security/employerClaim.js'), /String\(job\.employerId \|\| job\.employer_id \|\| ''\) !== user\.uid/,
         'the only owner read must be the verified job-ownership check');
     assert.match(route, /if \(!employerClaim\) \{[\s\S]*?publicationMode !== 'explicit'/,
         'the published-only rule must remain the fallback');
@@ -231,7 +234,17 @@ test('DIR-068 seal: zero FOUC, zero dead routes, Linux-compatible, cv-templates 
     }
     // The release manifest records the frozen baseline as clean.
     const manifest = JSON.parse(read('.bridge/CERTIFIED_FREEZE_MANIFEST.json'));
-    assert.equal(manifest.releaseSeal.frozenBaseline.clean, true, 'src/cv-templates must be recorded as git-diff clean');
+    // DIR-071 re-scoped this: the freeze covers the 55 TEMPLATE MODULES, while
+    // templateUtils.js is a shared utility a directive may legitimately change
+    // (DIR-071 enforces photo-visibility suppression there) and is recorded
+    // separately instead of silently widening the freeze.
+    assert.equal(manifest.releaseSeal.frozenBaseline.clean, true, 'the 55 template modules must be recorded as git-diff clean');
+    assert.equal(manifest.releaseSeal.frozenBaseline.scope, 'the 55 template modules (cv1..cv51, cover1..cover4)',
+        'the frozen scope must name the template modules explicitly');
+    assert.equal(manifest.releaseSeal.frozenBaseline.sharedUtility.path, 'src/cv-templates/templateUtils.js',
+        'the shared utility must be tracked explicitly');
+    assert.ok(Object.prototype.hasOwnProperty.call(manifest.releaseSeal.frozenBaseline.sharedUtility, 'changedByDirective'),
+        'the shared utility diff must be reported, never hidden');
 });
 
 test('DIR-068 seal: the release manifest documents every certified baseline honestly', () => {

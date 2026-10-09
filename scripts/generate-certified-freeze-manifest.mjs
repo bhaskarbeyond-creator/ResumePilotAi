@@ -78,7 +78,14 @@ if (fs.existsSync(CENSUS)) {
 }
 
 // The caller passes the frozen-baseline cleanliness so this script never shells out.
-const cvDiffLines = process.env.CV_TEMPLATES_DIFF_LINES;
+// DIR-071 re-scopes the frozen artifact: the freeze covers the 55 TEMPLATE MODULES
+// (cv1..cv51, cover1..cover4), which is what "src/cv-templates frozen" has always
+// meant in practice. `templateUtils.js` is a SHARED UTILITY that a directive may
+// legitimately change (DIR-071 enforces photo-visibility suppression there), so its
+// diff is recorded separately and does NOT define template cleanliness.
+const cvDiffLines = process.env.CV_TEMPLATE_DIRS_DIFF_LINES
+    ?? process.env.CV_TEMPLATES_DIFF_LINES;
+const templateUtilsDiffLines = process.env.CV_TEMPLATE_UTILS_DIFF_LINES;
 
 const existing = fs.existsSync(MANIFEST) ? JSON.parse(fs.readFileSync(MANIFEST, 'utf8')) : {};
 const manifest = {
@@ -99,8 +106,17 @@ const manifest = {
         routeCensus,
         frozenBaseline: {
             path: 'src/cv-templates',
+            scope: 'the 55 template modules (cv1..cv51, cover1..cover4)',
             gitDiffLines: cvDiffLines === undefined ? null : Number(cvDiffLines),
             clean: cvDiffLines === undefined ? null : Number(cvDiffLines) === 0,
+            // DIR-071: the shared utility is tracked explicitly rather than silently
+            // widening the freeze. It may carry a directive's change and must be
+            // reported, never hidden.
+            sharedUtility: {
+                path: 'src/cv-templates/templateUtils.js',
+                gitDiffLines: templateUtilsDiffLines === undefined ? null : Number(templateUtilsDiffLines),
+                changedByDirective: templateUtilsDiffLines === undefined ? null : Number(templateUtilsDiffLines) > 0,
+            },
         },
         sealedArtifacts: SEALED_ARTIFACTS.map((rel) => ({ file: rel, exists: fs.existsSync(path.join(ROOT, rel)), sha256: sha256(rel) })),
     },

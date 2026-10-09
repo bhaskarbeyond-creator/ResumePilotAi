@@ -90,6 +90,17 @@ export function normalizeResumeData(input = {}, { template = 'Cv1' } = {}) {
     }
     const hiddenSections = [...new Set((Array.isArray(raw.hiddenSections) ? raw.hiddenSections : []).map(text).filter(Boolean))];
 
+    // DIR-071 — GLOBAL PHOTO VISIBILITY SUPPRESSION.
+    // The visibility flag is authoritative: when ANY of showPhoto:false,
+    // hidePhoto:true or includePhoto:false is set the photo resolves to null, so a
+    // hidden photo can never leak through a render, publication or export path
+    // that forgot to consult the flag.
+    const photoHidden = raw.showPhoto === false || raw.hidePhoto === true || raw.includePhoto === false;
+    const showPhoto = photoHidden
+        ? false
+        : (raw.showPhoto !== undefined ? Boolean(raw.showPhoto) : true);
+    const photo = showPhoto && typeof raw.photo === 'string' && raw.photo.trim() ? raw.photo : null;
+
     return {
         ...clone(EMPTY_RESUME),
         ...raw,
@@ -101,8 +112,8 @@ export function normalizeResumeData(input = {}, { template = 'Cv1' } = {}) {
         targetJobDescription: text(raw.targetJobDescription || raw.targetJd || raw.jobDescription),
         country: text(raw.country), city: text(raw.city), address: text(raw.address), postalcode: text(raw.postalcode || raw.postalCode),
         website: text(raw.website || raw.websiteUrl), linkedin: text(raw.linkedin || raw.linkedinUrl), github: text(raw.github || raw.githubUrl),
-        photo: typeof raw.photo === 'string' && raw.photo.trim() ? raw.photo : null,
-        showPhoto: raw.showPhoto !== undefined ? Boolean(raw.showPhoto) : (raw.hidePhoto !== undefined ? !raw.hidePhoto : true),
+        photo,
+        showPhoto,
         summary: text(raw.summary || raw.professionalSummary),
         employments, educations, skills, languages,
         hobbies: Array.isArray(raw.hobbies) ? raw.hobbies : (raw.hobbies ? (typeof raw.hobbies === 'string' ? raw.hobbies : [raw.hobbies]) : []),

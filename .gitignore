@@ -93,6 +93,8 @@ template-lab/visual-metrics.json
 # A4 PDF evidence artifacts (regenerable)
 template-lab/evidence/
 template-lab/pdf-evidence.json
+# DIR-070 probe build output (reproducible; served by the void probe).
+template-lab/dir070-dist/
 
 # Regenerable DOCX forensic binaries and generated matrices
 artifacts/

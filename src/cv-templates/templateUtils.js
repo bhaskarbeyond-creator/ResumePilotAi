@@ -85,6 +85,13 @@ export function normalizeTemplateData(input = {}) {
     const raw = input && typeof input === 'object' ? input : {};
     const employments = raw.employments || raw.workExperiences || raw.experience;
     const educations = raw.educations || raw.education;
+    // DIR-071 — GLOBAL PHOTO VISIBILITY SUPPRESSION.
+    // The template view model is the LAST boundary before a template renders, so a
+    // hidden photo must already be null here. Any of showPhoto:false,
+    // hidePhoto:true or includePhoto:false suppresses it.
+    const photoHidden = raw.showPhoto === false || raw.hidePhoto === true || raw.includePhoto === false;
+    const showPhoto = photoHidden ? false : (raw.showPhoto !== undefined ? Boolean(raw.showPhoto) : true);
+    const photo = showPhoto && typeof raw.photo === 'string' && raw.photo.trim() ? raw.photo : null;
     const normalized = {
         ...raw,
         firstname: text(raw.firstname || raw.firstName),
@@ -101,7 +108,8 @@ export function normalizeTemplateData(input = {}) {
         website: text(raw.website || raw.websiteUrl),
         linkedin: text(raw.linkedin || raw.linkedinUrl),
         github: text(raw.github || raw.githubUrl),
-        photo: typeof raw.photo === 'string' && raw.photo.trim() ? raw.photo : null,
+        photo,
+        showPhoto,
         employments: normalizeCollection('employments', employments),
         educations: normalizeCollection('educations', educations),
         skills: normalizeCollection('skills', raw.skills),

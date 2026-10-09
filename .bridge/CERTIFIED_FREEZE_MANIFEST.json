@@ -1,5 +1,5 @@
 {
-  "certifiedAt": "2026-10-09T11:22:12.099Z",
+  "certifiedAt": "2026-10-09T16:00:35.857Z",
   "version": "4.0.0",
   "architecture": "BIDIRECTIONAL_INSTANT_WAKE_V1",
   "status": "FROZEN_AND_CERTIFIED",
@@ -64,9 +64,9 @@
     "generatedBy": "scripts/generate-certified-freeze-manifest.mjs",
     "directiveId": "DIR-068",
     "directiveCounts": {
-      "recordsOnDisk": 63,
-      "approvedFrozen": 49,
-      "withFreezeHash": 23,
+      "recordsOnDisk": 66,
+      "approvedFrozen": 52,
+      "withFreezeHash": 26,
       "directiveAssertedBaselines": 68,
       "note": "The directive asserts 68 certified baselines; the on-disk directive records are the authority."
     },
@@ -1769,8 +1769,14 @@
     },
     "frozenBaseline": {
       "path": "src/cv-templates",
+      "scope": "the 55 template modules (cv1..cv51, cover1..cover4)",
       "gitDiffLines": 0,
-      "clean": true
+      "clean": true,
+      "sharedUtility": {
+        "path": "src/cv-templates/templateUtils.js",
+        "gitDiffLines": 1,
+        "changedByDirective": true
+      }
     },
     "sealedArtifacts": [
       {
@@ -1796,27 +1802,27 @@
       {
         "file": "src/utils/exportDownloader.js",
         "exists": true,
-        "sha256": "431afd9eca95ed8e0e7fdb4c1f4a3d3fb1dd7f36a854002548fe9169480c2889"
+        "sha256": "cfc0809e2141ce410303a4b0eaae7bdfe32ecbe0e24933ffe5efe6c2521b1efa"
       },
       {
         "file": "src/engine/hybrid/smartPartitioner.js",
         "exists": true,
-        "sha256": "ae728b1baa8933dd7856eba84c2ff1309614109fc3edc9d08c468b0f379e81f1"
+        "sha256": "0539d2f3a9ef7fcd7debb235acd17cc1460835be486faa0cd4422f8906d15d82"
       },
       {
         "file": "src/engine/hybrid/smartEngine.css",
         "exists": true,
-        "sha256": "0aa477c74b23724a6be4012c9c2055d394a56edb42a598f880dd7e4b4c51adc1"
+        "sha256": "2a45ee00cb9cbcce591c00fa7c71c3a177df8bf253ff60dba715601570a2650d"
       },
       {
         "file": "src/engine/hybrid/SmartResumeComposer.jsx",
         "exists": true,
-        "sha256": "bc6cd99d041a688865e8cc73f41a730c16eb7f4ef68da2200b43b29004d41d6f"
+        "sha256": "80aa5104fc696bef87b71b8bd76f2e66775e58b01fda1c4e709de50ae4291e21"
       },
       {
         "file": "src/components/EmployerPortal/EmployerApplicantPipeline.jsx",
         "exists": true,
-        "sha256": "6131b773cf698246f383aa9427a4103dd0ae9658c3a35e6c71b2296b938733fe"
+        "sha256": "adb6663faa5d76772e4fef38cd0efeb27337d09a8182877120c09f8833576ce4"
       },
       {
         "file": "src/components/Dashboard/EmployerDashboard/JobApplicationsModal.jsx",
@@ -1831,17 +1837,17 @@
       {
         "file": "src/components/BuildResume/BuildResume.jsx",
         "exists": true,
-        "sha256": "a1f72271c469830e35489028d9593a13ceea93fbcdc4e0e6ceab17c5e7e4601c"
+        "sha256": "3430e2a3a7fbae04b99c3d6faa66166af1098b52a263cef3dd3d27863dd18ec5"
       },
       {
         "file": "backend/index.js",
         "exists": true,
-        "sha256": "ea2ddf8712ffb69ac9022190cd72498d52c48ccc0782afb63f8b3f46a36e06a2"
+        "sha256": "481cc28c7f8d4efb6da0a8cabd4d7a8b7da3b1596bbb8a10f3b0959e09537bfb"
       },
       {
         "file": "backend/services/docxExport.js",
         "exists": true,
-        "sha256": "40a67ebe18f5b4f169e29f3b9c8174c6209c359e591e6f779df74377906c4d56"
+        "sha256": "27425b6d9ab9afe6db8c6fc6e825a9c18e651b5f44119a38605eb2ea291c775a"
       },
       {
         "file": "template-lab/regenerate-previews.mjs",
@@ -2348,6 +2354,36 @@
       "certifiedAt": "2026-10-09T10:55:24.284Z",
       "freezeHash": "77ec17fb4312535b8895b357e46cc5b9ca429b9a",
       "evidenceHash": "51d88f63d1a07ff9fa1f915e59d0ff3d2bbdff70de018efc524c03b8483292c8",
+      "certificationKind": "automated",
+      "automated": true
+    },
+    {
+      "id": "DIR-068",
+      "title": "DIR-068: Master Platform-Wide UAT 10/10 Multi-Portal E2E Verification and Production Release Seal",
+      "priority": "P0",
+      "certifiedAt": "2026-10-09T11:24:07.440Z",
+      "freezeHash": "53ec5dd6083556671170522e6c6ccb86cb632b23",
+      "evidenceHash": "c6d29991b323434d2c9bef01a1b1e50cf8106542d7774b6cce34611b42542efd",
+      "certificationKind": "automated",
+      "automated": true
+    },
+    {
+      "id": "DIR-069",
+      "title": "DIR-069: True 10/10 Parity — DOCX Multi-Page Full-Width Reflow, Photo Embedding, Archetype 2-Col Certs, Recruiter Application Export Gate, and Free-Tier Watermark",
+      "priority": "P0",
+      "certifiedAt": "2026-10-09T14:01:04.705Z",
+      "freezeHash": "2d08fb0393ee20ea851fd887ad16e6485b7cc2de",
+      "evidenceHash": "1a97f9fe04c4b3b98ba01c30bdd58b5463eeb4fd382d1f45340e2a64e67ee803",
+      "certificationKind": "automated",
+      "automated": true
+    },
+    {
+      "id": "DIR-070",
+      "title": "DIR-070: 10/10 Smart Gap Filling & Partitioner Polish — Zero Page 1 Void Invariant & Multi-Tier Micro-Compaction",
+      "priority": "P0",
+      "certifiedAt": "2026-10-09T15:28:09.696Z",
+      "freezeHash": "1ae64c9907482d567cfa4af9d620a4a8fb406b6b",
+      "evidenceHash": "f180d86b224d2d2e89510b014da883f409b00c7bab5787ccba472646fd2d1ae6",
       "certificationKind": "automated",
       "automated": true
     }

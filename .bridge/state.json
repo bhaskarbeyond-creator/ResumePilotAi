@@ -1,25 +1,25 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-09T15:11:43.572Z",
-  "eventCount": 2590,
-  "activeDirectiveId": "DIR-070",
-  "activeDirectiveTitle": "DIR-070: 10/10 Smart Gap Filling & Partitioner Polish — Zero Page 1 Void Invariant & Multi-Tier Micro-Compaction",
-  "activeDirectiveStatus": "IN_PROGRESS",
+  "updatedAt": "2026-10-09T15:51:50.612Z",
+  "eventCount": 2600,
+  "activeDirectiveId": "DIR-071",
+  "activeDirectiveTitle": "DIR-071: Recruiter Applicant ATS Pipeline Word/PDF Export Fix & Global Candidate Photo Visibility Toggle Enforcement",
+  "activeDirectiveStatus": "ISSUED",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-09T14:00:59.919Z",
-  "unreadForLead": 79,
-  "unreadForDev": 122,
+  "stallDeadline": "2026-10-09T15:12:14.096Z",
+  "unreadForLead": 81,
+  "unreadForDev": 130,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-09T14:00:59.919Z",
-    "status": "S1-S10 complete: DOCX full-width reflow, photo embed, 2-col archetype certs, skill pills, free-tier watermark, verified recruiter draft gate. Submitting evidence.",
-    "percent": 95
+    "timestamp": "2026-10-09T15:12:14.096Z",
+    "status": "ACT authorized (plan 85/100). Starting multi-tier compaction + Page-1 void invariant + balanced 2-page.",
+    "percent": 10
   },
   "integrity": {
     "ok": false,
-    "checked": 2590,
+    "checked": 2600,
     "legacy": 7,
     "bad": 6
   }
