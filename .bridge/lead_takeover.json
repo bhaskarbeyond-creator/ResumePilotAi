@@ -1,0 +1,14 @@
+{
+  "active": false,
+  "reason": "user-requested",
+  "note": "user said: act as dev now",
+  "evidence": {
+    "note": "user said: act as dev now"
+  },
+  "startedAt": "2026-10-09T02:13:04.916Z",
+  "startedBy": "lead",
+  "directiveId": null,
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "endedAt": "2026-10-09T02:13:05.020Z",
+  "endedBy": "lead"
+}

@@ -16,6 +16,9 @@ import CubaCandidateHero from './CubaCandidateHero';
 import PaymentGraceBanner from './PaymentGraceBanner';
 import { getCurrentUserProfile } from '../../services/api/users';
 import { resolveActiveItem } from './navigationState';
+// DIR-055 S5: the FIRST production consumer of this predicate. It was authored
+// for exactly this fix and until now was referenced only by its own test.
+import { isApplicationShellRoute } from '../AppShell/applicationShell';
 import { CANDIDATE_NAVIGATION } from '../cuba/candidateNavigation';
 import { useUnreadMessages } from '../../hooks/useUnreadMessages';
 import { resolveMessagesVisibility } from '../../utils/moduleFlags';
@@ -404,6 +407,10 @@ const CubaCandidateShell = ({ children, copilotResume = null }) => {
             // grounding an operation needs is genuinely absent.
             copilotPortal={COPILOT_PORTALS.CANDIDATE}
             copilotDispatch={copilotDispatch}
+            // DIR-055 S5: on an application-shell route (the resume builder) that
+            // surface renders its own full-featured header, so this shell skips
+            // ONLY its top bar — sidebar, drawer, tab bar and palette all stay.
+            hideTopBar={isApplicationShellRoute(location.pathname)}
             // DIR-026 / AC-2: the candidate shell owns the real destination.
             messagesHref="/dashboard/messages"
         >

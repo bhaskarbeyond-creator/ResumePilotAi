@@ -1,9 +1,35 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { FiBell, FiCheck, FiInbox } from 'react-icons/fi';
+import {
+    FiBell, FiCheck, FiInbox, FiMail, FiUserPlus, FiCalendar,
+    FiXCircle, FiAward, FiTarget, FiCreditCard, FiFolder, FiShield, FiInfo, FiRotateCcw
+} from 'react-icons/fi';
 import { useHeaderPopover } from './useHeaderPopover';
 import { apiJson } from '../../services/api/platform';
+import { resolveNotificationHref, resolveNotificationKind } from './resolveNotificationHref';
+import CubaSkeleton from './CubaSkeleton';
+import CubaEmptyState from './CubaEmptyState';
+import CubaErrorState from './CubaErrorState';
 
 const cx = (...parts) => parts.filter(Boolean).join(' ');
+
+/**
+ * Contextual icon per notification KIND (DIR-055 S2). `resolveNotificationKind`
+ * maps the row's `type` to a semantic kind; this turns that into an icon. A kind
+ * with no entry falls back to the neutral system icon, so a future producer type
+ * can never render a blank row.
+ */
+const KIND_ICON = {
+    message: FiMail,
+    application: FiUserPlus,
+    interview: FiCalendar,
+    rejected: FiXCircle,
+    offer: FiAward,
+    match: FiTarget,
+    payment: FiCreditCard,
+    portfolio: FiFolder,
+    security: FiShield,
+    system: FiInfo
+};
 
 /**
  * M3NotificationCenter — the live notification bell and activity popover for the
@@ -28,6 +54,23 @@ const cx = (...parts) => parts.filter(Boolean).join(' ');
  *   A failed read sets an explicit error state and never silently renders as
  *   "0 unread, all clear" — a transport error masquerading as good news is the
  *   exact failure mode this component must not have.
+ *
+ * NAVIGATION IS DERIVED, NOT STORED (DIR-055 S2):
+ *   The `notifications` table has NO `href` column, so the old
+ *   `onNavigate(item.href)` always navigated to `undefined` and every row click
+ *   was silently dead. Rows now resolve a REAL mounted route from their `type`
+ *   via `resolveNotificationHref`; a row with no honest target renders as a `div`
+ *   rather than a dead button. The dead "View all activity" footer — which only
+ *   re-navigated to the page you were already on — is gone.
+ *
+ * INTERACTIVE READ STATE (DIR-055 S2/S3/S8):
+ *   Each row exposes a read toggle against the owner-scoped
+ *   `PATCH /api/notifications-data/:id`, and the header exposes Mark-all-read
+ *   against `POST /api/notifications-data/mark-all-read`. Both are OPTIMISTIC
+ *   WITH ROLLBACK, so a rejected write can never leave the UI claiming a state
+ *   the database does not hold. Loading uses CubaSkeleton, the zero-data state
+ *   uses CubaEmptyState, and a hard failure uses CubaErrorState with Retry — a
+ *   soft failure surfaces as an inline banner without hiding readable rows.
  */
 const formatWhen = (value) => {
     const when = new Date(value);
@@ -43,11 +86,13 @@ const formatWhen = (value) => {
     return when.toLocaleDateString();
 };
 
-const M3NotificationCenter = ({ onNavigate, onOpenAll }) => {
+const M3NotificationCenter = ({ onNavigate }) => {
     const [open, setOpen] = useState(false);
     const [rows, setRows] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [pendingIds, setPendingIds] = useState(() => new Set());
+    const [markingAll, setMarkingAll] = useState(false);
     const triggerRef = useRef(null);
     const panelRef = useRef(null);
     const mountedRef = useRef(true);
@@ -79,6 +124,72 @@ const M3NotificationCenter = ({ onNavigate, onOpenAll }) => {
     useEffect(() => { if (open) load(); }, [open, load]);
 
     const unread = rows.filter((item) => item.read !== true).length;
+
+    /**
+     * Per-row read toggle (DIR-055 S2) against the existing owner-scoped
+     * `PATCH /api/notifications-data/:id` route. Optimistic with rollback (S8):
+     * the badge must react instantly, but a rejected write must NEVER leave the
+     * UI claiming a state the database does not hold.
+     */
+    const toggleRead = useCallback(async (item) => {
+        const id = item?.id;
+        if (!id || pendingIds.has(id)) return;
+        const nextRead = item.read !== true;
+        setError('');
+        setPendingIds((prev) => new Set(prev).add(id));
+        setRows((prev) => prev.map((r) => (r.id === id ? { ...r, read: nextRead } : r)));
+        try {
+            await apiJson(`/api/notifications-data/${encodeURIComponent(id)}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ read: nextRead })
+            });
+        } catch (patchError) {
+            if (!mountedRef.current) return;
+            // Roll back ONLY this row — a full reload would discard sibling edits.
+            setRows((prev) => prev.map((r) => (r.id === id ? { ...r, read: !nextRead } : r)));
+            setError(patchError?.message || 'Could not update that notification.');
+        } finally {
+            if (mountedRef.current) {
+                setPendingIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
+            }
+        }
+    }, [pendingIds]);
+
+    /**
+     * Mark every unread row read in ONE owner-scoped statement (DIR-055 S3).
+     * Optimistic with rollback, and guarded so a double click cannot race two
+     * concurrent writes.
+     */
+    const markAllRead = useCallback(async () => {
+        if (markingAll || unread === 0) return;
+        const snapshot = rows;
+        setError('');
+        setMarkingAll(true);
+        setRows((prev) => prev.map((r) => ({ ...r, read: true })));
+        try {
+            await apiJson('/api/notifications-data/mark-all-read', { method: 'POST' });
+        } catch (markError) {
+            if (!mountedRef.current) return;
+            setRows(snapshot);
+            setError(markError?.message || 'Could not mark notifications as read.');
+        } finally {
+            if (mountedRef.current) setMarkingAll(false);
+        }
+    }, [markingAll, rows, unread]);
+
+    /**
+     * Row click → a REAL mounted route derived from the row's `type`
+     * (`resolveNotificationHref`). The `notifications` table has NO `href`
+     * column, so the previous `item.href` was always `undefined` and every click
+     * was silently dead. A row with no honest target does not navigate at all.
+     */
+    const openRow = useCallback((item) => {
+        const href = resolveNotificationHref(item);
+        if (!href) return;
+        setOpen(false);
+        onNavigate?.(href);
+    }, [onNavigate]);
 
     return (
         <div className="relative flex-none">
@@ -129,58 +240,104 @@ const M3NotificationCenter = ({ onNavigate, onOpenAll }) => {
                 >
                     <div className="flex flex-none items-center justify-between gap-3 px-4 py-3">
                         <h2 className="text-sm font-bold text-cuba-ink">Notifications</h2>
-                        {unread > 0 && (
-                            <span className="rounded-full bg-cuba-primary-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cuba-primary-ink-strong">
-                                {unread} new
-                            </span>
-                        )}
+                        <div className="flex flex-none items-center gap-2">
+                            {unread > 0 && (
+                                <span
+                                    data-testid="cuba-notification-unread-count"
+                                    className="rounded-full bg-cuba-primary-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cuba-primary-ink-strong"
+                                >
+                                    {unread} new
+                                </span>
+                            )}
+                            {unread > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={markAllRead}
+                                    disabled={markingAll}
+                                    data-testid="cuba-notification-mark-all"
+                                    className="cuba-focusable rounded-full border border-cuba-line px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cuba-primary-ink-strong transition-colors hover:bg-cuba-primary-soft disabled:opacity-50"
+                                >
+                                    {markingAll ? 'Marking…' : 'Mark all read'}
+                                </button>
+                            )}
+                        </div>
                     </div>
                     <div className="h-px flex-none" style={{ backgroundColor: 'var(--cuba-header-divider)' }} />
+                    {/* A SOFT failure (e.g. a rejected mark-read that was rolled back)
+                        must surface WITHOUT hiding rows the user can still read. */}
+                    {error && rows.length > 0 && (
+                        <p
+                            role="status"
+                            data-testid="cuba-notification-error"
+                            className="flex-none px-4 py-2 text-xs font-medium text-cuba-danger"
+                        >
+                            {error}
+                        </p>
+                    )}
                     {/* DIR-048: token-backed scrollbar — the OS default grey bar must
                         never paint inside the executive surface. */}
                     <div className="cuba-scrollbar min-h-0 flex-1 overflow-y-auto">
-                        {error ? (
-                            <p role="status" className="px-4 py-6 text-center text-sm text-cuba-danger">
-                                {error}
-                            </p>
+                        {error && rows.length === 0 ? (
+                            <CubaErrorState
+                                title="Notifications unavailable"
+                                message={error}
+                                onRetry={load}
+                                retrying={loading}
+                                className="m-3"
+                            />
                         ) : loading && rows.length === 0 ? (
-                            <p role="status" className="px-4 py-6 text-center text-sm text-cuba-ink-muted">
-                                Loading notifications…
-                            </p>
-                        ) : rows.length === 0 ? (
-                            <div className="flex flex-col items-center gap-2 px-4 py-8 text-center">
-                                <FiInbox className="h-7 w-7 text-cuba-ink-subtle" aria-hidden="true" />
-                                <p className="text-sm font-semibold text-cuba-ink">You are all caught up</p>
-                                <p className="text-xs text-cuba-ink-subtle">
-                                    Nothing unread. New activity will appear here.
-                                </p>
+                            <div className="space-y-3 px-4 py-4">
+                                <CubaSkeleton height="0.8rem" width="72%" text="Loading notifications" />
+                                <CubaSkeleton height="0.7rem" width="92%" text="Loading notifications" />
+                                <CubaSkeleton height="0.8rem" width="58%" text="Loading notifications" />
                             </div>
+                        ) : rows.length === 0 ? (
+                            <CubaEmptyState
+                                compact
+                                className="m-3"
+                                icon={<FiInbox className="h-5 w-5" aria-hidden="true" />}
+                                title="You are all caught up"
+                                description="Nothing unread. New activity will appear here."
+                            />
                         ) : (
                             <ul className="divide-y" style={{ borderColor: 'var(--cuba-header-divider)' }}>
                                 {rows.slice(0, 30).map((item) => {
                                     const isUnread = item.read !== true;
                                     const when = formatWhen(item.created_at || item.createdAt);
+                                    const href = resolveNotificationHref(item);
+                                    const Icon = KIND_ICON[resolveNotificationKind(item)] || FiInfo;
+                                    const isPending = pendingIds.has(item.id);
+                                    const label = item.title || 'Notification';
+                                    // A row with no honest destination is NOT a button:
+                                    // a dead link is worse than no link (zero dead hrefs).
+                                    const RowTag = href ? 'button' : 'div';
                                     return (
-                                        <li key={item.id}>
-                                            <button
-                                                type="button"
-                                                onClick={() => onNavigate?.(item.href)}
-                                                className="cuba-focusable flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-cuba-primary-soft"
+                                        <li key={item.id} className="flex items-start">
+                                            <RowTag
+                                                {...(href ? { type: 'button', onClick: () => openRow(item) } : {})}
+                                                data-testid="cuba-notification-row"
+                                                data-navigable={href ? 'true' : 'false'}
+                                                className={cx(
+                                                    'flex min-w-0 flex-1 items-start gap-3 px-4 py-3 text-left transition-colors',
+                                                    href ? 'cuba-focusable hover:bg-cuba-primary-soft' : '',
+                                                )}
                                             >
                                                 <span
-                                                    className="mt-1.5 h-2 w-2 flex-none rounded-full"
-                                                    style={{
-                                                        backgroundColor: isUnread ? 'var(--cuba-header-badge-fill)' : 'transparent',
-                                                    }}
+                                                    className="mt-0.5 flex h-7 w-7 flex-none items-center justify-center rounded-full"
+                                                    style={isUnread
+                                                        ? { backgroundColor: 'var(--cuba-header-badge-fill)', color: 'var(--cuba-header-badge-ink)' }
+                                                        : { backgroundColor: 'var(--cuba-header-divider)', color: 'var(--cuba-ink-subtle)' }}
                                                     aria-hidden="true"
-                                                />
+                                                >
+                                                    <Icon className="h-3.5 w-3.5" />
+                                                </span>
                                                 <span className="min-w-0 flex-1">
                                                     <span className="flex items-baseline justify-between gap-2">
                                                         <span className={cx(
                                                             'truncate text-sm',
                                                             isUnread ? 'font-semibold text-cuba-ink' : 'font-medium text-cuba-ink-muted',
                                                         )}>
-                                                            {item.title || 'Notification'}
+                                                            {label}
                                                         </span>
                                                         {when && (
                                                             <span className="flex-none text-[10px] text-cuba-ink-subtle">{when}</span>
@@ -192,6 +349,21 @@ const M3NotificationCenter = ({ onNavigate, onOpenAll }) => {
                                                         </span>
                                                     )}
                                                 </span>
+                                            </RowTag>
+                                            <button
+                                                type="button"
+                                                onClick={() => toggleRead(item)}
+                                                disabled={isPending}
+                                                data-testid="cuba-notification-toggle"
+                                                aria-pressed={!isUnread}
+                                                aria-label={isUnread ? `Mark "${label}" as read` : `Mark "${label}" as unread`}
+                                                className="cuba-focusable mt-3 mr-3 flex h-7 w-7 flex-none items-center justify-center rounded-full text-cuba-ink-subtle transition-colors hover:bg-cuba-primary-soft hover:text-cuba-primary-ink-strong disabled:opacity-50"
+                                            >
+                                                {isPending
+                                                    ? <CubaSkeleton width="0.75rem" height="0.75rem" rounded="rounded-full" text="Saving read state" />
+                                                    : isUnread
+                                                        ? <FiCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                                                        : <FiRotateCcw className="h-3 w-3" aria-hidden="true" />}
                                             </button>
                                         </li>
                                     );
@@ -200,18 +372,6 @@ const M3NotificationCenter = ({ onNavigate, onOpenAll }) => {
                         )}
                     </div>
 
-                    {onOpenAll && rows.length > 0 && (
-                        <>
-                            <div className="h-px flex-none" style={{ backgroundColor: 'var(--cuba-header-divider)' }} />
-                            <button
-                                type="button"
-                                onClick={() => { setOpen(false); onOpenAll(); }}
-                                className="cuba-focusable flex-none px-4 py-3 text-center text-sm font-semibold text-cuba-primary-ink-strong transition-colors hover:bg-cuba-primary-soft"
-                            >
-                                View all activity
-                            </button>
-                        </>
-                    )}
                 </div>
             )}
         </div>

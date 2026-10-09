@@ -43,6 +43,25 @@ router.patch('/:id', async (req, res) => {
     }
 });
 
+// POST /api/notifications-data/mark-all-read - Mark every UNREAD notification
+// belonging to the CURRENT user as read (DIR-055 S3).
+//
+// Owner-scoped by construction: the UPDATE is constrained by `user_id = ?`, so
+// it can never touch another tenant's rows. Additive endpoint — it does not
+// alter the existing GET or PATCH contracts.
+router.post('/mark-all-read', async (req, res) => {
+    try {
+        const pool = require('../database/mysql').getPool();
+        const [result] = await pool.query(
+            'UPDATE notifications SET is_read = 1, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND is_read = 0',
+            [req.user.uid]
+        );
+        return res.json({ success: true, updated: Number(result.affectedRows) || 0 });
+    } catch (_err) {
+        return res.status(500).json({ success: false, error: 'Failed to mark notifications as read' });
+    }
+});
+
 // GET /api/notifications-data/contact/list - List contact submissions (Admin / messages.read permission required)
 router.get('/contact/list', requirePermission('messages.read'), async (req, res) => {
     try {

@@ -1,5 +1,5 @@
 {
-  "certifiedAt": "2026-10-05T18:44:07.274Z",
+  "certifiedAt": "2026-10-09T03:10:54.495Z",
   "version": "3.0.0",
   "architecture": "BIDIRECTIONAL_INSTANT_WAKE_V1",
   "status": "FROZEN_AND_CERTIFIED",
@@ -7,8 +7,20 @@
     "protocol": "short_uri_prompt_file_dual_dispatch",
     "extensions": [
       {
+        "id": "rooveterinaryinc.roo-cline",
+        "dir": "rooveterinaryinc.roo-cline-3.54.0-universal",
+        "taskSupported": true,
+        "autoHealed": false
+      },
+      {
+        "id": "rooveterinaryinc.roo-code-nightly",
+        "dir": "rooveterinaryinc.roo-code-nightly-0.0.8179-universal",
+        "taskSupported": true,
+        "autoHealed": false
+      },
+      {
         "id": "saoudrizwan.claude-dev",
-        "dir": "saoudrizwan.claude-dev-4.1.22-universal",
+        "dir": "saoudrizwan.claude-dev-4.1.23-universal",
         "taskSupported": true,
         "promptFileSupported": true,
         "sidebarAutoFocus": true,
@@ -22,7 +34,7 @@
     "udpPort": 48222,
     "leadWatcher": {
       "running": true,
-      "pid": 34276,
+      "pid": 8916,
       "udpPort": 48222,
       "scriptExists": true,
       "certifiedBackupExists": true
@@ -31,21 +43,21 @@
   "certifiedFiles": [
     {
       "file": "bridge.cjs",
-      "sha256": "ef12109c4d5f9e21ca5bd4123b9094f682707b18060f1d66b9109b1e82b20795",
-      "bytes": 173504,
+      "sha256": "52fe30c6bf4c6a7e9540a0bbabd400b0f032bbf4d86025de975205722eb03742",
+      "bytes": 250069,
       "certifiedBackup": "bridge.cjs.certified.bak"
     },
     {
       "file": "lead_watcher.cjs",
-      "sha256": "5a82542fda827a8be14b213201d572ad8f7279d5760f47a1a35754ea9b1ddc2f",
-      "bytes": 26290,
+      "sha256": "7e277c622f3df131afe5c8c9ca88ca26bbec2161870d90a9bb9cb922e391dc41",
+      "bytes": 37604,
       "certifiedBackup": "lead_watcher.cjs.certified.bak"
     },
     {
-      "file": "wake_patch_guardian.cjs",
-      "sha256": "8901e0e570b2e3e147a7a11a4361e3f67ed069521712ff49090ce566b16c98a8",
-      "bytes": 9932,
-      "certifiedBackup": "wake_patch_guardian.cjs.certified.bak"
+      "file": "autowake.cjs",
+      "sha256": "25f5d3aa7b6aac5e1a0d3bcbc1698c714f9a7849c981710da142a662e7b6dd90",
+      "bytes": 42786,
+      "certifiedBackup": "autowake.cjs.certified.bak"
     }
   ]
 }

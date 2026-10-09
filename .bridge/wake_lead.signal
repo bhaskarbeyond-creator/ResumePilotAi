@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-08T17:25:31.054Z",
-  "seq": 2239,
-  "id": "evt_muzt4u8t_dd91c6e371d6",
-  "type": "EVIDENCE_SUBMITTED",
-  "title": "[Evidence] DIR-054: Eliminate 429 Storm on /api/messages/conversations, Shared Poller Architecture & Rate-Limit Alignment",
+  "timestamp": "2026-10-09T02:53:05.371Z",
+  "seq": 2375,
+  "id": "evt_mv0deqpx_0abb9f7d56ff",
+  "type": "HEARTBEAT",
+  "title": "[Heartbeat] S1,S2,S3,S4,S8,S9 done. S9 remediation script authored + proven by DRY RUN on live MariaDB: 17/17 placeholder rows, sender GROUNDED (senderId 5Fu7Yzv7..., real displayName, real snippet), 0 fabricated",
   "sender": "STAFF_DEVELOPER",
-  "directiveId": "DIR-054",
-  "summary": "DIR-054 COMPLETE. RCA reproduced live then eliminated. (1) Backend: /api/messages is now METHOD-AWARE - GET/HEAD draw on a new messaging-read budget (MESSAGING_READ_FIVE_MINUTE_LIMIT default 300/5min, failClosed:false) while POST/PATCH/DELETE keep the mutation budget (MESSAGING_FIVE_MINUTE_LIMIT raised 30 to 150, still failClosed:true); both registered in platformConfiguration.js. LIVE DIFFERENTIAL: pre-fix 35 reads = 10x200 + 25x429 with RateLimit-Limit 30; post-fix 150 reads = 150x200, 0x429, RateLimit-Limit 300. (2) Frontend: new src/hooks/unreadMessagesPoller.js is a React-free SINGLETON scheduler shared by all consumers - one in-flight read, one shared snapshot, exponential ladder 15/30/60/120/240 capped 300s, Retry-After honoured as a floor, refresh() cannot jump the deadline, last-unsubscribe clears the timer. useUnreadMessages.js polls through it and also shares ONE module-flag read per minute (was 4). (3) apiJson additively attaches err.retryAfter from the Retry-After header. (4) DIR-023 amber regression fixed at src/components/Candidate/CubaCandidateHero.jsx (note: the directive's src/components/cuba/ path does not exist) by reusing already-mapped classes - dir023-contrast-tokens 15/15, zero new !important maps. GATES: test:security:static 67/67; lint exit 0 (0 errors, 253 warnings = DIR-047 baseline); npm test 1715 tests 0 failures; build 3.38s (<4.0s budget); new 15-test tests/dir054-shared-poller.test.mjs wired into test:product; combined battery 42/42. LIVE S10: 6.5 continuous minutes on https://ime365.local/dashboard as a real Firebase identity (enableMessagesModule=true, revision 58) = 26 requests for 26 expected ticks, ALL 200, ZERO 429, cadence min 15320/mean 15495ms, ZERO bursts (the old 4-instance signature), badge stable at 'Messages, 0 unread', reconnect banner absent, served chunk assets/useUnreadMessages-DGYs-KZh.js contains the shared poller. HONEST LIMITATION: 4 of the 5 console lines are a PRE-EXISTING non-messaging 404 (GET /api/resumes/<uid> from CubaCandidateShell.jsx:273) plus 1 Stripe telemetry ERR_CONNECTION_RESET - neither is a 429 and neither is in DIR-054 scope; recommend a follow-up directive. INV-1 frozen baseline diff = 0 bytes. All servers via bridge xampp only."
+  "directiveId": "DIR-055",
+  "summary": "S1,S2,S3,S4,S8,S9 done. S9 remediation script authored + proven by DRY RUN on live MariaDB: 17/17 placeholder rows, sender GROUNDED (senderId 5Fu7Yzv7..., real displayName, real snippet), 0 fabricated, 0 written. tests/dir055-notifications.test.mjs now 23/23 (was 10). Regression 50/50. lint 0 errors. build 3.53s. Remaining: S5,S6,S7 (builder header), S11 (Playwright e2e), S12 (evidence pack)."
 }

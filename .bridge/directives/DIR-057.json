@@ -1,0 +1,18 @@
+{
+  "id": "DIR-057",
+  "title": "Authoritative MariaDB Settings Hydration in ModulesSettings.jsx, Admin Settings & Coupon System in Plans.jsx",
+  "priority": "P0",
+  "status": "ISSUED",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-09T03:08:08.195Z",
+  "updatedAt": "2026-10-09T03:08:08.195Z",
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "spec": "### 1. MANDATE & PROBLEM STATEMENT\nbackend/routes/platform.js:252 authoritatively returns _settingsSource: 'mariadb'.\nHowever, ModulesSettings.jsx:62, Plans.jsx:122, websiteSettings.jsx:45, socialSettings.jsx:35 check settings?._settingsSource === 'remote'.\nConsequently, isAuthoritative is permanently false, blocking admins from saving module toggles and disabling checkout coupons.\n\n### 2. ARCHITECTURAL SPECIFICATION\n1. Export unified helper isAuthoritativeSettings(settings) in src/utils/moduleFlags.js that accepts 'mariadb' and 'remote' and rejects stale configs.\n2. Update ModulesSettings.jsx, Plans.jsx, websiteSettings.jsx, socialSettings.jsx, and anlyticsSettings.jsx to use this helper.\n3. Ensure persistModules saves cleanly to /api/admin/modules without error toast.\n4. Ensure Plans.jsx coupon form renders when enabled.\n\n### 3. IMPLEMENTATION PLAN\n- S1: Author isAuthoritativeSettings in src/utils/moduleFlags.js.\n- S2: Wire helper into ModulesSettings.jsx.\n- S3: Wire helper into Plans.jsx.\n- S4: Wire helper into remaining admin settings panels.\n- S5: Author test suite tests/dir057-settings-hydration.test.mjs.",
+  "invariants": [],
+  "acceptanceCriteria": [],
+  "plan": null,
+  "evidence": null,
+  "reviews": [],
+  "freeze": null
+}

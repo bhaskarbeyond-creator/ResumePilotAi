@@ -1,25 +1,25 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-08T17:25:38.357Z",
-  "eventCount": 2239,
-  "activeDirectiveId": "DIR-054",
-  "activeDirectiveTitle": "Eliminate 429 Storm on /api/messages/conversations, Shared Poller Architecture & Rate-Limit Alignment",
-  "activeDirectiveStatus": "EVIDENCE_SUBMITTED",
-  "awaitingHuman": true,
-  "awaitingHumanReason": "Awaiting Gatekeeper evidence certification (human gate)",
-  "awaitingHumanSince": "2026-10-08T17:25:31.016Z",
-  "stallDeadline": null,
-  "unreadForLead": 7,
-  "unreadForDev": 21,
+  "updatedAt": "2026-10-09T03:21:27.118Z",
+  "eventCount": 2382,
+  "activeDirectiveId": "DIR-055",
+  "activeDirectiveTitle": "Unified Executive Builder Header (\"Best of Both Worlds\") & Real Interactive Notifications Pipeline",
+  "activeDirectiveStatus": "IN_PROGRESS",
+  "awaitingHuman": false,
+  "awaitingHumanReason": null,
+  "awaitingHumanSince": null,
+  "stallDeadline": "2026-10-09T02:53:05.349Z",
+  "unreadForLead": 0,
+  "unreadForDev": 0,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-08T17:21:49.456Z",
-    "status": "S9 gates green (security-static 67/67, lint 0 errors, npm test 1715/0 fail, build 3.38s). S10 live: pre-fix probe reproduced 25x429 at RateLimit-Limit 30; post-fix 150/150 x200 at RateLimit-Limit 300; 6.5-min dashboard capture running",
-    "percent": 80
+    "timestamp": "2026-10-09T02:53:05.349Z",
+    "status": "S1,S2,S3,S4,S8,S9 done. S9 remediation script authored + proven by DRY RUN on live MariaDB: 17/17 placeholder rows, sender GROUNDED (senderId 5Fu7Yzv7..., real displayName, real snippet), 0 fabricated, 0 written. tests/dir055-notifications.test.mjs now 23/23 (was 10). Regression 50/50. lint 0 errors. build 3.53s. Remaining: S5,S6,S7 (builder header), S11 (Playwright e2e), S12 (evidence pack).",
+    "percent": 85
   },
   "integrity": {
     "ok": true,
-    "checked": 2239,
+    "checked": 2382,
     "legacy": 0,
     "bad": 0
   }

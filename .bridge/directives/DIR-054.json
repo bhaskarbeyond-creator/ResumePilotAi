@@ -2,11 +2,11 @@
   "id": "DIR-054",
   "title": "Eliminate 429 Storm on /api/messages/conversations, Shared Poller Architecture & Rate-Limit Alignment",
   "priority": "P0",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-08T16:06:40.063Z",
-  "updatedAt": "2026-10-08T17:26:11.772Z",
+  "updatedAt": "2026-10-08T17:26:12.380Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "### 1. MANDATE & PROBLEM STATEMENT\\nThe User opened https://ime365.local/dashboard and observed 52 repeated red console errors:\\n'Failed to load resource: the server responded with a status of 429 (Too Many Requests) api/messages/conversations:1'.\\nThe User strictly demands: 'why am i seeing these errors? Ask developer to completely fix the pipeline.'\\nMandate: Architect an enterprise-grade fix eliminating the 429 rate limit storm on messaging endpoints, implement a shared singleton/coalesced poller with exponential backoff on the frontend, tune backend rate limiting budgets, and resolve the contrast token regression from DIR-053.\\n\\n### 2. ROOT CAUSE ANALYSIS (RCA)\\n1. RCA-1 (Uncoordinated Multi-Instance Polling Storm): Multiple dashboard components (CubaCandidateShell.jsx, MessagesNavBadge.jsx, and ProfileDisplay.jsx) each mount an independent instance of useUnreadMessages(). With POLL_INTERVAL_MS = 15000, 3 instances produce 12 req/min = 60 requests in 5 minutes.\\n2. RCA-2 (Overly Restrictive Global Messaging Rate Limiter): In backend/security/abuse.js, MESSAGING_FIVE_MINUTE_LIMIT defaults to 30 requests per 5 minutes (6 req/min). Because app.use('/api/messages', messagingAccountLimiter) is mounted globally on all messaging routes, legitimate unread badge polling exhausts the quota in 2.5 minutes.\\n3. RCA-3 (Absence of Backoff & 429 Circuit Breaker): In src/hooks/useUnreadMessages.js, when an HTTP 429 or network error occurs, setStatus('error') is set, but the 15-second setInterval continues indefinitely. There is zero Retry-After respect and zero exponential backoff, resulting in 52+ repeated 429 errors piling up in the DevTools console.\\n4. RCA-4 (Unshared In-Flight & Cache Deduplication): apiJson('/api/messages/conversations') lacks in-flight promise reuse and short-term caching across simultaneous component renders.\\n5. RCA-5 (DIR-023 Amber Token Regression from DIR-053): The reconnect banner classes introduced in CubaCandidateHero.jsx (bg-amber-50/95, border-amber-300/70, dark:text-amber-100/80) trip tests/dir023-contrast-tokens.test.mjs with 3 unmapped opacity classes.\\n\\n### 3. TECHNICAL SPECIFICATION & IMPLEMENTATION STEPS\\n- S1: Backend Rate Limiter Alignment & Sane Read Budget\\n  - In backend/security/abuse.js and backend/index.js, ensure read-only unread count/conversation polling (/api/messages/conversations) has a generous, realistic quota (e.g. raise MESSAGING_FIVE_MINUTE_LIMIT to at least 150 or separate heavy mutation endpoints from passive badge reads) so legitimate polling never hits 429.\\n- S2: Shared Singleton Poller / Coalescing in useUnreadMessages.js\\n  - Upgrade useUnreadMessages.js or platform.js to use an in-memory shared singleton subscriber / module-level broadcast pattern. Regardless of how many components mount useUnreadMessages(), exactly ONE network poll is dispatched per interval.\\n- S3: Dynamic Backoff & Retry-After Circuit Breaker\\n  - In useUnreadMessages.js, catch 429 status and network errors. When rate-limited or in error state, back off dynamically (15s -> 30s -> 60s) or pause until Retry-After expires, completely eliminating console error storms. Reset to 15s upon successful response.\\n- S4: Fix DIR-023 Amber Token Mapping\\n  - In src/components/cuba/CubaCandidateHero.jsx or contrast map, ensure reconnect banner classes use compliant Cuba design tokens, resolving the failure in tests/dir023-contrast-tokens.test.mjs.\\n- S5: Comprehensive E2E Verification & Regression Test Battery\\n  - Run npm test to verify all 67 tests pass (including contrast tokens and messaging gate tests).\\n  - Execute a multi-minute polling simulation on https://ime365.local/dashboard to guarantee zero 429 errors and clean badge synchronization.\\n\\n### 4. ACCEPTANCE CRITERIA\\n- AC-1: Zero 429 Too Many Requests errors on /api/messages/conversations during continuous dashboard usage.\\n- AC-2: useUnreadMessages() coalesces multiple mounted instances into a single coordinated network read.\\n- AC-3: If any transient 429 or transport error occurs, the frontend gracefully backs off and halts spamming.\\n- AC-4: tests/dir023-contrast-tokens.test.mjs passes 100% (67/67 tests green in npm test).\\n- AC-5: Production dist is cleanly rebuilt and verified via Playwright DOM crawl with 0 console errors.",
   "invariants": [],
@@ -63,6 +63,12 @@
       "evidenceHash": "11751bff870eeabf4a39ef4d479986cf5032f2fae69eddc5260309ae9f51c00d"
     }
   ],
-  "freeze": null,
-  "lastTransitionReason": "lead review"
+  "freeze": {
+    "freezeHash": "bd17869adcb74ba5eb9fa3119ab5bc845002641f",
+    "certifiedAt": "2026-10-08T17:26:12.380Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "",
+    "evidenceHash": "11751bff870eeabf4a39ef4d479986cf5032f2fae69eddc5260309ae9f51c00d"
+  },
+  "lastTransitionReason": "gatekeeper certification"
 }

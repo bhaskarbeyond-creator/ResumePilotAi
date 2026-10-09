@@ -1,0 +1,18 @@
+{
+  "id": "DIR-058",
+  "title": "Candidate Dashboard Real MariaDB Metrics Aggregation & Multi-Step Onboarding",
+  "priority": "P1",
+  "status": "ISSUED",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-09T03:08:15.294Z",
+  "updatedAt": "2026-10-09T03:08:15.294Z",
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "spec": "### 1. MANDATE & PROBLEM STATEMENT\nsrc/services/api/platform.js:1898 defines getStatesOfUser as a hardcoded stub returning [].\nConsequently, candidate counters for resumes, cover letters, and applications show 0 despite existing records.\nFurthermore, the candidate onboarding checklist contains only 1 single hardcoded step.\n\n### 2. ARCHITECTURAL SPECIFICATION\n1. Author GET /api/user-stats in backend aggregating user document counts (resumes, covers, portfolios, applications).\n2. Connect getStatesOfUser to call /api/user-stats.\n3. Update DashboardHomepage.jsx and CubaCandidateHero.jsx to render honest metrics.\n4. Expand candidate onboarding checklist to track completion of Profile, First Resume, Cover Letter, and First Job Application.\n\n### 3. IMPLEMENTATION PLAN\n- S1: Author GET /api/user-stats in backend/routes/platform.js.\n- S2: Connect getStatesOfUser in src/services/api/platform.js.\n- S3: Update DashboardHomepage.jsx to consume live stats.\n- S4: Update CubaCandidateHero.jsx to reflect live stats.\n- S5: Expand onboarding checklist.\n- S6: Author test suite tests/dir058-dashboard-stats.test.mjs.",
+  "invariants": [],
+  "acceptanceCriteria": [],
+  "plan": null,
+  "evidence": null,
+  "reviews": [],
+  "freeze": null
+}

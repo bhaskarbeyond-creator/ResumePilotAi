@@ -1,0 +1,18 @@
+{
+  "id": "DIR-056",
+  "title": "Saved Favorites & Bookmarks (/dashboard/favorites) Full-Page Workspace & Job Bookmarks Integration",
+  "priority": "P0",
+  "status": "ISSUED",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-09T03:07:53.642Z",
+  "updatedAt": "2026-10-09T03:07:53.642Z",
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "spec": "### 1. MANDATE & PROBLEM STATEMENT\nNavigating to 'Saved Favorites & Bookmarks' (/dashboard/favorites) currently renders a completely blank white screen.\nRCA: In DashboardFavourites.jsx:147, the entire view is gated behind {props.isFavoritesShowed === true && (...)}. Because isFavoritesShowed is not passed by Route path='favorites' in DashboardMain.jsx:524, it evaluates to undefined, rendering nothing.\n\n### 2. ARCHITECTURAL SPECIFICATION\n1. Transform DashboardFavourites.jsx into a first-class Cuba Executive full-page workspace.\n2. Fetch both saved documents via getFavourites and saved jobs via getJobFavourites.\n3. Provide filter tabs: All, Documents, and Jobs.\n4. Wire working optimistic deletion with toast notification and persistence.\n5. Wire click navigation to open documents and jobs.\n6. Provide rich Cuba UX states (CubaSkeleton and CubaEmptyState).\n\n### 3. IMPLEMENTATION PLAN\n- S1: Refactor DashboardFavourites.jsx to remove isFavoritesShowed gating and render inline Cuba page.\n- S2: Integrate getJobFavourites alongside getFavourites with unified normalization.\n- S3: Implement tabs: All, Documents, and Jobs.\n- S4: Wire interactive actions: click-to-view navigation and delete.\n- S5: Implement Cuba empty and loading states.\n- S6: Author test suite tests/dir056-favorites.test.mjs.",
+  "invariants": [],
+  "acceptanceCriteria": [],
+  "plan": null,
+  "evidence": null,
+  "reviews": [],
+  "freeze": null
+}

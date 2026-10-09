@@ -39,6 +39,14 @@ import { EMPTY_RESUME, DEFAULT_SECTION_ORDER, normalizeResumeData, buildCanonica
 import { getCandidateContext } from '../../utils/candidateContext';
 import { trackDownload, trackEvent, trackEngagement } from '../../utils/ga4';
 import CubaInlineNotice from '../cuba/CubaInlineNotice';
+// DIR-055 S6/S7: the builder header becomes the SINGLE full-featured header for
+// application-shell routes. It self-hosts the shell's notification centre and
+// identity menu because shell children are OPAQUE — CubaCandidateShell cannot
+// inject props into this component — so identity is read from AuthContext, which
+// this component already sits inside.
+import M3NotificationCenter from '../cuba/M3NotificationCenter';
+import M3UserMenu from '../cuba/M3UserMenu';
+import { useAuth } from '../../context/AuthContext';
 import { toValidatedPdfBlob, pdfFileName } from '../../utils/pdfDownload';
 import { executeDocxDownload } from '../../utils/docxDownload';
 
@@ -110,6 +118,55 @@ const BuildResume = () => {
         subscriptionsStatus: null, // This will hold the global subscription status from /data/subscriptions
         membershipEnds: null,
     });
+
+    // DIR-055 S7: identity for the builder header's M3UserMenu. Sourced from
+    // AuthContext using the SAME mapping CubaCandidateShell uses, so the two
+    // headers can never disagree about who the user is.
+    const authUser = useAuth();
+    const [theme, setTheme] = useState(() => {
+        try {
+            const saved = localStorage.getItem('cuba_theme') || localStorage.getItem('theme');
+            if (saved === 'dark' || saved === 'light') return saved;
+            return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        } catch (_) {
+            return 'light';
+        }
+    });
+
+    useEffect(() => {
+        try {
+            if (theme === 'dark') document.documentElement.classList.add('dark');
+            else document.documentElement.classList.remove('dark');
+            localStorage.setItem('cuba_theme', theme);
+        } catch (_) { /* optional */ }
+    }, [theme]);
+
+    const headerUser = useMemo(() => {
+        const fullName = String(authUser?.displayName || '').trim();
+        const email = String(authUser?.email || '').trim();
+        // Prefer an explicit role claim over the coarse account kind, because it
+        // is the value the server actually authorises on.
+        const role = String(
+            authUser?.role
+            || authUser?.customClaims?.role
+            || authUser?.customClaims?.accountType
+            || '',
+        ).trim();
+        if (!fullName && !email) return null;
+        return { name: fullName || email, email, role };
+    }, [authUser]);
+
+    const handleSignOut = useCallback(async () => {
+        try {
+            await fire.auth().signOut();
+        } catch (error) {
+            // Surface the real failure rather than pretending the user signed out;
+            // a false "signed out" is worse than a visible error.
+            console.error('Sign out failed', error);
+            return;
+        }
+        navigate('/');
+    }, [navigate]);
 
     const [resumeData, setResumeData] = useState(() => normalizeResumeData(EMPTY_RESUME));
     const [saveState, setSaveState] = useState({ status: 'idle', message: '' });
@@ -1715,14 +1772,16 @@ const BuildResume = () => {
                 </div>
             )}
 
-            {/* Unified Top Studio Header */}
-            <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/90 px-3 sm:px-6 py-2.5 flex items-center justify-between shadow-2xs gap-2 sm:gap-4">
+            {/* Unified Top Studio Header — DIR-055 S6: Cuba glass surface instead
+                of an ad-hoc white bar, so it matches the executive shell it sits
+                inside. Every legacy control is retained. */}
+            <header className="cuba-glass sticky top-0 z-40 flex items-center justify-between gap-2 border-x-0 border-t-0 px-3 py-2.5 shadow-cuba-xl sm:gap-4 sm:px-6">
                 {/* Left: Brand / Dashboard Link & Resume Context */}
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 max-w-[42%] sm:max-w-[48%]">
                     <button
                         type="button"
                         onClick={handleExitBuilder}
-                        className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 hover:text-indigo-600 bg-slate-100 hover:bg-indigo-50 border border-slate-200/80 transition-all cursor-pointer shrink-0 shadow-2xs"
+                        className="cuba-focusable flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 hover:text-indigo-600 bg-slate-100 hover:bg-indigo-50 border border-slate-200/80 transition-all cursor-pointer shrink-0 shadow-2xs"
                         aria-label="Save and exit to dashboard"
                     >
                         <svg className="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1733,8 +1792,14 @@ const BuildResume = () => {
 
                     <div className="h-4 w-px bg-slate-200 hidden md:block shrink-0"></div>
 
-                    {/* Resume Title & Active Template Badge */}
-                    <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+                    {/* Resume Title & Active Template Badge.
+                        DIR-055 S7: `min-w-[6rem]` is LOAD-BEARING. The title button
+                        uses `truncate`, which sets `overflow:hidden`, which makes a
+                        flex item's automatic minimum size resolve to 0 — so once the
+                        right rail gained the notification + identity controls, the
+                        title could be squeezed to a ZERO-SIZE box and disappear.
+                        An explicit floor lets it truncate without vanishing. */}
+                    <div className="flex items-center gap-2 min-w-[6rem] overflow-hidden">
                         {(() => {
                             const candidateFullName = `${resumeData?.firstname || ''} ${resumeData?.lastname || ''}`.trim();
                             const hasCustomTitle = Boolean(resumeData?.title && resumeData.title.trim() && resumeData.title.trim() !== 'Untitled Resume');
@@ -1775,7 +1840,7 @@ const BuildResume = () => {
                                         setTitleInput(hasCustomTitle ? resumeData.title : candidateFullName || '');
                                         setIsEditingTitle(true);
                                     }}
-                                    className="group flex items-center gap-1.5 text-xs sm:text-sm font-extrabold text-slate-900 hover:text-indigo-600 truncate tracking-tight transition-colors text-left cursor-pointer"
+                                    className="group flex min-w-[5rem] items-center gap-1.5 text-xs sm:text-sm font-extrabold text-slate-900 hover:text-indigo-600 truncate tracking-tight transition-colors text-left cursor-pointer"
                                     title="Click to rename resume"
                                 >
                                     <span className="truncate">{displayedTitle}</span>
@@ -1811,7 +1876,7 @@ const BuildResume = () => {
                         <button
                             type="button"
                             onClick={() => setShowAtsDrawer(prev => !prev)}
-                            className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-full border transition-all cursor-pointer shadow-2xs ${
+                            className={`cuba-focusable flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-full border transition-all cursor-pointer shadow-2xs ${
                                 headerAts.tone === 'good' ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100' :
                                 headerAts.tone === 'medium' ? 'bg-indigo-50 text-indigo-800 border-indigo-200 hover:bg-indigo-100' :
                                 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
@@ -1881,7 +1946,7 @@ const BuildResume = () => {
                     {/* Full Preview Modal Button */}
                     <button
                         onClick={() => setShowPreview(true)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-200 text-indigo-700 bg-indigo-50/60 hover:bg-indigo-100 text-xs font-bold shadow-2xs transition-all cursor-pointer"
+                        className="cuba-focusable flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-200 text-indigo-700 bg-indigo-50/60 hover:bg-indigo-100 text-xs font-bold shadow-2xs transition-all cursor-pointer"
                     >
                         <svg className="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -1894,7 +1959,7 @@ const BuildResume = () => {
                     <button
                         onClick={handleDownload}
                         disabled={isDownloading}
-                        className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
+                        className="cuba-focusable flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
                     >
                         {isDownloading ? (
                             <>
@@ -1911,10 +1976,26 @@ const BuildResume = () => {
                         )}
                     </button>
 
+                    {/* DIR-055 S7: the shell's notification centre and identity
+                        menu live in the builder's OWN header, so the builder keeps
+                        exactly ONE header while still gaining real notifications
+                        and real account actions. Hidden below md, where the mobile
+                        drawer owns navigation. */}
+                    <div className="hidden items-center gap-1 md:flex">
+                        <M3NotificationCenter onNavigate={navigate} />
+                        <M3UserMenu
+                            user={headerUser}
+                            theme={theme}
+                            onToggleTheme={() => setTheme((value) => (value === 'dark' ? 'light' : 'dark'))}
+                            onNavigate={navigate}
+                            onSignOut={handleSignOut}
+                        />
+                    </div>
+
                     {/* Mobile Menu Drawer Toggle */}
                     <button
                         onClick={() => setIsMobileMenuOpen(true)}
-                        className="md:hidden p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl cursor-pointer"
+                        className="cuba-focusable md:hidden p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl cursor-pointer"
                         aria-label="Open navigation menu"
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1925,7 +2006,7 @@ const BuildResume = () => {
             </header>
 
             {/* Horizontal Step Navigation Ribbon (Sleek, Scrollable, Complete 11-Step Discoverability) */}
-            <nav aria-label="Resume Steps Stepper" className="step-nav-ribbon step-nav sticky top-[57px] z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/90 px-3 sm:px-6 py-2 flex items-center justify-between gap-2 shadow-2xs">
+            <nav aria-label="Resume Steps Stepper" className="step-nav-ribbon step-nav cuba-glass sticky top-[57px] z-30 flex items-center justify-between gap-2 border-x-0 border-t-0 px-3 py-2 sm:px-6">
                 {/* Scroll Left Button */}
                 <button
                     type="button"

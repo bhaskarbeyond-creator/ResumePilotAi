@@ -1,0 +1,18 @@
+{
+  "id": "DIR-059",
+  "title": "Job Applications (/dashboard/applied-jobs) Real Data Pipeline, Kanban Synchronization & Candidate Withdrawal",
+  "priority": "P1",
+  "status": "ISSUED",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-09T03:08:21.373Z",
+  "updatedAt": "2026-10-09T03:08:21.373Z",
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "spec": "### 1. MANDATE & PROBLEM STATEMENT\nsrc/services/api/platform.js:956 defines getUserJobApplications as calling getTrackedJobs(userId).\nReal job applications submitted via JobApplicationModal.jsx are stored in table applications, but never appear in /dashboard/applied-jobs.\nIn addition, candidates have no withdrawal mechanism, and applications are not synchronized with the Kanban tracker.\n\n### 2. ARCHITECTURAL SPECIFICATION\n1. Connect getUserJobApplications to GET /api/jobs-data/applications/list.\n2. Normalize application fields (jobTitle, company, appliedDate, salary, status) in AppliedJobs.jsx.\n3. Add candidate withdrawal with confirmation modal calling DELETE /api/jobs-data/applications/:id.\n4. Add 1-click 'Track in Kanban' promoting an application to job_tracker with status 'applied'.\n\n### 3. IMPLEMENTATION PLAN\n- S1: Update getUserJobApplications in src/services/api/platform.js to fetch from /api/jobs-data/applications/list.\n- S2: Update AppliedJobs.jsx field mapping and empty/error states.\n- S3: Implement candidate withdrawal flow with confirmation dialog.\n- S4: Implement 'Track in Kanban' action in AppliedJobs.jsx.\n- S5: Author test suite tests/dir059-applied-jobs.test.mjs.",
+  "invariants": [],
+  "acceptanceCriteria": [],
+  "plan": null,
+  "evidence": null,
+  "reviews": [],
+  "freeze": null
+}

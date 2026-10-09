@@ -148,6 +148,12 @@ const CubaAppShell = ({
     // what stops a design layer from becoming a second source of truth (§7).
     commandSearchProvider = null,
     toolbar = null,
+    // DIR-055 S5: application-shell routes (the resume builder) render their OWN
+    // full-featured header. Leaving this shell's top bar mounted produced the
+    // double-header the user reported. Only the <header> element is skipped —
+    // the sidebar, mobile drawer, bottom tab bar, skip link and command palette
+    // all stay, so no navigation surface is lost.
+    hideTopBar = false,
     user = null,
     onSignOut,
     onNavigate,
@@ -264,6 +270,7 @@ const CubaAppShell = ({
                 controls; centre = the dominant command search; right rail =
                 status + identity. `flex-wrap` with `min-w-0` truncation is what
                 keeps it one clean row instead of letting any item overflow. */}
+            {!hideTopBar && (
             <header className="cuba-glass sticky top-0 z-50 flex h-[var(--cuba-header-h)] flex-none items-center gap-2 border-x-0 border-t-0 px-3 sm:gap-3 sm:px-5">
                 <button
                     type="button"
@@ -385,10 +392,7 @@ const CubaAppShell = ({
 
                     <AiEngineStatus status={aiStatus} className="hidden sm:inline-flex" />
 
-                    <M3NotificationCenter
-                        onNavigate={onNavigate}
-                        onOpenAll={toolbar ? undefined : (onNavigate ? () => onNavigate('/dashboard') : undefined)}
-                    />
+                    <M3NotificationCenter onNavigate={onNavigate} />
 
                     <M3UserMenu
                         user={user}
@@ -399,13 +403,19 @@ const CubaAppShell = ({
                     />
                 </div>
             </header>
+            )}
 
             <div className="w-full flex min-h-0 flex-1">
                 <aside
                     className={cx(
                         // DIR-048 S10: visible from md up — the tablet band gets the
                         // compact icon rail instead of no navigation at all.
-                        'cuba-glass sticky top-[var(--cuba-header-h)] hidden h-[calc(100vh-var(--cuba-header-h))] flex-none flex-col border-y-0 border-l-0 md:flex',
+                        // DIR-055 S5: when the top bar is hidden (an application
+                        // route owns its own header) the sidebar sticks to the
+                        // viewport top instead of leaving a phantom header-height gap.
+                        hideTopBar
+                            ? 'cuba-glass sticky top-0 hidden h-screen flex-none flex-col border-y-0 border-l-0 md:flex'
+                            : 'cuba-glass sticky top-[var(--cuba-header-h)] hidden h-[calc(100vh-var(--cuba-header-h))] flex-none flex-col border-y-0 border-l-0 md:flex',
                         railCollapsed ? 'w-[var(--cuba-sidebar-w-collapsed)]' : 'w-[var(--cuba-sidebar-w)]',
                     )}
                     data-testid="cuba-sidebar"
