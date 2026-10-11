@@ -1,25 +1,25 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-11T02:28:17.907Z",
-  "eventCount": 2623,
-  "activeDirectiveId": null,
-  "activeDirectiveTitle": null,
-  "activeDirectiveStatus": null,
+  "updatedAt": "2026-10-11T02:45:39.990Z",
+  "eventCount": 2631,
+  "activeDirectiveId": "DIR-073",
+  "activeDirectiveTitle": "DIR-073: Executive Command Palette & Search Pipeline UI/UX Overhaul",
+  "activeDirectiveStatus": "IN_PROGRESS",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-11T02:16:37.016Z",
-  "unreadForLead": 91,
-  "unreadForDev": 142,
+  "stallDeadline": "2026-10-11T02:42:16.324Z",
+  "unreadForLead": 94,
+  "unreadForDev": 147,
   "pendingBlockers": 1,
   "latestHeartbeat": {
-    "timestamp": "2026-10-11T02:16:37.016Z",
-    "status": "ACT started. Implementing S1 (decouple message route) + S2 (resolver deep-link) + S3 (migration 025).",
-    "percent": 10
+    "timestamp": "2026-10-11T02:42:16.324Z",
+    "status": "S1-S7 implemented. Build 2.87s, lint 0 errors. Running pinned unit suites.",
+    "percent": 55
   },
   "integrity": {
     "ok": false,
-    "checked": 2623,
+    "checked": 2631,
     "legacy": 8,
     "bad": 7
   }

@@ -2,7 +2,7 @@ import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } 
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
     FiGrid, FiFileText, FiSearch, FiList, FiMessageSquare, FiAward,
-    FiSettings, FiUser, FiShield, FiLifeBuoy, FiClipboard,
+    FiSettings, FiUser, FiShield, FiLifeBuoy, FiClipboard, FiBell, FiStar,
 } from 'react-icons/fi';
 import CubaAppShell from '../cuba/CubaAppShell';
 import { ACCOUNT_PORTALS, accountLinksFor } from '../cuba/accountLinks';
@@ -20,6 +20,8 @@ import { resolveActiveItem } from './navigationState';
 // for exactly this fix and until now was referenced only by its own test.
 import { isApplicationShellRoute } from '../AppShell/applicationShell';
 import { CANDIDATE_NAVIGATION } from '../cuba/candidateNavigation';
+// DIR-073: live entity search (resumes / portfolios / cover letters) for ⌘K.
+import { searchCandidateEntities } from './command/candidateEntitySearch';
 import { useUnreadMessages } from '../../hooks/useUnreadMessages';
 import { resolveMessagesVisibility } from '../../utils/moduleFlags';
 import { getSystemSettings } from '../../services/api/platform';
@@ -65,6 +67,11 @@ const ICONS = {
     profile: FiUser,
     security: FiShield,
     support: FiLifeBuoy,
+    // DIR-073: the notifications workspace (DIR-072) and saved favourites are
+    // real navigation targets, so they get authentic icons instead of the grid
+    // fallback the palette previously rendered for every row.
+    notifications: FiBell,
+    favorites: FiStar,
 };
 
 export const buildCommands = (groups, navigate) =>
@@ -72,6 +79,11 @@ export const buildCommands = (groups, navigate) =>
         id: item.id,
         label: item.label,
         group: group.label,
+        // DIR-073: carry the item's authentic Cuba icon onto the command so the
+        // palette can render it. This field was previously dropped, so every
+        // navigation row rendered with no icon even though the shell already
+        // resolves one (ICONS[item.id] || FiGrid) for the sidebar.
+        icon: item.icon || null,
         keywords: `${item.label} ${item.to}`,
         run: () => navigate(item.to),
     })));
@@ -195,6 +207,18 @@ const CubaCandidateShell = ({ children, copilotResume = null }) => {
     })), [activeItem, messagesNavAllowed, messagesBadge]);
 
     const commands = useMemo(() => buildCommands(groups, navigate), [groups, navigate]);
+
+    /**
+     * DIR-073: candidate entity search for the command palette. Mirrors the
+     * contract `CubaPortalShell` already uses — the provider returns
+     * palette-shaped hits ({ id, label, group, to, icon }) and this shell maps
+     * them to router-aware `run` handlers. Only REAL saved records are returned;
+     * a lookup failure degrades to no hits, never to invented documents.
+     */
+    const entitySearch = useMemo(() => async (term) => {
+        const hits = await searchCandidateEntities(term);
+        return hits.map((hit) => ({ ...hit, run: () => navigate(hit.to) }));
+    }, [navigate]);
 
     const displayName = useMemo(() => {
         const raw = String(user?.displayName || user?.email || '').trim();
@@ -400,6 +424,8 @@ const CubaCandidateShell = ({ children, copilotResume = null }) => {
             onToggleTheme={() => setTheme((value) => (value === 'dark' ? 'light' : 'dark'))}
             aiStatus={aiStatus}
             commands={commands}
+            // DIR-073: live entity search for resumes / portfolios / cover letters.
+            commandSearchProvider={entitySearch}
             user={headerUser}
             onSignOut={signOut}
             // DIR-021: the candidate copilot. The dispatcher resolves this

@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-11T02:26:23.225Z",
-  "seq": 2621,
-  "id": "evt_mv37c3ty_d9a8498631c9",
-  "type": "EVIDENCE_SUBMITTED",
-  "title": "[Evidence] DIR-072: DIR-072: Decouple Notification vs Message Pipelines & Establish Dedicated Routing",
+  "timestamp": "2026-10-11T02:47:41.686Z",
+  "seq": 2632,
+  "id": "evt_mv383iak_ef468ea78ddf",
+  "type": "HEARTBEAT",
+  "title": "[Heartbeat] All mandates implemented and verified. build 3.93s, lint 0 errors, dir073 6/6, 143/143 cuba suites, product EXIT 0, security 67/67, xampp 4/4, dir063..072 green. Submitting evidence.",
   "sender": "STAFF_DEVELOPER",
-  "directiveId": "DIR-072",
-  "summary": "DIR-072 COMPLETE: Decoupled notification and message pipelines. Direct chat (/api/messages/send) no longer mints notifications. Distinct route resolution with conversation deep linking (?conversationId=). Dedicated /dashboard/notifications mounted. Migration 025 applied on MariaDB. 49/49 tests pass, lint 0 errors, security 67/67 pass, build exit 0."
+  "directiveId": "DIR-073",
+  "summary": "All mandates implemented and verified. build 3.93s, lint 0 errors, dir073 6/6, 143/143 cuba suites, product EXIT 0, security 67/67, xampp 4/4, dir063..072 green. Submitting evidence."
 }

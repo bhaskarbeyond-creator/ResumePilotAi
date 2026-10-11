@@ -7,6 +7,20 @@ import { resolvePromptOperation } from './copilotPrompt';
 
 const cx = (...parts) => parts.filter(Boolean).join(' ');
 
+/**
+ * DIR-073: renders a command/copilot icon whether the caller supplied a React
+ * ELEMENT (`<FiGrid />`), a COMPONENT reference (`FiGrid`, which is what the
+ * entity-search providers return) or a plain string/emoji. Rendering a bare
+ * component reference as a child throws, which is exactly why the navigation
+ * rows carried no icon at all before this directive.
+ */
+const renderCommandIcon = (icon) => {
+    if (!icon) return null;
+    if (React.isValidElement(icon)) return icon;
+    if (typeof icon === 'string') return icon;
+    return React.createElement(icon, { className: 'h-4 w-4', 'aria-hidden': true });
+};
+
 /** Live entity hits are only worth a request once the term is specific enough. */
 const DEFAULT_ENTITY_MIN_LENGTH = 2;
 const DEFAULT_ENTITY_DEBOUNCE_MS = 250;
@@ -268,6 +282,23 @@ const CubaCommandPalette = ({
         [entityHits, rankedCommands],
     );
 
+    /**
+     * DIR-073: group the ranked results into labelled sections (Workspace, Job
+     * Intelligence, Account & Security, or a provider's own group) WITHOUT
+     * changing the flat ORDER — the index-based option ids, aria-activedescendant
+     * and Enter semantics all keep pointing at the same ranked row.
+     */
+    const groupedResults = useMemo(() => {
+        const sections = [];
+        results.forEach((command, index) => {
+            const label = command.group || '';
+            const current = sections[sections.length - 1];
+            if (current && current.label === label) current.items.push({ command, index });
+            else sections.push({ key: `${label || 'section'}-${index}`, label, items: [{ command, index }] });
+        });
+        return sections;
+    }, [results]);
+
     useEffect(() => {
         if (open) return;
         setQuery('');
@@ -460,17 +491,16 @@ const CubaCommandPalette = ({
                         colours used here are the AA-proven Cuba semantic inks
                         (INV-4), never raw palette values. */}
                     {copilotEnabled && (
-                        <div role="tablist" aria-label="Command surface mode" className="flex items-center gap-1 border-b border-cuba-line px-3 pt-2.5">
+                        <div role="tablist" aria-label="Command surface mode" className="cuba-glass mx-3 mb-1 mt-2.5 inline-flex self-start items-center gap-1 rounded-full p-1" data-testid="cuba-mode-switcher">
                             {[
-                                // A `text` key rather than the command-label key: these
-                                // are mode titles, not palette commands. The
-                                // certified design-system guard forbids a
-                                // hardcoded command-label key in this file so
-                                // the palette can never invent a command list,
-                                // and that guarantee is kept intact rather than
-                                // relaxed for DIR-021.
-                                { id: MODE_NAVIGATION, text: 'Navigation', hint: 'Press /' },
-                                { id: MODE_COPILOT, text: 'AI Copilot', hint: 'Press Space' },
+                                // A `text` key rather than the command-label key:
+                                // these are mode titles, not palette commands, so
+                                // the certified design-system guard (which forbids
+                                // a hardcoded command-label key in this file) stays
+                                // satisfied and the palette can never invent a
+                                // command list.
+                                { id: MODE_NAVIGATION, text: 'Navigation', hint: 'Press /', kbd: '/' },
+                                { id: MODE_COPILOT, text: 'AI Copilot', hint: 'Press Space', kbd: 'Space' },
                             ].map((tab) => (
                                 <button
                                     key={tab.id}
@@ -483,13 +513,23 @@ const CubaCommandPalette = ({
                                     data-testid={`cuba-mode-${tab.id}`}
                                     onClick={() => setMode(tab.id)}
                                     className={cx(
-                                        'cuba-focusable rounded-t-cuba-sm px-3 py-1.5 text-xs font-semibold transition-colors',
+                                        'cuba-focusable inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold transition-[background-color,color,box-shadow] duration-200 ease-cuba',
                                         mode === tab.id
-                                            ? 'bg-cuba-primary-soft text-cuba-ink'
-                                            : 'text-cuba-ink-subtle hover:bg-cuba-primary-soft',
+                                            ? 'bg-cuba-primary-fill text-cuba-on-primary shadow-cuba-sm'
+                                            : 'text-cuba-ink-subtle hover:text-cuba-ink',
                                     )}
                                 >
                                     {tab.text}
+                                    <kbd
+                                        className={cx(
+                                            'hidden rounded border px-1.5 py-0.5 text-[10px] font-semibold sm:inline-block',
+                                            mode === tab.id
+                                                ? 'border-current opacity-80'
+                                                : 'border-cuba-line text-cuba-ink-subtle',
+                                        )}
+                                    >
+                                        {tab.kbd}
+                                    </kbd>
                                     <span className="cuba-sr-only">. {tab.hint}</span>
                                 </button>
                             ))}
@@ -533,7 +573,7 @@ const CubaCommandPalette = ({
                             ? 'Searching platform records'
                             : `${results.length} command${results.length === 1 ? '' : 's'} available`}
                     </div>
-                    <ul id="cuba-command-list" role="listbox" aria-label="Commands" className="min-h-0 flex-1 overflow-y-auto p-2">
+                    <ul id="cuba-command-list" role="listbox" aria-label="Commands" className="cuba-scrollbar min-h-0 flex-1 overflow-y-auto p-2">
                         {entitySearching && (
                             <li className="px-3 py-2 text-xs font-semibold text-cuba-ink-subtle" data-testid="cuba-command-entity-searching">
                                 Searching platform records…
@@ -542,40 +582,52 @@ const CubaCommandPalette = ({
                         {results.length === 0 && (
                             <li className="px-3 py-6 text-center text-sm text-cuba-ink-muted">No matching command.</li>
                         )}
-                        {results.map((command, index) => (
-                            <li key={command.id} id={`cuba-command-${index}`} role="option" aria-selected={index === activeIndex}>
-                                <button
-                                    type="button"
-                                    onMouseEnter={() => setActiveIndex(index)}
-                                    onClick={() => run(command)}
-                                    className={cx(
-                                        'flex w-full items-center gap-3 rounded-cuba-sm px-3 py-2.5 text-left text-sm transition-colors',
-                                        index === activeIndex
-                                            ? 'bg-cuba-primary-soft text-cuba-ink'
-                                            : 'text-cuba-ink-muted hover:bg-cuba-primary-soft',
-                                    )}
-                                >
-                                    {command.icon && (
-                                        <span className="flex-none text-cuba-primary-ink-strong" aria-hidden="true">{command.icon}</span>
-                                    )}
-                                    <span className="min-w-0 flex-1 truncate">
-                                        {command.isAi && <span aria-hidden="true" className="cuba-ai-mark mr-1.5">✦</span>}
-                                        {command.isAi && <span className="cuba-sr-only">AI: </span>}
-                                        {command.label}
-                                    </span>
-                                    {command.group && (
-                                        <span className="flex-none text-[11px] uppercase tracking-wider text-cuba-ink-subtle">
-                                            {command.group}
-                                        </span>
-                                    )}
-                                </button>
-                            </li>
+                        {groupedResults.map((section) => (
+                            <React.Fragment key={section.key}>
+                                {section.label && (
+                                    <li
+                                        role="presentation"
+                                        aria-hidden="true"
+                                        data-testid="cuba-command-group"
+                                        className="px-3 pb-1 pt-3 text-[10px] font-bold uppercase tracking-[0.14em] text-cuba-ink-subtle"
+                                    >
+                                        {section.label}
+                                    </li>
+                                )}
+                                {section.items.map(({ command, index }) => (
+                                    <li key={command.id} id={`cuba-command-${index}`} role="option" aria-selected={index === activeIndex}>
+                                        <button
+                                            type="button"
+                                            onMouseEnter={() => setActiveIndex(index)}
+                                            onClick={() => run(command)}
+                                            className={cx(
+                                                'flex w-full items-center gap-3 rounded-cuba-sm px-3 py-2.5 text-left text-sm transition-colors',
+                                                index === activeIndex
+                                                    ? 'bg-cuba-primary-soft text-cuba-ink'
+                                                    : 'text-cuba-ink-muted hover:bg-cuba-primary-soft',
+                                            )}
+                                        >
+                                            {command.icon && (
+                                                <span className="flex-none text-cuba-primary-ink-strong" aria-hidden="true">{renderCommandIcon(command.icon)}</span>
+                                            )}
+                                            <span className="min-w-0 flex-1 truncate">
+                                                {command.isAi && <span aria-hidden="true" className="cuba-ai-mark mr-1.5">✦</span>}
+                                                {command.isAi && <span className="cuba-sr-only">AI: </span>}
+                                                {command.label}
+                                            </span>
+                                            {command.group && (
+                                                <span className="flex-none text-[11px] uppercase tracking-wider text-cuba-ink-subtle">
+                                                    {command.group}
+                                                </span>
+                                            )}
+                                        </button>
+                                    </li>
+                                ))}
+                            </React.Fragment>
                         ))}
                     </ul>
                         </>
                     )}
-                    </div>
-
                     {/* ---- DIR-021: the copilot surface ---------------------------
                         A SIBLING of the navigation panel, never a replacement for
                         it, so switching modes cannot destroy the ranked list. */}
@@ -586,7 +638,7 @@ const CubaCommandPalette = ({
                                 role="listbox"
                                 aria-label="AI career actions"
                                 data-testid="cuba-copilot-actions"
-                                className="min-h-0 flex-1 overflow-y-auto p-2"
+                                className="cuba-scrollbar min-h-0 flex-1 overflow-y-auto p-2"
                             >
                                 {copilotActions.length === 0 && (
                                     <li className="px-3 py-6 text-center text-sm text-cuba-ink-muted">
@@ -609,7 +661,7 @@ const CubaCommandPalette = ({
                                                     : 'text-cuba-ink-muted hover:bg-cuba-primary-soft',
                                             )}
                                         >
-                                            <span className="flex-none" aria-hidden="true">{action.icon}</span>
+                                            <span className="flex-none" aria-hidden="true">{renderCommandIcon(action.icon)}</span>
                                             <span className="min-w-0 flex-1 truncate">
                                                 {action.operation && (
                                                     <>
@@ -660,7 +712,7 @@ const CubaCommandPalette = ({
                                 <div data-testid="cuba-copilot-result" className="border-t border-cuba-line px-4 py-3">
                                     <div
                                         data-testid="cuba-copilot-result-text"
-                                        className="max-h-40 overflow-y-auto whitespace-pre-wrap rounded-cuba-sm bg-cuba-primary-soft p-3 text-sm text-cuba-ink"
+                                        className="cuba-scrollbar max-h-40 overflow-y-auto whitespace-pre-wrap rounded-cuba-sm bg-cuba-primary-soft p-3 text-sm text-cuba-ink"
                                     >
                                         {copilotResult.text}
                                     </div>
@@ -688,6 +740,34 @@ const CubaCommandPalette = ({
                             )}
                         </div>
                     )}
+
+                    {/* DIR-073: executive keyboard hint bar. Purely descriptive —
+                        every accelerator below is already handled by onKeyDown, so
+                        this is a legend, never a second control surface. */}
+                    <div
+                        className="flex flex-none flex-wrap items-center gap-x-4 gap-y-1 border-t border-cuba-line px-4 py-2 text-[11px] font-medium text-cuba-ink-subtle"
+                        data-testid="cuba-command-hints"
+                    >
+                        <span className="inline-flex items-center gap-1.5">
+                            <kbd className="rounded border border-cuba-line px-1.5 py-0.5 text-[10px] font-semibold">↑↓</kbd>
+                            Navigate
+                        </span>
+                        <span className="inline-flex items-center gap-1.5">
+                            <kbd className="rounded border border-cuba-line px-1.5 py-0.5 text-[10px] font-semibold">↵</kbd>
+                            Select
+                        </span>
+                        {copilotEnabled && (
+                            <span className="inline-flex items-center gap-1.5">
+                                <kbd className="rounded border border-cuba-line px-1.5 py-0.5 text-[10px] font-semibold">Tab</kbd>
+                                AI Mode
+                            </span>
+                        )}
+                        <span className="inline-flex items-center gap-1.5">
+                            <kbd className="rounded border border-cuba-line px-1.5 py-0.5 text-[10px] font-semibold">Esc</kbd>
+                            Close
+                        </span>
+                    </div>
+            </div>
             </div>
         </CubaPortal>
     );
