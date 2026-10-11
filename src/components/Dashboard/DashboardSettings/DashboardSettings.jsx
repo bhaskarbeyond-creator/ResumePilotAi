@@ -9,7 +9,7 @@ import { generateUserAiContent, cleanSkillName } from '../../../services/aiServi
 // DIR-075: clean identity parsing for the Master Profile header (no raw '()').
 import { parseUserIdentity, roleBadgeFor } from '../../cuba/userIdentity';
 import { FaCamera, FaTrash, FaUserCircle, FaKey, FaCalendarAlt, FaEnvelope, FaCreditCard, FaUpload, FaCheckCircle, FaExclamationTriangle, FaBriefcase, FaGraduationCap, FaTools, FaGlobe, FaPlus, FaCheck, FaShieldAlt, FaDesktop, FaDownload, FaCertificate, FaProjectDiagram, FaMagic, FaLinkedin, FaGithub, FaLink, FaSyncAlt, FaExternalLinkAlt, FaUnlink, FaLock, FaEye, FaEyeSlash, FaCrown, FaMobileAlt, FaQrcode, FaCopy, FaPrint, FaHistory, FaCrop, FaThLarge, FaTags, FaTimes, FaSearch, FaBolt, FaChevronDown, FaChevronUp, FaRocket, FaBuilding, FaCode } from 'react-icons/fa';
-import { MdAutoAwesome, MdLaunch, MdSearch, MdClose, MdContentCopy, MdDeleteOutline, MdAdd } from 'react-icons/md';
+import { MdAutoAwesome, MdLaunch, MdSearch, MdClose, MdContentCopy, MdDeleteOutline, MdAdd, MdErrorOutline } from 'react-icons/md';
 import fire from '../../../conf/fire';
 import MonthYearPicker from '../../Form/MonthYearPicker';
 import AiRecommendationModal from '../../Form/AiRecommendationModal';
@@ -367,8 +367,8 @@ function DashboardSettings(_props) {
                 if (el) {
                     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     el.focus();
-                    el.classList.add('ring-2', 'ring-indigo-400');
-                    setTimeout(() => el.classList.remove('ring-2', 'ring-indigo-400'), 2000);
+                    el.classList.add('ring-2', 'ring-[var(--cuba-primary-ring)]');
+                    setTimeout(() => el.classList.remove('ring-2', 'ring-[var(--cuba-primary-ring)]'), 2000);
                 }
             } catch {
                 // Ignore selector parsing nuances
@@ -421,6 +421,9 @@ function DashboardSettings(_props) {
     const [_skillFilter] = useState('all');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [profileSaveState, setProfileSaveState] = useState('loading');
+    // DIR-089: the account-details load previously only logged to the console, so a failed
+    // fetch left the page silently half-empty. This drives a real, dismissible alert region.
+    const [accountLoadError, setAccountLoadError] = useState(null);
     const [profileConflict, setProfileConflict] = useState(null);
     const persistProfileRef = useRef(null);
     const profileRef = useRef(null);
@@ -779,8 +782,14 @@ function DashboardSettings(_props) {
                     }
                     const logs = await getUserLoginHistory(currentUser.uid);
                     setLoginHistory(logs);
+                    // DIR-089: a clean load clears any previous failure banner.
+                    setAccountLoadError(null);
                 } catch (err) {
                     console.error('Error loading user account info:', err);
+                    // DIR-089: surface the failure instead of leaving the hub silently empty.
+                    if (mountedRef?.current !== false) {
+                        setAccountLoadError('We could not load your account details. Transactions, login history and security status may be incomplete.');
+                    }
                 }
             }
         };
@@ -2093,11 +2102,11 @@ function DashboardSettings(_props) {
     };
 
     const getPasswordStrength = (password) => {
-        if (!password) return { strength: '', width: 'w-0', color: 'bg-slate-200', text: '' };
-        if (password.length < 6) return { strength: 'weak', width: 'w-1/4', color: 'bg-red-500', text: 'Weak' };
-        if (password.length < 8) return { strength: 'fair', width: 'w-2/4', color: 'bg-amber-500', text: 'Fair' };
-        if (password.length < 10) return { strength: 'good', width: 'w-3/4', color: 'bg-indigo-500', text: 'Good' };
-        return { strength: 'strong', width: 'w-full', color: 'bg-emerald-500', text: 'Strong' };
+        if (!password) return { strength: '', width: 'w-0', color: 'bg-[var(--cuba-line)]', text: '' };
+        if (password.length < 6) return { strength: 'weak', width: 'w-1/4', color: 'bg-[var(--cuba-danger)]', text: 'Weak' };
+        if (password.length < 8) return { strength: 'fair', width: 'w-2/4', color: 'bg-[var(--cuba-warning)]', text: 'Fair' };
+        if (password.length < 10) return { strength: 'good', width: 'w-3/4', color: 'bg-[var(--cuba-primary)]', text: 'Good' };
+        return { strength: 'strong', width: 'w-full', color: 'bg-[var(--cuba-success)]', text: 'Strong' };
     };
 
     getPasswordStrength(accountSettings.password);
@@ -2118,31 +2127,51 @@ function DashboardSettings(_props) {
         <div className="min-h-0 bg-cuba-canvas text-cuba-ink font-sans">
             <div className="w-full max-w-[1440px] mx-auto px-3 sm:px-5 lg:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 pb-8 sm:pb-12">
 
+                {/* DIR-089: honest failure surface. The account-details fetch used to fail
+                    silently (console only), leaving the hub half-empty with no explanation. */}
+                {accountLoadError && (
+                    <div
+                        role="alert"
+                        data-testid="settings-load-error"
+                        className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--cuba-danger-soft)] bg-[var(--cuba-danger-soft)] px-3.5 py-2.5"
+                    >
+                        <MdErrorOutline className="h-4 w-4 flex-none text-[var(--cuba-danger)]" aria-hidden="true" />
+                        <p className="min-w-0 flex-1 text-xs font-semibold text-[var(--cuba-danger)]">{accountLoadError}</p>
+                        <button
+                            type="button"
+                            onClick={() => { setAccountLoadError(null); window.location.reload(); }}
+                            className="cuba-focusable rounded-lg border border-[var(--cuba-danger)] px-2.5 py-1 text-[11px] font-bold text-[var(--cuba-danger)]"
+                        >
+                            Retry
+                        </button>
+                    </div>
+                )}
+
                 {/* Hero Master Profile Overview Card — Styled after StepShell Header */}
-                <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-2xs relative overflow-hidden">
+                <div className="bg-white border border-[var(--cuba-line)] rounded-xl p-4 sm:p-5 shadow-2xs relative overflow-hidden">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         {/* Left Avatar & Right Details Container */}
                         <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
                             {/* Left Column: Avatar Image + Badge Underneath */}
                             <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
                                 <div className="relative">
-                                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden bg-gradient-to-br from-indigo-50 to-purple-50 border border-slate-200 shadow-2xs flex items-center justify-center">
+                                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden bg-gradient-to-br from-indigo-50 to-purple-50 border border-[var(--cuba-line)] shadow-2xs flex items-center justify-center">
                                         {normalizeProfileImage(profile.selectedImage) ? (
                                             <img src={normalizeProfileImage(profile.selectedImage)} alt="Profile avatar" className="w-full h-full object-cover" />
                                         ) : (
-                                            <div className="w-full h-full flex items-center justify-center bg-slate-900 text-white font-bold text-lg">
+                                            <div className="w-full h-full flex items-center justify-center bg-[var(--cuba-ink)] text-white font-bold text-lg">
                                                 {candidateFullName ? candidateFullName.charAt(0).toUpperCase() : 'U'}
                                             </div>
                                         )}
                                     </div>
-                                    {fire.auth().currentUser?.emailVerified && <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center shadow-2xs" title="Email verified" aria-label="Email verified">
+                                    {fire.auth().currentUser?.emailVerified && <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[var(--cuba-success)] rounded-full border-2 border-white flex items-center justify-center shadow-2xs" title="Email verified" aria-label="Email verified">
                                         <FaCheck className="w-2 h-2 text-white" />
                                     </div>}
                                 </div>
 
                                 {/* Membership Badge — directly UNDER avatar image */}
-                                <span className="px-2 py-0.5 text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/80 rounded-md flex items-center gap-1">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                <span className="px-2 py-0.5 text-[10px] font-bold text-[var(--cuba-primary-ink-strong)] bg-[var(--cuba-primary-soft)] border border-[var(--cuba-primary-line)]/80 rounded-md flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--cuba-success)]"></span>
                                     {effectiveMembership}
                                 </span>
                             </div>
@@ -2150,7 +2179,7 @@ function DashboardSettings(_props) {
                             {/* Right Column: Name, Occupation, Email & Profile Strength Badge */}
                             <div className="flex-1 min-w-0">
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-900 break-words">
+                                    <h1 className="text-base sm:text-lg font-bold tracking-tight text-[var(--cuba-ink)] break-words">
                                         {candidateFullName || 'Master User Profile'}
                                     </h1>
                                     {headerIdentity.roleLabel && (
@@ -2174,20 +2203,20 @@ function DashboardSettings(_props) {
                                         if (profile.skills && profile.skills.length >= 3) score += 10;
                                         const compScore = Math.min(100, score);
                                         return (
-                                            <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] sm:text-[11px] font-bold text-emerald-700">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                            <span className="inline-flex items-center gap-1.5 rounded-md border border-[var(--cuba-success-soft)] bg-[var(--cuba-success-soft)] px-2 py-0.5 text-[10px] sm:text-[11px] font-bold text-[var(--cuba-success)]">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-[var(--cuba-success)]"></span>
                                                 <span>{compScore}% Profile Strength</span>
                                             </span>
                                         );
                                     })()}
                                 </div>
                                 {profile.occupation && (
-                                    <p className="text-xs font-semibold text-indigo-600 mt-0.5 truncate">
+                                    <p className="text-xs font-semibold text-[var(--cuba-primary-ink-strong)] mt-0.5 truncate">
                                         {profile.occupation}
                                     </p>
                                 )}
                                 {profile.email && (
-                                    <p className="text-xs text-slate-500 mt-0.5 truncate">
+                                    <p className="text-xs text-[var(--cuba-ink-subtle)] mt-0.5 truncate">
                                         {profile.email}
                                     </p>
                                 )}
@@ -2206,7 +2235,7 @@ function DashboardSettings(_props) {
                                 <button
                                     type="button"
                                     onClick={() => setShowProfileGuidanceRail(prev => !prev)}
-                                    className="hidden lg:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 shadow-2xs transition-all cursor-pointer"
+                                    className="hidden lg:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-[var(--cuba-ink-muted)] hover:text-[var(--cuba-ink)] bg-white hover:bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] shadow-2xs transition-all cursor-pointer"
                                     title={showProfileGuidanceRail ? 'Expand view (hide copilot rail)' : 'Show copilot guidance rail'}
                                 >
                                     <span>{showProfileGuidanceRail ? 'Expand View' : 'Show Guidance'}</span>
@@ -2217,17 +2246,17 @@ function DashboardSettings(_props) {
                 </div>
 
                 {selectedSettings === 'Profile' && (profileSaveState === 'failed' || profileSaveState === 'conflict' || profileConflict) && (
-                    <div className={`rounded-xl border px-3.5 py-2.5 text-xs ${profileSaveState === 'failed' || profileSaveState === 'conflict' ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-slate-200 bg-white text-slate-600 shadow-2xs'}`} aria-live="polite">
+                    <div className={`rounded-xl border px-3.5 py-2.5 text-xs ${profileSaveState === 'failed' || profileSaveState === 'conflict' ? 'border-[var(--cuba-warning-soft)] bg-[var(--cuba-warning-soft)] text-[var(--cuba-warning)]' : 'border-[var(--cuba-line)] bg-white text-[var(--cuba-ink-muted)] shadow-2xs'}`} aria-live="polite">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
-                                <span className={`w-2 h-2 rounded-full ${profileSaveState === 'saved' ? 'bg-emerald-500' : profileSaveState === 'saving' || profileSaveState === 'pending' ? 'bg-indigo-500 animate-pulse' : profileSaveState === 'failed' || profileSaveState === 'conflict' ? 'bg-amber-500' : 'bg-slate-400'}`}></span>
+                                <span className={`w-2 h-2 rounded-full ${profileSaveState === 'saved' ? 'bg-[var(--cuba-success)]' : profileSaveState === 'saving' || profileSaveState === 'pending' ? 'bg-[var(--cuba-primary)] animate-pulse' : profileSaveState === 'failed' || profileSaveState === 'conflict' ? 'bg-[var(--cuba-warning)]' : 'bg-[var(--cuba-line-strong)]'}`}></span>
                                 <span><strong>Profile save:</strong> {profileSaveState === 'saving' ? 'Saving…' : profileSaveState === 'pending' ? 'Pending autosave' : profileSaveState === 'saved' ? 'Saved' : profileSaveState === 'conflict' ? 'Conflict—action required' : profileSaveState === 'failed' ? 'Failed—retry with Save' : 'Loading…'}</span>
                             </div>
                             {profileSaveState === 'failed' && (
                                 <button
                                     type="button"
                                     onClick={() => persistProfileRef.current?.({ notify: true })}
-                                    className="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-lg bg-amber-800 hover:bg-amber-900 text-white shadow-xs transition"
+                                    className="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-lg bg-[var(--cuba-warning)] hover:bg-[var(--cuba-warning)] text-white shadow-xs transition"
                                 >
                                     Retry Save
                                 </button>
@@ -2235,8 +2264,8 @@ function DashboardSettings(_props) {
                         </div>
                         {profileConflict && (
                             <div className="mt-2 flex flex-wrap gap-2">
-                                <button type="button" onClick={reloadProfileConflict} className="rounded border border-amber-400 bg-white px-3 py-1 text-xs font-semibold">Discard local changes and load latest</button>
-                                <button type="button" onClick={overwriteProfileConflict} className="rounded bg-amber-800 px-3 py-1 text-xs font-semibold text-white">Overwrite latest with local profile</button>
+                                <button type="button" onClick={reloadProfileConflict} className="rounded border border-[var(--cuba-warning-soft)] bg-white px-3 py-1 text-xs font-semibold">Discard local changes and load latest</button>
+                                <button type="button" onClick={overwriteProfileConflict} className="rounded bg-[var(--cuba-warning)] px-3 py-1 text-xs font-semibold text-white">Overwrite latest with local profile</button>
                             </div>
                         )}
                     </div>
@@ -2245,10 +2274,10 @@ function DashboardSettings(_props) {
                 {/* Inline Toast Banner */}
                 {toastState && (
                     <div role={toastState.type === 'error' ? 'alert' : 'status'} aria-live="polite" className={`p-4 rounded-xl border text-xs font-semibold flex items-center justify-between shadow-xs animate-in fade-in duration-200 ${
-                        toastState.type === 'error' ? 'bg-red-50 border-red-200 text-red-900' : 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                        toastState.type === 'error' ? 'bg-[var(--cuba-danger-soft)] border-[var(--cuba-danger-soft)] text-[var(--cuba-danger)]' : 'bg-[var(--cuba-success-soft)] border-[var(--cuba-success-soft)] text-[var(--cuba-success)]'
                     }`}>
                         <div className="flex items-center gap-2">
-                            {toastState.type === 'error' ? <FaExclamationTriangle className="w-4 h-4 text-red-600" /> : <FaCheckCircle className="w-4 h-4 text-emerald-600" />}
+                            {toastState.type === 'error' ? <FaExclamationTriangle className="w-4 h-4 text-[var(--cuba-danger)]" /> : <FaCheckCircle className="w-4 h-4 text-[var(--cuba-success)]" />}
                             <span>{toastState.msg}</span>
                         </div>
                     </div>
@@ -2259,12 +2288,12 @@ function DashboardSettings(_props) {
                     <div className="space-y-5">
 
                         {/* Horizontal Step Navigation Ribbon (Sticky with Backdrop Blur & Autosave) */}
-                        <nav aria-label="Master Profile Steps Stepper" className="step-nav-ribbon step-nav sticky top-0 sm:top-2 z-30 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-xl pl-14 sm:pl-4 pr-3 sm:pr-4 py-2 sm:py-2.5 flex items-center justify-between gap-2 shadow-xs transition-all overflow-hidden relative">
+                        <nav aria-label="Master Profile Steps Stepper" className="step-nav-ribbon step-nav sticky top-0 sm:top-2 z-30 bg-white/95 backdrop-blur-md border border-[var(--cuba-line)]/90 rounded-xl pl-14 sm:pl-4 pr-3 sm:pr-4 py-2 sm:py-2.5 flex items-center justify-between gap-2 shadow-xs transition-all overflow-hidden relative">
                             {/* Scroll Left Button */}
                             <button
                                 type="button"
                                 onClick={() => scrollSubTabs('left')}
-                                className="hidden sm:flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-200 transition-colors shrink-0 cursor-pointer"
+                                className="hidden sm:flex items-center justify-center w-7 h-7 rounded-lg bg-[var(--cuba-canvas)] hover:bg-[var(--cuba-line)] text-[var(--cuba-ink-muted)] hover:text-[var(--cuba-ink)] border border-[var(--cuba-line)] transition-colors shrink-0 cursor-pointer"
                                 aria-label="Scroll steps left"
                                 title="Scroll left"
                             >
@@ -2296,20 +2325,20 @@ function DashboardSettings(_props) {
                                             onClick={() => switchProfileSubTab(tabKey)}
                                             className={`step-nav-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer shrink-0 ${
                                                 isActive
-                                                    ? 'bg-indigo-600 text-white shadow-2xs ring-2 ring-indigo-500/25 font-bold'
+                                                    ? 'bg-[var(--cuba-primary)] text-white shadow-2xs ring-2 ring-[var(--cuba-primary-ring)]/25 font-bold'
                                                     : isCompleted
-                                                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80 hover:bg-emerald-100 font-semibold'
-                                                    : 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 hover:text-slate-900'
+                                                    ? 'bg-[var(--cuba-success-soft)] text-[var(--cuba-success)] border border-[var(--cuba-success-soft)]/80 hover:bg-[var(--cuba-success-soft)] font-semibold'
+                                                    : 'bg-[var(--cuba-canvas)] text-[var(--cuba-ink-muted)] border border-[var(--cuba-line)] hover:bg-[var(--cuba-canvas)] hover:text-[var(--cuba-ink)]'
                                             }`}
                                             aria-current={isActive ? 'step' : undefined}
                                             title={`${conf.name} (${isCompleted ? 'Completed' : 'Pending'}) — Use Left/Right keys to navigate`}
                                         >
                                             <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
                                                 isActive
-                                                    ? 'bg-white text-indigo-700'
+                                                    ? 'bg-white text-[var(--cuba-primary-ink-strong)]'
                                                     : isCompleted
-                                                    ? 'bg-emerald-600 text-white'
-                                                    : 'bg-slate-200 text-slate-600'
+                                                    ? 'bg-[var(--cuba-success)] text-white'
+                                                    : 'bg-[var(--cuba-line)] text-[var(--cuba-ink-muted)]'
                                             }`}>
                                                 {isCompleted ? '✓' : index + 1}
                                             </span>
@@ -2317,10 +2346,10 @@ function DashboardSettings(_props) {
                                             {count !== undefined && count !== 0 && (
                                                 <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
                                                     isActive
-                                                        ? 'bg-indigo-700 text-white'
+                                                        ? 'bg-[var(--cuba-primary-strong)] text-white'
                                                         : isCompleted
-                                                        ? 'bg-emerald-200/80 text-emerald-900'
-                                                        : 'bg-slate-200 text-slate-600'
+                                                        ? 'bg-[var(--cuba-success-soft)]/80 text-[var(--cuba-success)]'
+                                                        : 'bg-[var(--cuba-line)] text-[var(--cuba-ink-muted)]'
                                                 }`}>
                                                     {count}
                                                 </span>
@@ -2334,7 +2363,7 @@ function DashboardSettings(_props) {
                             <button
                                 type="button"
                                 onClick={() => scrollSubTabs('right')}
-                                className="hidden sm:flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-200 transition-colors shrink-0 cursor-pointer"
+                                className="hidden sm:flex items-center justify-center w-7 h-7 rounded-lg bg-[var(--cuba-canvas)] hover:bg-[var(--cuba-line)] text-[var(--cuba-ink-muted)] hover:text-[var(--cuba-ink)] border border-[var(--cuba-line)] transition-colors shrink-0 cursor-pointer"
                                 aria-label="Scroll steps right"
                                 title="Scroll right"
                             >
@@ -2344,17 +2373,17 @@ function DashboardSettings(_props) {
                             </button>
 
                             {/* Stepper Overview Dropdown Trigger & Consolidated Progress Summary (Exact BuildResume Header Matching) */}
-                            <div className="flex items-center gap-2 pl-2 border-l border-slate-200 shrink-0 text-xs" ref={stepsDropdownRef}>
+                            <div className="flex items-center gap-2 pl-2 border-l border-[var(--cuba-line)] shrink-0 text-xs" ref={stepsDropdownRef}>
                                 {/* Live Autosave Status Indicator */}
-                                <span className="hidden xl:inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-600" title={`Profile Save: ${profileSaveState}`}>
+                                <span className="hidden xl:inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--cuba-ink-muted)]" title={`Profile Save: ${profileSaveState}`}>
                                     <span className={`w-2 h-2 rounded-full shrink-0 ${
                                         profileSaveState === 'saved'
-                                            ? 'bg-emerald-500'
+                                            ? 'bg-[var(--cuba-success)]'
                                             : profileSaveState === 'saving' || profileSaveState === 'pending'
-                                            ? 'bg-indigo-500 animate-pulse'
+                                            ? 'bg-[var(--cuba-primary)] animate-pulse'
                                             : profileSaveState === 'failed' || profileSaveState === 'conflict'
-                                            ? 'bg-amber-500'
-                                            : 'bg-slate-400'
+                                            ? 'bg-[var(--cuba-warning)]'
+                                            : 'bg-[var(--cuba-line-strong)]'
                                     }`}></span>
                                     <span className="font-semibold">
                                         {profileSaveState === 'saving'
@@ -2375,7 +2404,7 @@ function DashboardSettings(_props) {
                                     <button
                                         type="button"
                                         onClick={() => persistProfileRef.current?.({ notify: true })}
-                                        className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-bold rounded-md bg-amber-800 hover:bg-amber-900 text-white shadow-xs transition cursor-pointer shrink-0"
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-bold rounded-md bg-[var(--cuba-warning)] hover:bg-[var(--cuba-warning)] text-white shadow-xs transition cursor-pointer shrink-0"
                                         title="Retry saving profile"
                                     >
                                         Retry
@@ -2386,23 +2415,23 @@ function DashboardSettings(_props) {
                                 <button
                                     type="button"
                                     onClick={() => setShowStepsDropdown(prev => !prev)}
-                                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold border border-slate-200/90 transition-all cursor-pointer shadow-2xs"
+                                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[var(--cuba-canvas)] hover:bg-[var(--cuba-line)] text-[var(--cuba-ink)] text-xs font-semibold border border-[var(--cuba-line)]/90 transition-all cursor-pointer shadow-2xs"
                                     aria-expanded={showStepsDropdown}
                                     aria-haspopup="dialog"
                                     title="View all profile sections in detail and jump directly without scrolling"
                                 >
-                                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                    <span className="w-2 h-2 rounded-full bg-[var(--cuba-success)]"></span>
                                     <span>{completedProfileStepCount} of {SUB_TAB_ORDER.length} complete</span>
-                                    <span className="text-slate-300">·</span>
-                                    <span className="text-indigo-600 font-bold">{profileProgressPercentage}%</span>
-                                    <svg className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${showStepsDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <span className="text-[var(--cuba-ink-subtle)]">·</span>
+                                    <span className="text-[var(--cuba-primary-ink-strong)] font-bold">{profileProgressPercentage}%</span>
+                                    <svg className={`w-3 h-3 text-[var(--cuba-ink-subtle)] transition-transform duration-200 ${showStepsDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                     </svg>
                                 </button>
                             </div>
 
                             {/* Sleek Gradient Stepper Completion Bar */}
-                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-100/80 overflow-hidden" aria-hidden="true">
+                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-[var(--cuba-canvas)]/80 overflow-hidden" aria-hidden="true">
                                 <div
                                     className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500 transition-all duration-500 ease-out"
                                     style={{ width: `${profileProgressPercentage}%` }}
@@ -2418,7 +2447,7 @@ function DashboardSettings(_props) {
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
                                         exit={{ opacity: 0 }}
-                                        className="fixed inset-0 z-[70] bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6"
+                                        className="fixed inset-0 z-[70] bg-[var(--cuba-ink)]/40 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6"
                                         onClick={() => setShowStepsDropdown(false)}
                                     >
                                         <motion.div
@@ -2426,29 +2455,29 @@ function DashboardSettings(_props) {
                                             animate={{ scale: 1, opacity: 1, y: 0 }}
                                             exit={{ scale: 0.95, opacity: 0, y: 10 }}
                                             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                                            className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden flex flex-col max-h-[90vh]"
+                                            className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-[var(--cuba-line)]/90 overflow-hidden flex flex-col max-h-[90vh]"
                                             onClick={(e) => e.stopPropagation()}
                                             role="dialog"
                                             aria-modal="true"
                                             aria-label="Profile Sections & Step Overview"
                                         >
                                             {/* Modal Header */}
-                                            <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
+                                            <div className="px-6 py-5 border-b border-[var(--cuba-line)] flex items-center justify-between bg-[var(--cuba-canvas)]/80">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-600/20 font-bold">
+                                                    <div className="w-10 h-10 rounded-2xl bg-[var(--cuba-primary)] text-white flex items-center justify-center shadow-md shadow-indigo-600/20 font-bold">
                                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                                                         </svg>
                                                     </div>
                                                     <div>
-                                                        <h3 className="text-base font-extrabold text-slate-900 tracking-tight">Profile Sections Overview (12 Sections)</h3>
-                                                        <p className="text-xs text-slate-500 font-medium">Jump instantly to any section or inspect overall completion</p>
+                                                        <h3 className="text-base font-extrabold text-[var(--cuba-ink)] tracking-tight">Profile Sections Overview (12 Sections)</h3>
+                                                        <p className="text-xs text-[var(--cuba-ink-subtle)] font-medium">Jump instantly to any section or inspect overall completion</p>
                                                     </div>
                                                 </div>
                                                 <button
                                                     type="button"
                                                     onClick={() => setShowStepsDropdown(false)}
-                                                    className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-xl transition-colors cursor-pointer"
+                                                    className="p-2 text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-line)]/60 rounded-xl transition-colors cursor-pointer"
                                                     aria-label="Close overview modal"
                                                 >
                                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2458,24 +2487,24 @@ function DashboardSettings(_props) {
                                             </div>
 
                                             {/* Overall Progress Gauge Bar */}
-                                            <div className="px-6 py-3 bg-indigo-50/60 border-b border-indigo-100/60 flex items-center justify-between gap-4">
-                                                <div className="flex items-center gap-2 text-xs font-bold text-indigo-950">
+                                            <div className="px-6 py-3 bg-[var(--cuba-primary-soft)]/60 border-b border-[var(--cuba-primary-line)]/60 flex items-center justify-between gap-4">
+                                                <div className="flex items-center gap-2 text-xs font-bold text-[var(--cuba-primary-ink-strong)]">
                                                     <span>Overall Completion:</span>
-                                                    <span className="text-indigo-600 font-extrabold">{completedProfileStepCount} of {SUB_TAB_ORDER.length} Sections Finished</span>
+                                                    <span className="text-[var(--cuba-primary-ink-strong)] font-extrabold">{completedProfileStepCount} of {SUB_TAB_ORDER.length} Sections Finished</span>
                                                 </div>
                                                 <div className="flex items-center gap-3 flex-1 max-w-xs">
-                                                    <div className="flex-1 h-2 bg-indigo-200/80 rounded-full overflow-hidden">
+                                                    <div className="flex-1 h-2 bg-[var(--cuba-primary-soft)]/80 rounded-full overflow-hidden">
                                                         <div
-                                                            className="h-full bg-indigo-600 rounded-full transition-all duration-500"
+                                                            className="h-full bg-[var(--cuba-primary)] rounded-full transition-all duration-500"
                                                             style={{ width: `${profileProgressPercentage}%` }}
                                                         ></div>
                                                     </div>
-                                                    <span className="text-xs font-black text-indigo-700">{profileProgressPercentage}%</span>
+                                                    <span className="text-xs font-black text-[var(--cuba-primary-ink-strong)]">{profileProgressPercentage}%</span>
                                                 </div>
                                             </div>
 
                                             {/* Steps Grid */}
-                                            <div className="p-6 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 bg-slate-50/40">
+                                            <div className="p-6 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 bg-[var(--cuba-canvas)]/40">
                                                 {SUB_TAB_ORDER.map((tabKey, index) => {
                                                     const conf = SUBTAB_CONFIG[tabKey] || SUBTAB_CONFIG.basic;
                                                     const isActive = profileSubTab === tabKey;
@@ -2492,10 +2521,10 @@ function DashboardSettings(_props) {
                                                             }}
                                                             className={`p-3.5 rounded-2xl border text-left transition-all duration-150 flex flex-col justify-between gap-2.5 cursor-pointer shadow-2xs hover:shadow-md ${
                                                                 isActive
-                                                                    ? 'bg-indigo-600 text-white border-indigo-600 ring-2 ring-indigo-500/25 shadow-md'
+                                                                    ? 'bg-[var(--cuba-primary)] text-white border-[var(--cuba-primary-line)] ring-2 ring-[var(--cuba-primary-ring)]/25 shadow-md'
                                                                     : isCompleted
-                                                                    ? 'bg-white text-slate-900 border-emerald-200/90 hover:border-emerald-400'
-                                                                    : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+                                                                    ? 'bg-white text-[var(--cuba-ink)] border-[var(--cuba-success-soft)]/90 hover:border-[var(--cuba-success)]'
+                                                                    : 'bg-white text-[var(--cuba-ink-muted)] border-[var(--cuba-line)] hover:border-[var(--cuba-line-strong)]'
                                                             }`}
                                                         >
                                                             <div className="flex items-center justify-between w-full">
@@ -2504,27 +2533,27 @@ function DashboardSettings(_props) {
                                                                         isActive
                                                                             ? 'bg-white/20 text-white'
                                                                             : isCompleted
-                                                                            ? 'bg-emerald-600 text-white'
-                                                                            : 'bg-slate-100 text-slate-500'
+                                                                            ? 'bg-[var(--cuba-success)] text-white'
+                                                                            : 'bg-[var(--cuba-canvas)] text-[var(--cuba-ink-subtle)]'
                                                                     }`}>
                                                                         {isCompleted ? '✓' : index + 1}
                                                                     </span>
-                                                                    <span className={`text-xs font-bold truncate ${isActive ? 'text-white' : 'text-slate-900'}`}>
+                                                                    <span className={`text-xs font-bold truncate ${isActive ? 'text-white' : 'text-[var(--cuba-ink)]'}`}>
                                                                         {conf.name}
                                                                     </span>
                                                                 </div>
                                                                 <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
                                                                     isActive
-                                                                        ? 'bg-white text-indigo-700'
+                                                                        ? 'bg-white text-[var(--cuba-primary-ink-strong)]'
                                                                         : isCompleted
-                                                                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                                                                        : 'bg-slate-100 text-slate-500'
+                                                                        ? 'bg-[var(--cuba-success-soft)] text-[var(--cuba-success)] border border-[var(--cuba-success-soft)]'
+                                                                        : 'bg-[var(--cuba-canvas)] text-[var(--cuba-ink-subtle)]'
                                                                 }`}>
                                                                     {isActive ? 'Current' : isCompleted ? 'Completed' : 'Pending'}
                                                                 </span>
                                                             </div>
 
-                                                            <p className={`text-[11px] line-clamp-1 ${isActive ? 'text-indigo-100' : 'text-slate-500'}`}>
+                                                            <p className={`text-[11px] line-clamp-1 ${isActive ? 'text-[var(--cuba-ink-inverse)]' : 'text-[var(--cuba-ink-subtle)]'}`}>
                                                                 {count !== undefined && count > 0 ? `${count} ${count === 1 ? 'entry' : 'entries'} saved` : conf.description || (isCompleted ? 'Finished & verified' : 'Needs information')}
                                                             </p>
                                                         </button>
@@ -2533,12 +2562,12 @@ function DashboardSettings(_props) {
                                             </div>
 
                                             {/* Modal Footer */}
-                                            <div className="px-6 py-4 bg-white border-t border-slate-100 flex items-center justify-between">
-                                                <span className="text-xs text-slate-500 font-medium">Click any section to jump directly</span>
+                                            <div className="px-6 py-4 bg-white border-t border-[var(--cuba-line)] flex items-center justify-between">
+                                                <span className="text-xs text-[var(--cuba-ink-subtle)] font-medium">Click any section to jump directly</span>
                                                 <button
                                                     type="button"
                                                     onClick={() => setShowStepsDropdown(false)}
-                                                    className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all shadow-2xs cursor-pointer"
+                                                    className="px-5 py-2 bg-[var(--cuba-ink)] hover:bg-[var(--cuba-ink)] text-white text-xs font-bold rounded-xl transition-all shadow-2xs cursor-pointer"
                                                 >
                                                     Close Overview
                                                 </button>
@@ -2563,12 +2592,12 @@ function DashboardSettings(_props) {
                                     const badgeText = typeof activeConf.statusBadge === 'function' ? activeConf.statusBadge(profile) : activeConf.statusBadge;
 
                                     return (
-                                        <header className="rounded-xl border border-slate-200 bg-white px-4 py-3.5 sm:px-5 shadow-2xs">
+                                        <header className="rounded-xl border border-[var(--cuba-line)] bg-white px-4 py-3.5 sm:px-5 shadow-2xs">
                                             <div className="flex items-center justify-between gap-3 min-w-0">
                                                 <div className="flex items-center gap-3 min-w-0 flex-1">
                                                     <div
                                                         className={`flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg text-xs sm:text-sm font-bold ${
-                                                            isComp ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-white'
+                                                            isComp ? 'bg-[var(--cuba-success)] text-white' : 'bg-[var(--cuba-ink)] text-white'
                                                         }`}
                                                         aria-label={`Step ${stepIdx + 1} of 12`}
                                                     >
@@ -2576,24 +2605,24 @@ function DashboardSettings(_props) {
                                                     </div>
                                                     <div className="min-w-0 flex-1">
                                                         <div className="flex flex-wrap items-center gap-2">
-                                                            <h1 className="text-sm sm:text-base font-bold tracking-tight text-slate-900">{activeConf.title}</h1>
+                                                            <h1 className="text-sm sm:text-base font-bold tracking-tight text-[var(--cuba-ink)]">{activeConf.title}</h1>
                                                             {badgeText ? (
-                                                                <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                                                                <span className="rounded-md border border-[var(--cuba-line)] bg-[var(--cuba-canvas)] px-2 py-0.5 text-[11px] font-semibold text-[var(--cuba-ink-muted)]">
                                                                     {badgeText}
                                                                 </span>
                                                             ) : null}
                                                             <span
                                                                 className={`rounded-md border px-2 py-0.5 text-[10px] font-bold ${
                                                                     isComp
-                                                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                                                                        : 'border-amber-200 bg-amber-50 text-amber-700'
+                                                                        ? 'border-[var(--cuba-success-soft)] bg-[var(--cuba-success-soft)] text-[var(--cuba-success)]'
+                                                                        : 'border-[var(--cuba-warning-soft)] bg-[var(--cuba-warning-soft)] text-[var(--cuba-warning)]'
                                                                 }`}
                                                             >
                                                                 {isComp ? 'Complete' : 'In progress'}
                                                             </span>
                                                         </div>
                                                         {activeConf.subtitle ? (
-                                                            <p className="mt-0.5 text-xs leading-relaxed text-slate-500 max-w-2xl">{activeConf.subtitle}</p>
+                                                            <p className="mt-0.5 text-xs leading-relaxed text-[var(--cuba-ink-subtle)] max-w-2xl">{activeConf.subtitle}</p>
                                                         ) : null}
                                                     </div>
                                                 </div>
@@ -2601,7 +2630,7 @@ function DashboardSettings(_props) {
                                                     <button
                                                         type="button"
                                                         onClick={() => setShowProfileGuidanceRail(prev => !prev)}
-                                                        className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition-colors cursor-pointer"
+                                                        className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[var(--cuba-line)] bg-[var(--cuba-canvas)] hover:bg-[var(--cuba-canvas)] text-[var(--cuba-ink-muted)] text-xs font-semibold transition-colors cursor-pointer"
                                                         title={showProfileGuidanceRail ? 'Collapse Guide' : 'Expand Guide'}
                                                     >
                                                         <span>{showProfileGuidanceRail ? 'Hide Guide' : 'Show Guide'}</span>
@@ -2613,7 +2642,7 @@ function DashboardSettings(_props) {
                                 })()}
 
                                 {/* Subtab Form Card */}
-                                <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 shadow-2xs space-y-5">
+                                <div className="bg-white rounded-xl border border-[var(--cuba-line)] p-4 sm:p-6 shadow-2xs space-y-5">
 
                         {/* Sub-Tab 1: Basic Details & Social Links — Styled after HeadingStep */}
                         {profileSubTab === 'basic' && (
@@ -2624,12 +2653,12 @@ function DashboardSettings(_props) {
                                         {/* Photo Upload Area - Compact, matching HeadingStep */}
                                         <div className="shrink-0 pt-0.5 self-center sm:self-start">
                                             <div className="space-y-1.5">
-                                                <label className="block text-[13px] font-semibold text-slate-700">
+                                                <label className="block text-[13px] font-semibold text-[var(--cuba-ink-muted)]">
                                                     Profile Photo
                                                 </label>
                                                 <div
                                                     className={`w-24 h-24 sm:w-28 sm:h-28 rounded-xl border-2 overflow-hidden relative group transition-all duration-200 flex items-center justify-center ${
-                                                        isDragging ? 'border-indigo-500 bg-indigo-50/50' : 'border-slate-200 bg-slate-50 shadow-2xs hover:border-slate-300'
+                                                        isDragging ? 'border-[var(--cuba-primary-line)] bg-[var(--cuba-primary-soft)]/50' : 'border-[var(--cuba-line)] bg-[var(--cuba-canvas)] shadow-2xs hover:border-[var(--cuba-line-strong)]'
                                                     }`}
                                                     onDragOver={handleDragOver}
                                                     onDragLeave={handleDragLeave}
@@ -2641,24 +2670,24 @@ function DashboardSettings(_props) {
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => setCropModalSrc(profile.selectedImage)}
-                                                                    className="p-1.5 bg-white rounded-full hover:bg-slate-100 transition-all text-indigo-600 shadow-xs"
+                                                                    className="p-1.5 bg-white rounded-full hover:bg-[var(--cuba-canvas)] transition-all text-[var(--cuba-primary-ink-strong)] shadow-xs"
                                                                     title="Crop & Adjust Photo">
                                                                     <FaCrop className="w-3 h-3" />
                                                                 </button>
-                                                                <label className="p-1.5 bg-white rounded-full hover:bg-slate-100 transition-all text-slate-700 shadow-xs cursor-pointer" title="Change photo">
+                                                                <label className="p-1.5 bg-white rounded-full hover:bg-[var(--cuba-canvas)] transition-all text-[var(--cuba-ink-muted)] shadow-xs cursor-pointer" title="Change photo">
                                                                     <input type="file" onChange={handleImageUpload} className="sr-only" accept="image/png,image/jpeg,image/webp" />
                                                                     <FaUpload className="w-3 h-3" />
                                                                 </label>
                                                             </div>
                                                         </>
                                                     ) : (
-                                                        <label className="w-full h-full flex flex-col items-center justify-center p-2 text-center cursor-pointer hover:bg-indigo-50/50 transition-colors">
+                                                        <label className="w-full h-full flex flex-col items-center justify-center p-2 text-center cursor-pointer hover:bg-[var(--cuba-primary-soft)]/50 transition-colors">
                                                             <input type="file" onChange={handleImageUpload} className="sr-only" accept="image/png,image/jpeg,image/webp" />
-                                                            <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold text-sm mb-1">
-                                                                {candidateFullName ? candidateFullName.charAt(0).toUpperCase() : <FaUpload className="w-3.5 h-3.5 text-slate-400" />}
+                                                            <div className="w-9 h-9 rounded-full bg-[var(--cuba-line)] flex items-center justify-center text-[var(--cuba-ink-muted)] font-bold text-sm mb-1">
+                                                                {candidateFullName ? candidateFullName.charAt(0).toUpperCase() : <FaUpload className="w-3.5 h-3.5 text-[var(--cuba-ink-subtle)]" />}
                                                             </div>
-                                                            <span className="text-[10px] font-bold text-indigo-600">Upload</span>
-                                                            <span className="text-[9px] text-slate-400">{isDragging ? 'Drop here' : 'PNG, JPG'}</span>
+                                                            <span className="text-[10px] font-bold text-[var(--cuba-primary-ink-strong)]">Upload</span>
+                                                            <span className="text-[9px] text-[var(--cuba-ink-subtle)]">{isDragging ? 'Drop here' : 'PNG, JPG'}</span>
                                                         </label>
                                                     )}
                                                 </div>
@@ -2669,9 +2698,9 @@ function DashboardSettings(_props) {
                                         <div className="flex-1 min-w-0 w-full space-y-3">
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                 <div>
-                                                    <label className="mb-1.5 flex items-baseline gap-1.5 text-[13px] font-semibold text-slate-700">
+                                                    <label className="mb-1.5 flex items-baseline gap-1.5 text-[13px] font-semibold text-[var(--cuba-ink-muted)]">
                                                         <span>First Name</span>
-                                                        <span aria-hidden="true" className="text-rose-500 font-medium">*</span>
+                                                        <span aria-hidden="true" className="text-[var(--cuba-danger)] font-medium">*</span>
                                                     </label>
                                                     <input
                                                         type="text"
@@ -2679,13 +2708,13 @@ function DashboardSettings(_props) {
                                                         value={profile.firstname}
                                                         onChange={handleInputChange}
                                                         placeholder="Your first name"
-                                                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs transition-colors placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/25 font-normal"
+                                                        className="w-full rounded-lg border border-[var(--cuba-line)] bg-white px-3 py-2 text-sm text-[var(--cuba-ink)] shadow-2xs transition-colors placeholder:text-[var(--cuba-ink-subtle)] focus:outline-none focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-ring)]/25 font-normal"
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label className="mb-1.5 flex items-baseline gap-1.5 text-[13px] font-semibold text-slate-700">
+                                                    <label className="mb-1.5 flex items-baseline gap-1.5 text-[13px] font-semibold text-[var(--cuba-ink-muted)]">
                                                         <span>Last Name</span>
-                                                        <span aria-hidden="true" className="text-rose-500 font-medium">*</span>
+                                                        <span aria-hidden="true" className="text-[var(--cuba-danger)] font-medium">*</span>
                                                     </label>
                                                     <input
                                                         type="text"
@@ -2693,7 +2722,7 @@ function DashboardSettings(_props) {
                                                         value={profile.lastname}
                                                         onChange={handleInputChange}
                                                         placeholder="Your last name"
-                                                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs transition-colors placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/25 font-normal"
+                                                        className="w-full rounded-lg border border-[var(--cuba-line)] bg-white px-3 py-2 text-sm text-[var(--cuba-ink)] shadow-2xs transition-colors placeholder:text-[var(--cuba-ink-subtle)] focus:outline-none focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-ring)]/25 font-normal"
                                                     />
                                                 </div>
                                             </div>
@@ -2705,8 +2734,8 @@ function DashboardSettings(_props) {
                                                     onChange={handleInputChange}
                                                     placeholder="e.g. Senior Full Stack Engineer"
                                                     suggestionType="jobTitle"
-                                                    inputClassName="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs transition-colors placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/25 font-normal"
-                                                    labelClassName="mb-1.5 flex items-baseline gap-1.5 text-[13px] font-semibold text-slate-700"
+                                                    inputClassName="w-full rounded-lg border border-[var(--cuba-line)] bg-white px-3 py-2 text-sm text-[var(--cuba-ink)] shadow-2xs transition-colors placeholder:text-[var(--cuba-ink-subtle)] focus:outline-none focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-ring)]/25 font-normal"
+                                                    labelClassName="mb-1.5 flex items-baseline gap-1.5 text-[13px] font-semibold text-[var(--cuba-ink-muted)]"
                                                 />
                                             </div>
                                         </div>
@@ -2714,18 +2743,18 @@ function DashboardSettings(_props) {
                                 </div>
 
                                 {/* Contact & Location */}
-                                <div className="space-y-3 border-t border-slate-100 pt-4">
+                                <div className="space-y-3 border-t border-[var(--cuba-line)] pt-4">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div>
                                             <div className="mb-1.5 flex items-baseline justify-between gap-1.5">
-                                                <label className="text-[13px] font-semibold text-slate-700">
+                                                <label className="text-[13px] font-semibold text-[var(--cuba-ink-muted)]">
                                                     <span>Email Address (Identity)</span>
-                                                    <span aria-hidden="true" className="text-rose-500 font-medium ml-1">*</span>
+                                                    <span aria-hidden="true" className="text-[var(--cuba-danger)] font-medium ml-1">*</span>
                                                 </label>
                                                 <button
                                                     type="button"
                                                     onClick={() => { setSelectedSettings('Account'); navigate('?tab=Account', { replace: true }); }}
-                                                    className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer flex items-center gap-1"
+                                                    className="text-[11px] font-semibold text-[var(--cuba-primary-ink-strong)] hover:text-[var(--cuba-primary-ink-strong)] transition-colors cursor-pointer flex items-center gap-1"
                                                     title="Switch to Account & Security to update primary email"
                                                 >
                                                     <span>Managed in Account</span>
@@ -2738,13 +2767,13 @@ function DashboardSettings(_props) {
                                                 value={fire.auth().currentUser?.email || profile.email || ''}
                                                 readOnly
                                                 disabled
-                                                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 shadow-2xs cursor-not-allowed select-none"
+                                                className="w-full rounded-lg border border-[var(--cuba-line)] bg-[var(--cuba-canvas)] px-3 py-2 text-sm text-[var(--cuba-ink-subtle)] shadow-2xs cursor-not-allowed select-none"
                                             />
                                         </div>
                                         <div>
-                                            <label className="mb-1.5 flex items-baseline gap-1.5 text-[13px] font-semibold text-slate-700">
+                                            <label className="mb-1.5 flex items-baseline gap-1.5 text-[13px] font-semibold text-[var(--cuba-ink-muted)]">
                                                 <span>Phone Number</span>
-                                                <span aria-hidden="true" className="text-rose-500 font-medium">*</span>
+                                                <span aria-hidden="true" className="text-[var(--cuba-danger)] font-medium">*</span>
                                             </label>
                                             <input
                                                 type="text"
@@ -2752,7 +2781,7 @@ function DashboardSettings(_props) {
                                                 value={profile.phone}
                                                 onChange={handleInputChange}
                                                 placeholder="With country code, e.g. +91 98765 43210"
-                                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs transition-colors placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/25 font-normal"
+                                                className="w-full rounded-lg border border-[var(--cuba-line)] bg-white px-3 py-2 text-sm text-[var(--cuba-ink)] shadow-2xs transition-colors placeholder:text-[var(--cuba-ink-subtle)] focus:outline-none focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-ring)]/25 font-normal"
                                             />
                                         </div>
                                     </div>
@@ -2766,14 +2795,14 @@ function DashboardSettings(_props) {
                                                 onSelect={(val) => handleInputChange({ target: { name: 'city', value: val } })}
                                                 placeholder="City, State"
                                                 suggestionType="city"
-                                                inputClassName="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs transition-colors placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/25 font-normal"
-                                                labelClassName="mb-1.5 flex items-baseline gap-1.5 text-[13px] font-semibold text-slate-700"
+                                                inputClassName="w-full rounded-lg border border-[var(--cuba-line)] bg-white px-3 py-2 text-sm text-[var(--cuba-ink)] shadow-2xs transition-colors placeholder:text-[var(--cuba-ink-subtle)] focus:outline-none focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-ring)]/25 font-normal"
+                                                labelClassName="mb-1.5 flex items-baseline gap-1.5 text-[13px] font-semibold text-[var(--cuba-ink-muted)]"
                                             />
                                         </div>
                                         <div>
-                                            <label className="mb-1.5 flex items-baseline gap-1.5 text-[13px] font-semibold text-slate-700">
+                                            <label className="mb-1.5 flex items-baseline gap-1.5 text-[13px] font-semibold text-[var(--cuba-ink-muted)]">
                                                 <span>Country</span>
-                                                <span className="text-[11px] font-medium text-slate-400">optional</span>
+                                                <span className="text-[11px] font-medium text-[var(--cuba-ink-subtle)]">optional</span>
                                             </label>
                                             <input
                                                 type="text"
@@ -2782,19 +2811,19 @@ function DashboardSettings(_props) {
                                                 onChange={handleInputChange}
                                                 placeholder="Country (e.g. India)"
                                                 spellCheck="false"
-                                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs transition-colors placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/25 font-normal"
+                                                className="w-full rounded-lg border border-[var(--cuba-line)] bg-white px-3 py-2 text-sm text-[var(--cuba-ink)] shadow-2xs transition-colors placeholder:text-[var(--cuba-ink-subtle)] focus:outline-none focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-ring)]/25 font-normal"
                                             />
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Online Presence & Address */}
-                                <div className="space-y-3 border-t border-slate-100 pt-4">
+                                <div className="space-y-3 border-t border-[var(--cuba-line)] pt-4">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div>
-                                            <label className="mb-1.5 flex items-baseline gap-1.5 text-[13px] font-semibold text-slate-700">
+                                            <label className="mb-1.5 flex items-baseline gap-1.5 text-[13px] font-semibold text-[var(--cuba-ink-muted)]">
                                                 <span>Street Address</span>
-                                                <span className="text-[11px] font-medium text-slate-400">optional</span>
+                                                <span className="text-[11px] font-medium text-[var(--cuba-ink-subtle)]">optional</span>
                                             </label>
                                             <input
                                                 type="text"
@@ -2802,13 +2831,13 @@ function DashboardSettings(_props) {
                                                 value={profile.address}
                                                 onChange={handleInputChange}
                                                 placeholder="Street address"
-                                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs transition-colors placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/25 font-normal"
+                                                className="w-full rounded-lg border border-[var(--cuba-line)] bg-white px-3 py-2 text-sm text-[var(--cuba-ink)] shadow-2xs transition-colors placeholder:text-[var(--cuba-ink-subtle)] focus:outline-none focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-ring)]/25 font-normal"
                                             />
                                         </div>
                                         <div>
-                                            <label className="mb-1.5 flex items-baseline gap-1.5 text-[13px] font-semibold text-slate-700">
+                                            <label className="mb-1.5 flex items-baseline gap-1.5 text-[13px] font-semibold text-[var(--cuba-ink-muted)]">
                                                 <span>Postal Code</span>
-                                                <span className="text-[11px] font-medium text-slate-400">optional</span>
+                                                <span className="text-[11px] font-medium text-[var(--cuba-ink-subtle)]">optional</span>
                                             </label>
                                             <input
                                                 type="text"
@@ -2816,16 +2845,16 @@ function DashboardSettings(_props) {
                                                 value={profile.postalCode}
                                                 onChange={handleInputChange}
                                                 placeholder="PIN / postal code"
-                                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs transition-colors placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/25 font-normal"
+                                                className="w-full rounded-lg border border-[var(--cuba-line)] bg-white px-3 py-2 text-sm text-[var(--cuba-ink)] shadow-2xs transition-colors placeholder:text-[var(--cuba-ink-subtle)] focus:outline-none focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-ring)]/25 font-normal"
                                             />
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div>
-                                            <label className="mb-1.5 flex items-center gap-1.5 text-[13px] font-semibold text-slate-700">
-                                                <FaLinkedin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                                            <label className="mb-1.5 flex items-center gap-1.5 text-[13px] font-semibold text-[var(--cuba-ink-muted)]">
+                                                <FaLinkedin className="w-3.5 h-3.5 text-[var(--cuba-info)] shrink-0" />
                                                 <span>LinkedIn Profile URL</span>
-                                                <span className="text-[11px] font-medium text-slate-400">optional</span>
+                                                <span className="text-[11px] font-medium text-[var(--cuba-ink-subtle)]">optional</span>
                                             </label>
                                             <input
                                                 type="url"
@@ -2833,14 +2862,14 @@ function DashboardSettings(_props) {
                                                 value={profile.linkedinUrl}
                                                 onChange={handleInputChange}
                                                 placeholder="https://linkedin.com/in/username"
-                                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs transition-colors placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/25 font-normal"
+                                                className="w-full rounded-lg border border-[var(--cuba-line)] bg-white px-3 py-2 text-sm text-[var(--cuba-ink)] shadow-2xs transition-colors placeholder:text-[var(--cuba-ink-subtle)] focus:outline-none focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-ring)]/25 font-normal"
                                             />
                                         </div>
                                         <div>
-                                            <label className="mb-1.5 flex items-center gap-1.5 text-[13px] font-semibold text-slate-700">
-                                                <FaGithub className="w-3.5 h-3.5 text-slate-800 shrink-0" />
+                                            <label className="mb-1.5 flex items-center gap-1.5 text-[13px] font-semibold text-[var(--cuba-ink-muted)]">
+                                                <FaGithub className="w-3.5 h-3.5 text-[var(--cuba-ink)] shrink-0" />
                                                 <span>GitHub / Portfolio URL</span>
-                                                <span className="text-[11px] font-medium text-slate-400">optional</span>
+                                                <span className="text-[11px] font-medium text-[var(--cuba-ink-subtle)]">optional</span>
                                             </label>
                                             <input
                                                 type="url"
@@ -2848,15 +2877,15 @@ function DashboardSettings(_props) {
                                                 value={profile.githubUrl}
                                                 onChange={handleInputChange}
                                                 placeholder="https://github.com/username"
-                                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs transition-colors placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/25 font-normal"
+                                                className="w-full rounded-lg border border-[var(--cuba-line)] bg-white px-3 py-2 text-sm text-[var(--cuba-ink)] shadow-2xs transition-colors placeholder:text-[var(--cuba-ink-subtle)] focus:outline-none focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-ring)]/25 font-normal"
                                             />
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="mb-1.5 flex items-center gap-1.5 text-[13px] font-semibold text-slate-700">
-                                            <FaGlobe className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                                        <label className="mb-1.5 flex items-center gap-1.5 text-[13px] font-semibold text-[var(--cuba-ink-muted)]">
+                                            <FaGlobe className="w-3.5 h-3.5 text-[var(--cuba-primary-ink-strong)] shrink-0" />
                                             <span>Personal Website / Portfolio URL</span>
-                                            <span className="text-[11px] font-medium text-slate-400">optional</span>
+                                            <span className="text-[11px] font-medium text-[var(--cuba-ink-subtle)]">optional</span>
                                         </label>
                                         <input
                                             type="url"
@@ -2864,7 +2893,7 @@ function DashboardSettings(_props) {
                                             value={profile.websiteUrl}
                                             onChange={handleInputChange}
                                             placeholder="https://yourwebsite.com"
-                                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs transition-colors placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/25 font-normal"
+                                            className="w-full rounded-lg border border-[var(--cuba-line)] bg-white px-3 py-2 text-sm text-[var(--cuba-ink)] shadow-2xs transition-colors placeholder:text-[var(--cuba-ink-subtle)] focus:outline-none focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-ring)]/25 font-normal"
                                         />
                                     </div>
                                 </div>
@@ -2877,10 +2906,10 @@ function DashboardSettings(_props) {
                             const bioCharCount = plainBio.length;
                             const bioWordCount = plainBio ? plainBio.split(/\s+/).filter(Boolean).length : 0;
                             const getBioProgress = () => {
-                                if (bioCharCount === 0) return { text: 'Empty', color: 'text-slate-400', bar: 'bg-slate-200' };
-                                if (bioCharCount < 100) return { text: 'Getting started', color: 'text-amber-600', bar: 'bg-amber-500' };
-                                if (bioCharCount <= 450) return { text: 'Good length', color: 'text-emerald-600', bar: 'bg-emerald-500' };
-                                return { text: 'Long — consider trimming', color: 'text-amber-600', bar: 'bg-amber-500' };
+                                if (bioCharCount === 0) return { text: 'Empty', color: 'text-[var(--cuba-ink-subtle)]', bar: 'bg-[var(--cuba-line)]' };
+                                if (bioCharCount < 100) return { text: 'Getting started', color: 'text-[var(--cuba-warning)]', bar: 'bg-[var(--cuba-warning)]' };
+                                if (bioCharCount <= 450) return { text: 'Good length', color: 'text-[var(--cuba-success)]', bar: 'bg-[var(--cuba-success)]' };
+                                return { text: 'Long — consider trimming', color: 'text-[var(--cuba-warning)]', bar: 'bg-[var(--cuba-warning)]' };
                             };
                             const bioProgress = getBioProgress();
 
@@ -2906,11 +2935,11 @@ function DashboardSettings(_props) {
                                     {/* Header & Character Progress Meter */}
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                         <div>
-                                            <h3 className="text-base font-bold text-slate-900 tracking-tight">Executive Bio &amp; Professional Summary</h3>
-                                            <p className="text-xs text-slate-500 mt-0.5">Synthesizes your verified career history, education, skills, and projects into an authoritative executive overview for all resumes.</p>
+                                            <h3 className="text-base font-bold text-[var(--cuba-ink)] tracking-tight">Executive Bio &amp; Professional Summary</h3>
+                                            <p className="text-xs text-[var(--cuba-ink-subtle)] mt-0.5">Synthesizes your verified career history, education, skills, and projects into an authoritative executive overview for all resumes.</p>
                                         </div>
-                                        <div className="flex items-center gap-2.5 shrink-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 shadow-2xs">
-                                            <div className="w-24 bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                                        <div className="flex items-center gap-2.5 shrink-0 rounded-xl border border-[var(--cuba-line)] bg-[var(--cuba-canvas)] px-3 py-1.5 shadow-2xs">
+                                            <div className="w-24 bg-[var(--cuba-line)] rounded-full h-1.5 overflow-hidden">
                                                 <div
                                                     className={`h-full ${bioProgress.bar} transition-all duration-300`}
                                                     style={{ width: `${Math.min(100, (bioCharCount / 400) * 100)}%` }}
@@ -2921,9 +2950,9 @@ function DashboardSettings(_props) {
                                     </div>
 
                                     {/* Action Toolbar: Tone Selector + AI Generator + Copy + Clear */}
-                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-slate-50 p-2.5 rounded-xl border border-slate-200/80">
+                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-[var(--cuba-canvas)] p-2.5 rounded-xl border border-[var(--cuba-line)]/80">
                                         <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }} role="group" aria-label="Tone preference">
-                                            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mr-1 shrink-0">Tone:</span>
+                                            <span className="text-[11px] font-bold text-[var(--cuba-ink-subtle)] uppercase tracking-wider mr-1 shrink-0">Tone:</span>
                                             {['balanced', 'concise', 'technical', 'executive'].map((toneKey) => (
                                                 <button
                                                     key={toneKey}
@@ -2932,8 +2961,8 @@ function DashboardSettings(_props) {
                                                     aria-pressed={summaryTone === toneKey}
                                                     className={`px-2.5 py-1 rounded-lg text-xs font-bold capitalize transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                                                         summaryTone === toneKey
-                                                            ? 'bg-indigo-600 text-white shadow-2xs'
-                                                            : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                                                            ? 'bg-[var(--cuba-primary)] text-white shadow-2xs'
+                                                            : 'bg-white text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-canvas)] border border-[var(--cuba-line)]'
                                                     }`}>
                                                     {toneKey.replace('-', ' ')}
                                                 </button>
@@ -2946,16 +2975,16 @@ function DashboardSettings(_props) {
                                                         type="button"
                                                         onClick={handleCopyBio}
                                                         title="Copy Executive Bio to clipboard"
-                                                        className="px-2.5 py-2 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-all shadow-2xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+                                                        className="px-2.5 py-2 bg-white hover:bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] text-[var(--cuba-ink-muted)] rounded-lg text-xs font-semibold transition-all shadow-2xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
                                                     >
-                                                        {bioCopied ? <FaCheck className="w-3.5 h-3.5 text-emerald-600" /> : <FaCopy className="w-3.5 h-3.5 text-slate-500" />}
+                                                        {bioCopied ? <FaCheck className="w-3.5 h-3.5 text-[var(--cuba-success)]" /> : <FaCopy className="w-3.5 h-3.5 text-[var(--cuba-ink-subtle)]" />}
                                                         <span>{bioCopied ? 'Copied!' : 'Copy'}</span>
                                                     </button>
                                                     <button
                                                         type="button"
                                                         onClick={() => setShowClearBioConfirm(true)}
                                                         title="Clear Executive Bio"
-                                                        className="p-2 bg-white hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-slate-500 hover:text-rose-600 rounded-lg text-xs font-semibold transition-all shadow-2xs flex items-center justify-center shrink-0 cursor-pointer"
+                                                        className="p-2 bg-white hover:bg-[var(--cuba-danger-soft)] border border-[var(--cuba-line)] hover:border-[var(--cuba-danger-soft)] text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-danger)] rounded-lg text-xs font-semibold transition-all shadow-2xs flex items-center justify-center shrink-0 cursor-pointer"
                                                     >
                                                         <FaTrash className="w-3.5 h-3.5" />
                                                     </button>
@@ -2974,23 +3003,23 @@ function DashboardSettings(_props) {
                                     </div>
 
                                     {/* Career Evidence Digest Badge */}
-                                    <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap">
-                                        <span className="inline-flex items-center gap-1.5 font-semibold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg">
-                                            <FaBolt className="w-3 h-3 text-amber-500" />
+                                    <div className="flex items-center gap-2 text-xs text-[var(--cuba-ink-subtle)] flex-wrap">
+                                        <span className="inline-flex items-center gap-1.5 font-semibold text-[var(--cuba-ink-muted)] bg-[var(--cuba-canvas)] px-2.5 py-1 rounded-lg">
+                                            <FaBolt className="w-3 h-3 text-[var(--cuba-warning)]" />
                                             <span>Synthesizes:</span>
                                         </span>
                                         <span>
-                                            {bioYearsExp ? <strong className="text-slate-700">{bioYearsExp} yrs exp · </strong> : null}
-                                            <strong className="text-slate-700">{bioRolesCount}</strong> {bioRolesCount === 1 ? 'position' : 'positions'} ·{' '}
-                                            <strong className="text-slate-700">{bioSkillsCount}</strong> skills
-                                            {bioEduCount > 0 ? <> · <strong className="text-slate-700">{bioEduCount}</strong> {bioEduCount === 1 ? 'degree' : 'degrees'}</> : null}
-                                            {bioCertsCount > 0 ? <> · <strong className="text-slate-700">{bioCertsCount}</strong> credentials</> : null}
+                                            {bioYearsExp ? <strong className="text-[var(--cuba-ink-muted)]">{bioYearsExp} yrs exp · </strong> : null}
+                                            <strong className="text-[var(--cuba-ink-muted)]">{bioRolesCount}</strong> {bioRolesCount === 1 ? 'position' : 'positions'} ·{' '}
+                                            <strong className="text-[var(--cuba-ink-muted)]">{bioSkillsCount}</strong> skills
+                                            {bioEduCount > 0 ? <> · <strong className="text-[var(--cuba-ink-muted)]">{bioEduCount}</strong> {bioEduCount === 1 ? 'degree' : 'degrees'}</> : null}
+                                            {bioCertsCount > 0 ? <> · <strong className="text-[var(--cuba-ink-muted)]">{bioCertsCount}</strong> credentials</> : null}
                                         </span>
                                     </div>
 
                                     {/* Clear Confirmation Dialog */}
                                     {showClearBioConfirm && (
-                                        <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-200">
+                                        <div className="p-3.5 rounded-xl bg-[var(--cuba-warning-soft)] border border-[var(--cuba-warning-soft)] text-[var(--cuba-warning)] text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-200">
                                             <span className="font-semibold">Clear your Executive Bio from Master Profile?</span>
                                             <div className="flex items-center gap-2 shrink-0">
                                                 <button
@@ -3000,14 +3029,14 @@ function DashboardSettings(_props) {
                                                         setShowClearBioConfirm(false);
                                                         triggerNotification('Executive Bio cleared.');
                                                     }}
-                                                    className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                                                    className="px-3 py-1.5 bg-[var(--cuba-warning)] hover:bg-[var(--cuba-warning)] text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
                                                 >
                                                     Confirm Clear
                                                 </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => setShowClearBioConfirm(false)}
-                                                    className="px-3 py-1.5 bg-white hover:bg-amber-100/60 border border-amber-300 text-amber-800 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+                                                    className="px-3 py-1.5 bg-white hover:bg-[var(--cuba-warning-soft)]/60 border border-[var(--cuba-warning-soft)] text-[var(--cuba-warning)] rounded-lg text-xs font-semibold transition-colors cursor-pointer"
                                                 >
                                                     Cancel
                                                 </button>
@@ -3017,21 +3046,21 @@ function DashboardSettings(_props) {
 
                                     {/* AI Review / Draft Gate (Invariant 7: Zero Silent Overwrites) */}
                                     {summaryAiDraft !== null && (
-                                        <div className="p-4 rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50/70 via-purple-50/40 to-white shadow-xs space-y-3 animate-in fade-in duration-200">
-                                            <div className="flex items-center justify-between gap-2 border-b border-indigo-100 pb-2.5">
+                                        <div className="p-4 rounded-xl border border-[var(--cuba-primary-line)] bg-gradient-to-br from-indigo-50/70 via-purple-50/40 to-white shadow-xs space-y-3 animate-in fade-in duration-200">
+                                            <div className="flex items-center justify-between gap-2 border-b border-[var(--cuba-primary-line)] pb-2.5">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center shadow-2xs">
+                                                    <div className="w-6 h-6 rounded-lg bg-[var(--cuba-primary)] text-white flex items-center justify-center shadow-2xs">
                                                         <FaMagic className="w-3 h-3" />
                                                     </div>
                                                     <div>
-                                                        <h4 className="text-xs font-bold text-slate-900">AI Executive Bio Draft</h4>
-                                                        <p className="text-[11px] text-slate-500">Synthesized from your verified profile facts · Editable before applying</p>
+                                                        <h4 className="text-xs font-bold text-[var(--cuba-ink)]">AI Executive Bio Draft</h4>
+                                                        <p className="text-[11px] text-[var(--cuba-ink-subtle)]">Synthesized from your verified profile facts · Editable before applying</p>
                                                     </div>
                                                 </div>
                                                 <button
                                                     type="button"
                                                     onClick={() => setSummaryAiDraft(null)}
-                                                    className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                                                    className="text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] p-1 rounded-lg hover:bg-[var(--cuba-canvas)] transition-colors cursor-pointer"
                                                     title="Dismiss draft"
                                                 >
                                                     <FaTimes className="w-3.5 h-3.5" />
@@ -3041,11 +3070,11 @@ function DashboardSettings(_props) {
                                                 value={summaryAiDraft}
                                                 onChange={(e) => setSummaryAiDraft(e.target.value)}
                                                 rows={4}
-                                                className="w-full text-xs p-3 bg-white border border-indigo-200 rounded-lg font-sans leading-relaxed text-slate-900 shadow-2xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                                                className="w-full text-xs p-3 bg-white border border-[var(--cuba-primary-line)] rounded-lg font-sans leading-relaxed text-[var(--cuba-ink)] shadow-2xs focus:border-[var(--cuba-primary-line)] focus:ring-1 focus:ring-[var(--cuba-primary-ring)] focus:outline-none"
                                                 placeholder="Review and edit the AI draft..."
                                             />
                                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-1">
-                                                <span className="text-[11px] text-slate-500 font-medium">
+                                                <span className="text-[11px] text-[var(--cuba-ink-subtle)] font-medium">
                                                     {stripHtml(summaryAiDraft).length} characters · {summaryAiDraft.trim().split(/\s+/).filter(Boolean).length} words
                                                 </span>
                                                 <div className="flex items-center gap-2">
@@ -3053,7 +3082,7 @@ function DashboardSettings(_props) {
                                                         type="button"
                                                         onClick={handleWriteAiSummary}
                                                         disabled={isAiGenerating}
-                                                        className="px-3 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
+                                                        className="px-3 py-1.5 bg-white hover:bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] text-[var(--cuba-ink-muted)] rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
                                                     >
                                                         <FaSyncAlt className={`w-3 h-3 ${isAiGenerating ? 'animate-spin' : ''}`} />
                                                         <span>Regenerate</span>
@@ -3066,7 +3095,7 @@ function DashboardSettings(_props) {
                                                             setSummaryAiDraft(null);
                                                             triggerNotification('Executive Bio applied to Master Profile!');
                                                         }}
-                                                        className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                                                        className="px-3.5 py-1.5 bg-[var(--cuba-primary)] hover:bg-[var(--cuba-primary-strong)] text-white rounded-lg text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5 cursor-pointer"
                                                     >
                                                         <FaCheck className="w-3 h-3" />
                                                         <span>Apply Bio to Profile</span>
@@ -3085,9 +3114,9 @@ function DashboardSettings(_props) {
                                             spellCheck="true"
                                             rows={7}
                                             placeholder="Who you are professionally, what you have done, and what you do well — in your own words."
-                                            className="w-full text-sm p-3.5 bg-white border border-slate-200 rounded-lg font-sans leading-relaxed text-slate-900 shadow-2xs focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/25 focus:outline-none"
+                                            className="w-full text-sm p-3.5 bg-white border border-[var(--cuba-line)] rounded-lg font-sans leading-relaxed text-[var(--cuba-ink)] shadow-2xs focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-ring)]/25 focus:outline-none"
                                         />
-                                        <div className="flex items-center justify-between text-[11px] text-slate-400 px-1 font-medium">
+                                        <div className="flex items-center justify-between text-[11px] text-[var(--cuba-ink-subtle)] px-1 font-medium">
                                             <span>{bioWordCount} words</span>
                                             <span>Recommended: 2–4 sentences (50–90 words)</span>
                                         </div>
@@ -3095,11 +3124,11 @@ function DashboardSettings(_props) {
 
                                     {/* Empty State Informational Helper */}
                                     {bioCharCount === 0 && (
-                                        <div className="p-3.5 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 text-slate-500 text-xs flex items-start gap-2.5">
-                                            <FaBolt className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
+                                        <div className="p-3.5 rounded-xl border border-dashed border-[var(--cuba-line)] bg-[var(--cuba-canvas)]/60 text-[var(--cuba-ink-subtle)] text-xs flex items-start gap-2.5">
+                                            <FaBolt className="w-4 h-4 text-[var(--cuba-primary-ink-strong)] shrink-0 mt-0.5" />
                                             <div className="space-y-0.5">
-                                                <p className="font-semibold text-slate-700">Lifelong Master Executive Bio</p>
-                                                <p className="text-[11px] text-slate-500">Your Master Executive Bio automatically pre-populates all new resumes and can be imported with 1-click in the resume builder. Use the AI button above to synthesize your profile history into an authentic overview.</p>
+                                                <p className="font-semibold text-[var(--cuba-ink-muted)]">Lifelong Master Executive Bio</p>
+                                                <p className="text-[11px] text-[var(--cuba-ink-subtle)]">Your Master Executive Bio automatically pre-populates all new resumes and can be imported with 1-click in the resume builder. Use the AI button above to synthesize your profile history into an authentic overview.</p>
                                             </div>
                                         </div>
                                     )}
@@ -3112,24 +3141,24 @@ function DashboardSettings(_props) {
                             <div className="space-y-6">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                     <div>
-                                        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Work History & Past Positions</h3>
-                                        <p className="text-xs text-slate-500">Add past employment details to pre-populate all future resumes automatically.</p>
+                                        <h3 className="text-xs font-bold text-[var(--cuba-ink)] uppercase tracking-wider">Work History & Past Positions</h3>
+                                        <p className="text-xs text-[var(--cuba-ink-subtle)]">Add past employment details to pre-populate all future resumes automatically.</p>
                                     </div>
-                                    <button type="button" onClick={addWorkExperience} className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs">
+                                    <button type="button" onClick={addWorkExperience} className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-3.5 py-2.5 bg-[var(--cuba-primary)] hover:bg-[var(--cuba-primary-strong)] text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs">
                                         <FaPlus className="w-3 h-3" /> Add Position
                                     </button>
                                 </div>
 
                                 {profile.workExperiences.length === 0 ? (
-                                    <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-2xl">
-                                        <p className="text-xs font-semibold text-slate-700 mb-1">No work history saved in Master Profile</p>
-                                        <p className="text-[11px] text-slate-500 mb-4">Click "Add Position" above or sync LinkedIn to store your experience once for all resumes.</p>
+                                    <div className="p-8 text-center bg-[var(--cuba-canvas)] border border-dashed border-[var(--cuba-line-strong)] rounded-2xl">
+                                        <p className="text-xs font-semibold text-[var(--cuba-ink-muted)] mb-1">No work history saved in Master Profile</p>
+                                        <p className="text-[11px] text-[var(--cuba-ink-subtle)] mb-4">Click "Add Position" above or sync LinkedIn to store your experience once for all resumes.</p>
                                     </div>
                                 ) : (
                                     profile.workExperiences.map((job, idx) => (
-                                        <div key={job.id || idx} className="p-5 bg-slate-50 border border-slate-200/90 rounded-2xl space-y-4">
-                                            <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
-                                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                        <div key={job.id || idx} className="p-5 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)]/90 rounded-2xl space-y-4">
+                                            <div className="flex items-center justify-between border-b border-[var(--cuba-line)]/60 pb-2">
+                                                <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--cuba-ink-subtle)]">
                                                     Position #{idx + 1}
                                                 </span>
                                                 <div className="flex items-center gap-1">
@@ -3137,7 +3166,7 @@ function DashboardSettings(_props) {
                                                         type="button"
                                                         disabled={idx === 0}
                                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('workExperiences', idx, -1); }}
-                                                        className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 disabled:hover:text-slate-500 rounded-lg hover:bg-slate-200/70 transition-all cursor-pointer text-xs font-bold"
+                                                        className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-primary-ink-strong)] disabled:opacity-30 disabled:hover:text-[var(--cuba-ink-subtle)] rounded-lg hover:bg-[var(--cuba-line)]/70 transition-all cursor-pointer text-xs font-bold"
                                                         title="Move position up">
                                                         ▲
                                                     </button>
@@ -3145,21 +3174,21 @@ function DashboardSettings(_props) {
                                                         type="button"
                                                         disabled={idx === profile.workExperiences.length - 1}
                                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('workExperiences', idx, 1); }}
-                                                        className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 disabled:hover:text-slate-500 rounded-lg hover:bg-slate-200/70 transition-all cursor-pointer text-xs font-bold"
+                                                        className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-primary-ink-strong)] disabled:opacity-30 disabled:hover:text-[var(--cuba-ink-subtle)] rounded-lg hover:bg-[var(--cuba-line)]/70 transition-all cursor-pointer text-xs font-bold"
                                                         title="Move position down">
                                                         ▼
                                                     </button>
                                                     <button
                                                         type="button"
                                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); duplicateWorkExperience(idx); }}
-                                                        className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 cursor-pointer ml-1"
+                                                        className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-primary-ink-strong)] rounded-lg hover:bg-[var(--cuba-primary-soft)] cursor-pointer ml-1"
                                                         title="Duplicate position">
                                                         <FaCopy className="w-3.5 h-3.5" />
                                                     </button>
                                                     <button
                                                         type="button"
                                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeWorkExperience(idx); }}
-                                                        className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50 cursor-pointer ml-1"
+                                                        className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-danger)] transition-colors rounded-lg hover:bg-[var(--cuba-danger-soft)] cursor-pointer ml-1"
                                                         title="Delete position">
                                                         <FaTrash className="w-3.5 h-3.5" />
                                                     </button>
@@ -3175,8 +3204,8 @@ function DashboardSettings(_props) {
                                                         onChange={(e) => updateWorkExperience(idx, 'jobTitle', e.target.value)}
                                                         placeholder="e.g. Senior Developer"
                                                         suggestionType="jobTitle"
-                                                        inputClassName="w-full text-xs p-2.5 pr-8 bg-white border border-slate-300 rounded-lg text-slate-900 font-semibold focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
-                                                        labelClassName="block text-[11px] font-bold text-slate-700 mb-1"
+                                                        inputClassName="w-full text-xs p-2.5 pr-8 bg-white border border-[var(--cuba-line-strong)] rounded-lg text-[var(--cuba-ink)] font-semibold focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-soft)] outline-none"
+                                                        labelClassName="block text-[11px] font-bold text-[var(--cuba-ink-muted)] mb-1"
                                                     />
                                                 </div>
                                                 <div>
@@ -3187,8 +3216,8 @@ function DashboardSettings(_props) {
                                                         onChange={(e) => updateWorkExperience(idx, 'company', e.target.value)}
                                                         placeholder="e.g. TechCorp"
                                                         suggestionType="company"
-                                                        inputClassName="w-full text-xs p-2.5 pr-8 bg-white border border-slate-300 rounded-lg text-slate-900 font-semibold focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
-                                                        labelClassName="block text-[11px] font-bold text-slate-700 mb-1"
+                                                        inputClassName="w-full text-xs p-2.5 pr-8 bg-white border border-[var(--cuba-line-strong)] rounded-lg text-[var(--cuba-ink)] font-semibold focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-soft)] outline-none"
+                                                        labelClassName="block text-[11px] font-bold text-[var(--cuba-ink-muted)] mb-1"
                                                     />
                                                 </div>
                                                 <div className="sm:pr-8">
@@ -3200,8 +3229,8 @@ function DashboardSettings(_props) {
                                                         onSelect={(val) => updateWorkExperience(idx, 'city', val)}
                                                         placeholder="e.g. Visakhapatnam, India"
                                                         suggestionType="city"
-                                                        inputClassName="w-full text-xs p-2.5 pr-8 bg-white border border-slate-300 rounded-lg text-slate-900 font-semibold focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
-                                                        labelClassName="block text-[11px] font-bold text-slate-700 mb-1"
+                                                        inputClassName="w-full text-xs p-2.5 pr-8 bg-white border border-[var(--cuba-line-strong)] rounded-lg text-[var(--cuba-ink)] font-semibold focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-soft)] outline-none"
+                                                        labelClassName="block text-[11px] font-bold text-[var(--cuba-ink-muted)] mb-1"
                                                     />
                                                 </div>
                                             </div>
@@ -3231,13 +3260,13 @@ function DashboardSettings(_props) {
                                             </div>
                                             <div>
                                                 <div className="flex items-center justify-between mb-2">
-                                                    <label className="block text-xs font-bold text-slate-800">Responsibilities &amp; Accomplishments</label>
+                                                    <label className="block text-xs font-bold text-[var(--cuba-ink)]">Responsibilities &amp; Accomplishments</label>
                                                     <button
                                                         type="button"
                                                         onClick={() => handleEnhanceWorkDescriptionWithAi(idx)}
                                                         disabled={isAiGenerating || !job.jobTitle}
-                                                        className="px-2.5 py-1 text-[11px] font-bold text-purple-700 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-all flex items-center gap-1 shadow-2xs cursor-pointer disabled:opacity-50">
-                                                        <FaMagic className={`w-3 h-3 text-purple-600 ${isAiGenerating ? 'animate-spin' : ''}`} />
+                                                        className="px-2.5 py-1 text-[11px] font-bold text-[var(--cuba-primary-ink-strong)] hover:text-[var(--cuba-primary-ink-strong)] bg-[var(--cuba-primary-soft)] hover:bg-[var(--cuba-primary-soft)] border border-[var(--cuba-primary-line)] rounded-lg transition-all flex items-center gap-1 shadow-2xs cursor-pointer disabled:opacity-50">
+                                                        <FaMagic className={`w-3 h-3 text-[var(--cuba-primary-ink-strong)] ${isAiGenerating ? 'animate-spin' : ''}`} />
                                                         <span>Enhance Bullets (AI)</span>
                                                     </button>
                                                 </div>
@@ -3256,7 +3285,7 @@ function DashboardSettings(_props) {
 
                                 {profile.workExperiences.length > 0 && (
                                     <div className="pt-2">
-                                        <button type="button" onClick={addWorkExperience} className="w-full py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-2xs">
+                                        <button type="button" onClick={addWorkExperience} className="w-full py-3 bg-[var(--cuba-primary-soft)] hover:bg-[var(--cuba-primary-soft)] text-[var(--cuba-primary-ink-strong)] border border-[var(--cuba-primary-line)] rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-2xs">
                                             <FaPlus className="w-3.5 h-3.5" /> Add Position
                                         </button>
                                     </div>
@@ -3269,24 +3298,24 @@ function DashboardSettings(_props) {
                             <div className="space-y-6">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                     <div>
-                                        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Education & Academic Degrees</h3>
-                                        <p className="text-xs text-slate-500">Save degrees to automatically populate education sections in resumes.</p>
+                                        <h3 className="text-xs font-bold text-[var(--cuba-ink)] uppercase tracking-wider">Education & Academic Degrees</h3>
+                                        <p className="text-xs text-[var(--cuba-ink-subtle)]">Save degrees to automatically populate education sections in resumes.</p>
                                     </div>
-                                    <button type="button" onClick={addEducation} className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs">
+                                    <button type="button" onClick={addEducation} className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-3.5 py-2.5 bg-[var(--cuba-primary)] hover:bg-[var(--cuba-primary-strong)] text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs">
                                         <FaPlus className="w-3 h-3" /> Add Degree
                                     </button>
                                 </div>
 
                                 {profile.education.length === 0 ? (
-                                    <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-2xl">
-                                        <p className="text-xs font-semibold text-slate-700 mb-1">No education entries saved in Master Profile</p>
-                                        <p className="text-[11px] text-slate-500">Click "Add Degree" to save your educational background.</p>
+                                    <div className="p-8 text-center bg-[var(--cuba-canvas)] border border-dashed border-[var(--cuba-line-strong)] rounded-2xl">
+                                        <p className="text-xs font-semibold text-[var(--cuba-ink-muted)] mb-1">No education entries saved in Master Profile</p>
+                                        <p className="text-[11px] text-[var(--cuba-ink-subtle)]">Click "Add Degree" to save your educational background.</p>
                                     </div>
                                 ) : (
                                     profile.education.map((edu, idx) => (
-                                        <div key={edu.id || idx} className="p-5 bg-slate-50 border border-slate-200/90 rounded-2xl space-y-4">
-                                            <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
-                                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                        <div key={edu.id || idx} className="p-5 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)]/90 rounded-2xl space-y-4">
+                                            <div className="flex items-center justify-between border-b border-[var(--cuba-line)]/60 pb-2">
+                                                <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--cuba-ink-subtle)]">
                                                     Degree #{idx + 1}
                                                 </span>
                                                 <div className="flex items-center gap-1">
@@ -3294,7 +3323,7 @@ function DashboardSettings(_props) {
                                                         type="button"
                                                         disabled={idx === 0}
                                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('education', idx, -1); }}
-                                                        className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 disabled:hover:text-slate-500 rounded-lg hover:bg-slate-200/70 transition-all cursor-pointer text-xs font-bold"
+                                                        className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-primary-ink-strong)] disabled:opacity-30 disabled:hover:text-[var(--cuba-ink-subtle)] rounded-lg hover:bg-[var(--cuba-line)]/70 transition-all cursor-pointer text-xs font-bold"
                                                         title="Move degree up">
                                                         ▲
                                                     </button>
@@ -3302,14 +3331,14 @@ function DashboardSettings(_props) {
                                                         type="button"
                                                         disabled={idx === profile.education.length - 1}
                                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('education', idx, 1); }}
-                                                        className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 disabled:hover:text-slate-500 rounded-lg hover:bg-slate-200/70 transition-all cursor-pointer text-xs font-bold"
+                                                        className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-primary-ink-strong)] disabled:opacity-30 disabled:hover:text-[var(--cuba-ink-subtle)] rounded-lg hover:bg-[var(--cuba-line)]/70 transition-all cursor-pointer text-xs font-bold"
                                                         title="Move degree down">
                                                         ▼
                                                     </button>
                                                     <button
                                                         type="button"
                                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeEducation(idx); }}
-                                                        className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50 cursor-pointer ml-1"
+                                                        className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-danger)] transition-colors rounded-lg hover:bg-[var(--cuba-danger-soft)] cursor-pointer ml-1"
                                                         title="Delete education degree">
                                                         <FaTrash className="w-3.5 h-3.5" />
                                                     </button>
@@ -3324,8 +3353,8 @@ function DashboardSettings(_props) {
                                                         onChange={(e) => updateEducation(idx, 'degree', e.target.value)}
                                                         placeholder="e.g. B.S. Computer Science"
                                                         suggestionType="degree"
-                                                        inputClassName="w-full text-xs p-2.5 pr-8 bg-white border border-slate-300 rounded-lg text-slate-900 font-semibold focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
-                                                        labelClassName="block text-[11px] font-bold text-slate-700 mb-1"
+                                                        inputClassName="w-full text-xs p-2.5 pr-8 bg-white border border-[var(--cuba-line-strong)] rounded-lg text-[var(--cuba-ink)] font-semibold focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-soft)] outline-none"
+                                                        labelClassName="block text-[11px] font-bold text-[var(--cuba-ink-muted)] mb-1"
                                                     />
                                                 </div>
                                                 <div>
@@ -3336,8 +3365,8 @@ function DashboardSettings(_props) {
                                                         onChange={(e) => updateEducation(idx, 'school', e.target.value)}
                                                         placeholder="e.g. Stanford University"
                                                         suggestionType="school"
-                                                        inputClassName="w-full text-xs p-2.5 pr-8 bg-white border border-slate-300 rounded-lg text-slate-900 font-semibold focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
-                                                        labelClassName="block text-[11px] font-bold text-slate-700 mb-1"
+                                                        inputClassName="w-full text-xs p-2.5 pr-8 bg-white border border-[var(--cuba-line-strong)] rounded-lg text-[var(--cuba-ink)] font-semibold focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-soft)] outline-none"
+                                                        labelClassName="block text-[11px] font-bold text-[var(--cuba-ink-muted)] mb-1"
                                                     />
                                                 </div>
                                                 <div className="sm:pr-8">
@@ -3358,18 +3387,18 @@ function DashboardSettings(_props) {
                                                         onSelect={(val) => updateEducation(idx, 'city', val)}
                                                         placeholder="e.g. Cambridge, MA"
                                                         suggestionType="city"
-                                                        inputClassName="w-full text-xs p-2.5 pr-8 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
-                                                        labelClassName="block text-[11px] font-bold text-slate-700 mb-1"
+                                                        inputClassName="w-full text-xs p-2.5 pr-8 bg-white border border-[var(--cuba-line-strong)] rounded-lg text-[var(--cuba-ink)] focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-soft)] outline-none"
+                                                        labelClassName="block text-[11px] font-bold text-[var(--cuba-ink-muted)] mb-1"
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label className="block text-[11px] font-bold text-slate-700 mb-1">GPA / Academic Honors (Optional)</label>
+                                                    <label className="block text-[11px] font-bold text-[var(--cuba-ink-muted)] mb-1">GPA / Academic Honors (Optional)</label>
                                                     <input
                                                         type="text"
                                                         value={edu.grade || edu.gpa || ''}
                                                         onChange={(e) => updateEducation(idx, 'grade', e.target.value)}
                                                         placeholder="e.g. 3.9/4.0 GPA, Summa Cum Laude"
-                                                        className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 font-semibold focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                                        className="w-full text-xs p-2.5 bg-white border border-[var(--cuba-line-strong)] rounded-lg text-[var(--cuba-ink)] font-semibold focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-soft)] outline-none"
                                                     />
                                                 </div>
                                             </div>
@@ -3379,7 +3408,7 @@ function DashboardSettings(_props) {
 
                                 {profile.education.length > 0 && (
                                     <div className="pt-2">
-                                        <button type="button" onClick={addEducation} className="w-full py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-2xs">
+                                        <button type="button" onClick={addEducation} className="w-full py-3 bg-[var(--cuba-primary-soft)] hover:bg-[var(--cuba-primary-soft)] text-[var(--cuba-primary-ink-strong)] border border-[var(--cuba-primary-line)] rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-2xs">
                                             <FaPlus className="w-3.5 h-3.5" /> Add Degree
                                         </button>
                                     </div>
@@ -3391,19 +3420,19 @@ function DashboardSettings(_props) {
                         {profileSubTab === 'skills' && (
                             <div className="space-y-5">
                                 {/* Header & Actions Toolbar (Row 1: Title & Primary Actions | Row 2: Search & View Utilities) */}
-                                <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3.5">
+                                <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[var(--cuba-line)]/90 shadow-2xs space-y-3.5">
                                     {/* Row 1: Title, Counter Badge & Primary Creation Actions */}
-                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--cuba-line)]">
                                         <div className="min-w-0">
                                             <div className="flex items-center gap-2.5 flex-wrap">
-                                                <h3 className="text-sm font-bold text-slate-900 tracking-tight whitespace-nowrap">
+                                                <h3 className="text-sm font-bold text-[var(--cuba-ink)] tracking-tight whitespace-nowrap">
                                                     Skills & Technical Competencies
                                                 </h3>
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100/80 whitespace-nowrap shrink-0">
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[var(--cuba-primary-soft)] text-[var(--cuba-primary-ink-strong)] border border-[var(--cuba-primary-line)]/80 whitespace-nowrap shrink-0">
                                                     {profile.skills.length} {profile.skills.length === 1 ? 'Skill' : 'Skills'}
                                                 </span>
                                             </div>
-                                            <p className="text-xs text-slate-500 mt-1">
+                                            <p className="text-xs text-[var(--cuba-ink-subtle)] mt-1">
                                                 Save core technical competencies and soft skills parsed by ATS screening engines.
                                             </p>
                                         </div>
@@ -3422,7 +3451,7 @@ function DashboardSettings(_props) {
                                             <button
                                                 type="button"
                                                 onClick={addSkill}
-                                                className="whitespace-nowrap px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer shrink-0">
+                                                className="whitespace-nowrap px-3.5 py-2 bg-[var(--cuba-primary)] hover:bg-[var(--cuba-primary-strong)] text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer shrink-0">
                                                 <FaPlus className="w-3 h-3" /> Add Skill
                                             </button>
                                         </div>
@@ -3432,19 +3461,19 @@ function DashboardSettings(_props) {
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                                         {/* Search / Filter Input */}
                                         <div className="relative flex-1 max-w-md">
-                                            <FaSearch className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                            <FaSearch className="w-3.5 h-3.5 text-[var(--cuba-ink-subtle)] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                                             <input
                                                 type="text"
                                                 value={skillsSearchQuery}
                                                 onChange={(e) => setSkillsSearchQuery(e.target.value)}
                                                 placeholder={profile.skills.length > 0 ? `Search across ${profile.skills.length} skills...` : "Filter skills..."}
-                                                className="w-full text-xs pl-9 pr-8 py-2 bg-slate-50/80 hover:bg-white focus:bg-white border border-slate-200/90 rounded-xl text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
+                                                className="w-full text-xs pl-9 pr-8 py-2 bg-[var(--cuba-canvas)]/80 hover:bg-white focus:bg-white border border-[var(--cuba-line)]/90 rounded-xl text-[var(--cuba-ink)] placeholder:text-[var(--cuba-ink-subtle)] focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-soft)] outline-none transition-all"
                                             />
                                             {skillsSearchQuery && (
                                                 <button
                                                     type="button"
                                                     onClick={() => setSkillsSearchQuery('')}
-                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] p-0.5 cursor-pointer"
                                                     title="Clear search">
                                                     <FaTimes className="w-3 h-3" />
                                                 </button>
@@ -3459,24 +3488,24 @@ function DashboardSettings(_props) {
                                                 onClick={() => setShowBulkSkills(prev => !prev)}
                                                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 border cursor-pointer ${
                                                     showBulkSkills || bulkSkillsInput.trim()
-                                                        ? 'bg-indigo-50 border-indigo-200 text-indigo-700 shadow-2xs font-bold'
-                                                        : 'bg-white border-slate-200 hover:border-slate-300 text-slate-700 hover:bg-slate-50'
+                                                        ? 'bg-[var(--cuba-primary-soft)] border-[var(--cuba-primary-line)] text-[var(--cuba-primary-ink-strong)] shadow-2xs font-bold'
+                                                        : 'bg-white border-[var(--cuba-line)] hover:border-[var(--cuba-line-strong)] text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-canvas)]'
                                                 }`}
                                                 title="Toggle quick bulk paste ingestion">
-                                                <FaBolt className={`w-3 h-3 ${showBulkSkills || bulkSkillsInput.trim() ? 'text-indigo-600' : 'text-amber-500'}`} />
+                                                <FaBolt className={`w-3 h-3 ${showBulkSkills || bulkSkillsInput.trim() ? 'text-[var(--cuba-primary-ink-strong)]' : 'text-[var(--cuba-warning)]'}`} />
                                                 <span>Bulk Paste</span>
                                                 {showBulkSkills ? <FaChevronUp className="w-2.5 h-2.5 opacity-60" /> : <FaChevronDown className="w-2.5 h-2.5 opacity-60" />}
                                             </button>
 
                                             {/* View Mode Switcher */}
-                                            <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200/80">
+                                            <div className="flex items-center bg-[var(--cuba-canvas)] p-0.5 rounded-xl border border-[var(--cuba-line)]/80">
                                                 <button
                                                     type="button"
                                                     onClick={() => setSkillsViewMode('grid')}
                                                     className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                                                         skillsViewMode === 'grid'
-                                                            ? 'bg-white text-indigo-700 shadow-2xs'
-                                                            : 'text-slate-600 hover:text-slate-900'
+                                                            ? 'bg-white text-[var(--cuba-primary-ink-strong)] shadow-2xs'
+                                                            : 'text-[var(--cuba-ink-muted)] hover:text-[var(--cuba-ink)]'
                                                     }`}
                                                     title="Cards View (Detailed view with proficiency controls)">
                                                     <FaThLarge className="w-3 h-3" />
@@ -3487,8 +3516,8 @@ function DashboardSettings(_props) {
                                                     onClick={() => setSkillsViewMode('compact')}
                                                     className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                                                         skillsViewMode === 'compact'
-                                                            ? 'bg-white text-indigo-700 shadow-2xs'
-                                                            : 'text-slate-600 hover:text-slate-900'
+                                                            ? 'bg-white text-[var(--cuba-primary-ink-strong)] shadow-2xs'
+                                                            : 'text-[var(--cuba-ink-muted)] hover:text-[var(--cuba-ink)]'
                                                     }`}
                                                     title="Compact Tags View (High-density overview of all skills)">
                                                     <FaTags className="w-3 h-3" />
@@ -3501,16 +3530,16 @@ function DashboardSettings(_props) {
 
                                 {/* Collapsible Bulk Skills Ingestion Drawer */}
                                 {(showBulkSkills || bulkSkillsInput.trim()) && (
-                                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5 transition-all">
+                                    <div className="p-4 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-2xl space-y-2.5 transition-all">
                                         <div className="flex items-center justify-between">
-                                            <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                                            <label className="block text-[11px] font-bold text-[var(--cuba-ink-muted)] uppercase tracking-wider flex items-center gap-1.5">
                                                 <span>⚡ Quick Bulk Paste Ingestion</span>
-                                                <span className="text-[10px] text-slate-500 font-normal lowercase">(comma, semicolon, or newline separated)</span>
+                                                <span className="text-[10px] text-[var(--cuba-ink-subtle)] font-normal lowercase">(comma, semicolon, or newline separated)</span>
                                             </label>
                                             <button
                                                 type="button"
                                                 onClick={() => setShowBulkSkills(false)}
-                                                className="text-[11px] font-semibold text-slate-400 hover:text-slate-600 cursor-pointer">
+                                                className="text-[11px] font-semibold text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] cursor-pointer">
                                                 Hide
                                             </button>
                                         </div>
@@ -3525,13 +3554,13 @@ function DashboardSettings(_props) {
                                                     }
                                                 }}
                                                 placeholder="Paste multiple skills at once (e.g. React.js, TypeScript, Node.js, Docker, Kubernetes, Clinical Leadership)..."
-                                                className="flex-1 text-xs p-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none resize-none h-14"
+                                                className="flex-1 text-xs p-2.5 bg-white border border-[var(--cuba-line-strong)] rounded-xl text-[var(--cuba-ink)] focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-soft)] outline-none resize-none h-14"
                                             />
                                             <button
                                                 type="button"
                                                 onClick={handleBulkSkillAdd}
                                                 disabled={!bulkSkillsInput.trim()}
-                                                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs shrink-0 cursor-pointer h-14"
+                                                className="px-4 py-2 bg-[var(--cuba-primary)] hover:bg-[var(--cuba-primary-strong)] disabled:opacity-40 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs shrink-0 cursor-pointer h-14"
                                             >
                                                 <FaPlus className="w-3.5 h-3.5" /> Add All
                                             </button>
@@ -3542,30 +3571,30 @@ function DashboardSettings(_props) {
 
                                 {/* Skills Presentation: Empty State vs Cards vs Compact Tags */}
                                 {profile.skills.length === 0 ? (
-                                    <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-2xl space-y-3">
-                                        <p className="text-xs font-semibold text-slate-700">No skills saved in Master Profile</p>
+                                    <div className="p-8 text-center bg-[var(--cuba-canvas)] border border-dashed border-[var(--cuba-line-strong)] rounded-2xl space-y-3">
+                                        <p className="text-xs font-semibold text-[var(--cuba-ink-muted)]">No skills saved in Master Profile</p>
                                         <div className="flex items-center justify-center gap-2">
                                             <button
                                                 type="button"
                                                 onClick={handleRecommendAiSkills}
                                                 disabled={isAiGenerating}
-                                                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer">
+                                                className="px-4 py-2 bg-[var(--cuba-primary)] hover:bg-[var(--cuba-primary-strong)] text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer">
                                                 <FaMagic className={`w-3.5 h-3.5 ${isAiGenerating ? 'animate-spin' : ''}`} />
                                                 <span>Auto-Recommend Top Skills (AI)</span>
                                             </button>
-                                            <button type="button" onClick={addSkill} className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl text-xs font-bold cursor-pointer">
+                                            <button type="button" onClick={addSkill} className="px-4 py-2 bg-[var(--cuba-line)] hover:bg-[var(--cuba-line-strong)] text-[var(--cuba-ink)] rounded-xl text-xs font-bold cursor-pointer">
                                                 Add Skill
                                             </button>
                                         </div>
                                     </div>
                                 ) : skillsViewMode === 'compact' ? (
                                     /* High-Density Compact Tags / Quick View */
-                                    <div className="p-4 bg-slate-50 border border-slate-200/90 rounded-2xl space-y-3">
+                                    <div className="p-4 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)]/90 rounded-2xl space-y-3">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                            <span className="text-xs font-bold text-[var(--cuba-ink-muted)] uppercase tracking-wider">
                                                 Quick Skill Matrix ({profile.skills.length})
                                             </span>
-                                            <span className="text-[11px] text-slate-500">
+                                            <span className="text-[11px] text-[var(--cuba-ink-subtle)]">
                                                 Click badge to cycle level • Reorder with arrows • Click × to delete
                                             </span>
                                         </div>
@@ -3581,19 +3610,19 @@ function DashboardSettings(_props) {
                                                     const idx = skill.originalIndex;
                                                     const currentLvl = skill.level || 'Intermediate';
                                                     const lvlColors = {
-                                                        expert: 'bg-indigo-100 text-indigo-800 border-indigo-200',
-                                                        advanced: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-                                                        intermediate: 'bg-sky-100 text-sky-800 border-sky-200',
-                                                        beginner: 'bg-slate-200 text-slate-700 border-slate-300'
-                                                    }[currentLvl.toLowerCase()] || 'bg-indigo-100 text-indigo-800 border-indigo-200';
+                                                        expert: 'bg-[var(--cuba-primary-soft)] text-[var(--cuba-primary-ink-strong)] border-[var(--cuba-primary-line)]',
+                                                        advanced: 'bg-[var(--cuba-success-soft)] text-[var(--cuba-success)] border-[var(--cuba-success-soft)]',
+                                                        intermediate: 'bg-[var(--cuba-info-soft)] text-[var(--cuba-info)] border-[var(--cuba-info-soft)]',
+                                                        beginner: 'bg-[var(--cuba-line)] text-[var(--cuba-ink-muted)] border-[var(--cuba-line-strong)]'
+                                                    }[currentLvl.toLowerCase()] || 'bg-[var(--cuba-primary-soft)] text-[var(--cuba-primary-ink-strong)] border-[var(--cuba-primary-line)]';
 
                                                     return (
                                                         <div
                                                             key={skill.id || idx}
-                                                            className="group inline-flex items-center gap-2 pl-3 pr-2 py-1.5 bg-white border border-slate-200 hover:border-indigo-300 rounded-xl shadow-2xs transition-all"
+                                                            className="group inline-flex items-center gap-2 pl-3 pr-2 py-1.5 bg-white border border-[var(--cuba-line)] hover:border-[var(--cuba-primary-line)] rounded-xl shadow-2xs transition-all"
                                                         >
-                                                            <span className="text-xs font-semibold text-slate-900">
-                                                                {skill.name || <span className="text-slate-400 italic">Untitled Skill</span>}
+                                                            <span className="text-xs font-semibold text-[var(--cuba-ink)]">
+                                                                {skill.name || <span className="text-[var(--cuba-ink-subtle)] italic">Untitled Skill</span>}
                                                             </span>
                                                             <button
                                                                 type="button"
@@ -3608,7 +3637,7 @@ function DashboardSettings(_props) {
                                                                     type="button"
                                                                     disabled={idx === 0}
                                                                     onClick={() => moveItem('skills', idx, -1)}
-                                                                    className="w-4 h-4 flex items-center justify-center text-slate-400 hover:text-indigo-600 disabled:opacity-20 text-[9px] cursor-pointer"
+                                                                    className="w-4 h-4 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-primary-ink-strong)] disabled:opacity-20 text-[9px] cursor-pointer"
                                                                     title="Move up"
                                                                 >
                                                                     ▲
@@ -3617,7 +3646,7 @@ function DashboardSettings(_props) {
                                                                     type="button"
                                                                     disabled={idx === profile.skills.length - 1}
                                                                     onClick={() => moveItem('skills', idx, 1)}
-                                                                    className="w-4 h-4 flex items-center justify-center text-slate-400 hover:text-indigo-600 disabled:opacity-20 text-[9px] cursor-pointer"
+                                                                    className="w-4 h-4 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-primary-ink-strong)] disabled:opacity-20 text-[9px] cursor-pointer"
                                                                     title="Move down"
                                                                 >
                                                                     ▼
@@ -3625,7 +3654,7 @@ function DashboardSettings(_props) {
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => removeSkill(idx)}
-                                                                    className="w-4 h-4 flex items-center justify-center text-slate-400 hover:text-red-600 ml-0.5 cursor-pointer"
+                                                                    className="w-4 h-4 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-danger)] ml-0.5 cursor-pointer"
                                                                     title="Delete skill"
                                                                 >
                                                                     <FaTimes className="w-2.5 h-2.5" />
@@ -3637,7 +3666,7 @@ function DashboardSettings(_props) {
                                             <button
                                                 type="button"
                                                 onClick={addSkill}
-                                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-dashed border-indigo-300 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-[var(--cuba-primary-soft)] hover:bg-[var(--cuba-primary-soft)] text-[var(--cuba-primary-ink-strong)] border border-dashed border-[var(--cuba-primary-line)] rounded-xl text-xs font-bold transition-all cursor-pointer"
                                             >
                                                 <FaPlus className="w-2.5 h-2.5" /> Add Skill
                                             </button>
@@ -3659,7 +3688,7 @@ function DashboardSettings(_props) {
                                                 return (
                                                     <div
                                                         key={skill.id || idx}
-                                                        className="group relative p-3.5 bg-white hover:bg-slate-50/50 border border-slate-200/90 hover:border-indigo-200 rounded-2xl transition-all shadow-2xs hover:shadow-xs space-y-2.5"
+                                                        className="group relative p-3.5 bg-white hover:bg-[var(--cuba-canvas)]/50 border border-[var(--cuba-line)]/90 hover:border-[var(--cuba-primary-line)] rounded-2xl transition-all shadow-2xs hover:shadow-xs space-y-2.5"
                                                     >
                                                         {/* Header: Skill Name Input with Autocomplete + Compact Action Pod */}
                                                         <div className="flex items-center gap-2">
@@ -3671,15 +3700,15 @@ function DashboardSettings(_props) {
                                                                     onChange={(e) => updateSkill(idx, 'name', e.target.value)}
                                                                     placeholder="Skill name (e.g. React.js, Python, Medical Leadership)"
                                                                     suggestionType="skill"
-                                                                    inputClassName="w-full text-xs p-2.5 pr-8 bg-slate-50/70 hover:bg-white focus:bg-white border border-slate-200 focus:border-indigo-500 rounded-xl font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
+                                                                    inputClassName="w-full text-xs p-2.5 pr-8 bg-[var(--cuba-canvas)]/70 hover:bg-white focus:bg-white border border-[var(--cuba-line)] focus:border-[var(--cuba-primary-line)] rounded-xl font-semibold text-[var(--cuba-ink)] focus:ring-2 focus:ring-[var(--cuba-primary-soft)] outline-none transition-all"
                                                                 />
                                                             </div>
-                                                            <div className="flex items-center gap-0.5 shrink-0 bg-slate-100/90 p-0.5 rounded-xl border border-slate-200/70">
+                                                            <div className="flex items-center gap-0.5 shrink-0 bg-[var(--cuba-canvas)]/90 p-0.5 rounded-xl border border-[var(--cuba-line)]/70">
                                                                 <button
                                                                     type="button"
                                                                     disabled={idx === 0}
                                                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('skills', idx, -1); }}
-                                                                    className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-indigo-600 disabled:opacity-20 rounded-lg hover:bg-white text-[10px] font-bold transition-all cursor-pointer"
+                                                                    className="w-6 h-6 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-primary-ink-strong)] disabled:opacity-20 rounded-lg hover:bg-white text-[10px] font-bold transition-all cursor-pointer"
                                                                     title="Move skill up">
                                                                     ▲
                                                                 </button>
@@ -3687,14 +3716,14 @@ function DashboardSettings(_props) {
                                                                     type="button"
                                                                     disabled={idx === profile.skills.length - 1}
                                                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('skills', idx, 1); }}
-                                                                    className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-indigo-600 disabled:opacity-20 rounded-lg hover:bg-white text-[10px] font-bold transition-all cursor-pointer"
+                                                                    className="w-6 h-6 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-primary-ink-strong)] disabled:opacity-20 rounded-lg hover:bg-white text-[10px] font-bold transition-all cursor-pointer"
                                                                     title="Move skill down">
                                                                     ▼
                                                                 </button>
                                                                 <button
                                                                     type="button"
                                                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeSkill(idx); }}
-                                                                    className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                                                                    className="w-6 h-6 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-danger)] hover:bg-[var(--cuba-danger-soft)] rounded-lg transition-colors cursor-pointer"
                                                                     title="Delete skill">
                                                                     <FaTrash className="w-2.5 h-2.5" />
                                                                 </button>
@@ -3704,13 +3733,13 @@ function DashboardSettings(_props) {
                                                         {/* Proficiency Level Segmented Control */}
                                                         <div className="space-y-1">
                                                             <div className="flex items-center justify-between text-[11px] px-1">
-                                                                <span className="font-semibold text-slate-400 text-[10px] uppercase tracking-wider">Proficiency</span>
-                                                                <span className="text-[10px] font-bold text-indigo-600 flex items-center gap-1">
-                                                                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block" />
+                                                                <span className="font-semibold text-[var(--cuba-ink-subtle)] text-[10px] uppercase tracking-wider">Proficiency</span>
+                                                                <span className="text-[10px] font-bold text-[var(--cuba-primary-ink-strong)] flex items-center gap-1">
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--cuba-primary)] inline-block" />
                                                                     {currentLvl}
                                                                 </span>
                                                             </div>
-                                                            <div className="grid grid-cols-4 gap-1 p-0.5 bg-slate-100/80 rounded-xl border border-slate-200/60">
+                                                            <div className="grid grid-cols-4 gap-1 p-0.5 bg-[var(--cuba-canvas)]/80 rounded-xl border border-[var(--cuba-line)]/60">
                                                                 {['Beginner', 'Intermediate', 'Advanced', 'Expert'].map((lvl) => {
                                                                     const isSelected = currentLvl.toLowerCase() === lvl.toLowerCase();
                                                                     return (
@@ -3720,8 +3749,8 @@ function DashboardSettings(_props) {
                                                                             onClick={() => updateSkill(idx, 'level', lvl)}
                                                                             className={`py-1 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer ${
                                                                                 isSelected
-                                                                                    ? 'bg-indigo-600 text-white shadow-2xs'
-                                                                                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+                                                                                    ? 'bg-[var(--cuba-primary)] text-white shadow-2xs'
+                                                                                    : 'text-[var(--cuba-ink-muted)] hover:text-[var(--cuba-ink)] hover:bg-white/80'
                                                                             }`}
                                                                         >
                                                                             {lvl}
@@ -3747,7 +3776,7 @@ function DashboardSettings(_props) {
                                             <FaMagic className={`w-3.5 h-3.5 ${isAiGenerating ? 'animate-spin' : ''}`} />
                                             <span>Auto-Recommend Skills (AI)</span>
                                         </button>
-                                        <button type="button" onClick={addSkill} className="flex-1 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer">
+                                        <button type="button" onClick={addSkill} className="flex-1 py-3 bg-[var(--cuba-primary-soft)] hover:bg-[var(--cuba-primary-soft)] text-[var(--cuba-primary-ink-strong)] border border-[var(--cuba-primary-line)] rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer">
                                             <FaPlus className="w-3.5 h-3.5" /> Add Skill
                                         </button>
                                     </div>
@@ -3762,8 +3791,8 @@ function DashboardSettings(_props) {
                                 {/* Header / Action Toolbar */}
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                     <div>
-                                        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Professional Certifications &amp; Credentials</h3>
-                                        <p className="text-xs text-slate-500">Industry credentials, verified licenses, and professional certifications you hold.</p>
+                                        <h3 className="text-xs font-bold text-[var(--cuba-ink)] uppercase tracking-wider">Professional Certifications &amp; Credentials</h3>
+                                        <p className="text-xs text-[var(--cuba-ink-subtle)]">Industry credentials, verified licenses, and professional certifications you hold.</p>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <button
@@ -3780,9 +3809,9 @@ function DashboardSettings(_props) {
                                         <button
                                             type="button"
                                             onClick={addCertification}
-                                            className="h-9 px-3.5 rounded-xl bg-white hover:bg-indigo-50/50 border border-slate-300 hover:border-indigo-300 text-slate-800 hover:text-indigo-700 text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+                                            className="h-9 px-3.5 rounded-xl bg-white hover:bg-[var(--cuba-primary-soft)]/50 border border-[var(--cuba-line-strong)] hover:border-[var(--cuba-primary-line)] text-[var(--cuba-ink)] hover:text-[var(--cuba-primary-ink-strong)] text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
                                         >
-                                            <MdAdd className="w-4 h-4 text-indigo-600" />
+                                            <MdAdd className="w-4 h-4 text-[var(--cuba-primary-ink-strong)]" />
                                             <span>Add Credential</span>
                                         </button>
                                     </div>
@@ -3793,19 +3822,19 @@ function DashboardSettings(_props) {
                                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
                                         {/* Live Search */}
                                         <div className="relative flex-1 max-w-sm">
-                                            <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                            <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--cuba-ink-subtle)]" />
                                             <input
                                                 type="text"
                                                 value={certSearchQuery}
                                                 onChange={(e) => setCertSearchQuery(e.target.value)}
                                                 placeholder="Search credentials, issuers, or IDs..."
-                                                className="w-full h-9 pl-9 pr-8 text-xs bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                                                className="w-full h-9 pl-9 pr-8 text-xs bg-white border border-[var(--cuba-line)] rounded-xl focus:border-[var(--cuba-primary-line)] focus:ring-1 focus:ring-[var(--cuba-primary-ring)] transition-all"
                                             />
                                             {certSearchQuery && (
                                                 <button
                                                     type="button"
                                                     onClick={() => setCertSearchQuery('')}
-                                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] cursor-pointer"
                                                 >
                                                     <MdClose className="w-3.5 h-3.5" />
                                                 </button>
@@ -3819,8 +3848,8 @@ function DashboardSettings(_props) {
                                                 onClick={() => setCertTypeFilter('all')}
                                                 className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
                                                     certTypeFilter === 'all'
-                                                        ? 'bg-slate-800 text-white'
-                                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                        ? 'bg-[var(--cuba-ink)] text-white'
+                                                        : 'bg-[var(--cuba-canvas)] text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-line)]'
                                                 }`}
                                             >
                                                 All ({(profile.certifications || []).length})
@@ -3835,8 +3864,8 @@ function DashboardSettings(_props) {
                                                         onClick={() => setCertTypeFilter(t.id)}
                                                         className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
                                                             certTypeFilter === t.id
-                                                                ? 'bg-indigo-600 text-white'
-                                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                                ? 'bg-[var(--cuba-primary)] text-white'
+                                                                : 'bg-[var(--cuba-canvas)] text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-line)]'
                                                         }`}
                                                     >
                                                         {t.label} ({count})
@@ -3849,13 +3878,13 @@ function DashboardSettings(_props) {
 
                                 {/* Credentials Cards List */}
                                 {(profile.certifications || []).length === 0 ? (
-                                    <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-2xl space-y-3">
-                                        <div className="w-10 h-10 mx-auto rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+                                    <div className="p-8 text-center bg-[var(--cuba-canvas)] border border-dashed border-[var(--cuba-line-strong)] rounded-2xl space-y-3">
+                                        <div className="w-10 h-10 mx-auto rounded-full bg-[var(--cuba-primary-soft)] border border-[var(--cuba-primary-line)] flex items-center justify-center text-[var(--cuba-primary-ink-strong)]">
                                             <FaCertificate className="w-5 h-5" />
                                         </div>
                                         <div>
-                                            <p className="text-xs font-bold text-slate-800 mb-0.5">No certifications saved in Master Profile</p>
-                                            <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                                            <p className="text-xs font-bold text-[var(--cuba-ink)] mb-0.5">No certifications saved in Master Profile</p>
+                                            <p className="text-[11px] text-[var(--cuba-ink-subtle)] max-w-sm mx-auto">
                                                 Add accredited certifications, state/national licenses, registrations, or completed courses.
                                             </p>
                                         </div>
@@ -3872,9 +3901,9 @@ function DashboardSettings(_props) {
                                             <button
                                                 type="button"
                                                 onClick={addCertification}
-                                                className="px-3.5 py-2 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+                                                className="px-3.5 py-2 rounded-xl bg-white border border-[var(--cuba-line-strong)] hover:bg-[var(--cuba-canvas)] text-[var(--cuba-ink-muted)] text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
                                             >
-                                                <MdAdd className="w-3.5 h-3.5 text-indigo-600" />
+                                                <MdAdd className="w-3.5 h-3.5 text-[var(--cuba-primary-ink-strong)]" />
                                                 <span>Add Credential</span>
                                             </button>
                                         </div>
@@ -3902,12 +3931,12 @@ function DashboardSettings(_props) {
 
                                         if (certList.length === 0 && (profile.certifications || []).length > 0) {
                                             return (
-                                                <div className="p-8 text-center bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
-                                                    <p className="text-xs font-bold text-slate-700">No credentials match your filter criteria.</p>
+                                                <div className="p-8 text-center bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-2xl space-y-2">
+                                                    <p className="text-xs font-bold text-[var(--cuba-ink-muted)]">No credentials match your filter criteria.</p>
                                                     <button
                                                         type="button"
                                                         onClick={() => { setCertSearchQuery(''); setCertTypeFilter('all'); }}
-                                                        className="text-xs font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer"
+                                                        className="text-xs font-bold text-[var(--cuba-primary-ink-strong)] hover:text-[var(--cuba-primary-ink-strong)] cursor-pointer"
                                                     >
                                                         Reset filters
                                                     </button>
@@ -3935,19 +3964,19 @@ function DashboardSettings(_props) {
                                             return (
                                                 <div
                                                     key={cert.id || idx}
-                                                    className="p-5 bg-white border border-slate-200/90 rounded-2xl space-y-4 hover:border-slate-300 shadow-2xs hover:shadow-xs transition-all"
+                                                    className="p-5 bg-white border border-[var(--cuba-line)]/90 rounded-2xl space-y-4 hover:border-[var(--cuba-line-strong)] shadow-2xs hover:shadow-xs transition-all"
                                                 >
                                                     {/* Card Header */}
-                                                    <div className="flex items-center justify-between border-b border-slate-200/70 pb-3">
+                                                    <div className="flex items-center justify-between border-b border-[var(--cuba-line)]/70 pb-3">
                                                         <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                                                            <span className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-700 font-extrabold flex items-center justify-center text-xs shrink-0 border border-indigo-100/80">
+                                                            <span className="w-7 h-7 rounded-lg bg-[var(--cuba-primary-soft)] text-[var(--cuba-primary-ink-strong)] font-extrabold flex items-center justify-center text-xs shrink-0 border border-[var(--cuba-primary-line)]/80">
                                                                 #{idx + 1}
                                                             </span>
                                                             <div className="min-w-0">
-                                                                <h4 className="text-xs font-bold text-slate-900 truncate">
+                                                                <h4 className="text-xs font-bold text-[var(--cuba-ink)] truncate">
                                                                     {certTitle || 'Untitled Credential'}
                                                                 </h4>
-                                                                <p className="text-[11px] text-slate-500 truncate">
+                                                                <p className="text-[11px] text-[var(--cuba-ink-subtle)] truncate">
                                                                     {subtitle}
                                                                 </p>
                                                             </div>
@@ -3962,7 +3991,7 @@ function DashboardSettings(_props) {
                                                                 type="button"
                                                                 disabled={idx === 0}
                                                                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('certifications', idx, -1); }}
-                                                                className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-100 text-xs font-bold transition-colors cursor-pointer"
+                                                                className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-primary-ink-strong)] disabled:opacity-30 rounded-lg hover:bg-[var(--cuba-canvas)] text-xs font-bold transition-colors cursor-pointer"
                                                                 title="Move credential up"
                                                             >
                                                                 ▲
@@ -3971,7 +4000,7 @@ function DashboardSettings(_props) {
                                                                 type="button"
                                                                 disabled={idx === (profile.certifications || []).length - 1}
                                                                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('certifications', idx, 1); }}
-                                                                className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-100 text-xs font-bold transition-colors cursor-pointer"
+                                                                className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-primary-ink-strong)] disabled:opacity-30 rounded-lg hover:bg-[var(--cuba-canvas)] text-xs font-bold transition-colors cursor-pointer"
                                                                 title="Move credential down"
                                                             >
                                                                 ▼
@@ -3979,7 +4008,7 @@ function DashboardSettings(_props) {
                                                             <button
                                                                 type="button"
                                                                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); duplicateCertification(idx); }}
-                                                                className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
+                                                                className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-primary-ink-strong)] hover:bg-[var(--cuba-primary-soft)] rounded-lg transition-colors cursor-pointer"
                                                                 title="Duplicate credential"
                                                             >
                                                                 <MdContentCopy className="w-3.5 h-3.5" />
@@ -3987,7 +4016,7 @@ function DashboardSettings(_props) {
                                                             <button
                                                                 type="button"
                                                                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeCertification(idx); }}
-                                                                className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer ml-0.5"
+                                                                className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-danger)] hover:bg-[var(--cuba-danger-soft)] rounded-lg transition-colors cursor-pointer ml-0.5"
                                                                 title="Delete credential"
                                                             >
                                                                 <MdDeleteOutline className="w-4 h-4" />
@@ -3999,7 +4028,7 @@ function DashboardSettings(_props) {
                                                     <div className="space-y-4 pt-1">
                                                         {/* Row 1: Credential Type Selector Pills */}
                                                         <div className="space-y-1.5">
-                                                            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
+                                                            <label className="block text-xs font-bold uppercase tracking-wider text-[var(--cuba-ink-muted)]">
                                                                 Credential Classification
                                                             </label>
                                                             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
@@ -4016,8 +4045,8 @@ function DashboardSettings(_props) {
                                                                             }}
                                                                             className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                                                                                 isSelected
-                                                                                    ? `${type.badgeClass} ring-2 ring-indigo-500/20 shadow-xs`
-                                                                                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                                                                    ? `${type.badgeClass} ring-2 ring-[var(--cuba-primary-ring)]/20 shadow-xs`
+                                                                                    : 'bg-white border-[var(--cuba-line)] text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-canvas)]'
                                                                             }`}
                                                                         >
                                                                             <Icon className="w-3.5 h-3.5" />
@@ -4096,7 +4125,7 @@ function DashboardSettings(_props) {
                                                                             href={cert.url || cert.link}
                                                                             target="_blank"
                                                                             rel="noreferrer"
-                                                                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
+                                                                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--cuba-primary-ink-strong)] hover:text-[var(--cuba-primary-ink-strong)] transition-colors"
                                                                         >
                                                                             <span>Test live URL</span>
                                                                             <MdLaunch className="w-3.5 h-3.5" />
@@ -4117,9 +4146,9 @@ function DashboardSettings(_props) {
                                     <button
                                         type="button"
                                         onClick={addCertification}
-                                        className="w-full h-11 rounded-2xl border border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/40 text-sm font-bold text-slate-700 hover:text-indigo-700 flex items-center justify-center gap-2 transition-all shadow-2xs cursor-pointer"
+                                        className="w-full h-11 rounded-2xl border border-dashed border-[var(--cuba-line-strong)] hover:border-[var(--cuba-primary-line)] hover:bg-[var(--cuba-primary-soft)]/40 text-sm font-bold text-[var(--cuba-ink-muted)] hover:text-[var(--cuba-primary-ink-strong)] flex items-center justify-center gap-2 transition-all shadow-2xs cursor-pointer"
                                     >
-                                        <MdAdd className="w-4 h-4 text-indigo-600" />
+                                        <MdAdd className="w-4 h-4 text-[var(--cuba-primary-ink-strong)]" />
                                         <span>Add Another Credential</span>
                                     </button>
                                 )}
@@ -4131,10 +4160,10 @@ function DashboardSettings(_props) {
                             <div className="space-y-6">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                     <div>
-                                        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Languages & Proficiency</h3>
-                                        <p className="text-xs text-slate-500">Add languages you speak and your level of proficiency.</p>
+                                        <h3 className="text-xs font-bold text-[var(--cuba-ink)] uppercase tracking-wider">Languages & Proficiency</h3>
+                                        <p className="text-xs text-[var(--cuba-ink-subtle)]">Add languages you speak and your level of proficiency.</p>
                                     </div>
-                                    <button type="button" onClick={addLanguage} className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs">
+                                    <button type="button" onClick={addLanguage} className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-3.5 py-2.5 bg-[var(--cuba-primary)] hover:bg-[var(--cuba-primary-strong)] text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs">
                                         <FaPlus className="w-3 h-3" /> Add Language
                                     </button>
                                 </div>
@@ -4147,7 +4176,7 @@ function DashboardSettings(_props) {
                                                 key={lang}
                                                 type="button"
                                                 onClick={() => setProfile((prev) => ({ ...prev, languages: [...prev.languages, { id: `lang_${Date.now()}`, name: lang, level: '' }] }))}
-                                                className="px-3 py-1.5 text-[11px] font-semibold bg-slate-100 hover:bg-indigo-100 hover:text-indigo-700 text-slate-700 rounded-lg border border-slate-200 hover:border-indigo-300 transition-all"
+                                                className="px-3 py-1.5 text-[11px] font-semibold bg-[var(--cuba-canvas)] hover:bg-[var(--cuba-primary-soft)] hover:text-[var(--cuba-primary-ink-strong)] text-[var(--cuba-ink-muted)] rounded-lg border border-[var(--cuba-line)] hover:border-[var(--cuba-primary-line)] transition-all"
                                             >
                                                 + {lang}
                                             </button>
@@ -4156,15 +4185,15 @@ function DashboardSettings(_props) {
                                 )}
 
                                 {profile.languages.length === 0 ? (
-                                    <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-2xl">
+                                    <div className="p-8 text-center bg-[var(--cuba-canvas)] border border-dashed border-[var(--cuba-line-strong)] rounded-2xl">
                                         <p className="text-2xl mb-2">🌐</p>
-                                        <p className="text-xs font-semibold text-slate-700 mb-1">No languages saved in Master Profile</p>
-                                        <p className="text-[11px] text-slate-500">Click "Add Language" or tap a language pill above.</p>
+                                        <p className="text-xs font-semibold text-[var(--cuba-ink-muted)] mb-1">No languages saved in Master Profile</p>
+                                        <p className="text-[11px] text-[var(--cuba-ink-subtle)]">Click "Add Language" or tap a language pill above.</p>
                                     </div>
                                 ) : (
                                     <div className="space-y-3">
                                         {profile.languages.map((lang, idx) => (
-                                            <div key={lang.id || idx} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center gap-4">
+                                            <div key={lang.id || idx} className="p-4 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-2xl flex items-center gap-4">
                                                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                     <AutocompleteInputField
                                                         hideLabel
@@ -4173,12 +4202,12 @@ function DashboardSettings(_props) {
                                                         onChange={(e) => updateLanguage(idx, 'name', e.target.value)}
                                                         placeholder="Language (e.g. English)"
                                                         suggestionType="language"
-                                                        inputClassName="w-full text-xs p-2.5 pr-8 bg-white border border-slate-300 rounded-lg font-semibold text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                                        inputClassName="w-full text-xs p-2.5 pr-8 bg-white border border-[var(--cuba-line-strong)] rounded-lg font-semibold text-[var(--cuba-ink)] focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-soft)] outline-none"
                                                     />
                                                     <select
                                                         value={lang.level || ''}
                                                         onChange={(e) => updateLanguage(idx, 'level', e.target.value)}
-                                                        className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                                        className="w-full text-xs p-2.5 bg-white border border-[var(--cuba-line-strong)] rounded-lg text-[var(--cuba-ink)] focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-soft)] outline-none"
                                                     >
                                                         <option value="" disabled>Select your proficiency</option>
                                                         {PROFICIENCY_LEVELS.map((lvl) => (
@@ -4191,7 +4220,7 @@ function DashboardSettings(_props) {
                                                         type="button"
                                                         disabled={idx === 0}
                                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('languages', idx, -1); }}
-                                                        className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-200/70 text-xs font-bold"
+                                                        className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-primary-ink-strong)] disabled:opacity-30 rounded-lg hover:bg-[var(--cuba-line)]/70 text-xs font-bold"
                                                         title="Move language up">
                                                         ▲
                                                     </button>
@@ -4199,14 +4228,14 @@ function DashboardSettings(_props) {
                                                         type="button"
                                                         disabled={idx === profile.languages.length - 1}
                                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('languages', idx, 1); }}
-                                                        className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-200/70 text-xs font-bold"
+                                                        className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-primary-ink-strong)] disabled:opacity-30 rounded-lg hover:bg-[var(--cuba-line)]/70 text-xs font-bold"
                                                         title="Move language down">
                                                         ▼
                                                     </button>
                                                     <button
                                                         type="button"
                                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeLanguage(idx); }}
-                                                        className="w-8 h-8 flex items-center justify-center bg-white hover:bg-red-50 text-slate-400 hover:text-red-600 border border-slate-200 hover:border-red-200 rounded-xl transition-all cursor-pointer flex-shrink-0"
+                                                        className="w-8 h-8 flex items-center justify-center bg-white hover:bg-[var(--cuba-danger-soft)] text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-danger)] border border-[var(--cuba-line)] hover:border-[var(--cuba-danger-soft)] rounded-xl transition-all cursor-pointer flex-shrink-0"
                                                         title="Delete language">
                                                         <FaTrash className="w-3.5 h-3.5" />
                                                     </button>
@@ -4218,7 +4247,7 @@ function DashboardSettings(_props) {
 
                                 {profile.languages.length > 0 && (
                                     <div className="pt-2">
-                                        <button type="button" onClick={addLanguage} className="w-full py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-2xs">
+                                        <button type="button" onClick={addLanguage} className="w-full py-3 bg-[var(--cuba-primary-soft)] hover:bg-[var(--cuba-primary-soft)] text-[var(--cuba-primary-ink-strong)] border border-[var(--cuba-primary-line)] rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-2xs">
                                             <FaPlus className="w-3.5 h-3.5" /> Add Language
                                         </button>
                                     </div>
@@ -4231,21 +4260,21 @@ function DashboardSettings(_props) {
                             <div className="space-y-6">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                     <div>
-                                        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Hobbies &amp; Personal Interests</h3>
-                                        <p className="text-xs text-slate-500">Showcase your passions, sports, or creative activities to add personality to your resume.</p>
+                                        <h3 className="text-xs font-bold text-[var(--cuba-ink)] uppercase tracking-wider">Hobbies &amp; Personal Interests</h3>
+                                        <p className="text-xs text-[var(--cuba-ink-subtle)]">Showcase your passions, sports, or creative activities to add personality to your resume.</p>
                                     </div>
                                 </div>
 
                                 {/* Quick-add pills */}
                                 <div className="space-y-2">
-                                    <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider">Quick Add Popular Hobbies</label>
+                                    <label className="block text-[11px] font-bold text-[var(--cuba-ink-muted)] uppercase tracking-wider">Quick Add Popular Hobbies</label>
                                     <div className="flex flex-wrap gap-2">
                                         {POPULAR_HOBBIES.filter(h => !(profile.hobbies || []).some(ex => (typeof ex === 'string' ? ex : ex.name || ex.hobby || '').toLowerCase() === h.toLowerCase())).map((hobby) => (
                                             <button
                                                 key={hobby}
                                                 type="button"
                                                 onClick={() => addHobby(hobby)}
-                                                className="px-3 py-1.5 text-[11px] font-semibold bg-slate-100 hover:bg-indigo-100 hover:text-indigo-700 text-slate-700 rounded-lg border border-slate-200 hover:border-indigo-300 transition-all cursor-pointer"
+                                                className="px-3 py-1.5 text-[11px] font-semibold bg-[var(--cuba-canvas)] hover:bg-[var(--cuba-primary-soft)] hover:text-[var(--cuba-primary-ink-strong)] text-[var(--cuba-ink-muted)] rounded-lg border border-[var(--cuba-line)] hover:border-[var(--cuba-primary-line)] transition-all cursor-pointer"
                                             >
                                                 + {hobby}
                                             </button>
@@ -4273,14 +4302,14 @@ function DashboardSettings(_props) {
                                             }}
                                             placeholder="Type a custom hobby (e.g. Marathon Running, Open Source, Astronomy)..."
                                             suggestionType="hobby"
-                                            inputClassName="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none h-[42px]"
+                                            inputClassName="w-full text-xs p-3 bg-white border border-[var(--cuba-line-strong)] rounded-xl text-[var(--cuba-ink)] focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-soft)] outline-none h-[42px]"
                                         />
                                     </div>
                                     <button
                                         type="button"
                                         onClick={() => addHobby()}
                                         disabled={!hobbyInput.trim()}
-                                        className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs cursor-pointer h-[42px] shrink-0"
+                                        className="px-4 py-2.5 bg-[var(--cuba-primary)] hover:bg-[var(--cuba-primary-strong)] disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs cursor-pointer h-[42px] shrink-0"
                                     >
                                         <FaPlus className="w-3 h-3" /> Add Hobby
                                     </button>
@@ -4288,14 +4317,14 @@ function DashboardSettings(_props) {
 
                                 {/* Active Hobbies List */}
                                 {(!profile.hobbies || profile.hobbies.length === 0) ? (
-                                    <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-2xl">
+                                    <div className="p-8 text-center bg-[var(--cuba-canvas)] border border-dashed border-[var(--cuba-line-strong)] rounded-2xl">
                                         <p className="text-2xl mb-2">⚽</p>
-                                        <p className="text-xs font-semibold text-slate-700 mb-1">No hobbies saved in Master Profile</p>
-                                        <p className="text-[11px] text-slate-500">Click a quick-add suggestion above or type a custom hobby.</p>
+                                        <p className="text-xs font-semibold text-[var(--cuba-ink-muted)] mb-1">No hobbies saved in Master Profile</p>
+                                        <p className="text-[11px] text-[var(--cuba-ink-subtle)]">Click a quick-add suggestion above or type a custom hobby.</p>
                                     </div>
                                 ) : (
-                                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
-                                        <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-2.5">
+                                    <div className="p-4 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-2xl">
+                                        <label className="block text-[11px] font-bold text-[var(--cuba-ink-muted)] uppercase tracking-wider mb-2.5">
                                             Active Hobbies ({profile.hobbies.length})
                                         </label>
                                         <div className="flex flex-wrap gap-2">
@@ -4304,13 +4333,13 @@ function DashboardSettings(_props) {
                                                 return (
                                                     <span
                                                         key={idx}
-                                                        className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-white border border-slate-300 text-slate-800 rounded-lg text-xs font-semibold shadow-2xs hover:border-slate-400 transition-all"
+                                                        className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-white border border-[var(--cuba-line-strong)] text-[var(--cuba-ink)] rounded-lg text-xs font-semibold shadow-2xs hover:border-[var(--cuba-line-strong)] transition-all"
                                                     >
                                                         <span>{name}</span>
                                                         <button
                                                             type="button"
                                                             onClick={() => removeHobby(idx)}
-                                                            className="text-slate-400 hover:text-red-600 transition-colors cursor-pointer"
+                                                            className="text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-danger)] transition-colors cursor-pointer"
                                                             title="Remove hobby"
                                                         >
                                                             ✕
@@ -4330,8 +4359,8 @@ function DashboardSettings(_props) {
                                 {/* Header / Action Toolbar */}
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                     <div>
-                                        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Portfolio & Personal Projects</h3>
-                                        <p className="text-xs text-slate-500">Highlight key technical or personal projects that demonstrate your practical skills and impact.</p>
+                                        <h3 className="text-xs font-bold text-[var(--cuba-ink)] uppercase tracking-wider">Portfolio & Personal Projects</h3>
+                                        <p className="text-xs text-[var(--cuba-ink-subtle)]">Highlight key technical or personal projects that demonstrate your practical skills and impact.</p>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <button
@@ -4347,9 +4376,9 @@ function DashboardSettings(_props) {
                                         <button
                                             type="button"
                                             onClick={addProject}
-                                            className="h-9 px-3.5 rounded-xl bg-white hover:bg-indigo-50/50 border border-slate-300 hover:border-indigo-300 text-slate-800 hover:text-indigo-700 text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all"
+                                            className="h-9 px-3.5 rounded-xl bg-white hover:bg-[var(--cuba-primary-soft)]/50 border border-[var(--cuba-line-strong)] hover:border-[var(--cuba-primary-line)] text-[var(--cuba-ink)] hover:text-[var(--cuba-primary-ink-strong)] text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all"
                                         >
-                                            <FaPlus className="w-3 h-3 text-indigo-600" />
+                                            <FaPlus className="w-3 h-3 text-[var(--cuba-primary-ink-strong)]" />
                                             <span>Add Project</span>
                                         </button>
                                     </div>
@@ -4360,19 +4389,19 @@ function DashboardSettings(_props) {
                                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
                                         {/* Live Search */}
                                         <div className="relative flex-1 max-w-sm">
-                                            <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                            <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--cuba-ink-subtle)]" />
                                             <input
                                                 type="text"
                                                 value={projectSearchQuery}
                                                 onChange={(e) => setProjectSearchQuery(e.target.value)}
                                                 placeholder="Search projects, roles, or tools..."
-                                                className="w-full h-9 pl-9 pr-8 text-xs bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                                                className="w-full h-9 pl-9 pr-8 text-xs bg-white border border-[var(--cuba-line)] rounded-xl focus:border-[var(--cuba-primary-line)] focus:ring-1 focus:ring-[var(--cuba-primary-ring)] transition-all"
                                             />
                                             {projectSearchQuery && (
                                                 <button
                                                     type="button"
                                                     onClick={() => setProjectSearchQuery('')}
-                                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)]"
                                                 >
                                                     <MdClose className="w-3.5 h-3.5" />
                                                 </button>
@@ -4386,8 +4415,8 @@ function DashboardSettings(_props) {
                                                 onClick={() => setProjectTypeFilter('all')}
                                                 className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${
                                                     projectTypeFilter === 'all'
-                                                        ? 'bg-slate-800 text-white'
-                                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                        ? 'bg-[var(--cuba-ink)] text-white'
+                                                        : 'bg-[var(--cuba-canvas)] text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-line)]'
                                                 }`}
                                             >
                                                 All ({(profile.projects || []).length})
@@ -4402,8 +4431,8 @@ function DashboardSettings(_props) {
                                                         onClick={() => setProjectTypeFilter(t.id)}
                                                         className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
                                                             projectTypeFilter === t.id
-                                                                ? 'bg-indigo-600 text-white'
-                                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                                ? 'bg-[var(--cuba-primary)] text-white'
+                                                                : 'bg-[var(--cuba-canvas)] text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-line)]'
                                                         }`}
                                                     >
                                                         {t.label} ({count})
@@ -4416,13 +4445,13 @@ function DashboardSettings(_props) {
 
                                 {/* Projects List */}
                                 {(profile.projects || []).length === 0 ? (
-                                    <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-2xl space-y-3">
-                                        <div className="w-10 h-10 mx-auto rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+                                    <div className="p-8 text-center bg-[var(--cuba-canvas)] border border-dashed border-[var(--cuba-line-strong)] rounded-2xl space-y-3">
+                                        <div className="w-10 h-10 mx-auto rounded-full bg-[var(--cuba-primary-soft)] border border-[var(--cuba-primary-line)] flex items-center justify-center text-[var(--cuba-primary-ink-strong)]">
                                             <FaRocket className="w-5 h-5" />
                                         </div>
                                         <div>
-                                            <p className="text-xs font-bold text-slate-800 mb-0.5">No portfolio projects saved in Master Profile</p>
-                                            <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                                            <p className="text-xs font-bold text-[var(--cuba-ink)] mb-0.5">No portfolio projects saved in Master Profile</p>
+                                            <p className="text-[11px] text-[var(--cuba-ink-subtle)] max-w-sm mx-auto">
                                                 Add prominent projects, open-source work, or applications showcasing hands-on experience.
                                             </p>
                                         </div>
@@ -4431,7 +4460,7 @@ function DashboardSettings(_props) {
                                                 type="button"
                                                 onClick={handleRecommendAiProjects}
                                                 disabled={isAiGenerating}
-                                                className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs"
+                                                className="px-3 py-1.5 rounded-xl bg-[var(--cuba-primary)] hover:bg-[var(--cuba-primary-strong)] text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs"
                                             >
                                                 <MdAutoAwesome className="w-3.5 h-3.5" />
                                                 <span>Auto-Recommend (AI)</span>
@@ -4439,9 +4468,9 @@ function DashboardSettings(_props) {
                                             <button
                                                 type="button"
                                                 onClick={addProject}
-                                                className="px-3 py-1.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center gap-1.5 shadow-2xs"
+                                                className="px-3 py-1.5 rounded-xl bg-white border border-[var(--cuba-line-strong)] hover:bg-[var(--cuba-canvas)] text-[var(--cuba-ink-muted)] text-xs font-bold flex items-center gap-1.5 shadow-2xs"
                                             >
-                                                <FaPlus className="w-3 h-3 text-indigo-600" />
+                                                <FaPlus className="w-3 h-3 text-[var(--cuba-primary-ink-strong)]" />
                                                 <span>Add Project</span>
                                             </button>
                                         </div>
@@ -4474,18 +4503,18 @@ function DashboardSettings(_props) {
                                                 : ((proj.url || proj.link) ? String(proj.url || proj.link).replace(/^https?:\/\//, '').slice(0, 45) : 'Add role, tools & details');
 
                                             return (
-                                                <div key={proj.id || idx} className="p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-4 hover:border-slate-300 transition-colors">
+                                                <div key={proj.id || idx} className="p-5 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-2xl space-y-4 hover:border-[var(--cuba-line-strong)] transition-colors">
                                                     {/* Card Header */}
-                                                    <div className="flex items-center justify-between border-b border-slate-200/70 pb-3">
+                                                    <div className="flex items-center justify-between border-b border-[var(--cuba-line)]/70 pb-3">
                                                         <div className="flex items-center gap-2 min-w-0 pr-2">
-                                                            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 shrink-0">
+                                                            <span className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--cuba-ink-subtle)] shrink-0">
                                                                 #{idx + 1}
                                                             </span>
                                                             <div className="min-w-0">
-                                                                <h4 className="text-xs font-bold text-slate-900 truncate">
+                                                                <h4 className="text-xs font-bold text-[var(--cuba-ink)] truncate">
                                                                     {proj.title || 'Untitled Project'}
                                                                 </h4>
-                                                                <p className="text-[11px] text-slate-500 truncate">
+                                                                <p className="text-[11px] text-[var(--cuba-ink-subtle)] truncate">
                                                                     {subtitle}
                                                                 </p>
                                                             </div>
@@ -4499,7 +4528,7 @@ function DashboardSettings(_props) {
                                                                 type="button"
                                                                 disabled={idx === 0}
                                                                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('projects', idx, -1); }}
-                                                                className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-200/70 text-xs font-bold"
+                                                                className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-primary-ink-strong)] disabled:opacity-30 rounded-lg hover:bg-[var(--cuba-line)]/70 text-xs font-bold"
                                                                 title="Move project up"
                                                             >
                                                                 ▲
@@ -4508,7 +4537,7 @@ function DashboardSettings(_props) {
                                                                 type="button"
                                                                 disabled={idx === (profile.projects || []).length - 1}
                                                                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('projects', idx, 1); }}
-                                                                className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-200/70 text-xs font-bold"
+                                                                className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-primary-ink-strong)] disabled:opacity-30 rounded-lg hover:bg-[var(--cuba-line)]/70 text-xs font-bold"
                                                                 title="Move project down"
                                                             >
                                                                 ▼
@@ -4516,7 +4545,7 @@ function DashboardSettings(_props) {
                                                             <button
                                                                 type="button"
                                                                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeProject(idx); }}
-                                                                className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer ml-1"
+                                                                className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-danger)] hover:bg-[var(--cuba-danger-soft)] rounded-lg transition-colors cursor-pointer ml-1"
                                                                 title="Delete project"
                                                             >
                                                                 <FaTrash className="w-3.5 h-3.5" />
@@ -4529,19 +4558,19 @@ function DashboardSettings(_props) {
                                                         {/* Row 1: Project Name & Role */}
                                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                                                             <div className="space-y-1">
-                                                                <label className="block text-xs font-bold text-slate-700">
-                                                                    Project Name <span className="text-red-500">*</span>
+                                                                <label className="block text-xs font-bold text-[var(--cuba-ink-muted)]">
+                                                                    Project Name <span className="text-[var(--cuba-danger)]">*</span>
                                                                 </label>
                                                                 <input
                                                                     type="text"
                                                                     value={proj.title || ''}
                                                                     onChange={(e) => updateProject(idx, 'title', e.target.value)}
                                                                     placeholder="e.g. Distributed E-Commerce Backend, Real-Time Chat App"
-                                                                    className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-xl font-semibold focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                                                                    className="w-full text-xs p-2.5 bg-white border border-[var(--cuba-line-strong)] rounded-xl font-semibold focus:border-[var(--cuba-primary-line)] focus:ring-1 focus:ring-[var(--cuba-primary-ring)] transition-all"
                                                                 />
                                                             </div>
                                                             <div className="space-y-1">
-                                                                <label className="block text-xs font-bold text-slate-700">
+                                                                <label className="block text-xs font-bold text-[var(--cuba-ink-muted)]">
                                                                     Your Role in Project
                                                                 </label>
                                                                 <input
@@ -4549,7 +4578,7 @@ function DashboardSettings(_props) {
                                                                     value={proj.role || ''}
                                                                     onChange={(e) => updateProject(idx, 'role', e.target.value)}
                                                                     placeholder="e.g. Lead Architect, Full Stack Developer, Creator"
-                                                                    className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                                                                    className="w-full text-xs p-2.5 bg-white border border-[var(--cuba-line-strong)] rounded-xl focus:border-[var(--cuba-primary-line)] focus:ring-1 focus:ring-[var(--cuba-primary-ring)] transition-all"
                                                                 />
                                                             </div>
                                                         </div>
@@ -4557,7 +4586,7 @@ function DashboardSettings(_props) {
                                                         {/* Row 2: Technologies & URL */}
                                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                                                             <div className="space-y-1">
-                                                                <label className="block text-xs font-bold text-slate-700">
+                                                                <label className="block text-xs font-bold text-[var(--cuba-ink-muted)]">
                                                                     Technologies / Tools Used
                                                                 </label>
                                                                 <input
@@ -4565,11 +4594,11 @@ function DashboardSettings(_props) {
                                                                     value={proj.technologies || ''}
                                                                     onChange={(e) => updateProject(idx, 'technologies', e.target.value)}
                                                                     placeholder="e.g. React, Node.js, PostgreSQL, Docker, AWS, TailwindCSS"
-                                                                    className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                                                                    className="w-full text-xs p-2.5 bg-white border border-[var(--cuba-line-strong)] rounded-xl focus:border-[var(--cuba-primary-line)] focus:ring-1 focus:ring-[var(--cuba-primary-ring)] transition-all"
                                                                 />
                                                             </div>
                                                             <div className="space-y-1">
-                                                                <label className="block text-xs font-bold text-slate-700">
+                                                                <label className="block text-xs font-bold text-[var(--cuba-ink-muted)]">
                                                                     Project / Portfolio URL
                                                                 </label>
                                                                 <input
@@ -4577,7 +4606,7 @@ function DashboardSettings(_props) {
                                                                     value={proj.url || proj.link || ''}
                                                                     onChange={(e) => updateProject(idx, 'url', e.target.value)}
                                                                     placeholder="https://github.com/... or https://..."
-                                                                    className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                                                                    className="w-full text-xs p-2.5 bg-white border border-[var(--cuba-line-strong)] rounded-xl focus:border-[var(--cuba-primary-line)] focus:ring-1 focus:ring-[var(--cuba-primary-ring)] transition-all"
                                                                 />
                                                                 {(proj.url || proj.link) && /^https?:\/\//i.test(String(proj.url || proj.link)) && (
                                                                     <div className="mt-1 flex items-center justify-end">
@@ -4585,7 +4614,7 @@ function DashboardSettings(_props) {
                                                                             href={proj.url || proj.link}
                                                                             target="_blank"
                                                                             rel="noreferrer"
-                                                                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
+                                                                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--cuba-primary-ink-strong)] hover:text-[var(--cuba-primary-ink-strong)] transition-colors"
                                                                         >
                                                                             <span>Test live URL</span>
                                                                             <MdLaunch className="w-3.5 h-3.5" />
@@ -4597,7 +4626,7 @@ function DashboardSettings(_props) {
 
                                                         {/* Row 3: Project Type / Category Selector */}
                                                         <div className="space-y-1.5 pt-1">
-                                                            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                                                            <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--cuba-ink-muted)]">
                                                                 Project Type / Category
                                                             </label>
                                                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -4611,8 +4640,8 @@ function DashboardSettings(_props) {
                                                                             onClick={() => updateProject(idx, 'projectType', type.id)}
                                                                             className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 ${
                                                                                 isSelected
-                                                                                    ? `${type.badgeClass} ring-2 ring-indigo-500/20 shadow-xs`
-                                                                                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                                                                    ? `${type.badgeClass} ring-2 ring-[var(--cuba-primary-ring)]/20 shadow-xs`
+                                                                                    : 'bg-white border-[var(--cuba-line)] text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-canvas)]'
                                                                             }`}
                                                                         >
                                                                             <Icon className="w-3.5 h-3.5" />
@@ -4633,9 +4662,9 @@ function DashboardSettings(_props) {
                                     <button
                                         type="button"
                                         onClick={addProject}
-                                        className="w-full h-11 rounded-2xl border border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/40 text-sm font-bold text-slate-700 hover:text-indigo-700 flex items-center justify-center gap-2 transition-all shadow-2xs"
+                                        className="w-full h-11 rounded-2xl border border-dashed border-[var(--cuba-line-strong)] hover:border-[var(--cuba-primary-line)] hover:bg-[var(--cuba-primary-soft)]/40 text-sm font-bold text-[var(--cuba-ink-muted)] hover:text-[var(--cuba-primary-ink-strong)] flex items-center justify-center gap-2 transition-all shadow-2xs"
                                     >
-                                        <FaPlus className="w-3.5 h-3.5 text-indigo-600" />
+                                        <FaPlus className="w-3.5 h-3.5 text-[var(--cuba-primary-ink-strong)]" />
                                         <span>Add Another Project</span>
                                     </button>
                                 )}
@@ -4662,13 +4691,13 @@ function DashboardSettings(_props) {
                                     {/* Header / Action Toolbar */}
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                         <div>
-                                            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Honors, Awards &amp; Key Achievements</h3>
-                                            <p className="text-xs text-slate-500">Record industry accolades, hackathon wins, academic distinctions, or notable career milestones.</p>
+                                            <h3 className="text-xs font-bold text-[var(--cuba-ink)] uppercase tracking-wider">Honors, Awards &amp; Key Achievements</h3>
+                                            <p className="text-xs text-[var(--cuba-ink-subtle)]">Record industry accolades, hackathon wins, academic distinctions, or notable career milestones.</p>
                                         </div>
                                         <button
                                             type="button"
                                             onClick={addAchievement}
-                                            className="h-9 px-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer whitespace-nowrap"
+                                            className="h-9 px-3.5 rounded-xl bg-[var(--cuba-ink)] hover:bg-[var(--cuba-ink)] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer whitespace-nowrap"
                                         >
                                             <MdAdd className="w-4 h-4 text-white" />
                                             <span>Add Award / Achievement</span>
@@ -4680,19 +4709,19 @@ function DashboardSettings(_props) {
                                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
                                             {/* Live Search */}
                                             <div className="relative flex-1 max-w-sm">
-                                                <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                                <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--cuba-ink-subtle)]" />
                                                 <input
                                                     type="text"
                                                     value={achievementSearchQuery}
                                                     onChange={(e) => setAchievementSearchQuery(e.target.value)}
                                                     placeholder="Search honors, awards, or organizations..."
-                                                    className="w-full h-9 pl-9 pr-8 text-xs bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                                                    className="w-full h-9 pl-9 pr-8 text-xs bg-white border border-[var(--cuba-line)] rounded-xl focus:border-[var(--cuba-primary-line)] focus:ring-1 focus:ring-[var(--cuba-primary-ring)] transition-all"
                                                 />
                                                 {achievementSearchQuery && (
                                                     <button
                                                         type="button"
                                                         onClick={() => setAchievementSearchQuery('')}
-                                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] cursor-pointer"
                                                     >
                                                         <MdClose className="w-3.5 h-3.5" />
                                                     </button>
@@ -4706,8 +4735,8 @@ function DashboardSettings(_props) {
                                                     onClick={() => setAchievementTypeFilter('all')}
                                                     className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
                                                         achievementTypeFilter === 'all'
-                                                            ? 'bg-slate-800 text-white'
-                                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                            ? 'bg-[var(--cuba-ink)] text-white'
+                                                            : 'bg-[var(--cuba-canvas)] text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-line)]'
                                                     }`}
                                                 >
                                                     All ({(profile.achievements || []).length})
@@ -4722,8 +4751,8 @@ function DashboardSettings(_props) {
                                                             onClick={() => setAchievementTypeFilter(t.id)}
                                                             className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
                                                                 achievementTypeFilter === t.id
-                                                                    ? 'bg-indigo-600 text-white'
-                                                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                                    ? 'bg-[var(--cuba-primary)] text-white'
+                                                                    : 'bg-[var(--cuba-canvas)] text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-line)]'
                                                             }`}
                                                         >
                                                             {t.label} ({count})
@@ -4735,26 +4764,26 @@ function DashboardSettings(_props) {
                                     )}
 
                                     {(!profile.achievements || profile.achievements.length === 0) ? (
-                                        <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-2xl">
+                                        <div className="p-8 text-center bg-[var(--cuba-canvas)] border border-dashed border-[var(--cuba-line-strong)] rounded-2xl">
                                             <p className="text-2xl mb-2">🏆</p>
-                                            <p className="text-xs font-semibold text-slate-700 mb-1">No achievements saved in Master Profile</p>
-                                            <p className="text-[11px] text-slate-500 mb-3">Add awards, competitive honors, or leadership recognitions to stand out to recruiters.</p>
+                                            <p className="text-xs font-semibold text-[var(--cuba-ink-muted)] mb-1">No achievements saved in Master Profile</p>
+                                            <p className="text-[11px] text-[var(--cuba-ink-subtle)] mb-3">Add awards, competitive honors, or leadership recognitions to stand out to recruiters.</p>
                                             <button
                                                 type="button"
                                                 onClick={addAchievement}
-                                                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
+                                                className="px-4 py-2 bg-[var(--cuba-ink)] hover:bg-[var(--cuba-ink)] text-white rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
                                             >
                                                 <MdAdd className="w-4 h-4 text-white" />
                                                 <span>Add First Achievement</span>
                                             </button>
                                         </div>
                                     ) : filteredAchievements.length === 0 ? (
-                                        <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-200 rounded-2xl space-y-2">
-                                            <p className="text-xs font-bold text-slate-700">No achievements match your filter criteria.</p>
+                                        <div className="p-8 text-center bg-[var(--cuba-canvas)] border border-dashed border-[var(--cuba-line)] rounded-2xl space-y-2">
+                                            <p className="text-xs font-bold text-[var(--cuba-ink-muted)]">No achievements match your filter criteria.</p>
                                             <button
                                                 type="button"
                                                 onClick={() => { setAchievementSearchQuery(''); setAchievementTypeFilter('all'); }}
-                                                className="text-xs font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer"
+                                                className="text-xs font-bold text-[var(--cuba-primary-ink-strong)] hover:text-[var(--cuba-primary-ink-strong)] cursor-pointer"
                                             >
                                                 Reset filters
                                             </button>
@@ -4784,14 +4813,14 @@ function DashboardSettings(_props) {
                                                         className={`bg-white border ${theme.cardBorder} rounded-2xl shadow-xs hover:shadow-md transition-all overflow-hidden`}
                                                     >
                                                         {/* Card Header */}
-                                                        <div className={`p-3.5 sm:p-4 border-b border-slate-100 bg-gradient-to-r ${theme.headerGradient} flex items-center justify-between gap-3`}>
+                                                        <div className={`p-3.5 sm:p-4 border-b border-[var(--cuba-line)] bg-gradient-to-r ${theme.headerGradient} flex items-center justify-between gap-3`}>
                                                             <div className="flex items-center gap-2.5 min-w-0 pr-2">
                                                                 <span className={`w-6 h-6 rounded-md ${theme.indexBadge} font-extrabold flex items-center justify-center text-[11px] shrink-0 shadow-2xs`}>
                                                                     #{originalIndex + 1}
                                                                 </span>
                                                                 <div className="min-w-0">
                                                                     <div className="flex items-center gap-2 flex-wrap">
-                                                                        <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                                                                        <h4 className="text-xs sm:text-sm font-bold text-[var(--cuba-ink)] truncate">
                                                                             {achTitle || 'Untitled Honor / Award'}
                                                                         </h4>
                                                                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 flex items-center gap-1 ${theme.badgeClass}`}>
@@ -4799,19 +4828,19 @@ function DashboardSettings(_props) {
                                                                             <span>{typeConfig.label}</span>
                                                                         </span>
                                                                     </div>
-                                                                    <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                                                                    <p className="text-[11px] text-[var(--cuba-ink-subtle)] truncate mt-0.5">
                                                                         {subtitle}
                                                                     </p>
                                                                 </div>
                                                             </div>
 
                                                             {/* Action Button Group */}
-                                                            <div className="flex items-center gap-0.5 bg-white/95 backdrop-blur-xs p-1 rounded-xl border border-slate-200/80 shadow-2xs shrink-0">
+                                                            <div className="flex items-center gap-0.5 bg-white/95 backdrop-blur-xs p-1 rounded-xl border border-[var(--cuba-line)]/80 shadow-2xs shrink-0">
                                                                 <button
                                                                     type="button"
                                                                     disabled={originalIndex === 0}
                                                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('achievements', originalIndex, -1); }}
-                                                                    className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-slate-900 disabled:opacity-20 rounded-lg hover:bg-slate-100 text-[11px] font-bold transition-all cursor-pointer"
+                                                                    className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink)] disabled:opacity-20 rounded-lg hover:bg-[var(--cuba-canvas)] text-[11px] font-bold transition-all cursor-pointer"
                                                                     title="Move award up"
                                                                 >
                                                                     ▲
@@ -4820,16 +4849,16 @@ function DashboardSettings(_props) {
                                                                     type="button"
                                                                     disabled={originalIndex === (profile.achievements || []).length - 1}
                                                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('achievements', originalIndex, 1); }}
-                                                                    className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-slate-900 disabled:opacity-20 rounded-lg hover:bg-slate-100 text-[11px] font-bold transition-all cursor-pointer"
+                                                                    className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink)] disabled:opacity-20 rounded-lg hover:bg-[var(--cuba-canvas)] text-[11px] font-bold transition-all cursor-pointer"
                                                                     title="Move award down"
                                                                 >
                                                                     ▼
                                                                 </button>
-                                                                <div className="w-[1px] h-3.5 bg-slate-200 mx-0.5" />
+                                                                <div className="w-[1px] h-3.5 bg-[var(--cuba-line)] mx-0.5" />
                                                                 <button
                                                                     type="button"
                                                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); duplicateAchievement(originalIndex); }}
-                                                                    className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50/70 transition-all cursor-pointer"
+                                                                    className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-primary-ink-strong)] rounded-lg hover:bg-[var(--cuba-primary-soft)]/70 transition-all cursor-pointer"
                                                                     title="Duplicate award"
                                                                 >
                                                                     <MdContentCopy className="w-3.5 h-3.5" />
@@ -4837,7 +4866,7 @@ function DashboardSettings(_props) {
                                                                 <button
                                                                     type="button"
                                                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeAchievement(originalIndex); }}
-                                                                    className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50/70 transition-all cursor-pointer ml-0.5"
+                                                                    className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-danger)] rounded-lg hover:bg-[var(--cuba-danger-soft)]/70 transition-all cursor-pointer ml-0.5"
                                                                     title="Delete award"
                                                                 >
                                                                     <MdDeleteOutline className="w-4 h-4" />
@@ -4849,10 +4878,10 @@ function DashboardSettings(_props) {
                                                         <div className="p-4 sm:p-5 space-y-4">
                                                             {/* Category Selector Segmented Bar */}
                                                             <div>
-                                                                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+                                                                <label className="block text-xs font-bold text-[var(--cuba-ink-muted)] uppercase tracking-wider mb-1.5">
                                                                     Category &amp; Recognition Type
                                                                 </label>
-                                                                <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100/70 border border-slate-200/80 rounded-xl">
+                                                                <div className="flex flex-wrap items-center gap-1.5 p-1 bg-[var(--cuba-canvas)]/70 border border-[var(--cuba-line)]/80 rounded-xl">
                                                                     {ACHIEVEMENT_TYPES.map(type => {
                                                                         const Icon = type.icon;
                                                                         const isSelected = activeType === type.id;
@@ -4863,11 +4892,11 @@ function DashboardSettings(_props) {
                                                                                 onClick={() => updateAchievement(originalIndex, 'achievementType', type.id)}
                                                                                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                                                                                     isSelected
-                                                                                        ? 'bg-white text-slate-900 shadow-xs border border-slate-200/90 font-bold'
-                                                                                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/60 border border-transparent'
+                                                                                        ? 'bg-white text-[var(--cuba-ink)] shadow-xs border border-[var(--cuba-line)]/90 font-bold'
+                                                                                        : 'text-[var(--cuba-ink-muted)] hover:text-[var(--cuba-ink)] hover:bg-white/60 border border-transparent'
                                                                                 }`}
                                                                             >
-                                                                                <Icon className={`w-3.5 h-3.5 ${isSelected ? theme.iconColor : 'text-slate-400'}`} />
+                                                                                <Icon className={`w-3.5 h-3.5 ${isSelected ? theme.iconColor : 'text-[var(--cuba-ink-subtle)]'}`} />
                                                                                 <span>{type.label}</span>
                                                                             </button>
                                                                         );
@@ -4915,10 +4944,10 @@ function DashboardSettings(_props) {
                                                             <div className="space-y-2">
                                                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
                                                                     <div>
-                                                                        <label className="text-[13px] font-semibold text-slate-700">
+                                                                        <label className="text-[13px] font-semibold text-[var(--cuba-ink-muted)]">
                                                                             Accomplishment &amp; Significance
                                                                         </label>
-                                                                        <span className="block sm:inline sm:ml-1.5 text-[11px] text-slate-400 font-normal">
+                                                                        <span className="block sm:inline sm:ml-1.5 text-[11px] text-[var(--cuba-ink-subtle)] font-normal">
                                                                             — scope, measurable impact, or why this honor was awarded
                                                                         </span>
                                                                     </div>
@@ -4926,10 +4955,10 @@ function DashboardSettings(_props) {
                                                                         type="button"
                                                                         disabled={isPolishingAchIndex === originalIndex}
                                                                         onClick={() => polishAchievementDescription(originalIndex)}
-                                                                        className="inline-flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 text-indigo-700 border border-indigo-200/80 rounded-lg text-xs font-bold transition-all shadow-2xs hover:shadow-xs cursor-pointer disabled:opacity-50 self-start sm:self-auto shrink-0"
+                                                                        className="inline-flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 text-[var(--cuba-primary-ink-strong)] border border-[var(--cuba-primary-line)]/80 rounded-lg text-xs font-bold transition-all shadow-2xs hover:shadow-xs cursor-pointer disabled:opacity-50 self-start sm:self-auto shrink-0"
                                                                         title="Auto-enhance phrasing with impact metrics and action verbs"
                                                                     >
-                                                                        <MdAutoAwesome className={`w-3.5 h-3.5 text-indigo-600 ${isPolishingAchIndex === originalIndex ? 'animate-spin' : ''}`} />
+                                                                        <MdAutoAwesome className={`w-3.5 h-3.5 text-[var(--cuba-primary-ink-strong)] ${isPolishingAchIndex === originalIndex ? 'animate-spin' : ''}`} />
                                                                         <span>{isPolishingAchIndex === originalIndex ? 'Polishing...' : '🪄 Enhance with AI'}</span>
                                                                     </button>
                                                                 </div>
@@ -4938,12 +4967,12 @@ function DashboardSettings(_props) {
                                                                     value={ach.description || ''}
                                                                     onChange={(e) => updateAchievement(originalIndex, 'description', e.target.value)}
                                                                     placeholder="Brief description of the accomplishment and its significance..."
-                                                                    className="w-full min-h-[78px] text-xs p-3.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200/90 rounded-xl font-medium text-slate-900 placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 outline-none resize-y transition-all shadow-2xs leading-relaxed"
+                                                                    className="w-full min-h-[78px] text-xs p-3.5 bg-[var(--cuba-canvas)]/50 hover:bg-white focus:bg-white border border-[var(--cuba-line)]/90 rounded-xl font-medium text-[var(--cuba-ink)] placeholder:text-[var(--cuba-ink-subtle)] focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-ring)]/15 outline-none resize-y transition-all shadow-2xs leading-relaxed"
                                                                 />
 
                                                                 {/* Quick Starter Chips */}
                                                                 <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-                                                                    <span className="text-[11px] font-semibold text-slate-400">Quick starters:</span>
+                                                                    <span className="text-[11px] font-semibold text-[var(--cuba-ink-subtle)]">Quick starters:</span>
                                                                     {SUGGESTION_CHIPS.map((chip, cIdx) => (
                                                                         <button
                                                                             key={cIdx}
@@ -4953,7 +4982,7 @@ function DashboardSettings(_props) {
                                                                                 const separator = current ? (current.endsWith('.') ? ' ' : '. ') : '';
                                                                                 updateAchievement(originalIndex, 'description', `${current}${separator}${chip.text}`);
                                                                             }}
-                                                                            className="inline-flex items-center text-[11px] font-medium px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-indigo-50/80 text-slate-600 hover:text-indigo-700 border border-slate-200 hover:border-indigo-200 transition-all cursor-pointer shadow-2xs"
+                                                                            className="inline-flex items-center text-[11px] font-medium px-2.5 py-1 rounded-lg bg-[var(--cuba-canvas)] hover:bg-[var(--cuba-primary-soft)]/80 text-[var(--cuba-ink-muted)] hover:text-[var(--cuba-primary-ink-strong)] border border-[var(--cuba-line)] hover:border-[var(--cuba-primary-line)] transition-all cursor-pointer shadow-2xs"
                                                                         >
                                                                             {chip.label}
                                                                         </button>
@@ -4971,9 +5000,9 @@ function DashboardSettings(_props) {
                                         <button
                                             type="button"
                                             onClick={addAchievement}
-                                            className="w-full h-11 rounded-2xl border border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/40 text-sm font-bold text-slate-700 hover:text-indigo-700 flex items-center justify-center gap-2 transition-all shadow-2xs cursor-pointer"
+                                            className="w-full h-11 rounded-2xl border border-dashed border-[var(--cuba-line-strong)] hover:border-[var(--cuba-primary-line)] hover:bg-[var(--cuba-primary-soft)]/40 text-sm font-bold text-[var(--cuba-ink-muted)] hover:text-[var(--cuba-primary-ink-strong)] flex items-center justify-center gap-2 transition-all shadow-2xs cursor-pointer"
                                         >
-                                            <MdAdd className="w-4 h-4 text-indigo-600" />
+                                            <MdAdd className="w-4 h-4 text-[var(--cuba-primary-ink-strong)]" />
                                             <span>Add Another Achievement</span>
                                         </button>
                                     )}
@@ -4986,28 +5015,28 @@ function DashboardSettings(_props) {
                             <div className="space-y-6">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                     <div>
-                                        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Professional &amp; Academic References</h3>
-                                        <p className="text-xs text-slate-500">Store references securely. Choose whether to show them on resumes or provide upon request.</p>
+                                        <h3 className="text-xs font-bold text-[var(--cuba-ink)] uppercase tracking-wider">Professional &amp; Academic References</h3>
+                                        <p className="text-xs text-[var(--cuba-ink-subtle)]">Store references securely. Choose whether to show them on resumes or provide upon request.</p>
                                     </div>
-                                    <button type="button" onClick={addReference} className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer">
+                                    <button type="button" onClick={addReference} className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-3.5 py-2.5 bg-[var(--cuba-primary)] hover:bg-[var(--cuba-primary-strong)] text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer">
                                         <FaPlus className="w-3 h-3" /> Add Reference
                                     </button>
                                 </div>
 
                                 {(!profile.references || profile.references.length === 0) ? (
-                                    <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-2xl">
+                                    <div className="p-8 text-center bg-[var(--cuba-canvas)] border border-dashed border-[var(--cuba-line-strong)] rounded-2xl">
                                         <p className="text-2xl mb-2">👥</p>
-                                        <p className="text-xs font-semibold text-slate-700 mb-1">No references saved in Master Profile</p>
-                                        <p className="text-[11px] text-slate-500 mb-3">Add managers, mentors, or colleagues who can vouch for your work.</p>
-                                        <button type="button" onClick={addReference} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer">
+                                        <p className="text-xs font-semibold text-[var(--cuba-ink-muted)] mb-1">No references saved in Master Profile</p>
+                                        <p className="text-[11px] text-[var(--cuba-ink-subtle)] mb-3">Add managers, mentors, or colleagues who can vouch for your work.</p>
+                                        <button type="button" onClick={addReference} className="px-4 py-2 bg-[var(--cuba-primary)] hover:bg-[var(--cuba-primary-strong)] text-white rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer">
                                             <FaPlus className="w-3 h-3" /> Add First Reference
                                         </button>
                                     </div>
                                 ) : (
                                     (profile.references || []).map((ref, idx) => (
-                                        <div key={ref.id || idx} className="p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
-                                            <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
-                                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                                        <div key={ref.id || idx} className="p-5 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-2xl space-y-3">
+                                            <div className="flex items-center justify-between border-b border-[var(--cuba-line)]/60 pb-2">
+                                                <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--cuba-ink-subtle)] flex items-center gap-1.5">
                                                     👥 Reference #{idx + 1}
                                                 </span>
                                                 <div className="flex items-center gap-1">
@@ -5015,7 +5044,7 @@ function DashboardSettings(_props) {
                                                         type="button"
                                                         disabled={idx === 0}
                                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('references', idx, -1); }}
-                                                        className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-200/70 text-xs font-bold cursor-pointer"
+                                                        className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-primary-ink-strong)] disabled:opacity-30 rounded-lg hover:bg-[var(--cuba-line)]/70 text-xs font-bold cursor-pointer"
                                                         title="Move up">
                                                         ▲
                                                     </button>
@@ -5023,14 +5052,14 @@ function DashboardSettings(_props) {
                                                         type="button"
                                                         disabled={idx === profile.references.length - 1}
                                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('references', idx, 1); }}
-                                                        className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-200/70 text-xs font-bold cursor-pointer"
+                                                        className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-primary-ink-strong)] disabled:opacity-30 rounded-lg hover:bg-[var(--cuba-line)]/70 text-xs font-bold cursor-pointer"
                                                         title="Move down">
                                                         ▼
                                                     </button>
                                                     <button
                                                         type="button"
                                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeReference(idx); }}
-                                                        className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer ml-1"
+                                                        className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-danger)] hover:bg-[var(--cuba-danger-soft)] rounded-lg transition-colors cursor-pointer ml-1"
                                                         title="Delete reference">
                                                         <FaTrash className="w-3.5 h-3.5" />
                                                     </button>
@@ -5043,7 +5072,7 @@ function DashboardSettings(_props) {
                                                         value={ref.name || ''}
                                                         onChange={(e) => updateReference(idx, 'name', e.target.value)}
                                                         placeholder="Referee Full Name (e.g. Dr. Jane Smith)"
-                                                        className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg font-semibold text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                                        className="w-full text-xs p-2.5 bg-white border border-[var(--cuba-line-strong)] rounded-lg font-semibold text-[var(--cuba-ink)] focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-soft)] outline-none"
                                                     />
                                                 </div>
                                                 <div>
@@ -5052,7 +5081,7 @@ function DashboardSettings(_props) {
                                                         value={ref.position || ''}
                                                         onChange={(e) => updateReference(idx, 'position', e.target.value)}
                                                         placeholder="Job Title / Position (e.g. VP of Engineering)"
-                                                        className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                                        className="w-full text-xs p-2.5 bg-white border border-[var(--cuba-line-strong)] rounded-lg text-[var(--cuba-ink)] focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-soft)] outline-none"
                                                     />
                                                 </div>
                                                 <div>
@@ -5061,7 +5090,7 @@ function DashboardSettings(_props) {
                                                         value={ref.company || ''}
                                                         onChange={(e) => updateReference(idx, 'company', e.target.value)}
                                                         placeholder="Company / Institution (e.g. Acme Corp)"
-                                                        className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                                        className="w-full text-xs p-2.5 bg-white border border-[var(--cuba-line-strong)] rounded-lg text-[var(--cuba-ink)] focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-soft)] outline-none"
                                                     />
                                                 </div>
                                             </div>
@@ -5072,7 +5101,7 @@ function DashboardSettings(_props) {
                                                         value={ref.email || ''}
                                                         onChange={(e) => updateReference(idx, 'email', e.target.value)}
                                                         placeholder="Email Address (e.g. jane.smith@acme.com)"
-                                                        className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                                        className="w-full text-xs p-2.5 bg-white border border-[var(--cuba-line-strong)] rounded-lg text-[var(--cuba-ink)] focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-soft)] outline-none"
                                                     />
                                                 </div>
                                                 <div>
@@ -5081,7 +5110,7 @@ function DashboardSettings(_props) {
                                                         value={ref.phone || ''}
                                                         onChange={(e) => updateReference(idx, 'phone', e.target.value)}
                                                         placeholder="Phone Number (e.g. +1 555-0199)"
-                                                        className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                                        className="w-full text-xs p-2.5 bg-white border border-[var(--cuba-line-strong)] rounded-lg text-[var(--cuba-ink)] focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-soft)] outline-none"
                                                     />
                                                 </div>
                                             </div>
@@ -5090,7 +5119,7 @@ function DashboardSettings(_props) {
                                                     value={ref.reference || ''}
                                                     onChange={(e) => updateReference(idx, 'reference', e.target.value)}
                                                     placeholder="Relationship notes or reference quote (e.g. 'Direct manager at Acme Corp for 3 years')..."
-                                                    className="w-full h-14 text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none resize-none"
+                                                    className="w-full h-14 text-xs p-2.5 bg-white border border-[var(--cuba-line-strong)] rounded-lg text-[var(--cuba-ink)] focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-soft)] outline-none resize-none"
                                                 />
                                             </div>
                                         </div>
@@ -5099,7 +5128,7 @@ function DashboardSettings(_props) {
 
                                 {(profile.references || []).length > 0 && (
                                     <div className="pt-2">
-                                        <button type="button" onClick={addReference} className="w-full py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-2xs cursor-pointer">
+                                        <button type="button" onClick={addReference} className="w-full py-3 bg-[var(--cuba-primary-soft)] hover:bg-[var(--cuba-primary-soft)] text-[var(--cuba-primary-ink-strong)] border border-[var(--cuba-primary-line)] rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-2xs cursor-pointer">
                                             <FaPlus className="w-3.5 h-3.5" /> Add Another Reference
                                         </button>
                                     </div>
@@ -5112,28 +5141,28 @@ function DashboardSettings(_props) {
                             <div className="space-y-6">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                     <div>
-                                        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Custom Profile Modules &amp; Bespoke Sections</h3>
-                                        <p className="text-xs text-slate-500">Create bespoke sections (e.g. Publications, Patents, Speaking Engagements, Volunteering, Military Service).</p>
+                                        <h3 className="text-xs font-bold text-[var(--cuba-ink)] uppercase tracking-wider">Custom Profile Modules &amp; Bespoke Sections</h3>
+                                        <p className="text-xs text-[var(--cuba-ink-subtle)]">Create bespoke sections (e.g. Publications, Patents, Speaking Engagements, Volunteering, Military Service).</p>
                                     </div>
-                                    <button type="button" onClick={addCustomSection} className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer">
+                                    <button type="button" onClick={addCustomSection} className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-3.5 py-2.5 bg-[var(--cuba-primary)] hover:bg-[var(--cuba-primary-strong)] text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer">
                                         <FaPlus className="w-3 h-3" /> Add Custom Module
                                     </button>
                                 </div>
 
                                 {(!profile.customSections || profile.customSections.length === 0) ? (
-                                    <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-2xl">
+                                    <div className="p-8 text-center bg-[var(--cuba-canvas)] border border-dashed border-[var(--cuba-line-strong)] rounded-2xl">
                                         <p className="text-2xl mb-2">🧩</p>
-                                        <p className="text-xs font-semibold text-slate-700 mb-1">No custom modules created in Master Profile</p>
-                                        <p className="text-[11px] text-slate-500 mb-3">Add any specialized section required for your unique career or industry background.</p>
-                                        <button type="button" onClick={addCustomSection} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer">
+                                        <p className="text-xs font-semibold text-[var(--cuba-ink-muted)] mb-1">No custom modules created in Master Profile</p>
+                                        <p className="text-[11px] text-[var(--cuba-ink-subtle)] mb-3">Add any specialized section required for your unique career or industry background.</p>
+                                        <button type="button" onClick={addCustomSection} className="px-4 py-2 bg-[var(--cuba-primary)] hover:bg-[var(--cuba-primary-strong)] text-white rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer">
                                             <FaPlus className="w-3 h-3" /> Add First Custom Section
                                         </button>
                                     </div>
                                 ) : (
                                     (profile.customSections || []).map((sec, sIdx) => (
-                                        <div key={sec.id || sIdx} className="p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-4">
-                                            <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
-                                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                                        <div key={sec.id || sIdx} className="p-5 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-2xl space-y-4">
+                                            <div className="flex items-center justify-between border-b border-[var(--cuba-line)]/60 pb-2">
+                                                <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--cuba-ink-subtle)] flex items-center gap-1.5">
                                                     🧩 Custom Section #{sIdx + 1}
                                                 </span>
                                                 <div className="flex items-center gap-1">
@@ -5141,7 +5170,7 @@ function DashboardSettings(_props) {
                                                         type="button"
                                                         disabled={sIdx === 0}
                                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('customSections', sIdx, -1); }}
-                                                        className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-200/70 text-xs font-bold cursor-pointer"
+                                                        className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-primary-ink-strong)] disabled:opacity-30 rounded-lg hover:bg-[var(--cuba-line)]/70 text-xs font-bold cursor-pointer"
                                                         title="Move up">
                                                         ▲
                                                     </button>
@@ -5149,14 +5178,14 @@ function DashboardSettings(_props) {
                                                         type="button"
                                                         disabled={sIdx === profile.customSections.length - 1}
                                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('customSections', sIdx, 1); }}
-                                                        className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-200/70 text-xs font-bold cursor-pointer"
+                                                        className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-primary-ink-strong)] disabled:opacity-30 rounded-lg hover:bg-[var(--cuba-line)]/70 text-xs font-bold cursor-pointer"
                                                         title="Move down">
                                                         ▼
                                                     </button>
                                                     <button
                                                         type="button"
                                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeCustomSection(sIdx); }}
-                                                        className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer ml-1"
+                                                        className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-danger)] hover:bg-[var(--cuba-danger-soft)] rounded-lg transition-colors cursor-pointer ml-1"
                                                         title="Delete custom section">
                                                         <FaTrash className="w-3.5 h-3.5" />
                                                     </button>
@@ -5165,59 +5194,59 @@ function DashboardSettings(_props) {
 
                                             <div className="space-y-3">
                                                 <div>
-                                                    <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Section Title</label>
+                                                    <label className="block text-[11px] font-bold text-[var(--cuba-ink-muted)] uppercase tracking-wider mb-1">Section Title</label>
                                                     <input
                                                         type="text"
                                                         value={sec.title || ''}
                                                         onChange={(e) => updateCustomSection(sIdx, 'title', e.target.value)}
                                                         placeholder="Section Title (e.g. Publications, Patents, Keynote Talks, Volunteer Experience)"
-                                                        className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg font-bold text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                                        className="w-full text-xs p-2.5 bg-white border border-[var(--cuba-line-strong)] rounded-lg font-bold text-[var(--cuba-ink)] focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-soft)] outline-none"
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Section Overview (Optional)</label>
+                                                    <label className="block text-[11px] font-bold text-[var(--cuba-ink-muted)] uppercase tracking-wider mb-1">Section Overview (Optional)</label>
                                                     <textarea
                                                         value={sec.content || ''}
                                                         onChange={(e) => updateCustomSection(sIdx, 'content', e.target.value)}
                                                         placeholder="Optional summary or introductory text for this entire section..."
-                                                        className="w-full h-16 text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none resize-none"
+                                                        className="w-full h-16 text-xs p-2.5 bg-white border border-[var(--cuba-line-strong)] rounded-lg text-[var(--cuba-ink)] focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-soft)] outline-none resize-none"
                                                     />
                                                 </div>
 
                                                 {/* Nested Items in Custom Section */}
                                                 <div className="pt-2 space-y-2">
                                                     <div className="flex items-center justify-between">
-                                                        <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                                                        <label className="block text-[11px] font-bold text-[var(--cuba-ink-muted)] uppercase tracking-wider">
                                                             Section Entries ({((sec.items || []).length)})
                                                         </label>
                                                         <button
                                                             type="button"
                                                             onClick={() => addCustomSectionItem(sIdx)}
-                                                            className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
+                                                            className="text-[11px] font-bold text-[var(--cuba-primary-ink-strong)] hover:text-[var(--cuba-primary-ink-strong)] flex items-center gap-1 cursor-pointer"
                                                         >
                                                             <FaPlus className="w-2.5 h-2.5" /> Add Entry
                                                         </button>
                                                     </div>
 
                                                     {(!sec.items || sec.items.length === 0) ? (
-                                                        <p className="text-[11px] text-slate-400 italic bg-white p-3 rounded-lg border border-dashed border-slate-200">
+                                                        <p className="text-[11px] text-[var(--cuba-ink-subtle)] italic bg-white p-3 rounded-lg border border-dashed border-[var(--cuba-line)]">
                                                             No item entries added. Click "Add Entry" to add bullet entries, publications, or events.
                                                         </p>
                                                     ) : (
                                                         sec.items.map((item, iIdx) => (
-                                                            <div key={item.id || iIdx} className="p-3 bg-white border border-slate-200 rounded-xl space-y-2">
+                                                            <div key={item.id || iIdx} className="p-3 bg-white border border-[var(--cuba-line)] rounded-xl space-y-2">
                                                                 <div className="flex items-center justify-between gap-2">
                                                                     <input
                                                                         type="text"
                                                                         value={item.title || ''}
                                                                         onChange={(e) => updateCustomSectionItem(sIdx, iIdx, 'title', e.target.value)}
                                                                         placeholder="Entry Title (e.g. 'Neural Attention Mechanisms Paper', 'Patent US102938')"
-                                                                        className="flex-1 text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg font-semibold text-slate-900 focus:border-indigo-500 outline-none"
+                                                                        className="flex-1 text-xs p-2 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-lg font-semibold text-[var(--cuba-ink)] focus:border-[var(--cuba-primary-line)] outline-none"
                                                                     />
                                                                     <button
                                                                         type="button"
                                                                         onClick={() => removeCustomSectionItem(sIdx, iIdx)}
-                                                                        className="text-slate-400 hover:text-red-600 p-1.5 rounded transition-colors cursor-pointer"
+                                                                        className="text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-danger)] p-1.5 rounded transition-colors cursor-pointer"
                                                                         title="Delete entry"
                                                                     >
                                                                         <FaTrash className="w-3 h-3" />
@@ -5227,7 +5256,7 @@ function DashboardSettings(_props) {
                                                                     value={item.description || ''}
                                                                     onChange={(e) => updateCustomSectionItem(sIdx, iIdx, 'description', e.target.value)}
                                                                     placeholder="Entry details, citations, or metrics..."
-                                                                    className="w-full h-14 text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:border-indigo-500 outline-none resize-none"
+                                                                    className="w-full h-14 text-xs p-2 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-lg text-[var(--cuba-ink)] focus:border-[var(--cuba-primary-line)] outline-none resize-none"
                                                                 />
                                                             </div>
                                                         ))
@@ -5240,7 +5269,7 @@ function DashboardSettings(_props) {
 
                                 {(profile.customSections || []).length > 0 && (
                                     <div className="pt-2">
-                                        <button type="button" onClick={addCustomSection} className="w-full py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-2xs cursor-pointer">
+                                        <button type="button" onClick={addCustomSection} className="w-full py-3 bg-[var(--cuba-primary-soft)] hover:bg-[var(--cuba-primary-soft)] text-[var(--cuba-primary-ink-strong)] border border-[var(--cuba-primary-line)] rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-2xs cursor-pointer">
                                             <FaPlus className="w-3.5 h-3.5" /> Add Another Custom Section
                                         </button>
                                     </div>
@@ -5249,10 +5278,10 @@ function DashboardSettings(_props) {
                         )}
 
                         {/* Save Master Profile Button — Back + Save + Save & Next */}
-                        <div className="pt-6 border-t border-slate-100">
+                        <div className="pt-6 border-t border-[var(--cuba-line)]">
                             {/* Mobile progress indicator */}
                             <div className="flex items-center justify-between mb-4 sm:hidden">
-                                <span className="text-xs text-slate-500 font-medium">
+                                <span className="text-xs text-[var(--cuba-ink-subtle)] font-medium">
                                     Step {SUB_TAB_ORDER.indexOf(profileSubTab) + 1} of {SUB_TAB_ORDER.length}
                                 </span>
                                 <div className="flex gap-1">
@@ -5262,7 +5291,7 @@ function DashboardSettings(_props) {
                                             type="button"
                                             onClick={() => switchProfileSubTab(tab)}
                                             className={`w-2 h-2 rounded-full transition-all cursor-pointer ${
-                                                tab === profileSubTab ? 'bg-indigo-600 w-5' : 'bg-slate-300'
+                                                tab === profileSubTab ? 'bg-[var(--cuba-primary)] w-5' : 'bg-[var(--cuba-line-strong)]'
                                             }`}
                                         />
                                     ))}
@@ -5275,7 +5304,7 @@ function DashboardSettings(_props) {
                                         <button
                                             type="button"
                                             onClick={() => switchProfileSubTab(SUB_TAB_ORDER[SUB_TAB_ORDER.indexOf(profileSubTab) - 1])}
-                                            className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                                            className="px-4 py-2.5 rounded-xl border border-[var(--cuba-line)] hover:bg-[var(--cuba-canvas)] text-[var(--cuba-ink-muted)] font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                                         >
                                             <span>← Back</span>
                                         </button>
@@ -5288,8 +5317,8 @@ function DashboardSettings(_props) {
                                         disabled={isSubmitting}
                                         className={`px-5 py-2.5 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
                                             SUB_TAB_ORDER.indexOf(profileSubTab) === SUB_TAB_ORDER.length - 1
-                                                ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs'
-                                                : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/80'
+                                                ? 'bg-[var(--cuba-primary)] hover:bg-[var(--cuba-primary-strong)] text-white shadow-2xs'
+                                                : 'bg-[var(--cuba-canvas)] hover:bg-[var(--cuba-line)] text-[var(--cuba-ink-muted)] border border-[var(--cuba-line)]/80'
                                         }`}>
                                         <FaCheckCircle className="w-3.5 h-3.5" />
                                         <span>{isSubmitting ? 'Saving...' : SUB_TAB_ORDER.indexOf(profileSubTab) === SUB_TAB_ORDER.length - 1 ? 'Save Master Profile ✓' : 'Save'}</span>
@@ -5299,7 +5328,7 @@ function DashboardSettings(_props) {
                                             type="button"
                                             onClick={handleSaveAndNext}
                                             disabled={isSubmitting}
-                                            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer">
+                                            className="px-5 py-2.5 bg-[var(--cuba-primary)] hover:bg-[var(--cuba-primary-strong)] text-white font-bold text-xs rounded-xl shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer">
                                             <FaCheckCircle className="w-3.5 h-3.5" />
                                             <span>{isSubmitting ? 'Saving...' : `Save & Next → ${SUBTAB_CONFIG[SUB_TAB_ORDER[SUB_TAB_ORDER.indexOf(profileSubTab) + 1]]?.name || 'Next'}`}</span>
                                         </button>
@@ -5321,14 +5350,14 @@ function DashboardSettings(_props) {
                             return (
                                 <>
                                     {/* StepGuide Card */}
-                                    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
+                                    <div className="rounded-xl border border-[var(--cuba-line)] bg-white p-4 shadow-2xs">
                                         <div className="flex items-center justify-between gap-2">
-                                            <h2 className="text-[11px] font-black uppercase tracking-widest text-slate-400">GUIDE</h2>
+                                            <h2 className="text-[11px] font-black uppercase tracking-widest text-[var(--cuba-ink-subtle)]">GUIDE</h2>
                                             <span
                                                 className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
                                                     isReady
-                                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                                        : 'bg-amber-50 text-amber-700 border border-amber-200'
+                                                        ? 'bg-[var(--cuba-success-soft)] text-[var(--cuba-success)] border border-[var(--cuba-success-soft)]'
+                                                        : 'bg-[var(--cuba-warning-soft)] text-[var(--cuba-warning)] border border-[var(--cuba-warning-soft)]'
                                                 }`}
                                             >
                                                 <FaCheckCircle className="w-3 h-3" />
@@ -5343,12 +5372,12 @@ function DashboardSettings(_props) {
                                                         <button
                                                             type="button"
                                                             onClick={() => handleFocusGap(gap)}
-                                                            className="w-full text-left flex items-start gap-2 text-[13px] leading-snug text-slate-700 hover:text-indigo-600 hover:bg-indigo-50/60 p-1.5 -mx-1.5 rounded-lg transition-colors cursor-pointer group"
+                                                            className="w-full text-left flex items-start gap-2 text-[13px] leading-snug text-[var(--cuba-ink-muted)] hover:text-[var(--cuba-primary-ink-strong)] hover:bg-[var(--cuba-primary-soft)]/60 p-1.5 -mx-1.5 rounded-lg transition-colors cursor-pointer group"
                                                             title="Click to jump to this field"
                                                         >
-                                                            <span className="mt-1.5 w-1.5 h-1.5 rounded-xs shrink-0 bg-amber-400 group-hover:bg-indigo-500 transition-colors" />
+                                                            <span className="mt-1.5 w-1.5 h-1.5 rounded-xs shrink-0 bg-[var(--cuba-warning)] group-hover:bg-[var(--cuba-primary)] transition-colors" />
                                                             <span className="flex-1">{gap}</span>
-                                                            <span className="opacity-0 group-hover:opacity-100 text-indigo-500 text-[11px] transition-opacity font-bold shrink-0">
+                                                            <span className="opacity-0 group-hover:opacity-100 text-[var(--cuba-primary-ink-strong)] text-[11px] transition-opacity font-bold shrink-0">
                                                                 Jump →
                                                             </span>
                                                         </button>
@@ -5358,14 +5387,14 @@ function DashboardSettings(_props) {
                                         )}
 
                                         {conf.atsTips && conf.atsTips.length > 0 && (
-                                            <div className="mt-4 border-t border-slate-100 pt-3">
-                                                <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                                            <div className="mt-4 border-t border-[var(--cuba-line)] pt-3">
+                                                <h3 className="text-[10px] font-black uppercase tracking-wider text-[var(--cuba-ink-subtle)]">
                                                     What the ATS check says
                                                 </h3>
                                                 <ul className="mt-2 space-y-1.5">
                                                     {conf.atsTips.map((tip, index) => (
-                                                        <li key={`${tip}-${index}`} className="flex items-start gap-2 text-[13px] leading-snug text-slate-600">
-                                                            <span className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 bg-slate-300" />
+                                                        <li key={`${tip}-${index}`} className="flex items-start gap-2 text-[13px] leading-snug text-[var(--cuba-ink-muted)]">
+                                                            <span className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 bg-[var(--cuba-line-strong)]" />
                                                             <span>{tip}</span>
                                                         </li>
                                                     ))}
@@ -5374,12 +5403,12 @@ function DashboardSettings(_props) {
                                         )}
 
                                         {isReady && (
-                                            <div className="mt-3 space-y-1.5 rounded-lg border border-emerald-200/90 bg-emerald-50/70 p-3">
-                                                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800">
-                                                    <FaCheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                                            <div className="mt-3 space-y-1.5 rounded-lg border border-[var(--cuba-success-soft)]/90 bg-[var(--cuba-success-soft)]/70 p-3">
+                                                <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--cuba-success)]">
+                                                    <FaCheckCircle className="w-3.5 h-3.5 text-[var(--cuba-success)]" />
                                                     <span>Optimized for screening ✓</span>
                                                 </div>
-                                                <p className="text-[12px] leading-relaxed text-emerald-700/90">
+                                                <p className="text-[12px] leading-relaxed text-[var(--cuba-success)]/90">
                                                     All essential fields and formatting checks for this section are satisfied.
                                                 </p>
                                             </div>
@@ -5387,23 +5416,23 @@ function DashboardSettings(_props) {
                                     </div>
 
                                     {/* Live AI Sync / Master Source card — Clean Light */}
-                                    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs space-y-3">
+                                    <div className="rounded-xl border border-[var(--cuba-line)] bg-white p-4 shadow-2xs space-y-3">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
-                                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                                                <span className="text-xs font-bold text-slate-900">Master Sync Active</span>
+                                                <span className="w-2 h-2 rounded-full bg-[var(--cuba-success)] animate-pulse"></span>
+                                                <span className="text-xs font-bold text-[var(--cuba-ink)]">Master Sync Active</span>
                                             </div>
-                                            <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-md">
+                                            <span className="text-[10px] font-bold text-[var(--cuba-primary-ink-strong)] bg-[var(--cuba-primary-soft)] border border-[var(--cuba-primary-line)] px-2 py-0.5 rounded-md">
                                                 Single Source
                                             </span>
                                         </div>
-                                        <p className="text-xs leading-relaxed text-slate-600">
+                                        <p className="text-xs leading-relaxed text-[var(--cuba-ink-muted)]">
                                             Data saved here automatically synchronizes across all <strong>51 AI Resume Templates</strong>, Cover Letters, and Portfolio.
                                         </p>
                                         <button
                                             type="button"
                                             onClick={() => navigate('/build-resume/heading')}
-                                            className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-2xs transition-colors cursor-pointer"
+                                            className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-[var(--cuba-primary)] hover:bg-[var(--cuba-primary-strong)] text-white text-xs font-bold shadow-2xs transition-colors cursor-pointer"
                                         >
                                             <span>Build / Edit Resumes</span>
                                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -5413,12 +5442,12 @@ function DashboardSettings(_props) {
                                     </div>
 
                                     {/* Sovereign MariaDB Data Protection Trust Badge — Clean Light */}
-                                    <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3.5 text-xs text-slate-600 space-y-1.5 shadow-2xs">
-                                        <div className="flex items-center gap-2 font-bold text-slate-800">
-                                            <FaShieldAlt className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                    <div className="rounded-xl border border-[var(--cuba-line)] bg-[var(--cuba-canvas)]/80 p-3.5 text-xs text-[var(--cuba-ink-muted)] space-y-1.5 shadow-2xs">
+                                        <div className="flex items-center gap-2 font-bold text-[var(--cuba-ink)]">
+                                            <FaShieldAlt className="w-3.5 h-3.5 text-[var(--cuba-success)] shrink-0" />
                                             <span>Sovereign Storage</span>
                                         </div>
-                                        <p className="text-[11px] leading-relaxed text-slate-500">
+                                        <p className="text-[11px] leading-relaxed text-[var(--cuba-ink-subtle)]">
                                             Protected with AES-256 GCM encryption at rest and in transit. Private, isolated by account, and GDPR compliant.
                                         </p>
                                     </div>
@@ -5435,17 +5464,17 @@ function DashboardSettings(_props) {
                         {/* Card 1: Subscription Tier Overview & Billing CTA */}
                         <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-5 sm:p-6 text-white shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
                             <div className="flex items-center gap-3.5 min-w-0">
-                                <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-400 font-extrabold text-lg shrink-0">
-                                    <FaCrown className="w-6 h-6 text-amber-400" />
+                                <div className="w-12 h-12 rounded-2xl bg-[var(--cuba-primary)]/20 border border-[var(--cuba-primary-line)]/30 flex items-center justify-center text-[var(--cuba-primary-ink-strong)] font-extrabold text-lg shrink-0">
+                                    <FaCrown className="w-6 h-6 text-[var(--cuba-warning)]" />
                                 </div>
                                 <div className="min-w-0">
                                     <div className="flex items-center gap-2 mb-0.5">
                                         <h3 className="text-sm font-bold text-white uppercase tracking-wider">Subscription Tier</h3>
-                                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold text-indigo-300 bg-indigo-500/30 border border-indigo-400/40 uppercase">
+                                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold text-[var(--cuba-ink-inverse)] bg-[var(--cuba-primary)]/30 border border-[var(--cuba-primary-line)]/40 uppercase">
                                             {effectiveMembership || 'Basic'}
                                         </span>
                                     </div>
-                                    <p className="text-xs text-slate-300 font-normal">
+                                    <p className="text-xs text-[var(--cuba-ink-subtle)] font-normal">
                                         {effectiveMembership === 'Enterprise'
                                             ? 'Enterprise workspace access with dedicated organization governance & AI quotas.'
                                             : effectiveMembership === 'Premium' || effectiveMembership === 'Pro'
@@ -5457,28 +5486,28 @@ function DashboardSettings(_props) {
                             <a
                                 href="/dashboard/plans"
                                 className="px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer">
-                                <FaCrown className="w-3.5 h-3.5 text-amber-300" />
+                                <FaCrown className="w-3.5 h-3.5 text-[var(--cuba-warning)]" />
                                 <span>{effectiveMembership === 'Enterprise' ? 'Manage Enterprise & Plans' : (effectiveMembership === 'Premium' || effectiveMembership === 'Pro') ? 'Manage Subscription & Plans' : 'Upgrade to PRO Career Pass'}</span>
                             </a>
                         </div>
 
                         {/* Card 2: Account Credentials & Password Change Form */}
-                        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
-                            <div className="flex items-center space-x-3 pb-4 border-b border-slate-100">
-                                <div className="p-2.5 bg-indigo-50 rounded-xl">
-                                    <FaShieldAlt className="w-5 h-5 text-indigo-600" />
+                        <div className="bg-white rounded-2xl border border-[var(--cuba-line)] p-6 sm:p-8 shadow-sm space-y-6">
+                            <div className="flex items-center space-x-3 pb-4 border-b border-[var(--cuba-line)]">
+                                <div className="p-2.5 bg-[var(--cuba-primary-soft)] rounded-xl">
+                                    <FaShieldAlt className="w-5 h-5 text-[var(--cuba-primary-ink-strong)]" />
                                 </div>
                                 <div>
-                                    <h2 className="text-base font-bold text-slate-900">Account Credentials &amp; Security</h2>
-                                    <p className="text-xs text-slate-500">Update your primary login email and security authentication password.</p>
+                                    <h2 className="text-base font-bold text-[var(--cuba-ink)]">Account Credentials &amp; Security</h2>
+                                    <p className="text-xs text-[var(--cuba-ink-subtle)]">Update your primary login email and security authentication password.</p>
                                 </div>
                             </div>
 
                             <form onSubmit={handleAccountSubmit} className="space-y-6">
                                 {/* Account Email Address Input */}
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
-                                        <FaEnvelope className="w-3.5 h-3.5 text-indigo-600" /> Account Email Address
+                                    <label className="block text-xs font-bold text-[var(--cuba-ink-muted)] mb-1 flex items-center gap-1.5">
+                                        <FaEnvelope className="w-3.5 h-3.5 text-[var(--cuba-primary-ink-strong)]" /> Account Email Address
                                     </label>
                                     <input
                                         type="email"
@@ -5486,43 +5515,43 @@ function DashboardSettings(_props) {
                                         value={databaseAccountSettings.email}
                                         onChange={(e) => setDatabaseAccountSettings({ ...databaseAccountSettings, email: e.target.value })}
                                         placeholder="name@example.com"
-                                        className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                        className="w-full text-xs p-3 bg-white border border-[var(--cuba-line-strong)] rounded-xl text-[var(--cuba-ink)] font-semibold focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-soft)] outline-none"
                                     />
                                 </div>
 
                                 {/* Password Change / Creation Grid */}
-                                <div className="border-t border-slate-100 pt-6 space-y-4">
-                                    <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                                        <FaKey className="w-3.5 h-3.5 text-indigo-600" /> {usesPasswordProvider ? 'Security Password Update & Re-authentication' : 'Create Account Security Password'}
+                                <div className="border-t border-[var(--cuba-line)] pt-6 space-y-4">
+                                    <h3 className="text-xs font-bold text-[var(--cuba-ink)] uppercase tracking-wider flex items-center gap-1.5">
+                                        <FaKey className="w-3.5 h-3.5 text-[var(--cuba-primary-ink-strong)]" /> {usesPasswordProvider ? 'Security Password Update & Re-authentication' : 'Create Account Security Password'}
                                     </h3>
 
                                     {usesPasswordProvider ? (
                                         /* Current Password Input for Identity Verification */
                                         <div>
-                                            <label className="block text-xs font-bold text-slate-700 mb-1">Current Password (Required for Email or Password Change)</label>
+                                            <label className="block text-xs font-bold text-[var(--cuba-ink-muted)] mb-1">Current Password (Required for Email or Password Change)</label>
                                             <div className="relative">
                                                 <input
                                                     type={showPasswordMap.current ? 'text' : 'password'}
                                                     value={accountPasswordState.currentPassword}
                                                     onChange={(e) => setAccountPasswordState({ ...accountPasswordState, currentPassword: e.target.value })}
                                                     placeholder="Enter current password to re-authenticate"
-                                                    className="w-full text-xs p-3 pr-10 bg-white border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                                    className="w-full text-xs p-3 pr-10 bg-white border border-[var(--cuba-line-strong)] rounded-xl text-[var(--cuba-ink)] font-semibold focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-soft)] outline-none"
                                                 />
                                                 <button
                                                     type="button"
                                                     onClick={() => setShowPasswordMap({ ...showPasswordMap, current: !showPasswordMap.current })}
-                                                    className="absolute right-3 top-3 text-slate-400 hover:text-slate-600">
+                                                    className="absolute right-3 top-3 text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)]">
                                                     {showPasswordMap.current ? <FaEyeSlash className="w-3.5 h-3.5" /> : <FaEye className="w-3.5 h-3.5" />}
                                                 </button>
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="p-3.5 bg-blue-50/80 border border-blue-200/80 rounded-xl text-xs text-blue-900 space-y-1">
-                                            <div className="font-bold flex items-center gap-1.5 text-blue-950">
-                                                <FaShieldAlt className="w-3.5 h-3.5 text-blue-600" />
+                                        <div className="p-3.5 bg-[var(--cuba-info-soft)]/80 border border-[var(--cuba-info-soft)]/80 rounded-xl text-xs text-[var(--cuba-info)] space-y-1">
+                                            <div className="font-bold flex items-center gap-1.5 text-[var(--cuba-info)]">
+                                                <FaShieldAlt className="w-3.5 h-3.5 text-[var(--cuba-info)]" />
                                                 <span>OAuth-Authenticated Account ({primaryOAuthProvider})</span>
                                             </div>
-                                            <p className="text-blue-800 text-[11px] leading-relaxed">
+                                            <p className="text-[var(--cuba-info)] text-[11px] leading-relaxed">
                                                 You are currently signed in with {primaryOAuthProvider}. Set an independent security password below to also enable direct email and password login without affecting your {primaryOAuthProvider} account.
                                             </p>
                                         </div>
@@ -5531,19 +5560,19 @@ function DashboardSettings(_props) {
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         {/* New Security Password */}
                                         <div>
-                                            <label className="block text-xs font-bold text-slate-700 mb-1">{usesPasswordProvider ? 'New Security Password' : 'Set Security Password'}</label>
+                                            <label className="block text-xs font-bold text-[var(--cuba-ink-muted)] mb-1">{usesPasswordProvider ? 'New Security Password' : 'Set Security Password'}</label>
                                             <div className="relative">
                                                 <input
                                                     type={showPasswordMap.new ? 'text' : 'password'}
                                                     value={accountPasswordState.newPassword}
                                                     onChange={(e) => setAccountPasswordState({ ...accountPasswordState, newPassword: e.target.value })}
                                                     placeholder="Min. 8 characters"
-                                                    className="w-full text-xs p-3 pr-10 bg-white border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                                    className="w-full text-xs p-3 pr-10 bg-white border border-[var(--cuba-line-strong)] rounded-xl text-[var(--cuba-ink)] font-semibold focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-soft)] outline-none"
                                                 />
                                                 <button
                                                     type="button"
                                                     onClick={() => setShowPasswordMap({ ...showPasswordMap, new: !showPasswordMap.new })}
-                                                    className="absolute right-3 top-3 text-slate-400 hover:text-slate-600">
+                                                    className="absolute right-3 top-3 text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)]">
                                                     {showPasswordMap.new ? <FaEyeSlash className="w-3.5 h-3.5" /> : <FaEye className="w-3.5 h-3.5" />}
                                                 </button>
                                             </div>
@@ -5551,19 +5580,19 @@ function DashboardSettings(_props) {
 
                                         {/* Confirm New Password */}
                                         <div>
-                                            <label className="block text-xs font-bold text-slate-700 mb-1">{usesPasswordProvider ? 'Confirm New Password' : 'Confirm Password'}</label>
+                                            <label className="block text-xs font-bold text-[var(--cuba-ink-muted)] mb-1">{usesPasswordProvider ? 'Confirm New Password' : 'Confirm Password'}</label>
                                             <div className="relative">
                                                 <input
                                                     type={showPasswordMap.confirm ? 'text' : 'password'}
                                                     value={accountPasswordState.confirmPassword}
                                                     onChange={(e) => setAccountPasswordState({ ...accountPasswordState, confirmPassword: e.target.value })}
                                                     placeholder="Re-enter password"
-                                                    className="w-full text-xs p-3 pr-10 bg-white border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                                    className="w-full text-xs p-3 pr-10 bg-white border border-[var(--cuba-line-strong)] rounded-xl text-[var(--cuba-ink)] font-semibold focus:border-[var(--cuba-primary-line)] focus:ring-2 focus:ring-[var(--cuba-primary-soft)] outline-none"
                                                 />
                                                 <button
                                                     type="button"
                                                     onClick={() => setShowPasswordMap({ ...showPasswordMap, confirm: !showPasswordMap.confirm })}
-                                                    className="absolute right-3 top-3 text-slate-400 hover:text-slate-600">
+                                                    className="absolute right-3 top-3 text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)]">
                                                     {showPasswordMap.confirm ? <FaEyeSlash className="w-3.5 h-3.5" /> : <FaEye className="w-3.5 h-3.5" />}
                                                 </button>
                                             </div>
@@ -5572,34 +5601,34 @@ function DashboardSettings(_props) {
 
                                     {/* Password Criteria Real-Time Checklist */}
                                     {accountPasswordState.newPassword && (
-                                        <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1.5">
-                                            <span className="font-bold text-slate-700 block text-[11px] uppercase tracking-wider mb-1">Security Standards Checklist</span>
+                                        <div className="p-3 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-xl text-xs space-y-1.5">
+                                            <span className="font-bold text-[var(--cuba-ink-muted)] block text-[11px] uppercase tracking-wider mb-1">Security Standards Checklist</span>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] font-semibold">
-                                                <div className={`flex items-center gap-1.5 ${accountPasswordState.newPassword.length >= 8 ? 'text-emerald-700' : 'text-slate-400'}`}>
-                                                    <FaCheckCircle className={`w-3 h-3 ${accountPasswordState.newPassword.length >= 8 ? 'text-emerald-600' : 'text-slate-300'}`} />
+                                                <div className={`flex items-center gap-1.5 ${accountPasswordState.newPassword.length >= 8 ? 'text-[var(--cuba-success)]' : 'text-[var(--cuba-ink-subtle)]'}`}>
+                                                    <FaCheckCircle className={`w-3 h-3 ${accountPasswordState.newPassword.length >= 8 ? 'text-[var(--cuba-success)]' : 'text-[var(--cuba-ink-subtle)]'}`} />
                                                     <span>At least 8 characters</span>
                                                 </div>
-                                                <div className={`flex items-center gap-1.5 ${/[A-Z]/.test(accountPasswordState.newPassword) ? 'text-emerald-700' : 'text-slate-400'}`}>
-                                                    <FaCheckCircle className={`w-3 h-3 ${/[A-Z]/.test(accountPasswordState.newPassword) ? 'text-emerald-600' : 'text-slate-300'}`} />
+                                                <div className={`flex items-center gap-1.5 ${/[A-Z]/.test(accountPasswordState.newPassword) ? 'text-[var(--cuba-success)]' : 'text-[var(--cuba-ink-subtle)]'}`}>
+                                                    <FaCheckCircle className={`w-3 h-3 ${/[A-Z]/.test(accountPasswordState.newPassword) ? 'text-[var(--cuba-success)]' : 'text-[var(--cuba-ink-subtle)]'}`} />
                                                     <span>Uppercase letter (A-Z)</span>
                                                 </div>
-                                                <div className={`flex items-center gap-1.5 ${/\d/.test(accountPasswordState.newPassword) || /[^A-Za-z0-9]/.test(accountPasswordState.newPassword) ? 'text-emerald-700' : 'text-slate-400'}`}>
-                                                    <FaCheckCircle className={`w-3 h-3 ${/\d/.test(accountPasswordState.newPassword) || /[^A-Za-z0-9]/.test(accountPasswordState.newPassword) ? 'text-emerald-600' : 'text-slate-300'}`} />
+                                                <div className={`flex items-center gap-1.5 ${/\d/.test(accountPasswordState.newPassword) || /[^A-Za-z0-9]/.test(accountPasswordState.newPassword) ? 'text-[var(--cuba-success)]' : 'text-[var(--cuba-ink-subtle)]'}`}>
+                                                    <FaCheckCircle className={`w-3 h-3 ${/\d/.test(accountPasswordState.newPassword) || /[^A-Za-z0-9]/.test(accountPasswordState.newPassword) ? 'text-[var(--cuba-success)]' : 'text-[var(--cuba-ink-subtle)]'}`} />
                                                     <span>Number or special character</span>
                                                 </div>
-                                                <div className={`flex items-center gap-1.5 ${accountPasswordState.newPassword && accountPasswordState.newPassword === accountPasswordState.confirmPassword ? 'text-emerald-700' : 'text-slate-400'}`}>
-                                                    <FaCheckCircle className={`w-3 h-3 ${accountPasswordState.newPassword && accountPasswordState.newPassword === accountPasswordState.confirmPassword ? 'text-emerald-600' : 'text-slate-300'}`} />
+                                                <div className={`flex items-center gap-1.5 ${accountPasswordState.newPassword && accountPasswordState.newPassword === accountPasswordState.confirmPassword ? 'text-[var(--cuba-success)]' : 'text-[var(--cuba-ink-subtle)]'}`}>
+                                                    <FaCheckCircle className={`w-3 h-3 ${accountPasswordState.newPassword && accountPasswordState.newPassword === accountPasswordState.confirmPassword ? 'text-[var(--cuba-success)]' : 'text-[var(--cuba-ink-subtle)]'}`} />
                                                     <span>Passwords match</span>
                                                 </div>
                                             </div>
                                         </div>
                                     )}
 
-                                    <div className="flex justify-end pt-4 border-t border-slate-100">
+                                    <div className="flex justify-end pt-4 border-t border-[var(--cuba-line)]">
                                         <button
                                             type="submit"
                                             disabled={isSubmitting}
-                                            className="w-full sm:w-auto px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2">
+                                            className="w-full sm:w-auto px-6 py-3.5 bg-[var(--cuba-primary)] hover:bg-[var(--cuba-primary-strong)] text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2">
                                             <FaCheckCircle className="w-3.5 h-3.5" />
                                             <span>{isSubmitting ? 'Updating Account...' : (usesPasswordProvider ? 'Update Account Security ✓' : 'Create Account Security Password ✓')}</span>
                                         </button>
@@ -5609,28 +5638,28 @@ function DashboardSettings(_props) {
                         </div>
 
                         {/* Card 2.5: Twilio Mobile SMS Security & Alerts Center */}
-                        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
-                            <div className="flex items-center space-x-3 pb-4 border-b border-slate-100">
-                                <div className="p-2.5 bg-red-50 rounded-xl">
-                                    <FaMobileAlt className="w-5 h-5 text-red-600" />
+                        <div className="bg-white rounded-2xl border border-[var(--cuba-line)] p-6 sm:p-8 shadow-sm space-y-6">
+                            <div className="flex items-center space-x-3 pb-4 border-b border-[var(--cuba-line)]">
+                                <div className="p-2.5 bg-[var(--cuba-danger-soft)] rounded-xl">
+                                    <FaMobileAlt className="w-5 h-5 text-[var(--cuba-danger)]" />
                                 </div>
                                 <div>
-                                    <h2 className="text-base font-bold text-slate-900">Mobile SMS Security &amp; Outgoing Alerts</h2>
-                                    <p className="text-xs text-slate-500">Configure your primary mobile number for instant SMS security notifications upon logins, 2FA updates, or password changes.</p>
+                                    <h2 className="text-base font-bold text-[var(--cuba-ink)]">Mobile SMS Security &amp; Outgoing Alerts</h2>
+                                    <p className="text-xs text-[var(--cuba-ink-subtle)]">Configure your primary mobile number for instant SMS security notifications upon logins, 2FA updates, or password changes.</p>
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
-                                        <FaMobileAlt className="w-3.5 h-3.5 text-red-600" /> Mobile Phone Number (with Country Code)
+                                    <label className="block text-xs font-bold text-[var(--cuba-ink-muted)] mb-1 flex items-center gap-1.5">
+                                        <FaMobileAlt className="w-3.5 h-3.5 text-[var(--cuba-danger)]" /> Mobile Phone Number (with Country Code)
                                     </label>
                                     <input
                                         type="tel"
                                         value={profile?.phone || ''}
                                         onChange={(e) => setProfile(prev => ({ ...prev, phone: e.target.value }))}
                                         placeholder="+1 415 555 2671 / +91 9876543210"
-                                        className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none"
+                                        className="w-full text-xs p-3 bg-white border border-[var(--cuba-line-strong)] rounded-xl text-[var(--cuba-ink)] font-semibold focus:border-[var(--cuba-danger)] focus:ring-2 focus:ring-[var(--cuba-danger-soft)] outline-none"
                                     />
                                 </div>
 
@@ -5651,8 +5680,8 @@ function DashboardSettings(_props) {
                                                 setToastState({ type: 'error', msg: `SMS Dispatch Failed: ${res.error}` });
                                             }
                                         }}
-                                        className="w-full sm:w-auto px-5 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer">
-                                        <FaMobileAlt className="w-3.5 h-3.5 text-red-400" />
+                                        className="w-full sm:w-auto px-5 py-3 bg-[var(--cuba-ink)] hover:bg-[var(--cuba-ink)] text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer">
+                                        <FaMobileAlt className="w-3.5 h-3.5 text-[var(--cuba-danger)]" />
                                         <span>Dispatch Test SMS Alert</span>
                                     </button>
                                 </div>
@@ -5660,33 +5689,33 @@ function DashboardSettings(_props) {
                         </div>
 
                         {/* Card 4: Two-Factor Authentication (TOTP 2FA) */}
-                        <div id="totp-security-hub" className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4 scroll-mt-24">
-                            <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                        <div id="totp-security-hub" className="bg-white rounded-2xl border border-[var(--cuba-line)] p-6 sm:p-8 shadow-sm space-y-4 scroll-mt-24">
+                            <div className="flex items-center justify-between gap-3 pb-3 border-b border-[var(--cuba-line)]">
                                 <div className="flex items-center space-x-3">
-                                    <div className="p-2.5 bg-purple-50 rounded-xl">
-                                        <FaMobileAlt className="w-5 h-5 text-purple-600" />
+                                    <div className="p-2.5 bg-[var(--cuba-primary-soft)] rounded-xl">
+                                        <FaMobileAlt className="w-5 h-5 text-[var(--cuba-primary-ink-strong)]" />
                                     </div>
                                     <div>
-                                        <h3 className="text-sm font-bold text-slate-900">Two-Factor Authentication (TOTP 2FA)</h3>
-                                        <p className="text-xs text-slate-500">Protect your account using Google Authenticator, Authy, Microsoft Authenticator, or 1Password.</p>
+                                        <h3 className="text-sm font-bold text-[var(--cuba-ink)]">Two-Factor Authentication (TOTP 2FA)</h3>
+                                        <p className="text-xs text-[var(--cuba-ink-subtle)]">Protect your account using Google Authenticator, Authy, Microsoft Authenticator, or 1Password.</p>
                                     </div>
                                 </div>
                                 <span className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 ${
                                     totpStatus.enabled
-                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                        : 'bg-slate-100 text-slate-600 border border-slate-200'
+                                        ? 'bg-[var(--cuba-success-soft)] text-[var(--cuba-success)] border border-[var(--cuba-success-soft)]'
+                                        : 'bg-[var(--cuba-canvas)] text-[var(--cuba-ink-muted)] border border-[var(--cuba-line)]'
                                 }`}>
-                                    <FaShieldAlt className={`w-3 h-3 ${totpStatus.enabled ? 'text-emerald-600' : 'text-slate-400'}`} />
+                                    <FaShieldAlt className={`w-3 h-3 ${totpStatus.enabled ? 'text-[var(--cuba-success)]' : 'text-[var(--cuba-ink-subtle)]'}`} />
                                     <span>{totpStatus.enabled ? '2FA Active 🟢' : 'Not Enrolled ⚪'}</span>
                                 </span>
                             </div>
 
-                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 bg-slate-50 border border-slate-200 rounded-xl">
-                                <div className="text-xs text-slate-600 space-y-1">
-                                    <p className="font-bold text-slate-900">
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-xl">
+                                <div className="text-xs text-[var(--cuba-ink-muted)] space-y-1">
+                                    <p className="font-bold text-[var(--cuba-ink)]">
                                         {totpStatus.enabled ? 'Your account is secured with 2FA.' : 'Add an extra layer of security to your account.'}
                                     </p>
-                                    <p className="text-[11px] text-slate-500">
+                                    <p className="text-[11px] text-[var(--cuba-ink-subtle)]">
                                         {totpStatus.enabled
                                             ? 'Each login will require entering a 6-digit dynamic code generated by your mobile authenticator app.'
                                             : 'Scan a QR code in Google Authenticator or Authy to generate dynamic login codes.'}
@@ -5698,7 +5727,7 @@ function DashboardSettings(_props) {
                                             <button
                                                 type="button"
                                                 onClick={() => setTotpDisableModalOpen(true)}
-                                                className="px-3.5 py-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 text-xs font-bold rounded-xl transition-all shadow-2xs cursor-pointer">
+                                                className="px-3.5 py-2 bg-[var(--cuba-danger-soft)] hover:bg-[var(--cuba-danger-soft)] border border-[var(--cuba-danger-soft)] text-[var(--cuba-danger)] text-xs font-bold rounded-xl transition-all shadow-2xs cursor-pointer">
                                                 Disable 2FA
                                             </button>
                                         </>
@@ -5706,7 +5735,7 @@ function DashboardSettings(_props) {
                                         <button
                                             type="button"
                                             onClick={handleStartTotpSetup}
-                                            className="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer">
+                                            className="px-4 py-2.5 bg-[var(--cuba-primary)] hover:bg-[var(--cuba-primary-strong)] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer">
                                             <FaQrcode className="w-3.5 h-3.5" />
                                             <span>Enable 2FA (Authenticator App)</span>
                                         </button>
@@ -5716,70 +5745,70 @@ function DashboardSettings(_props) {
                         </div>
 
                         {/* Card 5: Email Verification & Authentication Status */}
-                        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
-                            <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                        <div className="bg-white rounded-2xl border border-[var(--cuba-line)] p-6 sm:p-8 shadow-sm space-y-4">
+                            <div className="flex items-center justify-between gap-3 pb-3 border-b border-[var(--cuba-line)]">
                                 <div className="flex items-center space-x-3">
-                                    <div className="p-2.5 bg-indigo-50 rounded-xl">
-                                        <FaEnvelope className="w-5 h-5 text-indigo-600" />
+                                    <div className="p-2.5 bg-[var(--cuba-primary-soft)] rounded-xl">
+                                        <FaEnvelope className="w-5 h-5 text-[var(--cuba-primary-ink-strong)]" />
                                     </div>
                                     <div>
-                                        <h3 className="text-sm font-bold text-slate-900">Email Verification Status</h3>
-                                        <p className="text-xs text-slate-500">Verify your email address for account recovery and notification delivery.</p>
+                                        <h3 className="text-sm font-bold text-[var(--cuba-ink)]">Email Verification Status</h3>
+                                        <p className="text-xs text-[var(--cuba-ink-subtle)]">Verify your email address for account recovery and notification delivery.</p>
                                     </div>
                                 </div>
                                 <span className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 ${
                                     fire.auth().currentUser?.emailVerified
-                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                        : 'bg-amber-50 text-amber-700 border border-amber-200'
+                                        ? 'bg-[var(--cuba-success-soft)] text-[var(--cuba-success)] border border-[var(--cuba-success-soft)]'
+                                        : 'bg-[var(--cuba-warning-soft)] text-[var(--cuba-warning)] border border-[var(--cuba-warning-soft)]'
                                 }`}>
-                                    <FaCheckCircle className={`w-3 h-3 ${fire.auth().currentUser?.emailVerified ? 'text-emerald-600' : 'text-amber-500'}`} />
+                                    <FaCheckCircle className={`w-3 h-3 ${fire.auth().currentUser?.emailVerified ? 'text-[var(--cuba-success)]' : 'text-[var(--cuba-warning)]'}`} />
                                     <span>{fire.auth().currentUser?.emailVerified ? 'Verified Email 🟢' : 'Unverified Email 🟡'}</span>
                                 </span>
                             </div>
 
                             {!fire.auth().currentUser?.emailVerified && (
-                                <div className="p-4 bg-amber-50/60 border border-amber-200 rounded-xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                                    <div className="text-xs text-amber-900">
+                                <div className="p-4 bg-[var(--cuba-warning-soft)]/60 border border-[var(--cuba-warning-soft)] rounded-xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                                    <div className="text-xs text-[var(--cuba-warning)]">
                                         <p className="font-bold">Your email address has not been verified yet.</p>
-                                        <p className="text-[11px] text-amber-700">Click below to send a verification confirmation link to <strong>{fire.auth().currentUser?.email}</strong>.</p>
+                                        <p className="text-[11px] text-[var(--cuba-warning)]">Click below to send a verification confirmation link to <strong>{fire.auth().currentUser?.email}</strong>.</p>
                                     </div>
                                     <button
                                         type="button"
                                         onClick={handleSendVerificationEmail}
-                                        className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition-all shadow-2xs shrink-0">
+                                        className="px-4 py-2 bg-[var(--cuba-warning)] hover:bg-[var(--cuba-warning)] text-white text-xs font-bold rounded-xl transition-all shadow-2xs shrink-0">
                                         Resend Verification Email
                                     </button>
                                 </div>
                             )}
                         </div>
 
-                        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
-                            <div><h3 className="text-sm font-bold text-slate-900">Preferences &amp; Privacy</h3><p className="text-xs text-slate-500">These account-scoped choices do not change analytics consent or payment state.</p></div>
-                            <label className="block text-xs font-bold text-slate-700" htmlFor="account-language">Language<select id="account-language" value={preferences.language} onChange={event => setPreferences(current => ({ ...current, language: event.target.value }))} className="mt-1 w-full rounded-xl border border-slate-300 p-3 text-sm font-normal"><option value="en">English</option><option value="hi">हिन्दी</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="pt">Português</option><option value="it">Italiano</option><option value="nl">Nederlands</option></select></label>
-                            <div className="grid gap-3 sm:grid-cols-2">{[['emailNotifications','Email notifications'],['securityNotifications','Security notifications'],['productUpdates','Product updates'],['profileDiscoverable','Discoverable public profile']].map(([key,label]) => <label key={key} className="flex items-center gap-2 rounded-xl border border-slate-200 p-3 text-xs font-semibold"><input type="checkbox" checked={Boolean(preferences[key])} onChange={event => setPreferences(current => ({ ...current, [key]: event.target.checked }))} />{label}</label>)}</div>
+                        <div className="bg-white rounded-2xl border border-[var(--cuba-line)] p-6 sm:p-8 shadow-sm space-y-4">
+                            <div><h3 className="text-sm font-bold text-[var(--cuba-ink)]">Preferences &amp; Privacy</h3><p className="text-xs text-[var(--cuba-ink-subtle)]">These account-scoped choices do not change analytics consent or payment state.</p></div>
+                            <label className="block text-xs font-bold text-[var(--cuba-ink-muted)]" htmlFor="account-language">Language<select id="account-language" value={preferences.language} onChange={event => setPreferences(current => ({ ...current, language: event.target.value }))} className="mt-1 w-full rounded-xl border border-[var(--cuba-line-strong)] p-3 text-sm font-normal"><option value="en">English</option><option value="hi">हिन्दी</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="pt">Português</option><option value="it">Italiano</option><option value="nl">Nederlands</option></select></label>
+                            <div className="grid gap-3 sm:grid-cols-2">{[['emailNotifications','Email notifications'],['securityNotifications','Security notifications'],['productUpdates','Product updates'],['profileDiscoverable','Discoverable public profile']].map(([key,label]) => <label key={key} className="flex items-center gap-2 rounded-xl border border-[var(--cuba-line)] p-3 text-xs font-semibold"><input type="checkbox" checked={Boolean(preferences[key])} onChange={event => setPreferences(current => ({ ...current, [key]: event.target.checked }))} />{label}</label>)}</div>
                             <div className="flex flex-wrap items-center gap-3 pt-1">
-                                <button type="button" onClick={handlePreferencesSave} disabled={savingPreferences} className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700 disabled:opacity-50 transition-all">{savingPreferences ? 'Saving…' : 'Save preferences'}</button>
-                                <button type="button" onClick={openPrivacyChoicesModal} className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-2xs">Manage Cookie &amp; Analytics Choices</button>
+                                <button type="button" onClick={handlePreferencesSave} disabled={savingPreferences} className="rounded-xl bg-[var(--cuba-primary)] px-4 py-2 text-xs font-bold text-white hover:bg-[var(--cuba-primary-strong)] disabled:opacity-50 transition-all">{savingPreferences ? 'Saving…' : 'Save preferences'}</button>
+                                <button type="button" onClick={openPrivacyChoicesModal} className="rounded-xl border border-[var(--cuba-line-strong)] bg-white px-4 py-2 text-xs font-bold text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-canvas)] transition-all shadow-2xs">Manage Cookie &amp; Analytics Choices</button>
                             </div>
                         </div>
 
                         {/* Card 5: GDPR Data Portability & Export */}
-                        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
-                            <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                        <div className="bg-white rounded-2xl border border-[var(--cuba-line)] p-6 sm:p-8 shadow-sm space-y-4">
+                            <div className="flex items-center justify-between gap-3 pb-3 border-b border-[var(--cuba-line)]">
                                 <div className="flex items-center space-x-3">
-                                    <div className="p-2.5 bg-blue-50 rounded-xl">
-                                        <FaDownload className="w-5 h-5 text-blue-600" />
+                                    <div className="p-2.5 bg-[var(--cuba-info-soft)] rounded-xl">
+                                        <FaDownload className="w-5 h-5 text-[var(--cuba-info)]" />
                                     </div>
                                     <div>
-                                        <h3 className="text-sm font-bold text-slate-900">GDPR Data Portability &amp; Backup</h3>
-                                        <p className="text-xs text-slate-500">Download JSON for your profile, resumes, cover letters, Portfolios, CMS posts, employer content, applications, and accessible transactions. Provider-held identity/billing/audit records may require support export channels.</p>
+                                        <h3 className="text-sm font-bold text-[var(--cuba-ink)]">GDPR Data Portability &amp; Backup</h3>
+                                        <p className="text-xs text-[var(--cuba-ink-subtle)]">Download JSON for your profile, resumes, cover letters, Portfolios, CMS posts, employer content, applications, and accessible transactions. Provider-held identity/billing/audit records may require support export channels.</p>
                                     </div>
                                 </div>
                                 <button
                                     type="button"
                                     onClick={handleExportUserData}
                                     disabled={isSubmitting}
-                                    className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-2 shrink-0">
+                                    className="px-4 py-2.5 bg-[var(--cuba-info)] hover:bg-[var(--cuba-info)] text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-2 shrink-0">
                                     <FaDownload className="w-3.5 h-3.5" />
                                     <span>Download All My Data (JSON)</span>
                                 </button>
@@ -5787,30 +5816,30 @@ function DashboardSettings(_props) {
                         </div>
 
                         {/* Card 6: Active Device Sessions & Security Logs */}
-                        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
-                            <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                        <div className="bg-white rounded-2xl border border-[var(--cuba-line)] p-6 sm:p-8 shadow-sm space-y-4">
+                            <div className="flex items-center justify-between gap-3 pb-3 border-b border-[var(--cuba-line)]">
                                 <div className="flex items-center space-x-3">
-                                    <div className="p-2.5 bg-emerald-50 rounded-xl">
-                                        <FaDesktop className="w-5 h-5 text-emerald-600" />
+                                    <div className="p-2.5 bg-[var(--cuba-success-soft)] rounded-xl">
+                                        <FaDesktop className="w-5 h-5 text-[var(--cuba-success)]" />
                                     </div>
                                     <div>
-                                        <h3 className="text-sm font-bold text-slate-900">Active Device Sessions</h3>
-                                        <p className="text-xs text-slate-500">Manage device logins and authenticated browser sessions.</p>
+                                        <h3 className="text-sm font-bold text-[var(--cuba-ink)]">Active Device Sessions</h3>
+                                        <p className="text-xs text-[var(--cuba-ink-subtle)]">Manage device logins and authenticated browser sessions.</p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-3">
+                            <div className="p-4 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-xl flex items-center justify-between gap-3">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-9 h-9 rounded-lg bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-700 font-bold text-xs shrink-0">
+                                    <div className="w-9 h-9 rounded-lg bg-[var(--cuba-success-soft)] border border-[var(--cuba-success-soft)] flex items-center justify-center text-[var(--cuba-success)] font-bold text-xs shrink-0">
                                         💻
                                     </div>
                                     <div>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-xs font-bold text-slate-900">Current Session</span>
-                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-700">Active Now</span>
+                                            <span className="text-xs font-bold text-[var(--cuba-ink)]">Current Session</span>
+                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[var(--cuba-success-soft)] text-[var(--cuba-success)]">Active Now</span>
                                         </div>
-                                        <p className="text-[11px] text-slate-500 font-medium">
+                                        <p className="text-[11px] text-[var(--cuba-ink-subtle)] font-medium">
                                             {navigator.platform || 'Desktop'} • {navigator.userAgent.includes('Chrome') ? 'Chrome Web Browser' : 'Modern Browser'}
                                         </p>
                                     </div>
@@ -5818,22 +5847,22 @@ function DashboardSettings(_props) {
                                 <button
                                     type="button"
                                     onClick={() => triggerNotification('Session security verified. Current device authenticated.')}
-                                    className="px-3.5 py-2 bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 text-xs font-bold rounded-xl transition-all shadow-2xs">
+                                    className="px-3.5 py-2 bg-white hover:bg-[var(--cuba-canvas)] border border-[var(--cuba-line-strong)] text-[var(--cuba-ink-muted)] text-xs font-bold rounded-xl transition-all shadow-2xs">
                                     Verify Active Session
                                 </button>
                             </div>
                         </div>
 
                         {/* Card 7: Historical Login Audit Trail */}
-                        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
-                            <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                        <div className="bg-white rounded-2xl border border-[var(--cuba-line)] p-6 sm:p-8 shadow-sm space-y-4">
+                            <div className="flex items-center justify-between gap-3 pb-3 border-b border-[var(--cuba-line)]">
                                 <div className="flex items-center space-x-3">
-                                    <div className="p-2.5 bg-slate-100 rounded-xl">
-                                        <FaHistory className="w-5 h-5 text-slate-700" />
+                                    <div className="p-2.5 bg-[var(--cuba-canvas)] rounded-xl">
+                                        <FaHistory className="w-5 h-5 text-[var(--cuba-ink-muted)]" />
                                     </div>
                                     <div>
-                                        <h3 className="text-sm font-bold text-slate-900">Historical Login Audit Trail</h3>
-                                        <p className="text-xs text-slate-500">Security history of authenticated logins, devices, browsers, and timestamps.</p>
+                                        <h3 className="text-sm font-bold text-[var(--cuba-ink)]">Historical Login Audit Trail</h3>
+                                        <p className="text-xs text-[var(--cuba-ink-subtle)]">Security history of authenticated logins, devices, browsers, and timestamps.</p>
                                     </div>
                                 </div>
                                 <button
@@ -5846,21 +5875,21 @@ function DashboardSettings(_props) {
                                             triggerNotification('Login audit trail updated!');
                                         }
                                     }}
-                                    className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shrink-0 cursor-pointer">
+                                    className="px-3 py-1.5 bg-[var(--cuba-canvas)] hover:bg-[var(--cuba-line)] text-[var(--cuba-ink-muted)] text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shrink-0 cursor-pointer">
                                     <FaSyncAlt className="w-3 h-3" /> Refresh Trail
                                 </button>
                             </div>
 
                             {loginHistory.length === 0 ? (
-                                <div className="p-6 text-center bg-slate-50 border border-dashed border-slate-200 rounded-xl space-y-1">
-                                    <p className="text-xs font-semibold text-slate-700">Recent Login Session Recorded</p>
-                                    <p className="text-[11px] text-slate-500">Future login sessions will automatically build your security audit trail here.</p>
+                                <div className="p-6 text-center bg-[var(--cuba-canvas)] border border-dashed border-[var(--cuba-line)] rounded-xl space-y-1">
+                                    <p className="text-xs font-semibold text-[var(--cuba-ink-muted)]">Recent Login Session Recorded</p>
+                                    <p className="text-[11px] text-[var(--cuba-ink-subtle)]">Future login sessions will automatically build your security audit trail here.</p>
                                 </div>
                             ) : (
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left text-xs">
                                         <thead>
-                                            <tr className="border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                                            <tr className="border-b border-[var(--cuba-line)] text-[var(--cuba-ink-subtle)] font-bold uppercase tracking-wider text-[10px]">
                                                 <th className="pb-2">Date &amp; Time</th>
                                                 <th className="pb-2">Device OS</th>
                                                 <th className="pb-2">Browser</th>
@@ -5868,18 +5897,18 @@ function DashboardSettings(_props) {
                                                 <th className="pb-2 text-right">Status</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-100">
+                                        <tbody className="divide-y divide-[var(--cuba-line)]">
                                             {loginHistory.map((log, idx) => (
-                                                <tr key={log.id || idx} className="hover:bg-slate-50/80 transition-colors">
-                                                    <td className="py-3 font-semibold text-slate-900">
+                                                <tr key={log.id || idx} className="hover:bg-[var(--cuba-canvas)]/80 transition-colors">
+                                                    <td className="py-3 font-semibold text-[var(--cuba-ink)]">
                                                         {log.date ? `${log.date} ${log.time || ''}` : new Date(log.timestamp).toLocaleString()}
                                                     </td>
-                                                    <td className="py-3 text-slate-700 font-medium">{log.device || 'Windows PC'}</td>
-                                                    <td className="py-3 text-slate-700 font-medium">{log.browser || 'Google Chrome'}</td>
-                                                    <td className="py-3 text-slate-600 font-mono text-[11px]">{log.authMethod || 'Email & Password'}</td>
+                                                    <td className="py-3 text-[var(--cuba-ink-muted)] font-medium">{log.device || 'Windows PC'}</td>
+                                                    <td className="py-3 text-[var(--cuba-ink-muted)] font-medium">{log.browser || 'Google Chrome'}</td>
+                                                    <td className="py-3 text-[var(--cuba-ink-muted)] font-mono text-[11px]">{log.authMethod || 'Email & Password'}</td>
                                                     <td className="py-3 text-right">
-                                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                                            <FaCheckCircle className="w-2.5 h-2.5 text-emerald-500" />
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[var(--cuba-success-soft)] text-[var(--cuba-success)] border border-[var(--cuba-success-soft)]">
+                                                            <FaCheckCircle className="w-2.5 h-2.5 text-[var(--cuba-success)]" />
                                                             <span>{log.status || 'Success 🟢'}</span>
                                                         </span>
                                                     </td>
@@ -5892,21 +5921,21 @@ function DashboardSettings(_props) {
                         </div>
 
                         {/* Card 4: Danger Zone — Account Deletion */}
-                        <div className="bg-red-50/50 border border-red-200/80 rounded-2xl p-6 sm:p-8 space-y-4 shadow-2xs">
+                        <div className="bg-[var(--cuba-danger-soft)]/50 border border-[var(--cuba-danger-soft)]/80 rounded-2xl p-6 sm:p-8 space-y-4 shadow-2xs">
                             <div className="flex items-center justify-between gap-3">
                                 <div className="flex items-center space-x-3">
-                                    <div className="p-2.5 bg-red-100 rounded-xl">
-                                        <FaExclamationTriangle className="w-5 h-5 text-red-600" />
+                                    <div className="p-2.5 bg-[var(--cuba-danger-soft)] rounded-xl">
+                                        <FaExclamationTriangle className="w-5 h-5 text-[var(--cuba-danger)]" />
                                     </div>
                                     <div>
-                                        <h3 className="text-sm font-bold text-red-950">Danger Zone — Account Deletion</h3>
-                                        <p className="text-xs text-red-700">Permanently delete your account, master profile, saved resumes, and subscription data.</p>
+                                        <h3 className="text-sm font-bold text-[var(--cuba-danger)]">Danger Zone — Account Deletion</h3>
+                                        <p className="text-xs text-[var(--cuba-danger)]">Permanently delete your account, master profile, saved resumes, and subscription data.</p>
                                     </div>
                                 </div>
                                 <button
                                     type="button"
                                     onClick={() => setDeleteAccountModalOpen(true)}
-                                    className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center justify-center gap-1.5 shrink-0">
+                                    className="px-4 py-2.5 bg-[var(--cuba-danger)] hover:bg-[var(--cuba-danger)] text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center justify-center gap-1.5 shrink-0">
                                     <FaTrash className="w-3.5 h-3.5" />
                                     <span>Delete Account</span>
                                 </button>
@@ -5928,34 +5957,34 @@ function DashboardSettings(_props) {
 
         {/* Danger Zone Account Deletion Confirmation Modal */}
         {deleteAccountModalOpen && (
-            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4" role="presentation" onKeyDown={event => { if (event.key === 'Escape' && !isSubmitting) setDeleteAccountModalOpen(false); }}>
-                <div role="alertdialog" aria-modal="true" aria-labelledby="delete-account-title" aria-describedby="delete-account-description" className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4 border border-slate-200">
-                    <div className="flex items-center gap-3 text-red-600">
+            <div className="fixed inset-0 z-50 bg-[var(--cuba-ink)]/60 backdrop-blur-xs flex items-center justify-center p-4" role="presentation" onKeyDown={event => { if (event.key === 'Escape' && !isSubmitting) setDeleteAccountModalOpen(false); }}>
+                <div role="alertdialog" aria-modal="true" aria-labelledby="delete-account-title" aria-describedby="delete-account-description" className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4 border border-[var(--cuba-line)]">
+                    <div className="flex items-center gap-3 text-[var(--cuba-danger)]">
                         <FaExclamationTriangle className="w-6 h-6 shrink-0" />
-                        <h3 id="delete-account-title" className="text-base font-bold text-slate-900">Confirm Permanent Account Deletion</h3>
+                        <h3 id="delete-account-title" className="text-base font-bold text-[var(--cuba-ink)]">Confirm Permanent Account Deletion</h3>
                     </div>
-                    <p id="delete-account-description" className="text-xs text-slate-600 leading-relaxed">
+                    <p id="delete-account-description" className="text-xs text-[var(--cuba-ink-muted)] leading-relaxed">
                         This action is <strong>irreversible</strong>. Your identity and owned profile, resume, cover-letter, Portfolio, CMS, employer, job, application, notification, and messaging data will be removed. Payment, invoice, transaction, subscription, and security-audit records may be retained for legal, fraud-prevention, and accounting obligations.
                     </p>
                     <div className="space-y-3">
                         {usesPasswordProvider ? (
                             <div>
-                                <label className="block text-xs font-bold text-slate-700 mb-1">Current Password (Required for Identity Verification):</label>
-                                <input type="password" value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)} placeholder="Enter current password" className="w-full text-xs p-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-red-500 outline-none" />
+                                <label className="block text-xs font-bold text-[var(--cuba-ink-muted)] mb-1">Current Password (Required for Identity Verification):</label>
+                                <input type="password" value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)} placeholder="Enter current password" className="w-full text-xs p-3 bg-[var(--cuba-canvas)] border border-[var(--cuba-line-strong)] rounded-xl text-[var(--cuba-ink)] font-semibold focus:border-[var(--cuba-danger)] outline-none" />
                             </div>
                         ) : (
-                            <p className="text-xs text-slate-600">Your identity provider or recent verified sign-in will be used for confirmation.</p>
+                            <p className="text-xs text-[var(--cuba-ink-muted)]">Your identity provider or recent verified sign-in will be used for confirmation.</p>
                         )}
                         <div>
-                            <label className="block text-xs font-bold text-slate-700 mb-1">
-                                Type <span className="font-mono text-red-600 font-bold">DELETE</span> to confirm:
+                            <label className="block text-xs font-bold text-[var(--cuba-ink-muted)] mb-1">
+                                Type <span className="font-mono text-[var(--cuba-danger)] font-bold">DELETE</span> to confirm:
                             </label>
                             <input
                                 type="text"
                                 value={deleteInputText}
                                 onChange={(e) => setDeleteInputText(e.target.value)}
                                 placeholder="DELETE"
-                                className="w-full text-xs p-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono font-bold focus:border-red-500 outline-none"
+                                className="w-full text-xs p-3 bg-[var(--cuba-canvas)] border border-[var(--cuba-line-strong)] rounded-xl text-[var(--cuba-ink)] font-mono font-bold focus:border-[var(--cuba-danger)] outline-none"
                             />
                         </div>
                     </div>
@@ -5964,14 +5993,14 @@ function DashboardSettings(_props) {
                             type="button"
                             autoFocus
                             onClick={() => { setDeleteAccountModalOpen(false); setDeleteInputText(''); setDeletePassword(''); }}
-                            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer">
+                            className="px-4 py-2 bg-[var(--cuba-canvas)] hover:bg-[var(--cuba-line)] text-[var(--cuba-ink-muted)] font-bold text-xs rounded-xl cursor-pointer">
                             Cancel
                         </button>
                         <button
                             type="button"
                             disabled={deleteInputText !== 'DELETE' || (usesPasswordProvider && !deletePassword) || isSubmitting}
                             onClick={handleDeleteAccountConfirmed}
-                            className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer">
+                            className="px-4 py-2 bg-[var(--cuba-danger)] hover:bg-[var(--cuba-danger)] disabled:opacity-40 text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer">
                             {isSubmitting ? 'Purging Account...' : 'Permanently Delete Account'}
                         </button>
                     </div>
@@ -5981,23 +6010,23 @@ function DashboardSettings(_props) {
 
         {/* TOTP 2FA Setup Wizard Modal */}
         {totpSetupModalOpen && (
-            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto" role="presentation" onKeyDown={event => { if (event.key === 'Escape' && !isSubmitting) setTotpSetupModalOpen(false); }}>
-                <div role="dialog" aria-modal="true" aria-labelledby="totp-setup-title" className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl space-y-5 border border-slate-200 my-8">
+            <div className="fixed inset-0 z-50 bg-[var(--cuba-ink)]/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto" role="presentation" onKeyDown={event => { if (event.key === 'Escape' && !isSubmitting) setTotpSetupModalOpen(false); }}>
+                <div role="dialog" aria-modal="true" aria-labelledby="totp-setup-title" className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl space-y-5 border border-[var(--cuba-line)] my-8">
                     {/* Header */}
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div className="flex items-center justify-between border-b border-[var(--cuba-line)] pb-3">
                         <div className="flex items-center gap-2.5">
-                            <div className="p-2 bg-purple-100 rounded-lg text-purple-700 font-bold">
+                            <div className="p-2 bg-[var(--cuba-primary-soft)] rounded-lg text-[var(--cuba-primary-ink-strong)] font-bold">
                                 <FaQrcode className="w-5 h-5" />
                             </div>
                             <div>
-                                <h3 id="totp-setup-title" className="text-base font-bold text-slate-900">Set Up Authenticator App (2FA)</h3>
-                                <p className="text-[11px] text-slate-500">Step {totpSetupStep} of 3 • Google Authenticator / Authy</p>
+                                <h3 id="totp-setup-title" className="text-base font-bold text-[var(--cuba-ink)]">Set Up Authenticator App (2FA)</h3>
+                                <p className="text-[11px] text-[var(--cuba-ink-subtle)]">Step {totpSetupStep} of 3 • Google Authenticator / Authy</p>
                             </div>
                         </div>
                         <button
                             type="button"
                             onClick={() => setTotpSetupModalOpen(false)}
-                            className="text-slate-400 hover:text-slate-600 text-lg font-bold">
+                            className="text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] text-lg font-bold">
                             ✕
                         </button>
                     </div>
@@ -6005,12 +6034,12 @@ function DashboardSettings(_props) {
                     {/* Step 1: Scan QR Code & View Base32 Secret Key */}
                     {totpSetupStep === 1 && (
                         <div className="space-y-4">
-                            <div className="p-3 bg-purple-50/70 border border-purple-100 rounded-xl text-xs text-purple-900 leading-relaxed">
+                            <div className="p-3 bg-[var(--cuba-primary-soft)]/70 border border-[var(--cuba-primary-line)] rounded-xl text-xs text-[var(--cuba-primary-ink-strong)] leading-relaxed">
                                 <strong>1. Open Google Authenticator or Authy</strong> on your mobile phone and tap <strong>"+"</strong> to add a new account, then scan the QR code below.
                             </div>
 
-                            <div className="flex flex-col sm:flex-row items-center gap-4 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
-                                <div className="p-2 bg-white rounded-xl shadow-xs border border-slate-200 shrink-0">
+                            <div className="flex flex-col sm:flex-row items-center gap-4 p-4 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-2xl">
+                                <div className="p-2 bg-white rounded-xl shadow-xs border border-[var(--cuba-line)] shrink-0">
                                     <img
                                         src={totpQrCodeDataUrl}
                                         alt="2FA QR Code"
@@ -6018,8 +6047,8 @@ function DashboardSettings(_props) {
                                     />
                                 </div>
                                 <div className="space-y-2 text-xs min-w-0 flex-1">
-                                    <span className="font-bold text-slate-700 block uppercase tracking-wider text-[10px]">Can't scan? Enter key manually:</span>
-                                    <div className="flex items-center gap-2 p-2.5 bg-white border border-slate-300 rounded-xl font-mono text-xs font-bold text-purple-900">
+                                    <span className="font-bold text-[var(--cuba-ink-muted)] block uppercase tracking-wider text-[10px]">Can't scan? Enter key manually:</span>
+                                    <div className="flex items-center gap-2 p-2.5 bg-white border border-[var(--cuba-line-strong)] rounded-xl font-mono text-xs font-bold text-[var(--cuba-primary-ink-strong)]">
                                         <span className="truncate select-all">{totpSetupSecret}</span>
                                         <button
                                             type="button"
@@ -6027,26 +6056,26 @@ function DashboardSettings(_props) {
                                                 navigator.clipboard.writeText(totpSetupSecret);
                                                 triggerNotification('Secret key copied to clipboard!');
                                             }}
-                                            className="p-1 text-slate-500 hover:text-purple-700 shrink-0"
+                                            className="p-1 text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-primary-ink-strong)] shrink-0"
                                             title="Copy key">
                                             <FaCopy className="w-3.5 h-3.5" />
                                         </button>
                                     </div>
-                                    <p className="text-[10px] text-slate-500">Account Type: Time-based (TOTP), 6 digits, 30s period.</p>
+                                    <p className="text-[10px] text-[var(--cuba-ink-subtle)]">Account Type: Time-based (TOTP), 6 digits, 30s period.</p>
                                 </div>
                             </div>
 
-                            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                            <div className="flex justify-end gap-2 pt-2 border-t border-[var(--cuba-line)]">
                                 <button
                                     type="button"
                                     onClick={() => setTotpSetupModalOpen(false)}
-                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl">
+                                    className="px-4 py-2 bg-[var(--cuba-canvas)] hover:bg-[var(--cuba-line)] text-[var(--cuba-ink-muted)] font-bold text-xs rounded-xl">
                                     Cancel
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setTotpSetupStep(2)}
-                                    className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-xs">
+                                    className="px-5 py-2.5 bg-[var(--cuba-primary)] hover:bg-[var(--cuba-primary-strong)] text-white font-bold text-xs rounded-xl shadow-xs">
                                     Next: Verify Code →
                                 </button>
                             </div>
@@ -6056,34 +6085,34 @@ function DashboardSettings(_props) {
                     {/* Step 2: 6-Digit TOTP Verification */}
                     {totpSetupStep === 2 && (
                         <div className="space-y-4">
-                            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 leading-relaxed">
+                            <div className="p-3 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-xl text-xs text-[var(--cuba-ink-muted)] leading-relaxed">
                                 Enter the <strong>6-digit security code</strong> currently generated by Google Authenticator / Authy to verify setup.
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-slate-700 mb-1">6-Digit Verification Code</label>
+                                <label className="block text-xs font-bold text-[var(--cuba-ink-muted)] mb-1">6-Digit Verification Code</label>
                                 <input
                                     type="text"
                                     maxLength={6}
                                     value={totpVerificationCode}
                                     onChange={(e) => setTotpVerificationCode(e.target.value.replace(/\D/g, ''))}
                                     placeholder="123456"
-                                    className="w-full text-center text-xl tracking-widest font-mono p-3.5 bg-slate-50 border border-purple-300 rounded-xl text-purple-950 font-extrabold focus:border-purple-600 outline-none"
+                                    className="w-full text-center text-xl tracking-widest font-mono p-3.5 bg-[var(--cuba-canvas)] border border-[var(--cuba-primary-line)] rounded-xl text-[var(--cuba-primary-ink-strong)] font-extrabold focus:border-[var(--cuba-primary-line)] outline-none"
                                 />
                             </div>
 
-                            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                            <div className="flex items-center justify-between pt-2 border-t border-[var(--cuba-line)]">
                                 <button
                                     type="button"
                                     onClick={() => setTotpSetupStep(1)}
-                                    className="px-3.5 py-2 text-slate-600 hover:text-slate-900 text-xs font-bold">
+                                    className="px-3.5 py-2 text-[var(--cuba-ink-muted)] hover:text-[var(--cuba-ink)] text-xs font-bold">
                                     ← Back to QR Code
                                 </button>
                                 <button
                                     type="button"
                                     disabled={totpVerificationCode.length !== 6 || isSubmitting}
                                     onClick={handleVerifyAndEnableTotp}
-                                    className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-40 text-white font-bold text-xs rounded-xl shadow-xs">
+                                    className="px-5 py-2.5 bg-[var(--cuba-primary)] hover:bg-[var(--cuba-primary-strong)] disabled:opacity-40 text-white font-bold text-xs rounded-xl shadow-xs">
                                     {isSubmitting ? 'Verifying...' : 'Verify & Enable 2FA ✓'}
                                 </button>
                             </div>
@@ -6093,11 +6122,11 @@ function DashboardSettings(_props) {
                     {/* Step 3: Native Firebase MFA enrollment complete */}
                     {totpSetupStep === 3 && (
                         <div className="space-y-4">
-                            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900 leading-relaxed">
+                            <div className="p-4 bg-[var(--cuba-success-soft)] border border-[var(--cuba-success-soft)] rounded-xl text-xs text-[var(--cuba-success)] leading-relaxed">
                                 <strong>Two-factor authentication is active.</strong> Firebase Identity Platform will require your authenticator code during sign-in. IME365 does not store or display reusable recovery codes.
                             </div>
-                            <div className="flex justify-end pt-2 border-t border-slate-100">
-                                <button type="button" onClick={() => setTotpSetupModalOpen(false)} className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs">
+                            <div className="flex justify-end pt-2 border-t border-[var(--cuba-line)]">
+                                <button type="button" onClick={() => setTotpSetupModalOpen(false)} className="px-5 py-2.5 bg-[var(--cuba-success)] hover:bg-[var(--cuba-success)] text-white font-bold text-xs rounded-xl shadow-xs">
                                     Done &amp; Close ✓
                                 </button>
                             </div>
@@ -6109,37 +6138,37 @@ function DashboardSettings(_props) {
 
         {/* Disable TOTP 2FA Confirmation Modal */}
         {totpDisableModalOpen && (
-            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4" role="presentation" onKeyDown={event => { if (event.key === 'Escape' && !isSubmitting) setTotpDisableModalOpen(false); }}>
-                <div role="alertdialog" aria-modal="true" aria-labelledby="totp-disable-title" className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4 border border-slate-200">
-                    <div className="flex items-center gap-3 text-red-600">
+            <div className="fixed inset-0 z-50 bg-[var(--cuba-ink)]/60 backdrop-blur-xs flex items-center justify-center p-4" role="presentation" onKeyDown={event => { if (event.key === 'Escape' && !isSubmitting) setTotpDisableModalOpen(false); }}>
+                <div role="alertdialog" aria-modal="true" aria-labelledby="totp-disable-title" className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4 border border-[var(--cuba-line)]">
+                    <div className="flex items-center gap-3 text-[var(--cuba-danger)]">
                         <FaExclamationTriangle className="w-6 h-6 shrink-0" />
-                        <h3 id="totp-disable-title" className="text-base font-bold text-slate-900">Disable Two-Factor Authentication</h3>
+                        <h3 id="totp-disable-title" className="text-base font-bold text-[var(--cuba-ink)]">Disable Two-Factor Authentication</h3>
                     </div>
-                    <p className="text-xs text-slate-600 leading-relaxed">
+                    <p className="text-xs text-[var(--cuba-ink-muted)] leading-relaxed">
                         Disabling 2FA reduces your account security. Reauthenticate with your account provider to confirm.
                     </p>
                     <div className="space-y-3">
                         {usesPasswordProvider ? (
                             <div>
-                                <label className="block text-xs font-bold text-slate-700 mb-1">Current Account Password (Required):</label>
-                                <input type="password" value={totpDisablePassword} onChange={(e) => setTotpDisablePassword(e.target.value)} placeholder="Enter current password" className="w-full text-xs p-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-red-500 outline-none" />
+                                <label className="block text-xs font-bold text-[var(--cuba-ink-muted)] mb-1">Current Account Password (Required):</label>
+                                <input type="password" value={totpDisablePassword} onChange={(e) => setTotpDisablePassword(e.target.value)} placeholder="Enter current password" className="w-full text-xs p-3 bg-[var(--cuba-canvas)] border border-[var(--cuba-line-strong)] rounded-xl text-[var(--cuba-ink)] font-semibold focus:border-[var(--cuba-danger)] outline-none" />
                             </div>
                         ) : (
-                            <p className="text-xs text-slate-600">Your identity provider will open a secure reauthentication popup.</p>
+                            <p className="text-xs text-[var(--cuba-ink-muted)]">Your identity provider will open a secure reauthentication popup.</p>
                         )}
                     </div>
-                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--cuba-line)]">
                         <button
                             type="button"
                             onClick={() => { setTotpDisableModalOpen(false); setTotpDisablePassword(''); }}
-                            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl">
+                            className="px-4 py-2 bg-[var(--cuba-canvas)] hover:bg-[var(--cuba-line)] text-[var(--cuba-ink-muted)] font-bold text-xs rounded-xl">
                             Cancel
                         </button>
                         <button
                             type="button"
                             disabled={(usesPasswordProvider && !totpDisablePassword) || isSubmitting}
                             onClick={handleDisableTotpConfirmed}
-                            className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white font-bold text-xs rounded-xl shadow-xs">
+                            className="px-4 py-2 bg-[var(--cuba-danger)] hover:bg-[var(--cuba-danger)] disabled:opacity-40 text-white font-bold text-xs rounded-xl shadow-xs">
                             {isSubmitting ? 'Disabling...' : 'Confirm Disable 2FA'}
                         </button>
                     </div>

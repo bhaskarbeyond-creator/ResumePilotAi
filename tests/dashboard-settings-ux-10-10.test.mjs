@@ -25,7 +25,10 @@ test('DashboardSettings Profile UX 10/10 Verification Suite', () => {
     // 4. Interactive Copilot Rail Gap Navigation
     assert.match(fileContent, /handleFocusGap\s*=\s*\(gapText\)\s*=>/, 'Must provide handleFocusGap helper');
     assert.match(fileContent, /scrollIntoView\(\{\s*behavior:\s*'smooth',\s*block:\s*'center'\s*\}\)/, 'Must smooth-scroll target field on gap click');
-    assert.match(fileContent, /el\.classList\.add\('ring-2',\s*'ring-indigo-400'\)/, 'Must highlight focused field with glowing ring');
+    // DIR-089 supersedes the literal class here: the hardcoded ring-indigo-400 focus ring was
+    // tokenised to --cuba-primary-ring. The assertion still requires that a two-class focus
+    // ring is applied to the focused field, so the intent is unchanged.
+    assert.match(fileContent, /el\.classList\.add\('ring-2',\s*'ring-\[var\(--cuba-primary-ring\)\]'\)/, 'Must highlight focused field with glowing ring');
     assert.match(fileContent, /onClick=\{\(\) => handleFocusGap\(gap\)\}/, 'Must wire gap item clicks to handleFocusGap');
 
     // 5. 12 Canonical Subtabs Alignment & Synthesis Capstone Position

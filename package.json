@@ -48,6 +48,7 @@
     "test:dir086": "node --test tests/dir086-candidate-overview-polish.test.mjs",
     "test:dir087": "node --test tests/dir087-candidate-master-audit.test.mjs",
     "test:dir088": "node --test tests/dir088-resume-builder-mastery.test.mjs",
+    "test:dir089": "node --test tests/dir089-settings-security-mastery.test.mjs",
     "release:manifest": "node scripts/generate-certified-freeze-manifest.mjs",
     "test:dir064:visual": "node template-lab/docx-visual-parity.mjs",
     "test:api-resilience": "node tests/test_api_server_e2e_resilience.cjs",
