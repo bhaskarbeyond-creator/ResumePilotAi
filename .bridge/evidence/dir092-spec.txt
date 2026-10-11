@@ -1,0 +1,42 @@
+﻿VISUAL TARGET: d:\xampp\htdocs\IME365\.bridge\references\candidate-dashboard-target-reference.png (Exact reference uploaded by user). User explicitly commanded: 'i need exactly same layout. check the current one and give proper directive'. The previous directive DIR-091 only implemented S1 (CubaMetricCardRow.jsx) and left S2-S6 unbuilt. In DIR-092, implement the complete layout with 100% visual and functional fidelity across DashboardHomepage.jsx, CubaCandidateShell.jsx, CandidateExecutiveRail.jsx, and child components:
+
+1. WELCOME & ACTION HEADER:
+- Left: 'Good morning, <Name>! ðŸ‘‹' (bold h1) + subtext 'Take the next step towards your dream career. Your candidate workspace at a glance.'
+- Right: Quote 'Better resumes. Brighter opportunities.' (muted italic) + Action Button Group:
+  * '+ Create Resume âˆ¨' (Solid purple primary dropdown CTA #4f46e5/#6366f1)
+  * 'ðŸ” Explore Jobs' (Outline button with search icon)
+  * 'ðŸŽ™ï¸ Mock Interview' (Outline button with mic icon)
+
+2. 4 HIGH-DENSITY METRIC CARDS (CubaMetricCardRow polish):
+- 'Total Resumes': Soft blue doc icon container, large value '5', 'â†‘ 2 this month' (green), chevron '>'
+- 'Avg. ATS Score': Donut ring gauge '69%' with green arc & centered label, label 'Avg. ATS Score', 'â†‘ +12%' (green) 'Target 80%+', chevron '>'
+- 'Job Applications': Soft blue paper airplane container, large value '1', 'â†‘ 1 this week' (green), chevron '>'
+- 'Interview Coach': Soft red/rose users icon container, value 'Ready', 'Start a session' (purple link), chevron '>'
+
+3. WORKSPACE TOOLBAR WITH VIEW TOGGLE & SORT:
+- Segmented category pills: 'All Resumes (N)' (Active solid purple pill), 'Tailored (N)' (white pill), 'Master (N)', 'Drafts (N)' using plugin-free [scrollbar-width:none] [&::-webkit-scrollbar]:hidden
+- Right controls:
+  * Search input: 'ðŸ” Search resumes by title, role, or keyword...' (Ctrl+K binding)
+  * 'Sort âˆ¨' dropdown (Last Updated, ATS Score, Title)
+  * View Toggle: [ âŠž ] (Grid active) / [ â˜° ] (List inactive)
+
+4. RESUME CARDS (4 ACTIVE DOCUMENT CARDS + 1 DASHED CONTAINER):
+- Cards 1-4: Top status badge ('ðŸŸ¢ Master', 'ðŸŸ£ Tailored', 'âšª Draft') + 'â€¢â€¢â€¢' overflow menu; realistic thumbnail paper preview; Title ('Master Resume', 'Software Engineer - Product', 'Data Analyst Resume', 'UX Designer Resume') + date ('Updated Oct 11, 2026'); dual metadata badges ('ATS: XX/100', 'X job matches'); full-width solid purple 'âœï¸ Edit Resume' primary button; 4-icon action row: [ðŸ“„ PDF], [ðŸ“ Word], [ðŸ”— Share], [â€¢â€¢â€¢ More].
+- Card 5: Dashed container '+ Create a New Resume' with soft blue/purple background, plus icon, 'Start from scratch or use AI to create a professional resume.', 'Create with AI' (solid purple) and 'Upload Resume' (outline) buttons.
+
+5. BOTTOM INTELLIGENCE & ANALYTICS (3 COLUMNS):
+- Col 1: 'Application Progress' monthly bar chart (Jan-Jun) with grouped bars (Applied, Shortlisted, Interview, Offers) + 'View Details' link.
+- Col 2: 'Top Job Matches for You' with company logos (Google, Accenture, Infosys), job titles, locations, match badges ('92% Match', '86% Match', '78% Match') + bookmarks + 'View All' link.
+- Col 3: 'Your Next Steps' checklist stepper (Complete resume âœ“, Improve ATS to 80%+ â—‹, Apply to matching jobs â—‹, Take a mock interview â—‹) + 'View All' link.
+
+6. RIGHT RAIL AI CAREER ASSISTANT:
+- Header: 'AI Career Assistant' + 'â— Live' status badge + 'Your Career Co-pilot' + 'Get personalised insights, improve your resume, and prepare for interviews.'
+- Navigation Tabs: 'Suggestions' (active purple underline), 'Resume Insights', 'Job Match'
+- 4 Quick Action Cards: 'Improve ATS score', 'Tailor to a job description', 'Generate cover letter', 'Prepare for interview' (with colored icon circles and chevron '>')
+- Interactive prompt input: 'Ask me anything about your career...' + purple send button 'âž¤' + prompt chips ('Improve my resume', 'Find jobs for me', 'Interview tips')
+- 'Today's Insights' section: Warning (69% ATS), Job Matches (3 new jobs), Complete profile.
+
+7. LEFT SIDEBAR PROMO:
+- 'ðŸ‘‘ Upgrade to Pro' card in CubaAppShell sidebar with 'Unlock advanced AI tools...' + 'Upgrade Now â†’' button.
+
+INVARIANTS: Sub-4s Vite build, 0 lint errors, 55 CV templates diff=0, XAMPP policy, zero synthetic data, test suite tests/dir092-candidate-dashboard-reference-layout.test.mjs passing 100%.

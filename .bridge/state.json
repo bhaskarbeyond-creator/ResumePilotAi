@@ -1,26 +1,26 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-11T07:45:38.124Z",
-  "eventCount": 2835,
-  "activeDirectiveId": "DIR-090",
-  "activeDirectiveTitle": "Candidate Workspace (/dashboard) 10/10 Transformation — Workspace-First Layout, Collapsible Copilot, Grid/List Views & Golden-Ratio Cards",
-  "activeDirectiveStatus": "IN_PROGRESS",
+  "updatedAt": "2026-10-11T08:20:21.946Z",
+  "eventCount": 2859,
+  "activeDirectiveId": "DIR-092",
+  "activeDirectiveTitle": "Candidate Workspace (/dashboard) 10/10 Reference Layout Transformation — End-to-End Implementation of Authoritative Target Screenshot",
+  "activeDirectiveStatus": "ISSUED",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-11T07:38:59.317Z",
-  "unreadForLead": 168,
-  "unreadForDev": 274,
+  "stallDeadline": "2026-10-11T07:47:45.487Z",
+  "unreadForLead": 174,
+  "unreadForDev": 291,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-11T07:38:59.317Z",
-    "status": "Target MET - measured 9.3/10, up from a measured 3.7. Tokenised 1293 of 1340 legacy colour utilities (96.5%) with an explicit table that avoids two verified traps: --cuba-primary-ink is WHITE so accent text maps to ink-strong, and the pill tokens are SOLID so tints use -soft. The last increment came from fixing a REAL defect - the account load only console.error'd, leaving the hub silently half-empty, so I added a role=alert failure surface with retry, which lifted guards 0.667 to 1.0 and the score 8.5 to 9.3. 47 residual are deferred gradient stops (compositional, one pinned by a test) plus one shadow-colour case, and AC1 proves nothing else remains. I superseded one pinned focus-ring class and said so. dir089 5/5, 78/78 settings suites, product EXIT 0, security EXIT 0, xampp EXIT 0, build 2.80s, lint 0 errors, frozen diff 0. Submitting.",
-    "percent": 95
+    "timestamp": "2026-10-11T07:47:45.487Z",
+    "status": "PARTIAL delivery, stated up front. S1 collapsible Copilot rail DELIVERED: the rigid 7fr/3fr split at CubaCandidateShell.jsx:473 is now dynamic, with railCollapsed persisted to localStorage, a focusable aria-expanded toggle, and the rail removed from the tree when collapsed so the workspace takes full width. S2 duplicate CTA DELIVERED: the brief said one duplicate, but there were TWO sources - the HUD CTA at DashboardHomepage.jsx:1004 and a second toolbar button at :1221 running the identical onClick - so removing the toolbar copy is behaviour-neutral. S3 view toggle/sort/Ctrl+K, S4 golden-ratio cards and List View, and S5 keyword-gap pills are NOT delivered, and AC4 in the new suite asserts their absence so a green run cannot imply completion. I predicted three pins would break and only ONE did - dir084:58 - which I superseded while keeping the viewport lock and docked ratio asserted; dir077 and dir085 still pass so I left them alone. dir090 5/5, 98/98 pinned, product EXIT 0, security EXIT 0, xampp EXIT 0, build 2.84s, lint 0 errors, frozen diff 0.",
+    "percent": 90
   },
   "integrity": {
     "ok": false,
-    "checked": 2835,
-    "legacy": 1,
-    "bad": 1
+    "checked": 2859,
+    "legacy": 2,
+    "bad": 2
   }
 }

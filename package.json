@@ -51,6 +51,7 @@
     "test:dir089": "node --test tests/dir089-settings-security-mastery.test.mjs",
     "test:dir090": "node --test tests/dir090-candidate-dashboard-mastery.test.mjs",
     "test:dir091": "node --test tests/dir091-candidate-dashboard-reference-mastery.test.mjs",
+    "test:dir092": "node --test tests/dir092-candidate-dashboard-reference-layout.test.mjs",
     "release:manifest": "node scripts/generate-certified-freeze-manifest.mjs",
     "test:dir064:visual": "node template-lab/docx-visual-parity.mjs",
     "test:api-resilience": "node tests/test_api_server_e2e_resilience.cjs",

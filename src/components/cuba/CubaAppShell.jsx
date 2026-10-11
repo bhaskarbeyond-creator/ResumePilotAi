@@ -18,6 +18,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { FiMenu, FiSearch, FiSun, FiMoon, FiX } from 'react-icons/fi';
 // DIR-079: the header brand block's sidebar toggle glyphs.
 import { GoSidebarCollapse, GoSidebarExpand } from 'react-icons/go';
+// DIR-092 area 7: the sidebar "Upgrade to Pro" promo card.
+import CubaUpgradeCard from './CubaUpgradeCard';
 import AiEngineStatus from './AiEngineStatus';
 import CubaCommandPalette from './CubaCommandPalette';
 // DIR-026 / AC-2: the live unread-message badge. It is its OWN header action
@@ -136,6 +138,12 @@ export const CubaNavGroups = ({ groups, collapsed = false, onNavigate, headingId
 const CubaAppShell = ({
     navigation = [],
     navigationLabel = 'Candidate workspace navigation',
+    /**
+     * DIR-092 area 7: whether the signed-in user is already on a Pro plan. The sidebar promo
+     * card adapts its copy rather than upselling an existing subscriber. Defaults to false so
+     * every existing caller keeps working; the shell never guesses a plan from a missing prop.
+     */
+    isPro = false,
     /**
      * Structured breadcrumb trail (DIR-011). When supplied it is rendered as a
      * semantic `<nav aria-label="Breadcrumb">` with clickable ancestors.
@@ -592,6 +600,14 @@ const CubaAppShell = ({
                         </div>
                     )}
                     <CubaNavGroups groups={groups} collapsed={railCollapsed} onNavigate={handleNavClick} headingId="cuba-nav-heading" navigationLabel={navigationLabel} />
+                    {/* DIR-092 area 7: the reference anchors a promo card at the FOOT of the
+                        sidebar. CubaNavGroups is flex-1, so this sits below it without
+                        stealing scroll from the nav list. */}
+                    <CubaUpgradeCard
+                        collapsed={railCollapsed}
+                        isPro={Boolean(isPro)}
+                        onNavigate={handleNavClick}
+                    />
                 </aside>
 
                 {mobileOpen && (
