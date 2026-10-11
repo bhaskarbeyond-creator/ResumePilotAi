@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 // Step Components
@@ -89,6 +89,7 @@ const BuildResume = () => {
     const [saveSuccessMsg, setSaveSuccessMsg] = useState(false);
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [titleInput, setTitleInput] = useState('');
+    const [showQuickActions, setShowQuickActions] = useState(false);
 
     // Mobile responsiveness and studio drawer states
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -206,18 +207,19 @@ const BuildResume = () => {
     }, [location.pathname]);
 
     useEffect(() => {
-        if (!isMobileMenuOpen && !isMobilePreviewOpen && !showAllStepsModal && !showAtsDrawer) return undefined;
+        if (!isMobileMenuOpen && !isMobilePreviewOpen && !showAllStepsModal && !showAtsDrawer && !showQuickActions) return undefined;
         const closeOnEscape = event => {
             if (event.key === 'Escape') {
                 setIsMobileMenuOpen(false);
                 setIsMobilePreviewOpen(false);
                 setShowAllStepsModal(false);
                 setShowAtsDrawer(false);
+                setShowQuickActions(false);
             }
         };
         document.addEventListener('keydown', closeOnEscape);
         return () => document.removeEventListener('keydown', closeOnEscape);
-    }, [isMobileMenuOpen, isMobilePreviewOpen, showAllStepsModal, showAtsDrawer]);
+    }, [isMobileMenuOpen, isMobilePreviewOpen, showAllStepsModal, showAtsDrawer, showQuickActions]);
 
     // Load module settings (Import Module, ATS Score Module, etc.)
     useEffect(() => {
@@ -1021,6 +1023,15 @@ const BuildResume = () => {
         navigate(userData.user ? '/dashboard' : '/');
     };
 
+    // DIR-091: the breadcrumb ancestors are real links to '/dashboard'. They must still honour the
+    // same data-safety guarantee as handleExitBuilder, so pending edits are flushed first. The
+    // write is fire-and-forget because a client-side route change does not cancel the request.
+    const handleBreadcrumbNavigate = () => {
+        if (userIdRef.current && changeVersionRef.current > savedVersionRef.current) {
+            persistLatest({ manual: true });
+        }
+    };
+
     const handleAddCustomSection = () => {
         // Title is entered in a small in-app dialog.
         openCustomSectionDialog();
@@ -1811,6 +1822,26 @@ const BuildResume = () => {
 
                     <div className="h-4 w-px bg-[var(--cuba-line)] hidden md:block shrink-0"></div>
 
+                    <nav aria-label="Resume builder breadcrumb" className="hidden xl:flex shrink-0 items-center gap-1 text-[10px] font-semibold text-[var(--cuba-ink-subtle)]">
+                        <Link to="/dashboard" onClick={handleBreadcrumbNavigate} className="hover:text-[var(--cuba-primary-strong)] transition-colors">Dashboard</Link>
+                        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m9 18 6-6-6-6" /></svg>
+                        <Link to="/dashboard" onClick={handleBreadcrumbNavigate} className="hover:text-[var(--cuba-primary-strong)] transition-colors">Resumes &amp; Master CV</Link>
+                        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m9 18 6-6-6-6" /></svg>
+                        <Link to="/dashboard" onClick={handleBreadcrumbNavigate} className="hover:text-[var(--cuba-primary-strong)] transition-colors">Build Resume</Link>
+                        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m9 18 6-6-6-6" /></svg>
+                        {/* Same real resolution the header title uses: custom title, else the
+                            candidate's own name, else the honest untitled fallback. */}
+                        <span className="max-w-24 truncate text-[var(--cuba-ink-muted)]" aria-current="page">
+                            {(() => {
+                                const candidateFullName = `${resumeData?.firstname || ''} ${resumeData?.lastname || ''}`.trim();
+                                const hasCustomTitle = Boolean(resumeData?.title && resumeData.title.trim() && resumeData.title.trim() !== 'Untitled Resume');
+                                return hasCustomTitle
+                                    ? resumeData.title.trim()
+                                    : candidateFullName || t('DashboardHomepage.card.untitledResume', 'Untitled Resume');
+                            })()}
+                        </span>
+                    </nav>
+
                     {/* Resume Title & Active Template Badge.
                         DIR-055 S7: `min-w-[6rem]` is LOAD-BEARING. The title button
                         uses `truncate`, which sets `overflow:hidden`, which makes a
@@ -1883,7 +1914,7 @@ const BuildResume = () => {
                     </div>
 
                     {/* Auto-save Status Pill */}
-                    <div role="status" aria-live="polite" className="hidden 2xl:flex items-center gap-1.5 text-[11px] font-medium text-[var(--cuba-ink-subtle)] ml-1 shrink-0">
+                    <div role="status" aria-live="polite" className="hidden xl:flex items-center gap-1.5 text-[11px] font-medium text-[var(--cuba-ink-subtle)] ml-1 shrink-0">
                         <span className={`w-2 h-2 rounded-full ${saveState.status === 'saved' ? 'bg-emerald-500' : saveState.status === 'error' || saveState.status === 'conflict' ? 'bg-red-500' : 'bg-amber-500 animate-pulse'}`}></span>
                         <span className="truncate">{saveState.status === 'saved' ? 'Saved' : (saveState.message || 'Saving...')}</span>
                     </div>

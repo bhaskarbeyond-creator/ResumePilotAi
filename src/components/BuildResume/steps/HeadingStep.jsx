@@ -57,6 +57,7 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
     const [moreOpen, setMoreOpen] = useState(
         Boolean(resumeData?.website || resumeData?.linkedin || resumeData?.github || resumeData?.address || resumeData?.postalcode),
     );
+    const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
 
     const [isGeneratingJd, setIsGeneratingJd] = useState(false);
     const [jdAutofillMessage, setJdAutofillMessage] = useState('');
@@ -126,6 +127,25 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
 
     const handlePhotoChange = (photo) => {
         setFormData((prev) => ({ ...prev, photo }));
+    };
+
+    const resetPersonalInformation = () => {
+        // DIR-091: Reset is intentionally explicit (the confirmation state lives in
+        // the visible section header). The normal autosave/unmount pipeline remains
+        // the sole persistence path, so reset behaves exactly like user edits.
+        setFormData({
+            firstname: '', lastname: '', email: '', phone: '', country: '', city: '',
+            address: '', postalcode: '', occupation: '', photo: null, showPhoto: true,
+            website: '', linkedin: '', github: '',
+        });
+        setTargetRole('');
+        setTargetJd('');
+        targetRoleRef.current = '';
+        targetJdRef.current = '';
+        setTouched({});
+        setErrors({});
+        setMoreOpen(false);
+        setResetConfirmOpen(false);
     };
 
     const handleSave = () => {
@@ -446,16 +466,54 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
         <StepShell
             stepNumber={1}
             stepPath="heading"
-            title={t('HeadingStep.title', 'Your details')}
+            title={t('HeadingStep.title', 'Personal information')}
             subtitle={t('HeadingStep.subtitle', 'How recruiters reach you, and the role you are targeting.')}
             isComplete={isStepComplete}
-            statusBadge={`${completedRequiredFields}/${requiredFields.length} required fields`}
+            statusBadge={`${completedRequiredFields} of ${requiredFields.length} required fields`}
             resumeData={resumeData}
-            targetJd={resumeData?.targetJobDescription || ''}
+            targetJd={targetJd}
+            headerActions={(
+                <>
+                    {!resetConfirmOpen ? (
+                        <>
+                            <button
+                                type="button"
+                                onClick={handleAutofillJd}
+                                disabled={isGeneratingJd || !String(targetRole || formData.occupation || '').trim()}
+                                className="inline-flex min-h-8 items-center gap-1 rounded-lg border border-[var(--cuba-primary-line)] bg-[var(--cuba-primary-soft)] px-2.5 py-1 text-[10px] font-bold text-[var(--cuba-primary-strong)] transition-colors hover:bg-[var(--cuba-primary-soft-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+                                title="Generate target-role requirements with AI"
+                            >
+                                <MdAutoAwesome className="h-3.5 w-3.5" aria-hidden="true" />
+                                <span>{isGeneratingJd ? 'Generating…' : 'Auto Fill with AI'}</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setResetConfirmOpen(true)}
+                                className="inline-flex min-h-8 items-center rounded-lg px-2 py-1 text-[10px] font-bold text-[var(--cuba-ink-subtle)] transition-colors hover:bg-[var(--cuba-canvas)] hover:text-[var(--cuba-ink)]"
+                            >
+                                Reset section
+                            </button>
+                        </>
+                    ) : (
+                        <span className="inline-flex items-center gap-1 rounded-lg border border-[var(--cuba-warning)] bg-[var(--cuba-warning-soft)] p-1 text-[10px] font-bold text-[var(--cuba-warning)]">
+                            Clear all fields?
+                            <button type="button" onClick={resetPersonalInformation} className="rounded bg-[var(--cuba-warning)] px-1.5 py-1 text-white hover:opacity-90">Reset</button>
+                            <button type="button" onClick={() => setResetConfirmOpen(false)} className="rounded px-1.5 py-1 hover:bg-[var(--cuba-warning-soft)]">Cancel</button>
+                        </span>
+                    )}
+                </>
+            )}
         >
-            <form onSubmit={(e) => e.preventDefault()} className="rounded-xl border border-[var(--cuba-line)] bg-white p-4 sm:p-5 shadow-2xs space-y-5">
+            <form onSubmit={(e) => e.preventDefault()} className="rounded-2xl border border-[var(--cuba-line)] bg-white p-4 sm:p-5 lg:p-6 shadow-cuba-xl space-y-5">
                 {/* Identity */}
                 <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                        <div>
+                            <h2 className="text-sm font-extrabold tracking-tight text-[var(--cuba-ink)]">Personal &amp; contact details</h2>
+                            <p className="mt-0.5 text-[11px] leading-relaxed text-[var(--cuba-ink-subtle)]">Required fields help employers identify and contact you.</p>
+                        </div>
+                        <span className="shrink-0 rounded-full border border-[var(--cuba-line)] bg-[var(--cuba-canvas)] px-2 py-1 text-[10px] font-bold text-[var(--cuba-ink-subtle)]">Required *</span>
+                    </div>
                     <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 items-start">
                         <div className="shrink-0 pt-0.5">
                             <PhotoUpload

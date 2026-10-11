@@ -41,6 +41,7 @@ export default function StepShell({
     totalSteps = 12,
     hideGuide = false,
     guideChildren = null,
+    headerActions = null,
     children,
 }) {
     const [isMobileGuideOpen, setIsMobileGuideOpen] = useState(false);
@@ -70,7 +71,7 @@ export default function StepShell({
     return (
         <div className="w-full space-y-3 pb-8 sm:pb-0">
             <header className="rounded-xl border border-[var(--cuba-line)] bg-white px-4 py-3.5 sm:px-5 shadow-2xs">
-                <div className="flex items-center justify-between gap-3 min-w-0">
+                <div className="flex flex-wrap items-center justify-between gap-3 min-w-0">
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                         <div
                             className={`flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg text-xs sm:text-sm font-bold ${
@@ -103,6 +104,12 @@ export default function StepShell({
                             ) : null}
                         </div>
                     </div>
+
+                    {headerActions ? (
+                        <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+                            {headerActions}
+                        </div>
+                    ) : null}
 
                     {!hideGuide && (
                         <div className="shrink-0 hidden lg:block">

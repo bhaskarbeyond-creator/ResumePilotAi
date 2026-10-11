@@ -1238,7 +1238,7 @@
     }
   },
   "HeadingStep": {
-    "title": "Personal & Contact Information",
+    "title": "Personal information",
     "subtitle": "Tell us about yourself so employers can reach you easily. All required fields must be completed to proceed.",
     "progress": {
       "label": "Progress: {{completed}}/{{total}} required fields",

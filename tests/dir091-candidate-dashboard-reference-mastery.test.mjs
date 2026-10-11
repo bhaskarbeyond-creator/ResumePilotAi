@@ -112,3 +112,128 @@ test('DIR-091 AC6: the frozen CV template set and the XAMPP server policy are un
     const changed = execSync('git status --porcelain src/cv-templates', { cwd: root, encoding: 'utf8' }).trim();
     assert.equal(changed, '', 'src/cv-templates must have a zero diff');
 });
+
+// ---------------------------------------------------------------------------------------------
+// DIR-091 (two-page re-issue) — the BUILD RESUME half. Added under the Lead's ruling that the
+// dashboard rail mount (S5) is SUPERSEDED by the already-frozen CandidateExecutiveRail, and that
+// this suite must be EXTENDED rather than duplicated.
+// ---------------------------------------------------------------------------------------------
+
+const HEADING = 'src/components/BuildResume/steps/HeadingStep.jsx';
+const STEPSHELL = 'src/components/BuildResume/components/StepShell.jsx';
+const BUILDER = 'src/components/BuildResume/BuildResume.jsx';
+const ASSISTANT = 'src/components/Candidate/CandidateCareerAssistant.jsx';
+
+test('DIR-091 AC7: HeadingStep carries Auto Fill with AI and an inline-confirm Reset section', async () => {
+    const heading = await read(HEADING);
+
+    // Both reference header actions exist.
+    assert.match(heading, /Auto Fill with AI/);
+    assert.match(heading, /Reset section/);
+
+    // Reset is an inline confirm driven by component state — never a native dialog.
+    assert.match(heading, /resetConfirmOpen/);
+    assert.match(heading, /const resetPersonalInformation = \(\) => \{/);
+    assert.match(heading, /Clear all fields\?/);
+    assert.doesNotMatch(heading, /window\.confirm\(/);
+
+    // The section is retitled and labelled as required, per the reference.
+    assert.match(heading, /'Personal information'/);
+    assert.match(heading, /Personal &amp; contact details/);
+    assert.match(heading, /Required \*/);
+
+    // The component default is NOT sufficient: the i18n file OVERRIDES it, so the locale value must
+    // match the reference too. This defect was found by the S8 live DOM capture, not by this suite.
+    const en = JSON.parse(await read('src/locales/en/en.json'));
+    assert.equal(en.HeadingStep?.title, 'Personal information', 'the en locale must render the reference title');
+});
+
+test('DIR-091 AC8: StepShell exposes the headerActions slot without regressing the guide rail', async () => {
+    const shell = await read(STEPSHELL);
+
+    assert.match(shell, /headerActions = null,/);
+    assert.match(shell, /\{headerActions \? \(/);
+    // The header must wrap rather than crush the actions at narrow widths.
+    assert.match(shell, /flex flex-wrap items-center justify-between/);
+
+    // The guide rail still receives the DERIVED atsSection. The patch's atsResult pass-through was
+    // dropped as superseded, so no dead prop may reappear.
+    assert.match(shell, /<StepGuide stepPath=\{stepPath\} gaps=\{gaps\} atsSection=\{atsSection\} candidateContext=\{candidateContext\}>/);
+    assert.doesNotMatch(shell, /atsSection=\{atsSection\} atsResult=/);
+});
+
+test('DIR-091 AC9: the builder renders the four-level breadcrumb and shows Saved from xl', async () => {
+    const builder = await read(BUILDER);
+
+    assert.match(builder, /aria-label="Resume builder breadcrumb"/);
+
+    // Exactly the four reference levels, in order.
+    // Bound the slice to the nav element so the order check cannot be satisfied by text elsewhere.
+    const navStart = builder.indexOf('aria-label="Resume builder breadcrumb"');
+    const nav = builder.slice(navStart, builder.indexOf('</nav>', navStart));
+
+    let cursor = -1;
+    for (const label of ['Dashboard', 'Resumes &amp; Master CV', 'Build Resume']) {
+        const idx = nav.indexOf(label);
+        assert.ok(idx > cursor, `the breadcrumb must render "${label}" after the previous level`);
+        cursor = idx;
+    }
+
+    // Every ancestor segment must be a real LINK back to its route ('/dashboard' x3), not a button.
+    assert.equal((nav.match(/<Link to="\/dashboard"/g) || []).length, 3, 'all three ancestor segments must link to /dashboard');
+    assert.doesNotMatch(nav, /<button/, 'breadcrumb ancestors must be links, not buttons');
+
+    // The final level is the real resume title / candidate name, marked as the current page.
+    assert.match(nav, /aria-current="page"/);
+    assert.match(nav, /resumeData\?\.firstname/);
+
+    // The whole breadcrumb must render from the xl breakpoint upward.
+    assert.match(builder, /className="hidden xl:flex shrink-0 items-center gap-1 text-\[10px\] font-semibold text-\[var\(--cuba-ink-subtle\)\]"/);
+
+    // The Saved status pill must be visible at the reference viewport (xl), not only 2xl.
+    assert.match(builder, /role="status" aria-live="polite" className="hidden xl:flex items-center gap-1\.5 text-\[11px\] font-medium text-\[var\(--cuba-ink-subtle\)\] ml-1 shrink-0"/);
+    assert.doesNotMatch(builder, /className="hidden 2xl:flex items-center gap-1\.5 text-\[11px\] font-medium text-\[var\(--cuba-ink-subtle\)\] ml-1 shrink-0"/);
+});
+
+test('DIR-091 AC10: the new surfaces are Cuba-tokenised and carry no fabricated metrics', async () => {
+    const [assistant, heading] = await Promise.all([read(ASSISTANT), read(HEADING)]);
+
+    const PALETTE = /(?:bg|text|border|from|to|via|ring|fill|stroke)-(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\d{2,3}/;
+    const HEX = /#[0-9a-fA-F]{3,6}\b/;
+
+    // The career assistant is fully tokenised: no palette utilities, no raw hex colours.
+    assert.doesNotMatch(assistant, PALETTE, 'CandidateCareerAssistant must use Cuba tokens');
+    assert.doesNotMatch(assistant, HEX, 'CandidateCareerAssistant must not use raw hex colours');
+
+    // It reads real platform APIs only, and never renders a fabricated zero.
+    assert.match(assistant, /getActiveJobs/);
+    assert.match(assistant, /getTrackedJobs/);
+    assert.doesNotMatch(assistant, /\?\? 0/);
+    assert.match(assistant, /jdMatch\?\.score == null \? '—'/);
+
+    // The new HeadingStep header actions are token-based.
+    assert.match(heading, /border-\[var\(--cuba-primary-line\)\]/);
+    assert.match(heading, /bg-\[var\(--cuba-primary-soft\)\]/);
+    assert.match(heading, /text-\[var\(--cuba-warning\)\]/);
+});
+
+test('DIR-091 AC11: the metric row renders an explicit placeholder, never a fabricated zero', async () => {
+    const cards = await read('src/components/Candidate/CubaMetricCardRow.jsx');
+
+    // Every numeric card defaults to null (unknown) rather than to 0.
+    assert.match(cards, /count = null, bestScore = null, applications = null/);
+
+    // An unresolved applications read renders the placeholder, not a zero.
+    assert.match(cards, /applications === null \? '--' : String\(applications\)/);
+
+    // No numeric card may be handed a literal zero.
+    assert.doesNotMatch(cards, /value="0"/);
+    assert.doesNotMatch(cards, /value=\{0\}/);
+
+    // The Interview Coach card is a capability label ("Ready"), NOT a measured metric, so it must
+    // not be presented as a count. Its value stays the reference's own string.
+    assert.match(cards, /label="Interview Coach"/);
+    assert.match(cards, /value="Ready"/);
+});
+
+

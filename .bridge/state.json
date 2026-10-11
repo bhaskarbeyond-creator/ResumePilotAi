@@ -1,26 +1,26 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-11T11:09:10.987Z",
-  "eventCount": 2904,
-  "activeDirectiveId": null,
-  "activeDirectiveTitle": null,
-  "activeDirectiveStatus": null,
+  "updatedAt": "2026-10-11T18:33:11.491Z",
+  "eventCount": 2913,
+  "activeDirectiveId": "DIR-091",
+  "activeDirectiveTitle": "DIR-091: 100% Pixel-Perfect Reference Parity for Candidate Dashboard and Build Resume (Two-Page Operational Parity)",
+  "activeDirectiveStatus": "IN_PROGRESS",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
   "stallDeadline": "2026-10-11T10:51:33.854Z",
-  "unreadForLead": 192,
-  "unreadForDev": 317,
-  "pendingBlockers": 1,
+  "unreadForLead": 193,
+  "unreadForDev": 325,
+  "pendingBlockers": 0,
   "latestHeartbeat": {
     "timestamp": "2026-10-11T10:51:33.854Z",
     "status": "S1-S4 landed: rail fabrications removed (real insights memo render), PROGRESS_SERIES colours corrected (interview=success, offer=warning), Sort+Grid/List wired to real state, recency spelled out, header quote inlined. 52/52 pinned tests still green, frozen templates diff=0. Now repairing the capture harness (F-EV-1).",
     "percent": 55
   },
   "integrity": {
-    "ok": false,
-    "checked": 2904,
-    "legacy": 1,
-    "bad": 1
+    "ok": true,
+    "checked": 2913,
+    "legacy": 0,
+    "bad": 0
   }
 }
