@@ -2,11 +2,11 @@
   "id": "DIR-079",
   "title": "DIR-079: Align Top-Left Header Brand Block with Logo, GoSidebarCollapse Button & Vertical Divider",
   "priority": "P0",
-  "status": "IN_PROGRESS",
+  "status": "APPROVED",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-11T04:03:21.044Z",
-  "updatedAt": "2026-10-11T04:05:24.328Z",
+  "updatedAt": "2026-10-11T04:09:31.442Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "MISSION & TARGET SPECIFICATION:\nThe user provided a target reference design for the top-left header zone:\n[ Full IME365.com Logo ] [ GoSidebarCollapse Button in rounded-xl border tile ] | [ Vertical Divider Line ]\n\nMANDATORY IMPLEMENTATION REQUIREMENTS:\n1. Header Left Brand Block in CubaAppShell.jsx:\n   - Import GoSidebarCollapse and GoSidebarExpand from 'react-icons/go'.\n   - In the sticky <header className='cuba-glass sticky top-0 ...'>, create a dedicated top-left brand zone that spans the width of the sidebar:\n     * When expanded on desktop (md:flex): width is w-[var(--cuba-sidebar-w)] (260px) with border-r border-cuba-line (or border-r border-slate-200 dark:border-cuba-line) separating it from the rest of the header.\n     * Inner layout: flex items-center justify-between h-full px-3.5 sm:px-4.\n     * Left side: Authentic logo (<a data-testid='cuba-header-brand' href='/dashboard' ...><img src={activeLogo} alt='IME365.com' className='h-10 md:h-11 w-auto max-w-[185px] object-contain shrink-0' onError={...} /></a>).\n     * Right side: Sidebar toggle button (data-testid='cuba-sidebar-toggle') styled as a rounded-xl bordered tile:\n       className='cuba-focusable w-9 h-9 flex-none rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 dark:border-cuba-line dark:bg-cuba-card text-slate-600 hover:text-slate-900 dark:text-slate-300 flex items-center justify-center transition-colors shadow-2xs'\n       Rendering <GoSidebarCollapse className='w-4 h-4' /> when expanded, and <GoSidebarExpand className='w-4 h-4' /> when collapsed.\n     * When collapsed: width collapses cleanly to w-[var(--cuba-sidebar-w-collapsed)] (72px) with centered toggle button / brand mark.\n2. Ensure Zero Horizontal Drift in Header:\n   - The central command search pill remains centered in the remaining header space.\n   - Right rail (notifications, user menu, AI engine status) remains intact.\n3. Verification & Quality Gates:\n   - Add tests/dir079-header-brand-block.test.mjs verifying:\n     * GoSidebarCollapse and GoSidebarExpand used in header.\n     * Logo placed before the toggle button in the header brand block.\n     * Border-r divider present on the brand block.\n     * Tests pass with 0 errors.\n   - Pinned gates: dir078, dir077, dir048, test:product, test:security:static, test:xampp-policy, build (<4s), 0 lint errors, 0 diff on frozen CV templates.",
   "invariants": [],
@@ -26,10 +26,51 @@
     ],
     "planHash": "2ea73914958769cb0e0222c182c455baa1e345fd99440714c1a8d18b38aa932a"
   },
-  "evidence": null,
-  "reviews": [],
+  "evidence": {
+    "submittedAt": "2026-10-11T04:09:28.710Z",
+    "summary": "DIR-079 complete. CubaAppShell now has ONE dedicated top-left brand block (data-testid cuba-header-brand-block) that spans the sidebar width - hidden h-full flex-none items-center border-r md:flex, width railCollapsed ? w-[var(--cuba-sidebar-w-collapsed)] 72px : w-[var(--cuba-sidebar-w)] 260px, inner justify-between px-3.5 sm:px-4 expanded or justify-center px-1 compact. The expanded state renders the authentic logo link (cuba-header-brand, h-10 md:h-11 w-auto max-w-[185px] object-contain shrink-0, onError) followed by the sidebar toggle tile (cuba-sidebar-toggle) with the mandated rounded-xl bordered class carrying min-[1025px]:inline-flex, aria-label and aria-pressed, rendering GoSidebarCollapse when expanded and GoSidebarExpand when collapsed; the compact state centres the toggle at 1025px and up and the brand mark below 1025px. The old FiChevronLeft chevron is retired, the header padding became pl-3 pr-3 sm:pr-5 md:pl-0 so the border-r divider aligns with the sidebar edge, the DIR-077 spacer is retired and the centre search plus right rail are untouched (zero horizontal drift). dir048, dir077 and dir078 assertions updated. Gates: dir079 6/6, 223/223 pinned suites, test:product EXIT 0, security:static 67/67, xampp-policy 4/4, build 3.08s, lint 0 errors, dir063..dir079 all green, frozen cv-templates diff 0.",
+    "tests": {
+      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir079-evidence.log",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791691768711_dir079-evidence.log",
+      "sha256": "52e4ea04af7e8cf88dd8bfec982e2e2702ed3f4536e45a56c7a480eb18b267c8",
+      "size": 4124
+    },
+    "domCrawl": null,
+    "artifacts": [],
+    "git": {
+      "isGit": true,
+      "head": "5c14b1f2e90d9f10813d733911616eb7dedb7064",
+      "branch": "arena/01a0e100-resumepilotai",
+      "dirty": false,
+      "status": ""
+    },
+    "manifestHash": "fc10b42a729e2642a82fdb11f203449afb44f1f184d6745b69df7c9463419c03"
+  },
+  "reviews": [
+    {
+      "reviewedAt": "2026-10-11T04:09:31.442Z",
+      "verdict": "APPROVED",
+      "feedback": "Automated evidence audit: test artifact scanned, no failure markers, clean tree. This is a machine check, NOT a human Lead review.",
+      "evidenceHash": "fc10b42a729e2642a82fdb11f203449afb44f1f184d6745b69df7c9463419c03",
+      "automated": true,
+      "provenance": {
+        "actor": "LEAD_SUPERVISOR",
+        "invocation": "declared-automation",
+        "automated": true,
+        "reasons": [
+          "declared",
+          "non-tty"
+        ],
+        "pid": 19336,
+        "parentPid": 12396,
+        "tty": false,
+        "at": "2026-10-11T04:09:31.441Z",
+        "explicitlyAllowed": true
+      }
+    }
+  ],
   "freeze": null,
-  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "lastTransitionReason": "lead review",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {
