@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-11T02:16:37.035Z",
-  "seq": 2620,
-  "id": "evt_mv36zjiw_14a4a3f52cf1",
-  "type": "HEARTBEAT",
-  "title": "[Heartbeat] ACT started. Implementing S1 (decouple message route) + S2 (resolver deep-link) + S3 (migration 025).",
+  "timestamp": "2026-10-11T02:26:23.225Z",
+  "seq": 2621,
+  "id": "evt_mv37c3ty_d9a8498631c9",
+  "type": "EVIDENCE_SUBMITTED",
+  "title": "[Evidence] DIR-072: DIR-072: Decouple Notification vs Message Pipelines & Establish Dedicated Routing",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-072",
-  "summary": "ACT started. Implementing S1 (decouple message route) + S2 (resolver deep-link) + S3 (migration 025)."
+  "summary": "DIR-072 COMPLETE: Decoupled notification and message pipelines. Direct chat (/api/messages/send) no longer mints notifications. Distinct route resolution with conversation deep linking (?conversationId=). Dedicated /dashboard/notifications mounted. Migration 025 applied on MariaDB. 49/49 tests pass, lint 0 errors, security 67/67 pass, build exit 0."
 }

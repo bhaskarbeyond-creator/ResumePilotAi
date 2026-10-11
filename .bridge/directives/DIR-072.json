@@ -2,11 +2,11 @@
   "id": "DIR-072",
   "title": "DIR-072: Decouple Notification vs Message Pipelines & Establish Dedicated Routing",
   "priority": "P0",
-  "status": "IN_PROGRESS",
+  "status": "APPROVED",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-11T02:11:20.237Z",
-  "updatedAt": "2026-10-11T02:14:41.036Z",
+  "updatedAt": "2026-10-11T02:26:25.281Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "P0 ARCHITECTURAL MANDATES: 1. RCA & PIPELINE DECOUPLING: In backend/index.js line 2351, sending a direct chat message via /api/messages/send automatically inserts a row into the notifications table (type: message). This pollutes the candidate notification bell with duplicate chat spam (e.g. 25 unread identical New message notifications). Decouple direct chat messaging from the system notification feed. Peer-to-peer chat messages belong strictly to conversations and conversation_messages, tracked by useUnreadMessages and MessagesNavBadge. 2. DISTINCT REDIRECTION & ROUTING: In src/components/cuba/resolveNotificationHref.js, resolveNotificationHref currently routes all message types directly to CANDIDATE_ROUTES.messages (/dashboard/messages). The top header has both MessagesNavBadge (speech bubble) and M3NotificationCenter (bell), both collapsing to /dashboard/messages. Ensure system notifications route to their respective distinct functional areas (applied jobs, interviews, job tracker, plans, settings, portfolios). If a conversation notification is ever dispatched, it must deep-link to the specific conversation (/dashboard/messages?conversationId=...) rather than generic chat. 3. DEDICATED NOTIFICATIONS WORKSPACE: Mount a first-class /dashboard/notifications route in src/components/Dashboard/DashboardMain/DashboardMain.jsx so candidates have a dedicated full-page notifications management view, and wire a 'View all notifications' CTA in the M3NotificationCenter popover footer pointing to /dashboard/notifications. 4. DATA REMEDIATION & HYGIENE: Provide a safe, non-destructive migration or cleanup for stale placeholder duplicate 'message' notifications in the notifications table so the user's bell is unblocked from legacy chat spam. 5. REGRESSION & TEST GUARDS: Ensure all tests across DIR-063..DIR-071 stay green, and create tests/dir072-notifications-messages-decoupling.test.mjs validating decoupled pipelines, distinct routing, deep-linking, and clean quality gates.",
   "invariants": [],
@@ -28,10 +28,51 @@
     ],
     "planHash": "bd184ac44c2aba931d3a5ccb7a697dd95c586f884b635b3c361884c176fa327a"
   },
-  "evidence": null,
-  "reviews": [],
+  "evidence": {
+    "submittedAt": "2026-10-11T02:26:22.589Z",
+    "summary": "DIR-072 COMPLETE: Decoupled notification and message pipelines. Direct chat (/api/messages/send) no longer mints notifications. Distinct route resolution with conversation deep linking (?conversationId=). Dedicated /dashboard/notifications mounted. Migration 025 applied on MariaDB. 49/49 tests pass, lint 0 errors, security 67/67 pass, build exit 0.",
+    "tests": {
+      "source": "D:\\xampp\\htdocs\\IME365\\test-results\\dir072-evidence.log",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791685582590_dir072-evidence.log",
+      "sha256": "dd52e413007640ba329568a2c143076dc0da1cdade4c6544ce525d1bb020b490",
+      "size": 4300
+    },
+    "domCrawl": null,
+    "artifacts": [],
+    "git": {
+      "isGit": true,
+      "head": "118a76df36b069c1843c7c69af466a21bfa12753",
+      "branch": "arena/01a0e100-resumepilotai",
+      "dirty": false,
+      "status": ""
+    },
+    "manifestHash": "426dd01ab78b89cc4aa0e36c0cf7eb022153e16a17d8b1e0c9c5205f7c37ae57"
+  },
+  "reviews": [
+    {
+      "reviewedAt": "2026-10-11T02:26:25.281Z",
+      "verdict": "APPROVED",
+      "feedback": "Automated evidence audit: test artifact scanned, no failure markers, clean tree. This is a machine check, NOT a human Lead review.",
+      "evidenceHash": "426dd01ab78b89cc4aa0e36c0cf7eb022153e16a17d8b1e0c9c5205f7c37ae57",
+      "automated": true,
+      "provenance": {
+        "actor": "LEAD_SUPERVISOR",
+        "invocation": "declared-automation",
+        "automated": true,
+        "reasons": [
+          "declared",
+          "non-tty"
+        ],
+        "pid": 10000,
+        "parentPid": 3200,
+        "tty": false,
+        "at": "2026-10-11T02:26:25.281Z",
+        "explicitlyAllowed": true
+      }
+    }
+  ],
   "freeze": null,
-  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "lastTransitionReason": "lead review",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {
