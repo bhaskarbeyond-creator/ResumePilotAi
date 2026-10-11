@@ -1,0 +1,75 @@
+{
+  "id": "DIR-084",
+  "title": "Candidate Suite Single-Viewport Golden 10/10 Master Layout Refactor & Zero-Gap Functional Verification",
+  "priority": "P0",
+  "status": "IN_PROGRESS",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-11T05:49:35.293Z",
+  "updatedAt": "2026-10-11T05:51:21.915Z",
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "spec": "MANDATE: User explicitly requests: 'Refactor layouts of all pages, unlock them and make 10/10 updates. I need SWOT 10/10 rated and extremely high and smooth User experience and Best 10/10 layout for each page. Check the functionality after update and prove that nothing fails and everything is working 100% with no gaps. single Viewport layout is preferable to give best user experience.' (Bridge unlocked for 60 min). PHASE 1 - SINGLE-VIEWPORT OVERVIEW MASTER REFACTOR: In CubaCandidateShell.jsx, DashboardHomepage.jsx, and CandidateExecutiveRail.jsx, re-engineer the Overview layout geometry so the Hero banner, 4 Stat Cards, AI Career Briefing, and Executive Right Rail ALL fit simultaneously within a SINGLE VIEWPORT (1080p/1440p) with ZERO vertical page scrollbar. Compact padding (py-3/p-3.5), tight gaps (gap-2.5/gap-3), and cohesive briefing placement. PHASE 2 - SINGLE-VIEWPORT PARADIGM ACROSS ALL 15 PAGES: Enforce the single-viewport architecture across all Candidate Suite pages (Resumes, Cover Letters split-view, Portfolios Bento grid, Job Tracker intra-column Kanban, Applications, Interview Coach, Messages, Plans, Settings, Support). Every page body must lock within h-[calc(100vh-var(--cuba-header-h))] with internal scrolling where applicable and zero document-level page overflow. PHASE 3 - SWOT 10/10 NATIVE TOKENS & SMOOTH UX: Strict Cuba M3 glassmorphism in both light and dark modes, fluid transitions, and zero layout shift. PHASE 4 - ZERO-GAP FUNCTIONAL VERIFICATION: Author tests/dir084-single-viewport-mastery.test.mjs (AC1-AC8) proving 100% functional integrity, test all interactive controls, maintain build under 4s and lint clean, then submit evidence.",
+  "invariants": [],
+  "acceptanceCriteria": [],
+  "plan": {
+    "submittedAt": "2026-10-11T05:51:20.612Z",
+    "summary": "DIR-084 PHASES 1-3 forensics complete; this is the plan. ROOT CAUSE FOUND (PHASE 2 blocker): CubaAppShell.jsx:306 renders the shell root as w-full flex min-h-screen flex-col - min-h-screen, NOT a bounded height. The content row (CubaAppShell.jsx:522 w-full flex min-h-0 flex-1) and <main> (CubaAppShell.jsx:638 w-full min-w-0 flex-1 overflow-x-hidden) therefore never own the vertical scroll, so EVERY candidate page grows the DOCUMENT and the browser window scrollbar appears. That single line is why the whole suite violates the single-viewport paradigm. BLAST RADIUS: CubaAppShell is imported by CubaCandidateShell.jsx:7, CubaPortalShell.jsx:10 (employer/admin/enterprise) and DesignSystemShowcase.jsx:3, so a naive root change would alter four portals. The mandate is the Candidate Suite, so the plan adds an OPT-IN \u000biewportLock prop that only CubaCandidateShell sets - the other portals keep today's behaviour byte for byte, which is both safer and exactly the requested scope. PHASE 1 OVERVIEW GEOMETRY (measured): the Overview stacks, in order, a breadcrumb row (mb-2.5, CubaAppShell.jsx:649), the content pad (pt-2.5 pb-24 md:pt-3 md:pb-6, :644), CubaCandidateHero (banner p-6 sm:p-8 at CubaCandidateHero.jsx:111, h1 \text-2xl sm:text-3xl lg:text-4xl at :159, action row mt-6 at :168, ATS gauge panel p-4 at :194, and the FOUR stat cards at :253 in a gap-4 sm:gap-5 grid), AiCareerBriefing (about 90-120px), then the DashboardHomepage Document Gallery plus its four onboarding steps, all inside a space-y-4 md:space-y-5 wrapper (CubaCandidateShell.jsx:456) and a grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,7fr)_minmax(0,3fr)] (CubaCandidateShell.jsx:467) whose main column is space-y-6 and whose rail (CandidateExecutiveRail.jsx:99) is space-y-4. At 1080p that stack is roughly 900-1300px tall against a ~937px viewport, so the Hero, the 4 Stat Cards, the Briefing and the Rail can never be visible together - exactly the user complaint. The fix is to lock the region AND compact it: wrapper space-y-2.5, grid gap-3 promoted to 2xl, main column space-y-3, hero banner p-4 sm:p-5, h1 \text-xl sm:text-2xl lg:text-3xl, action row mt-4, gauge p-3, stat grid gap-2.5 sm:gap-3, rail space-y-2.5 with internal scrolling, and the Document Gallery plus Onboarding moved into an internally-scrolling lower region so they never push the fold. PHASE 3 TOKENS AND SMOOTHNESS: the touched surfaces stay on Cuba tokens with dark: counterparts wherever a raw utility must remain, scroll owners gain scrollbar-gutter: stable so the appearance of a scrollbar cannot shift the layout, and the interactive controls keep their transitions. INVARIANTS: XAMPP-only servers, no detached node/vite/nodemon daemon; frozen src/cv-templates diff 0; no auth, token, API, DB or RBAC change; zero fabricated data - no metric, count or telemetry value is invented and the existing real bindings (count, bestScore, applications, trackedJobs, onboarding progress) are preserved; preserve every DIR-048/055/072-083 pin and the dir081/dir082/dir083 suites; sub-4s build; 0 lint errors. UX STATES: every page keeps the DIR-081 four-state contract and every split view keeps its below-lg single-pane fallback; the locked region must still render loading, empty and error states in full. RESPONSIVE: 375px keeps the single column with the mobile tab bar and its pb-24 reserve; 768px two columns; 1080p and 1440p are the single-viewport targets; 1680px+ keeps the wide cap. QA: tests/dir084-single-viewport-mastery.test.mjs with AC1 the viewportLock contract (root h-[100dvh] min-h-0 overflow-hidden, main min-h-0 flex-1 overflow-y-auto, aside h-full) and the opt-in default, AC2 the compacted Overview geometry, AC3 the Hero, the four stat cards, the Briefing and the Rail all inside ONE bounded region, AC4 no document-level min-h-screen remains on any of the 15 candidate page roots, AC5 dark-mode parity on every touched file, AC6 the interactive-control inventory is preserved, AC7 no new dependency and the build stays under 4s, AC8 no layout-shift hazard (scrollbar-gutter stable on the scroll owners). A11Y: the locked region keeps one main landmark and its skip target (cuba-main-content), the scroll owner stays keyboard reachable, focus is not trapped by the lock, aria-current and the labelled regions from DIR-083 are preserved, and contrast stays AA in both themes. PERFORMANCE: the change is layout-only - no new dependency, no timer, no simulated latency - and it should REDUCE paint cost because a bounded scroll region avoids whole-document reflow on every interaction. SEQUENCING AND RISK: the shell prop first (one file, opt-in), then the Overview compaction, then the per-page verification, then the token and smoothness pass. ROLLBACK: reverting the single opt-in prop restores today's document-scroll behaviour for the candidate suite, and each compaction is independently revertible; no schema, API or data surface is touched.",
+    "steps": [
+      "S1 - Add an opt-in viewportLock prop to CubaAppShell so ONLY the candidate suite locks to the viewport: the root becomes h-[100dvh] min-h-0 overflow-hidden, the content row becomes min-h-0 overflow-hidden, main becomes min-h-0 flex-1 overflow-y-auto cuba-scrollbar, the aside h-screen becomes h-full, and the mobile pb-24 reserve for the tab bar is kept",
+      "CubaCandidateShell passes viewportLock and the employer, admin and enterprise portals are untouched.",
+      "S2 - Compact the Overview geometry in CubaCandidateShell: the wrapper space-y-4 md:space-y-5 becomes space-y-2.5, the two-column grid gap-6 becomes gap-3 and moves its split to 2xl, the main column space-y-6 becomes space-y-3, and the aside gains min-h-0 so the rail scrolls internally.",
+      "S3 - Compact CubaCandidateHero: the banner p-6 sm:p-8 becomes p-4 sm:p-5, the h1 text-2xl sm:text-3xl lg:text-4xl becomes text-xl sm:text-2xl lg:text-3xl, the action row mt-6 becomes mt-4, the ATS gauge panel p-4 becomes p-3, and the four-card stat grid gap-4 sm:gap-5 becomes gap-2.5 sm:gap-3 with a compact card density.",
+      "S4 - Compact CandidateExecutiveRail and AiCareerBriefing: the rail space-y-4 becomes space-y-2.5 with internal scrolling and the briefing uses compact padding, so the Hero, the four Stat Cards, the Briefing and the Rail all fit one 1080p viewport with zero document scrollbar.",
+      "S5 - Move the DashboardHomepage Document Gallery and the four onboarding steps into an internally-scrolling lower region so they never push the Overview fold, keeping their real data bindings and interactions intact.",
+      "S6 - Enforce the locked paradigm across the remaining pages: Messages, Cover Letters, Job Tracker, Portfolios and Applied already own bounded regions from DIR-083, so verify them and replace any remaining min-h-screen page root with the locked height so every page body sits inside h-[calc(100vh-var(--cuba-header-h))].",
+      "S7 - Token and smoothness pass: replace any remaining raw colour utility with Cuba tokens, add dark: counterparts where a raw utility must stay, add scrollbar-gutter stable to the scroll owners to prevent layout shift, and keep the transitions on the interactive controls.",
+      "S8 - Author tests/dir084-single-viewport-mastery.test.mjs (AC1-AC8 as described) and register test:dir084 in package.json.",
+      "S9 - Run dir084, dir083..dir072, cuba-candidate-portal, cuba-design-system, the dir048 suites, test:product, test:security:static, test:xampp-policy, dir063..dir084, build (under 4s), lint (0 errors), confirm frozen cv-templates diff 0, write .bridge/evidence/dir084-evidence.log and submit."
+    ],
+    "planHash": "6d12abc884e65997d4cc63788b9ef905b97d47a13632fb58a55e8bbad894b6d9"
+  },
+  "evidence": null,
+  "reviews": [],
+  "freeze": null,
+  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "continuationPending": false,
+  "revisionTarget": null,
+  "planApproval": {
+    "approvedAt": "2026-10-11T05:51:21.915Z",
+    "automated": true,
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "declared-automation",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "non-tty"
+      ],
+      "pid": 11880,
+      "parentPid": 19508,
+      "tty": false,
+      "at": "2026-10-11T05:51:21.913Z",
+      "explicitlyAllowed": true
+    },
+    "feedback": "Auto-approved by the autonomous plan-scorer (score 100/100, reviewer verdict approved). NOT a human Lead review."
+  },
+  "heartbeats": [
+    {
+      "at": "2026-10-11T06:00:48.474Z",
+      "status": "S1-S6 + S8 delivered: opt-in viewportLock on CubaAppShell (candidate-only), compacted single-viewport Overview (2xl bounded grid + internal scroll), 6 document-level min-h-screen page roots removed, dir084 suite 8/8, 149/149 pinned. Running the remaining gates.",
+      "percent": 70,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    },
+    {
+      "at": "2026-10-11T06:05:29.198Z",
+      "status": "All gates green: dir084 8/8, 149/149 pinned, product EXIT 0, security 67/67, xampp 4/4, build 3.41s isolated, lint 0 errors, frozen diff 0. Submitting evidence.",
+      "percent": 95,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    }
+  ],
+  "lastHeartbeatAt": "2026-10-11T06:05:29.198Z"
+}

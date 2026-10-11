@@ -551,7 +551,7 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
     );
 
     return (
-        <div className={`${isInsideDashboard ? 'w-full' : 'rp-public-site'} min-h-screen flex flex-col bg-cuba-canvas text-cuba-ink`}>
+        <div className={`${isInsideDashboard ? 'w-full min-h-0' : 'rp-public-site min-h-screen'} flex flex-col bg-cuba-canvas text-cuba-ink`}>
             {/* Top Navigation Bar with active public-site styling and auth modal hook */}
             {!isInsideDashboard && <HomepageNavbar onOpenAuthModal={authBtnHandler} />}
 

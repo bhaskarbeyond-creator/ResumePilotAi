@@ -306,7 +306,11 @@ it('verifies all 4 portal shells initialize Cuba state synchronously without fra
 
     it('verifies CubaAppShell enforces w-full on root and main elements', () => {
         const cubaAppShellJsx = fs.readFileSync(path.join(root, 'src/components/cuba/CubaAppShell.jsx'), 'utf8');
-        assert.match(cubaAppShellJsx, /className="w-full flex min-h-screen flex-col bg-cuba-canvas text-cuba-ink"/, 'CubaAppShell root must have w-full');
-        assert.match(cubaAppShellJsx, /<main id="cuba-main-content"[^>]*className="w-full min-w-0 flex-1 overflow-x-hidden"/, 'CubaAppShell main must have w-full');
+        // DIR-084: the root and <main> now resolve their classes through cx() so the
+        // candidate suite can opt into the single-viewport lock. The w-full contract is
+        // unchanged in both branches.
+        assert.match(cubaAppShellJsx, /'w-full flex flex-col bg-cuba-canvas text-cuba-ink'/, 'CubaAppShell root must have w-full');
+        assert.match(cubaAppShellJsx, /viewportLock \? 'h-\[100dvh\] min-h-0 overflow-hidden' : 'min-h-screen'/, 'CubaAppShell root must keep a full-height branch');
+        assert.match(cubaAppShellJsx, /id="cuba-main-content"[\s\S]{0,200}?'w-full min-w-0 flex-1 overflow-x-hidden'/, 'CubaAppShell main must have w-full');
     });
 });

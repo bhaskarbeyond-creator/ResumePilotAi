@@ -968,7 +968,7 @@ class DashboardHomepage extends Component {
     const { t } = this.props;
     const isCuba = isCubaShellEnabled();
     return (
-      <div className={isCuba ? "space-y-6" : "min-h-screen bg-slate-50"}>
+      <div className={isCuba ? "space-y-3" : "min-h-screen bg-slate-50"}>
         <div className={isCuba ? "w-full" : "mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-4 sm:py-6 max-w-none w-full"} style={isCuba ? undefined : {maxWidth: '1600px'}}>
           {this.state.documentsError && <div role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{this.state.documentsError} <button type="button" onClick={() => this.getAllDocuments()} className="ml-2 font-semibold underline">Try again</button></div>}
           {/* Header Section (Legacy only — CubaCandidateHero provides the executive welcome banner) */}

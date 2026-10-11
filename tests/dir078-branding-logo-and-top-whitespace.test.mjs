@@ -55,15 +55,17 @@ test('AC3: zero hardcoded star placeholder boxes remain', async () => {
 
 test('AC4: the top padding is tightened on the container, breadcrumbs and shell', async () => {
     const [shell, cand] = await Promise.all([read(SHELL), read(CAND_SHELL)]);
-    assert.match(shell, /max-w-\[1680px\] px-4 pt-2\.5 pb-24 sm:px-6 md:pt-3 md:pb-6 lg:px-8/);
-    assert.match(shell, /mb-2\.5 hidden min-w-0 md:block" data-testid="cuba-main-breadcrumbs"/);
-    assert.match(cand, /className="space-y-4 md:space-y-5"/);
+    assert.match(shell, /max-w-\[1680px\] min-h-0 px-4 pt-2 pb-24 sm:px-6 md:pt-2\.5 md:pb-4 lg:px-8/);
+    assert.match(shell, /mb-2 hidden min-w-0 md:block" data-testid="cuba-main-breadcrumbs"/);
+    // DIR-084 supersedes the DIR-078 wrapper assertion: the Overview branch is now
+    // tightened to space-y-2.5 and the non-Overview branch keeps the original spacing.
+    assert.match(cand, /isOverview \? 'space-y-2\.5' : 'space-y-4 md:space-y-5'/);
     assert.doesNotMatch(shell, /px-4 py-6 pb-24/);
 });
 
 test('AC5: the dir048 and dir077 assertions track the tightened padding', async () => {
     const [dir048, dir077] = await Promise.all([read(DIR048), read(DIR077)]);
     // The pinned suites assert the escaped regex form (`pt-2\.5`).
-    assert.ok(dir048.includes('px-4 pt-2\\.5 pb-24'), 'dir048 must assert the tightened cap');
-    assert.ok(dir077.includes('px-4 pt-2\\.5 pb-24'), 'dir077 must assert the tightened cap');
+    assert.ok(dir048.includes('px-4 pt-2 pb-24'), 'dir048 must assert the tightened cap');
+    assert.ok(dir077.includes('px-4 pt-2 pb-24'), 'dir077 must assert the tightened cap');
 });

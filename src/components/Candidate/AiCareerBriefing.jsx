@@ -87,7 +87,7 @@ const AiCareerBriefing = ({ className = '' }) => {
             )}
 
             {!loading && briefing.headline && (
-                <div className="space-y-3">
+                <div className="space-y-2">
                     <CubaBadge tone={briefing.state === 'error' ? 'danger' : briefing.state === 'scored' ? 'success' : 'info'}>
                         {briefing.state === 'error'
                             ? 'Unavailable'

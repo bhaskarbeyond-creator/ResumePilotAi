@@ -319,7 +319,7 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 py-6 px-4 sm:px-6 lg:px-8" data-testid="user-support-desk">
+        <div className="min-h-0 bg-cuba-canvas py-4 px-4 sm:px-6 lg:px-8" data-testid="user-support-desk">
             <div className="max-w-7xl mx-auto space-y-6">
 
                 {/* ── HEADER & ACTIONS ────────────────────────────────────────── */}

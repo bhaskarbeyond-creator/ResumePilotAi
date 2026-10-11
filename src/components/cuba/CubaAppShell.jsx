@@ -170,6 +170,12 @@ const CubaAppShell = ({
     // this declaration a caller-supplied href was silently dropped and the
     // header badge never rendered at all.
     messagesHref = '/dashboard/messages',
+    // ---- DIR-084: opt-in SINGLE-VIEWPORT lock -----------------------------
+    // When true the shell owns its own height (h-[100dvh]) and <main> owns the
+    // vertical scroll, so no candidate page can grow the DOCUMENT. Default false,
+    // so the employer, admin and enterprise portals (CubaPortalShell) keep today's
+    // document-scroll behaviour byte for byte.
+    viewportLock = false,
     // ---- DIR-021: AI Career Copilot wiring ---------------------------------
     // All optional and all forwarded verbatim to CubaCommandPalette. The shell
     // never calls `copilotDispatch` itself: the palette owns the request so the
@@ -303,7 +309,12 @@ const CubaAppShell = ({
     }, [groups]);
 
     return (
-        <div className="w-full flex min-h-screen flex-col bg-cuba-canvas text-cuba-ink">
+        <div className={cx(
+            'w-full flex flex-col bg-cuba-canvas text-cuba-ink',
+            // DIR-084: with the lock the shell is exactly one viewport tall and clips,
+            // so the only scrollbar in the app belongs to <main>.
+            viewportLock ? 'h-[100dvh] min-h-0 overflow-hidden' : 'min-h-screen',
+        )}>
             <a
                 href="#cuba-main-content"
                 className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-[70] focus:rounded-cuba-sm focus:bg-cuba-card focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-cuba-ink focus:shadow-cuba-md"
@@ -519,7 +530,7 @@ const CubaAppShell = ({
             </header>
             )}
 
-            <div className="w-full flex min-h-0 flex-1">
+            <div className={cx('w-full flex min-h-0 flex-1', viewportLock && 'overflow-hidden')}>
                 <aside
                     className={cx(
                         // DIR-048 S10: visible from md up — the tablet band gets the
@@ -527,9 +538,13 @@ const CubaAppShell = ({
                         // DIR-055 S5: when the top bar is hidden (an application
                         // route owns its own header) the sidebar sticks to the
                         // viewport top instead of leaving a phantom header-height gap.
-                        hideTopBar
-                            ? 'cuba-glass sticky top-0 hidden h-screen flex-none flex-col border-y-0 border-l-0 md:flex'
-                            : 'cuba-glass sticky top-[var(--cuba-header-h)] hidden h-[calc(100vh-var(--cuba-header-h))] flex-none flex-col border-y-0 border-l-0 md:flex',
+                        // DIR-084: under the viewport lock the row is already exactly one
+                        // viewport tall, so the rail fills it and no longer needs to stick.
+                        viewportLock
+                            ? 'cuba-glass hidden h-full flex-none flex-col border-y-0 border-l-0 md:flex'
+                            : hideTopBar
+                                ? 'cuba-glass sticky top-0 hidden h-screen flex-none flex-col border-y-0 border-l-0 md:flex'
+                                : 'cuba-glass sticky top-[var(--cuba-header-h)] hidden h-[calc(100vh-var(--cuba-header-h))] flex-none flex-col border-y-0 border-l-0 md:flex',
                         railCollapsed ? 'w-[var(--cuba-sidebar-w-collapsed)]' : 'w-[var(--cuba-sidebar-w)]',
                     )}
                     data-testid="cuba-sidebar"
@@ -635,18 +650,28 @@ const CubaAppShell = ({
                     </div>
                 )}
 
-                <main id="cuba-main-content" tabIndex={-1} className="w-full min-w-0 flex-1 overflow-x-hidden">
+                <main
+                    id="cuba-main-content"
+                    tabIndex={-1}
+                    data-viewport-lock={viewportLock ? 'true' : 'false'}
+                    className={cx(
+                        'w-full min-w-0 flex-1 overflow-x-hidden',
+                        // DIR-084: <main> owns the ONLY vertical scrollbar. The stable
+                        // scrollbar gutter means its appearance can never shift layout.
+                        viewportLock && 'min-h-0 overflow-y-auto cuba-scrollbar [scrollbar-gutter:stable]',
+                    )}
+                >
                     {/* DIR-048 S9: the single responsive gutter + width cap shared by
                         every portal, with `pb-24` on mobile reserving room for the
                         bottom tab bar so it can never cover content.
                         DIR-077: the cap is raised from max-w-7xl to max-w-[1680px] so
                         a wide executive viewport stops wasting ~30% of its width. */}
-                    <div className="mx-auto w-full max-w-[1680px] px-4 pt-2.5 pb-24 sm:px-6 md:pt-3 md:pb-6 lg:px-8">
+                    <div className="mx-auto w-full max-w-[1680px] min-h-0 px-4 pt-2 pb-24 sm:px-6 md:pt-2.5 md:pb-4 lg:px-8">
                         {/* DIR-077: the semantic trail now anchors the MAIN workspace
                             column at its left edge (exactly one Breadcrumb landmark),
                             instead of floating over the sidebar header. */}
                         {(breadcrumbs || breadcrumb) && (
-                            <div className="mb-2.5 hidden min-w-0 md:block" data-testid="cuba-main-breadcrumbs">
+                            <div className="mb-2 hidden min-w-0 md:block" data-testid="cuba-main-breadcrumbs">
                                 {breadcrumbs ? (
                                     <M3Breadcrumbs items={breadcrumbs} onNavigate={onNavigate} />
                                 ) : (

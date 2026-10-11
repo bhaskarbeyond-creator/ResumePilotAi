@@ -96,7 +96,7 @@ const CandidateExecutiveRail = ({ onNavigate }) => {
     const go = (href) => { if (typeof onNavigate === 'function') onNavigate(href); };
 
     return (
-        <div className="space-y-4" data-testid="cuba-executive-rail">
+        <div className="space-y-2.5" data-testid="cuba-executive-rail">
             <WidgetCard title="Live Copilot Quick-Pitch" icon={<FiZap className="h-3.5 w-3.5" />} testId="cuba-rail-copilot">
                 {quickPitch.length === 0 ? (
                     <CubaEmptyState compact title="No quick actions" description="Copilot shortcuts appear once your workspace has activity." />

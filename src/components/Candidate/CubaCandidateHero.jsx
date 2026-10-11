@@ -108,7 +108,7 @@ const CubaCandidateHero = ({ displayName = 'Candidate' }) => {
               * element carrying this id may exist in the Candidate Dashboard. */}
             <div
                 data-testid="cuba-candidate-hero"
-                className="relative overflow-hidden rounded-[18px] p-6 sm:p-8 text-white shadow-[0_12px_32px_-6px_rgba(115,102,255,0.42)] transition-all"
+                className="relative overflow-hidden rounded-[18px] p-4 sm:p-5 text-white shadow-[0_12px_32px_-6px_rgba(115,102,255,0.42)] transition-all"
                 style={{
                     background: 'linear-gradient(103.75deg, #33b1ee -13.9%, #7366ff 79.68%)',
                 }}
@@ -156,7 +156,7 @@ const CubaCandidateHero = ({ displayName = 'Candidate' }) => {
                             <span className="h-2 w-2 rounded-full bg-emerald-300 animate-pulse" aria-hidden="true" />
                             <span>Executive Career Intelligence</span>
                         </div>
-                        <h1 className="mt-3 text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white font-rubik">
+                        <h1 className="mt-2 text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-white font-rubik">
                             {greeting}, {displayName}!
                         </h1>
                         <p className="mt-2 text-sm sm:text-base text-white/90 leading-relaxed font-normal max-w-xl">
@@ -165,7 +165,7 @@ const CubaCandidateHero = ({ displayName = 'Candidate' }) => {
                                 : 'Build your first recruiter-ready resume with context-aware AI, Google XYZ formula, and 51 certified ATS templates.'}
                         </p>
 
-                        <div className="mt-6 flex flex-wrap items-center gap-3">
+                        <div className="mt-4 flex flex-wrap items-center gap-3">
                             <a
                                 href="/build-resume/heading?new=1"
                                 className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-xs font-bold text-[#5949d6] shadow-[0_4px_14px_rgba(0,0,0,0.15)] transition-all hover:bg-slate-100 hover:shadow-lg cursor-pointer"
@@ -191,7 +191,7 @@ const CubaCandidateHero = ({ displayName = 'Candidate' }) => {
                     </div>
 
                     {/* Clock & Status Box (Authentic Cuba Profile-box Clock) */}
-                    <div className="hidden lg:flex flex-col items-center justify-center rounded-2xl bg-black/20 p-4 border border-white/20 backdrop-blur-md min-w-[150px] text-center z-20">
+                    <div className="hidden lg:flex flex-col items-center justify-center rounded-2xl bg-black/20 p-3 border border-white/20 backdrop-blur-md min-w-[150px] text-center z-20">
                         <div className="clockbox relative flex items-center justify-center">
                             <svg id="cuba-analog-clock" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" className="w-12 h-12">
                                 <circle cx="300" cy="300" r="253.9" fill="#ffffff" stroke="rgba(255,255,255,0.4)" strokeWidth="25" />
@@ -249,8 +249,9 @@ const CubaCandidateHero = ({ displayName = 'Candidate' }) => {
                 </div>
             )}
 
-            {/* Row of 4 Cuba KPI Stat Cards with Authentic widget-1 styling */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+            {/* Row of 4 Cuba KPI Stat Cards — DIR-084 compact density so the four cards,
+                the hero banner and the briefing share one viewport. */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
                 <CubaStatCard
                     label="Active Resumes"
                     value={loading ? '...' : String(count)}

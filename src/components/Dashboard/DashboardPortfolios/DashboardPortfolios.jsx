@@ -417,7 +417,7 @@ const DashboardPortfolios = ({ t, showToast }) => {
     }
 
     return (
-        <div className="min-h-screen bg-cuba-canvas" data-testid="cuba-page-frame" data-page-state="ready">
+        <div className="min-h-0 bg-cuba-canvas" data-testid="cuba-page-frame" data-page-state="ready">
             <div className="mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-4 sm:py-6 max-w-none w-full" style={{maxWidth: '1600px'}}>
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">

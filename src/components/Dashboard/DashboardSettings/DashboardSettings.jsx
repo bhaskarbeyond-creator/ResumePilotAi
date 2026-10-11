@@ -2115,7 +2115,7 @@ function DashboardSettings(_props) {
 
     return (
         <>
-        <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
+        <div className="min-h-0 bg-cuba-canvas text-cuba-ink font-sans">
             <div className="w-full max-w-[1440px] mx-auto px-3 sm:px-5 lg:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 pb-8 sm:pb-12">
 
                 {/* Hero Master Profile Overview Card — Styled after StepShell Header */}

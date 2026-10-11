@@ -1741,7 +1741,7 @@ const DashboardInterviews = () => {
     const recentTrend = trend.slice(-5);
 
     return (
-        <div className="min-h-screen w-full bg-slate-50 text-slate-900 p-4 sm:p-6 lg:p-8 font-sans">
+        <div className="min-h-0 w-full bg-cuba-canvas text-cuba-ink p-4 sm:p-5 font-sans">
             <SrStatus message={liveMessage} />
             <StatusToast message={toast} />
 

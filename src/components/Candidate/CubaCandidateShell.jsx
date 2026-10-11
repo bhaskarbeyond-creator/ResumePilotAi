@@ -452,25 +452,33 @@ const CubaCandidateShell = ({ children, copilotResume = null }) => {
             hideTopBar={isApplicationShellRoute(location.pathname)}
             // DIR-026 / AC-2: the candidate shell owns the real destination.
             messagesHref="/dashboard/messages"
+            // DIR-084: the candidate suite is the portal that adopts the SINGLE-VIEWPORT
+            // lock, so its pages can never grow the document.
+            viewportLock
         >
-            <div className="space-y-4 md:space-y-5">
+            <div className={isOverview ? 'space-y-2.5' : 'space-y-4 md:space-y-5'}>
                 {/* DIR-022 / AC-4: renewal recovery. Renders only when the
                     server reports PAST_DUE with a live grace deadline. */}
                 <PaymentGraceBanner profile={entitlementProfile} />
                 {isOverview ? (
-                    /* DIR-077: high-density 2-column executive grid on >=1280px
-                       (xl). The main workspace column (~70%) holds the Hero, the
-                       briefing, the Document Gallery and Onboarding; the executive
-                       right rail (~30%) fills the former empty right void with live
-                       intelligence. Below xl it stacks to ONE column, so the mobile
-                       (375px) and tablet (768px) flows are unchanged. */
-                    <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]">
-                        <div className="min-w-0 space-y-6">
+                    /* DIR-084 SINGLE-VIEWPORT OVERVIEW.
+                       The grid is bounded to exactly one viewport minus the shell header and
+                       the chrome above it, so the Hero, the four Stat Cards, the AI Briefing
+                       and the Executive Rail are all visible together on a 1080p/1440p screen
+                       with ZERO document scrollbar. The split lands at 2xl (1536px), which is
+                       inside both target resolutions; narrower laptops keep the natural flow
+                       instead of being squashed into a fixed height. The fold-critical blocks
+                       are flex-none and only the Document Gallery / Onboarding region and the
+                       rail scroll internally. */
+                    <div className="grid min-h-0 grid-cols-1 gap-3 2xl:h-[calc(100dvh-var(--cuba-header-h)-3.75rem)] 2xl:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]">
+                        <div className="flex min-h-0 min-w-0 flex-col gap-3">
                             <CubaCandidateHero displayName={displayName} />
                             <AiCareerBriefing />
-                            {children}
+                            <div className="min-h-0 flex-1 2xl:overflow-y-auto cuba-scrollbar [scrollbar-gutter:stable]">
+                                {children}
+                            </div>
                         </div>
-                        <aside className="min-w-0" aria-label="Executive intelligence rail">
+                        <aside className="min-h-0 min-w-0 2xl:overflow-y-auto cuba-scrollbar [scrollbar-gutter:stable]" aria-label="Executive intelligence rail">
                             <CandidateExecutiveRail onNavigate={navigate} />
                         </aside>
                     </div>
