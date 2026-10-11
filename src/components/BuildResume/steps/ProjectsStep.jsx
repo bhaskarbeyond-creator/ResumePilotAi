@@ -341,7 +341,7 @@ const ProjectsStep = ({ resumeData, updateResumeData, onNavigate }) => {
 
                 {/* Row 3: Project Type Selector */}
                 <div className="space-y-1.5">
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-[var(--cuba-ink-muted)]">
                         Project Type / Category
                     </label>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -356,7 +356,7 @@ const ProjectsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                     className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 ${
                                         isSelected
                                             ? `${type.badgeClass} ring-2 ring-indigo-500/20 shadow-xs`
-                                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                            : 'bg-white border-[var(--cuba-line)] text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-canvas)]'
                                     }`}
                                 >
                                     <Icon className="w-3.5 h-3.5" />
@@ -378,7 +378,7 @@ const ProjectsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                         <MdAutoAwesome className="w-4 h-4 text-indigo-600" />
                         <span>Project Tips & Best Practices</span>
                     </h3>
-                    <ul className="space-y-2 text-[11px] text-slate-600">
+                    <ul className="space-y-2 text-[11px] text-[var(--cuba-ink-muted)]">
                         <li className="flex items-start gap-1.5">
                             <span className="text-indigo-600 font-bold">•</span>
                             <span><strong>Select 2–4 Top Projects:</strong> Focus on projects that showcase your core capabilities and directly align with your target role.</span>
@@ -419,7 +419,7 @@ const ProjectsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                     toastState.type === 'error'
                         ? 'bg-rose-900 text-white border-rose-700'
                         : toastState.type === 'info'
-                            ? 'bg-slate-900 text-white border-slate-700'
+                            ? 'bg-[var(--cuba-ink)] text-white border-[var(--cuba-line-strong)]'
                             : 'bg-emerald-900 text-white border-emerald-700'
                 }`}>
                     <MdCheckCircle className="w-4 h-4 text-emerald-400" />
@@ -455,9 +455,9 @@ const ProjectsStep = ({ resumeData, updateResumeData, onNavigate }) => {
             ) : (
                 <div className="space-y-4">
                     {/* 10/10 Command Toolbar: Row 1 Header & Primary Actions */}
-                    <div className="p-3.5 bg-slate-50/80 rounded-2xl border border-slate-200/80 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
+                    <div className="p-3.5 bg-[var(--cuba-canvas)]/80 rounded-2xl border border-[var(--cuba-line)]/80 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
                         <div className="flex items-center gap-2.5">
-                            <span className="text-sm font-extrabold text-slate-800 tracking-tight">
+                            <span className="text-sm font-extrabold text-[var(--cuba-ink)] tracking-tight">
                                 Project Portfolio
                             </span>
                             <span className="px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 text-xs font-bold">
@@ -479,7 +479,7 @@ const ProjectsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                             <button
                                 type="button"
                                 onClick={addProject}
-                                className="h-9 px-3.5 rounded-xl bg-white hover:bg-indigo-50/50 border border-slate-300 hover:border-indigo-300 text-slate-800 hover:text-indigo-700 text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all"
+                                className="h-9 px-3.5 rounded-xl bg-white hover:bg-indigo-50/50 border border-[var(--cuba-line-strong)] hover:border-indigo-300 text-[var(--cuba-ink)] hover:text-indigo-700 text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all"
                             >
                                 <MdAdd className="w-4 h-4 text-indigo-600" />
                                 <span>Add Project</span>
@@ -492,19 +492,19 @@ const ProjectsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
                             {/* Live Search */}
                             <div className="relative flex-1 max-w-sm">
-                                <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--cuba-ink-subtle)]" />
                                 <input
                                     type="text"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     placeholder="Search projects, roles, or tools..."
-                                    className="w-full h-9 pl-9 pr-8 text-xs bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                                    className="w-full h-9 pl-9 pr-8 text-xs bg-white border border-[var(--cuba-line)] rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
                                 />
                                 {searchQuery && (
                                     <button
                                         type="button"
                                         onClick={() => setSearchQuery('')}
-                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)]"
                                     >
                                         <MdClose className="w-3.5 h-3.5" />
                                     </button>
@@ -518,8 +518,8 @@ const ProjectsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                     onClick={() => setSelectedTypeFilter('all')}
                                     className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${
                                         selectedTypeFilter === 'all'
-                                            ? 'bg-slate-800 text-white'
-                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                            ? 'bg-[var(--cuba-ink)] text-white'
+                                            : 'bg-[var(--cuba-canvas)] text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-line)]'
                                     }`}
                                 >
                                     All ({projects.length})
@@ -535,7 +535,7 @@ const ProjectsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                             className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
                                                 selectedTypeFilter === t.id
                                                     ? 'bg-indigo-600 text-white'
-                                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                    : 'bg-[var(--cuba-canvas)] text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-line)]'
                                             }`}
                                         >
                                             {t.label} ({count})
@@ -563,19 +563,19 @@ const ProjectsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                             return (
                                 <div
                                     key={project.id}
-                                    className="p-5 bg-white border border-slate-200/90 rounded-2xl space-y-4 hover:border-slate-300 shadow-2xs hover:shadow-xs transition-all"
+                                    className="p-5 bg-white border border-[var(--cuba-line)]/90 rounded-2xl space-y-4 hover:border-[var(--cuba-line-strong)] shadow-2xs hover:shadow-xs transition-all"
                                 >
                                     {/* Card Header */}
-                                    <div className="flex items-center justify-between border-b border-slate-200/70 pb-3">
+                                    <div className="flex items-center justify-between border-b border-[var(--cuba-line)]/70 pb-3">
                                         <div className="flex items-center gap-2.5 min-w-0 pr-2">
                                             <span className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-700 font-extrabold flex items-center justify-center text-xs shrink-0 border border-indigo-100/80">
                                                 #{originalIndex + 1}
                                             </span>
                                             <div className="min-w-0">
-                                                <h4 className="text-xs font-bold text-slate-900 truncate">
+                                                <h4 className="text-xs font-bold text-[var(--cuba-ink)] truncate">
                                                     {project.title || 'Untitled Project'}
                                                 </h4>
-                                                <p className="text-[11px] text-slate-500 truncate">
+                                                <p className="text-[11px] text-[var(--cuba-ink-subtle)] truncate">
                                                     {subtitle}
                                                 </p>
                                             </div>
@@ -589,7 +589,7 @@ const ProjectsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                                 type="button"
                                                 disabled={originalIndex === 0}
                                                 onClick={() => moveProject(project.id, -1)}
-                                                className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-100 text-xs font-bold transition-colors"
+                                                className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-[var(--cuba-canvas)] text-xs font-bold transition-colors"
                                                 title="Move project up"
                                             >
                                                 ▲
@@ -598,7 +598,7 @@ const ProjectsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                                 type="button"
                                                 disabled={originalIndex === projects.length - 1}
                                                 onClick={() => moveProject(project.id, 1)}
-                                                className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-100 text-xs font-bold transition-colors"
+                                                className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-[var(--cuba-canvas)] text-xs font-bold transition-colors"
                                                 title="Move project down"
                                             >
                                                 ▼
@@ -606,7 +606,7 @@ const ProjectsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                             <button
                                                 type="button"
                                                 onClick={() => duplicateProject(project.id)}
-                                                className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
+                                                className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
                                                 title="Duplicate project"
                                             >
                                                 <MdContentCopy className="w-3.5 h-3.5" />
@@ -614,7 +614,7 @@ const ProjectsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                             <button
                                                 type="button"
                                                 onClick={() => removeProject(project.id)}
-                                                className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer ml-0.5"
+                                                className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer ml-0.5"
                                                 title="Delete project"
                                             >
                                                 <MdDeleteOutline className="w-4 h-4" />
@@ -633,7 +633,7 @@ const ProjectsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                     <button
                         type="button"
                         onClick={addProject}
-                        className="w-full h-11 rounded-2xl border border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/40 text-sm font-bold text-slate-700 hover:text-indigo-700 flex items-center justify-center gap-2 transition-all shadow-2xs"
+                        className="w-full h-11 rounded-2xl border border-dashed border-[var(--cuba-line-strong)] hover:border-indigo-400 hover:bg-indigo-50/40 text-sm font-bold text-[var(--cuba-ink-muted)] hover:text-indigo-700 flex items-center justify-center gap-2 transition-all shadow-2xs"
                     >
                         <MdAdd className="w-4 h-4 text-indigo-600" />
                         <span>Add Another Project</span>

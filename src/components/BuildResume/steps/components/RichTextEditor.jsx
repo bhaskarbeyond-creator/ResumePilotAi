@@ -474,13 +474,13 @@ function ToolbarPlugin() {
     }, [editor, updateToolbar]);
 
     return (
-        <div className="toolbar flex items-center space-x-1 mb-2 p-2 bg-gray-50 rounded-t-[3px] border-b border-gray-200">
+        <div className="toolbar flex items-center space-x-1 mb-2 p-2 bg-[var(--cuba-canvas)] rounded-t-[3px] border-b border-[var(--cuba-line)]">
             <button
                 type="button"
                 onClick={() => {
                     editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold');
                 }}
-                className={`toolbar-item p-2 rounded hover:bg-gray-200 transition-colors ${isBold ? 'bg-blue-100 text-blue-600' : 'text-gray-600'}`}
+                className={`toolbar-item p-2 rounded hover:bg-[var(--cuba-line)] transition-colors ${isBold ? 'bg-blue-100 text-blue-600' : 'text-[var(--cuba-ink-muted)]'}`}
                 aria-label="Format Bold">
                 <FiBold className="w-4 h-4" />
             </button>
@@ -489,7 +489,7 @@ function ToolbarPlugin() {
                 onClick={() => {
                     editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic');
                 }}
-                className={`toolbar-item p-2 rounded hover:bg-gray-200 transition-colors ${isItalic ? 'bg-blue-100 text-blue-600' : 'text-gray-600'}`}
+                className={`toolbar-item p-2 rounded hover:bg-[var(--cuba-line)] transition-colors ${isItalic ? 'bg-blue-100 text-blue-600' : 'text-[var(--cuba-ink-muted)]'}`}
                 aria-label="Format Italics">
                 <FiItalic className="w-4 h-4" />
             </button>
@@ -498,11 +498,11 @@ function ToolbarPlugin() {
                 onClick={() => {
                     editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline');
                 }}
-                className={`toolbar-item p-2 rounded hover:bg-gray-200 transition-colors ${isUnderline ? 'bg-blue-100 text-blue-600' : 'text-gray-600'}`}
+                className={`toolbar-item p-2 rounded hover:bg-[var(--cuba-line)] transition-colors ${isUnderline ? 'bg-blue-100 text-blue-600' : 'text-[var(--cuba-ink-muted)]'}`}
                 aria-label="Format Underline">
                 <FiUnderline className="w-4 h-4" />
             </button>
-            <div className="w-px h-6 bg-gray-300 mx-1"></div>
+            <div className="w-px h-6 bg-[var(--cuba-line-strong)] mx-1"></div>
             <button
                 type="button"
                 onClick={() => {
@@ -514,7 +514,7 @@ function ToolbarPlugin() {
                         editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined);
                     }
                 }}
-                className={`toolbar-item p-2 rounded hover:bg-gray-200 transition-colors ${isUnorderedList ? 'bg-blue-100 text-blue-600' : 'text-gray-600'}`}
+                className={`toolbar-item p-2 rounded hover:bg-[var(--cuba-line)] transition-colors ${isUnorderedList ? 'bg-blue-100 text-blue-600' : 'text-[var(--cuba-ink-muted)]'}`}
                 aria-label={isUnorderedList ? 'Create Sub-bullet' : 'Create Bullet List'}
                 title={isUnorderedList ? 'Create Sub-bullet (Tab)' : 'Create Bullet List'}>
                 <FiList className="w-4 h-4" />
@@ -530,7 +530,7 @@ function ToolbarPlugin() {
                         editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined);
                     }
                 }}
-                className={`toolbar-item p-2 rounded hover:bg-gray-200 transition-colors ${isOrderedList ? 'bg-blue-100 text-blue-600' : 'text-gray-600'}`}
+                className={`toolbar-item p-2 rounded hover:bg-[var(--cuba-line)] transition-colors ${isOrderedList ? 'bg-blue-100 text-blue-600' : 'text-[var(--cuba-ink-muted)]'}`}
                 aria-label={isOrderedList ? 'Create Sub-number' : 'Create Numbered List'}
                 title={isOrderedList ? 'Create Sub-number (Tab)' : 'Create Numbered List'}>
                 <FiHash className="w-4 h-4" />
@@ -543,7 +543,7 @@ function ToolbarPlugin() {
                         onClick={() => {
                             editor.dispatchCommand(OUTDENT_CONTENT_COMMAND, undefined);
                         }}
-                        className="toolbar-item p-2 rounded hover:bg-gray-200 transition-colors text-gray-600"
+                        className="toolbar-item p-2 rounded hover:bg-[var(--cuba-line)] transition-colors text-[var(--cuba-ink-muted)]"
                         aria-label="Outdent (Move Left)"
                         title="Outdent (Shift+Tab)">
                         <FiChevronLeft className="w-4 h-4" />
@@ -553,7 +553,7 @@ function ToolbarPlugin() {
                         onClick={() => {
                             exitListToNormalText(editor);
                         }}
-                        className="toolbar-item p-2 rounded hover:bg-gray-200 transition-colors text-gray-600"
+                        className="toolbar-item p-2 rounded hover:bg-[var(--cuba-line)] transition-colors text-[var(--cuba-ink-muted)]"
                         aria-label="Exit List"
                         title="Exit List (Enter on empty line)">
                         <FiCornerDownLeft className="w-4 h-4" />
@@ -563,7 +563,7 @@ function ToolbarPlugin() {
                         onClick={() => {
                             editor.dispatchCommand(REMOVE_LIST_COMMAND, undefined);
                         }}
-                        className="toolbar-item p-2 rounded hover:bg-gray-200 transition-colors text-gray-600"
+                        className="toolbar-item p-2 rounded hover:bg-[var(--cuba-line)] transition-colors text-[var(--cuba-ink-muted)]"
                         aria-label="Remove List"
                         title="Remove List">
                         <FiMinus className="w-4 h-4" />
@@ -601,15 +601,15 @@ const RichTextEditor = ({ value = '', onChange, placeholder = 'Enter your text..
     return (
         <div className={`relative ${className}`}>
             <LexicalComposer initialConfig={getInitialConfig()}>
-                <div className="bg-white border border-slate-300 hover:border-slate-400 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 rounded-md transition-all duration-200 ease-in-out">
+                <div className="bg-white border border-[var(--cuba-line-strong)] hover:border-[var(--cuba-line-strong)] focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 rounded-md transition-all duration-200 ease-in-out">
                     <ToolbarPlugin />
                     <div className="relative">
                         <RichTextPlugin
                             contentEditable={
                                 <ContentEditable
-                                    className={`min-h-[100px] px-3 py-2.5 text-sm text-slate-900 outline-none resize-none`}
+                                    className={`min-h-[100px] px-3 py-2.5 text-sm text-[var(--cuba-ink)] outline-none resize-none`}
                                     aria-placeholder={placeholder}
-                                    placeholder={<div className={`absolute top-2.5 left-3 text-sm text-slate-400 pointer-events-none`}>{placeholder}</div>}
+                                    placeholder={<div className={`absolute top-2.5 left-3 text-sm text-[var(--cuba-ink-subtle)] pointer-events-none`}>{placeholder}</div>}
                                 />
                             }
                             ErrorBoundary={LexicalErrorBoundary}

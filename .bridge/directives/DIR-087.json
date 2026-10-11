@@ -2,11 +2,11 @@
   "id": "DIR-087",
   "title": "MASTER CANDIDATE_PAGES Phase 1 — Comprehensive Inventory, Industry Benchmarks, Baseline Scoring & JobSearchBar Scrollbar Guard",
   "priority": "P0",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-11T06:54:07.101Z",
-  "updatedAt": "2026-10-11T07:04:13.961Z",
+  "updatedAt": "2026-10-11T07:04:15.226Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "MANDATE: Execute Phase 1-3 of the Master Engineering Directive for CANDIDATE_PAGES: 1) Address developer escalation: replace the no-op 'scrollbar-none' in src/components/JobsListings/JobSearchBar.jsx:188 with '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden' and add a repo-wide test assertion ensuring no instance of 'scrollbar-none' remains anywhere in src. 2) Conduct full Phase 1 audit and inventory of all candidate-facing pages across the 14 candidate modules: Overview (/dashboard), Resume Builder (/build-resume/* - all 10 steps), Cover Letters (/dashboard/cover-letters), Portfolios (/dashboard/portfolios), Job Tracker (/dashboard/job-tracker), Job Portal (/jobs/portal, /jobs/browse), Applied Jobs (/dashboard/applied-jobs), AI Interview Coach (/dashboard/interview), Messages (/dashboard/messages), Favorites (/dashboard/favorites), Notifications (/dashboard/notifications), Settings & 2FA (/dashboard/settings), Plans (/dashboard/plans), and Support (/dashboard/support). 3) Establish industry benchmarks (Linear, Teal HQ, Rezi, Kickresume, Hired) across the 10 quality dimensions. 4) Score baseline quality (0-10) for each page and identify all P0/P1 blockers. 5) Produce the formal Candidate Page Inventory and Baseline Quality Scorecard deliverables, and author tests/dir087-candidate-master-audit.test.mjs. 6) Verify with clean build under 4s, 0 lint errors, and zero drift on frozen 55 CV templates.",
   "invariants": [],
@@ -67,8 +67,30 @@
       }
     }
   ],
-  "freeze": null,
-  "lastTransitionReason": "lead review",
+  "freeze": {
+    "freezeHash": "0978bc839edda31189215fe36c434aafc87ef924",
+    "certifiedAt": "2026-10-11T07:04:15.226Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "Autonomous Lead (Antigravity): evidence audit passed, no human review.",
+    "evidenceHash": "e01fa0cd1505b608305f29b4413b1fffbafad3a54b7e44d3d6cf7c822279d445",
+    "automated": true,
+    "certificationKind": "automated",
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "declared-automation",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "non-tty"
+      ],
+      "pid": 13448,
+      "parentPid": 4204,
+      "tty": false,
+      "at": "2026-10-11T07:04:14.473Z",
+      "explicitlyAllowed": true
+    }
+  },
+  "lastTransitionReason": "gatekeeper certification",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {

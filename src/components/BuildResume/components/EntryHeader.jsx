@@ -37,7 +37,7 @@ export default function EntryHeader({
             type="button"
             onClick={() => { setMenuOpen(false); onClick?.(); }}
             className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px] font-medium transition-colors ${
-                danger ? 'text-rose-600 hover:bg-rose-50' : 'text-slate-700 hover:bg-slate-50'
+                danger ? 'text-rose-600 hover:bg-rose-50' : 'text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-canvas)]'
             }`}
         >
             <span className="w-4">{icon}</span>
@@ -52,22 +52,22 @@ export default function EntryHeader({
                 onClick={onToggle}
                 aria-expanded={expanded}
                 aria-controls={controlsId || undefined}
-                className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-2.5 text-left transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300"
+                className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-2.5 text-left transition-colors hover:bg-[var(--cuba-canvas)] focus:outline-none focus:ring-2 focus:ring-[var(--cuba-line-strong)]"
             >
                 <span
-                    className={`min-w-0 flex-1 ${title ? '' : 'text-slate-400'}`}
+                    className={`min-w-0 flex-1 ${title ? '' : 'text-[var(--cuba-ink-subtle)]'}`}
                 >
-                    <span className={`block truncate text-sm font-semibold ${title ? 'text-slate-900' : 'italic'}`}>
+                    <span className={`block truncate text-sm font-semibold ${title ? 'text-[var(--cuba-ink)]' : 'italic'}`}>
                         {title || 'Untitled entry'}
                     </span>
                     {subtitle ? (
-                        <span className="block truncate text-xs text-slate-500">{subtitle}</span>
+                        <span className="block truncate text-xs text-[var(--cuba-ink-subtle)]">{subtitle}</span>
                     ) : null}
                 </span>
                 {meta ? (
-                    <span className="hidden sm:block shrink-0 text-xs font-medium text-slate-400">{meta}</span>
+                    <span className="hidden sm:block shrink-0 text-xs font-medium text-[var(--cuba-ink-subtle)]">{meta}</span>
                 ) : null}
-                <MdExpandMore className={`w-4 h-4 shrink-0 text-slate-400 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+                <MdExpandMore className={`w-4 h-4 shrink-0 text-[var(--cuba-ink-subtle)] transition-transform ${expanded ? 'rotate-180' : ''}`} />
             </button>
 
             {hasMenu && (
@@ -77,12 +77,12 @@ export default function EntryHeader({
                         onClick={() => setMenuOpen(prev => !prev)}
                         aria-label="Entry actions"
                         aria-expanded={menuOpen}
-                        className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                        className="rounded-md p-1.5 text-[var(--cuba-ink-subtle)] transition-colors hover:bg-[var(--cuba-canvas)] hover:text-[var(--cuba-ink-muted)]"
                     >
                         <MdMoreVert className="w-4 h-4" />
                     </button>
                     {menuOpen && (
-                        <div className="absolute right-0 z-20 mt-1 w-44 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+                        <div className="absolute right-0 z-20 mt-1 w-44 overflow-hidden rounded-lg border border-[var(--cuba-line)] bg-white py-1 shadow-lg">
                             {onMoveUp && menuItem('Move up', <MdArrowUpward className="w-4 h-4" />, onMoveUp)}
                             {onMoveDown && menuItem('Move down', <MdArrowDownward className="w-4 h-4" />, onMoveDown)}
                             {onDuplicate && menuItem('Duplicate', <MdContentCopy className="w-4 h-4" />, onDuplicate)}

@@ -219,9 +219,9 @@ const WorkHistoryStep = ({ resumeData, updateResumeData, onNavigate: _onNavigate
                                                 prev.map(emp => (emp.id === employment.id ? { ...emp, current: isChecked, end: isChecked ? 'Present' : '' } : emp))
                                             );
                                         }}
-                                        className="w-3.5 h-3.5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer accent-indigo-600"
+                                        className="w-3.5 h-3.5 text-indigo-600 rounded border-[var(--cuba-line-strong)] focus:ring-indigo-500 cursor-pointer accent-indigo-600"
                                     />
-                                    <span className={employment.current ? 'text-indigo-600 font-bold' : 'text-slate-500 hover:text-slate-700'}>
+                                    <span className={employment.current ? 'text-indigo-600 font-bold' : 'text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)]'}>
                                         Current Role
                                     </span>
                                 </label>
@@ -239,10 +239,10 @@ const WorkHistoryStep = ({ resumeData, updateResumeData, onNavigate: _onNavigate
                 {/* Description Section */}
                 <div className="space-y-2.5">
                     <div className="pb-0.5">
-                        <label className="block text-[13px] font-bold text-slate-800">
+                        <label className="block text-[13px] font-bold text-[var(--cuba-ink)]">
                             Responsibilities & Achievements
                         </label>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-[var(--cuba-ink-subtle)]">
                             Highlight your achievements and impact — or let AI craft high-impact, metric-backed bullets for you.
                         </p>
                     </div>
@@ -271,9 +271,9 @@ const WorkHistoryStep = ({ resumeData, updateResumeData, onNavigate: _onNavigate
         const roleName = targetEmp?.jobTitle || targetEmp?.employer || 'Position';
 
         return (
-            <div className="mt-4 pt-3.5 border-t border-slate-100 space-y-3">
+            <div className="mt-4 pt-3.5 border-t border-[var(--cuba-line)] space-y-3">
                 <div className="flex items-center justify-between gap-1.5">
-                    <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    <h3 className="text-[10px] font-black uppercase tracking-wider text-[var(--cuba-ink-subtle)]">
                         AI Role Copilot
                     </h3>
                     <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-100/80 px-2 py-0.5 rounded-md truncate max-w-[130px]" title={roleName}>
@@ -291,7 +291,7 @@ const WorkHistoryStep = ({ resumeData, updateResumeData, onNavigate: _onNavigate
                                 className={`px-2 py-0.5 text-[10px] font-semibold rounded-md transition-all whitespace-nowrap cursor-pointer ${
                                     (targetEmp?.id === emp.id)
                                         ? 'bg-indigo-600 text-white shadow-2xs'
-                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                        : 'bg-[var(--cuba-canvas)] text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-line)]'
                                 }`}
                             >
                                 #{idx + 1} {emp.jobTitle || emp.employer || 'Role'}
@@ -300,7 +300,7 @@ const WorkHistoryStep = ({ resumeData, updateResumeData, onNavigate: _onNavigate
                     </div>
                 )}
 
-                <p className="text-[11px] text-slate-500 leading-snug">
+                <p className="text-[11px] text-[var(--cuba-ink-subtle)] leading-snug">
                     Use AI to polish bullets, insert verified metrics, align keywords with target job, or answer guided questions.
                 </p>
 
@@ -316,11 +316,11 @@ const WorkHistoryStep = ({ resumeData, updateResumeData, onNavigate: _onNavigate
                 </button>
 
                 {/* Segmented Quick Tools */}
-                <div className="grid grid-cols-3 gap-1 bg-slate-100/90 p-1 rounded-xl border border-slate-200/80">
+                <div className="grid grid-cols-3 gap-1 bg-[var(--cuba-canvas)]/90 p-1 rounded-xl border border-[var(--cuba-line)]/80">
                     <button
                         type="button"
                         onClick={() => handleOpenCopilot(targetEmp, 'quantify')}
-                        className="inline-flex flex-col items-center justify-center py-1.5 px-1 rounded-lg text-slate-700 hover:text-amber-800 hover:bg-white transition-all cursor-pointer text-center"
+                        className="inline-flex flex-col items-center justify-center py-1.5 px-1 rounded-lg text-[var(--cuba-ink-muted)] hover:text-amber-800 hover:bg-white transition-all cursor-pointer text-center"
                         title="Add measurable numbers, revenue, %, or scale"
                     >
                         <MdTrendingUp className="w-3.5 h-3.5 text-amber-600 mb-0.5" />
@@ -329,7 +329,7 @@ const WorkHistoryStep = ({ resumeData, updateResumeData, onNavigate: _onNavigate
                     <button
                         type="button"
                         onClick={() => handleOpenCopilot(targetEmp, 'tailor')}
-                        className="inline-flex flex-col items-center justify-center py-1.5 px-1 rounded-lg text-slate-700 hover:text-purple-800 hover:bg-white transition-all cursor-pointer text-center"
+                        className="inline-flex flex-col items-center justify-center py-1.5 px-1 rounded-lg text-[var(--cuba-ink-muted)] hover:text-purple-800 hover:bg-white transition-all cursor-pointer text-center"
                         title="Match terminology from your Target Role and Job Description"
                     >
                         <MdTrackChanges className="w-3.5 h-3.5 text-purple-600 mb-0.5" />
@@ -338,7 +338,7 @@ const WorkHistoryStep = ({ resumeData, updateResumeData, onNavigate: _onNavigate
                     <button
                         type="button"
                         onClick={() => handleOpenCopilot(targetEmp, 'interview')}
-                        className="inline-flex flex-col items-center justify-center py-1.5 px-1 rounded-lg text-slate-700 hover:text-indigo-800 hover:bg-white transition-all cursor-pointer text-center"
+                        className="inline-flex flex-col items-center justify-center py-1.5 px-1 rounded-lg text-[var(--cuba-ink-muted)] hover:text-indigo-800 hover:bg-white transition-all cursor-pointer text-center"
                         title="Answer 3 simple guided questions to craft bullets"
                     >
                         <MdHelpOutline className="w-3.5 h-3.5 text-indigo-500 mb-0.5" />
@@ -368,12 +368,12 @@ const WorkHistoryStep = ({ resumeData, updateResumeData, onNavigate: _onNavigate
                         <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center mx-auto shadow-md">
                             <MdWorkOutline className="w-6 h-6" />
                         </div>
-                        <h3 className="text-base font-bold text-slate-900">
+                        <h3 className="text-base font-bold text-[var(--cuba-ink)]">
                             {suggestedTargetRole
                                 ? `Let's build your experience for ${suggestedTargetRole}`
                                 : 'Add your work experience'}
                         </h3>
-                        <p className="text-xs text-slate-500 leading-relaxed">
+                        <p className="text-xs text-[var(--cuba-ink-subtle)] leading-relaxed">
                             Work experience accounts for <strong>28 out of 100 points</strong> in your ATS score.
                             Start with your current or most recent role and include measurable achievements.
                         </p>
@@ -381,21 +381,21 @@ const WorkHistoryStep = ({ resumeData, updateResumeData, onNavigate: _onNavigate
 
                     {/* 4-Step Visual Roadmap */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 max-w-xl mx-auto text-left">
-                        <div className="p-2.5 rounded-xl bg-white border border-slate-200/80 shadow-2xs space-y-1">
+                        <div className="p-2.5 rounded-xl bg-white border border-[var(--cuba-line)]/80 shadow-2xs space-y-1">
                             <span className="text-[10px] font-bold text-indigo-600">01 · Role & Org</span>
-                            <p className="text-[11px] text-slate-600 font-medium">Add verified title & employer</p>
+                            <p className="text-[11px] text-[var(--cuba-ink-muted)] font-medium">Add verified title & employer</p>
                         </div>
-                        <div className="p-2.5 rounded-xl bg-white border border-slate-200/80 shadow-2xs space-y-1">
+                        <div className="p-2.5 rounded-xl bg-white border border-[var(--cuba-line)]/80 shadow-2xs space-y-1">
                             <span className="text-[10px] font-bold text-indigo-600">02 · Dates</span>
-                            <p className="text-[11px] text-slate-600 font-medium">Establish chronological tenure</p>
+                            <p className="text-[11px] text-[var(--cuba-ink-muted)] font-medium">Establish chronological tenure</p>
                         </div>
-                        <div className="p-2.5 rounded-xl bg-white border border-slate-200/80 shadow-2xs space-y-1">
+                        <div className="p-2.5 rounded-xl bg-white border border-[var(--cuba-line)]/80 shadow-2xs space-y-1">
                             <span className="text-[10px] font-bold text-indigo-600">03 · Verbs & Metrics</span>
-                            <p className="text-[11px] text-slate-600 font-medium">Lead with action & numbers</p>
+                            <p className="text-[11px] text-[var(--cuba-ink-muted)] font-medium">Lead with action & numbers</p>
                         </div>
-                        <div className="p-2.5 rounded-xl bg-white border border-slate-200/80 shadow-2xs space-y-1">
+                        <div className="p-2.5 rounded-xl bg-white border border-[var(--cuba-line)]/80 shadow-2xs space-y-1">
                             <span className="text-[10px] font-bold text-indigo-600">04 · Target JD</span>
-                            <p className="text-[11px] text-slate-600 font-medium">Align domain keywords</p>
+                            <p className="text-[11px] text-[var(--cuba-ink-muted)] font-medium">Align domain keywords</p>
                         </div>
                     </div>
 
@@ -414,7 +414,7 @@ const WorkHistoryStep = ({ resumeData, updateResumeData, onNavigate: _onNavigate
                                 <button
                                     type="button"
                                     onClick={() => addEmployment('')}
-                                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors"
+                                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-[var(--cuba-line-strong)] hover:bg-[var(--cuba-canvas)] text-[var(--cuba-ink-muted)] text-xs font-semibold transition-colors"
                                 >
                                     <span>+ Add a Different Role</span>
                                 </button>
@@ -454,7 +454,7 @@ const WorkHistoryStep = ({ resumeData, updateResumeData, onNavigate: _onNavigate
                     <button
                         type="button"
                         onClick={() => addEmployment('')}
-                        className="w-full h-11 rounded-xl border border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/40 text-sm font-semibold text-slate-700 hover:text-indigo-700 flex items-center justify-center gap-2 transition-colors"
+                        className="w-full h-11 rounded-xl border border-dashed border-[var(--cuba-line-strong)] hover:border-indigo-400 hover:bg-indigo-50/40 text-sm font-semibold text-[var(--cuba-ink-muted)] hover:text-indigo-700 flex items-center justify-center gap-2 transition-colors"
                     >
                         <MdAdd className="w-4 h-4" />
                         Add another role

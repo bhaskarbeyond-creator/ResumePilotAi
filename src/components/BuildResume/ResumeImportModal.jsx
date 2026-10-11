@@ -162,7 +162,7 @@ const ResumeImportModal = ({
     return (
         <AnimatePresence>
             <div
-                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--cuba-ink)]/60 backdrop-blur-sm"
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="resume-import-title"
@@ -176,7 +176,7 @@ const ResumeImportModal = ({
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 10 }}
                     transition={{ duration: 0.2 }}
-                    className="bg-white rounded-2xl shadow-2xl max-w-xl w-full overflow-hidden border border-slate-100"
+                    className="bg-white rounded-2xl shadow-2xl max-w-xl w-full overflow-hidden border border-[var(--cuba-line)]"
                 >
                     {/* Header */}
                     <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 px-6 py-5 text-white flex items-center justify-between">
@@ -220,7 +220,7 @@ const ResumeImportModal = ({
                                 onDrop={handleDrop}
                                 className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-200 ${isDragging
                                         ? 'border-indigo-500 bg-indigo-50/50 scale-[1.01]'
-                                        : 'border-slate-300 hover:border-indigo-400 bg-slate-50/50 hover:bg-slate-50'
+                                        : 'border-[var(--cuba-line-strong)] hover:border-indigo-400 bg-[var(--cuba-canvas)]/50 hover:bg-[var(--cuba-canvas)]'
                                     }`}
                             >
                                 <div className="w-16 h-16 mx-auto mb-4 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center shadow-inner">
@@ -233,10 +233,10 @@ const ResumeImportModal = ({
                                         />
                                     </svg>
                                 </div>
-                                <h4 className="font-semibold text-slate-800 text-sm mb-1">
+                                <h4 className="font-semibold text-[var(--cuba-ink)] text-sm mb-1">
                                     Drag and drop your resume file here
                                 </h4>
-                                <p className="text-xs text-slate-500 mb-4">
+                                <p className="text-xs text-[var(--cuba-ink-subtle)] mb-4">
                                     Supports PDF, DOCX, DOC, TXT, RTF, JPG, JPEG, PNG (up to 10MB)
                                 </p>
                                 <label className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-semibold rounded-xl cursor-pointer shadow-md hover:shadow-lg transition-all duration-200">
@@ -280,16 +280,16 @@ const ResumeImportModal = ({
                                         </svg>
                                     </div>
                                 </div>
-                                <h4 className="font-bold text-slate-800 text-base mb-1">
+                                <h4 className="font-bold text-[var(--cuba-ink)] text-base mb-1">
                                     {status === 'extracting' ? 'Reading Resume Document...' : 'AI Engine Analyzing Career History...'}
                                 </h4>
-                                <p className="text-xs text-slate-500 max-w-sm mx-auto mb-4">
+                                <p className="text-xs text-[var(--cuba-ink-subtle)] max-w-sm mx-auto mb-4">
                                     {status === 'extracting'
                                         ? `Extracting text content from ${fileName}`
                                         : 'Extracting contact info, work history, education, and skills into builder steps.'}
                                 </p>
                                 {/* Progress bar */}
-                                <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden max-w-xs mx-auto">
+                                <div className="w-full bg-[var(--cuba-line)] rounded-full h-2 overflow-hidden max-w-xs mx-auto">
                                     <motion.div
                                         className="h-full bg-gradient-to-r from-blue-500 to-indigo-500"
                                         initial={{ width: 0 }}
@@ -297,7 +297,7 @@ const ResumeImportModal = ({
                                         transition={{ duration: 0.3 }}
                                     />
                                 </div>
-                                <p className="text-xs text-slate-400 mt-2">{Math.round(progress)}%</p>
+                                <p className="text-xs text-[var(--cuba-ink-subtle)] mt-2">{Math.round(progress)}%</p>
                                 {/* Cancel button during loading */}
                                 <button
                                     onClick={() => {
@@ -306,7 +306,7 @@ const ResumeImportModal = ({
                                         setStatus('idle');
                                         setProgress(0);
                                     }}
-                                    className="mt-4 px-4 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-lg transition-colors"
+                                    className="mt-4 px-4 py-1.5 bg-[var(--cuba-line)] hover:bg-[var(--cuba-line-strong)] text-[var(--cuba-ink-muted)] text-xs font-semibold rounded-lg transition-colors"
                                 >
                                     Cancel
                                 </button>
@@ -329,34 +329,34 @@ const ResumeImportModal = ({
 
                                 {/* Data preview grid */}
                                 <div className="grid grid-cols-2 gap-3 text-xs">
-                                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                                        <span className="text-slate-400 block mb-0.5 font-medium">Candidate Name</span>
-                                        <span className="font-semibold text-slate-800 truncate block">
+                                    <div className="p-3 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-xl">
+                                        <span className="text-[var(--cuba-ink-subtle)] block mb-0.5 font-medium">Candidate Name</span>
+                                        <span className="font-semibold text-[var(--cuba-ink)] truncate block">
                                             {parsedResult.firstname || parsedResult.lastname
                                                 ? `${parsedResult.firstname || ''} ${parsedResult.lastname || ''}`.trim() || '—'
                                                 : 'Detected'}
                                         </span>
                                     </div>
-                                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                                        <span className="text-slate-400 block mb-0.5 font-medium">Occupation</span>
-                                        <span className="font-semibold text-slate-800 truncate block">
+                                    <div className="p-3 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-xl">
+                                        <span className="text-[var(--cuba-ink-subtle)] block mb-0.5 font-medium">Occupation</span>
+                                        <span className="font-semibold text-[var(--cuba-ink)] truncate block">
                                             {parsedResult.occupation || 'Detected'}
                                         </span>
                                     </div>
-                                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                                        <span className="text-slate-400 block mb-0.5 font-medium">Work History</span>
-                                        <span className="font-semibold text-slate-800 block">
+                                    <div className="p-3 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-xl">
+                                        <span className="text-[var(--cuba-ink-subtle)] block mb-0.5 font-medium">Work History</span>
+                                        <span className="font-semibold text-[var(--cuba-ink)] block">
                                             {parsedResult.employments?.length || 0} positions
                                         </span>
                                     </div>
-                                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                                        <span className="text-slate-400 block mb-0.5 font-medium">Education</span>
-                                        <span className="font-semibold text-slate-800 block">
+                                    <div className="p-3 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-xl">
+                                        <span className="text-[var(--cuba-ink-subtle)] block mb-0.5 font-medium">Education</span>
+                                        <span className="font-semibold text-[var(--cuba-ink)] block">
                                             {parsedResult.educations?.length || 0} degrees
                                         </span>
                                     </div>
-                                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl col-span-2">
-                                        <span className="text-slate-400 block mb-0.5 font-medium">Key Skills Extracted</span>
+                                    <div className="p-3 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-xl col-span-2">
+                                        <span className="text-[var(--cuba-ink-subtle)] block mb-0.5 font-medium">Key Skills Extracted</span>
                                         <div className="flex flex-wrap gap-1.5 mt-1">
                                             {(parsedResult.skills || []).slice(0, 8).map((sk, i) => (
                                                 <span
@@ -367,7 +367,7 @@ const ResumeImportModal = ({
                                                 </span>
                                             ))}
                                             {(parsedResult.skills?.length || 0) > 8 && (
-                                                <span className="px-2 py-0.5 bg-slate-200 text-slate-600 font-medium text-[11px] rounded-md">
+                                                <span className="px-2 py-0.5 bg-[var(--cuba-line)] text-[var(--cuba-ink-muted)] font-medium text-[11px] rounded-md">
                                                     +{(parsedResult.skills?.length || 0) - 8} more
                                                 </span>
                                             )}
@@ -389,14 +389,14 @@ const ResumeImportModal = ({
                                         />
                                     </svg>
                                 </div>
-                                <h4 className="font-bold text-slate-800 text-sm mb-1">Import Failed</h4>
+                                <h4 className="font-bold text-[var(--cuba-ink)] text-sm mb-1">Import Failed</h4>
                                 <p className="text-xs text-rose-600 mb-4">{errorMessage}</p>
                                 <button
                                     onClick={() => {
                                         setStatus('idle');
                                         setErrorMessage('');
                                     }}
-                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-colors"
+                                    className="px-4 py-2 bg-[var(--cuba-canvas)] hover:bg-[var(--cuba-line)] text-[var(--cuba-ink-muted)] text-xs font-semibold rounded-xl transition-colors"
                                 >
                                     Try Another Document
                                 </button>
@@ -405,10 +405,10 @@ const ResumeImportModal = ({
                     </div>
 
                     {/* Footer */}
-                    <div className="bg-slate-50 border-t border-slate-100 px-6 py-4 flex items-center justify-between">
+                    <div className="bg-[var(--cuba-canvas)] border-t border-[var(--cuba-line)] px-6 py-4 flex items-center justify-between">
                         <button
                             onClick={onClose}
-                            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+                            className="px-4 py-2 text-xs font-semibold text-[var(--cuba-ink-muted)] hover:text-[var(--cuba-ink)] transition-colors"
                         >
                             Cancel
                         </button>

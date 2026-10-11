@@ -110,9 +110,9 @@ const ReferencesStep = ({ resumeData, updateResumeData, onNavigate }) => {
         >
             <div className="space-y-3">
                 {references.length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-slate-300 bg-white px-5 py-8 text-center space-y-4">
-                        <h3 className="text-base font-bold tracking-tight text-slate-900">Start with the privacy-safe default</h3>
-                        <p className="mx-auto max-w-md text-sm leading-relaxed text-slate-500">
+                    <div className="rounded-xl border border-dashed border-[var(--cuba-line-strong)] bg-white px-5 py-8 text-center space-y-4">
+                        <h3 className="text-base font-bold tracking-tight text-[var(--cuba-ink)]">Start with the privacy-safe default</h3>
+                        <p className="mx-auto max-w-md text-sm leading-relaxed text-[var(--cuba-ink-subtle)]">
                             Most candidates keep reference contact details private and provide them when asked.
                             Use the statement below, or add named references if the role asks for them.
                         </p>
@@ -120,7 +120,7 @@ const ReferencesStep = ({ resumeData, updateResumeData, onNavigate }) => {
                             <button
                                 type="button"
                                 onClick={applyAvailableOnRequest}
-                                className="inline-flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
+                                className="inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--cuba-ink)] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--cuba-ink)]"
                             >
                                 <MdCheck className="w-4 h-4" />
                                 “Available upon request”
@@ -128,7 +128,7 @@ const ReferencesStep = ({ resumeData, updateResumeData, onNavigate }) => {
                             <button
                                 type="button"
                                 onClick={addReference}
-                                className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                                className="inline-flex items-center justify-center gap-2 rounded-lg border border-[var(--cuba-line)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--cuba-ink-muted)] transition-colors hover:bg-[var(--cuba-canvas)]"
                             >
                                 <MdAdd className="w-4 h-4" />
                                 Add a named reference
@@ -137,7 +137,7 @@ const ReferencesStep = ({ resumeData, updateResumeData, onNavigate }) => {
                     </div>
                 ) : (
                     <div className="space-y-3">
-                        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xs divide-y divide-slate-100">
+                        <div className="overflow-hidden rounded-xl border border-[var(--cuba-line)] bg-white shadow-2xs divide-y divide-[var(--cuba-line)]">
                             {references.map((reference, index) => (
                                 <div key={reference.id} className="p-4 space-y-3">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -161,7 +161,7 @@ const ReferencesStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                             type="button"
                                             onClick={() => moveReference(reference.id, -1)}
                                             disabled={index === 0}
-                                            className="text-xs font-semibold text-slate-400 hover:text-slate-700 disabled:opacity-30"
+                                            className="text-xs font-semibold text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] disabled:opacity-30"
                                         >
                                             Move up
                                         </button>
@@ -169,7 +169,7 @@ const ReferencesStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                             type="button"
                                             onClick={() => moveReference(reference.id, 1)}
                                             disabled={index === references.length - 1}
-                                            className="text-xs font-semibold text-slate-400 hover:text-slate-700 disabled:opacity-30"
+                                            className="text-xs font-semibold text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] disabled:opacity-30"
                                         >
                                             Move down
                                         </button>
@@ -185,14 +185,14 @@ const ReferencesStep = ({ resumeData, updateResumeData, onNavigate }) => {
                             ))}
                         </div>
 
-                        <p className="text-xs text-slate-500 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                        <p className="text-xs text-[var(--cuba-ink-subtle)] rounded-lg border border-[var(--cuba-line)] bg-[var(--cuba-canvas)] px-3 py-2">
                             Consent note: add a person only if they have agreed to be contacted as a reference.
                         </p>
 
                         <button
                             type="button"
                             onClick={addReference}
-                            className="w-full h-11 rounded-xl border border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/40 text-sm font-semibold text-slate-700 hover:text-indigo-700 flex items-center justify-center gap-2 transition-colors"
+                            className="w-full h-11 rounded-xl border border-dashed border-[var(--cuba-line-strong)] hover:border-indigo-400 hover:bg-indigo-50/40 text-sm font-semibold text-[var(--cuba-ink-muted)] hover:text-indigo-700 flex items-center justify-center gap-2 transition-colors"
                         >
                             <MdAdd className="w-4 h-4" />
                             Add another reference

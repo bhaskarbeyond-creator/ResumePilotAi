@@ -10,7 +10,7 @@ const STATUS_THEME = {
     excellent: { stroke: '#059669', chip: 'bg-emerald-50 border-emerald-200 text-emerald-800' },
     strong: { stroke: '#4f46e5', chip: 'bg-indigo-50 border-indigo-200 text-indigo-800' },
     'needs-improvement': { stroke: '#d97706', chip: 'bg-amber-50 border-amber-200 text-amber-800' },
-    'getting-started': { stroke: '#475569', chip: 'bg-slate-100 border-slate-300 text-slate-800' },
+    'getting-started': { stroke: '#475569', chip: 'bg-[var(--cuba-canvas)] border-[var(--cuba-line-strong)] text-[var(--cuba-ink)]' },
 };
 
 const RadialGauge = ({ score = 0, stroke = '#475569', label = '' }) => {
@@ -21,7 +21,7 @@ const RadialGauge = ({ score = 0, stroke = '#475569', label = '' }) => {
     return (
         <div className="relative flex h-12 w-12 flex-shrink-0 items-center justify-center">
             <svg className="h-12 w-12 -rotate-90 transform" viewBox="0 0 56 56" aria-hidden="true">
-                <circle cx="28" cy="28" r={radius} stroke="currentColor" strokeWidth="4.5" fill="transparent" className="text-slate-100" />
+                <circle cx="28" cy="28" r={radius} stroke="currentColor" strokeWidth="4.5" fill="transparent" className="text-[var(--cuba-ink-inverse)]" />
                 <circle
                     cx="28"
                     cy="28"
@@ -36,8 +36,8 @@ const RadialGauge = ({ score = 0, stroke = '#475569', label = '' }) => {
                 />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-xs font-black leading-none text-slate-900">{safeScore}</span>
-                <span className="text-[8px] font-bold text-slate-400">/100</span>
+                <span className="text-xs font-black leading-none text-[var(--cuba-ink)]">{safeScore}</span>
+                <span className="text-[8px] font-bold text-[var(--cuba-ink-subtle)]">/100</span>
             </div>
             <span className="sr-only">{label}</span>
         </div>
@@ -123,7 +123,7 @@ const AtsScoreMeter = ({ resumeData = {}, onNavigate, jobDescription, onJobDescr
 
     return (
         <section
-            className="space-y-2 rounded-2xl border border-slate-200/90 bg-white p-3 shadow-sm"
+            className="space-y-2 rounded-2xl border border-[var(--cuba-line)]/90 bg-white p-3 shadow-sm"
             aria-label={t('AtsScoreMeter.region', 'ATS readiness')}
             data-testid="ats-score-meter">
             <div className="flex items-center justify-between gap-2">
@@ -132,11 +132,11 @@ const AtsScoreMeter = ({ resumeData = {}, onNavigate, jobDescription, onJobDescr
                     <div className="min-w-0">
                         <div className="flex items-center gap-1">
                             <MdSpeed className="h-3.5 w-3.5 flex-shrink-0 text-indigo-600" aria-hidden="true" />
-                            <span className="truncate text-[11px] font-bold uppercase tracking-wider text-slate-800">
+                            <span className="truncate text-[11px] font-bold uppercase tracking-wider text-[var(--cuba-ink)]">
                                 {t('AtsScoreMeter.title', 'ATS readiness')}
                             </span>
                         </div>
-                        <p className="text-[10px] font-semibold tabular-nums text-slate-500" data-testid="ats-readiness-score">
+                        <p className="text-[10px] font-semibold tabular-nums text-[var(--cuba-ink-subtle)]" data-testid="ats-readiness-score">
                             {result?.qualityScore || 0} / 100
                         </p>
                         <span className={`mt-0.5 inline-block max-w-full truncate rounded-md border px-1.5 py-0.5 text-[10px] font-extrabold ${theme.chip}`}>
@@ -147,7 +147,7 @@ const AtsScoreMeter = ({ resumeData = {}, onNavigate, jobDescription, onJobDescr
                 <button
                     type="button"
                     onClick={() => setIsExpanded((value) => !value)}
-                    className="flex-shrink-0 rounded-lg bg-slate-100 p-1.5 text-slate-500 transition-colors hover:bg-indigo-50 hover:text-indigo-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    className="flex-shrink-0 rounded-lg bg-[var(--cuba-canvas)] p-1.5 text-[var(--cuba-ink-subtle)] transition-colors hover:bg-indigo-50 hover:text-indigo-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                     aria-expanded={isExpanded}
                     aria-controls="ats-score-details"
                     title={t('AtsScoreMeter.toggle', 'Toggle detailed breakdown')}>
@@ -156,29 +156,29 @@ const AtsScoreMeter = ({ resumeData = {}, onNavigate, jobDescription, onJobDescr
                 </button>
             </div>
 
-            <p className="text-[10px] leading-snug text-slate-500" data-testid="ats-jd-match">
-                <span className="font-bold text-slate-600">{t('AtsScoreMeter.jdTitle', 'Target job match')}</span>
+            <p className="text-[10px] leading-snug text-[var(--cuba-ink-subtle)]" data-testid="ats-jd-match">
+                <span className="font-bold text-[var(--cuba-ink-muted)]">{t('AtsScoreMeter.jdTitle', 'Target job match')}</span>
                 {': '}
                 {matchLabel}
             </p>
 
             {result?.language?.nonEnglish && isExpanded && (
-                <p className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] text-slate-600">
+                <p className="rounded-lg border border-[var(--cuba-line)] bg-[var(--cuba-canvas)] px-2 py-1 text-[10px] text-[var(--cuba-ink-muted)]">
                     {t('AtsScoreMeter.nonEnglish', 'Action-verb coaching is English-oriented. Your content is still scored on structure, evidence, and relevance.')}
                 </p>
             )}
 
             {isExpanded && (
-                <div id="ats-score-details" className="max-h-[min(22rem,50vh)] space-y-2.5 overflow-y-auto border-t border-slate-100 pt-2">
+                <div id="ats-score-details" className="max-h-[min(22rem,50vh)] space-y-2.5 overflow-y-auto border-t border-[var(--cuba-line)] pt-2">
                     {(result?.improvements || []).length > 0 && (
                         <div>
-                            <h3 className="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            <h3 className="mb-1 text-[10px] font-bold uppercase tracking-wider text-[var(--cuba-ink-subtle)]">
                                 {t('AtsScoreMeter.improvements', 'Highest-value next steps')}
                             </h3>
                             <ol className="space-y-1">
                                 {(result.improvements || []).map((item, index) => (
-                                    <li key={item.text || index} className="text-[10px] leading-snug text-slate-700">
-                                        <span className="font-extrabold text-slate-500">{index + 1}.</span>{' '}
+                                    <li key={item.text || index} className="text-[10px] leading-snug text-[var(--cuba-ink-muted)]">
+                                        <span className="font-extrabold text-[var(--cuba-ink-subtle)]">{index + 1}.</span>{' '}
                                         {item.text}
                                         {item.navigateTo && typeof onNavigate === 'function' && (
                                             <button
@@ -196,7 +196,7 @@ const AtsScoreMeter = ({ resumeData = {}, onNavigate, jobDescription, onJobDescr
 
                     {(result?.strengths || []).length > 0 && (result?.qualityScore || 0) >= 15 && (
                         <div>
-                            <h3 className="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            <h3 className="mb-1 text-[10px] font-bold uppercase tracking-wider text-[var(--cuba-ink-subtle)]">
                                 {t('AtsScoreMeter.strengths', 'Strengths')}
                             </h3>
                             <ul className="space-y-1">
@@ -211,12 +211,12 @@ const AtsScoreMeter = ({ resumeData = {}, onNavigate, jobDescription, onJobDescr
                     )}
 
                     <div className="space-y-1.5">
-                        <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-[var(--cuba-ink-subtle)]">
                             <span>{t('AtsScoreMeter.breakdown', 'Why this score')}</span>
                             <span>{t('AtsScoreMeter.points', 'Points')}</span>
                         </div>
                         {(result?.qualityScore || 0) < 15 && (
-                            <p className="rounded-lg bg-slate-50 px-2 py-1.5 text-[10px] leading-snug text-slate-600">
+                            <p className="rounded-lg bg-[var(--cuba-canvas)] px-2 py-1.5 text-[10px] leading-snug text-[var(--cuba-ink-muted)]">
                                 {t('AtsScoreMeter.emptyCoach', 'You are just getting started. Add contact details and one role — the score will move as the resume becomes real.')}
                             </p>
                         )}
@@ -224,20 +224,20 @@ const AtsScoreMeter = ({ resumeData = {}, onNavigate, jobDescription, onJobDescr
                             const percent = Math.round(((section.score || 0) / (section.maxScore || 1)) * 100);
                             const healthy = percent >= 70;
                             return (
-                                <article key={section.id} className="space-y-1 rounded-xl border border-slate-100 bg-slate-50/70 p-2">
+                                <article key={section.id} className="space-y-1 rounded-xl border border-[var(--cuba-line)] bg-[var(--cuba-canvas)]/70 p-2">
                                     <div className="flex items-center justify-between text-xs">
-                                        <h4 className="truncate text-[11px] font-bold text-slate-700">{t(`AtsScoreMeter.categories.${section.id}`, section.name)}</h4>
-                                        <span className="ml-1 text-[10px] font-extrabold tabular-nums text-slate-600">
+                                        <h4 className="truncate text-[11px] font-bold text-[var(--cuba-ink-muted)]">{t(`AtsScoreMeter.categories.${section.id}`, section.name)}</h4>
+                                        <span className="ml-1 text-[10px] font-extrabold tabular-nums text-[var(--cuba-ink-muted)]">
                                             {section.score}/{section.maxScore}
                                         </span>
                                     </div>
-                                    <div className="h-1 w-full overflow-hidden rounded-full bg-slate-200" aria-hidden="true">
+                                    <div className="h-1 w-full overflow-hidden rounded-full bg-[var(--cuba-line)]" aria-hidden="true">
                                         <div
                                             className={`h-1 rounded-full transition-all duration-500 ${healthy ? 'bg-indigo-600' : 'bg-amber-500'}`}
                                             style={{ width: `${percent}%` }}
                                         />
                                     </div>
-                                    <p className="text-[10px] leading-tight text-slate-500">{section.action}</p>
+                                    <p className="text-[10px] leading-tight text-[var(--cuba-ink-subtle)]">{section.action}</p>
                                     {section.navigateTo && typeof onNavigate === 'function' && section.score < section.maxScore && (
                                         <button
                                             type="button"
@@ -251,7 +251,7 @@ const AtsScoreMeter = ({ resumeData = {}, onNavigate, jobDescription, onJobDescr
                         })}
                     </div>
 
-                    <div className="border-t border-slate-200 pt-2">
+                    <div className="border-t border-[var(--cuba-line)] pt-2">
                         <button
                             type="button"
                             onClick={() => setShowMatcher((value) => !value)}
@@ -263,8 +263,8 @@ const AtsScoreMeter = ({ resumeData = {}, onNavigate, jobDescription, onJobDescr
                         </button>
 
                         {showMatcher && (
-                            <div className="mt-2 space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-2.5">
-                                <label className="block text-[10px] font-semibold text-slate-600" htmlFor="ats-target-jd">
+                            <div className="mt-2 space-y-2 rounded-xl border border-[var(--cuba-line)] bg-[var(--cuba-canvas)] p-2.5">
+                                <label className="block text-[10px] font-semibold text-[var(--cuba-ink-muted)]" htmlFor="ats-target-jd">
                                     {t('AtsScoreMeter.jdLabel', 'Paste the job you want. Matching stays on this device and is never sent to a server.')}
                                 </label>
                                 <textarea
@@ -273,7 +273,7 @@ const AtsScoreMeter = ({ resumeData = {}, onNavigate, jobDescription, onJobDescr
                                     value={jdDraft}
                                     onChange={(event) => setJdDraft(event.target.value)}
                                     placeholder={t('AtsScoreMeter.jdPlaceholder', 'Paste the job description to check role fit…')}
-                                    className="h-16 w-full resize-none rounded-lg border border-slate-200 bg-white p-2 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                    className="h-16 w-full resize-none rounded-lg border border-[var(--cuba-line)] bg-white p-2 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                 />
                                 <div className="flex gap-2">
                                     <button
@@ -287,7 +287,7 @@ const AtsScoreMeter = ({ resumeData = {}, onNavigate, jobDescription, onJobDescr
                                         <button
                                             type="button"
                                             onClick={clearJobDescription}
-                                            className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
+                                            className="rounded-lg border border-[var(--cuba-line-strong)] px-3 py-1.5 text-xs font-semibold text-[var(--cuba-ink-muted)] hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
                                             {t('AtsScoreMeter.clearJd', 'Clear')}
                                         </button>
                                     )}
@@ -314,7 +314,7 @@ const AtsScoreMeter = ({ resumeData = {}, onNavigate, jobDescription, onJobDescr
                                         )}
                                         {Object.keys(result.jdMatch.groups || {}).slice(0, 3).map((group) => (
                                             <div key={group}>
-                                                <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wide text-slate-500">{group}</p>
+                                                <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wide text-[var(--cuba-ink-subtle)]">{group}</p>
                                                 <div className="flex flex-wrap gap-1">
                                                     {(result.jdMatch.groups[group] || []).slice(0, 4).map((keyword) => (
                                                         <span key={keyword} className="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold text-amber-800">
@@ -330,7 +330,7 @@ const AtsScoreMeter = ({ resumeData = {}, onNavigate, jobDescription, onJobDescr
                         )}
                     </div>
 
-                    <p className="flex items-start gap-1 text-[9px] leading-snug text-slate-400">
+                    <p className="flex items-start gap-1 text-[9px] leading-snug text-[var(--cuba-ink-subtle)]">
                         <MdWarning className="mt-0.5 h-3 w-3 flex-shrink-0" aria-hidden="true" />
                         <span>
                             {t(

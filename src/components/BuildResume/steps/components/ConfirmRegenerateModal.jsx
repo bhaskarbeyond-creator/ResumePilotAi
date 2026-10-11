@@ -72,7 +72,7 @@ const ConfirmRegenerateModal = ({
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs transition-opacity duration-200 animate-in fade-in"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--cuba-ink)]/60 backdrop-blur-xs transition-opacity duration-200 animate-in fade-in"
             onClick={handleBackdropClick}
             role="presentation"
         >
@@ -91,10 +91,10 @@ const ConfirmRegenerateModal = ({
                             <MdWarningAmber className="w-5 h-5" />
                         </div>
                         <div>
-                            <h3 id="confirm-regenerate-title" className="text-sm font-bold text-slate-900">
+                            <h3 id="confirm-regenerate-title" className="text-sm font-bold text-[var(--cuba-ink)]">
                                 Replace Existing Job Requirements?
                             </h3>
-                            <p className="text-[11px] text-slate-500 font-medium">
+                            <p className="text-[11px] text-[var(--cuba-ink-subtle)] font-medium">
                                 Target Role Tailoring & ATS Copilot
                             </p>
                         </div>
@@ -103,7 +103,7 @@ const ConfirmRegenerateModal = ({
                         type="button"
                         onClick={onClose}
                         disabled={isGenerating}
-                        className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 rounded-lg transition-colors"
+                        className="text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-canvas)] p-1.5 rounded-lg transition-colors"
                         aria-label="Close modal"
                     >
                         <MdClose className="w-4 h-4" />
@@ -112,7 +112,7 @@ const ConfirmRegenerateModal = ({
 
                 {/* Body Content */}
                 <div className="mt-4 space-y-3">
-                    <p id="confirm-regenerate-desc" className="text-xs text-slate-600 leading-relaxed">
+                    <p id="confirm-regenerate-desc" className="text-xs text-[var(--cuba-ink-muted)] leading-relaxed">
                         Your target requirements already contain custom text. Regenerating will synthesize fresh, industry-standard responsibilities and key qualifications tailored to:
                     </p>
 
@@ -126,29 +126,29 @@ const ConfirmRegenerateModal = ({
                     </div>
 
                     {existingTextSnippet && (
-                        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200/80">
-                            <span className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                        <div className="p-2.5 rounded-lg bg-[var(--cuba-canvas)] border border-[var(--cuba-line)]/80">
+                            <span className="block text-[10px] font-semibold text-[var(--cuba-ink-subtle)] uppercase tracking-wider mb-1">
                                 Current text will be replaced
                             </span>
-                            <p className="text-[11px] text-slate-600 italic line-clamp-2">
+                            <p className="text-[11px] text-[var(--cuba-ink-muted)] italic line-clamp-2">
                                 "{existingTextSnippet.slice(0, 120)}{existingTextSnippet.length > 120 ? '...' : ''}"
                             </p>
                         </div>
                     )}
 
-                    <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+                    <div className="flex items-center gap-1.5 text-[11px] text-[var(--cuba-ink-subtle)]">
                         <MdAutoAwesome className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
                         <span>You can always manually edit or paste custom text at any time.</span>
                     </div>
                 </div>
 
                 {/* Actions */}
-                <div className="mt-6 flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                <div className="mt-6 flex items-center justify-end gap-2.5 pt-3 border-t border-[var(--cuba-line)]">
                     <button
                         type="button"
                         onClick={onClose}
                         disabled={isGenerating}
-                        className="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors"
+                        className="px-3.5 py-2 text-xs font-semibold text-[var(--cuba-ink-muted)] hover:text-[var(--cuba-ink)] hover:bg-[var(--cuba-canvas)] rounded-xl transition-colors"
                     >
                         Cancel
                     </button>

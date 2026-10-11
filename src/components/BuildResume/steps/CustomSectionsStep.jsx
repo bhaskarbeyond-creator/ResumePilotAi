@@ -261,8 +261,8 @@ const CustomSectionsStep = ({ resumeData, updateResumeData, onNavigate }) => {
 
                     {suggestions.length > 0 && (
                         <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4 space-y-2.5">
-                            <h3 className="text-sm font-bold text-slate-900">Sections your profile already hints at</h3>
-                            <p className="text-xs text-slate-500">
+                            <h3 className="text-sm font-bold text-[var(--cuba-ink)]">Sections your profile already hints at</h3>
+                            <p className="text-xs text-[var(--cuba-ink-subtle)]">
                                 Based on words in your own entries — adding one creates a blank section you fill in.
                             </p>
                             <div className="flex flex-wrap gap-2">
@@ -272,9 +272,9 @@ const CustomSectionsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                         type="button"
                                         onClick={() => addSection(suggestion.title)}
                                         title={`Matched “${suggestion.basis}” in your text`}
-                                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-indigo-300 hover:text-indigo-700 transition-colors"
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--cuba-line)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--cuba-ink-muted)] hover:border-indigo-300 hover:text-indigo-700 transition-colors"
                                     >
-                                        <MdAdd className="w-3.5 h-3.5 text-slate-400" />
+                                        <MdAdd className="w-3.5 h-3.5 text-[var(--cuba-ink-subtle)]" />
                                         {suggestion.title}
                                     </button>
                                 ))}
@@ -293,7 +293,7 @@ const CustomSectionsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                             <div
                                 key={section.id}
                                 className={`rounded-xl border bg-white transition-all ${
-                                    isExpanded ? 'border-indigo-300 ring-2 ring-indigo-500/10' : 'border-slate-200'
+                                    isExpanded ? 'border-indigo-300 ring-2 ring-indigo-500/10' : 'border-[var(--cuba-line)]'
                                 }`}
                             >
                                 <div
@@ -302,17 +302,17 @@ const CustomSectionsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                 >
                                     <div className="flex items-center gap-2.5 min-w-0">
                                         <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${
-                                            isComplete ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'
+                                            isComplete ? 'bg-emerald-100 text-emerald-800' : 'bg-[var(--cuba-canvas)] text-[var(--cuba-ink-muted)]'
                                         }`}>
                                             {isComplete ? <MdCheck className="w-4 h-4" /> : sectionIndex + 1}
                                         </div>
                                         <div className="min-w-0">
                                             <div className="flex items-center gap-2 flex-wrap">
-                                                <h3 className={`text-xs sm:text-sm font-bold truncate ${section.title ? 'text-slate-900' : 'text-slate-400 italic'}`}>
+                                                <h3 className={`text-xs sm:text-sm font-bold truncate ${section.title ? 'text-[var(--cuba-ink)]' : 'text-[var(--cuba-ink-subtle)] italic'}`}>
                                                     {section.title || 'Untitled section'}
                                                 </h3>
-                                                <span className="text-slate-300 text-xs">•</span>
-                                                <span className="text-xs text-slate-500 font-medium">
+                                                <span className="text-[var(--cuba-ink-subtle)] text-xs">•</span>
+                                                <span className="text-xs text-[var(--cuba-ink-subtle)] font-medium">
                                                     {items.length} {items.length === 1 ? 'entry' : 'entries'}
                                                 </span>
                                             </div>
@@ -325,7 +325,7 @@ const CustomSectionsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                             onClick={() => moveSection(section.id, -1)}
                                             disabled={sectionIndex === 0}
                                             aria-label="Move section up"
-                                            className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30"
+                                            className="p-1 rounded text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-canvas)] disabled:opacity-30"
                                             title="Move up"
                                         >↑</button>
                                         <button
@@ -333,14 +333,14 @@ const CustomSectionsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                             onClick={() => moveSection(section.id, 1)}
                                             disabled={sectionIndex === customSections.length - 1}
                                             aria-label="Move section down"
-                                            className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30"
+                                            className="p-1 rounded text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-canvas)] disabled:opacity-30"
                                             title="Move down"
                                         >↓</button>
                                         <button
                                             type="button"
                                             onClick={() => removeSection(section.id)}
                                             aria-label="Remove section"
-                                            className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                                            className="p-1 rounded text-[var(--cuba-ink-subtle)] hover:text-rose-600 hover:bg-rose-50"
                                             title="Delete section"
                                         >
                                             <MdDelete className="w-3.5 h-3.5" />
@@ -349,7 +349,7 @@ const CustomSectionsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                             type="button"
                                             onClick={() => toggleSection(section.id)}
                                             aria-label={isExpanded ? 'Collapse section' : 'Expand section'}
-                                            className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 ml-1"
+                                            className="p-1 rounded text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-canvas)] ml-1"
                                         >
                                             <MdKeyboardArrowDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                                         </button>
@@ -367,8 +367,8 @@ const CustomSectionsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                             required
                                         />
 
-                                        <div className="space-y-2 pt-2 border-t border-slate-100">
-                                            <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                        <div className="space-y-2 pt-2 border-t border-[var(--cuba-line)]">
+                                            <h4 className="text-[11px] font-bold uppercase tracking-wider text-[var(--cuba-ink-subtle)]">
                                                 Entries ({items.length})
                                             </h4>
 
@@ -376,12 +376,12 @@ const CustomSectionsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                                 const itemExpanded = expandedItems.has(item.id);
                                                 const itemTitle = item.title || item.name || '';
                                                 return (
-                                                    <div key={item.id} className="rounded-lg border border-slate-200 bg-slate-50/40">
+                                                    <div key={item.id} className="rounded-lg border border-[var(--cuba-line)] bg-[var(--cuba-canvas)]/40">
                                                         <div
                                                             className="flex items-center justify-between px-3 py-2 cursor-pointer"
                                                             onClick={() => toggleItem(item.id)}
                                                         >
-                                                            <span className={`text-xs font-bold truncate ${itemTitle ? 'text-slate-800' : 'text-slate-400 italic'}`}>
+                                                            <span className={`text-xs font-bold truncate ${itemTitle ? 'text-[var(--cuba-ink)]' : 'text-[var(--cuba-ink-subtle)] italic'}`}>
                                                                 {itemTitle || 'Untitled entry'}
                                                             </span>
                                                             <div className="flex items-center gap-0.5" onClick={e => e.stopPropagation()}>
@@ -389,26 +389,26 @@ const CustomSectionsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                                                     type="button"
                                                                     onClick={() => moveItem(section.id, item.id, -1)}
                                                                     disabled={itemIndex === 0}
-                                                                    className="p-1 text-slate-400 hover:text-slate-700 disabled:opacity-30"
+                                                                    className="p-1 text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] disabled:opacity-30"
                                                                     aria-label="Move entry up"
                                                                 >↑</button>
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => moveItem(section.id, item.id, 1)}
                                                                     disabled={itemIndex === items.length - 1}
-                                                                    className="p-1 text-slate-400 hover:text-slate-700 disabled:opacity-30"
+                                                                    className="p-1 text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] disabled:opacity-30"
                                                                     aria-label="Move entry down"
                                                                 >↓</button>
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => duplicateItem(section.id, item.id)}
-                                                                    className="p-1 text-slate-400 hover:text-indigo-600"
+                                                                    className="p-1 text-[var(--cuba-ink-subtle)] hover:text-indigo-600"
                                                                     aria-label="Duplicate entry"
                                                                 >⧉</button>
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => removeItem(section.id, item.id)}
-                                                                    className="p-1 text-slate-400 hover:text-rose-600"
+                                                                    className="p-1 text-[var(--cuba-ink-subtle)] hover:text-rose-600"
                                                                     aria-label="Remove entry"
                                                                 >
                                                                     <MdDelete className="w-3 h-3" />
@@ -416,7 +416,7 @@ const CustomSectionsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => toggleItem(item.id)}
-                                                                    className="p-1 text-slate-400 hover:text-slate-700"
+                                                                    className="p-1 text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)]"
                                                                     aria-label={itemExpanded ? 'Collapse entry' : 'Expand entry'}
                                                                 >
                                                                     <MdKeyboardArrowDown className={`w-3.5 h-3.5 transition-transform ${itemExpanded ? 'rotate-180' : ''}`} />
@@ -425,7 +425,7 @@ const CustomSectionsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                                         </div>
 
                                                         {itemExpanded && (
-                                                            <div className="p-3 bg-white border-t border-slate-100 rounded-b-lg space-y-3">
+                                                            <div className="p-3 bg-white border-t border-[var(--cuba-line)] rounded-b-lg space-y-3">
                                                                 <Field
                                                                     label={t('CustomSectionsStep.fields.itemTitle.label', 'Entry title')}
                                                                     name={`custom-item-title-${item.id}`}
@@ -434,7 +434,7 @@ const CustomSectionsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                                                     onChange={(e) => updateItem(section.id, item.id, 'title', e.target.value)}
                                                                 />
                                                                 <div className="space-y-1">
-                                                                    <label className="block text-[13px] font-semibold text-slate-700">Details</label>
+                                                                    <label className="block text-[13px] font-semibold text-[var(--cuba-ink-muted)]">Details</label>
                                                                     <BulletPointsEditor
                                                                         value={item.description || item.content || ''}
                                                                         onChange={(value) => updateItem(section.id, item.id, 'description', value)}
@@ -450,7 +450,7 @@ const CustomSectionsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                             <button
                                                 type="button"
                                                 onClick={() => addItem(section.id)}
-                                                className="w-full h-8 rounded-lg border border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/40 text-xs font-semibold text-slate-700 hover:text-indigo-700 flex items-center justify-center gap-1.5 transition-colors"
+                                                className="w-full h-8 rounded-lg border border-dashed border-[var(--cuba-line-strong)] hover:border-indigo-400 hover:bg-indigo-50/40 text-xs font-semibold text-[var(--cuba-ink-muted)] hover:text-indigo-700 flex items-center justify-center gap-1.5 transition-colors"
                                             >
                                                 <MdAdd className="w-3.5 h-3.5" />
                                                 Add entry
@@ -465,7 +465,7 @@ const CustomSectionsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                     <button
                         type="button"
                         onClick={() => addSection()}
-                        className="w-full h-11 rounded-xl border border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/40 text-sm font-semibold text-slate-700 hover:text-indigo-700 flex items-center justify-center gap-2 transition-colors"
+                        className="w-full h-11 rounded-xl border border-dashed border-[var(--cuba-line-strong)] hover:border-indigo-400 hover:bg-indigo-50/40 text-sm font-semibold text-[var(--cuba-ink-muted)] hover:text-indigo-700 flex items-center justify-center gap-2 transition-colors"
                     >
                         <MdAdd className="w-4 h-4" />
                         Add another section

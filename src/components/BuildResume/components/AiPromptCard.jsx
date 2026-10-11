@@ -19,8 +19,8 @@ import { describeAssistSource } from '../ai/aiContract.js';
 function LoadingRow({ label }) {
     return (
         <div className="flex items-center gap-3 py-1" role="status">
-            <span className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-slate-200 border-t-indigo-500" />
-            <span className="text-sm text-slate-500">{label || 'Working from what you have written…'}</span>
+            <span className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-[var(--cuba-line)] border-t-indigo-500" />
+            <span className="text-sm text-[var(--cuba-ink-subtle)]">{label || 'Working from what you have written…'}</span>
         </div>
     );
 }
@@ -33,14 +33,14 @@ function QuestionsPanel({ questions, onSubmit }) {
 
     return (
         <div className="space-y-3">
-            <p className="text-[13px] leading-relaxed text-slate-600">
+            <p className="text-[13px] leading-relaxed text-[var(--cuba-ink-muted)]">
                 There isn’t enough detail in this entry yet, so instead of guessing we ask.
                 Answer any of these — only what you type will be used.
             </p>
             <ol className="space-y-3">
                 {questions.map((q, index) => (
                     <li key={q.id}>
-                        <label htmlFor={`${q.id}-answer`} className="mb-1 block text-[13px] font-semibold text-slate-700">
+                        <label htmlFor={`${q.id}-answer`} className="mb-1 block text-[13px] font-semibold text-[var(--cuba-ink-muted)]">
                             {index + 1}. {q.question}
                         </label>
                         <textarea
@@ -48,18 +48,18 @@ function QuestionsPanel({ questions, onSubmit }) {
                             rows={2}
                             value={answers[q.answerField] || ''}
                             onChange={event => setAnswers(prev => ({ ...prev, [q.answerField]: event.target.value }))}
-                            className="w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
+                            className="w-full resize-y rounded-lg border border-[var(--cuba-line)] bg-white px-3 py-2 text-sm text-[var(--cuba-ink)] shadow-2xs placeholder:text-[var(--cuba-ink-subtle)] focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
                         />
                     </li>
                 ))}
             </ol>
             <div className="flex items-center justify-between gap-3">
-                <p className="text-xs text-slate-400">{filled}/{questions.length} answered — one is enough to start</p>
+                <p className="text-xs text-[var(--cuba-ink-subtle)]">{filled}/{questions.length} answered — one is enough to start</p>
                 <button
                     type="button"
                     disabled={filled === 0}
                     onClick={() => onSubmit(answers)}
-                    className="rounded-lg bg-slate-900 px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="rounded-lg bg-[var(--cuba-ink)] px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--cuba-ink)] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                     Use my answers
                 </button>
@@ -82,7 +82,7 @@ function SuggestionsPanel({ suggestions, onAccept, metaKind }) {
 
     return (
         <div className="space-y-3">
-            <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
+            <ul className="divide-y divide-[var(--cuba-line)] rounded-lg border border-[var(--cuba-line)] bg-white">
                 {suggestions.map(s => (
                     <li key={s.id} className="flex items-start gap-2.5 px-3 py-2.5">
                         <input
@@ -90,12 +90,12 @@ function SuggestionsPanel({ suggestions, onAccept, metaKind }) {
                             id={`sugg-${s.id}`}
                             checked={selected.has(s.id)}
                             onChange={() => toggle(s.id)}
-                            className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                            className="mt-0.5 h-4 w-4 shrink-0 rounded border-[var(--cuba-line-strong)] text-indigo-600 focus:ring-indigo-500"
                         />
                         <label htmlFor={`sugg-${s.id}`} className="min-w-0 cursor-pointer">
-                            <span className="block text-sm leading-snug text-slate-800">{s.text}</span>
+                            <span className="block text-sm leading-snug text-[var(--cuba-ink)]">{s.text}</span>
                             {s.basis && s.basis !== 'target role' ? (
-                                <span className="mt-0.5 block truncate text-xs text-slate-400" title={s.basis}>
+                                <span className="mt-0.5 block truncate text-xs text-[var(--cuba-ink-subtle)]" title={s.basis}>
                                     based on: “{s.basis}”
                                 </span>
                             ) : null}
@@ -104,12 +104,12 @@ function SuggestionsPanel({ suggestions, onAccept, metaKind }) {
                 ))}
             </ul>
             <div className="flex items-center justify-between gap-3">
-                <p className="text-xs text-slate-400">Only add what is true for you — you can remove any of it later.</p>
+                <p className="text-xs text-[var(--cuba-ink-subtle)]">Only add what is true for you — you can remove any of it later.</p>
                 <button
                     type="button"
                     disabled={chosen.length === 0}
                     onClick={() => onAccept(chosen)}
-                    className="shrink-0 rounded-lg bg-slate-900 px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="shrink-0 rounded-lg bg-[var(--cuba-ink)] px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--cuba-ink)] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                     Add {chosen.length > 0 ? `selected (${chosen.length})` : 'selected'}
                 </button>
@@ -130,7 +130,7 @@ function DraftPanel({ draft, existing, onUseDraft }) {
                 onChange={event => setText(event.target.value)}
                 rows={Math.min(10, Math.max(4, Math.ceil(text.length / 90)))}
                 aria-label="Draft (editable)"
-                className="w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm leading-relaxed text-slate-900 shadow-2xs focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
+                className="w-full resize-y rounded-lg border border-[var(--cuba-line)] bg-white px-3 py-2.5 text-sm leading-relaxed text-[var(--cuba-ink)] shadow-2xs focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
             />
             {willReplace ? (
                 <p className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2.5 py-1.5">
@@ -142,7 +142,7 @@ function DraftPanel({ draft, existing, onUseDraft }) {
                     type="button"
                     disabled={!text.trim()}
                     onClick={() => onUseDraft(text)}
-                    className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="inline-flex items-center gap-2 rounded-lg bg-[var(--cuba-ink)] px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--cuba-ink)] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                     <MdCheck className="w-4 h-4" />
                     Use this draft
@@ -172,7 +172,7 @@ export default function AiPromptCard({
 
     if (status === 'loading') {
         return (
-            <div ref={panelRef} className="rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3.5" aria-busy="true">
+            <div ref={panelRef} className="rounded-xl border border-[var(--cuba-line)] bg-[var(--cuba-canvas)]/60 px-4 py-3.5" aria-busy="true">
                 <LoadingRow />
             </div>
         );
@@ -204,14 +204,14 @@ export default function AiPromptCard({
             <div ref={panelRef} className="rounded-xl border border-indigo-100 bg-indigo-50/40 px-4 py-4 space-y-3">
                 <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                        <h3 className="flex items-center gap-1.5 text-sm font-bold text-slate-900">
+                        <h3 className="flex items-center gap-1.5 text-sm font-bold text-[var(--cuba-ink)]">
                             <MdOutlineEditNote className="w-4 h-4 text-indigo-500" />
                             {title}
                         </h3>
                         <p className="mt-0.5 text-xs font-medium text-indigo-700/80">{describeAssistSource(result)}</p>
                     </div>
                     {onDismiss && (
-                        <button type="button" onClick={onDismiss} aria-label="Dismiss AI suggestions" className="shrink-0 rounded-md p-1 text-slate-400 transition-colors hover:bg-white hover:text-slate-600">
+                        <button type="button" onClick={onDismiss} aria-label="Dismiss AI suggestions" className="shrink-0 rounded-md p-1 text-[var(--cuba-ink-subtle)] transition-colors hover:bg-white hover:text-[var(--cuba-ink-muted)]">
                             <MdClose className="w-4 h-4" />
                         </button>
                     )}
@@ -222,7 +222,7 @@ export default function AiPromptCard({
                 {kind === 'draft' && <DraftPanel draft={result.draft} existing={draftExisting} onUseDraft={onUseDraft} />}
                 {kind === 'empty' && (
                     <div className="space-y-2">
-                        <p className="text-sm leading-relaxed text-slate-600">{result.note || 'Nothing to suggest yet — add a little detail and try again.'}</p>
+                        <p className="text-sm leading-relaxed text-[var(--cuba-ink-muted)]">{result.note || 'Nothing to suggest yet — add a little detail and try again.'}</p>
                         <button type="button" onClick={onRun} className="text-xs font-bold text-indigo-700 underline underline-offset-2 hover:text-indigo-900">
                             Try again
                         </button>
@@ -233,16 +233,16 @@ export default function AiPromptCard({
     }
 
     return (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-2xs">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--cuba-line)] bg-white px-4 py-3 shadow-2xs">
             <div className="min-w-0">
-                <p className="text-sm font-semibold text-slate-800">{title}</p>
-                <p className="text-xs text-slate-500">{disabled ? disabledReason : evidenceHint}</p>
+                <p className="text-sm font-semibold text-[var(--cuba-ink)]">{title}</p>
+                <p className="text-xs text-[var(--cuba-ink-subtle)]">{disabled ? disabledReason : evidenceHint}</p>
             </div>
             <button
                 type="button"
                 onClick={onRun}
                 disabled={disabled}
-                className="shrink-0 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-semibold text-slate-800 shadow-xs transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50"
+                className="shrink-0 rounded-lg border border-[var(--cuba-line-strong)] bg-white px-3.5 py-2 text-sm font-semibold text-[var(--cuba-ink)] shadow-xs transition-colors hover:bg-[var(--cuba-canvas)] focus:outline-none focus:ring-2 focus:ring-[var(--cuba-line-strong)] disabled:cursor-not-allowed disabled:opacity-50"
             >
                 {buttonLabel}
             </button>

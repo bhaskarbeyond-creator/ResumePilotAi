@@ -453,7 +453,7 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
             resumeData={resumeData}
             targetJd={resumeData?.targetJobDescription || ''}
         >
-            <form onSubmit={(e) => e.preventDefault()} className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 shadow-2xs space-y-5">
+            <form onSubmit={(e) => e.preventDefault()} className="rounded-xl border border-[var(--cuba-line)] bg-white p-4 sm:p-5 shadow-2xs space-y-5">
                 {/* Identity */}
                 <div className="space-y-3">
                     <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 items-start">
@@ -508,7 +508,7 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
                 </div>
 
                 {/* Contact & location */}
-                <div className="space-y-3 border-t border-slate-100 pt-4">
+                <div className="space-y-3 border-t border-[var(--cuba-line)] pt-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <Field
                             label={t('HeadingStep.fields.email.label', 'Email')}
@@ -553,12 +553,12 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
                 </div>
 
                 {/* Optional extras */}
-                <div className="border-t border-slate-100 pt-3">
+                <div className="border-t border-[var(--cuba-line)] pt-3">
                     <button
                         type="button"
                         onClick={() => setMoreOpen(prev => !prev)}
                         aria-expanded={moreOpen}
-                        className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
+                        className="flex items-center gap-1.5 text-xs font-semibold text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink)] transition-colors"
                     >
                         {moreOpen ? <MdExpandLess className="w-4 h-4" /> : <MdExpandMore className="w-4 h-4" />}
                         More details (optional)
@@ -607,7 +607,7 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
                 </div>
 
                 {/* Optional Target Job Description Tailoring */}
-                <div className="border-t border-slate-100 pt-3">
+                <div className="border-t border-[var(--cuba-line)] pt-3">
                     <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3.5 space-y-3">
                         <div className="flex items-center justify-between">
                             <span className="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
@@ -619,16 +619,16 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                 </span>
                             ) : null}
                         </div>
-                        <p className="text-[11px] leading-relaxed text-slate-500">
+                        <p className="text-[11px] leading-relaxed text-[var(--cuba-ink-subtle)]">
                             Specifying your target role and pasting the job description allows the AI copilot and ATS engine to highlight missing keywords, tailor summaries, and suggest relevant skills across all subsequent steps.
                         </p>
                         {/* Target Role with Auto AI Dropdown */}
                         <div ref={roleInputContainerRef} className="relative">
                             <div className="flex items-center justify-between mb-1">
-                                <label className="block text-[11px] font-semibold text-slate-700">
+                                <label className="block text-[11px] font-semibold text-[var(--cuba-ink-muted)]">
                                     Target Job Title (Optional)
                                 </label>
-                                <span className="text-[10px] text-slate-400">
+                                <span className="text-[10px] text-[var(--cuba-ink-subtle)]">
                                     Select or type your destination role
                                 </span>
                             </div>
@@ -643,7 +643,7 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                     onFocus={() => setRoleDropdownOpen(true)}
                                     onKeyDown={handleRoleKeyDown}
                                     placeholder="e.g. Senior Data Analyst (if transitioning or targeting a different role)"
-                                    className="w-full rounded-lg border border-slate-200 bg-white pl-3 pr-16 py-1.5 text-xs text-slate-900 shadow-2xs placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                    className="w-full rounded-lg border border-[var(--cuba-line)] bg-white pl-3 pr-16 py-1.5 text-xs text-[var(--cuba-ink)] shadow-2xs placeholder:text-[var(--cuba-ink-subtle)] focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                                 />
                                 <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
                                     {targetRole && (
@@ -654,7 +654,7 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                                 targetRoleRef.current = '';
                                                 handleSave();
                                             }}
-                                            className="p-1 text-slate-400 hover:text-slate-600 rounded-md hover:bg-slate-100"
+                                            className="p-1 text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] rounded-md hover:bg-[var(--cuba-canvas)]"
                                             title="Clear target role"
                                         >
                                             <MdClose className="w-3 h-3" />
@@ -682,17 +682,17 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                                 <span className="inline-block w-2.5 h-2.5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin ml-1"></span>
                                             )}
                                         </span>
-                                        <span className="text-slate-400 font-normal">
+                                        <span className="text-[var(--cuba-ink-subtle)] font-normal">
                                             {suggestedRoles.length} suggestions
                                         </span>
                                     </div>
                                     {suggestedRoles.length === 0 && isFetchingAiRoles && (
-                                        <div className="p-4 text-center text-slate-500 text-xs flex items-center justify-center gap-2">
+                                        <div className="p-4 text-center text-[var(--cuba-ink-subtle)] text-xs flex items-center justify-center gap-2">
                                             <span className="inline-block w-3 h-3 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></span>
                                             <span>Consulting AI for role suggestions…</span>
                                         </div>
                                     )}
-                                    <ul className="max-h-56 overflow-y-auto divide-y divide-slate-100 py-1">
+                                    <ul className="max-h-56 overflow-y-auto divide-y divide-[var(--cuba-line)] py-1">
                                         {suggestedRoles.map((roleItem, index) => {
                                             const isSelected = targetRole && targetRole.toLowerCase() === roleItem.toLowerCase();
                                             const isHighlighted = index === highlightedIndex;
@@ -704,7 +704,7 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                                         className={`w-full text-left px-3 py-2 flex items-center justify-between transition-colors ${
                                                             isHighlighted || isSelected
                                                                 ? 'bg-indigo-50/90 text-indigo-950 font-semibold'
-                                                                : 'text-slate-700 hover:bg-slate-50'
+                                                                : 'text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-canvas)]'
                                                         }`}
                                                     >
                                                         <span className="flex items-center gap-1.5">
@@ -722,7 +722,7 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                             );
                                         })}
                                         {targetRole && targetRole.trim().length >= 2 && (
-                                            <li className="p-1 bg-slate-50/60">
+                                            <li className="p-1 bg-[var(--cuba-canvas)]/60">
                                                 <button
                                                     type="button"
                                                     onClick={handleFetchAiRoleSuggestions}
@@ -744,12 +744,12 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                             </li>
                                         )}
                                     </ul>
-                                    <div className="px-3 py-1 bg-slate-50 border-t border-slate-100 text-[10px] text-slate-400 flex items-center justify-between">
+                                    <div className="px-3 py-1 bg-[var(--cuba-canvas)] border-t border-[var(--cuba-line)] text-[10px] text-[var(--cuba-ink-subtle)] flex items-center justify-between">
                                         <span>Use ↑↓ to navigate, Enter to select</span>
                                         <button
                                             type="button"
                                             onClick={() => setRoleDropdownOpen(false)}
-                                            className="text-slate-500 hover:text-slate-800 font-medium"
+                                            className="text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink)] font-medium"
                                         >
                                             Close
                                         </button>
@@ -761,7 +761,7 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
                         {/* Target Job Description with Manual Autofill Button */}
                         <div>
                             <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
-                                <label className="block text-[11px] font-semibold text-slate-700">
+                                <label className="block text-[11px] font-semibold text-[var(--cuba-ink-muted)]">
                                     Target Job Description / Key Requirements (Optional)
                                 </label>
                                 <button
@@ -795,7 +795,7 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                     <button
                                         type="button"
                                         onClick={() => setJdAutofillMessage('')}
-                                        className="text-slate-400 hover:text-slate-600 ml-2"
+                                        className="text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] ml-2"
                                     >
                                         <MdClose className="w-3 h-3" />
                                     </button>
@@ -807,7 +807,7 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                 value={targetJd}
                                 onChange={(e) => setTargetJd(e.target.value)}
                                 placeholder="Paste the target job description or click 'Autofill Requirements' above to generate realistic expectations for this role…"
-                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 shadow-2xs placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                className="w-full rounded-lg border border-[var(--cuba-line)] bg-white px-3 py-2 text-xs text-[var(--cuba-ink)] shadow-2xs placeholder:text-[var(--cuba-ink-subtle)] focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                             />
                         </div>
 
@@ -826,14 +826,14 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                                 </span>
                                             )}
                                         </span>
-                                        <span className="text-[10px] text-slate-500">
+                                        <span className="text-[10px] text-[var(--cuba-ink-subtle)]">
                                             {extractedKeywords.length} key domains parsed
                                         </span>
                                     </div>
                                     {extractedKeywords.length > 0 && (
                                         <div className="flex flex-wrap gap-1">
                                             {extractedKeywords.map((kw, i) => (
-                                                <span key={`kw-${i}`} className="inline-flex items-center px-2 py-0.5 rounded bg-white border border-indigo-200/80 text-[10px] font-medium text-slate-700 shadow-2xs">
+                                                <span key={`kw-${i}`} className="inline-flex items-center px-2 py-0.5 rounded bg-white border border-indigo-200/80 text-[10px] font-medium text-[var(--cuba-ink-muted)] shadow-2xs">
                                                     {kw.term}
                                                 </span>
                                             ))}

@@ -1,0 +1,65 @@
+{
+  "id": "DIR-088",
+  "title": "CANDIDATE_PAGES Wave 1 — Resume Builder 10/10 UX Overhaul, Rezi-Grade Inline ATS Helpers & Step Tokenization",
+  "priority": "P0",
+  "status": "IN_PROGRESS",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-11T07:08:10.677Z",
+  "updatedAt": "2026-10-11T07:09:15.162Z",
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "spec": "MANDATE: Execute Wave 1 of the Candidate Suite Master Transformation on the Resume Builder (/build-resume/*, 13 child step modules): 1) Elevate the Resume Builder from baseline 4.3/10 to >= 9.0/10. 2) Eradicate the 235 legacy hardcoded color utilities across BuildResume.jsx and the step wizards, replacing them with Cuba design tokens (--cuba-canvas, --cuba-surface, --cuba-ink, --cuba-line, --cuba-primary). 3) Benchmark against Rezi.ai: Implement real-time, inline ATS feedback guidance (action verb power hints, bullet length benchmarks, keyword density cues) directly within the step editors. 4) Streamline step navigation: Ensure smooth transitions across Heading, Work History, Education, Skills, Summary, Certifications, Projects, Achievements, Custom, and Review with zero scroll glitches and accessible keyboard navigation. 5) Enforce complete guard honesty and autosave persistence across all steps. 6) Author tests/dir088-resume-builder-mastery.test.mjs with comprehensive ACs. 7) Invariants: Frozen 55 CV templates diff = 0, build under 4s, 0 lint errors, XAMPP server policy.",
+  "invariants": [],
+  "acceptanceCriteria": [],
+  "plan": {
+    "submittedAt": "2026-10-11T07:09:12.791Z",
+    "summary": "DIR-088 recon complete. THE HEADLINE FINDING IS A SCOPE DISCREPANCY THAT CHANGES THE PLAN: the brief says '235 legacy hardcoded color utilities across BuildResume.jsx and the step wizards', but 235 is only BuildResume.jsx itself. I measured the whole module with the DIR-087 counter and the true total is 2252 legacy colour utilities across 32 files. The distribution is heavily skewed: BuildResume.jsx 235, RoleAiCopilotModal 212, AchievementsStep 189, SkillsStep 155, ReviewStep 116, TemplateSelectionModal 98, SummaryStep 96, CertificationsStep 95, ProjectsStep 92, HeadingStep 83, AtsScoreMeter 77, ResumeImportModal 75, SyncProfileModal 70, WorkHistoryStep 64, CustomSectionsStep 60, AiPromptCard 57, EducationStep 53, AutocompleteInputField 45, EducationHealthCard 44, PreviewModal 42, RoleHealthCard 40, PhotoUpload 38, RichTextEditor 35, ConfirmRegenerateModal 32, StepShell 31, LanguagesStep 29, ReferencesStep 24, StepGuide 24, EntryHeader 15, Field 13, EmptyState 11, EntryList 2. Every one of the 32 files has ZERO cuba- classes except BuildResume.jsx which has 8 - so this is a genuine from-scratch tokenisation of the whole builder, not a touch-up. THE SECOND FINDING IS THE GOOD NEWS: the project ALREADY HAS a real, 1168-line ATS engine at src/utils/atsScore.js exporting ATS_WEIGHTS, ACTION_VERBS, extractBullets, extractMetrics, leadingActionVerb, analyzeStuffing, extractJdKeywords, keywordOccursInText, matchJobDescription and calculateAtsScore. The Rezi-grade inline helpers can therefore be built ON that engine rather than inventing a second scorer - action-verb power hints come from leadingActionVerb plus ACTION_VERBS, bullet length benchmarks from extractBullets plus extractMetrics, and keyword density cues from extractJdKeywords plus keywordOccursInText. That is the difference between real guidance and fabricated advice. THE THIRD FINDING IS THE SINGLE INSERTION POINT: src/components/BuildResume/components/StepShell.jsx is the shared wrapper every step already renders, and it ALREADY receives resumeData, targetJd, stepNumber, totalSteps and guideChildren. Inline ATS guidance added there reaches all 13 steps at once instead of being duplicated into each editor. THE FOURTH FINDING IS THE TOKEN SET: src/styles/cuba-tokens.css provides --cuba-canvas, --cuba-line, --cuba-line-strong, --cuba-ink, --cuba-ink-muted, --cuba-ink-subtle, --cuba-ink-inverse, --cuba-radius-sm/md/lg/xl, --cuba-shadow-sm/md/lg/xl, the --cuba-primary family, and the --cuba-pill-* families. PLAN. S1 MEASURE FIRST: extend the DIR-087 collector into a reusable resume-builder scorer so the 4.3 -> 9.0 target is MEASURED before and after rather than asserted. S2 THE MAPPING TABLE WITH SEMANTIC SAFETY RULES, because a blind global find-and-replace would BREAK this code: neutral structure maps slate/gray/zinc/neutral/stone to --cuba-canvas/--cuba-surface/--cuba-line/--cuba-ink tiers, but STATE colours (red/green/amber/blue used for validation, success, warning, error, ATS bands) must map to the --cuba-pill-danger/success/warning/info families and --cuba-success/--cuba-info, NOT to ink tokens, and text that is deliberately white ON a coloured or gradient fill must STAY white (--cuba-on-primary where the fill is primary). I will write this table into the repo as a reviewable artifact so the mapping is auditable rather than improvised. S3 REFACTOR IN MEASURED BATCHES, biggest first, re-running the scorer after each batch so the count is provably falling and the build stays green; any occurrence needing a human judgement call gets reported rather than guessed. S4 INLINE ATS VIA StepShell built on atsScore.js as described, with the hints derived from the entry's own text and the stored target JD, never invented. S5 STEP NAVIGATION, GUARDS AND AUTOSAVE: keyboard-reachable step transitions, no scroll jumps, and honest loading/empty/error states; note the builder already has saveResumeDraft with expectedRevision optimistic concurrency at BuildResume.jsx:522, so autosave work extends that mechanism rather than adding a competing one. S6 tests/dir088-resume-builder-mastery.test.mjs plus the full gate suite. RISK AND HONESTY I AM DECLARING UP FRONT: 2252 occurrences across 32 files is a large surface for one directive, and I will not claim a 9.0 rating I cannot measure - S1 exists precisely so the number is reproducible, and if a batch cannot be safely automated I will say so and leave it rather than mass-replace and break contrast. INVARIANTS: frozen 55 CV template modules diff 0, build under 4s, 0 lint errors, XAMPP-only servers with no detached node/vite/nodemon daemon, no auth/API/DB/RBAC change, and the existing ats-score and builder test pins preserved.",
+    "steps": [
+      "S1 - Build the measurement harness first: extend the DIR-087 metrics collector into a reusable resume-builder scorer that reports the legacy-vs-token ratio and the derived 0-10 rating for the BuildResume module, so the 4.3 to 9.0 target is measured before and after rather than asserted.",
+      "S2 - Author the token mapping table with semantic safety rules (neutrals to canvas/surface/line/ink tiers",
+      "state colours to the cuba-pill/success/info families",
+      "deliberate white-on-fill preserved) and commit it as a reviewable artifact so every substitution is auditable.",
+      "S3 - Refactor the 32 files in measured batches, largest first (BuildResume 235, RoleAiCopilotModal 212, AchievementsStep 189, SkillsStep 155, ReviewStep 116, down to EntryList 2), re-running the scorer after each batch to prove the count falls and the build stays green, and reporting rather than guessing any occurrence that needs a human judgement call.",
+      "S4 - Build the Rezi-grade inline ATS guidance into StepShell.jsx on top of the existing src/utils/atsScore.js engine: action-verb power hints from leadingActionVerb plus ACTION_VERBS, bullet length benchmarks from extractBullets plus extractMetrics, and keyword density cues from extractJdKeywords plus keywordOccursInText, all derived from the entry text and the stored target JD so nothing is fabricated.",
+      "S5 - Step navigation, guard honesty and autosave: keyboard-reachable transitions across all 13 steps with no scroll jumps, honest loading/empty/error states, and autosave extended through the existing saveResumeDraft expectedRevision mechanism at BuildResume.jsx:522 rather than a competing one.",
+      "S6 - Author tests/dir088-resume-builder-mastery.test.mjs with comprehensive ACs, register test:dir088, then verify the scorer rating, the full pinned suite, build under 4s, 0 lint errors, frozen 55-template diff 0 and the XAMPP policy, and submit evidence."
+    ],
+    "planHash": "bb9a181f6a9f443dfac6da16d1cdef43086b8c33e79cd204f63c653ee45b4a6a"
+  },
+  "evidence": null,
+  "reviews": [],
+  "freeze": null,
+  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "continuationPending": false,
+  "revisionTarget": null,
+  "planApproval": {
+    "approvedAt": "2026-10-11T07:09:15.162Z",
+    "automated": true,
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "declared-automation",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "non-tty"
+      ],
+      "pid": 13564,
+      "parentPid": 21032,
+      "tty": false,
+      "at": "2026-10-11T07:09:15.161Z",
+      "explicitlyAllowed": true
+    },
+    "feedback": "Auto-approved by the autonomous plan-scorer (score 85/100, reviewer verdict approved). NOT a human Lead review."
+  },
+  "heartbeats": [
+    {
+      "at": "2026-10-11T07:26:46.032Z",
+      "status": "S1-S4 and S6 delivered, S5 NOT delivered. Measured baseline for the Resume Builder module was score 1.2 with 2252 legacy colour utilities; the neutral structural half (1072 substitutions across 32 files) is now tokenised, giving a MEASURED 3.5 - so the directive 9.0 target is NOT met and I am reporting that plainly rather than asserting it. I did not run a blind replace: I verified in the tokens that --cuba-pill-success-fill is SOLID green with WHITE ink, so the 1179 semantic state colours need shade-aware mapping that a script cannot safely do without visual verification. The Rezi-grade inline ATS is built on the project own 1168-line atsScore.js engine (action verbs, bullet length, keyword density, section findings) and wired into StepShell so all 13 steps inherit it. My tokenisation did break one pinned className assertion in the product suite; I found it, fixed the pin without weakening it, and product now passes. dir088 6/6, 150/150 pinned, product EXIT 0, security 67/67, xampp 4/4, build 3.32s, lint 0 errors, frozen 55-template diff 0. Submitting evidence with the shortfall stated up front.",
+      "percent": 95,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    }
+  ],
+  "lastHeartbeatAt": "2026-10-11T07:26:46.032Z"
+}

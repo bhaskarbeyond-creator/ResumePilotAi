@@ -3,6 +3,9 @@ import { MdCheck, MdCheckCircle, MdExpandMore } from 'react-icons/md';
 import { getCandidateContext } from '../../../utils/candidateContext.js';
 import { calculateAtsScore } from '../../../utils/atsScore.js';
 import StepGuide from './StepGuide.jsx';
+// DIR-088: Rezi-grade inline ATS guidance, rendered inside the section guide rail so every
+// step inherits it from this one wrapper instead of each editor reimplementing it.
+import InlineAtsGuidance from './InlineAtsGuidance.jsx';
 
 /**
  * StepShell — the one panel of truth per step. Replaces StepWorkspaceLayout.
@@ -66,12 +69,12 @@ export default function StepShell({
 
     return (
         <div className="w-full space-y-3 pb-8 sm:pb-0">
-            <header className="rounded-xl border border-slate-200 bg-white px-4 py-3.5 sm:px-5 shadow-2xs">
+            <header className="rounded-xl border border-[var(--cuba-line)] bg-white px-4 py-3.5 sm:px-5 shadow-2xs">
                 <div className="flex items-center justify-between gap-3 min-w-0">
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                         <div
                             className={`flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg text-xs sm:text-sm font-bold ${
-                                isComplete ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-white'
+                                isComplete ? 'bg-emerald-600 text-white' : 'bg-[var(--cuba-ink)] text-white'
                             }`}
                             aria-label={`Step ${stepNumber} of ${totalSteps}`}
                         >
@@ -79,9 +82,9 @@ export default function StepShell({
                         </div>
                         <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
-                                <h1 className="text-sm sm:text-base font-bold tracking-tight text-slate-900">{title}</h1>
+                                <h1 className="text-sm sm:text-base font-bold tracking-tight text-[var(--cuba-ink)]">{title}</h1>
                                 {statusBadge ? (
-                                    <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                                    <span className="rounded-md border border-[var(--cuba-line)] bg-[var(--cuba-canvas)] px-2 py-0.5 text-[11px] font-semibold text-[var(--cuba-ink-muted)]">
                                         {statusBadge}
                                     </span>
                                 ) : null}
@@ -96,7 +99,7 @@ export default function StepShell({
                                 </span>
                             </div>
                             {subtitle ? (
-                                <p className="mt-0.5 text-xs leading-relaxed text-slate-500 max-w-2xl">{subtitle}</p>
+                                <p className="mt-0.5 text-xs leading-relaxed text-[var(--cuba-ink-subtle)] max-w-2xl">{subtitle}</p>
                             ) : null}
                         </div>
                     </div>
@@ -106,7 +109,7 @@ export default function StepShell({
                             <button
                                 type="button"
                                 onClick={() => setIsDesktopGuideCollapsed(prev => !prev)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 transition-colors"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink)] bg-[var(--cuba-canvas)] hover:bg-[var(--cuba-line)] transition-colors"
                                 title={isDesktopGuideCollapsed ? 'Show Section Guide' : 'Expand workspace width'}
                             >
                                 <span>{isDesktopGuideCollapsed ? 'Show Guide' : 'Expand View'}</span>
@@ -118,16 +121,16 @@ export default function StepShell({
 
             {/* Mobile Section Guide & ATS Readiness Accordion (Progressive Disclosure on <lg screens) */}
             {!hideGuide && (
-                <div className="lg:hidden rounded-xl border border-slate-200 bg-white shadow-2xs overflow-hidden">
+                <div className="lg:hidden rounded-xl border border-[var(--cuba-line)] bg-white shadow-2xs overflow-hidden">
                     <button
                         type="button"
                         onClick={() => setIsMobileGuideOpen(prev => !prev)}
-                        className="w-full flex items-center justify-between px-4 py-2.5 text-left bg-slate-50/75 hover:bg-slate-100/90 transition-colors"
+                        className="w-full flex items-center justify-between px-4 py-2.5 text-left bg-[var(--cuba-canvas)]/75 hover:bg-[var(--cuba-canvas)]/90 transition-colors"
                         aria-expanded={isMobileGuideOpen}
                         aria-controls={`mobile-guide-${stepPath}`}
                     >
                         <div className="flex items-center gap-2 min-w-0">
-                            <span className="text-xs font-bold text-slate-800">
+                            <span className="text-xs font-bold text-[var(--cuba-ink)]">
                                 Section Guide & ATS Insights
                             </span>
                             <span
@@ -142,16 +145,19 @@ export default function StepShell({
                             </span>
                         </div>
                         <MdExpandMore
-                            className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ${
+                            className={`w-4 h-4 text-[var(--cuba-ink-subtle)] transition-transform duration-200 shrink-0 ${
                                 isMobileGuideOpen ? 'rotate-180 text-indigo-600' : ''
                             }`}
                         />
                     </button>
                     {isMobileGuideOpen && (
-                        <div id={`mobile-guide-${stepPath}`} className="p-3 border-t border-slate-100">
+                        <div id={`mobile-guide-${stepPath}`} className="p-3 border-t border-[var(--cuba-line)]">
                             <StepGuide stepPath={stepPath} gaps={gaps} atsSection={atsSection} candidateContext={candidateContext}>
                                 {guideChildren}
                             </StepGuide>
+                            <div className="mt-3">
+                                <InlineAtsGuidance resumeData={resumeData} targetJd={targetJd} stepPath={stepPath} />
+                            </div>
                         </div>
                     )}
                 </div>
@@ -167,6 +173,9 @@ export default function StepShell({
                         <StepGuide stepPath={stepPath} gaps={gaps} atsSection={atsSection} candidateContext={candidateContext}>
                             {guideChildren}
                         </StepGuide>
+                        <div className="mt-3">
+                            <InlineAtsGuidance resumeData={resumeData} targetJd={targetJd} stepPath={stepPath} />
+                        </div>
                     </aside>
                 )}
             </div>

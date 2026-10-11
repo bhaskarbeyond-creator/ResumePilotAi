@@ -266,7 +266,7 @@ export default function RoleAiCopilotModal({
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs transition-opacity duration-200 animate-in fade-in"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--cuba-ink)]/60 backdrop-blur-xs transition-opacity duration-200 animate-in fade-in"
             onClick={(e) => { if (e.target === e.currentTarget && !isLoading) onClose(); }}
             role="presentation"
         >
@@ -275,24 +275,24 @@ export default function RoleAiCopilotModal({
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="role-copilot-title"
-                className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200/90 overflow-hidden transition-all duration-200 animate-in zoom-in-95 flex flex-col max-h-[90vh]"
+                className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-[var(--cuba-line)]/90 overflow-hidden transition-all duration-200 animate-in zoom-in-95 flex flex-col max-h-[90vh]"
             >
                 {/* Header */}
-                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between gap-3 shrink-0">
+                <div className="px-6 py-4 border-b border-[var(--cuba-line)] bg-[var(--cuba-canvas)]/50 flex items-center justify-between gap-3 shrink-0">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center text-white shadow-xs shrink-0">
                             <MdAutoAwesome className="w-5 h-5" />
                         </div>
                         <div>
                             <div className="flex items-center gap-2 flex-wrap">
-                                <h3 id="role-copilot-title" className="text-sm font-bold text-slate-900">
+                                <h3 id="role-copilot-title" className="text-sm font-bold text-[var(--cuba-ink)]">
                                     AI Role Copilot
                                 </h3>
                                 <span className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2 py-0.5 rounded-full">
                                     🛡️ Zero-Hallucination
                                 </span>
                             </div>
-                            <p className="text-xs text-slate-500 font-medium">
+                            <p className="text-xs text-[var(--cuba-ink-subtle)] font-medium">
                                 {roleTitle}{company ? ` · ${company}` : ''}
                             </p>
                         </div>
@@ -301,7 +301,7 @@ export default function RoleAiCopilotModal({
                         type="button"
                         onClick={onClose}
                         disabled={isLoading}
-                        className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-colors"
+                        className="w-8 h-8 rounded-full bg-[var(--cuba-canvas)] hover:bg-[var(--cuba-line)] text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] flex items-center justify-center transition-colors"
                         aria-label="Close copilot"
                     >
                         <MdClose className="w-4 h-4" />
@@ -310,17 +310,17 @@ export default function RoleAiCopilotModal({
 
                 {/* Segmented Mode Navigation Bar */}
                 <div className="px-6 pt-3 pb-1 bg-white shrink-0">
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 p-1 bg-slate-100/90 rounded-xl border border-slate-200/70">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 p-1 bg-[var(--cuba-canvas)]/90 rounded-xl border border-[var(--cuba-line)]/70">
                         <button
                             type="button"
                             onClick={() => { setActiveMode('polish'); setError(''); }}
                             className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs transition-all select-none ${
                                 activeMode === 'polish'
-                                    ? 'bg-white text-indigo-700 shadow-xs font-bold border border-slate-200/60'
-                                    : 'text-slate-600 hover:text-slate-900 font-semibold hover:bg-white/50'
+                                    ? 'bg-white text-indigo-700 shadow-xs font-bold border border-[var(--cuba-line)]/60'
+                                    : 'text-[var(--cuba-ink-muted)] hover:text-[var(--cuba-ink)] font-semibold hover:bg-white/50'
                             }`}
                         >
-                            <MdAutoAwesome className={`w-3.5 h-3.5 ${activeMode === 'polish' ? 'text-indigo-600' : 'text-slate-400'}`} />
+                            <MdAutoAwesome className={`w-3.5 h-3.5 ${activeMode === 'polish' ? 'text-indigo-600' : 'text-[var(--cuba-ink-subtle)]'}`} />
                             <span>Polish Writing</span>
                         </button>
                         <button
@@ -328,11 +328,11 @@ export default function RoleAiCopilotModal({
                             onClick={() => { setActiveMode('quantify'); setError(''); }}
                             className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs transition-all select-none ${
                                 activeMode === 'quantify'
-                                    ? 'bg-white text-indigo-700 shadow-xs font-bold border border-slate-200/60'
-                                    : 'text-slate-600 hover:text-slate-900 font-semibold hover:bg-white/50'
+                                    ? 'bg-white text-indigo-700 shadow-xs font-bold border border-[var(--cuba-line)]/60'
+                                    : 'text-[var(--cuba-ink-muted)] hover:text-[var(--cuba-ink)] font-semibold hover:bg-white/50'
                             }`}
                         >
-                            <MdTrendingUp className={`w-3.5 h-3.5 ${activeMode === 'quantify' ? 'text-indigo-600' : 'text-slate-400'}`} />
+                            <MdTrendingUp className={`w-3.5 h-3.5 ${activeMode === 'quantify' ? 'text-indigo-600' : 'text-[var(--cuba-ink-subtle)]'}`} />
                             <span>Add Metrics</span>
                             {bulletsLackingMetrics.length > 0 && (
                                 <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded-full font-bold">
@@ -345,11 +345,11 @@ export default function RoleAiCopilotModal({
                             onClick={() => { setActiveMode('tailor'); setError(''); }}
                             className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs transition-all select-none ${
                                 activeMode === 'tailor'
-                                    ? 'bg-white text-indigo-700 shadow-xs font-bold border border-slate-200/60'
-                                    : 'text-slate-600 hover:text-slate-900 font-semibold hover:bg-white/50'
+                                    ? 'bg-white text-indigo-700 shadow-xs font-bold border border-[var(--cuba-line)]/60'
+                                    : 'text-[var(--cuba-ink-muted)] hover:text-[var(--cuba-ink)] font-semibold hover:bg-white/50'
                             }`}
                         >
-                            <MdTrackChanges className={`w-3.5 h-3.5 ${activeMode === 'tailor' ? 'text-indigo-600' : 'text-slate-400'}`} />
+                            <MdTrackChanges className={`w-3.5 h-3.5 ${activeMode === 'tailor' ? 'text-indigo-600' : 'text-[var(--cuba-ink-subtle)]'}`} />
                             <span>Tailor to Job</span>
                         </button>
                         <button
@@ -361,11 +361,11 @@ export default function RoleAiCopilotModal({
                             }}
                             className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs transition-all select-none ${
                                 activeMode === 'interview'
-                                    ? 'bg-white text-indigo-700 shadow-xs font-bold border border-slate-200/60'
-                                    : 'text-slate-600 hover:text-slate-900 font-semibold hover:bg-white/50'
+                                    ? 'bg-white text-indigo-700 shadow-xs font-bold border border-[var(--cuba-line)]/60'
+                                    : 'text-[var(--cuba-ink-muted)] hover:text-[var(--cuba-ink)] font-semibold hover:bg-white/50'
                             }`}
                         >
-                            <MdHelpOutline className={`w-3.5 h-3.5 ${activeMode === 'interview' ? 'text-indigo-600' : 'text-slate-400'}`} />
+                            <MdHelpOutline className={`w-3.5 h-3.5 ${activeMode === 'interview' ? 'text-indigo-600' : 'text-[var(--cuba-ink-subtle)]'}`} />
                             <span>Guided Write</span>
                         </button>
                     </div>
@@ -384,7 +384,7 @@ export default function RoleAiCopilotModal({
                     {/* MODE 1: POLISH WRITING */}
                     {activeMode === 'polish' && (
                         <div className="space-y-3">
-                            <p className="text-xs text-slate-600 leading-relaxed">
+                            <p className="text-xs text-[var(--cuba-ink-muted)] leading-relaxed">
                                 Rewrites your current bullet points for active voice, clarity, and grammatical precision. <strong>Strictly preserves your verified facts, scope, and numbers.</strong>
                             </p>
 
@@ -393,16 +393,16 @@ export default function RoleAiCopilotModal({
                                     {bullets.length > 0 ? (
                                         <div className="space-y-2.5">
                                             <div className="flex items-center justify-between">
-                                                <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                                                <span className="text-[11px] font-bold text-[var(--cuba-ink-muted)] uppercase tracking-wider">
                                                     Current Bullets to Polish ({bullets.length})
                                                 </span>
-                                                <span className="text-[11px] text-slate-500">
+                                                <span className="text-[11px] text-[var(--cuba-ink-subtle)]">
                                                     All {bullets.length} will be enhanced together
                                                 </span>
                                             </div>
                                             <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                                                 {bullets.map((b, i) => (
-                                                    <div key={i} className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-xs text-slate-700 flex items-start gap-2.5">
+                                                    <div key={i} className="p-3 rounded-xl bg-[var(--cuba-canvas)] border border-[var(--cuba-line)]/80 text-xs text-[var(--cuba-ink-muted)] flex items-start gap-2.5">
                                                         <span className="w-5 h-5 rounded-md bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">
                                                             {i + 1}
                                                         </span>
@@ -432,8 +432,8 @@ export default function RoleAiCopilotModal({
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 text-center space-y-3">
-                                            <p className="text-xs text-slate-600 font-medium">
+                                        <div className="p-5 rounded-2xl bg-[var(--cuba-canvas)] border border-[var(--cuba-line)]/80 text-center space-y-3">
+                                            <p className="text-xs text-[var(--cuba-ink-muted)] font-medium">
                                                 No bullet points found yet for <strong>{roleTitle}</strong>. Switch to <strong>Guided Write</strong> to build them from guided questions.
                                             </p>
                                             <button
@@ -453,7 +453,7 @@ export default function RoleAiCopilotModal({
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2.5">
-                                            <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                                            <span className="text-[11px] font-bold text-[var(--cuba-ink-muted)] uppercase tracking-wider">
                                                 Polished Bullets ({generatedBullets.length})
                                             </span>
                                             <button
@@ -482,7 +482,7 @@ export default function RoleAiCopilotModal({
                                                     className={`p-3 rounded-xl border transition-all space-y-2 ${
                                                         selectedBullets[idx]
                                                             ? 'bg-indigo-50/70 border-indigo-300 ring-1 ring-indigo-500/20'
-                                                            : 'bg-white border-slate-200 hover:border-slate-300'
+                                                            : 'bg-white border-[var(--cuba-line)] hover:border-[var(--cuba-line-strong)]'
                                                     }`}
                                                 >
                                                     <label className="flex items-start gap-3 cursor-pointer">
@@ -493,10 +493,10 @@ export default function RoleAiCopilotModal({
                                                                 const checked = e.target.checked;
                                                                 setSelectedBullets((prev) => ({ ...prev, [idx]: checked }));
                                                             }}
-                                                            className="mt-0.5 w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 accent-indigo-600 shrink-0"
+                                                            className="mt-0.5 w-4 h-4 text-indigo-600 rounded border-[var(--cuba-line-strong)] focus:ring-indigo-500 accent-indigo-600 shrink-0"
                                                         />
                                                         <div className="flex-1 space-y-1">
-                                                            <span className="text-xs text-slate-800 leading-relaxed block font-medium">
+                                                            <span className="text-xs text-[var(--cuba-ink)] leading-relaxed block font-medium">
                                                                 {bullet}
                                                             </span>
                                                             <div className="flex items-center gap-2">
@@ -511,7 +511,7 @@ export default function RoleAiCopilotModal({
                                                                 >
                                                                     {analysis.status === 'green' ? '🟢 100% ATS Ready' : `🟡 ${analysis.badgeText}`}
                                                                 </span>
-                                                                <span className="text-[10px] text-slate-400">
+                                                                <span className="text-[10px] text-[var(--cuba-ink-subtle)]">
                                                                     {bullet.length} chars
                                                                 </span>
                                                             </div>
@@ -520,7 +520,7 @@ export default function RoleAiCopilotModal({
 
                                                     {/* Quick Metric Injector if missing metric */}
                                                     {!analysis.hasMetric && (
-                                                        <div className="pt-1.5 border-t border-dashed border-slate-200/80 flex items-center gap-1.5 flex-wrap pl-7">
+                                                        <div className="pt-1.5 border-t border-dashed border-[var(--cuba-line)]/80 flex items-center gap-1.5 flex-wrap pl-7">
                                                             <span className="text-[10px] font-bold text-amber-800">⚡ No metric yet:</span>
                                                             <span className="text-[10px] text-amber-900">Add a number you can verify once it is in your resume, or use Quantify to add one now.</span>
                                                         </div>
@@ -537,7 +537,7 @@ export default function RoleAiCopilotModal({
                     {/* MODE 2: QUANTIFY IMPACT */}
                     {activeMode === 'quantify' && (
                         <div className="space-y-3">
-                            <p className="text-xs text-slate-600 leading-relaxed">
+                            <p className="text-xs text-[var(--cuba-ink-muted)] leading-relaxed">
                                 ATS parsers and executive screeners award up to <strong>6 extra points</strong> when bullets contain measurable numbers (%, $, time, volume, scale). Tell us your real outcome and we will weave it in cleanly.
                             </p>
 
@@ -548,9 +548,9 @@ export default function RoleAiCopilotModal({
                                     <p className="text-[11px] text-emerald-700">Your experience already contains numbers, percentages, or scale.</p>
                                 </div>
                             ) : (
-                                <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/90 space-y-3">
+                                <div className="p-4 rounded-2xl bg-[var(--cuba-canvas)]/80 border border-[var(--cuba-line)]/90 space-y-3">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                                        <span className="text-[11px] font-bold text-[var(--cuba-ink-muted)] uppercase tracking-wider">
                                             Bullet {metricPromptIndex + 1} of {bullets.length} Needs Metrics
                                         </span>
                                         <div className="flex gap-1">
@@ -562,7 +562,7 @@ export default function RoleAiCopilotModal({
                                                     className={`w-5 h-5 rounded-full text-[10px] font-bold transition-colors ${
                                                         metricPromptIndex === i
                                                             ? 'bg-indigo-600 text-white'
-                                                            : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+                                                            : 'bg-[var(--cuba-line)] text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-line-strong)]'
                                                     }`}
                                                 >
                                                     {i + 1}
@@ -571,12 +571,12 @@ export default function RoleAiCopilotModal({
                                         </div>
                                     </div>
 
-                                    <div className="p-3 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 italic leading-relaxed">
+                                    <div className="p-3 rounded-xl bg-white border border-[var(--cuba-line)] text-xs text-[var(--cuba-ink)] italic leading-relaxed">
                                         "{bullets[metricPromptIndex]}"
                                     </div>
 
                                     <div className="space-y-1.5">
-                                        <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                                        <label className="block text-[11px] font-bold text-[var(--cuba-ink-muted)] uppercase tracking-wider">
                                             What was the quantifiable outcome or scale?
                                         </label>
                                         <input
@@ -584,19 +584,19 @@ export default function RoleAiCopilotModal({
                                             value={metricInput}
                                             onChange={(e) => setMetricInput(e.target.value)}
                                             placeholder="e.g. cut load time by 35%, managed team of 6, saved $15K annually"
-                                            className="w-full px-3 py-2 text-xs border rounded-xl border-slate-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 bg-white"
+                                            className="w-full px-3 py-2 text-xs border rounded-xl border-[var(--cuba-line)] focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 bg-white"
                                         />
                                     </div>
 
                                     {/* Quick suggestion pills */}
                                     <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                                        <span className="text-[10px] font-bold text-slate-400 mr-0.5">Quick Ideas:</span>
+                                        <span className="text-[10px] font-bold text-[var(--cuba-ink-subtle)] mr-0.5">Quick Ideas:</span>
                                         {['reduced by 30%', 'saved 10 hrs/week', 'team of 5', 'scaled to 10k users', 'budget of $250k', 'exceeded target by 20%'].map((suggestion) => (
                                             <button
                                                 key={suggestion}
                                                 type="button"
                                                 onClick={() => setMetricInput(suggestion)}
-                                                className="text-[10px] font-medium px-2 py-0.5 rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50/50 transition-colors"
+                                                className="text-[10px] font-medium px-2 py-0.5 rounded-lg bg-white border border-[var(--cuba-line)] text-[var(--cuba-ink-muted)] hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50/50 transition-colors"
                                             >
                                                 +{suggestion}
                                             </button>
@@ -619,7 +619,7 @@ export default function RoleAiCopilotModal({
                     {/* MODE 3: TAILOR TO TARGET ROLE / JD */}
                     {activeMode === 'tailor' && (
                         <div className="space-y-3">
-                            <p className="text-xs text-slate-600 leading-relaxed">
+                            <p className="text-xs text-[var(--cuba-ink-muted)] leading-relaxed">
                                 Compares your work experience against your <strong>Target Role ({targetRole || 'Target'})</strong> and Job Description.
                             </p>
 
@@ -658,7 +658,7 @@ export default function RoleAiCopilotModal({
                                                     </span>
                                                 ))}
                                             </div>
-                                            <p className="text-[10px] text-slate-500 pt-1">
+                                            <p className="text-[10px] text-[var(--cuba-ink-subtle)] pt-1">
                                                 *Notice: Only include competencies you actually performed.
                                             </p>
                                         </div>
@@ -674,9 +674,9 @@ export default function RoleAiCopilotModal({
                                     </button>
                                 </div>
                             ) : (
-                                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-2">
-                                    <p className="text-xs font-semibold text-slate-700">No Target Job Description found in Step 1.</p>
-                                    <p className="text-[11px] text-slate-500 max-w-md mx-auto">Add your target job description in Step 1 (Personal Info) to unlock automated keyword matching and ATS tailoring.</p>
+                                <div className="p-5 rounded-2xl bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] text-center space-y-2">
+                                    <p className="text-xs font-semibold text-[var(--cuba-ink-muted)]">No Target Job Description found in Step 1.</p>
+                                    <p className="text-[11px] text-[var(--cuba-ink-subtle)] max-w-md mx-auto">Add your target job description in Step 1 (Personal Info) to unlock automated keyword matching and ATS tailoring.</p>
                                 </div>
                             )}
                         </div>
@@ -693,7 +693,7 @@ export default function RoleAiCopilotModal({
                             </div>
 
                             {interviewQuestions.length === 0 && isLoading ? (
-                                <div className="p-8 text-center text-xs text-slate-500 space-y-2">
+                                <div className="p-8 text-center text-xs text-[var(--cuba-ink-subtle)] space-y-2">
                                     <span className="inline-block w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
                                     <p className="font-medium">Formulating smart questions for {roleTitle}...</p>
                                 </div>
@@ -707,12 +707,12 @@ export default function RoleAiCopilotModal({
                                             ? q.starterChips.filter(chip => typeof chip === 'string' && !/[0-9%$]/.test(chip))
                                             : [];
                                         return (
-                                            <div key={qKey} className="p-3.5 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-2 transition-all focus-within:bg-indigo-50/20 focus-within:border-indigo-200">
+                                            <div key={qKey} className="p-3.5 rounded-2xl bg-[var(--cuba-canvas)]/70 border border-[var(--cuba-line)]/80 space-y-2 transition-all focus-within:bg-indigo-50/20 focus-within:border-indigo-200">
                                                 <div className="flex items-start gap-2">
                                                     <span className="inline-flex items-center text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-md shrink-0">
                                                         Q{idx + 1}
                                                     </span>
-                                                    <label className="block text-xs font-bold text-slate-800 leading-snug">
+                                                    <label className="block text-xs font-bold text-[var(--cuba-ink)] leading-snug">
                                                         {q.question}
                                                     </label>
                                                 </div>
@@ -725,16 +725,16 @@ export default function RoleAiCopilotModal({
                                                         setInterviewAnswers((prev) => ({ ...prev, [qKey]: val }));
                                                     }}
                                                     placeholder="Type what you did, tools used, or outcomes achieved..."
-                                                    className="w-full px-3.5 py-2 text-xs border rounded-xl border-slate-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/15 bg-white transition-all placeholder:text-slate-400 resize-none leading-relaxed"
+                                                    className="w-full px-3.5 py-2 text-xs border rounded-xl border-[var(--cuba-line)] focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/15 bg-white transition-all placeholder:text-[var(--cuba-ink-subtle)] resize-none leading-relaxed"
                                                 />
 
                                                 {/* Sleek Starter Idea Pills */}
                                                 <div className="space-y-1.5 pt-0.5">
-                                                    <div className="flex items-center justify-between text-[11px] text-slate-500">
+                                                    <div className="flex items-center justify-between text-[11px] text-[var(--cuba-ink-subtle)]">
                                                         <span className="flex items-center gap-1 font-medium">
                                                             <span className="text-amber-500">💡</span> Tap keywords to insert:
                                                         </span>
-                                                        <span className="text-[10px] text-slate-400">Click to add</span>
+                                                        <span className="text-[10px] text-[var(--cuba-ink-subtle)]">Click to add</span>
                                                     </div>
                                                     <div className="flex flex-wrap items-center gap-1.5">
                                                         {starters.map((starter) => (
@@ -777,10 +777,10 @@ export default function RoleAiCopilotModal({
                             )}
 
                             {generatedBullets.length > 0 && (
-                                <div className="space-y-2 pt-3 border-t border-slate-100">
+                                <div className="space-y-2 pt-3 border-t border-[var(--cuba-line)]">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2.5">
-                                            <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                                            <span className="text-[11px] font-bold text-[var(--cuba-ink-muted)] uppercase tracking-wider">
                                                 Synthesized Bullets ({generatedBullets.length})
                                             </span>
                                             <button
@@ -801,7 +801,7 @@ export default function RoleAiCopilotModal({
                                                     className={`p-3 rounded-xl border transition-all space-y-2 ${
                                                         selectedBullets[idx]
                                                             ? 'bg-indigo-50/70 border-indigo-300 ring-1 ring-indigo-500/20'
-                                                            : 'bg-white border-slate-200 hover:border-slate-300'
+                                                            : 'bg-white border-[var(--cuba-line)] hover:border-[var(--cuba-line-strong)]'
                                                     }`}
                                                 >
                                                     <label className="flex items-start gap-3 cursor-pointer">
@@ -812,10 +812,10 @@ export default function RoleAiCopilotModal({
                                                                 const checked = e.target.checked;
                                                                 setSelectedBullets((prev) => ({ ...prev, [idx]: checked }));
                                                             }}
-                                                            className="mt-0.5 w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 accent-indigo-600 shrink-0"
+                                                            className="mt-0.5 w-4 h-4 text-indigo-600 rounded border-[var(--cuba-line-strong)] focus:ring-indigo-500 accent-indigo-600 shrink-0"
                                                         />
                                                         <div className="flex-1 space-y-1">
-                                                            <span className="text-xs text-slate-800 leading-relaxed block font-medium">
+                                                            <span className="text-xs text-[var(--cuba-ink)] leading-relaxed block font-medium">
                                                                 {bullet}
                                                             </span>
                                                             <div className="flex items-center gap-2">
@@ -830,7 +830,7 @@ export default function RoleAiCopilotModal({
                                                                 >
                                                                     {analysis.status === 'green' ? '🟢 100% ATS Ready' : `🟡 ${analysis.badgeText}`}
                                                                 </span>
-                                                                <span className="text-[10px] text-slate-400">
+                                                                <span className="text-[10px] text-[var(--cuba-ink-subtle)]">
                                                                     {bullet.length} chars
                                                                 </span>
                                                             </div>
@@ -839,7 +839,7 @@ export default function RoleAiCopilotModal({
 
                                                     {/* Quick Metric Injector if missing metric */}
                                                     {!analysis.hasMetric && (
-                                                        <div className="pt-1.5 border-t border-dashed border-slate-200/80 flex items-center gap-1.5 flex-wrap pl-7">
+                                                        <div className="pt-1.5 border-t border-dashed border-[var(--cuba-line)]/80 flex items-center gap-1.5 flex-wrap pl-7">
                                                             <span className="text-[10px] font-bold text-amber-800">⚡ No metric yet:</span>
                                                             <span className="text-[10px] text-amber-900">Add a number you can verify once it is in your resume, or use Quantify to add one now.</span>
                                                         </div>
@@ -855,10 +855,10 @@ export default function RoleAiCopilotModal({
                 </div>
 
                 {/* Footer Actions */}
-                <div className="px-6 py-3.5 border-t border-slate-100 bg-slate-50/80 flex items-center justify-between shrink-0">
-                    <div className="text-[11px] text-slate-500 flex items-center gap-1.5 font-medium">
+                <div className="px-6 py-3.5 border-t border-[var(--cuba-line)] bg-[var(--cuba-canvas)]/80 flex items-center justify-between shrink-0">
+                    <div className="text-[11px] text-[var(--cuba-ink-subtle)] flex items-center gap-1.5 font-medium">
                         <span>🛡️ Fact-Preserving AI</span>
-                        <span className="text-slate-300">·</span>
+                        <span className="text-[var(--cuba-ink-subtle)]">·</span>
                         <span>Zero Hallucination</span>
                     </div>
 
@@ -867,7 +867,7 @@ export default function RoleAiCopilotModal({
                             type="button"
                             onClick={onClose}
                             disabled={isLoading}
-                            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-200/60 rounded-xl transition-colors"
+                            className="px-4 py-2 text-xs font-semibold text-[var(--cuba-ink-muted)] hover:text-[var(--cuba-ink)] hover:bg-[var(--cuba-line)]/60 rounded-xl transition-colors"
                         >
                             Close
                         </button>

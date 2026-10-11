@@ -14,11 +14,11 @@ export default function EducationHealthCard({ education = {}, targetJd = '' }) {
 
     if (!education.school && !education.degree) {
         return (
-            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-3 text-center space-y-1">
-                <p className="text-[11px] font-semibold text-slate-600">
+            <div className="rounded-xl border border-dashed border-[var(--cuba-line)] bg-[var(--cuba-canvas)]/60 p-3 text-center space-y-1">
+                <p className="text-[11px] font-semibold text-[var(--cuba-ink-muted)]">
                     Academic ATS Signals
                 </p>
-                <p className="text-[10px] text-slate-400 leading-snug">
+                <p className="text-[10px] text-[var(--cuba-ink-subtle)] leading-snug">
                     Enter institution and degree to evaluate credential strength and JD alignment.
                 </p>
             </div>
@@ -49,19 +49,19 @@ export default function EducationHealthCard({ education = {}, targetJd = '' }) {
         }
         return {
             label: 'Needs Details',
-            bg: 'bg-slate-100 text-slate-600 border-slate-200',
-            dot: 'bg-slate-400',
+            bg: 'bg-[var(--cuba-canvas)] text-[var(--cuba-ink-muted)] border-[var(--cuba-line)]',
+            dot: 'bg-[var(--cuba-line-strong)]',
         };
     };
 
     const badge = getScoreBadge(health.score);
 
     return (
-        <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3 space-y-2 transition-all">
+        <div className="rounded-xl border border-[var(--cuba-line)]/80 bg-[var(--cuba-canvas)]/70 p-3 space-y-2 transition-all">
             {/* Top Bar: Label + Score */}
             <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="text-[11px] font-bold text-[var(--cuba-ink-muted)] uppercase tracking-wider flex items-center gap-1.5">
                         <MdSchool className="w-3.5 h-3.5 text-indigo-600" />
                         Academic ATS Health
                     </span>
@@ -83,7 +83,7 @@ export default function EducationHealthCard({ education = {}, targetJd = '' }) {
             <div className="flex flex-wrap gap-1.5 pt-0.5">
                 {health.pills.map((pill) => {
                     const isOk = pill.ok;
-                    let style = 'bg-white text-slate-600 border-slate-200';
+                    let style = 'bg-white text-[var(--cuba-ink-muted)] border-[var(--cuba-line)]';
                     if (pill.color === 'emerald') {
                         style = 'bg-emerald-50/90 text-emerald-800 border-emerald-200';
                     } else if (pill.color === 'amber') {
@@ -91,7 +91,7 @@ export default function EducationHealthCard({ education = {}, targetJd = '' }) {
                     } else if (pill.color === 'indigo') {
                         style = 'bg-indigo-50/90 text-indigo-800 border-indigo-200';
                     } else if (pill.color === 'slate') {
-                        style = 'bg-slate-100/90 text-slate-600 border-slate-200';
+                        style = 'bg-[var(--cuba-canvas)]/90 text-[var(--cuba-ink-muted)] border-[var(--cuba-line)]';
                     }
 
                     return (

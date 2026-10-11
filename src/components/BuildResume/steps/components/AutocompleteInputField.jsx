@@ -461,7 +461,7 @@ const AutocompleteInputField = ({
     return (
         <div className="relative w-full" ref={containerRef}>
             {!hideLabel && label && (
-                <label htmlFor={name} className={labelClassName || "block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5"}>
+                <label htmlFor={name} className={labelClassName || "block text-xs font-bold text-[var(--cuba-ink-muted)] uppercase tracking-wider mb-1.5"}>
                     {label}
                     {required && <span className="text-red-500 ml-1 font-bold">*</span>}
                 </label>
@@ -499,13 +499,13 @@ const AutocompleteInputField = ({
                     }}
                     disabled={disabled}
                     spellCheck="true"
-                    className={inputClassName || `w-full px-3.5 py-2.5 pr-14 border rounded-xl transition-all duration-150 text-sm text-slate-900 placeholder-slate-400 bg-white
+                    className={inputClassName || `w-full px-3.5 py-2.5 pr-14 border rounded-xl transition-all duration-150 text-sm text-[var(--cuba-ink)] placeholder:text-[var(--cuba-ink-subtle)] bg-white
                         ${
                             disabled
-                                ? 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'
+                                ? 'border-[var(--cuba-line)] bg-[var(--cuba-canvas)] text-[var(--cuba-ink-subtle)] cursor-not-allowed'
                                 : error
                                 ? 'border-red-300 bg-red-50/50 focus:border-red-500 focus:ring-3 focus:ring-red-500/15'
-                                : 'border-slate-200 hover:border-slate-300 focus:border-indigo-600 focus:ring-3 focus:ring-indigo-500/15'
+                                : 'border-[var(--cuba-line)] hover:border-[var(--cuba-line-strong)] focus:border-indigo-600 focus:ring-3 focus:ring-indigo-500/15'
                         }
                         focus:outline-none shadow-2xs`}
                     placeholder={placeholder}
@@ -525,7 +525,7 @@ const AutocompleteInputField = ({
                             className={`p-1 rounded-md transition-colors ${
                                 showDropdown
                                     ? 'text-indigo-600 bg-indigo-50'
-                                    : 'text-slate-400 hover:text-indigo-600 hover:bg-slate-50'
+                                    : 'text-[var(--cuba-ink-subtle)] hover:text-indigo-600 hover:bg-[var(--cuba-canvas)]'
                             }`}
                         >
                             <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
@@ -539,7 +539,7 @@ const AutocompleteInputField = ({
             {error ? (
                 <p className="mt-1 text-xs text-red-500 font-medium">{error}</p>
             ) : hint ? (
-                <p className="mt-1 text-xs text-slate-400">{hint}</p>
+                <p className="mt-1 text-xs text-[var(--cuba-ink-subtle)]">{hint}</p>
             ) : null}
 
             {showDropdown && (suggestions.length > 0 || (loading && isUserTypingRef.current)) && (
@@ -547,11 +547,11 @@ const AutocompleteInputField = ({
                     role="listbox"
                     id={`${name}-suggestions-list`}
                     aria-label={label || name}
-                    className="absolute z-50 w-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto py-1"
+                    className="absolute z-50 w-full mt-1.5 bg-white border border-[var(--cuba-line)] rounded-xl shadow-lg max-h-60 overflow-y-auto py-1"
                 >
                     {suggestions.length > 0 ? (
                         <>
-                            <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 flex items-center justify-between">
+                            <div className="px-3 py-1.5 text-[10px] font-bold text-[var(--cuba-ink-subtle)] uppercase tracking-wider border-b border-[var(--cuba-line)] flex items-center justify-between">
                                 <span className="flex items-center gap-1.5">
                                     <span className="text-indigo-500 font-normal">✨</span>
                                     <span>
@@ -563,9 +563,9 @@ const AutocompleteInputField = ({
                                         ) : null}
                                     </span>
                                 </span>
-                                <span className="text-[9px] text-slate-400 font-normal">{suggestions.length} match{suggestions.length === 1 ? '' : 'es'}</span>
+                                <span className="text-[9px] text-[var(--cuba-ink-subtle)] font-normal">{suggestions.length} match{suggestions.length === 1 ? '' : 'es'}</span>
                             </div>
-                            <ul className="divide-y divide-slate-50/50">
+                            <ul className="divide-y divide-[var(--cuba-line)]/50">
                                 {suggestions.map((option, idx) => {
                                     const isRecent = getRecentSelections(suggestionType).includes(option);
                                     return (
@@ -576,10 +576,10 @@ const AutocompleteInputField = ({
                                             aria-selected={idx === activeIndex}
                                             onMouseDown={(e) => { e.preventDefault(); handleSelectOption(option); }}
                                             onClick={() => handleSelectOption(option)}
-                                            className={`px-4 py-2.5 text-sm text-slate-700 cursor-pointer flex items-center justify-between gap-2 transition-colors ${
+                                            className={`px-4 py-2.5 text-sm text-[var(--cuba-ink-muted)] cursor-pointer flex items-center justify-between gap-2 transition-colors ${
                                                 idx === activeIndex
                                                     ? 'bg-indigo-50 text-indigo-900 font-medium'
-                                                    : 'hover:bg-slate-50'
+                                                    : 'hover:bg-[var(--cuba-canvas)]'
                                             }`}
                                         >
                                             <div className="flex items-center gap-2 truncate">
@@ -605,7 +605,7 @@ const AutocompleteInputField = ({
                             </ul>
                         </>
                     ) : loading ? (
-                        <div className="px-4 py-3 text-xs text-slate-500 flex items-center gap-2.5">
+                        <div className="px-4 py-3 text-xs text-[var(--cuba-ink-subtle)] flex items-center gap-2.5">
                             <div className="w-3.5 h-3.5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                             <span>Generating AI suggestions...</span>
                         </div>

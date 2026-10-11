@@ -341,10 +341,10 @@ export default function SyncProfileModal({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[var(--cuba-ink)]/60 backdrop-blur-xs animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl border border-[var(--cuba-line)] shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
                 {/* Modal Header */}
-                <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">
+                <div className="px-6 py-4 border-b border-[var(--cuba-line)] flex items-center justify-between bg-[var(--cuba-canvas)]/70">
                     <div className="flex items-center gap-2.5">
                         <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs">
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -352,13 +352,13 @@ export default function SyncProfileModal({
                             </svg>
                         </div>
                         <div>
-                            <h2 className="text-sm font-bold text-slate-900 tracking-tight">Master Profile Sync Hub</h2>
-                            <p className="text-[11px] text-slate-500">Harmonize data between this Resume and your Master Profile</p>
+                            <h2 className="text-sm font-bold text-[var(--cuba-ink)] tracking-tight">Master Profile Sync Hub</h2>
+                            <p className="text-[11px] text-[var(--cuba-ink-subtle)]">Harmonize data between this Resume and your Master Profile</p>
                         </div>
                     </div>
                     <button
                         onClick={onClose}
-                        className="w-8 h-8 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 flex items-center justify-center transition-colors cursor-pointer"
+                        className="w-8 h-8 rounded-xl text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-line)]/60 flex items-center justify-center transition-colors cursor-pointer"
                         aria-label="Close"
                     >
                         ✕
@@ -366,13 +366,13 @@ export default function SyncProfileModal({
                 </div>
 
                 {/* Tab Switcher */}
-                <div className="px-6 pt-3 pb-2 border-b border-slate-100 flex gap-2">
+                <div className="px-6 pt-3 pb-2 border-b border-[var(--cuba-line)] flex gap-2">
                     <button
                         onClick={() => setMode('push')}
                         className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
                             mode === 'push'
                                 ? 'bg-indigo-600 text-white shadow-2xs'
-                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                : 'bg-[var(--cuba-canvas)] text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-line)]'
                         }`}
                     >
                         <span>Push New Items to Master Profile</span>
@@ -387,7 +387,7 @@ export default function SyncProfileModal({
                         className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
                             mode === 'pull'
                                 ? 'bg-indigo-600 text-white shadow-2xs'
-                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                : 'bg-[var(--cuba-canvas)] text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-line)]'
                         }`}
                     >
                         <span>Import from Master Profile</span>
@@ -410,22 +410,22 @@ export default function SyncProfileModal({
                     {loading ? (
                         <div className="py-12 flex flex-col items-center justify-center space-y-3">
                             <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                            <p className="text-xs text-slate-500 font-semibold">Comparing Resume with Master Profile...</p>
+                            <p className="text-xs text-[var(--cuba-ink-subtle)] font-semibold">Comparing Resume with Master Profile...</p>
                         </div>
                     ) : mode === 'push' ? (
                         /* PUSH VIEW: Resume -> Master Profile */
                         <div>
                             {pushDiffs.totalNew === 0 ? (
-                                <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-2xl space-y-2">
+                                <div className="p-8 text-center bg-[var(--cuba-canvas)] border border-dashed border-[var(--cuba-line-strong)] rounded-2xl space-y-2">
                                     <span className="text-2xl">✓</span>
-                                    <p className="text-xs font-bold text-slate-800">Everything is already in sync!</p>
-                                    <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                                    <p className="text-xs font-bold text-[var(--cuba-ink)]">Everything is already in sync!</p>
+                                    <p className="text-[11px] text-[var(--cuba-ink-subtle)] max-w-sm mx-auto">
                                         All work experiences, education, skills, certifications, and achievements in this resume are already safely recorded in your Master Profile.
                                     </p>
                                 </div>
                             ) : (
                                 <div className="space-y-4">
-                                    <p className="text-xs text-slate-600 leading-relaxed">
+                                    <p className="text-xs text-[var(--cuba-ink-muted)] leading-relaxed">
                                         The following <strong>{pushDiffs.totalNew} item(s)</strong> were added or tailored in this resume and are missing from your permanent Master Profile. Select the ones you want to save to your lifelong archive:
                                     </p>
 
@@ -440,9 +440,9 @@ export default function SyncProfileModal({
                                             education: 'Education Degrees',
                                         };
                                         return (
-                                            <div key={category} className="bg-slate-50/70 border border-slate-200 rounded-xl p-3.5 space-y-2.5">
+                                            <div key={category} className="bg-[var(--cuba-canvas)]/70 border border-[var(--cuba-line)] rounded-xl p-3.5 space-y-2.5">
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700">
+                                                    <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--cuba-ink-muted)]">
                                                         {titles[category] || category} ({list.length})
                                                     </span>
                                                 </div>
@@ -454,8 +454,8 @@ export default function SyncProfileModal({
                                                                 key={item.id}
                                                                 className={`flex items-start gap-2.5 p-2.5 rounded-lg border text-xs cursor-pointer transition-all ${
                                                                     isChecked
-                                                                        ? 'bg-white border-indigo-300 text-slate-900 shadow-2xs'
-                                                                        : 'bg-slate-100/60 border-slate-200 text-slate-500 hover:bg-white'
+                                                                        ? 'bg-white border-indigo-300 text-[var(--cuba-ink)] shadow-2xs'
+                                                                        : 'bg-[var(--cuba-canvas)]/60 border-[var(--cuba-line)] text-[var(--cuba-ink-subtle)] hover:bg-white'
                                                                 }`}
                                                             >
                                                                 <input
@@ -466,7 +466,7 @@ export default function SyncProfileModal({
                                                                 />
                                                                 <div className="min-w-0 flex-1">
                                                                     <p className="font-semibold truncate">{item.label}</p>
-                                                                    {item.sub ? <p className="text-[10px] text-slate-400 truncate">{item.sub}</p> : null}
+                                                                    {item.sub ? <p className="text-[10px] text-[var(--cuba-ink-subtle)] truncate">{item.sub}</p> : null}
                                                                 </div>
                                                             </label>
                                                         );
@@ -481,7 +481,7 @@ export default function SyncProfileModal({
                     ) : (
                         /* PULL VIEW: Master Profile -> Resume */
                         <div className="space-y-4">
-                            <p className="text-xs text-slate-600 leading-relaxed">
+                            <p className="text-xs text-[var(--cuba-ink-muted)] leading-relaxed">
                                 Select which sections of your authoritative <strong>Master Profile</strong> you wish to import or refresh inside this resume draft:
                             </p>
 
@@ -497,8 +497,8 @@ export default function SyncProfileModal({
                                         key={key}
                                         className={`flex items-start gap-2.5 p-3 rounded-xl border text-xs cursor-pointer transition-all ${
                                             selectedPullSections[key]
-                                                ? 'bg-indigo-50/50 border-indigo-300 text-slate-900 shadow-2xs'
-                                                : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
+                                                ? 'bg-indigo-50/50 border-indigo-300 text-[var(--cuba-ink)] shadow-2xs'
+                                                : 'bg-[var(--cuba-canvas)] border-[var(--cuba-line)] text-[var(--cuba-ink-subtle)] hover:bg-[var(--cuba-canvas)]'
                                         }`}
                                     >
                                         <input
@@ -509,7 +509,7 @@ export default function SyncProfileModal({
                                         />
                                         <div className="min-w-0 flex-1">
                                             <p className="font-bold">{title}</p>
-                                            <p className="text-[11px] text-slate-500 truncate mt-0.5">{desc}</p>
+                                            <p className="text-[11px] text-[var(--cuba-ink-subtle)] truncate mt-0.5">{desc}</p>
                                         </div>
                                     </label>
                                 ))}
@@ -519,11 +519,11 @@ export default function SyncProfileModal({
                 </div>
 
                 {/* Modal Footer */}
-                <div className="px-6 py-3.5 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+                <div className="px-6 py-3.5 border-t border-[var(--cuba-line)] bg-[var(--cuba-canvas)] flex items-center justify-between">
                     <button
                         type="button"
                         onClick={onClose}
-                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 rounded-xl transition-colors cursor-pointer"
+                        className="px-4 py-2 text-xs font-semibold text-[var(--cuba-ink-muted)] hover:text-[var(--cuba-ink)] hover:bg-[var(--cuba-line)]/60 rounded-xl transition-colors cursor-pointer"
                     >
                         Cancel
                     </button>
@@ -532,7 +532,7 @@ export default function SyncProfileModal({
                             type="button"
                             onClick={handlePushToProfile}
                             disabled={saving || loading || pushDiffs.totalNew === 0}
-                            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-[var(--cuba-line-strong)] text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
                         >
                             {saving ? (
                                 <>
@@ -550,7 +550,7 @@ export default function SyncProfileModal({
                             type="button"
                             onClick={handlePullFromProfile}
                             disabled={loading}
-                            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
+                            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-[var(--cuba-line-strong)] text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
                         >
                             Apply Selected to Resume
                         </button>

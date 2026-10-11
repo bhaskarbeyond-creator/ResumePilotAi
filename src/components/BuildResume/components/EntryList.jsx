@@ -41,8 +41,8 @@ export default function EntryList({
     if (!entries.length) return null;
 
     return (
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xs">
-            <ul className="divide-y divide-slate-100">
+        <div className="overflow-hidden rounded-xl border border-[var(--cuba-line)] bg-white shadow-2xs">
+            <ul className="divide-y divide-[var(--cuba-line)]">
                 {entries.map((entry, index) => {
                     const expanded = expandedId === entry.id;
                     const title = renderEntryTitle ? renderEntryTitle(entry, index) : { title: '', subtitle: '', meta: '' };

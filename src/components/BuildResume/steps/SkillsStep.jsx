@@ -50,7 +50,7 @@ const LEVEL_COLOR_CLASSES = {
     expert: 'bg-indigo-100 text-indigo-800 border-indigo-200',
     advanced: 'bg-emerald-100 text-emerald-800 border-emerald-200',
     intermediate: 'bg-sky-100 text-sky-800 border-sky-200',
-    beginner: 'bg-slate-200 text-slate-700 border-slate-300',
+    beginner: 'bg-[var(--cuba-line)] text-[var(--cuba-ink-muted)] border-[var(--cuba-line-strong)]',
 };
 
 /**
@@ -368,19 +368,19 @@ const SkillsStep = ({ resumeData, updateResumeData, onNavigate }) => {
         >
             <div className="space-y-4">
                 {/* 10/10 Header & Actions Toolbar */}
-                <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3.5">
+                <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[var(--cuba-line)]/90 shadow-2xs space-y-3.5">
                     {/* Row 1: Title, Counter Badge & Primary Creation Actions */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--cuba-line)]">
                         <div className="min-w-0">
                             <div className="flex items-center gap-2.5 flex-wrap">
-                                <h3 className="text-sm font-bold text-slate-900 tracking-tight whitespace-nowrap">
+                                <h3 className="text-sm font-bold text-[var(--cuba-ink)] tracking-tight whitespace-nowrap">
                                     Skills & Technical Competencies
                                 </h3>
                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100/80 whitespace-nowrap shrink-0">
                                     {skills.length} {skills.length === 1 ? 'Skill' : 'Skills'}
                                 </span>
                             </div>
-                            <p className="text-xs text-slate-500 mt-1">
+                            <p className="text-xs text-[var(--cuba-ink-subtle)] mt-1">
                                 Save core technical competencies and soft skills parsed by ATS screening engines.
                             </p>
                         </div>
@@ -409,19 +409,19 @@ const SkillsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                         {/* Search / Filter Input */}
                         <div className="relative flex-1 max-w-md">
-                            <FaSearch className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            <FaSearch className="w-3.5 h-3.5 text-[var(--cuba-ink-subtle)] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                             <input
                                 type="text"
                                 value={skillsSearchQuery}
                                 onChange={(e) => setSkillsSearchQuery(e.target.value)}
                                 placeholder={skills.length > 0 ? `Search across ${skills.length} skills...` : "Filter skills..."}
-                                className="w-full text-xs pl-9 pr-8 py-2 bg-slate-50/80 hover:bg-white focus:bg-white border border-slate-200/90 rounded-xl text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
+                                className="w-full text-xs pl-9 pr-8 py-2 bg-[var(--cuba-canvas)]/80 hover:bg-white focus:bg-white border border-[var(--cuba-line)]/90 rounded-xl text-[var(--cuba-ink)] placeholder:text-[var(--cuba-ink-subtle)] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
                             />
                             {skillsSearchQuery && (
                                 <button
                                     type="button"
                                     onClick={() => setSkillsSearchQuery('')}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] p-0.5 cursor-pointer"
                                     title="Clear search">
                                     <FaTimes className="w-3 h-3" />
                                 </button>
@@ -437,7 +437,7 @@ const SkillsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 border cursor-pointer ${
                                     showBulkSkills || bulkSkillsInput.trim()
                                         ? 'bg-indigo-50 border-indigo-200 text-indigo-700 shadow-2xs font-bold'
-                                        : 'bg-white border-slate-200 hover:border-slate-300 text-slate-700 hover:bg-slate-50'
+                                        : 'bg-white border-[var(--cuba-line)] hover:border-[var(--cuba-line-strong)] text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-canvas)]'
                                 }`}
                                 title="Toggle quick bulk paste ingestion">
                                 <FaBolt className={`w-3 h-3 ${showBulkSkills || bulkSkillsInput.trim() ? 'text-indigo-600' : 'text-amber-500'}`} />
@@ -446,14 +446,14 @@ const SkillsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                             </button>
 
                             {/* View Mode Switcher */}
-                            <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200/80">
+                            <div className="flex items-center bg-[var(--cuba-canvas)] p-0.5 rounded-xl border border-[var(--cuba-line)]/80">
                                 <button
                                     type="button"
                                     onClick={() => setSkillsViewMode('grid')}
                                     className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                                         skillsViewMode === 'grid'
                                             ? 'bg-white text-indigo-700 shadow-2xs'
-                                            : 'text-slate-600 hover:text-slate-900'
+                                            : 'text-[var(--cuba-ink-muted)] hover:text-[var(--cuba-ink)]'
                                     }`}
                                     title="Cards View (Detailed view with proficiency controls)">
                                     <FaThLarge className="w-3 h-3" />
@@ -465,7 +465,7 @@ const SkillsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                     className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                                         skillsViewMode === 'compact'
                                             ? 'bg-white text-indigo-700 shadow-2xs'
-                                            : 'text-slate-600 hover:text-slate-900'
+                                            : 'text-[var(--cuba-ink-muted)] hover:text-[var(--cuba-ink)]'
                                     }`}
                                     title="Compact Tags View (High-density overview of all skills)">
                                     <FaTags className="w-3 h-3" />
@@ -478,16 +478,16 @@ const SkillsStep = ({ resumeData, updateResumeData, onNavigate }) => {
 
                 {/* Collapsible Bulk Skills Ingestion Drawer */}
                 {(showBulkSkills || bulkSkillsInput.trim()) && (
-                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5 transition-all animate-fadeIn">
+                    <div className="p-4 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-2xl space-y-2.5 transition-all animate-fadeIn">
                         <div className="flex items-center justify-between">
-                            <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                            <label className="block text-[11px] font-bold text-[var(--cuba-ink-muted)] uppercase tracking-wider flex items-center gap-1.5">
                                 <span>⚡ Quick Bulk Paste Ingestion</span>
-                                <span className="text-[10px] text-slate-500 font-normal lowercase">(comma, semicolon, or newline separated)</span>
+                                <span className="text-[10px] text-[var(--cuba-ink-subtle)] font-normal lowercase">(comma, semicolon, or newline separated)</span>
                             </label>
                             <button
                                 type="button"
                                 onClick={() => setShowBulkSkills(false)}
-                                className="text-[11px] font-semibold text-slate-400 hover:text-slate-600 cursor-pointer">
+                                className="text-[11px] font-semibold text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] cursor-pointer">
                                 Hide
                             </button>
                         </div>
@@ -502,7 +502,7 @@ const SkillsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                     }
                                 }}
                                 placeholder="Paste multiple skills at once (e.g. React.js, TypeScript, Node.js, Docker, Kubernetes, Clinical Leadership)..."
-                                className="flex-1 text-xs p-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none resize-none h-14"
+                                className="flex-1 text-xs p-2.5 bg-white border border-[var(--cuba-line-strong)] rounded-xl text-[var(--cuba-ink)] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none resize-none h-14"
                             />
                             <button
                                 type="button"
@@ -539,17 +539,17 @@ const SkillsStep = ({ resumeData, updateResumeData, onNavigate }) => {
 
                 {/* JD Alignment Panel — ATS Engine Output */}
                 {jdMatch && jdMatch.score !== null && (
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-2xs space-y-3">
+                    <div className="rounded-2xl border border-[var(--cuba-line)] bg-white p-4 sm:p-5 shadow-2xs space-y-3">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                            <h2 className="text-sm font-bold text-slate-900">
+                            <h2 className="text-sm font-bold text-[var(--cuba-ink)]">
                                 Alignment with your target role
                                 {candidateContext.target.role ? ` — ${candidateContext.target.role}` : ''}
                             </h2>
-                            <span className="text-xs font-semibold text-slate-500">
+                            <span className="text-xs font-semibold text-[var(--cuba-ink-subtle)]">
                                 {jdMatch.matched.length} matched · {jdMatch.partial?.length || 0} partial · {jdMatch.missing.length} missing
                             </span>
                         </div>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-[var(--cuba-ink-subtle)]">
                             Matched means the term appears in your resume. Partial means part of a multi-word term appears —
                             consider whether the resume should use the full term, if it is true for you.
                         </p>
@@ -579,15 +579,15 @@ const SkillsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                         )}
                         {jdMatch.missing.length > 0 && (
                             <div>
-                                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Not found in your resume</h3>
+                                <h3 className="text-[11px] font-bold uppercase tracking-wider text-[var(--cuba-ink-subtle)] mb-1.5">Not found in your resume</h3>
                                 <div className="flex flex-wrap gap-1.5">
                                     {jdMatch.missing.slice(0, 12).map(term => (
-                                        <span key={`x-${term}`} className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-500">
+                                        <span key={`x-${term}`} className="rounded-lg border border-[var(--cuba-line)] bg-[var(--cuba-canvas)] px-2.5 py-1 text-xs font-medium text-[var(--cuba-ink-subtle)]">
                                             {term}
                                         </span>
                                     ))}
                                 </div>
-                                <p className="mt-1.5 text-[11px] text-slate-400">
+                                <p className="mt-1.5 text-[11px] text-[var(--cuba-ink-subtle)]">
                                     Add terms only if they are true for you — never pad the list.
                                 </p>
                             </div>
@@ -597,9 +597,9 @@ const SkillsStep = ({ resumeData, updateResumeData, onNavigate }) => {
 
                 {/* Skills Presentation: Empty State vs Cards vs Compact Tags */}
                 {skills.length === 0 ? (
-                    <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-2xl space-y-3.5">
-                        <p className="text-xs font-semibold text-slate-700">No skills added to your resume yet</p>
-                        <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                    <div className="p-8 text-center bg-[var(--cuba-canvas)] border border-dashed border-[var(--cuba-line-strong)] rounded-2xl space-y-3.5">
+                        <p className="text-xs font-semibold text-[var(--cuba-ink-muted)]">No skills added to your resume yet</p>
+                        <p className="text-[11px] text-[var(--cuba-ink-subtle)] max-w-sm mx-auto">
                             Add technical skills, industry tools, and soft competencies that will be evaluated by ATS scanners.
                         </p>
                         <div className="flex items-center justify-center gap-2.5 pt-1">
@@ -614,19 +614,19 @@ const SkillsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                             <button
                                 type="button"
                                 onClick={() => addSkill()}
-                                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl text-xs font-bold cursor-pointer transition-colors">
+                                className="px-4 py-2 bg-[var(--cuba-line)] hover:bg-[var(--cuba-line-strong)] text-[var(--cuba-ink)] rounded-xl text-xs font-bold cursor-pointer transition-colors">
                                 Add Skill
                             </button>
                         </div>
                     </div>
                 ) : skillsViewMode === 'compact' ? (
                     /* High-Density Compact Tags / Quick View */
-                    <div className="p-4 bg-slate-50 border border-slate-200/90 rounded-2xl space-y-3">
+                    <div className="p-4 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)]/90 rounded-2xl space-y-3">
                         <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            <span className="text-xs font-bold text-[var(--cuba-ink-muted)] uppercase tracking-wider">
                                 Quick Skill Matrix ({filteredSkills.length})
                             </span>
-                            <span className="text-[11px] text-slate-500">
+                            <span className="text-[11px] text-[var(--cuba-ink-subtle)]">
                                 Click badge to cycle level • Reorder with arrows • Click × to delete
                             </span>
                         </div>
@@ -639,10 +639,10 @@ const SkillsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                 return (
                                     <div
                                         key={skill.id || idx}
-                                        className="group inline-flex items-center gap-2 pl-3 pr-2 py-1.5 bg-white border border-slate-200 hover:border-indigo-300 rounded-xl shadow-2xs transition-all"
+                                        className="group inline-flex items-center gap-2 pl-3 pr-2 py-1.5 bg-white border border-[var(--cuba-line)] hover:border-indigo-300 rounded-xl shadow-2xs transition-all"
                                     >
-                                        <span className="text-xs font-semibold text-slate-900">
-                                            {skill.skillName || skill.name || <span className="text-slate-400 italic">Untitled Skill</span>}
+                                        <span className="text-xs font-semibold text-[var(--cuba-ink)]">
+                                            {skill.skillName || skill.name || <span className="text-[var(--cuba-ink-subtle)] italic">Untitled Skill</span>}
                                         </span>
                                         <button
                                             type="button"
@@ -657,7 +657,7 @@ const SkillsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                                 type="button"
                                                 disabled={idx === 0}
                                                 onClick={() => moveSkill(idx, -1)}
-                                                className="w-4 h-4 flex items-center justify-center text-slate-400 hover:text-indigo-600 disabled:opacity-20 text-[9px] cursor-pointer"
+                                                className="w-4 h-4 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-indigo-600 disabled:opacity-20 text-[9px] cursor-pointer"
                                                 title="Move up"
                                             >
                                                 ▲
@@ -666,7 +666,7 @@ const SkillsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                                 type="button"
                                                 disabled={idx === skills.length - 1}
                                                 onClick={() => moveSkill(idx, 1)}
-                                                className="w-4 h-4 flex items-center justify-center text-slate-400 hover:text-indigo-600 disabled:opacity-20 text-[9px] cursor-pointer"
+                                                className="w-4 h-4 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-indigo-600 disabled:opacity-20 text-[9px] cursor-pointer"
                                                 title="Move down"
                                             >
                                                 ▼
@@ -674,7 +674,7 @@ const SkillsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                             <button
                                                 type="button"
                                                 onClick={() => removeSkill(skill.id)}
-                                                className="w-4 h-4 flex items-center justify-center text-slate-400 hover:text-red-600 ml-0.5 cursor-pointer"
+                                                className="w-4 h-4 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-red-600 ml-0.5 cursor-pointer"
                                                 title="Delete skill"
                                             >
                                                 <FaTimes className="w-2.5 h-2.5" />
@@ -703,7 +703,7 @@ const SkillsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                 return (
                                     <div
                                         key={skill.id || idx}
-                                        className="group relative p-3.5 bg-white hover:bg-slate-50/50 border border-slate-200/90 hover:border-indigo-200 rounded-2xl transition-all shadow-2xs hover:shadow-xs space-y-2.5"
+                                        className="group relative p-3.5 bg-white hover:bg-[var(--cuba-canvas)]/50 border border-[var(--cuba-line)]/90 hover:border-indigo-200 rounded-2xl transition-all shadow-2xs hover:shadow-xs space-y-2.5"
                                     >
                                         {/* Header: Skill Name Input with Autocomplete + Compact Action Pod */}
                                         <div className="flex items-center gap-2">
@@ -717,15 +717,15 @@ const SkillsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                                     placeholder="Skill name (e.g. React.js, Python, Medical Leadership)"
                                                     suggestionType="skill"
                                                     context={candidateContext}
-                                                    inputClassName="w-full text-xs p-2.5 pr-8 bg-slate-50/70 hover:bg-white focus:bg-white border border-slate-200 focus:border-indigo-500 rounded-xl font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
+                                                    inputClassName="w-full text-xs p-2.5 pr-8 bg-[var(--cuba-canvas)]/70 hover:bg-white focus:bg-white border border-[var(--cuba-line)] focus:border-indigo-500 rounded-xl font-semibold text-[var(--cuba-ink)] focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
                                                 />
                                             </div>
-                                            <div className="flex items-center gap-0.5 shrink-0 bg-slate-100/90 p-0.5 rounded-xl border border-slate-200/70">
+                                            <div className="flex items-center gap-0.5 shrink-0 bg-[var(--cuba-canvas)]/90 p-0.5 rounded-xl border border-[var(--cuba-line)]/70">
                                                 <button
                                                     type="button"
                                                     disabled={idx === 0}
                                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveSkill(idx, -1); }}
-                                                    className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-indigo-600 disabled:opacity-20 rounded-lg hover:bg-white text-[10px] font-bold transition-all cursor-pointer"
+                                                    className="w-6 h-6 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-indigo-600 disabled:opacity-20 rounded-lg hover:bg-white text-[10px] font-bold transition-all cursor-pointer"
                                                     title="Move skill up">
                                                     ▲
                                                 </button>
@@ -733,14 +733,14 @@ const SkillsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                                     type="button"
                                                     disabled={idx === skills.length - 1}
                                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveSkill(idx, 1); }}
-                                                    className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-indigo-600 disabled:opacity-20 rounded-lg hover:bg-white text-[10px] font-bold transition-all cursor-pointer"
+                                                    className="w-6 h-6 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-indigo-600 disabled:opacity-20 rounded-lg hover:bg-white text-[10px] font-bold transition-all cursor-pointer"
                                                     title="Move skill down">
                                                     ▼
                                                 </button>
                                                 <button
                                                     type="button"
                                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeSkill(skill.id); }}
-                                                    className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                                                    className="w-6 h-6 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                                                     title="Delete skill">
                                                     <FaTrash className="w-2.5 h-2.5" />
                                                 </button>
@@ -750,13 +750,13 @@ const SkillsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                         {/* Proficiency Level Segmented Control */}
                                         <div className="space-y-1">
                                             <div className="flex items-center justify-between text-[11px] px-1">
-                                                <span className="font-semibold text-slate-400 text-[10px] uppercase tracking-wider">Proficiency</span>
+                                                <span className="font-semibold text-[var(--cuba-ink-subtle)] text-[10px] uppercase tracking-wider">Proficiency</span>
                                                 <span className="text-[10px] font-bold text-indigo-600 flex items-center gap-1">
                                                     <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block" />
                                                     {currentLvl}
                                                 </span>
                                             </div>
-                                            <div className="grid grid-cols-4 gap-1 p-0.5 bg-slate-100/80 rounded-xl border border-slate-200/60">
+                                            <div className="grid grid-cols-4 gap-1 p-0.5 bg-[var(--cuba-canvas)]/80 rounded-xl border border-[var(--cuba-line)]/60">
                                                 {PROFICIENCY_LEVELS.map((lvl) => {
                                                     const isSelected = currentLvl.toLowerCase() === lvl.label.toLowerCase();
                                                     return (
@@ -767,7 +767,7 @@ const SkillsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                                             className={`py-1 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer ${
                                                                 isSelected
                                                                     ? 'bg-indigo-600 text-white shadow-2xs'
-                                                                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+                                                                    : 'text-[var(--cuba-ink-muted)] hover:text-[var(--cuba-ink)] hover:bg-white/80'
                                                             }`}
                                                         >
                                                             {lvl.label}

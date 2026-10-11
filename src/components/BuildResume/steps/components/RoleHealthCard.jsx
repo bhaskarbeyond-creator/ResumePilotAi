@@ -40,19 +40,19 @@ export default function RoleHealthCard({ employment = {}, targetJd = '' }) {
         }
         return {
             label: 'In Progress',
-            bg: 'bg-slate-100 text-slate-600 border-slate-200',
-            dot: 'bg-slate-400',
+            bg: 'bg-[var(--cuba-canvas)] text-[var(--cuba-ink-muted)] border-[var(--cuba-line)]',
+            dot: 'bg-[var(--cuba-line-strong)]',
         };
     };
 
     const badge = getScoreBadge(health.score);
 
     return (
-        <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3 space-y-2 transition-all">
+        <div className="rounded-xl border border-[var(--cuba-line)]/80 bg-[var(--cuba-canvas)]/70 p-3 space-y-2 transition-all">
             {/* Top Bar: Label + Score */}
             <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="text-[11px] font-bold text-[var(--cuba-ink-muted)] uppercase tracking-wider flex items-center gap-1.5">
                         <MdTrendingUp className="w-3.5 h-3.5 text-indigo-600" />
                         Role ATS Health
                     </span>
@@ -74,7 +74,7 @@ export default function RoleHealthCard({ employment = {}, targetJd = '' }) {
             <div className="flex flex-wrap gap-1.5 pt-0.5">
                 {health.pills.map((pill) => {
                     const isOk = pill.ok;
-                    let style = 'bg-white text-slate-600 border-slate-200';
+                    let style = 'bg-white text-[var(--cuba-ink-muted)] border-[var(--cuba-line)]';
                     if (pill.color === 'emerald') {
                         style = 'bg-emerald-50/90 text-emerald-800 border-emerald-200';
                     } else if (pill.color === 'amber') {

@@ -331,9 +331,9 @@ const EducationStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                                 prev.map(edu => (edu.id === education.id ? { ...edu, current: isChecked, finished: isChecked ? 'Present' : '' } : edu))
                                             );
                                         }}
-                                        className="w-3.5 h-3.5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer accent-indigo-600"
+                                        className="w-3.5 h-3.5 text-indigo-600 rounded border-[var(--cuba-line-strong)] focus:ring-indigo-500 cursor-pointer accent-indigo-600"
                                     />
-                                    <span className={education.current ? 'text-indigo-600 font-bold' : 'text-slate-500 hover:text-slate-700'}>
+                                    <span className={education.current ? 'text-indigo-600 font-bold' : 'text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)]'}>
                                         Currently Studying
                                     </span>
                                 </label>
@@ -353,10 +353,10 @@ const EducationStep = ({ resumeData, updateResumeData, onNavigate }) => {
                 <div className="space-y-2 pt-1">
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                         <div>
-                            <label className="block text-[13px] font-bold text-slate-800">
+                            <label className="block text-[13px] font-bold text-[var(--cuba-ink)]">
                                 Coursework, Honors, Research or Thesis (Optional)
                             </label>
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-[var(--cuba-ink-subtle)]">
                                 Add notable coursework, awards, senior thesis, or academic highlights.
                             </p>
                         </div>
@@ -365,7 +365,7 @@ const EducationStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                 <button
                                     type="button"
                                     onClick={() => handleUndoEnhance(education.id)}
-                                    className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors underline cursor-pointer"
+                                    className="text-xs font-semibold text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink)] transition-colors underline cursor-pointer"
                                 >
                                     Undo
                                 </button>
@@ -373,10 +373,10 @@ const EducationStep = ({ resumeData, updateResumeData, onNavigate }) => {
                             <button
                                 type="button"
                                 onClick={() => handleToggleBullets(education)}
-                                className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-200 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer shadow-2xs"
+                                className="inline-flex items-center gap-1 text-xs font-medium text-[var(--cuba-ink-muted)] hover:text-[var(--cuba-ink)] bg-white hover:bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer shadow-2xs"
                                 title="Toggle bullet point (•) before each line"
                             >
-                                <MdFormatListBulleted className="w-3.5 h-3.5 text-slate-600" />
+                                <MdFormatListBulleted className="w-3.5 h-3.5 text-[var(--cuba-ink-muted)]" />
                                 <span>Bullets</span>
                             </button>
                             <button
@@ -413,7 +413,7 @@ const EducationStep = ({ resumeData, updateResumeData, onNavigate }) => {
 
                     <textarea
                         rows={3}
-                        className="w-full text-xs rounded-xl border border-slate-300 p-3 text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors leading-relaxed"
+                        className="w-full text-xs rounded-xl border border-[var(--cuba-line-strong)] p-3 text-[var(--cuba-ink)] placeholder:text-[var(--cuba-ink-subtle)] focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors leading-relaxed"
                         placeholder={`• Relevant Coursework: Distributed Systems, Machine Learning, Computer Networks
 • Dean's Honor List across all semesters; 3.92 GPA
 • Senior Capstone: Autonomous drone navigation system using ROS and C++`}
@@ -425,7 +425,7 @@ const EducationStep = ({ resumeData, updateResumeData, onNavigate }) => {
                     {/* Quick starter chips when empty */}
                     {(!education.description || education.description.trim().length === 0) && (
                         <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-                            <span className="text-[11px] text-slate-400 font-medium">Quick ideas:</span>
+                            <span className="text-[11px] text-[var(--cuba-ink-subtle)] font-medium">Quick ideas:</span>
                             {[
                                 "Dean's Honor List",
                                 "Relevant Coursework",
@@ -442,7 +442,7 @@ const EducationStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                         const updated = current ? `${current}\n${bulletItem}` : bulletItem;
                                         updateEducation(education.id, 'description', updated);
                                     }}
-                                    className="text-[11px] font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900 px-2 py-0.5 rounded-md transition-colors cursor-pointer"
+                                    className="text-[11px] font-medium text-[var(--cuba-ink-muted)] bg-[var(--cuba-canvas)] hover:bg-[var(--cuba-line)] hover:text-[var(--cuba-ink)] px-2 py-0.5 rounded-md transition-colors cursor-pointer"
                                 >
                                     + {chip}
                                 </button>
@@ -460,10 +460,10 @@ const EducationStep = ({ resumeData, updateResumeData, onNavigate }) => {
         if (!targetEdu) return null;
 
         return (
-            <div className="mt-4 pt-3.5 border-t border-slate-100 space-y-2.5">
+            <div className="mt-4 pt-3.5 border-t border-[var(--cuba-line)] space-y-2.5">
                 {educations.length > 1 && (
                     <div className="flex items-center justify-between gap-1.5">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-[var(--cuba-ink-subtle)]">
                             Active Qualification
                         </span>
                         <div className="flex items-center gap-1 overflow-x-auto pb-0.5 max-w-[190px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -475,7 +475,7 @@ const EducationStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                     className={`px-2 py-0.5 text-[10px] font-semibold rounded-md transition-all whitespace-nowrap cursor-pointer ${
                                         (targetEdu?.id === edu.id)
                                             ? 'bg-indigo-600 text-white shadow-2xs font-bold'
-                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                            : 'bg-[var(--cuba-canvas)] text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-line)]'
                                     }`}
                                     title={edu.degree || edu.school || `Qualification #${idx + 1}`}
                                 >
@@ -543,7 +543,7 @@ const EducationStep = ({ resumeData, updateResumeData, onNavigate }) => {
                     <button
                         type="button"
                         onClick={addEducation}
-                        className="w-full h-11 rounded-xl border border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/40 text-sm font-semibold text-slate-700 hover:text-indigo-700 flex items-center justify-center gap-2 transition-colors"
+                        className="w-full h-11 rounded-xl border border-dashed border-[var(--cuba-line-strong)] hover:border-indigo-400 hover:bg-indigo-50/40 text-sm font-semibold text-[var(--cuba-ink-muted)] hover:text-indigo-700 flex items-center justify-center gap-2 transition-colors"
                     >
                         <MdAdd className="w-4 h-4" />
                         Add another qualification

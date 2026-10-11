@@ -151,18 +151,18 @@ export default function ReviewStep({
     return (
         <div className="w-full max-w-[1440px] mx-auto space-y-4" aria-labelledby="review-export-title">
             {/* Header — calm, factual */}
-            <header className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-2xs">
+            <header className="rounded-2xl border border-[var(--cuba-line)] bg-white p-5 sm:p-6 shadow-2xs">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="space-y-1.5 max-w-2xl">
                         <div className="flex items-center gap-2.5">
-                            <h1 id="review-export-title" className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
+                            <h1 id="review-export-title" className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--cuba-ink)]">
                                 Review and export
                             </h1>
                             <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${overallTheme.badge}`}>
                                 {atsResult.qualityScore}/100 ATS Score
                             </span>
                         </div>
-                        <p className="text-slate-500 text-xs leading-relaxed">
+                        <p className="text-[var(--cuba-ink-subtle)] text-xs leading-relaxed">
                             How each section of your resume checks against ATS parsing and recruiter screening —
                             every claim below comes from the check itself.
                         </p>
@@ -172,13 +172,13 @@ export default function ReviewStep({
                         <button
                             type="button"
                             onClick={() => setIsJdInputOpen(prev => !prev)}
-                            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-[var(--cuba-canvas)] hover:bg-[var(--cuba-line)] text-[var(--cuba-ink-muted)] transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
                         >
                             <MdSearch className="w-4 h-4 text-indigo-600" />
                             <span>{targetJd ? 'Update Job Description' : 'Match Target Job'}</span>
                         </button>
 
-                        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-2.5 sm:p-3">
+                        <div className="flex items-center gap-3 rounded-xl border border-[var(--cuba-line)] bg-[var(--cuba-canvas)] p-2.5 sm:p-3">
                             <div className={`w-10 h-10 rounded-lg flex flex-col items-center justify-center text-white ${overallTheme.solid}`}>
                                 <span className="text-base font-bold tabular-nums leading-none">
                                     {atsResult.qualityScore}
@@ -188,7 +188,7 @@ export default function ReviewStep({
                                 </span>
                             </div>
                             <div>
-                                <div className="text-xs font-bold text-slate-900">
+                                <div className="text-xs font-bold text-[var(--cuba-ink)]">
                                     {atsResult.status?.label || 'In Progress'}
                                 </div>
                                 <div className={`text-[10px] mt-0.5 font-medium ${requiredReady ? 'text-emerald-700' : 'text-amber-700'}`}>
@@ -202,7 +202,7 @@ export default function ReviewStep({
 
             {/* Target Job Description Matcher */}
             {isJdInputOpen && (
-                <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-2xs space-y-3">
+                <div className="bg-white rounded-xl border border-[var(--cuba-line)] p-5 shadow-2xs space-y-3">
                     {/* DIR-048: replaces window.alert for the missing-target-role
                         precondition. Assertive role, rendered at the top of the card
                         the user is working in, dismissible once the role exists. */}
@@ -215,7 +215,7 @@ export default function ReviewStep({
                         />
                     )}
                     <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <h3 className="text-sm font-bold text-slate-900">Target job description</h3>
+                        <h3 className="text-sm font-bold text-[var(--cuba-ink)]">Target job description</h3>
                         <div className="flex items-center gap-2">
                             <button
                                 type="button"
@@ -239,13 +239,13 @@ export default function ReviewStep({
                             <button
                                 type="button"
                                 onClick={() => setIsJdInputOpen(false)}
-                                className="text-xs font-semibold text-slate-500 hover:text-slate-800"
+                                className="text-xs font-semibold text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink)]"
                             >
                                 Close
                             </button>
                         </div>
                     </div>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-[var(--cuba-ink-subtle)]">
                         Paste the job description you are applying for. Matching checks which of its distinctive terms
                         your resume uses — matched, partially, or not at all.
                     </p>
@@ -254,19 +254,19 @@ export default function ReviewStep({
                         onChange={(e) => setTargetJd(e.target.value)}
                         aria-label="Target job description duties, requirements, and keywords"
                         rows={4}
-                        className="w-full text-xs p-3 rounded-lg border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none resize-y"
+                        className="w-full text-xs p-3 rounded-lg border border-[var(--cuba-line)] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none resize-y"
                     />
                     {atsResult.jdMatch?.score !== null && (
                         <div className="pt-2 space-y-2">
-                            <span className="text-xs font-semibold text-slate-700">
+                            <span className="text-xs font-semibold text-[var(--cuba-ink-muted)]">
                                 Match: <strong className="text-indigo-700">{atsResult.jdMatch.score}%</strong>
-                                <span className="text-slate-400 font-normal">
+                                <span className="text-[var(--cuba-ink-subtle)] font-normal">
                                     {' '}· {atsResult.jdMatch.matched.length} matched · {atsResult.jdMatch.partial?.length || 0} partial · {atsResult.jdMatch.missing.length} missing
                                 </span>
                             </span>
                             {atsResult.jdMatch.matched?.length > 0 && (
                                 <div className="flex flex-wrap items-center gap-1">
-                                    <span className="text-[11px] font-semibold text-slate-500">Matched:</span>
+                                    <span className="text-[11px] font-semibold text-[var(--cuba-ink-subtle)]">Matched:</span>
                                     {atsResult.jdMatch.matched.slice(0, 8).map((term, i) => (
                                         <span key={`m-${i}`} className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-bold">
                                             ✓ {term}
@@ -276,7 +276,7 @@ export default function ReviewStep({
                             )}
                             {atsResult.jdMatch.partial?.length > 0 && (
                                 <div className="flex flex-wrap items-center gap-1">
-                                    <span className="text-[11px] font-semibold text-slate-500">Partial:</span>
+                                    <span className="text-[11px] font-semibold text-[var(--cuba-ink-subtle)]">Partial:</span>
                                     {atsResult.jdMatch.partial.slice(0, 8).map((term, i) => (
                                         <span key={`p-${i}`} className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200 text-[10px] font-bold">
                                             {term}
@@ -286,13 +286,13 @@ export default function ReviewStep({
                             )}
                             {atsResult.jdMatch.missing?.length > 0 && (
                                 <div className="flex flex-wrap items-center gap-1.5">
-                                    <span className="text-[11px] font-semibold text-slate-500">Not in your resume:</span>
+                                    <span className="text-[11px] font-semibold text-[var(--cuba-ink-subtle)]">Not in your resume:</span>
                                     {atsResult.jdMatch.missing.slice(0, 8).map((term, i) => (
                                         <button
                                             key={`x-${i}`}
                                             type="button"
                                             onClick={() => onNavigate('skills')}
-                                            className="px-2 py-0.5 rounded-md bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 text-[10px] font-bold transition-colors"
+                                            className="px-2 py-0.5 rounded-md bg-[var(--cuba-canvas)] hover:bg-[var(--cuba-canvas)] text-[var(--cuba-ink-muted)] border border-[var(--cuba-line)] text-[10px] font-bold transition-colors"
                                             title={`Consider whether “${term}” should appear in your Skills`}
                                         >
                                             {term}
@@ -300,7 +300,7 @@ export default function ReviewStep({
                                     ))}
                                 </div>
                             )}
-                            <p className="text-[11px] text-slate-400">
+                            <p className="text-[11px] text-[var(--cuba-ink-subtle)]">
                                 Add terms only when they are true for you — partial matches often mean your resume uses
                                 a different word for the same thing, which is fine.
                             </p>
@@ -313,17 +313,17 @@ export default function ReviewStep({
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 {/* Left: Section-by-Section Breakdown */}
                 <main className="lg:col-span-8 space-y-4 min-w-0">
-                    <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs">
+                    <div className="bg-white rounded-2xl border border-[var(--cuba-line)]/90 p-5 shadow-2xs">
                         <div className="mb-4">
-                            <h2 className="text-sm sm:text-base font-bold text-slate-900">
+                            <h2 className="text-sm sm:text-base font-bold text-[var(--cuba-ink)]">
                                 Section readiness
                             </h2>
-                            <p className="text-xs text-slate-500 mt-0.5">
+                            <p className="text-xs text-[var(--cuba-ink-subtle)] mt-0.5">
                                 Click any section to review and refine content directly.
                             </p>
                         </div>
 
-                        <div className="divide-y divide-slate-100">
+                        <div className="divide-y divide-[var(--cuba-line)]">
                             {atsResult.sections.map((sec) => {
                                 const secPct = sec.maxScore > 0 ? Math.round((sec.score / sec.maxScore) * 100) : 0;
                                 const secTheme = getScoreTheme(secPct);
@@ -339,14 +339,14 @@ export default function ReviewStep({
                                             </div>
                                             <div className="min-w-0 flex-1">
                                                 <div className="flex items-center gap-2">
-                                                    <h3 className="text-xs font-bold text-slate-900">
+                                                    <h3 className="text-xs font-bold text-[var(--cuba-ink)]">
                                                         {sec.name}
                                                     </h3>
                                                     <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-md ${secTheme.badge}`}>
                                                         {secPct}%
                                                     </span>
                                                 </div>
-                                                <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
+                                                <p className="text-xs text-[var(--cuba-ink-muted)] mt-0.5 leading-relaxed">
                                                     {sec.action || sec.reason || 'Section content reviewed.'}
                                                 </p>
                                             </div>
@@ -384,7 +384,7 @@ export default function ReviewStep({
                                         </li>
                                     ))
                                 ) : (
-                                    <li className="text-xs text-slate-500">
+                                    <li className="text-xs text-[var(--cuba-ink-subtle)]">
                                         Add detailed roles and skills to see what is working.
                                     </li>
                                 )}
@@ -427,24 +427,24 @@ export default function ReviewStep({
 
                 {/* Right: Template, Preview & Export */}
                 <aside className="lg:col-span-4 sticky top-[125px] self-start space-y-4" aria-label="Template and export actions">
-                    <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs space-y-4">
+                    <div className="bg-white rounded-2xl border border-[var(--cuba-line)]/90 p-5 shadow-2xs space-y-4">
                         <div>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--cuba-ink-subtle)]">
                                 Active presentation
                             </span>
-                            <h2 className="text-base font-bold text-slate-900 mt-0.5">
+                            <h2 className="text-base font-bold text-[var(--cuba-ink)] mt-0.5">
                                 {templateName || 'Modern Template'}
                             </h2>
-                            <p className="text-xs text-slate-500 mt-0.5">
+                            <p className="text-xs text-[var(--cuba-ink-subtle)] mt-0.5">
                                 Text-first layout, readable by ATS parsers.
                             </p>
                         </div>
 
-                        <div className="space-y-2 pt-2 border-t border-slate-100">
+                        <div className="space-y-2 pt-2 border-t border-[var(--cuba-line)]">
                             <button
                                 type="button"
                                 onClick={onChooseTemplate}
-                                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 text-slate-800 text-xs font-semibold transition-all"
+                                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[var(--cuba-line)] hover:border-indigo-300 hover:bg-indigo-50 text-[var(--cuba-ink)] text-xs font-semibold transition-all"
                             >
                                 <span>Change template</span>
                             </button>
@@ -459,14 +459,14 @@ export default function ReviewStep({
                         </div>
                     </div>
 
-                    <div className="bg-slate-900 rounded-2xl p-5 text-white shadow-md space-y-3">
+                    <div className="bg-[var(--cuba-ink)] rounded-2xl p-5 text-white shadow-md space-y-3">
                         <div className="flex items-center gap-2">
                             <MdFileDownload className="w-5 h-5 text-indigo-300" />
                             <h3 className="text-sm font-bold text-white">
                                 Download
                             </h3>
                         </div>
-                        <p className="text-xs text-slate-300 leading-relaxed">
+                        <p className="text-xs text-[var(--cuba-ink-subtle)] leading-relaxed">
                             Export a PDF with the selected template.
                         </p>
 

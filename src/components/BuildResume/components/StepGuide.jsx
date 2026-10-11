@@ -35,9 +35,9 @@ export default function StepGuide({
     const ready = missing.length === 0 && openFindings.length === 0;
 
     return (
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
+        <div className="rounded-xl border border-[var(--cuba-line)] bg-white p-4 shadow-2xs">
             <div className="flex items-center justify-between gap-2">
-                <h2 className="text-[11px] font-black uppercase tracking-widest text-slate-400">{title}</h2>
+                <h2 className="text-[11px] font-black uppercase tracking-widest text-[var(--cuba-ink-subtle)]">{title}</h2>
                 <span
                     className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
                         ready
@@ -53,7 +53,7 @@ export default function StepGuide({
             {missing.length > 0 && (
                 <ul className="mt-3 space-y-1.5" aria-label="What is missing in this section">
                     {missing.map((gap, index) => (
-                        <li key={`${gap}-${index}`} className="flex items-start gap-2 text-[13px] leading-snug text-slate-600">
+                        <li key={`${gap}-${index}`} className="flex items-start gap-2 text-[13px] leading-snug text-[var(--cuba-ink-muted)]">
                             <MdCircle className="mt-1 w-2.5 h-2.5 shrink-0 text-amber-400" />
                             <span>{gap}</span>
                         </li>
@@ -62,14 +62,14 @@ export default function StepGuide({
             )}
 
             {openFindings.length > 0 && (
-                <div className="mt-4 border-t border-slate-100 pt-3">
-                    <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                <div className="mt-4 border-t border-[var(--cuba-line)] pt-3">
+                    <h3 className="text-[10px] font-black uppercase tracking-wider text-[var(--cuba-ink-subtle)]">
                         What the ATS check says
                     </h3>
                     <ul className="mt-2 space-y-1.5">
                         {openFindings.map((finding, index) => (
-                            <li key={`${finding.text}-${index}`} className="flex items-start gap-2 text-[13px] leading-snug text-slate-600">
-                                <MdCircle className="mt-1 w-2.5 h-2.5 shrink-0 text-slate-300" />
+                            <li key={`${finding.text}-${index}`} className="flex items-start gap-2 text-[13px] leading-snug text-[var(--cuba-ink-muted)]">
+                                <MdCircle className="mt-1 w-2.5 h-2.5 shrink-0 text-[var(--cuba-ink-subtle)]" />
                                 <span>{finding.text}</span>
                             </li>
                         ))}

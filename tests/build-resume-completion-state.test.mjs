@@ -84,7 +84,10 @@ test('P0-2: legacy heading rules exclude builder scope and Cuba contexts', () =>
 });
 
 test('P0-2: builder root and portaled surfaces carry the scope class', () => {
-    assert.match(SHELL, /className="rp-builder-scope h-screen w-full bg-slate-50 flex flex-col overflow-hidden"/);
+    // DIR-088 supersedes the literal colour here: the builder root's hardcoded bg-slate-50 was
+    // tokenised to --cuba-canvas. The assertion still pins the full class list, so the scope
+    // class, geometry and overflow behaviour remain locked.
+    assert.match(SHELL, /className="rp-builder-scope h-screen w-full bg-\[var\(--cuba-canvas\)\] flex flex-col overflow-hidden"/);
     assert.match(SHELL, /className="rp-builder-scope w-full max-w-md bg-white h-full shadow-2xl/); // ATS drawer
     assert.match(SHELL, /className="rp-builder-scope fixed left-0 top-0 bottom-0 w-80 max-w-\[85vw\]/); // mobile nav drawer
     assert.match(SHELL, /className="rp-builder-scope w-full max-w-3xl bg-white rounded-3xl/); // overview modal

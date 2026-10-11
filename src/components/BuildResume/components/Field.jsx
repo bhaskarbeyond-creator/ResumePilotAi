@@ -30,18 +30,18 @@ export default function Field({
     const describedBy = [hint ? `${id}-hint` : null, error ? `${id}-error` : null].filter(Boolean).join(' ') || undefined;
 
     const controlClass = [
-        'w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs transition-colors',
-        'placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/25',
-        error ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-500/20' : 'border-slate-200 focus:border-indigo-400',
+        'w-full rounded-lg border bg-white px-3 py-2 text-sm text-[var(--cuba-ink)] shadow-2xs transition-colors',
+        'placeholder:text-[var(--cuba-ink-subtle)] focus:outline-none focus:ring-2 focus:ring-indigo-500/25',
+        error ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-500/20' : 'border-[var(--cuba-line)] focus:border-indigo-400',
     ].join(' ');
 
     return (
         <div className={`min-w-0 ${className}`}>
             {label ? (
-                <label htmlFor={id} className="mb-1.5 flex items-baseline gap-1.5 text-[13px] font-semibold text-slate-700">
+                <label htmlFor={id} className="mb-1.5 flex items-baseline gap-1.5 text-[13px] font-semibold text-[var(--cuba-ink-muted)]">
                     <span>{label}</span>
                     {required && <span aria-hidden="true" className="text-rose-500">*</span>}
-                    {optional && <span className="text-[11px] font-medium text-slate-400">optional</span>}
+                    {optional && <span className="text-[11px] font-medium text-[var(--cuba-ink-subtle)]">optional</span>}
                 </label>
             ) : null}
 
@@ -83,7 +83,7 @@ export default function Field({
             {error ? (
                 <p id={`${id}-error`} className="mt-1.5 text-xs font-medium text-rose-600" role="alert">{error}</p>
             ) : hint ? (
-                <p id={`${id}-hint`} className="mt-1.5 text-xs text-slate-500">{hint}</p>
+                <p id={`${id}-hint`} className="mt-1.5 text-xs text-[var(--cuba-ink-subtle)]">{hint}</p>
             ) : null}
         </div>
     );

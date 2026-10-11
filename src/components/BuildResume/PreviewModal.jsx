@@ -65,7 +65,7 @@ const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isD
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4">
             {/* Enhanced Backdrop with glassmorphism effect */}
             <div
-                className={`absolute inset-0 transition-all duration-500 ease-out ${isVisible ? 'bg-slate-900/20 backdrop-blur-md' : 'bg-transparent backdrop-blur-none'}`}
+                className={`absolute inset-0 transition-all duration-500 ease-out ${isVisible ? 'bg-[var(--cuba-ink)]/20 backdrop-blur-md' : 'bg-transparent backdrop-blur-none'}`}
                 onClick={handleBackdropClick}
                 style={{
                     background: isVisible ? 'linear-gradient(135deg, rgba(15, 23, 42, 0.1) 0%, rgba(30, 41, 59, 0.2) 100%)' : 'transparent',
@@ -86,7 +86,7 @@ const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isD
                     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1)',
                 }}>
                 {/* Enhanced Header with gradient background - Mobile responsive */}
-                <div className="relative bg-gradient-to-r from-slate-50 to-blue-50/50 border-b border-slate-200/50 px-3 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-6 rounded-t-lg sm:rounded-t-2xl">
+                <div className="relative bg-gradient-to-r from-[var(--cuba-canvas)] to-blue-50/50 border-b border-[var(--cuba-line)]/50 px-3 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-6 rounded-t-lg sm:rounded-t-2xl">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-1">
                             <div className="hidden sm:block p-2 lg:p-3 bg-blue-100 rounded-lg lg:rounded-xl">
@@ -100,8 +100,8 @@ const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isD
                                 </svg>
                             </div>
                             <div className="min-w-0 flex-1">
-                                <h2 id="resume-preview-title" className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-900 tracking-tight truncate">{t('PreviewModal.title')}</h2>
-                                <p className="text-xs sm:text-sm text-slate-600 mt-0.5 sm:mt-1 font-medium truncate">
+                                <h2 id="resume-preview-title" className="text-lg sm:text-xl lg:text-2xl font-bold text-[var(--cuba-ink)] tracking-tight truncate">{t('PreviewModal.title')}</h2>
+                                <p className="text-xs sm:text-sm text-[var(--cuba-ink-muted)] mt-0.5 sm:mt-1 font-medium truncate">
                                     {t('PreviewModal.subtitle', { templateName: getTemplateName ? getTemplateName(currentTemplate) : currentTemplate })}
                                 </p>
                             </div>
@@ -115,12 +115,12 @@ const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isD
                                     disabled={isSharing}
                                     className={`relative px-3 sm:px-4 lg:px-5 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-xl font-semibold transition-all duration-300 flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm shadow-sm ${
                                         isSharing
-                                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
-                                            : 'bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 hover:text-indigo-600 shadow-slate-200 hover:shadow-md transform hover:-translate-y-0.5'
+                                            ? 'bg-[var(--cuba-canvas)] text-[var(--cuba-ink-subtle)] cursor-not-allowed shadow-none'
+                                            : 'bg-white hover:bg-[var(--cuba-canvas)] border border-[var(--cuba-line-strong)] text-[var(--cuba-ink-muted)] hover:text-indigo-600 shadow-slate-200 hover:shadow-md transform hover:-translate-y-0.5'
                                     }`}>
                                     {isSharing ? (
                                         <>
-                                            <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
+                                            <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-[var(--cuba-line-strong)] border-t-transparent rounded-full animate-spin"></div>
                                             <span className="hidden sm:inline">{t('PreviewModal.actions.sharing', 'Sharing...')}</span>
                                             <span className="sm:hidden">{t('PreviewModal.actions.sharingShort', 'Share...')}</span>
                                         </>
@@ -143,12 +143,12 @@ const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isD
                                     disabled={isDownloadingDocx}
                                     className={`relative px-3 sm:px-4 lg:px-5 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-xl font-semibold transition-all duration-300 flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm shadow-lg ${
                                         isDownloadingDocx
-                                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
+                                            ? 'bg-[var(--cuba-canvas)] text-[var(--cuba-ink-subtle)] cursor-not-allowed shadow-none'
                                             : 'bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-700 hover:to-green-800 text-white shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:shadow-xl transform hover:-translate-y-0.5'
                                     }`}>
                                     {isDownloadingDocx ? (
                                         <>
-                                            <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
+                                            <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-[var(--cuba-line-strong)] border-t-transparent rounded-full animate-spin"></div>
                                             <span className="hidden sm:inline">{t('PreviewModal.actions.generatingDocx', 'Generating DOCX...')}</span>
                                             <span className="sm:hidden">{t('PreviewModal.actions.generatingDocxShort', 'DOCX...')}</span>
                                         </>
@@ -175,12 +175,12 @@ const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isD
                                 disabled={isDownloading}
                                 className={`relative px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-xl font-semibold transition-all duration-300 flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm shadow-lg ${
                                     isDownloading
-                                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
+                                        ? 'bg-[var(--cuba-canvas)] text-[var(--cuba-ink-subtle)] cursor-not-allowed shadow-none'
                                         : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-blue-500/25 hover:shadow-blue-500/40 hover:shadow-xl transform hover:-translate-y-0.5'
                                 }`}>
                                 {isDownloading ? (
                                     <>
-                                        <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
+                                        <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-[var(--cuba-line-strong)] border-t-transparent rounded-full animate-spin"></div>
                                         <span className="hidden sm:inline">{t('PreviewModal.actions.generatingPdf')}</span>
                                         <span className="sm:hidden">PDF...</span>
                                     </>
@@ -203,7 +203,7 @@ const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isD
                             {/* Enhanced Close Button - Mobile responsive */}
                             <button
                                 onClick={handleClose}
-                                className="p-2 sm:p-3 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg sm:rounded-xl transition-all duration-200 group"
+                                className="p-2 sm:p-3 text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-canvas)] rounded-lg sm:rounded-xl transition-all duration-200 group"
                                 aria-label={t('PreviewModal.actions.close')}>
                                 <svg className="w-4 h-4 sm:w-5 sm:h-5 group-hover:rotate-90 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -216,7 +216,7 @@ const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isD
                 {/* Enhanced Modal Body with improved styling and mobile responsiveness */}
                 <div className="relative flex-1 overflow-hidden rounded-b-lg sm:rounded-b-2xl">
                     {/* Gradient overlay for better visual depth */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-slate-50/50 via-white/30 to-blue-50/50 pointer-events-none"></div>
+                    <div className="absolute inset-0 bg-gradient-to-br from-[var(--cuba-canvas)]/50 via-white/30 to-blue-50/50 pointer-events-none"></div>
 
                     <div className="relative h-[calc(95vh-100px)] sm:h-[calc(90vh-140px)] overflow-auto p-2 sm:p-4 custom-scrollbar">
                         <div className="flex justify-center items-start min-h-full">
@@ -242,8 +242,8 @@ const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isD
 
                 {/* Keyboard shortcut hint - Mobile responsive */}
                 <div className="absolute bottom-2 sm:bottom-4 left-1/2 transform -translate-x-1/2">
-                    <div className="bg-slate-800/90 backdrop-blur-sm text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs font-medium flex items-center space-x-1 sm:space-x-2 shadow-lg">
-                        <kbd className="bg-slate-700 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-xs">ESC</kbd>
+                    <div className="bg-[var(--cuba-ink)]/90 backdrop-blur-sm text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs font-medium flex items-center space-x-1 sm:space-x-2 shadow-lg">
+                        <kbd className="bg-[var(--cuba-ink)] px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-xs">ESC</kbd>
                         <span className="hidden sm:inline">{t('PreviewModal.keyboard.escToClose')}</span>
                         <span className="sm:hidden">Close</span>
                     </div>

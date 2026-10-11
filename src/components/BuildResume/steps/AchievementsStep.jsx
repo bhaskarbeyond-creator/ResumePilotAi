@@ -331,7 +331,7 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                     <button
                         type="button"
                         onClick={() => setToastState(null)}
-                        className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                        className="text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] p-1 cursor-pointer"
                     >
                         <MdClose className="w-3.5 h-3.5" />
                     </button>
@@ -355,21 +355,21 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                             <div className="flex items-center justify-between gap-2">
                                 <div className="flex items-center gap-2">
                                     <FaSearch className="w-3.5 h-3.5 text-indigo-600" />
-                                    <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Recognition Signals in Your Experience</h3>
+                                    <h3 className="text-xs font-bold text-[var(--cuba-ink)] uppercase tracking-wider">Recognition Signals in Your Experience</h3>
                                 </div>
                                 <span className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 text-[10px] font-bold">
                                     {signals.length} found
                                 </span>
                             </div>
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-[var(--cuba-ink-subtle)]">
                                 Detected recognition lines from what you already entered in work history or education. Click to feature as standalone awards:
                             </p>
                             <ul className="divide-y divide-indigo-100/60 rounded-xl border border-indigo-100 bg-white shadow-2xs overflow-hidden">
                                 {signals.map((signal, index) => (
                                     <li key={index} className="flex items-start justify-between gap-3 px-3.5 py-3 hover:bg-indigo-50/20 transition-colors">
                                         <div className="min-w-0">
-                                            <p className="text-xs font-medium leading-relaxed text-slate-800">{signal.text}</p>
-                                            <p className="mt-1 text-[11px] text-slate-400 font-medium">from {signal.source}</p>
+                                            <p className="text-xs font-medium leading-relaxed text-[var(--cuba-ink)]">{signal.text}</p>
+                                            <p className="mt-1 text-[11px] text-[var(--cuba-ink-subtle)] font-medium">from {signal.source}</p>
                                         </div>
                                         <button
                                             type="button"
@@ -387,9 +387,9 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
             ) : (
                 <div className="space-y-4">
                     {/* Modern Command Toolbar */}
-                    <div className="p-3.5 bg-slate-50/80 rounded-2xl border border-slate-200/80 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
+                    <div className="p-3.5 bg-[var(--cuba-canvas)]/80 rounded-2xl border border-[var(--cuba-line)]/80 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
                         <div className="flex items-center gap-2.5">
-                            <span className="text-sm font-extrabold text-slate-800 tracking-tight">
+                            <span className="text-sm font-extrabold text-[var(--cuba-ink)] tracking-tight">
                                 Honors &amp; Key Achievements
                             </span>
                             <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-xs font-bold border border-amber-200/60">
@@ -405,7 +405,7 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                     className={`h-9 px-3.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer ${
                                         scanOpen
                                             ? 'bg-indigo-50 border-indigo-300 text-indigo-700'
-                                            : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-700'
+                                            : 'bg-white hover:bg-[var(--cuba-canvas)] border-[var(--cuba-line)] text-[var(--cuba-ink-muted)]'
                                     }`}
                                     title="Scan existing work and project descriptions for award signals"
                                 >
@@ -417,7 +417,7 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                             <button
                                 type="button"
                                 onClick={() => addAchievement()}
-                                className="h-9 px-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+                                className="h-9 px-3.5 rounded-xl bg-[var(--cuba-ink)] hover:bg-[var(--cuba-ink)] text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
                             >
                                 <MdAdd className="w-4 h-4 text-white" />
                                 <span>Add Award / Achievement</span>
@@ -430,19 +430,19 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
                             {/* Live Search */}
                             <div className="relative flex-1 max-w-sm">
-                                <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--cuba-ink-subtle)]" />
                                 <input
                                     type="text"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     placeholder="Search honors, awards, or organizations..."
-                                    className="w-full h-9 pl-9 pr-8 text-xs bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                                    className="w-full h-9 pl-9 pr-8 text-xs bg-white border border-[var(--cuba-line)] rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
                                 />
                                 {searchQuery && (
                                     <button
                                         type="button"
                                         onClick={() => setSearchQuery('')}
-                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] cursor-pointer"
                                     >
                                         <MdClose className="w-3.5 h-3.5" />
                                     </button>
@@ -456,8 +456,8 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                     onClick={() => setSelectedTypeFilter('all')}
                                     className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
                                         selectedTypeFilter === 'all'
-                                            ? 'bg-slate-800 text-white'
-                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                            ? 'bg-[var(--cuba-ink)] text-white'
+                                            : 'bg-[var(--cuba-canvas)] text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-line)]'
                                     }`}
                                 >
                                     All ({achievements.length})
@@ -473,7 +473,7 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                             className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
                                                 selectedTypeFilter === t.id
                                                     ? 'bg-indigo-600 text-white'
-                                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                    : 'bg-[var(--cuba-canvas)] text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-line)]'
                                             }`}
                                         >
                                             {t.label} ({count})
@@ -490,21 +490,21 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                             <div className="flex items-center justify-between gap-2">
                                 <div className="flex items-center gap-2">
                                     <FaSearch className="w-3.5 h-3.5 text-indigo-600" />
-                                    <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Recognition Signals in Your Experience</h3>
+                                    <h3 className="text-xs font-bold text-[var(--cuba-ink)] uppercase tracking-wider">Recognition Signals in Your Experience</h3>
                                 </div>
-                                <button type="button" onClick={() => setScanOpen(false)} className="text-xs font-bold text-slate-400 hover:text-slate-600 cursor-pointer">
+                                <button type="button" onClick={() => setScanOpen(false)} className="text-xs font-bold text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] cursor-pointer">
                                     ✕ Close
                                 </button>
                             </div>
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-[var(--cuba-ink-subtle)]">
                                 Lines detected in your work history or education text that match recognition signals. Click to add:
                             </p>
                             <ul className="divide-y divide-indigo-100/60 rounded-xl border border-indigo-100 bg-white shadow-2xs overflow-hidden">
                                 {signals.map((signal, index) => (
                                     <li key={index} className="flex items-start justify-between gap-3 px-3.5 py-3 hover:bg-indigo-50/20 transition-colors">
                                         <div className="min-w-0">
-                                            <p className="text-xs font-medium leading-relaxed text-slate-800">{signal.text}</p>
-                                            <p className="mt-1 text-[11px] text-slate-400 font-medium">from {signal.source}</p>
+                                            <p className="text-xs font-medium leading-relaxed text-[var(--cuba-ink)]">{signal.text}</p>
+                                            <p className="mt-1 text-[11px] text-[var(--cuba-ink-subtle)] font-medium">from {signal.source}</p>
                                         </div>
                                         <button
                                             type="button"
@@ -544,14 +544,14 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                     className={`bg-white border ${theme.cardBorder} rounded-2xl shadow-xs hover:shadow-md transition-all overflow-hidden`}
                                 >
                                     {/* Card Header */}
-                                    <div className={`p-3.5 sm:p-4 border-b border-slate-100 bg-gradient-to-r ${theme.headerGradient} flex items-center justify-between gap-3`}>
+                                    <div className={`p-3.5 sm:p-4 border-b border-[var(--cuba-line)] bg-gradient-to-r ${theme.headerGradient} flex items-center justify-between gap-3`}>
                                         <div className="flex items-center gap-2.5 min-w-0 pr-2">
                                             <span className={`w-6 h-6 rounded-md ${theme.indexBadge} font-extrabold flex items-center justify-center text-[11px] shrink-0 shadow-2xs`}>
                                                 #{originalIndex + 1}
                                             </span>
                                             <div className="min-w-0">
                                                 <div className="flex items-center gap-2 flex-wrap">
-                                                    <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                                                    <h4 className="text-xs sm:text-sm font-bold text-[var(--cuba-ink)] truncate">
                                                         {achTitle || 'Untitled Honor / Award'}
                                                     </h4>
                                                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 flex items-center gap-1 ${theme.badgeClass}`}>
@@ -559,19 +559,19 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                                         <span>{typeConfig.label}</span>
                                                     </span>
                                                 </div>
-                                                <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                                                <p className="text-[11px] text-[var(--cuba-ink-subtle)] truncate mt-0.5">
                                                     {subtitle}
                                                 </p>
                                             </div>
                                         </div>
 
                                         {/* Action Button Group */}
-                                        <div className="flex items-center gap-0.5 bg-white/95 backdrop-blur-xs p-1 rounded-xl border border-slate-200/80 shadow-2xs shrink-0">
+                                        <div className="flex items-center gap-0.5 bg-white/95 backdrop-blur-xs p-1 rounded-xl border border-[var(--cuba-line)]/80 shadow-2xs shrink-0">
                                             <button
                                                 type="button"
                                                 disabled={originalIndex === 0}
                                                 onClick={(e) => { e.stopPropagation(); moveAchievement(achievement.id, -1); }}
-                                                className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-slate-900 disabled:opacity-20 rounded-lg hover:bg-slate-100 text-[11px] font-bold transition-all cursor-pointer"
+                                                className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink)] disabled:opacity-20 rounded-lg hover:bg-[var(--cuba-canvas)] text-[11px] font-bold transition-all cursor-pointer"
                                                 title="Move award up"
                                             >
                                                 ▲
@@ -580,16 +580,16 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                                 type="button"
                                                 disabled={originalIndex === achievements.length - 1}
                                                 onClick={(e) => { e.stopPropagation(); moveAchievement(achievement.id, 1); }}
-                                                className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-slate-900 disabled:opacity-20 rounded-lg hover:bg-slate-100 text-[11px] font-bold transition-all cursor-pointer"
+                                                className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink)] disabled:opacity-20 rounded-lg hover:bg-[var(--cuba-canvas)] text-[11px] font-bold transition-all cursor-pointer"
                                                 title="Move award down"
                                             >
                                                 ▼
                                             </button>
-                                            <div className="w-[1px] h-3.5 bg-slate-200 mx-0.5" />
+                                            <div className="w-[1px] h-3.5 bg-[var(--cuba-line)] mx-0.5" />
                                             <button
                                                 type="button"
                                                 onClick={(e) => { e.stopPropagation(); duplicateAchievement(achievement.id); }}
-                                                className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50/70 transition-all cursor-pointer"
+                                                className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-indigo-600 rounded-lg hover:bg-indigo-50/70 transition-all cursor-pointer"
                                                 title="Duplicate award"
                                             >
                                                 <MdContentCopy className="w-3.5 h-3.5" />
@@ -597,7 +597,7 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                             <button
                                                 type="button"
                                                 onClick={(e) => { e.stopPropagation(); removeAchievement(achievement.id); }}
-                                                className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50/70 transition-all cursor-pointer ml-0.5"
+                                                className="w-7 h-7 flex items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-rose-600 rounded-lg hover:bg-rose-50/70 transition-all cursor-pointer ml-0.5"
                                                 title="Delete award"
                                             >
                                                 <MdDeleteOutline className="w-4 h-4" />
@@ -609,10 +609,10 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                     <div className="p-4 sm:p-5 space-y-4">
                                         {/* Category Selector Segmented Bar */}
                                         <div>
-                                            <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+                                            <label className="block text-xs font-bold text-[var(--cuba-ink-muted)] uppercase tracking-wider mb-1.5">
                                                 Category &amp; Recognition Type
                                             </label>
-                                            <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100/70 border border-slate-200/80 rounded-xl">
+                                            <div className="flex flex-wrap items-center gap-1.5 p-1 bg-[var(--cuba-canvas)]/70 border border-[var(--cuba-line)]/80 rounded-xl">
                                                 {ACHIEVEMENT_TYPES.map(type => {
                                                     const Icon = type.icon;
                                                     const isSelected = activeType === type.id;
@@ -623,11 +623,11 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                                             onClick={() => updateAchievement(achievement.id, 'achievementType', type.id)}
                                                             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                                                                 isSelected
-                                                                    ? 'bg-white text-slate-900 shadow-xs border border-slate-200/90 font-bold'
-                                                                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60 border border-transparent'
+                                                                    ? 'bg-white text-[var(--cuba-ink)] shadow-xs border border-[var(--cuba-line)]/90 font-bold'
+                                                                    : 'text-[var(--cuba-ink-muted)] hover:text-[var(--cuba-ink)] hover:bg-white/60 border border-transparent'
                                                             }`}
                                                         >
-                                                            <Icon className={`w-3.5 h-3.5 ${isSelected ? theme.iconColor : 'text-slate-400'}`} />
+                                                            <Icon className={`w-3.5 h-3.5 ${isSelected ? theme.iconColor : 'text-[var(--cuba-ink-subtle)]'}`} />
                                                             <span>{type.label}</span>
                                                         </button>
                                                     );
@@ -675,10 +675,10 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                         <div className="space-y-2">
                                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
                                                 <div>
-                                                    <label className="text-[13px] font-semibold text-slate-700">
+                                                    <label className="text-[13px] font-semibold text-[var(--cuba-ink-muted)]">
                                                         Accomplishment &amp; Significance
                                                     </label>
-                                                    <span className="block sm:inline sm:ml-1.5 text-[11px] text-slate-400 font-normal">
+                                                    <span className="block sm:inline sm:ml-1.5 text-[11px] text-[var(--cuba-ink-subtle)] font-normal">
                                                         — scope, measurable impact, or why this honor was awarded
                                                     </span>
                                                 </div>
@@ -698,12 +698,12 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                                 value={achievement.description || ''}
                                                 onChange={(e) => updateAchievement(achievement.id, 'description', e.target.value)}
                                                 placeholder={getDynamicPlaceholder('achievements', 'description', candidateContext) || 'Brief description of the accomplishment and its significance...'}
-                                                className="w-full min-h-[78px] text-xs p-3.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200/90 rounded-xl font-medium text-slate-900 placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 outline-none resize-y transition-all shadow-2xs leading-relaxed"
+                                                className="w-full min-h-[78px] text-xs p-3.5 bg-[var(--cuba-canvas)]/50 hover:bg-white focus:bg-white border border-[var(--cuba-line)]/90 rounded-xl font-medium text-[var(--cuba-ink)] placeholder:text-[var(--cuba-ink-subtle)] focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 outline-none resize-y transition-all shadow-2xs leading-relaxed"
                                             />
 
                                             {/* Quick Starter Chips */}
                                             <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-                                                <span className="text-[11px] font-semibold text-slate-400">Quick starters:</span>
+                                                <span className="text-[11px] font-semibold text-[var(--cuba-ink-subtle)]">Quick starters:</span>
                                                 {SUGGESTION_CHIPS.map((chip, cIdx) => (
                                                     <button
                                                         key={cIdx}
@@ -713,7 +713,7 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                                             const separator = current ? (current.endsWith('.') ? ' ' : '. ') : '';
                                                             updateAchievement(achievement.id, 'description', `${current}${separator}${chip.text}`);
                                                         }}
-                                                        className="inline-flex items-center text-[11px] font-medium px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-indigo-50/80 text-slate-600 hover:text-indigo-700 border border-slate-200 hover:border-indigo-200 transition-all cursor-pointer shadow-2xs"
+                                                        className="inline-flex items-center text-[11px] font-medium px-2.5 py-1 rounded-lg bg-[var(--cuba-canvas)] hover:bg-indigo-50/80 text-[var(--cuba-ink-muted)] hover:text-indigo-700 border border-[var(--cuba-line)] hover:border-indigo-200 transition-all cursor-pointer shadow-2xs"
                                                     >
                                                         {chip.label}
                                                     </button>
@@ -730,7 +730,7 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                     <button
                         type="button"
                         onClick={() => addAchievement()}
-                        className="w-full h-11 rounded-2xl border border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/40 text-sm font-bold text-slate-700 hover:text-indigo-700 flex items-center justify-center gap-2 transition-all shadow-2xs cursor-pointer"
+                        className="w-full h-11 rounded-2xl border border-dashed border-[var(--cuba-line-strong)] hover:border-indigo-400 hover:bg-indigo-50/40 text-sm font-bold text-[var(--cuba-ink-muted)] hover:text-indigo-700 flex items-center justify-center gap-2 transition-all shadow-2xs cursor-pointer"
                     >
                         <MdAdd className="w-4 h-4 text-indigo-600" />
                         <span>{t('AchievementsStep.actions.addAchievement', 'Add Another Achievement')}</span>

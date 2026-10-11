@@ -1668,20 +1668,20 @@ const BuildResume = () => {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-slate-50 flex items-center justify-center w-full" aria-busy="true">
+            <div className="min-h-screen bg-[var(--cuba-canvas)] flex items-center justify-center w-full" aria-busy="true">
                 <div className="flex flex-col items-center space-y-4" role="status">
                     <div aria-hidden="true" className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-slate-600 text-sm font-semibold">Loading your resume...</p>
+                    <p className="text-[var(--cuba-ink-muted)] text-sm font-semibold">Loading your resume...</p>
                 </div>
             </div>
         );
     }
     if (!hasLoadedRef.current && saveState.status === 'error') {
         return (
-            <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-                <div role="alert" className="max-w-md w-full text-center bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <h1 className="text-lg font-semibold text-slate-900">Resume unavailable</h1>
-                    <p className="mt-2 text-sm text-slate-600">{saveState.message}</p>
+            <main className="min-h-screen bg-[var(--cuba-canvas)] flex items-center justify-center p-4">
+                <div role="alert" className="max-w-md w-full text-center bg-white p-6 rounded-2xl shadow-sm border border-[var(--cuba-line)]">
+                    <h1 className="text-lg font-semibold text-[var(--cuba-ink)]">Resume unavailable</h1>
+                    <p className="mt-2 text-sm text-[var(--cuba-ink-muted)]">{saveState.message}</p>
                     <div className="mt-5 flex items-center justify-center gap-3">
                         <button
                             type="button"
@@ -1689,7 +1689,7 @@ const BuildResume = () => {
                                 setSaveState({ status: 'idle', message: '' });
                                 setLoadRetry(value => value + 1);
                             }}
-                            className="rounded-xl bg-slate-900 hover:bg-slate-800 px-4 py-2 text-sm font-semibold text-white transition-colors cursor-pointer"
+                            className="rounded-xl bg-[var(--cuba-ink)] hover:bg-[var(--cuba-ink)] px-4 py-2 text-sm font-semibold text-white transition-colors cursor-pointer"
                         >
                             Try again
                         </button>
@@ -1700,7 +1700,7 @@ const BuildResume = () => {
                                 setSaveState({ status: 'idle', message: '' });
                                 setLoadRetry(value => value + 1);
                             }}
-                            className="rounded-xl border border-slate-300 hover:bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors cursor-pointer"
+                            className="rounded-xl border border-[var(--cuba-line-strong)] hover:bg-[var(--cuba-canvas)] px-4 py-2 text-sm font-semibold text-[var(--cuba-ink-muted)] transition-colors cursor-pointer"
                         >
                             Start fresh draft
                         </button>
@@ -1711,7 +1711,7 @@ const BuildResume = () => {
     }
 
     return (
-        <div className="rp-builder-scope h-screen w-full bg-slate-50 flex flex-col overflow-hidden">
+        <div className="rp-builder-scope h-screen w-full bg-[var(--cuba-canvas)] flex flex-col overflow-hidden">
             {/* Toast Notifications — portaled to <body> so they escape the
                 dashboard content wrapper's z-index:1 stacking context and
                 render above the mobile topbar (z-[60]). */}
@@ -1770,7 +1770,7 @@ const BuildResume = () => {
                     <div className="mt-2 flex flex-wrap gap-2">
                         {saveState.status === 'error' && <button type="button" onClick={() => persistLatest({ manual: true })} className="rounded bg-red-700 px-3 py-1.5 text-xs font-semibold text-white">Retry save</button>}
                         {saveState.status === 'conflict' && <>
-                            {saveConflict?.remoteData && <button type="button" onClick={resolveConflictWithRemote} className="rounded bg-slate-700 px-3 py-1.5 text-xs font-semibold text-white">Load newer version</button>}
+                            {saveConflict?.remoteData && <button type="button" onClick={resolveConflictWithRemote} className="rounded bg-[var(--cuba-ink)] px-3 py-1.5 text-xs font-semibold text-white">Load newer version</button>}
                             <button type="button" onClick={resolveConflictWithLocal} className="rounded border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-800">Keep my changes</button>
                         </>}
                     </div>
@@ -1800,16 +1800,16 @@ const BuildResume = () => {
                     <button
                         type="button"
                         onClick={handleExitBuilder}
-                        className="cuba-focusable flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 hover:text-indigo-600 bg-slate-100 hover:bg-indigo-50 border border-slate-200/80 transition-all cursor-pointer shrink-0 shadow-2xs"
+                        className="cuba-focusable flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold text-[var(--cuba-ink-muted)] hover:text-indigo-600 bg-[var(--cuba-canvas)] hover:bg-indigo-50 border border-[var(--cuba-line)]/80 transition-all cursor-pointer shrink-0 shadow-2xs"
                         aria-label="Save and exit to dashboard"
                     >
-                        <svg className="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-3.5 h-3.5 text-[var(--cuba-ink-subtle)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                         </svg>
                         <span className="hidden md:inline">Dashboard</span>
                     </button>
 
-                    <div className="h-4 w-px bg-slate-200 hidden md:block shrink-0"></div>
+                    <div className="h-4 w-px bg-[var(--cuba-line)] hidden md:block shrink-0"></div>
 
                     {/* Resume Title & Active Template Badge.
                         DIR-055 S7: `min-w-[6rem]` is LOAD-BEARING. The title button
@@ -1847,7 +1847,7 @@ const BuildResume = () => {
                                             if (trimmed) updateResumeData({ title: trimmed });
                                             setIsEditingTitle(false);
                                         }}
-                                        className="text-xs sm:text-sm font-extrabold text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 max-w-[160px] sm:max-w-[220px]"
+                                        className="text-xs sm:text-sm font-extrabold text-[var(--cuba-ink)] bg-[var(--cuba-canvas)] px-2 py-0.5 rounded border border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 max-w-[160px] sm:max-w-[220px]"
                                     />
                                 );
                             }
@@ -1859,11 +1859,11 @@ const BuildResume = () => {
                                         setTitleInput(hasCustomTitle ? resumeData.title : candidateFullName || '');
                                         setIsEditingTitle(true);
                                     }}
-                                    className="group flex min-w-[5rem] items-center gap-1.5 text-xs sm:text-sm font-extrabold text-slate-900 hover:text-indigo-600 truncate tracking-tight transition-colors text-left cursor-pointer"
+                                    className="group flex min-w-[5rem] items-center gap-1.5 text-xs sm:text-sm font-extrabold text-[var(--cuba-ink)] hover:text-indigo-600 truncate tracking-tight transition-colors text-left cursor-pointer"
                                     title="Click to rename resume"
                                 >
                                     <span className="truncate">{displayedTitle}</span>
-                                    <svg className="w-3 h-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-3 h-3 text-[var(--cuba-ink-subtle)] opacity-0 group-hover:opacity-100 transition-opacity shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                     </svg>
                                 </button>
@@ -1872,18 +1872,18 @@ const BuildResume = () => {
                         <button
                             type="button"
                             onClick={() => setShowTemplateSelection(true)}
-                            className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold border border-slate-200/80 transition-colors cursor-pointer shrink-0 shadow-2xs"
+                            className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[var(--cuba-canvas)] hover:bg-[var(--cuba-line)] text-[var(--cuba-ink-muted)] text-xs font-semibold border border-[var(--cuba-line)]/80 transition-colors cursor-pointer shrink-0 shadow-2xs"
                             title="Click to switch template"
                         >
                             <span>{getTemplateName(currentTemplate)}</span>
-                            <svg className="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-3 h-3 text-[var(--cuba-ink-subtle)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                             </svg>
                         </button>
                     </div>
 
                     {/* Auto-save Status Pill */}
-                    <div role="status" aria-live="polite" className="hidden 2xl:flex items-center gap-1.5 text-[11px] font-medium text-slate-500 ml-1 shrink-0">
+                    <div role="status" aria-live="polite" className="hidden 2xl:flex items-center gap-1.5 text-[11px] font-medium text-[var(--cuba-ink-subtle)] ml-1 shrink-0">
                         <span className={`w-2 h-2 rounded-full ${saveState.status === 'saved' ? 'bg-emerald-500' : saveState.status === 'error' || saveState.status === 'conflict' ? 'bg-red-500' : 'bg-amber-500 animate-pulse'}`}></span>
                         <span className="truncate">{saveState.status === 'saved' ? 'Saved' : (saveState.message || 'Saving...')}</span>
                     </div>
@@ -1906,7 +1906,7 @@ const BuildResume = () => {
                                 <span className={`w-2 h-2 rounded-full ${headerAts.tone === 'good' ? 'bg-emerald-500' : headerAts.tone === 'medium' ? 'bg-indigo-500' : 'bg-amber-500'}`}></span>
                                 <span className="text-xs font-semibold tracking-tight">ATS: {headerAts.score}/100</span>
                             </div>
-                            <span className="hidden lg:inline text-[11px] font-semibold text-slate-600 border-l border-slate-300/80 pl-1.5">
+                            <span className="hidden lg:inline text-[11px] font-semibold text-[var(--cuba-ink-muted)] border-l border-[var(--cuba-line-strong)]/80 pl-1.5">
                                 {headerAts.label}
                             </span>
                             <svg className={`w-3.5 h-3.5 transition-transform ${showAtsDrawer ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1922,9 +1922,9 @@ const BuildResume = () => {
                     {isImportEnabled && (
                         <button
                             onClick={() => setShowImportModal(true)}
-                            className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold shadow-2xs transition-all cursor-pointer"
+                            className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[var(--cuba-line)] bg-white text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-canvas)] text-xs font-semibold shadow-2xs transition-all cursor-pointer"
                         >
-                            <svg className="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-3.5 h-3.5 text-[var(--cuba-ink-subtle)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                             </svg>
                             <span>AI Import</span>
@@ -1936,10 +1936,10 @@ const BuildResume = () => {
                         <button
                             onClick={handlePublishForReview}
                             disabled={publicationState.status === 'saving'}
-                            className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 text-xs font-semibold shadow-2xs transition-all cursor-pointer"
+                            className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[var(--cuba-line)] text-[var(--cuba-ink-muted)] bg-white hover:bg-[var(--cuba-canvas)] text-xs font-semibold shadow-2xs transition-all cursor-pointer"
                             title="Share review link with peers or mentors"
                         >
-                            <svg className="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-3.5 h-3.5 text-[var(--cuba-ink-subtle)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                             </svg>
                             <span>{publicationState.isPublished ? 'Review Link' : 'Share'}</span>
@@ -1951,7 +1951,7 @@ const BuildResume = () => {
                         <button
                             type="button"
                             onClick={() => setShowSyncProfileModal(true)}
-                            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 text-xs font-semibold shadow-2xs transition-all cursor-pointer"
+                            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[var(--cuba-line)] text-[var(--cuba-ink-muted)] bg-white hover:bg-[var(--cuba-canvas)] text-xs font-semibold shadow-2xs transition-all cursor-pointer"
                             title="Sync sections with your Master Profile"
                         >
                             <svg className="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1978,7 +1978,7 @@ const BuildResume = () => {
                     <button
                         onClick={handleDownload}
                         disabled={isDownloading}
-                        className="cuba-focusable flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
+                        className="cuba-focusable flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-[var(--cuba-ink)] hover:bg-[var(--cuba-ink)] disabled:bg-[var(--cuba-line-strong)] text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
                     >
                         {isDownloading ? (
                             <>
@@ -2014,7 +2014,7 @@ const BuildResume = () => {
                     {/* Mobile Menu Drawer Toggle */}
                     <button
                         onClick={() => setIsMobileMenuOpen(true)}
-                        className="cuba-focusable md:hidden p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl cursor-pointer"
+                        className="cuba-focusable md:hidden p-2 text-[var(--cuba-ink-muted)] hover:text-[var(--cuba-ink)] hover:bg-[var(--cuba-canvas)] rounded-xl cursor-pointer"
                         aria-label="Open navigation menu"
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2030,7 +2030,7 @@ const BuildResume = () => {
                 <button
                     type="button"
                     onClick={() => scrollRibbon('left')}
-                    className="hidden sm:flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-200 transition-colors shrink-0 cursor-pointer"
+                    className="hidden sm:flex items-center justify-center w-7 h-7 rounded-lg bg-[var(--cuba-canvas)] hover:bg-[var(--cuba-line)] text-[var(--cuba-ink-muted)] hover:text-[var(--cuba-ink)] border border-[var(--cuba-line)] transition-colors shrink-0 cursor-pointer"
                     aria-label="Scroll steps left"
                     title="Scroll left"
                 >
@@ -2054,7 +2054,7 @@ const BuildResume = () => {
                                         ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-500/25 font-bold'
                                         : isCompleted
                                         ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80 hover:bg-emerald-100 font-semibold'
-                                        : 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 hover:text-slate-900'
+                                        : 'bg-[var(--cuba-canvas)] text-[var(--cuba-ink-muted)] border border-[var(--cuba-line)] hover:bg-[var(--cuba-canvas)] hover:text-[var(--cuba-ink)]'
                                 }`}
                                 aria-current={isActive ? 'step' : undefined}
                                 title={`${step.name} (${isCompleted ? 'Completed' : 'Pending'})`}
@@ -2064,7 +2064,7 @@ const BuildResume = () => {
                                         ? 'bg-white text-indigo-700'
                                         : isCompleted
                                         ? 'bg-emerald-600 text-white'
-                                        : 'bg-slate-200 text-slate-600'
+                                        : 'bg-[var(--cuba-line)] text-[var(--cuba-ink-muted)]'
                                 }`}>
                                     {isCompleted ? '✓' : index + 1}
                                 </span>
@@ -2088,7 +2088,7 @@ const BuildResume = () => {
                 <button
                     type="button"
                     onClick={() => scrollRibbon('right')}
-                    className="hidden sm:flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-200 transition-colors shrink-0 cursor-pointer"
+                    className="hidden sm:flex items-center justify-center w-7 h-7 rounded-lg bg-[var(--cuba-canvas)] hover:bg-[var(--cuba-line)] text-[var(--cuba-ink-muted)] hover:text-[var(--cuba-ink)] border border-[var(--cuba-line)] transition-colors shrink-0 cursor-pointer"
                     aria-label="Scroll steps right"
                     title="Scroll right"
                 >
@@ -2098,18 +2098,18 @@ const BuildResume = () => {
                 </button>
 
                 {/* Stepper Overview Modal Trigger & Consolidated Progress Summary */}
-                <div className="flex items-center gap-2 shrink-0 pl-2 border-l border-slate-200">
+                <div className="flex items-center gap-2 shrink-0 pl-2 border-l border-[var(--cuba-line)]">
                     <button
                         type="button"
                         onClick={() => setShowAllStepsModal(true)}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold border border-slate-200/90 transition-all cursor-pointer shadow-2xs"
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[var(--cuba-canvas)] hover:bg-[var(--cuba-line)] text-[var(--cuba-ink)] text-xs font-semibold border border-[var(--cuba-line)]/90 transition-all cursor-pointer shadow-2xs"
                         title="View all resume sections in detail"
                     >
                         <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                         <span>{completedStepCount} of {contentSteps.length} complete</span>
-                        <span className="text-slate-300">·</span>
+                        <span className="text-[var(--cuba-ink-subtle)]">·</span>
                         <span className="text-indigo-600 font-bold">{progressPercentage}%</span>
-                        <svg className="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-3 h-3 text-[var(--cuba-ink-subtle)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>
@@ -2119,7 +2119,7 @@ const BuildResume = () => {
             {/* Main Editing Canvas */}
             <div className="flex-1 flex overflow-hidden relative">
                 {/* Scrollable Form Content */}
-                <div className={`flex-1 overflow-y-auto bg-slate-50/80 ${showDesktopSplitPreview ? 'xl:max-w-[58%]' : ''} transition-all duration-300`}>
+                <div className={`flex-1 overflow-y-auto bg-[var(--cuba-canvas)]/80 ${showDesktopSplitPreview ? 'xl:max-w-[58%]' : ''} transition-all duration-300`}>
                     <div className="min-h-[calc(100vh-180px)] w-full max-w-[1440px] mx-auto px-3 sm:px-5 lg:px-6 pt-2 pb-24 space-y-3">
                         {/* Step Form Routes */}
                         <Routes>
@@ -2140,13 +2140,13 @@ const BuildResume = () => {
                     </div>
 
                     {/* Fixed Bottom Action Footer (Never covers form content, sticky to viewport bottom) */}
-                    <footer className="sticky bottom-0 bg-white/95 backdrop-blur-md border-t border-slate-200/90 px-4 sm:px-6 lg:px-8 py-3.5 z-30 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
+                    <footer className="sticky bottom-0 bg-white/95 backdrop-blur-md border-t border-[var(--cuba-line)]/90 px-4 sm:px-6 lg:px-8 py-3.5 z-30 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
                         <div className="flex justify-between items-center max-w-7xl mx-auto gap-3">
                             {/* Previous Button */}
                             <button
                                 onClick={handlePrevious}
                                 disabled={currentStepIndex === 0}
-                                className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all text-xs rounded-xl shadow-2xs cursor-pointer"
+                                className="flex items-center gap-1.5 px-4 py-2 border border-[var(--cuba-line)] text-[var(--cuba-ink-muted)] font-semibold hover:bg-[var(--cuba-canvas)] disabled:opacity-40 disabled:cursor-not-allowed transition-all text-xs rounded-xl shadow-2xs cursor-pointer"
                                 aria-label="Go to previous step"
                             >
                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2157,11 +2157,11 @@ const BuildResume = () => {
                             </button>
 
                             {/* Center Status */}
-                            <div className="hidden sm:flex items-center gap-2.5 text-xs font-semibold text-slate-500">
+                            <div className="hidden sm:flex items-center gap-2.5 text-xs font-semibold text-[var(--cuba-ink-subtle)]">
                                 <span>Step {currentStepIndex + 1} of {orderedSteps.length}</span>
-                                <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                                <span className="font-bold text-slate-900">{orderedSteps[currentStepIndex]?.name}</span>
-                                <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                                <span className="w-1 h-1 rounded-full bg-[var(--cuba-line-strong)]"></span>
+                                <span className="font-bold text-[var(--cuba-ink)]">{orderedSteps[currentStepIndex]?.name}</span>
+                                <span className="w-1 h-1 rounded-full bg-[var(--cuba-line-strong)]"></span>
                                 <span className={saveState.status === 'saved' ? 'text-emerald-600 font-bold' : 'text-amber-600'}>
                                     {saveState.status === 'saved' ? 'Saved ✓' : 'Saving...'}
                                 </span>
@@ -2172,7 +2172,7 @@ const BuildResume = () => {
                                 <button
                                     type="button"
                                     onClick={() => setShowPreview(true)}
-                                    className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 hover:border-slate-300 text-slate-700 bg-white hover:bg-slate-50 text-xs font-semibold rounded-xl shadow-2xs transition-colors cursor-pointer"
+                                    className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 border border-[var(--cuba-line)] hover:border-[var(--cuba-line-strong)] text-[var(--cuba-ink-muted)] bg-white hover:bg-[var(--cuba-canvas)] text-xs font-semibold rounded-xl shadow-2xs transition-colors cursor-pointer"
                                 >
                                     <svg className="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -2218,7 +2218,7 @@ const BuildResume = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[70] bg-slate-950/40 backdrop-blur-xs flex justify-end"
+                        className="fixed inset-0 z-[70] bg-[var(--cuba-ink)]/40 backdrop-blur-xs flex justify-end"
                         onClick={() => setShowAtsDrawer(false)}
                     >
                         <motion.div
@@ -2233,7 +2233,7 @@ const BuildResume = () => {
                             aria-label="ATS Career Readiness Companion"
                         >
                             {/* Drawer Header */}
-                            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                            <div className="p-4 border-b border-[var(--cuba-line)] flex items-center justify-between bg-[var(--cuba-canvas)]">
                                 <div className="flex items-center gap-2">
                                     <div className="p-1.5 bg-indigo-600 text-white rounded-lg shadow-2xs">
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2241,13 +2241,13 @@ const BuildResume = () => {
                                         </svg>
                                     </div>
                                     <div>
-                                        <h3 className="text-sm font-bold text-slate-900">ATS Readiness Companion</h3>
-                                        <p className="text-[11px] text-slate-500">Real-time keyword &amp; structure diagnostics</p>
+                                        <h3 className="text-sm font-bold text-[var(--cuba-ink)]">ATS Readiness Companion</h3>
+                                        <p className="text-[11px] text-[var(--cuba-ink-subtle)]">Real-time keyword &amp; structure diagnostics</p>
                                     </div>
                                 </div>
                                 <button
                                     onClick={() => setShowAtsDrawer(false)}
-                                    className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg transition-colors cursor-pointer"
+                                    className="p-1.5 text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] rounded-lg transition-colors cursor-pointer"
                                     aria-label="Close ATS Drawer"
                                 >
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2301,11 +2301,11 @@ const BuildResume = () => {
                             aria-label="Resume builder navigation"
                             onClick={(e) => e.stopPropagation()}>
                             {/* Mobile Navigation Header */}
-                            <div className="px-4 py-4 border-b border-slate-100 flex justify-between items-center">
+                            <div className="px-4 py-4 border-b border-[var(--cuba-line)] flex justify-between items-center">
                                 <button type="button" onClick={async () => { setIsMobileMenuOpen(false); await handleExitBuilder(); }} aria-label="Save and exit to dashboard">
                                     <img src={logo} alt="IME365.com" className="h-11 w-auto object-contain" />
                                 </button>
-                                <button type="button" onClick={() => setIsMobileMenuOpen(false)} aria-label="Close navigation menu" className="p-2 text-slate-400 hover:text-slate-600 rounded-lg">
+                                <button type="button" onClick={() => setIsMobileMenuOpen(false)} aria-label="Close navigation menu" className="p-2 text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] rounded-lg">
                                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                     </svg>
@@ -2330,8 +2330,8 @@ const BuildResume = () => {
                                                     isActive
                                                         ? 'bg-indigo-50 text-indigo-900 border border-indigo-200 font-bold shadow-2xs'
                                                         : isCompleted
-                                                        ? 'text-slate-700 hover:bg-slate-50'
-                                                        : 'text-slate-600 hover:bg-slate-50'
+                                                        ? 'text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-canvas)]'
+                                                        : 'text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-canvas)]'
                                                 }`}
                                                 aria-current={isActive ? 'step' : undefined}>
                                                 <div className="flex items-center gap-2.5 min-w-0">
@@ -2341,13 +2341,13 @@ const BuildResume = () => {
                                                                 ? 'bg-indigo-600 text-white'
                                                                 : isCompleted
                                                                 ? 'bg-emerald-500 text-white'
-                                                                : 'bg-slate-100 text-slate-500'
+                                                                : 'bg-[var(--cuba-canvas)] text-[var(--cuba-ink-subtle)]'
                                                         }`}>
                                                         {isCompleted ? '✓' : index + 1}
                                                     </div>
 
                                                     <div className="min-w-0 text-left">
-                                                        <span className={`text-xs block truncate ${isActive ? 'font-bold text-indigo-950' : isCompleted ? 'font-semibold text-slate-800' : 'font-medium text-slate-600'}`}>
+                                                        <span className={`text-xs block truncate ${isActive ? 'font-bold text-indigo-950' : isCompleted ? 'font-semibold text-[var(--cuba-ink)]' : 'font-medium text-[var(--cuba-ink-muted)]'}`}>
                                                             {step.name}
                                                         </span>
                                                     </div>
@@ -2359,14 +2359,14 @@ const BuildResume = () => {
 
                                 {/* Mobile Sync Profile Button */}
                                 {userData.user && (
-                                    <div className="mt-4 pt-3 border-t border-slate-100">
+                                    <div className="mt-4 pt-3 border-t border-[var(--cuba-line)]">
                                         <button
                                             type="button"
                                             onClick={() => {
                                                 setIsMobileMenuOpen(false);
                                                 setShowSyncProfileModal(true);
                                             }}
-                                            className="w-full flex items-center justify-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+                                            className="w-full flex items-center justify-center gap-2 p-2.5 rounded-xl border border-[var(--cuba-line)] bg-[var(--cuba-canvas)] hover:bg-[var(--cuba-canvas)] text-[var(--cuba-ink)] text-xs font-bold transition-all cursor-pointer shadow-2xs"
                                         >
                                             <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -2404,7 +2404,7 @@ const BuildResume = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[70] bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6"
+                        className="fixed inset-0 z-[70] bg-[var(--cuba-ink)]/40 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6"
                         onClick={() => setShowAllStepsModal(false)}
                     >
                         <motion.div
@@ -2412,14 +2412,14 @@ const BuildResume = () => {
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.95, opacity: 0, y: 10 }}
                             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                            className="rp-builder-scope w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden flex flex-col max-h-[90vh]"
+                            className="rp-builder-scope w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-[var(--cuba-line)]/90 overflow-hidden flex flex-col max-h-[90vh]"
                             onClick={(e) => e.stopPropagation()}
                             role="dialog"
                             aria-modal="true"
                             aria-label="Resume Sections & Step Overview"
                         >
                             {/* Modal Header */}
-                            <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
+                            <div className="px-6 py-5 border-b border-[var(--cuba-line)] flex items-center justify-between bg-[var(--cuba-canvas)]/80">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-600/20 font-bold">
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2427,13 +2427,13 @@ const BuildResume = () => {
                                         </svg>
                                     </div>
                                     <div>
-                                        <h3 className="text-base font-extrabold text-slate-900 tracking-tight">Resume Sections Overview (11 Steps)</h3>
-                                        <p className="text-xs text-slate-500 font-medium">Jump instantly to any section or inspect overall completion</p>
+                                        <h3 className="text-base font-extrabold text-[var(--cuba-ink)] tracking-tight">Resume Sections Overview (11 Steps)</h3>
+                                        <p className="text-xs text-[var(--cuba-ink-subtle)] font-medium">Jump instantly to any section or inspect overall completion</p>
                                     </div>
                                 </div>
                                 <button
                                     onClick={() => setShowAllStepsModal(false)}
-                                    className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-xl transition-colors cursor-pointer"
+                                    className="p-2 text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-line)]/60 rounded-xl transition-colors cursor-pointer"
                                     aria-label="Close overview modal"
                                 >
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2460,7 +2460,7 @@ const BuildResume = () => {
                             </div>
 
                             {/* Steps Grid */}
-                            <div className="p-6 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 bg-slate-50/40">
+                            <div className="p-6 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 bg-[var(--cuba-canvas)]/40">
                                 {orderedSteps.map((step, index) => {
                                     const isActive = currentStep.id === step.id;
                                     const isCompleted = isStepCompleted(step.id, step.path);
@@ -2477,8 +2477,8 @@ const BuildResume = () => {
                                                 isActive
                                                     ? 'bg-indigo-600 text-white border-indigo-600 ring-2 ring-indigo-500/25 shadow-md'
                                                     : isCompleted
-                                                    ? 'bg-white text-slate-900 border-emerald-200/90 hover:border-emerald-400'
-                                                    : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+                                                    ? 'bg-white text-[var(--cuba-ink)] border-emerald-200/90 hover:border-emerald-400'
+                                                    : 'bg-white text-[var(--cuba-ink-muted)] border-[var(--cuba-line)] hover:border-[var(--cuba-line-strong)]'
                                             }`}
                                         >
                                             <div className="flex items-center justify-between w-full">
@@ -2488,11 +2488,11 @@ const BuildResume = () => {
                                                             ? 'bg-white/20 text-white'
                                                             : isCompleted
                                                             ? 'bg-emerald-600 text-white'
-                                                            : 'bg-slate-100 text-slate-500'
+                                                            : 'bg-[var(--cuba-canvas)] text-[var(--cuba-ink-subtle)]'
                                                     }`}>
                                                         {isCompleted ? '✓' : index + 1}
                                                     </span>
-                                                    <span className={`text-xs font-bold truncate ${isActive ? 'text-white' : 'text-slate-900'}`}>
+                                                    <span className={`text-xs font-bold truncate ${isActive ? 'text-white' : 'text-[var(--cuba-ink)]'}`}>
                                                         {step.name}
                                                     </span>
                                                 </div>
@@ -2501,13 +2501,13 @@ const BuildResume = () => {
                                                         ? 'bg-white text-indigo-700'
                                                         : isCompleted
                                                         ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                                                        : 'bg-slate-100 text-slate-500'
+                                                        : 'bg-[var(--cuba-canvas)] text-[var(--cuba-ink-subtle)]'
                                                 }`}>
                                                     {isActive ? 'Current' : isCompleted ? 'Completed' : 'Pending'}
                                                 </span>
                                             </div>
 
-                                            <p className={`text-[11px] line-clamp-1 ${isActive ? 'text-indigo-100' : 'text-slate-500'}`}>
+                                            <p className={`text-[11px] line-clamp-1 ${isActive ? 'text-indigo-100' : 'text-[var(--cuba-ink-subtle)]'}`}>
                                                 {guidance.statusBadge || guidance.title}
                                             </p>
                                         </button>
@@ -2516,7 +2516,7 @@ const BuildResume = () => {
                             </div>
 
                             {/* Modal Footer */}
-                            <div className="px-6 py-4 bg-white border-t border-slate-100 flex items-center justify-between">
+                            <div className="px-6 py-4 bg-white border-t border-[var(--cuba-line)] flex items-center justify-between">
                                 <button
                                     type="button"
                                     onClick={() => {
@@ -2530,7 +2530,7 @@ const BuildResume = () => {
                                 <button
                                     type="button"
                                     onClick={() => setShowAllStepsModal(false)}
-                                    className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all shadow-2xs cursor-pointer"
+                                    className="px-5 py-2 bg-[var(--cuba-ink)] hover:bg-[var(--cuba-ink)] text-white text-xs font-bold rounded-xl transition-all shadow-2xs cursor-pointer"
                                 >
                                     Close Overview
                                 </button>
@@ -2648,7 +2648,7 @@ const BuildResume = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-[2px]"
+                        className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-[var(--cuba-ink)]/40 backdrop-blur-[2px]"
                         onClick={() => setCustomSectionDialogOpen(false)}
                         role="dialog"
                         aria-modal="true"
@@ -2661,10 +2661,10 @@ const BuildResume = () => {
                             className="rp-builder-scope w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl"
                             onClick={(event) => event.stopPropagation()}
                         >
-                            <h2 id="custom-section-dialog-title" className="text-sm font-bold text-slate-900">
+                            <h2 id="custom-section-dialog-title" className="text-sm font-bold text-[var(--cuba-ink)]">
                                 Add a custom section
                             </h2>
-                            <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                            <p className="mt-1 text-xs leading-relaxed text-[var(--cuba-ink-subtle)]">
                                 Name it — publications, volunteering, speaking, professional affiliations, or
                                 anything else that belongs on your resume.
                             </p>
@@ -2677,13 +2677,13 @@ const BuildResume = () => {
                                 }}
                                 maxLength={100}
                                 placeholder="e.g. Publications, Volunteering, Community Speaking"
-                                className="mt-3 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-2xs focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
+                                className="mt-3 w-full rounded-lg border border-[var(--cuba-line)] px-3 py-2 text-sm text-[var(--cuba-ink)] shadow-2xs focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
                             />
                             <div className="mt-4 flex justify-end gap-2">
                                 <button
                                     type="button"
                                     onClick={() => setCustomSectionDialogOpen(false)}
-                                    className="rounded-lg border border-slate-200 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                    className="rounded-lg border border-[var(--cuba-line)] px-3.5 py-2 text-xs font-semibold text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-canvas)]"
                                 >
                                     Cancel
                                 </button>
@@ -2691,7 +2691,7 @@ const BuildResume = () => {
                                     type="button"
                                     onClick={confirmCustomSection}
                                     disabled={!customSectionTitleDraft.trim()}
-                                    className="rounded-lg bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+                                    className="rounded-lg bg-[var(--cuba-ink)] px-3.5 py-2 text-xs font-semibold text-white hover:bg-[var(--cuba-ink)] disabled:cursor-not-allowed disabled:opacity-40"
                                 >
                                     Add section
                                 </button>
