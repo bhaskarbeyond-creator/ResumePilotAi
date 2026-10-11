@@ -2,11 +2,11 @@
   "id": "DIR-074",
   "title": "DIR-074: Executive User Identity & M3 Account Dropdown Pipeline Overhaul",
   "priority": "P0",
-  "status": "IN_PROGRESS",
+  "status": "APPROVED",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-11T02:48:25.152Z",
-  "updatedAt": "2026-10-11T02:50:51.071Z",
+  "updatedAt": "2026-10-11T02:55:28.286Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "P0 ARCHITECTURAL MANDATES: 1. USER IDENTITY & ROLE ENHANCEMENT (NO RAW PARENTHESES): In src/components/cuba/M3UserMenu.jsx and shells (CubaCandidateShell.jsx, CubaPortalShell.jsx), implement robust identity parsing (parseUserIdentity utility). When a displayName contains parenthetical roles (e.g. 'Bhaskar Beyond (Super Admin)'), cleanly extract the clean name ('Bhaskar Beyond') and the role ('Super Admin'). On the top trigger chip, render the clean name on row 1 and the role on row 2 (text-[10px] font-semibold tracking-wide uppercase text-indigo-600 dark:text-indigo-400). In the dropdown popover, render the clean name, email, and a dedicated executive Cuba badge (not raw text with parentheses) with role-tailored styling (Super Admin, Admin, Recruiter, Org Admin, Candidate). 2. CLEAN UP SOURCE DATA: In scripts/deep-clean-production.cjs line 68, update displayName to 'Bhaskar Beyond' (clean name without parenthetical role) while preserving customClaims.role = 'SUPER_ADMIN'. 3. DROPDOWN PIPELINE AUDIT & DECOUPLING (10/10 EXPERIENCE): In src/components/cuba/accountLinks.js, fix the Candidate settings destination from '/dashboard/settings' to '/dashboard/settings?tab=account' so 'Your profile' (?tab=profile -> Master Profile) and 'Settings' (?tab=account -> Account & Preferences) have distinct, purposeful destinations rather than both landing on Profile. In DashboardSettings.jsx, ensure ?tab=security or ?tab=2fa smoothly scrolls to the 2FA / TOTP Security Hub card. 4. FULL PIPELINE VALIDATION: Verify each dropdown item across Candidate, Admin (/admin/operators or /admin/settings, /admin/security), Recruiter (/employer/settings), and Enterprise (/org/<slug>/settings, /org/<slug>/security). Verify Dark/Light theme toggles and Sign out pipeline. 5. COMMAND PALETTE SEARCH INPUT BOX STYLING (10/10 EXECUTIVE POLISH): In src/components/cuba/CubaCommandPalette.jsx, strip 'cuba-focus-ring' from <input> (which previously drew an isolated purple outline box around only the text string, leaving FiSearch on the left and [Esc] on the right stranded). Make the input completely borderless (border-0 outline-none ring-0 focus:outline-none focus:ring-0 focus-visible:outline-none). Style the search container row as a seamless, unified, elegant executive search bar (Linear/Spotlight style) without disjointed inner boxes. 6. INVARIANTS: Preserve existing tests/cuba-design-system.test.mjs, tests/copilot-command-surface.test.mjs, tests/dir072-notifications-messages-decoupling.test.mjs, tests/dir073-command-palette-overhaul.test.mjs, WCAG 2.1 AA accessibility (role=menu, role=menuitem, roving tabindex), zero regression on 55 frozen CV templates, and sub-4s Vite build.",
   "invariants": [],
@@ -26,10 +26,51 @@
     ],
     "planHash": "6da376bb9d4f1fff82887432cfa64c9a37eb5a28f9a3b8ededbb624b116bbff1"
   },
-  "evidence": null,
-  "reviews": [],
+  "evidence": {
+    "submittedAt": "2026-10-11T02:55:26.807Z",
+    "summary": "DIR-074 complete. New pure parseUserIdentity module splits a parenthetical role out of the display name; M3UserMenu renders the clean name plus role label on the trigger chip and a role-tailored executive badge in the popover, and both shells parse the identity upstream. deep-clean-production.cjs now writes displayName Bhaskar Beyond while keeping customClaims.role SUPER_ADMIN. Candidate Settings moved to /dashboard/settings?tab=account so profile and settings are distinct destinations, and DashboardSettings smooth-scrolls to the TOTP card (id totp-security-hub) on ?tab=security or ?tab=2fa. Gates: dir074 8/8, 188/188 pinned suites, test:product EXIT 0, security:static 67/67, xampp-policy 4/4, build 3.04s, lint 0 errors, dir063..dir073 all green, frozen cv-templates diff 0.",
+    "tests": {
+      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir074-evidence.log",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791687326808_dir074-evidence.log",
+      "sha256": "3ccfc87f95ead857e3e30f584aa003f8f0339732661b4553e8dfd81a613a3344",
+      "size": 3826
+    },
+    "domCrawl": null,
+    "artifacts": [],
+    "git": {
+      "isGit": true,
+      "head": "6b732f32fdfdab0bdaafb6cac696da7a7a151b25",
+      "branch": "arena/01a0e100-resumepilotai",
+      "dirty": false,
+      "status": ""
+    },
+    "manifestHash": "a3557307d4870c87c8700ce0a3de78e2c395b10b93d88c921741a935effc6805"
+  },
+  "reviews": [
+    {
+      "reviewedAt": "2026-10-11T02:55:28.286Z",
+      "verdict": "APPROVED",
+      "feedback": "Automated evidence audit: test artifact scanned, no failure markers, clean tree. This is a machine check, NOT a human Lead review.",
+      "evidenceHash": "a3557307d4870c87c8700ce0a3de78e2c395b10b93d88c921741a935effc6805",
+      "automated": true,
+      "provenance": {
+        "actor": "LEAD_SUPERVISOR",
+        "invocation": "declared-automation",
+        "automated": true,
+        "reasons": [
+          "declared",
+          "non-tty"
+        ],
+        "pid": 8000,
+        "parentPid": 17808,
+        "tty": false,
+        "at": "2026-10-11T02:55:28.286Z",
+        "explicitlyAllowed": true
+      }
+    }
+  ],
   "freeze": null,
-  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "lastTransitionReason": "lead review",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {
