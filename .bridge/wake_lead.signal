@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-11T02:58:48.927Z",
-  "seq": 2648,
-  "id": "evt_mv38ht50_514eb273f5ad",
+  "timestamp": "2026-10-11T03:11:04.382Z",
+  "seq": 2659,
+  "id": "evt_mv38xkmg_3f35fa901ec5",
   "type": "HEARTBEAT",
-  "title": "[Heartbeat] Amendment implemented: seamless search bar. All gates green (dir074 9/9, 188/188 pinned, product EXIT 0, security 67/67, xampp 4/4, build 3.42s, lint 0). Submitting evidence.",
+  "title": "[Heartbeat] All mandates implemented and verified. build 3.55s, lint 0 errors, dir075 4/4, 183/183 pinned, product EXIT 0, security 67/67, xampp 4/4, dir063..075 green. Submitting evidence.",
   "sender": "STAFF_DEVELOPER",
-  "directiveId": "DIR-074",
-  "summary": "Amendment implemented: seamless search bar. All gates green (dir074 9/9, 188/188 pinned, product EXIT 0, security 67/67, xampp 4/4, build 3.42s, lint 0). Submitting evidence."
+  "directiveId": "DIR-075",
+  "summary": "All mandates implemented and verified. build 3.55s, lint 0 errors, dir075 4/4, 183/183 pinned, product EXIT 0, security 67/67, xampp 4/4, dir063..075 green. Submitting evidence."
 }

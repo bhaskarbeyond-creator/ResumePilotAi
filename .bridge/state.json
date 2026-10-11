@@ -1,26 +1,26 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-11T02:51:42.438Z",
-  "eventCount": 2640,
-  "activeDirectiveId": "DIR-074",
-  "activeDirectiveTitle": "DIR-074: Executive User Identity & M3 Account Dropdown Pipeline Overhaul",
+  "updatedAt": "2026-10-11T03:10:59.252Z",
+  "eventCount": 2658,
+  "activeDirectiveId": "DIR-075",
+  "activeDirectiveTitle": "DIR-075: Decouple Master Profile Data from Account & Security Switcher",
   "activeDirectiveStatus": "IN_PROGRESS",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-11T02:47:41.660Z",
-  "unreadForLead": 97,
-  "unreadForDev": 153,
-  "pendingBlockers": 1,
+  "stallDeadline": "2026-10-11T03:08:54.085Z",
+  "unreadForLead": 105,
+  "unreadForDev": 163,
+  "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-11T02:47:41.660Z",
-    "status": "All mandates implemented and verified. build 3.93s, lint 0 errors, dir073 6/6, 143/143 cuba suites, product EXIT 0, security 67/67, xampp 4/4, dir063..072 green. Submitting evidence.",
-    "percent": 90
+    "timestamp": "2026-10-11T03:08:54.085Z",
+    "status": "S1-S6 implemented. build 3.55s, lint 0 errors, dir075 4/4, 183/183 pinned. Running product/security/policy gates.",
+    "percent": 60
   },
   "integrity": {
-    "ok": false,
-    "checked": 2640,
-    "legacy": 8,
-    "bad": 7
+    "ok": true,
+    "checked": 2658,
+    "legacy": 0,
+    "bad": 0
   }
 }

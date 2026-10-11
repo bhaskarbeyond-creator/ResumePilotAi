@@ -310,9 +310,9 @@ test.describe('DIR-017 Candidate Account & Security Command Center (live stack)'
         await signIn(page);
     });
 // ---------------------------------------------------------------------
-    // STAGE 1 - outer command switcher + 12-subtab Master Profile ribbon
+    // STAGE 1 - URL-driven surfaces + 12-subtab Master Profile ribbon
     // ---------------------------------------------------------------------
-    test('AC-6 stage 1: outer switcher toggles Master Profile <-> Account & Security and keeps the URL authoritative', async ({ page }) => {
+    test('AC-6 stage 1: the URL drives the surface and the in-page Account switcher is gone', async ({ page }) => {
         await page.goto('/dashboard/settings?tab=Account', { waitUntil: 'domcontentloaded' });
 
         // The Account & Security branch renders the credentials card.
@@ -320,8 +320,12 @@ test.describe('DIR-017 Candidate Account & Security Command Center (live stack)'
             page.getByRole('heading', { name: 'Account Credentials & Security' }),
         ).toBeVisible({ timeout: 60_000 });
 
-        // Switch back to the Master Profile branch via the visible control.
-        await page.getByRole('button', { name: 'Master Profile' }).click();
+        // DIR-075: the redundant in-page switcher must be GONE.
+        await expect(page.getByRole('button', { name: 'Master Profile', exact: true })).toHaveCount(0);
+        await expect(page.getByRole('button', { name: 'Account & Security', exact: true })).toHaveCount(0);
+
+        // The URL is authoritative: ?tab=Profile renders the Master Profile branch.
+        await page.goto('/dashboard/settings?tab=Profile', { waitUntil: 'domcontentloaded' });
 
         // The 12-subtab ribbon is the profile branch's own landmark.
         await expect(
@@ -355,8 +359,8 @@ test.describe('DIR-017 Candidate Account & Security Command Center (live stack)'
         await expect(page.getByRole('tab', { name: /Education/i })).toHaveAttribute('aria-selected', 'true');
         await expect(page.getByRole('tab', { name: /Basic & Contact/i })).toHaveAttribute('aria-selected', 'false');
 
-        // And the switch back must return to the account rail.
-        await page.getByRole('button', { name: 'Account & Security' }).click();
+        // And navigating back to the account rail by URL must return the credentials card.
+        await page.goto('/dashboard/settings?tab=Account', { waitUntil: 'domcontentloaded' });
         await expect(
             page.getByRole('heading', { name: 'Account Credentials & Security' }),
         ).toBeVisible({ timeout: 30_000 });

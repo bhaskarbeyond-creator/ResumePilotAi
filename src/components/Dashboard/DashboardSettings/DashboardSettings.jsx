@@ -6,7 +6,9 @@ import { useTranslation } from 'react-i18next';
 import { getProfileOfUser, getAccountInfo, saveUserPreferences, changePassword, updateUserEmail, getUserTransactions, deleteUserAccountPermanently, exportUserDataJSON, beginUserTotp2FA, saveUserTotp2FA, disableUserTotp2FA, getUserTotpStatus, reauthenticateUser, recordUserLoginEvent, getUserLoginHistory, sendSmsNotification } from '../../../services/api/platform';
 import { saveProfile } from '../../../services/profilePersistence';
 import { generateUserAiContent, cleanSkillName } from '../../../services/aiService';
-import { FaUser, FaCog, FaCamera, FaTrash, FaUserCircle, FaKey, FaCalendarAlt, FaEnvelope, FaCreditCard, FaUpload, FaCheckCircle, FaExclamationTriangle, FaBriefcase, FaGraduationCap, FaTools, FaGlobe, FaPlus, FaCheck, FaShieldAlt, FaDesktop, FaDownload, FaCertificate, FaProjectDiagram, FaMagic, FaLinkedin, FaGithub, FaLink, FaSyncAlt, FaExternalLinkAlt, FaUnlink, FaLock, FaEye, FaEyeSlash, FaCrown, FaMobileAlt, FaQrcode, FaCopy, FaPrint, FaHistory, FaCrop, FaThLarge, FaTags, FaTimes, FaSearch, FaBolt, FaChevronDown, FaChevronUp, FaRocket, FaBuilding, FaCode } from 'react-icons/fa';
+// DIR-075: clean identity parsing for the Master Profile header (no raw '()').
+import { parseUserIdentity, roleBadgeFor } from '../../cuba/userIdentity';
+import { FaCamera, FaTrash, FaUserCircle, FaKey, FaCalendarAlt, FaEnvelope, FaCreditCard, FaUpload, FaCheckCircle, FaExclamationTriangle, FaBriefcase, FaGraduationCap, FaTools, FaGlobe, FaPlus, FaCheck, FaShieldAlt, FaDesktop, FaDownload, FaCertificate, FaProjectDiagram, FaMagic, FaLinkedin, FaGithub, FaLink, FaSyncAlt, FaExternalLinkAlt, FaUnlink, FaLock, FaEye, FaEyeSlash, FaCrown, FaMobileAlt, FaQrcode, FaCopy, FaPrint, FaHistory, FaCrop, FaThLarge, FaTags, FaTimes, FaSearch, FaBolt, FaChevronDown, FaChevronUp, FaRocket, FaBuilding, FaCode } from 'react-icons/fa';
 import { MdAutoAwesome, MdLaunch, MdSearch, MdClose, MdContentCopy, MdDeleteOutline, MdAdd } from 'react-icons/md';
 import fire from '../../../conf/fire';
 import MonthYearPicker from '../../Form/MonthYearPicker';
@@ -2099,7 +2101,14 @@ function DashboardSettings(_props) {
     };
 
     getPasswordStrength(accountSettings.password);
-    const candidateFullName = `${profile.firstname} ${profile.lastname}`.trim() || profile.name;
+    // DIR-075: sanitize the header identity so a parenthetical role in the
+    // display name ('Bhaskar Beyond (Super Admin)') renders as a clean name plus
+    // a dedicated role badge — never raw '()' in the <h1>.
+    const headerIdentity = parseUserIdentity({
+        name: `${profile.firstname || ''} ${profile.lastname || ''}`.trim() || profile.name || '',
+    });
+    const candidateFullName = headerIdentity.name;
+    const candidateRoleBadge = roleBadgeFor(headerIdentity.role);
     const effectiveMembership = databaseAccountSettings.membership || 'Basic';
     const completedProfileStepCount = SUB_TAB_ORDER.filter(k => SUBTAB_CONFIG[k]?.isComplete(profile)).length;
     const profileProgressPercentage = Math.min(100, Math.round((completedProfileStepCount / SUB_TAB_ORDER.length) * 100));
@@ -2144,6 +2153,14 @@ function DashboardSettings(_props) {
                                     <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-900 break-words">
                                         {candidateFullName || 'Master User Profile'}
                                     </h1>
+                                    {headerIdentity.roleLabel && (
+                                        <span
+                                            data-testid="profile-role-badge"
+                                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${candidateRoleBadge.className}`}
+                                        >
+                                            {headerIdentity.roleLabel}
+                                        </span>
+                                    )}
                                     {(() => {
                                         let score = 0;
                                         if (profile.firstname || profile.lastname) score += 15;
@@ -2177,33 +2194,14 @@ function DashboardSettings(_props) {
                             </div>
                         </div>
 
-                        {/* Right Action Cluster: Segmented Switcher + Expand View Toggle */}
+                        {/* Right Action Cluster: Expand View / Show Guidance toggle.
+                            DIR-075: the redundant in-page [Master Profile | Account &
+                            Security] switcher was removed — the sidebar already
+                            exposes 'Security & 2FA Hub' (?tab=Security) and
+                            'Subscription & Plans' (/dashboard/plans) as first-class
+                            destinations, so Master Profile Data is now a pure,
+                            dedicated workspace driven by the URL. */}
                         <div className="flex items-center gap-2 self-stretch md:self-center flex-shrink-0">
-                            <div className="bg-slate-100 p-1 rounded-xl flex items-center gap-1 flex-1 md:flex-initial">
-                                <button
-                                    type="button"
-                                    onClick={() => { setSelectedSettings('Profile'); navigate('?tab=Profile', { replace: true }); }}
-                                    className={`flex-1 md:flex-initial px-3 sm:px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
-                                        selectedSettings === 'Profile'
-                                            ? 'bg-white text-slate-900 shadow-2xs border border-slate-200/80'
-                                            : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
-                                    }`}>
-                                    <FaUser className="w-3 h-3 flex-shrink-0" />
-                                    <span>Master Profile</span>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => { setSelectedSettings('Account'); navigate('?tab=Account', { replace: true }); }}
-                                    className={`flex-1 md:flex-initial px-3 sm:px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
-                                        selectedSettings === 'Account'
-                                            ? 'bg-white text-slate-900 shadow-2xs border border-slate-200/80'
-                                            : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
-                                    }`}>
-                                    <FaCog className="w-3 h-3 flex-shrink-0" />
-                                    <span>Account &amp; Security</span>
-                                </button>
-                            </div>
-
                             {selectedSettings === 'Profile' && (
                                 <button
                                     type="button"
