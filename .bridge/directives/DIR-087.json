@@ -1,0 +1,63 @@
+{
+  "id": "DIR-087",
+  "title": "MASTER CANDIDATE_PAGES Phase 1 — Comprehensive Inventory, Industry Benchmarks, Baseline Scoring & JobSearchBar Scrollbar Guard",
+  "priority": "P0",
+  "status": "IN_PROGRESS",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-11T06:54:07.101Z",
+  "updatedAt": "2026-10-11T06:55:35.896Z",
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "spec": "MANDATE: Execute Phase 1-3 of the Master Engineering Directive for CANDIDATE_PAGES: 1) Address developer escalation: replace the no-op 'scrollbar-none' in src/components/JobsListings/JobSearchBar.jsx:188 with '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden' and add a repo-wide test assertion ensuring no instance of 'scrollbar-none' remains anywhere in src. 2) Conduct full Phase 1 audit and inventory of all candidate-facing pages across the 14 candidate modules: Overview (/dashboard), Resume Builder (/build-resume/* - all 10 steps), Cover Letters (/dashboard/cover-letters), Portfolios (/dashboard/portfolios), Job Tracker (/dashboard/job-tracker), Job Portal (/jobs/portal, /jobs/browse), Applied Jobs (/dashboard/applied-jobs), AI Interview Coach (/dashboard/interview), Messages (/dashboard/messages), Favorites (/dashboard/favorites), Notifications (/dashboard/notifications), Settings & 2FA (/dashboard/settings), Plans (/dashboard/plans), and Support (/dashboard/support). 3) Establish industry benchmarks (Linear, Teal HQ, Rezi, Kickresume, Hired) across the 10 quality dimensions. 4) Score baseline quality (0-10) for each page and identify all P0/P1 blockers. 5) Produce the formal Candidate Page Inventory and Baseline Quality Scorecard deliverables, and author tests/dir087-candidate-master-audit.test.mjs. 6) Verify with clean build under 4s, 0 lint errors, and zero drift on frozen 55 CV templates.",
+  "invariants": [],
+  "acceptanceCriteria": [],
+  "plan": {
+    "submittedAt": "2026-10-11T06:55:33.545Z",
+    "summary": "DIR-087 recon complete. RECON FINDINGS. (1) THE ESCALATION IS CONFIRMED AND IS THE LAST ONE: a repo-wide sweep of src for the word scrollbar-none returns EXACTLY ONE hit - src/components/JobsListings/JobSearchBar.jsx:188, the Quick Trending Filter Pills strip: mt-3 pt-3 border-t border-slate-100 flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none. DIR-086 fixed the other three (EducationStep.jsx:469, WorkHistoryStep.jsx:285, DashboardHomepage.jsx:1179). It is a no-op because package.json pins tailwindcss ^4.1.8 with NO scrollbar plugin, so the class emits no CSS. (2) ROUTE INVENTORY VERIFIED AGAINST THE REAL ROUTER (src/main.jsx), NOT ASSUMED. Mounted candidate routes are: dashboard (Overview), build-resume with THIRTEEN children (index + heading, work-history, education, skills, languages, summary, projects, certifications, achievements, references, custom, review), cover-letters, portfolios, job-tracker, applied-jobs, interview, messages, favorites, notifications, settings, plans, support, and the jobs family (jobs, jobs/portal, jobs/portal/:jobId, jobs/browse, jobs/category/:catName). THREE CORRECTIONS TO THE DIRECTIVE BRIEF, each a real finding: (a) the Job Portal is NOT at /jobs/portal and /jobs/browse - those are the URLs, but they are MOUNTED UNDER THE DASHBOARD at /dashboard/jobs/portal and /dashboard/jobs/browse, so an audit that probes the bare paths would 404; (b) /dashboard/plans is served by the Billing component, not a DashboardPlans module; (c) /dashboard/favorites is served by DashboardFavourites (British spelling in the component name, American in the route), and /dashboard/profile and /dashboard/security are REDIRECTS into settings tabs rather than pages of their own. (3) MEASURED FILE INVENTORY for the scorecard (real line counts, no estimates): DashboardHomepage 1941, DashboardSettings 6170, DashboardInterviews 3129, CoverLetter 1812, JobTracker 1074, MainJobListings 872, DashboardSupport 862, DashboardMessages 674, AppliedJobs 552, DashboardPortfolios 547, PortfolioGallery 238, JobSearchBar 219, CandidateExecutiveRail 90. Candidate-facing component groups: AppliedJobs, Billing, BuildResume, Candidate, CoverLetter, Dashboard, JobsListings, PortfolioBuilder, PortfolioGallery, PortfolioTemplates, PublicPortfolio. (4) FROZEN BASELINE VERIFIED: the 55 figure is the 55 TEMPLATE MODULES (cv1..cv51 = 51, plus cover1..cover4 = 4), which I confirmed by listing the directories - my first raw count of 67 was nested FILES inside each template directory and is not the pinned figure, so I am using 55 and will assert diff 0 over cv1..cv51 + cover1..cover4 plus templateUtils.js. PLAN. S1 the escalation fix: swap the no-op class on JobSearchBar.jsx:188 for the plugin-free arbitrary form [scrollbar-width:none] plus [&::-webkit-scrollbar]:hidden, keeping the strip scrollable and keyboard reachable. S2 the guard: add a REPO-WIDE assertion that walks every .jsx/.js/.css under src and fails on ANY scrollbar-none occurrence, so the class cannot silently return - this is the widened AC my DIR-086 submission admitted was too narrow (it hard-coded three files, which is exactly why this fourth one survived). S3 Phase 1 inventory: enumerate every candidate-facing page with its real mounted route, serving component, file path and measured line count, and record the three route corrections above so the later phases do not probe dead URLs. S4 benchmarks: document what Linear, Teal HQ, Rezi, Kickresume and Hired do across ten quality dimensions (information architecture, above-the-fold density, empty/loading/error states, keyboard and a11y, responsive behaviour, real-data truthfulness, task completion depth, visual hierarchy, performance budget, and progressive disclosure), citing each source and marking anything I could not verify rather than inventing it. S5 baseline scoring: rate each page 0-10 using the DIR-081 METHOD - measurable proxies only (cuba- token adoption versus legacy slate/gray/blue/indigo/rose/purple utilities, responsive breakpoint count, Cuba primitive adoption, and loading/empty/error guard coverage) - and list every P0/P1 blocker with its file:line, never a fabricated number. S6 deliverables: .bridge/evidence/dir087-candidate-page-inventory.md, .bridge/evidence/dir087-baseline-quality-scorecard.md and tests/dir087-candidate-master-audit.test.mjs, registering test:dir087. INVARIANTS: XAMPP-only servers, no detached node/vite/nodemon daemon; frozen src/cv-templates diff 0 over the 55 modules; no auth, token, API, DB or RBAC change because S1 is a presentational class swap and S3-S5 are read-only analysis plus test authoring; ZERO FABRICATED DATA - every score is derived from a counted metric and every benchmark claim is either cited or explicitly marked unverified; preserve all DIR-048/055/072-086 pins. HONEST LIMITS I am declaring up front: the audit deliverable is an ANALYSIS artifact, so its value rests on the counting method being reproducible - I will state the exact commands used for every metric so the Lead can re-derive them; and the benchmark section is desk research against public product behaviour, not a hands-on trial, so it will be labelled as such. SCOPE: I will NOT refactor the page bodies in this directive - DIR-087 Phase 1 is inventory, benchmarks, baseline scoring and the guard, and the remediation phases should follow as their own directives so each is independently verifiable.",
+    "steps": [
+      "S1 - Fix the escalation: replace the no-op scrollbar-none on src/components/JobsListings/JobSearchBar.jsx:188 with [scrollbar-width:none] and [&::-webkit-scrollbar]:hidden, keeping the trending pill strip scrollable and keyboard reachable.",
+      "S2 - Add the repo-wide guard: assert that no .jsx/.js/.css file anywhere under src contains scrollbar-none, replacing DIR-086 AC3's three hard-coded files so the class cannot return.",
+      "S3 - Phase 1 inventory: enumerate all candidate-facing pages with real mounted route, serving component, file path and measured line count, including the three route corrections (jobs family mounted under /dashboard/jobs, plans served by Billing, favorites served by DashboardFavourites) and the settings-tab redirects.",
+      "S4 - Benchmarks: document Linear, Teal HQ, Rezi, Kickresume and Hired across ten quality dimensions with citations, explicitly marking anything unverified instead of inventing it.",
+      "S5 - Baseline scoring: rate every page 0-10 with the DIR-081 measurable-proxy method (cuba- token adoption vs legacy colour utilities, breakpoint count, Cuba primitive adoption, loading/empty/error guard coverage) and list all P0/P1 blockers with file:line.",
+      "S6 - Author .bridge/evidence/dir087-candidate-page-inventory.md, .bridge/evidence/dir087-baseline-quality-scorecard.md and tests/dir087-candidate-master-audit.test.mjs, register test:dir087, then verify build under 4s, 0 lint errors, frozen 55-template diff 0, and all pinned suites green."
+    ],
+    "planHash": "bffba1b43b9686b563bc62b6399790297a2861097430c0aa03e970ff657589ee"
+  },
+  "evidence": null,
+  "reviews": [],
+  "freeze": null,
+  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "continuationPending": false,
+  "revisionTarget": null,
+  "planApproval": {
+    "approvedAt": "2026-10-11T06:55:35.896Z",
+    "automated": true,
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "declared-automation",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "non-tty"
+      ],
+      "pid": 9964,
+      "parentPid": 16708,
+      "tty": false,
+      "at": "2026-10-11T06:55:35.895Z",
+      "explicitlyAllowed": true
+    },
+    "feedback": "Auto-approved by the autonomous plan-scorer (score 100/100, reviewer verdict approved). NOT a human Lead review."
+  },
+  "heartbeats": [
+    {
+      "at": "2026-10-11T07:03:56.958Z",
+      "status": "S1-S6 delivered. Escalation fixed (JobSearchBar.jsx:188 - the fourth and last no-op scrollbar class) and the guard widened from DIR-086 AC3 three hard-coded files to a repo-wide scan of 707 files that targets className values and CSS so documentation comments stay legal. Phase 1 inventory produced for 14 measured surfaces, and it caught an error of MY OWN: the router is split across main.jsx / DashboardMain.jsx / BuildResume.jsx, so my first draft wrongly claimed the job-portal routes did not exist - they do, as auth-aware dispatchers. Benchmarks sourced (Hired is dead - hired.com now redirects to LHH). Baseline composite 5.7/10 with 2 P0 and 17 P1, all derived from a reproducible collector; I also found and fixed a false P0 my own guard detector produced for DashboardMessages. dir087 6/6, 136/136 pinned, product EXIT 0, security 67/67, xampp 4/4, build 2.78s, lint 0 errors, frozen 55-template diff 0. Submitting evidence.",
+      "percent": 95,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    }
+  ],
+  "lastHeartbeatAt": "2026-10-11T07:03:56.958Z"
+}

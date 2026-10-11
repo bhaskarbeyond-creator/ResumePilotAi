@@ -1,26 +1,26 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-11T06:48:03.083Z",
-  "eventCount": 2790,
-  "activeDirectiveId": "DIR-086",
-  "activeDirectiveTitle": "Candidate Overview 10/10 Polish — Zero Horizontal Scrollbars, Working Copilot Quick-Pitch Routing, Compact Action Cards & Streamlined Rail",
-  "activeDirectiveStatus": "IN_PROGRESS",
+  "updatedAt": "2026-10-11T06:54:26.677Z",
+  "eventCount": 2801,
+  "activeDirectiveId": "DIR-087",
+  "activeDirectiveTitle": "MASTER CANDIDATE_PAGES Phase 1 — Comprehensive Inventory, Industry Benchmarks, Baseline Scoring & JobSearchBar Scrollbar Guard",
+  "activeDirectiveStatus": "ISSUED",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-11T06:23:35.274Z",
-  "unreadForLead": 154,
-  "unreadForDev": 244,
+  "stallDeadline": "2026-10-11T06:50:48.336Z",
+  "unreadForLead": 158,
+  "unreadForDev": 251,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-11T06:23:35.274Z",
-    "status": "S1-S7 delivered: friendly AI Copilot mascot (inline SVG, aurora tokens), compact Copilot HUD, 4-capsule metric strip, hero banner + 4 stat cards + radial gauge retired, workspace promoted above the fold, briefing moved to the rail. dir085 6/6, 155/155 pinned, product EXIT 0 quiet, security 67/67, xampp 4/4, build 3.19s, lint 0 errors, frozen diff 0. Submitting evidence.",
+    "timestamp": "2026-10-11T06:50:48.336Z",
+    "status": "S1-S5 delivered: Quick-Pitch routing fixed via a shared resolveActionHref resolver (tailor -> /build-resume/heading, cover letter -> /dashboard/cover-letters, mock drill -> /dashboard/interview; no action resolves to /dashboard), native scrollbar tracks hidden with Tailwind v4 arbitrary utilities and the no-op scrollbar-none retired, card collapsed to one primary + one compact row, rail reduced to the Quick-Pitch alone. dir086 6/6, 161/161 pinned, product EXIT 0, security 67/67, xampp 4/4, build 2.77s, lint 0 errors, frozen diff 0. Submitting evidence.",
     "percent": 95
   },
   "integrity": {
-    "ok": false,
-    "checked": 2790,
-    "legacy": 2,
-    "bad": 2
+    "ok": true,
+    "checked": 2801,
+    "legacy": 0,
+    "bad": 0
   }
 }

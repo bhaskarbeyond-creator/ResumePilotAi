@@ -185,7 +185,11 @@ const JobSearchBar = ({
                 </div>
 
                 {/* Quick Trending Filter Pills Strip */}
-                <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                {/* DIR-087: the strip used the class scrollbar-none, which is a NO-OP here —
+                    package.json pins tailwindcss ^4.1.8 and installs no scrollbar plugin, so it
+                    emitted no CSS and the browser still painted its native track. These are the
+                    plugin-free Tailwind v4 arbitrary equivalents; the strip stays scrollable. */}
+                <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                     <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap pl-1 mr-1">
                         {t('JobsUpdate.JobSearchBar.trending', 'Quick Filter:')}
                     </span>
