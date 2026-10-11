@@ -142,6 +142,11 @@ This is the most consequential finding, because it explains why the others survi
 
 ### 7.1 What the repaired harness immediately exposed
 
+> **UPDATE — this diagnosis was incomplete; see §12.1.** The empty shell had a *second and primary*
+> cause: the base path was wrong (`/IME365` renders the app's own 404 page, which the SPA fallback serves
+> with HTTP 200). AC2 was subsequently **RESOLVED** in §12 using the platform's sanctioned session
+> mechanism. Read this section together with §12.1.
+
 Re-run XAMPP-served with **real** data, the capture **FAILED** — correctly:
 
 ```
@@ -162,6 +167,10 @@ wholesale.
 **AC2 disposition: BLOCKED, with the blocker now precisely identified.** Producing a valid bottom-zone
 artifact requires a real authenticated session (or a sanctioned test-session mechanism). That is the
 remediation owner's decision, and it must not be faked.
+
+> **SUPERSEDED — see §12.** The sanctioned test-session mechanism already existed in the repository
+> (`tests/e2e/dir006-session.mjs`), so AC2 was subsequently **RESOLVED** and a genuine below-the-fold
+> artifact was produced. This section is retained as the audit trail of the original blocker.
 
 ---
 

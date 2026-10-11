@@ -1,7 +1,7 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-11T11:01:48.926Z",
-  "eventCount": 2903,
+  "updatedAt": "2026-10-11T11:09:10.987Z",
+  "eventCount": 2904,
   "activeDirectiveId": null,
   "activeDirectiveTitle": null,
   "activeDirectiveStatus": null,
@@ -9,9 +9,9 @@
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
   "stallDeadline": "2026-10-11T10:51:33.854Z",
-  "unreadForLead": 191,
+  "unreadForLead": 192,
   "unreadForDev": 317,
-  "pendingBlockers": 0,
+  "pendingBlockers": 1,
   "latestHeartbeat": {
     "timestamp": "2026-10-11T10:51:33.854Z",
     "status": "S1-S4 landed: rail fabrications removed (real insights memo render), PROGRESS_SERIES colours corrected (interview=success, offer=warning), Sort+Grid/List wired to real state, recency spelled out, header quote inlined. 52/52 pinned tests still green, frozen templates diff=0. Now repairing the capture harness (F-EV-1).",
@@ -19,7 +19,7 @@
   },
   "integrity": {
     "ok": false,
-    "checked": 2903,
+    "checked": 2904,
     "legacy": 1,
     "bad": 1
   }
