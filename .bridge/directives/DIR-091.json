@@ -2,11 +2,11 @@
   "id": "DIR-091",
   "title": "DIR-091: 100% Pixel-Perfect Reference Parity for Candidate Dashboard and Build Resume (Two-Page Operational Parity)",
   "priority": "P0",
-  "status": "IN_PROGRESS",
+  "status": "CHANGES_REQUESTED",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-11T18:28:17.395Z",
-  "updatedAt": "2026-10-11T18:33:03.687Z",
+  "updatedAt": "2026-10-11T19:30:25.572Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "Developer must review his work in patch 01a12b9e-91b4-7174-9f95-41baa9990820.patch against certified HEAD (42d51bfc) and achieve 100% pixel-perfect reference parity and operational connections for both attached reference views: (1) Candidate Dashboard (/dashboard) and (2) Build Resume (/build-resume/*). Retain high-value builder enhancements (AI autofill, section reset with confirmation, StepGuide assistant rail, breadcrumb navigation) while ensuring Cuba sidebar shell framing, operational controls, and zero-diff cv-templates.",
   "invariants": [
@@ -38,12 +38,52 @@
     ],
     "planHash": "63640eb4d3c860c6e2c15517b83da9cfdf5e50962e718a312aadad4eee8e97f8"
   },
-  "evidence": null,
-  "reviews": [],
+  "evidence": {
+    "submittedAt": "2026-10-11T19:30:22.040Z",
+    "summary": "S8 COMPLETE - authenticated two-page live capture with 12/12 checks PASS at 1920x1080 on real data. XAMPP-served, session minted by the platform's own mintFirebaseSession, zero APIs mocked, 0 failed /api responses and 0 console errors. LIVE-PROVEN: the 4-level breadcrumb (3 ancestor links all href=/dashboard, labels Dashboard > Resumes & Master CV > Build Resume, no buttons, aria-current segment = the real resume title), Auto Fill with AI, Reset section, and the badge reading exactly 5 of 5 required fields. THE CAPTURE EARNED ITS KEEP TWICE: (1) it found the app is served from XAMPP's DOCUMENT ROOT, not /IME365 - src/main.jsx:522 uses BrowserRouter with no basename so a subpath mount renders Page not found; (2) it caught a REAL defect the static suite could not - en.json overrode HeadingStep.title to Personal & Contact Information so the reference title never rendered; locale fixed and AC7 now pins the locale value. SCOPE: patch re-implemented on HEAD not applied (all 8 files conflict; base is a DIR-053/055/058-era tree). S5 rail mount SUPERSEDED per Lead ruling - CandidateExecutiveRail kept, its 6 pins intact. S6 verified already delivered (fabricated Job Applications 0 already replaced by an honest placeholder; AC11 pins it). S3 tokenisation: 50 palette utilities plus 27 hex literals and 2 arbitrary shadows all to zero. S4: StepShell headerActions slot, HeadingStep retitle + Auto Fill + inline-confirm Reset, 4-level breadcrumb, Saved pill xl. dir091 EXTENDED not duplicated, now 11 ACs, 11/11 pass. Full pinned suite 84 pass / 2 fail, the 2 being the pre-existing F-GAP-7 dir082 DashboardHomepage 278-vs-226 ratchet on a file NOT in this diff. ESLint 0 errors, build 3.23s, cv-templates diff 0. Evidence: .bridge/evidence/DIR-091-progress.md sections 1-10, dir091-two-page-manifest.json, and three PNG captures.",
+    "tests": {
+      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\tmp\\dir091-s8-tests.log",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791747022041_dir091-s8-tests.log",
+      "sha256": "2a3911a007032b8f73bb16744e1bbdff40cbf3d65f3cbd05f0999f1d77b21d96",
+      "size": 17880
+    },
+    "domCrawl": null,
+    "artifacts": [],
+    "git": {
+      "isGit": true,
+      "head": "fc6999ac9e13263d40add3ff2c77ee5b1ac263cf",
+      "branch": "arena/01a0e100-resumepilotai",
+      "dirty": false,
+      "status": ""
+    },
+    "manifestHash": "48a9d1ab1085d4ff9aaa6a3f904563d98805d29c18b1171dc99758a3231c3062"
+  },
+  "reviews": [
+    {
+      "reviewedAt": "2026-10-11T19:30:25.572Z",
+      "verdict": "CHANGES_REQUESTED",
+      "feedback": "Automated evidence audit FAILED: test artifact contains a failure marker: Γä╣ fail 2. Re-submit with a passing test log.",
+      "evidenceHash": "48a9d1ab1085d4ff9aaa6a3f904563d98805d29c18b1171dc99758a3231c3062",
+      "automated": true,
+      "provenance": {
+        "actor": "LEAD_SUPERVISOR",
+        "invocation": "declared-automation",
+        "automated": true,
+        "reasons": [
+          "declared",
+          "non-tty"
+        ],
+        "pid": 15824,
+        "parentPid": 22096,
+        "tty": false,
+        "at": "2026-10-11T19:30:25.571Z"
+      }
+    }
+  ],
   "freeze": null,
-  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "lastTransitionReason": "lead review",
   "continuationPending": false,
-  "revisionTarget": null,
+  "revisionTarget": "evidence",
   "planApproval": {
     "approvedAt": "2026-10-11T18:33:03.687Z",
     "automated": true,

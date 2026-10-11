@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-11T19:13:32.633Z",
-  "seq": 2926,
-  "id": "evt_mv47bbg9_0ca1a3df4647",
-  "type": "HEARTBEAT",
-  "title": "[Heartbeat] REFINED BREADCRUMB SPEC EXECUTED. All three ancestor segments are now real Link to /dashboard elements (were buttons; Build Resume was a plain span), with handleBreadcrumbNavigate flushing pending edi",
+  "timestamp": "2026-10-11T19:30:23.059Z",
+  "seq": 2928,
+  "id": "evt_mv47wz3s_3fabb7ce431d",
+  "type": "EVIDENCE_SUBMITTED",
+  "title": "[Evidence] DIR-091: DIR-091: 100% Pixel-Perfect Reference Parity for Candidate Dashboard and Build Resume (Two-Page Operational Parity)",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-091",
-  "summary": "REFINED BREADCRUMB SPEC EXECUTED. All three ancestor segments are now real Link to /dashboard elements (were buttons; Build Resume was a plain span), with handleBreadcrumbNavigate flushing pending edits first. Final segment = real resume title/name with aria-current=page. Visible from xl. AC9 strengthened to pin exactly 3 ancestor links, no button, bounded to the nav element. test:dir091 11/11, full pinned suite 78 pass / 2 fail (pre-existing F-GAP-7 dir082 DashboardHomepage ratchet), ESLint exit 0, build 2.95s. Remaining: S8 live authenticated capture + submit-evidence."
+  "summary": "S8 COMPLETE - authenticated two-page live capture with 12/12 checks PASS at 1920x1080 on real data. XAMPP-served, session minted by the platform's own mintFirebaseSession, zero APIs mocked, 0 failed /api responses and 0 console errors. LIVE-PROVEN: the 4-level breadcrumb (3 ancestor links all href=/dashboard, labels Dashboard > Resumes & Master CV > Build Resume, no buttons, aria-current segment = the real resume title), Auto Fill with AI, Reset section, and the badge reading exactly 5 of 5 required fields. THE CAPTURE EARNED ITS KEEP TWICE: (1) it found the app is served from XAMPP's DOCUMENT ROOT, not /IME365 - src/main.jsx:522 uses BrowserRouter with no basename so a subpath mount renders Page not found; (2) it caught a REAL defect the static suite could not - en.json overrode HeadingStep.title to Personal & Contact Information so the reference title never rendered; locale fixed and AC7 now pins the locale value. SCOPE: patch re-implemented on HEAD not applied (all 8 files conflict; base is a DIR-053/055/058-era tree). S5 rail mount SUPERSEDED per Lead ruling - CandidateExecutiveRail kept, its 6 pins intact. S6 verified already delivered (fabricated Job Applications 0 already replaced by an honest placeholder; AC11 pins it). S3 tokenisation: 50 palette utilities plus 27 hex literals and 2 arbitrary shadows all to zero. S4: StepShell headerActions slot, HeadingStep retitle + Auto Fill + inline-confirm Reset, 4-level breadcrumb, Saved pill xl. dir091 EXTENDED not duplicated, now 11 ACs, 11/11 pass. Full pinned suite 84 pass / 2 fail, the 2 being the pre-existing F-GAP-7 dir082 DashboardHomepage 278-vs-226 ratchet on a file NOT in this diff. ESLint 0 errors, build 3.23s, cv-templates diff 0. Evidence: .bridge/evidence/DIR-091-progress.md sections 1-10, dir091-two-page-manifest.json, and three PNG captures."
 }
