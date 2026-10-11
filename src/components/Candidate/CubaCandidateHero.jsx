@@ -8,6 +8,7 @@ import CopilotHeroHud from './CopilotHeroHud';
 import CubaMetricCardRow from './CubaMetricCardRow';
 import { getResumes, getTrackedJobs, getStatesOfUser } from '../../services/api/platform';
 import { summariseResumes } from './briefingLogic';
+import { toEpochMs } from '../../utils/subscriptionUtils';
 
 const CubaCandidateHero = ({ displayName = 'Candidate', onNavigate }) => {
     const [resumes, setResumes] = useState(null);
@@ -71,6 +72,28 @@ const CubaCandidateHero = ({ displayName = 'Candidate', onNavigate }) => {
     const count = summary.count;
     const bestScore = summary.bestScore;
 
+    // DIR-093 S3: a REAL trend, never an estimate. "this month" counts the resumes whose OWN
+    // timestamp falls inside the last 30 days. If the list carries no usable timestamps at all,
+    // the delta stays null and the card omits the chip rather than showing a fabricated 0.
+    const trends = useMemo(() => {
+        if (!Array.isArray(resumes) || resumes.length === 0) return null;
+        const now = Date.now();
+        const windowMs = 30 * 24 * 60 * 60 * 1000;
+        let dated = 0;
+        let recent = 0;
+        for (const resume of resumes) {
+            const ms = toEpochMs(
+                resume?.updated_at ?? resume?.updatedAt
+                ?? resume?.created_at ?? resume?.createdAt
+                ?? resume?.item?.updated_at ?? resume?.item?.created_at,
+            );
+            if (ms === null) continue;
+            dated += 1;
+            if (now - ms >= 0 && now - ms <= windowMs) recent += 1;
+        }
+        return dated === 0 ? null : { resumes: recent };
+    }, [resumes]);
+
     // DIR-085: a real, derived insight line. Every branch is computed from values that
     // already exist (the measured resume count and the real ATS score); when neither is
     // known the line is omitted rather than invented.
@@ -89,12 +112,11 @@ const CubaCandidateHero = ({ displayName = 'Candidate', onNavigate }) => {
 
     return (
         <div className="space-y-2.5">
-            {/* DIR-085: the page keeps ONE top-level heading even though the tall banner is
-                gone, so the Overview still exposes an h1 to assistive technology. */}
-            <h1 className="sr-only">{displayName} candidate overview</h1>
-
+            {/* DIR-093 S1: the page's single h1 is now the VISIBLE reference greeting inside the
+                welcome header, so the DIR-085 screen-reader-only heading is retired rather than
+                duplicated. The Overview still exposes exactly one h1 - it is simply the real one. */}
             <div data-testid="cuba-candidate-hero">
-                <CopilotHeroHud insight={insight} onNavigate={onNavigate} />
+                <CopilotHeroHud insight={insight} onNavigate={onNavigate} displayName={displayName} />
             </div>
 
             {/* DIR-053 S4: honest connectivity banner. It only appears when the API
@@ -125,6 +147,8 @@ const CubaCandidateHero = ({ displayName = 'Candidate', onNavigate }) => {
                 count={count}
                 bestScore={bestScore}
                 applications={applications}
+                trends={loading ? null : trends}
+                onNavigate={onNavigate}
             />
         </div>
     );

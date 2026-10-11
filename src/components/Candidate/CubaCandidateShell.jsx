@@ -443,6 +443,14 @@ const CubaCandidateShell = ({ children, copilotResume = null }) => {
         return () => { mounted = false; };
     }, []);
 
+    // DIR-093 S7: the rail's prompt input runs the SAME authenticated dispatcher the command
+    // palette uses, so a prompt typed in the rail travels only in the POST body and is counted
+    // against the real server quota. No second AI path is introduced.
+    const handleAsk = useCallback(
+        ({ operation, prompt: askPrompt }) => copilotDispatch(operation, { prompt: askPrompt }),
+        [copilotDispatch],
+    );
+
     const isOverview = location.pathname === '/dashboard' || location.pathname === '/dashboard/';
 
     return (
@@ -519,7 +527,7 @@ const CubaCandidateShell = ({ children, copilotResume = null }) => {
                                 beside the Live Copilot Quick-Pitch, as the mandate specifies. */}
                             <div className="space-y-2.5">
                                 <AiCareerBriefing />
-                                <CandidateExecutiveRail onNavigate={navigate} />
+                                <CandidateExecutiveRail onNavigate={navigate} onAsk={handleAsk} />
                             </div>
                         </aside>
                         )}

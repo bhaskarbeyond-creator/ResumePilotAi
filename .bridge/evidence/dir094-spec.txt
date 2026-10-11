@@ -1,0 +1,19 @@
+VISUAL TARGET: d:\xampp\htdocs\IME365\.bridge\references\candidate-dashboard-target-reference.png
+
+User command: "i need exactly same layout. check the current one and give proper directive."
+
+RECON (verified this session): the bottom three-column analytics band DOES NOT EXIST anywhere in src/. A whole-repo sweep for "Application Progress" / "Top Job Matches for You" / "Your Next Steps" returns hits only in .bridge directive/evidence files, never in application code. The only "chart" token in src/ is in src/enterprise/EnterpriseConsole.jsx and is not a chart component. No charting dependency is installed (no recharts, chart.js, d3, visx, apexcharts in package.json). This is therefore the ONLY genuinely greenfield subsystem in the reference.
+
+SCOPE (Part B - area 5, the bottom three-column analytics band). Split from DIR-093 because it needs new data lineage, not just layout over existing reads.
+
+AC1 APPLICATION PROGRESS (col 1): a real grouped bar chart (Applied / Shortlisted / Interview / Offers across the last six months) rendered as hand-built SVG - zero charting dependency. It MUST be driven by real application/state data (getStatesOfUser / the job-tracker pipeline); a month with no data renders no bar, and an entirely unavailable series renders an explicit empty state, NEVER a fabricated series. Includes a "View Details" link to a real route, a y-axis scale derived from the real maximum, and an accessible fallback (role="img" + a text summary or an equivalent table) for non-visual users.
+
+AC2 TOP JOB MATCHES FOR YOU (col 2): a real list of job matches - title, company, location, a real match percentage, and a relative recency ("2 days ago") - sourced from the real matching module (src/components/Dashboard/DashbaordJobMatching/DashboardJobMatching.jsx) and the real jobs API. No invented company names (the reference's Google/Accenture/Infosys are ILLUSTRATION ONLY and must NOT be hardcoded). Each row offers a real bookmark action and the panel a "View All" link.
+
+AC3 YOUR NEXT STEPS (col 3): a checklist stepper whose completed/pending state is DERIVED from real profile + document completeness (e.g. resume exists, ATS >= 80%, >= 1 application, >= 1 mock interview), each item deep-linking to the real surface that advances it, plus a "View All" link. No hardcoded completion state.
+
+AC4 LAYOUT + A11Y: the band is a 3-column grid at >= lg that stacks below lg, uses Cuba tokens only (zero hardcoded hex, zero raw Tailwind palette utilities), unique landmark labelling, and must not introduce horizontal overflow at 375 / 768 / 1024 / 1280 / 1920.
+
+AC5 TESTS + EVIDENCE: author tests/dir094-candidate-dashboard-analytics.test.mjs asserting AC1-AC4 (including a static guard that no charting library was added and that the reference company names appear nowhere in the new code), register test:dir094, run the full pinned suite + build + lint + frozen-template + XAMPP gates, and submit evidence stating precisely which columns landed.
+
+INVARIANTS: zero synthetic data and zero fabricated series; no new runtime dependency for charting; src/cv-templates diff 0; XAMPP-only servers; build < 4.0s; 0 lint errors; no auth/API/DB/RBAC change; full pinned suite EXIT 0.

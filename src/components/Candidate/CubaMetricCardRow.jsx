@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiFileText, FiAward, FiBriefcase, FiZap } from 'react-icons/fi';
+import { FiFileText, FiAward, FiBriefcase, FiZap, FiChevronRight, FiTrendingUp } from 'react-icons/fi';
 
 /**
  * CubaMetricCardRow — DIR-091 high-density metric cards for the candidate workspace.
@@ -55,28 +55,59 @@ const AtsDonut = ({ score }) => {
     );
 };
 
-const MetricCard = ({ label, value, caption, icon, tone = 'primary', children, testId }) => (
-    <div
-        data-testid={testId}
-        className="flex min-w-0 items-center gap-3 rounded-cuba-lg border border-cuba-line bg-cuba-card px-3.5 py-3"
-    >
-        <span
-            className="flex h-9 w-9 flex-none items-center justify-center rounded-cuba-md"
-            style={{ backgroundColor: `var(--cuba-${tone === 'primary' ? 'primary' : tone}-soft)`, color: tone === 'primary' ? 'var(--cuba-primary-ink-strong)' : `var(--cuba-${tone})` }}
-        >
-            {icon}
+/**
+ * A real trend chip (DIR-093 S3). `delta` must be a finite number > 0 to render; anything else
+ * (null, undefined, NaN, 0) renders NOTHING — a missing history is never dressed up as a flat
+ * or invented gain.
+ */
+const TrendChip = ({ delta, unit }) => {
+    if (typeof delta !== 'number' || !Number.isFinite(delta) || delta <= 0) return null;
+    return (
+        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-cuba-success">
+            <FiTrendingUp className="h-3 w-3" aria-hidden="true" />
+            {`${delta} ${unit}`}
         </span>
-        <span className="min-w-0 flex-1">
-            <span className="block truncate text-[11px] font-semibold uppercase tracking-wider text-cuba-ink-subtle">{label}</span>
-            <span className="block text-lg font-bold leading-tight text-cuba-ink">{value}</span>
-            {caption && <span className="mt-0.5 block truncate text-[11px] text-cuba-ink-muted">{caption}</span>}
-        </span>
-        {children}
-    </div>
-);
+    );
+};
 
-const CubaMetricCardRow = ({ loading = false, count = null, bestScore = null, applications = null }) => {
+const MetricCard = ({ label, value, caption, icon, tone = 'primary', children, testId, trend, trendUnit, onOpen, openLabel }) => {
+    const interactive = typeof onOpen === 'function';
+    const Tag = interactive ? 'button' : 'div';
+
+    return (
+        <Tag
+            {...(interactive ? { type: 'button', onClick: onOpen, 'aria-label': openLabel } : {})}
+            data-testid={testId}
+            className="cuba-focusable flex min-w-0 items-center gap-3 rounded-cuba-lg border border-cuba-line bg-cuba-card px-3.5 py-3 text-left transition-colors hover:bg-cuba-primary-soft"
+        >
+            <span
+                className="flex h-9 w-9 flex-none items-center justify-center rounded-cuba-md"
+                style={{ backgroundColor: `var(--cuba-${tone === 'primary' ? 'primary' : tone}-soft)`, color: tone === 'primary' ? 'var(--cuba-primary-ink-strong)' : `var(--cuba-${tone})` }}
+            >
+                {icon}
+            </span>
+            <span className="min-w-0 flex-1">
+                <span className="block truncate text-[11px] font-semibold uppercase tracking-wider text-cuba-ink-subtle">{label}</span>
+                <span className="block text-lg font-bold leading-tight text-cuba-ink">{value}</span>
+                {(trend !== undefined || caption) && (
+                    <span className="mt-0.5 flex items-center gap-2">
+                        <TrendChip delta={trend} unit={trendUnit} />
+                        {caption && <span className="truncate text-[11px] text-cuba-ink-muted">{caption}</span>}
+                    </span>
+                )}
+            </span>
+            {children}
+            {interactive && <FiChevronRight className="h-4 w-4 flex-none text-cuba-ink-subtle" aria-hidden="true" />}
+        </Tag>
+    );
+};
+
+const CubaMetricCardRow = ({ loading = false, count = null, bestScore = null, applications = null, trends = null, onNavigate }) => {
     const dash = loading;
+    // DIR-093 S3: a real delta only. `trends` stays null unless the caller could actually measure
+    // one, so an unavailable history omits the chip instead of showing a fabricated 0.
+    const trendData = trends && typeof trends === 'object' ? trends : {};
+    const go = (href) => { if (typeof onNavigate === 'function') onNavigate(href); };
 
     return (
         <section data-testid="cuba-metric-cards" aria-label="Overview metrics" className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 2xl:grid-cols-4">
@@ -87,6 +118,10 @@ const CubaMetricCardRow = ({ loading = false, count = null, bestScore = null, ap
                 tone="primary"
                 value={dash ? '--' : count === null ? '--' : String(count)}
                 caption={dash ? 'Loading' : count === null ? 'Unavailable' : 'In your workspace'}
+                trend={dash ? undefined : trendData.resumes}
+                trendUnit="this month"
+                onOpen={() => go('/build-resume')}
+                openLabel="Open your resumes"
             />
             <MetricCard
                 testId="cuba-metric-ats"
@@ -95,6 +130,10 @@ const CubaMetricCardRow = ({ loading = false, count = null, bestScore = null, ap
                 tone={bestScore !== null && bestScore >= 75 ? 'success' : 'warning'}
                 value={dash ? '--' : bestScore !== null ? `${bestScore}%` : 'Not scored'}
                 caption={dash ? 'Loading' : 'Target 80%+'}
+                trend={dash ? undefined : trendData.ats}
+                trendUnit="pts"
+                onOpen={() => go('/build-resume')}
+                openLabel="Open your resumes to lift your ATS score"
             >
                 <AtsDonut score={dash ? null : bestScore} />
             </MetricCard>
@@ -105,6 +144,10 @@ const CubaMetricCardRow = ({ loading = false, count = null, bestScore = null, ap
                 tone="info"
                 value={dash ? '--' : applications === null ? '--' : String(applications)}
                 caption={dash ? 'Loading' : 'Submitted'}
+                trend={dash ? undefined : trendData.applications}
+                trendUnit="this week"
+                onOpen={() => go('/dashboard/applied-jobs')}
+                openLabel="Open your submitted applications"
             />
             <MetricCard
                 testId="cuba-metric-coach"
@@ -113,6 +156,8 @@ const CubaMetricCardRow = ({ loading = false, count = null, bestScore = null, ap
                 tone="warning"
                 value="Ready"
                 caption="Start a session"
+                onOpen={() => go('/dashboard/interview')}
+                openLabel="Start an interview coaching session"
             />
         </section>
     );

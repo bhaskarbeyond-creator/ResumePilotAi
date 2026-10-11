@@ -11,7 +11,7 @@ import { useLottie } from "lottie-react";
 import { FaCheckCircle, FaChevronRight, FaPencilAlt, FaEllipsisH, FaEnvelope, FaPlus, FaBullseye, FaShareAlt, FaTrashAlt, FaFileAlt, FaClock, FaDownload, FaStar, FaCalendarAlt, FaUsers, FaBars, FaInbox, FaEye, FaSearch, FaTimes, FaChartLine, FaMagic, FaBolt, FaArrowRight, FaLightbulb } from "react-icons/fa";
 import { trackDownload, trackEvent, trackEngagement } from "../../../utils/ga4";
 import { downloadResumePdf, downloadResumeDocx } from "../../../utils/exportDownloader";
-import { isPaidMembershipTier } from "../../../utils/subscriptionUtils";
+import { isPaidMembershipTier, formatSafeDate } from "../../../utils/subscriptionUtils";
 import { getTemplateComponent } from "../../../utils/templateRegistry";
 import { calculateAtsScore } from "../../../utils/atsScore";
 import TemplateRenderer from "../../TemplateRenderer";
@@ -1409,15 +1409,23 @@ class DashboardHomepage extends Component {
                               : t("DashboardHomepage.card.untitledResume", "Untitled Resume")}
                           </button>
                           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                            <span className="text-xs text-slate-500">
-                              {t("DashboardHomepage.card.created", "Created")}{" "}
-                              {new Date(
-                                document.item?.created_at?.seconds * 1000 || Date.now()
-                              ).toLocaleDateString("en-US", {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                              })}
+                            {/* DIR-093 S6: the previous expression fell back to `Date.now()` when a
+                                document carried no timestamp, so an undated resume rendered TODAY -
+                                a fabricated date presented as fact. The shared DIR-048 formatter now
+                                owns the parse, the line reads "Updated <date>" as the reference
+                                specifies, and a genuinely unknown date renders an explicit
+                                placeholder instead of today. */}
+                            <span className="text-xs text-slate-500" data-testid="cuba-resume-updated">
+                              {(() => {
+                                const stamp = formatSafeDate(
+                                  document.item?.updated_at || document.item?.created_at,
+                                  "en-US",
+                                  { day: "numeric", month: "short", year: "numeric" }
+                                );
+                                return stamp
+                                  ? `${t("DashboardHomepage.card.updated", "Updated")} ${stamp}`
+                                  : t("DashboardHomepage.card.dateUnavailable", "Date unavailable");
+                              })()}
                             </span>
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                               atsScore >= 75 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :

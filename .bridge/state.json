@@ -1,25 +1,25 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-11T08:20:21.946Z",
-  "eventCount": 2859,
-  "activeDirectiveId": "DIR-092",
-  "activeDirectiveTitle": "Candidate Workspace (/dashboard) 10/10 Reference Layout Transformation — End-to-End Implementation of Authoritative Target Screenshot",
-  "activeDirectiveStatus": "ISSUED",
+  "updatedAt": "2026-10-11T08:35:38.672Z",
+  "eventCount": 2873,
+  "activeDirectiveId": "DIR-093",
+  "activeDirectiveTitle": "Candidate Workspace (/dashboard) Reference Parity - Part A: Welcome Header, Metric Card Polish, Workspace Toolbar, Resume Cards & AI Career Assistant Rail",
+  "activeDirectiveStatus": "IN_PROGRESS",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-11T07:47:45.487Z",
-  "unreadForLead": 174,
-  "unreadForDev": 291,
+  "stallDeadline": "2026-10-11T08:34:39.461Z",
+  "unreadForLead": 178,
+  "unreadForDev": 301,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-11T07:47:45.487Z",
-    "status": "PARTIAL delivery, stated up front. S1 collapsible Copilot rail DELIVERED: the rigid 7fr/3fr split at CubaCandidateShell.jsx:473 is now dynamic, with railCollapsed persisted to localStorage, a focusable aria-expanded toggle, and the rail removed from the tree when collapsed so the workspace takes full width. S2 duplicate CTA DELIVERED: the brief said one duplicate, but there were TWO sources - the HUD CTA at DashboardHomepage.jsx:1004 and a second toolbar button at :1221 running the identical onClick - so removing the toolbar copy is behaviour-neutral. S3 view toggle/sort/Ctrl+K, S4 golden-ratio cards and List View, and S5 keyword-gap pills are NOT delivered, and AC4 in the new suite asserts their absence so a green run cannot imply completion. I predicted three pins would break and only ONE did - dir084:58 - which I superseded while keeping the viewport lock and docked ratio asserted; dir077 and dir085 still pass so I left them alone. dir090 5/5, 98/98 pinned, product EXIT 0, security EXIT 0, xampp EXIT 0, build 2.84s, lint 0 errors, frozen diff 0.",
-    "percent": 90
+    "timestamp": "2026-10-11T08:34:39.461Z",
+    "status": "Recon done, plan approved. Starting S6 (real date defect) + S3 (metric card polish).",
+    "percent": 10
   },
   "integrity": {
     "ok": false,
-    "checked": 2859,
+    "checked": 2873,
     "legacy": 2,
     "bad": 2
   }

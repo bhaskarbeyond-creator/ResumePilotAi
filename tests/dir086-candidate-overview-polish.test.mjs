@@ -65,13 +65,19 @@ test('AC4: the rail holds only the Quick-Pitch and no longer repeats the capsule
     assert.doesNotMatch(rail, /<WidgetCard title="ATS Keyword Strength"/);
     assert.doesNotMatch(rail, /<WidgetCard title="Application Milestones"/);
     assert.doesNotMatch(rail, /AtsRadialGauge|PipelineStepper/);
-    // Only the Live Copilot Quick-Pitch remains, with its empty state intact.
-    assert.match(rail, /title="Live Copilot Quick-Pitch"/);
-    assert.match(rail, /CubaEmptyState compact title="No quick actions"/);
+    // DIR-093 S7 restyled the rail into the reference AI Career Assistant and added the
+    // "Today's Insights" panel the reference mandates, so the single-widget guard becomes an
+    // exact two-panel guard. The intent is unchanged: the rail renders ONLY its own panels and
+    // never re-renders the retired duplicates.
+    assert.match(rail, /title="AI Career Assistant"/);
+    assert.match(rail, /title="Today's Insights"/);
+    assert.match(rail, /CubaEmptyState compact title="No suggestions yet"/);
     const widgets = (rail.match(/<WidgetCard /g) || []).length;
-    assert.equal(widgets, 1, `the rail must render exactly one widget, found ${widgets}`);
-    // The orphaned reads (and their 4s retry loop) went with the widgets.
-    assert.doesNotMatch(rail, /getTrackedJobs|getStatesOfUser|summariseResumes/);
+    assert.equal(widgets, 2, `the rail must render exactly the two reference panels, found ${widgets}`);
+    // The ORPHANED reads (and their 4s retry loop) are still gone. DIR-093 S7 added exactly ONE
+    // real read - getResumes - which the Resume Insights tab and Today's Insights both reuse.
+    assert.doesNotMatch(rail, /getTrackedJobs|getStatesOfUser/);
+    assert.match(rail, /getResumes/);
     assert.doesNotMatch(rail, /setInterval/);
 });
 

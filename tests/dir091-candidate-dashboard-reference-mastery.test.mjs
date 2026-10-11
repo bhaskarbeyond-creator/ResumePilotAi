@@ -60,7 +60,10 @@ test('DIR-091 AC3: every metric binds to a real platform read and never fabricat
     // The hero still owns the real reads; the card row is a pure presenter.
     assert.match(hero, /getResumes/);
     assert.match(hero, /getStatesOfUser/);
-    assert.match(cards, /const CubaMetricCardRow = \(\{ loading = false, count = null, bestScore = null, applications = null \}\)/);
+    // DIR-093 S3 added optional `trends` and `onNavigate` props for the reference affordances.
+    // The four REAL values are still the props that drive the cards, and they still default to
+    // null, so an unresolved read renders an honest placeholder rather than a fabricated zero.
+    assert.match(cards, /const CubaMetricCardRow = \(\{ loading = false, count = null, bestScore = null, applications = null, trends = null, onNavigate \}\)/);
 
     // An unresolved read renders an explicit placeholder, never a fake zero.
     assert.match(cards, /count === null \? '--' : String\(count\)/);
@@ -85,9 +88,14 @@ test('DIR-091 AC4: the cards use Cuba design tokens only — no raw palette util
 test('DIR-091 AC5: the header surface is preserved and stays accessible', async () => {
     const [hero, cards] = await Promise.all([read(HERO), read(CARDS)]);
 
-    // The reference header keeps the greeting, the quote and the three CTAs via the HUD.
-    assert.match(hero, /<CopilotHeroHud insight=\{insight\} onNavigate=\{onNavigate\} \/>/);
-    assert.match(hero, /<h1 className="sr-only">/);
+    // The reference header keeps the greeting, the quote and the three CTAs via the HUD. DIR-093
+    // handed the HUD the candidate's REAL first name so it can render the greeting, and moved the
+    // page's single h1 out of the hero's screen-reader-only element and into that visible greeting.
+    // Both assertions follow the surface rather than being dropped, and the h1 count is still one.
+    assert.match(hero, /<CopilotHeroHud insight=\{insight\} onNavigate=\{onNavigate\} displayName=\{displayName\} \/>/);
+    const hud = await read('src/components/Candidate/CopilotHeroHud.jsx');
+    assert.match(hud, /<h1 /);
+    assert.doesNotMatch(hero, /<h1/);
 
     // The metric row is a labelled landmark, and the donut is decorative to AT because the
     // percentage is already in the card's text.

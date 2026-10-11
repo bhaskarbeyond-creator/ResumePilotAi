@@ -55,7 +55,9 @@ test('AC3: the sidebar brand tile and context switcher share ONE pill', async ()
 test('AC4: the candidate overview is a 2-column grid with the executive rail', async () => {
     const [shell, rail] = await Promise.all([read(CAND_SHELL), read(RAIL)]);
     assert.match(shell, /xl:grid-cols-\[minmax\(0,7fr\)_minmax\(0,3fr\)\]/);
-    assert.match(shell, /<CandidateExecutiveRail onNavigate=\{navigate\} \/>/);
+    // DIR-093 S7 handed the rail the shell's real AI dispatcher so its prompt input can actually
+    // run an operation. The intent is unchanged - the shell renders the rail with its real props.
+    assert.match(shell, /<CandidateExecutiveRail onNavigate=\{navigate\} onAsk=\{handleAsk\} \/>/);
     assert.match(shell, /aria-label="Executive intelligence rail"/);
     assert.match(rail, /data-testid="cuba-executive-rail"/);
     assert.match(rail, /data-testid=\{testId\}/);
@@ -84,9 +86,10 @@ test('AC6: the micro-visual primitives survive; the hero now uses the capsule st
     const [hero, stat, visuals] = await Promise.all([read(HERO), read(STATCARD), read(VISUALS)]);
     assert.match(stat, /visual = null,/);
     assert.match(stat, /\{visual && !loading && \(/);
-    // DIR-085: the hero no longer mounts the four stat cards or the radial gauge; the
-    // compact capsule strip replaces them. The primitives themselves are untouched.
-    assert.match(hero, /<CubaMetricCapsuleStrip/);
+    // DIR-085: the hero no longer mounts the four stat cards or the radial gauge; a compact metric
+    // surface replaces them. DIR-091 then moved that surface from the capsule strip to the metric
+    // CARD row, so this guard follows it there. The primitives themselves are untouched.
+    assert.match(hero, /<CubaMetricCardRow/);
     assert.doesNotMatch(hero, /AtsRadialGauge/);
     assert.match(visuals, /data-testid="cuba-ats-radial-gauge"/);
     assert.match(visuals, /data-testid="cuba-resume-progress"/);

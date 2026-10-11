@@ -1,0 +1,18 @@
+{
+  "id": "DIR-094",
+  "title": "Candidate Workspace (/dashboard) Reference Parity - Part B: Bottom Three-Column Analytics (Application Progress chart, Top Job Matches, Your Next Steps)",
+  "priority": "P1",
+  "status": "ISSUED",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-11T08:33:53.137Z",
+  "updatedAt": "2026-10-11T08:33:53.137Z",
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "spec": "VISUAL TARGET: d:\\xampp\\htdocs\\IME365\\.bridge\\references\\candidate-dashboard-target-reference.png\r\n\r\nUser command: i",
+  "invariants": [],
+  "acceptanceCriteria": [],
+  "plan": null,
+  "evidence": null,
+  "reviews": [],
+  "freeze": null
+}
