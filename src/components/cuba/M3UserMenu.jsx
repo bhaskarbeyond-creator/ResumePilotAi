@@ -4,6 +4,7 @@ import {
 } from 'react-icons/fi';
 import { useHeaderPopover } from './useHeaderPopover';
 import { ACCOUNT_PORTALS, accountLinksFor } from './accountLinks';
+import { parseUserIdentity, roleBadgeFor } from './userIdentity';
 
 const cx = (...parts) => parts.filter(Boolean).join(' ');
 
@@ -85,9 +86,13 @@ const M3UserMenu = ({ user, theme = 'light', onToggleTheme, onNavigate, onSignOu
 
     useHeaderPopover({ open, onClose: () => setOpen(false), triggerRef, panelRef });
 
-    const name = String(user?.name || '').trim();
-    const email = String(user?.email || '').trim();
-    const role = String(user?.role || '').trim();
+    // DIR-074: split a parenthetical role out of the display name so the chip and
+    // the menu show a CLEAN name plus a dedicated role — never raw brackets.
+    const identity = parseUserIdentity(user);
+    const name = identity.name;
+    const email = identity.email;
+    const roleLabel = identity.roleLabel;
+    const roleBadge = roleBadgeFor(identity.role);
 
     if (!name && !email) return null;
 
@@ -153,12 +158,12 @@ const M3UserMenu = ({ user, theme = 'light', onToggleTheme, onNavigate, onSignOu
                     />
                 </span>
                 <span className="hidden min-w-0 max-w-[clamp(7rem,18vw,13rem)] flex-col items-start leading-tight sm:flex">
-                    <span className="w-full truncate text-xs font-semibold text-cuba-ink">
+                    <span data-testid="cuba-user-trigger-name" className="w-full truncate text-xs font-semibold text-cuba-ink">
                         {name || email}
                     </span>
-                    {role && (
-                        <span className="w-full truncate text-[10px] font-medium uppercase tracking-wide text-cuba-ink-subtle">
-                            {role}
+                    {roleLabel && (
+                        <span data-testid="cuba-user-trigger-role" className="w-full truncate text-[10px] font-semibold uppercase tracking-wide text-indigo-600 dark:text-indigo-400">
+                            {roleLabel}
                         </span>
                     )}
                 </span>
@@ -203,12 +208,16 @@ const M3UserMenu = ({ user, theme = 'light', onToggleTheme, onNavigate, onSignOu
                                     <span className="min-w-0 break-all">{email}</span>
                                 </p>
                             )}
-                            {role && (
+                            {roleLabel && (
                                 <span
                                     data-testid="cuba-user-menu-role"
-                                    className="mt-1.5 inline-block rounded-full bg-cuba-primary-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cuba-primary-ink-strong"
+                                    data-role-tone={roleBadge.tone}
+                                    className={cx(
+                                        'mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide',
+                                        roleBadge.className,
+                                    )}
                                 >
-                                    {role}
+                                    {roleLabel}
                                 </span>
                             )}
                         </div>

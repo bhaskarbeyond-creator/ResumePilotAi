@@ -1,25 +1,25 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-11T02:45:39.990Z",
-  "eventCount": 2631,
-  "activeDirectiveId": "DIR-073",
-  "activeDirectiveTitle": "DIR-073: Executive Command Palette & Search Pipeline UI/UX Overhaul",
+  "updatedAt": "2026-10-11T02:51:42.438Z",
+  "eventCount": 2640,
+  "activeDirectiveId": "DIR-074",
+  "activeDirectiveTitle": "DIR-074: Executive User Identity & M3 Account Dropdown Pipeline Overhaul",
   "activeDirectiveStatus": "IN_PROGRESS",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-11T02:42:16.324Z",
-  "unreadForLead": 94,
-  "unreadForDev": 147,
+  "stallDeadline": "2026-10-11T02:47:41.660Z",
+  "unreadForLead": 97,
+  "unreadForDev": 153,
   "pendingBlockers": 1,
   "latestHeartbeat": {
-    "timestamp": "2026-10-11T02:42:16.324Z",
-    "status": "S1-S7 implemented. Build 2.87s, lint 0 errors. Running pinned unit suites.",
-    "percent": 55
+    "timestamp": "2026-10-11T02:47:41.660Z",
+    "status": "All mandates implemented and verified. build 3.93s, lint 0 errors, dir073 6/6, 143/143 cuba suites, product EXIT 0, security 67/67, xampp 4/4, dir063..072 green. Submitting evidence.",
+    "percent": 90
   },
   "integrity": {
     "ok": false,
-    "checked": 2631,
+    "checked": 2640,
     "legacy": 8,
     "bad": 7
   }

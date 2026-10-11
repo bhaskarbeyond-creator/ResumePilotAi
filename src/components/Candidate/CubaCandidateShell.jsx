@@ -6,6 +6,8 @@ import {
 } from 'react-icons/fi';
 import CubaAppShell from '../cuba/CubaAppShell';
 import { ACCOUNT_PORTALS, accountLinksFor } from '../cuba/accountLinks';
+// DIR-074: clean identity parsing (strips a parenthetical role from the name).
+import { parseUserIdentity } from '../cuba/userIdentity';
 import AiEngineStatus from '../cuba/AiEngineStatus';
 import AiCareerBriefing from './AiCareerBriefing';
 import CubaCandidateHero from './CubaCandidateHero';
@@ -241,20 +243,27 @@ const CubaCandidateShell = ({ children, copilotResume = null }) => {
         const email = String(user?.email || '').trim();
         // Prefer an explicit role claim over the coarse account kind, because it
         // is the value the server actually authorises on.
-        const role = String(
+        const claimRole = String(
             user?.role
             || user?.customClaims?.role
             || user?.customClaims?.accountType
             || '',
         ).trim();
 
-        if (!fullName && !email) return null;
+        // DIR-074: clean a parenthetical role out of the display name so the
+        // account menu never renders 'Name (Role)'. The explicit claim stays
+        // authoritative for the role; the parenthetical is only a fallback.
+        const identity = parseUserIdentity({ name: fullName, email, role: claimRole });
+        const name = identity.name;
+        const role = claimRole || identity.role;
+
+        if (!name && !email) return null;
         // DIR-025: resolved from the shared `accountLinks` table rather than
         // re-spelled here, so the candidate targets can never drift from the
         // table the crawler and the unit tests assert against.
         const account = accountLinksFor(ACCOUNT_PORTALS.CANDIDATE);
         return {
-            name: fullName || displayName,
+            name: name || displayName,
             email,
             role,
             profileHref: account.profile,

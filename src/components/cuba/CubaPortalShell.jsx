@@ -16,6 +16,8 @@ import fire from '../../conf/fire';
 import { resolveActiveItem } from '../Candidate/navigationState';
 import { buildPortalCommands } from './portalCommands';
 import { ACCOUNT_PORTALS, accountLinksFor } from './accountLinks';
+// DIR-074: clean identity parsing (strips a parenthetical role from the name).
+import { parseUserIdentity } from './userIdentity';
 
 /**
  * Modern icon map for recruiter, enterprise, and platform admin navigation items.
@@ -234,7 +236,7 @@ const CubaPortalShell = ({
 
         const sessionName = String(session?.displayName || '').trim();
         const sessionEmail = String(session?.email || '').trim();
-        const role = String(
+        const claimRole = String(
             user?.role
             || session?.role
             || session?.customClaims?.role
@@ -242,8 +244,17 @@ const CubaPortalShell = ({
             || '',
         ).trim();
 
-        const name = explicitName || sessionName;
-        const email = explicitEmail || sessionEmail;
+        // DIR-074: split a parenthetical role out of the display name so the
+        // account menu never renders 'Name (Role)'. The explicit claim stays
+        // authoritative; the parenthetical is only a fallback.
+        const identity = parseUserIdentity({
+            name: explicitName || sessionName,
+            email: explicitEmail || sessionEmail,
+            role: claimRole,
+        });
+        const name = identity.name;
+        const email = identity.email;
+        const role = claimRole || identity.role;
 
         if (!name && !email) return null;
         // DIR-025: the account-menu targets are ROLE-SCOPED.

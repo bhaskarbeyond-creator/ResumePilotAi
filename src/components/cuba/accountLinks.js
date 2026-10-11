@@ -83,7 +83,7 @@ export function accountLinksFor(portal, context = {}) {
         default:
             return {
                 profile: '/dashboard/settings?tab=profile',
-                settings: '/dashboard/settings',
+                settings: '/dashboard/settings?tab=account',
                 security: '/dashboard/settings?tab=security',
             };
     }

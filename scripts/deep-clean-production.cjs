@@ -65,7 +65,7 @@ async function cleanFirebaseAuth() {
   await auth.updateUser(SUPERADMIN_UID, {
     emailVerified: true,
     disabled: false,
-    displayName: 'Bhaskar Beyond (Super Admin)'
+    displayName: 'Bhaskar Beyond'
   });
 
   const verifiedUsers = await auth.listUsers(100);

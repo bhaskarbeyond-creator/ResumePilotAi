@@ -375,6 +375,7 @@ function DashboardSettings(_props) {
     };
 
     // Reactive URL query parameter listener for ?tab=Account, ?tab=Profile, and ?subtab=...
+    const pendingScrollRef = useRef(null);
     useEffect(() => {
         const searchParams = new URLSearchParams(location.search);
         const tabParam = searchParams.get('tab');
@@ -383,8 +384,12 @@ function DashboardSettings(_props) {
             const lower = tabParam.toLowerCase();
             if (lower.includes('account') || lower.includes('security') || lower === '2fa') {
                 setSelectedSettings('Account');
+                // DIR-074: a deep link to Security / 2FA must land ON the TOTP
+                // card, not merely open the Account pane.
+                pendingScrollRef.current = (lower.includes('security') || lower === '2fa') ? 'totp-security-hub' : null;
             } else if (lower.includes('profile')) {
                 setSelectedSettings('Profile');
+                pendingScrollRef.current = null;
             }
         }
         if (subTabParam) {
@@ -394,6 +399,19 @@ function DashboardSettings(_props) {
             }
         }
     }, [location.search]);
+
+    // DIR-074: honour a pending deep-link scroll once the Account pane has
+    // rendered. A short defer lets the pane mount before we scroll to its card.
+    useEffect(() => {
+        const targetId = pendingScrollRef.current;
+        if (!targetId || selectedSettings !== 'Account') return undefined;
+        pendingScrollRef.current = null;
+        const timer = setTimeout(() => {
+            const el = document.getElementById(targetId);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 120);
+        return () => clearTimeout(timer);
+    }, [selectedSettings, location.search]);
     const [summaryTone, setSummaryTone] = useState('balanced');
     const [summaryAiDraft, setSummaryAiDraft] = useState(null);
     const [bioCopied, setBioCopied] = useState(false);
@@ -5644,7 +5662,7 @@ function DashboardSettings(_props) {
                         </div>
 
                         {/* Card 4: Two-Factor Authentication (TOTP 2FA) */}
-                        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
+                        <div id="totp-security-hub" className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4 scroll-mt-24">
                             <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
                                 <div className="flex items-center space-x-3">
                                     <div className="p-2.5 bg-purple-50 rounded-xl">
