@@ -2,11 +2,11 @@
   "id": "DIR-085",
   "title": "Candidate Overview Unified Command Center — Above-The-Fold Resume Workspace, Compact AI Copilot HUD & Friendly Native Mascot",
   "priority": "P0",
-  "status": "IN_PROGRESS",
+  "status": "APPROVED",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-11T06:10:53.502Z",
-  "updatedAt": "2026-10-11T06:12:49.711Z",
+  "updatedAt": "2026-10-11T06:23:54.139Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "MANDATE: User feedback on DIR-084 overview: 'why am i not able to satisfy myself with this structure and layout. What is missing and why all the options are not in the viewport. Iam now not able to browser bottom part(resumes). Enhance this layout and structure to max best possible with SWOT evidence. Use best approact and friendly cartoons to amke it feel native ai engine.' ROOT CAUSE ANALYSIS: 1) Hero banner and 4 Stat cards consume ~500px, triply duplicating data with the right rail. 2) The candidate's primary working asset — their active resumes — is squished into a cut-off bottom sliver that is hard to browse. 3) The cold circular radar feels sterile rather than a friendly native AI engine. ARCHITECTURAL REDESIGN: PHASE 1 - COMPACT AI COPILOT HERO (~90-110px): Sleek horizontal glass HUD featuring a friendly native AI Copilot mascot (illustrated friendly AI robot/avatar with glowing aurora halo: 'PilotAI Copilot Active'), dynamic career insight, and compact quick CTAs (+ New Resume, Explore Jobs, Mock Drill). PHASE 2 - COMPACT METRIC CAPSULE STRIP (~45-55px): 4 horizontal glass KPI capsules in a single tight row (5 Resumes, 69% ATS, 1 Application, Interview Coach Ready). PHASE 3 - PRIMARY CANVAS: ABOVE-THE-FOLD RESUME WORKSPACE: Main Left Column (~68% width) becomes the Primary Resume & Document Workspace! Category pills (All, Resumes, Cover Letters, Portfolios), search/sort, and high-density Resume Cards with thumbnails, ATS badges, and 1-click [Edit], [Tailor AI], [PDF Download] actions immediately browsable in the single viewport. Right Column (~32% width) holds the AI Career Briefing and Live Copilot Quick-Pitch. PHASE 4 - VERIFICATION: Author tests/dir085-overview-workspace-mastery.test.mjs (AC1-AC6), ensure zero whole-window scroll, sub-4s build, clean lint.",
   "invariants": [],
@@ -26,10 +26,51 @@
     ],
     "planHash": "07940a66afd9992cb40703846a93ffd7cf3a04bcf89eeb5b18c62cdd1f766fe3"
   },
-  "evidence": null,
-  "reviews": [],
+  "evidence": {
+    "submittedAt": "2026-10-11T06:23:51.250Z",
+    "summary": "DIR-085 complete. ROOT CAUSE (recon, file:line): the Overview stacked a tall gradient banner plus FOUR full-height CubaStatCards (CubaCandidateHero.jsx:254-296), then AiCareerBriefing, then the workspace - roughly 500px of a ~937px 1080p viewport before a single resume was drawn. The metrics were triply duplicated: the hero cards showed Resumes/ATS/Applications/Interview Coach, CandidateExecutiveRail.jsx independently rendered an ATS Keyword Strength widget at :129 and an Application Milestones widget at :153, and DashboardHomepage.jsx carried a legacy Career Command Center block at :1040-1175 that recomputed calculateAtsScore at :1046. The cold radar was AtsRadialGauge (StatMicroVisuals.jsx:15) at CubaCandidateHero.jsx:273, and NO mascot asset existed anywhere under src/assets so it had to be inline SVG. S1 NEW CubaCopilotMascot.jsx: a friendly inline-SVG AI robot avatar (rounded head, glowing eyes, antenna, warm smile, shoulders) inside an aurora halo driven by the EXISTING tokens --cuba-ai-aurora-a and --cuba-ai-aurora-b with a --cuba-ai-border ring; role=img plus aria-label with the glyph aria-hidden so a screen reader announces one label; the pulse is suppressed under prefers-reduced-motion; no binary asset and no dependency. S2 NEW CubaMetricCapsule.jsx exporting CubaMetricCapsule and CubaMetricCapsuleStrip: one tight glass row of four labelled capsules at ~48px replacing four ~120px cards. S3 NEW CopilotHeroHud.jsx: ONE horizontal glass row (~100px) with the mascot, a live PilotAI Copilot Active status pill, a single dynamic insight line and three compact CTAs (New Resume, Explore Jobs, Mock Drill) wired to the real routes. S4 CubaCandidateHero.jsx body rewritten: the tall gradient banner, the inline telemetry SVG, the analog clock, the four CubaStatCards and the AtsRadialGauge are all retired; the component now renders a visually-hidden h1 (so the Overview still exposes exactly one top-level heading), the compact HUD, the unchanged honest API-reconnect banner and the capsule strip, and the unused clock state plus its 1s interval were removed. S5 CubaCandidateShell.jsx column restructure: the ~68% main column is now the compact HUD followed immediately by the resume workspace, and the AI Career Briefing MOVED into the ~32% right column beside the Live Copilot Quick-Pitch exactly as the mandate specifies; the DIR-084 viewport lock, the 2xl-bounded Overview grid and the stable scrollbar gutters are untouched. S7 NEW tests/dir085-overview-workspace-mastery.test.mjs with 6 acceptance tests (AC1 the compact HUD and capsule strip exist and the four stat cards plus the radial gauge are gone from the hero, AC2 the workspace leads the main column and the briefing lives in the rail, AC3 the de-duplication rule holds so the capsule strip is the ONLY headline surface and the rail keeps ATS and applications strictly as detail widgets, AC4 zero whole-window scroll with the DIR-084 lock and bounded Overview intact, AC5 a11y with a decorative mascot carrying a real accessible name, labelled status pill and capsule list and accessible CTA names plus the sr-only h1, AC6 no new dependency, no new binary asset and no fabricated telemetry) and test:dir085 registered; three superseded pins were updated in lockstep (DIR-077 AC5/AC6 hero telemetry and micro-visuals, DIR-084 AC2/AC3 hero banner and four-card assertions). VERIFIED: dir085 6 passing, 155 passing across dir085 + dir084 + dir083 + dir082 + dir081 + dir080 + dir079 + dir078 + dir077 + dir048 suites + dir055 + cuba-candidate-portal + cuba-design-system + copilot-command-surface, test:dir072..dir085 and test:design-system every script EXIT 0, test:product EXIT 0 on a quiet run, security:static 67 passing, xampp-policy 4 passing, build EXIT 0 in 3.19s against a 4.0s budget, lint 0 errors, frozen cv-templates diff 0. TWO LOAD-INDUCED FLAKES were observed and cleared and neither was caused by this directive: tests/ats-score.test.mjs:587 asserts a scoring TIME BUDGET (scoring took 85ms) and tripped while the security suite ran in parallel, and tests/interview-coach-lifecycle.test.mjs:2992 is the known jsdom/act() race; both pass in isolation (24 passing and 1 passing respectively) and neither file was touched by DIR-085. HONEST LIMITS: the mascot is a designed inline-SVG avatar rather than a licensed illustration, built from the existing AI aurora tokens; the capsule strip reports the SAME four facts the old cards reported, so DIR-085 removed duplication and height rather than inventing analytics; and the wider DIR-082 legacy backlog is unchanged and still ratcheted (DashboardSettings 1330, DashboardInterviews 764, DashboardHomepage 226, DashboardSupport 183, ResumesList 12). ZERO FABRICATION: no metric was invented - the capsules bind to the same real sources the removed cards used, an unresolved read renders an explicit placeholder rather than a fake zero, and the insight line is omitted entirely when there is nothing truthful to say.",
+    "tests": {
+      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir085-evidence.log",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791699831251_dir085-evidence.log",
+      "sha256": "bc1647973f5b5d034b8293b40166d3bbbabd948f06b48677d55e8b8da9aa44d0",
+      "size": 7367
+    },
+    "domCrawl": null,
+    "artifacts": [],
+    "git": {
+      "isGit": true,
+      "head": "a50fe94848d90fd01ddf64de13c9c4367881b62f",
+      "branch": "arena/01a0e100-resumepilotai",
+      "dirty": false,
+      "status": ""
+    },
+    "manifestHash": "1912e5ec7b994bfd3632f6c5772bdfd1c6a6431470aab70183ee80ee02e4a274"
+  },
+  "reviews": [
+    {
+      "reviewedAt": "2026-10-11T06:23:54.139Z",
+      "verdict": "APPROVED",
+      "feedback": "Automated evidence audit: test artifact scanned, no failure markers, clean tree. This is a machine check, NOT a human Lead review.",
+      "evidenceHash": "1912e5ec7b994bfd3632f6c5772bdfd1c6a6431470aab70183ee80ee02e4a274",
+      "automated": true,
+      "provenance": {
+        "actor": "LEAD_SUPERVISOR",
+        "invocation": "declared-automation",
+        "automated": true,
+        "reasons": [
+          "declared",
+          "non-tty"
+        ],
+        "pid": 21140,
+        "parentPid": 20292,
+        "tty": false,
+        "at": "2026-10-11T06:23:54.138Z",
+        "explicitlyAllowed": true
+      }
+    }
+  ],
   "freeze": null,
-  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "lastTransitionReason": "lead review",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {
