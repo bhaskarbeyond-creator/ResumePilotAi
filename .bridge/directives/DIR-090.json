@@ -2,11 +2,11 @@
   "id": "DIR-090",
   "title": "Lead Delivery Forensic Review & Gap Audit — Candidate Dashboard 100% Reference Parity",
   "priority": "P1",
-  "status": "IN_PROGRESS",
+  "status": "APPROVED",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-11T10:35:30.401Z",
-  "updatedAt": "2026-10-11T10:43:41.509Z",
+  "updatedAt": "2026-10-11T11:00:47.265Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "Lead Architect has independently implemented the Candidate Dashboard (/dashboard) with 100% token and layout fidelity against candidate-dashboard-target-reference.png. Developer (Cline) is assigned to perform an adversarial forensic gap analysis, compare live screenshots (current_dashboard_live_1920.png, current_dashboard_bottom_analytics.png) with reference, verify test suites test:dir084 to test:dir094, and submit a detailed Gap Identification Report.",
   "invariants": [
@@ -34,10 +34,51 @@
     ],
     "planHash": "409e0f4b65518bfec2100b0304696894661bbbd66ca96297726c5b590c9b48d7"
   },
-  "evidence": null,
-  "reviews": [],
+  "evidence": {
+    "submittedAt": "2026-10-11T11:00:43.850Z",
+    "summary": "DIR-090 forensic gap audit COMPLETE. VERDICT: the 100 percent parity claim does NOT hold. AC1 DONE - all 7 zones compared against the reference: sidebar, top bar, metric row, resume grid and rail chrome are at or near parity; three real gaps were found and FIXED. AC2 BLOCKED with a precise cause - no valid below-the-fold artifact has ever existed: the previous harness scrolled a non-existent selector so current_dashboard_bottom_analytics.png was bit-for-bit current_dashboard_live_1920.png, both 427882 bytes and MD5 734B5FC719CA5A4045F2B30F1E564C1E; the rewritten XAMPP-served harness now proves this by hash and FAILS loudly. AC3 DONE - 59 of 59 pinned tests green across dir084 dir085 dir086 dir090 dir091 dir092 dir093 dir094 plus the new dir095 7 of 7, and 17 of 17 in dir058 dir077 dir083. AC4 DONE - .bridge/evidence/DIR-090-forensic-gap-report.md. P0 FINDING FIXED (invariant Zero fabricated metrics): CandidateExecutiveRail.jsx rendered a HARDCODED Todays Insights list copied verbatim from the reference screenshot - Your resume is 69 percent ATS ready and 3 new jobs match your profile - while the real measured insights memo beside it was used only for its length in an sr-only span, so one screen showed a measured 82 percent donut next to an asserted 69 percent. The list now renders the real memo; an honest empty state replaces it while unresolved. It survived review because dir093 AC3 only asserted the memo EXISTED and dir091 AC2 s anti-69 guard targets CubaMetricCardRow.jsx, not the rail. GAP-2 FIXED: PROGRESS_SERIES colours were inverted against the reference legend (interview was amber, offer was green; now interview is cuba-success and offer is cuba-warning) and the reference s fourth Shortlisted series is correctly absent because backend/routes/jobsData.js restricts status to wishlist applied interview offer rejected. GAP-3 FIXED: the toolbar Sort button and Grid/List toggle had NO onClick and NO state, with Grid hardcoded active; they are now a real select bound to sortBy over Last Updated, ATS Score and Title plus aria-pressed Grid/List buttons that really reflow the card container, with a comparator reading only stored fields. GAP-5 FIXED: recency now reads 2 days ago rather than 2d ago. GAP-6 FIXED: the header quote is inline with the CTA group as in the reference. GAP-4 ACCEPTED DEVIATION, recorded not closed: per-job match badges 92 86 78 percent have no data lineage and dir094 AC3 forbids hardcoding them, so column 2 parity is capped at visual and structural level and 100 percent parity is unachievable by policy. EVIDENCE-INTEGRITY FIXED: the old harness also mocked EVERY data API with a body carrying bestScore 69 and spawned an in-process Vite server on a rogue port, violating the P0 XAMPP-only invariant; the rewritten harness is XAMPP-Apache-served, refuses to run if Apache is down, leaves data APIs unmocked by default, labels --mock runs ILLUSTRATIVE, verifies the scroll really moved, asserts the dashboard really rendered, and writes a manifest with per-artifact MD5s. NEW PRE-EXISTING FINDING F-GAP-7: tests/dir082-viewport-density.test.mjs fails AC3 and AC6 because DashboardHomepage.jsx sits at 278 legacy palette utilities against a 226 ratchet ceiling - HEAD measures exactly 226 and every line DIR-090 inserted into that file contains zero palette utilities, so the +52 came from the previous DIR-093-era uncommitted work; the two failures share one root cause because dir082 line 67-85 is missing its closing brace so AC3 swallows AC6. Left unfixed deliberately - clearing 52 utilities is a DIR-088-style token sweep needing visual verification, raising the ceiling would silently relax a ratchet, and editing another directive s test semantics is out of scope. INVARIANTS: git diff --stat -- src/cv-templates is empty (0), no new dependency, no charting library. FILES: src/components/Candidate/CandidateExecutiveRail.jsx, analyticsLogic.js, CopilotHeroHud.jsx, src/components/Dashboard/DashboardHomepage/DashboardHomepage.jsx, tests/dir095-candidate-dashboard-data-lineage.test.mjs (new), package.json (test:dir095), .bridge/capture_dashboard.mjs (rewritten).",
+    "tests": {
+      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir090-test-run.log",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791716443853_dir090-test-run.log",
+      "sha256": "d5a6a28d49827cef0fe5de92a947345917e1f3a3b82d3d434e80f6f1e076fb47",
+      "size": 11608
+    },
+    "domCrawl": null,
+    "artifacts": [],
+    "git": {
+      "isGit": true,
+      "head": "8f05d35be8ba1b82c45facb5843921ad14ead112",
+      "branch": "arena/01a0e100-resumepilotai",
+      "dirty": false,
+      "status": ""
+    },
+    "manifestHash": "7ce279f58b6aaa4a34daefd37eade5552e7ffbf63bb5ad5763b7f9417923f7c6"
+  },
+  "reviews": [
+    {
+      "reviewedAt": "2026-10-11T11:00:47.265Z",
+      "verdict": "APPROVED",
+      "feedback": "Automated evidence audit: test artifact scanned, no failure markers, clean tree. This is a machine check, NOT a human Lead review.",
+      "evidenceHash": "7ce279f58b6aaa4a34daefd37eade5552e7ffbf63bb5ad5763b7f9417923f7c6",
+      "automated": true,
+      "provenance": {
+        "actor": "LEAD_SUPERVISOR",
+        "invocation": "declared-automation",
+        "automated": true,
+        "reasons": [
+          "declared",
+          "non-tty"
+        ],
+        "pid": 23868,
+        "parentPid": 14688,
+        "tty": false,
+        "at": "2026-10-11T11:00:47.265Z",
+        "explicitlyAllowed": true
+      }
+    }
+  ],
   "freeze": null,
-  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "lastTransitionReason": "lead review",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {
