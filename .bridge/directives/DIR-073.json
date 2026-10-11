@@ -2,11 +2,11 @@
   "id": "DIR-073",
   "title": "DIR-073: Executive Command Palette & Search Pipeline UI/UX Overhaul",
   "priority": "P0",
-  "status": "IN_PROGRESS",
+  "status": "APPROVED",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-11T02:32:29.509Z",
-  "updatedAt": "2026-10-11T02:38:30.438Z",
+  "updatedAt": "2026-10-11T02:47:54.198Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "P0 ARCHITECTURAL MANDATES: 1. DOM NESTING & SIZING FIX: In src/components/cuba/CubaCommandPalette.jsx, eliminate the premature closing </div> at line 577 so panelRef properly encapsulates the entire dialog content and removes the bottom clipping/overflow artifact. 2. ICON HYDRATION: In src/components/Candidate/CubaCandidateShell.jsx buildCommands (and any other portal shells), ensure item.icon is preserved and passed to the command object so every navigation row renders its authentic Cuba icon. 3. CUSTOM SCROLLBAR & SLEEK STYLING: Replace unstyled OS scrollbars with a custom Cuba thin scrollbar (.cuba-custom-scrollbar or sleek webkit/firefox scrollbar utility) so bulky Windows scrollbars and arrow buttons never bleed into the modal. 4. M3 SEGMENTED MODE SWITCHER: Refactor the top Navigation vs AI Copilot tabs into a sleek Cuba executive segmented pill control with smooth transition, subtle glassmorphic backdrop, and keyboard accelerator badges. 5. GROUPED VISUAL HIERARCHY & KEYBOARD FOOTER: Organize search results into clean visual sections (Workspace, Job Intelligence, Account & Security) with subtle group headers. Add an executive bottom hint bar ([↑↓ Navigate] [↵ Select] [Tab AI Mode] [Esc Close]). 6. CANDIDATE ENTITY SEARCH ENRICHMENT: Wire candidate entities (resumes, portfolios, cover letters) into commandSearchProvider so typing document names surfaces actual records. 7. INVARIANTS: Preserve existing tests/cuba-design-system.test.mjs (zero hardcoded label literals in CubaCommandPalette.jsx), tests/copilot-command-surface.test.mjs, WCAG 2.1 AA combobox accessibility, and sub-4s build budget.",
   "invariants": [],
@@ -26,10 +26,51 @@
     ],
     "planHash": "6c0d6accc4f91e86450b30abbb745840533fcd941ec6765545deb9c12f751326"
   },
-  "evidence": null,
-  "reviews": [],
+  "evidence": {
+    "submittedAt": "2026-10-11T02:47:51.282Z",
+    "summary": "DIR-073 complete. Fixed the panelRef DOM-nesting bug (premature closing div before the copilot surface) so the glass panel encapsulates the whole dialog. Icon hydration: buildCommands now carries each command's authentic Cuba icon and the palette renders component-or-element icons defensively. All three scroll containers use the certified cuba-scrollbar. The Navigation/AI Copilot tabs are now a glass segmented pill with kbd accelerator badges while preserving the certified tablist ARIA contract and cuba-mode testids. Results are grouped into labelled sections with an executive keyboard hint footer. New candidate entity search (resumes/portfolios/cover letters) wired into CubaCandidateShell via commandSearchProvider. Gates: dir073 6/6, 143/143 cuba suites, test:product EXIT 0, security:static 67/67, xampp-policy 4/4, build 3.93s, lint 0 errors, dir063..dir072 all green, frozen cv-templates diff 0.",
+    "tests": {
+      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir073-evidence.log",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791686871283_dir073-evidence.log",
+      "sha256": "8cc5f3c7a176395cec13139c24ab1b863b93358fd45ad7275be4908c6339a42f",
+      "size": 4749
+    },
+    "domCrawl": null,
+    "artifacts": [],
+    "git": {
+      "isGit": true,
+      "head": "a8f27c5a817d148beb4d6d770cae52f4920a3120",
+      "branch": "arena/01a0e100-resumepilotai",
+      "dirty": false,
+      "status": ""
+    },
+    "manifestHash": "2f6501b0cec065158d13f7f0aa9dbe3a811aa143914d276f153473463ccea11d"
+  },
+  "reviews": [
+    {
+      "reviewedAt": "2026-10-11T02:47:54.198Z",
+      "verdict": "APPROVED",
+      "feedback": "Automated evidence audit: test artifact scanned, no failure markers, clean tree. This is a machine check, NOT a human Lead review.",
+      "evidenceHash": "2f6501b0cec065158d13f7f0aa9dbe3a811aa143914d276f153473463ccea11d",
+      "automated": true,
+      "provenance": {
+        "actor": "LEAD_SUPERVISOR",
+        "invocation": "declared-automation",
+        "automated": true,
+        "reasons": [
+          "declared",
+          "non-tty"
+        ],
+        "pid": 1536,
+        "parentPid": 15436,
+        "tty": false,
+        "at": "2026-10-11T02:47:54.198Z",
+        "explicitlyAllowed": true
+      }
+    }
+  ],
   "freeze": null,
-  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "lastTransitionReason": "lead review",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {

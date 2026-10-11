@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-11T02:47:41.686Z",
-  "seq": 2632,
-  "id": "evt_mv383iak_ef468ea78ddf",
-  "type": "HEARTBEAT",
-  "title": "[Heartbeat] All mandates implemented and verified. build 3.93s, lint 0 errors, dir073 6/6, 143/143 cuba suites, product EXIT 0, security 67/67, xampp 4/4, dir063..072 green. Submitting evidence.",
+  "timestamp": "2026-10-11T02:47:52.020Z",
+  "seq": 2633,
+  "id": "evt_mv383q9m_20e708def0ba",
+  "type": "EVIDENCE_SUBMITTED",
+  "title": "[Evidence] DIR-073: DIR-073: Executive Command Palette & Search Pipeline UI/UX Overhaul",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-073",
-  "summary": "All mandates implemented and verified. build 3.93s, lint 0 errors, dir073 6/6, 143/143 cuba suites, product EXIT 0, security 67/67, xampp 4/4, dir063..072 green. Submitting evidence."
+  "summary": "DIR-073 complete. Fixed the panelRef DOM-nesting bug (premature closing div before the copilot surface) so the glass panel encapsulates the whole dialog. Icon hydration: buildCommands now carries each command's authentic Cuba icon and the palette renders component-or-element icons defensively. All three scroll containers use the certified cuba-scrollbar. The Navigation/AI Copilot tabs are now a glass segmented pill with kbd accelerator badges while preserving the certified tablist ARIA contract and cuba-mode testids. Results are grouped into labelled sections with an executive keyboard hint footer. New candidate entity search (resumes/portfolios/cover letters) wired into CubaCandidateShell via commandSearchProvider. Gates: dir073 6/6, 143/143 cuba suites, test:product EXIT 0, security:static 67/67, xampp-policy 4/4, build 3.93s, lint 0 errors, dir063..dir072 all green, frozen cv-templates diff 0."
 }
