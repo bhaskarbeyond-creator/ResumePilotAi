@@ -2,11 +2,11 @@
   "id": "DIR-091",
   "title": "DIR-091: 100% Pixel-Perfect Reference Parity for Candidate Dashboard and Build Resume (Two-Page Operational Parity)",
   "priority": "P0",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-11T18:28:17.395Z",
-  "updatedAt": "2026-10-11T19:31:35.578Z",
+  "updatedAt": "2026-10-11T19:31:37.585Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "Developer must review his work in patch 01a12b9e-91b4-7174-9f95-41baa9990820.patch against certified HEAD (42d51bfc) and achieve 100% pixel-perfect reference parity and operational connections for both attached reference views: (1) Candidate Dashboard (/dashboard) and (2) Build Resume (/build-resume/*). Retain high-value builder enhancements (AI autofill, section reset with confirmation, StepGuide assistant rail, breadcrumb navigation) while ensuring Cuba sidebar shell framing, operational controls, and zero-diff cv-templates.",
   "invariants": [
@@ -101,8 +101,30 @@
       }
     }
   ],
-  "freeze": null,
-  "lastTransitionReason": "lead review",
+  "freeze": {
+    "freezeHash": "a2a6255410155e93aee2b89ebf8c88acfcb7576e",
+    "certifiedAt": "2026-10-11T19:31:37.585Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "Autonomous Lead (Antigravity): evidence audit passed, no human review.",
+    "evidenceHash": "e339c0b02d55b68dcea14d667d69f18f1bec9763fb3a692c4a2e6a81d8aae32a",
+    "automated": true,
+    "certificationKind": "automated",
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "declared-automation",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "non-tty"
+      ],
+      "pid": 17616,
+      "parentPid": 23748,
+      "tty": false,
+      "at": "2026-10-11T19:31:36.362Z",
+      "explicitlyAllowed": true
+    }
+  },
+  "lastTransitionReason": "gatekeeper certification",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {
