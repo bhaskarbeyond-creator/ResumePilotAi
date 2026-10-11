@@ -1,0 +1,18 @@
+{
+  "id": "DIR-073",
+  "title": "DIR-073: Executive Command Palette & Search Pipeline UI/UX Overhaul",
+  "priority": "P0",
+  "status": "ISSUED",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-11T02:32:29.509Z",
+  "updatedAt": "2026-10-11T02:32:29.509Z",
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "spec": "P0 ARCHITECTURAL MANDATES: 1. DOM NESTING & SIZING FIX: In src/components/cuba/CubaCommandPalette.jsx, eliminate the premature closing </div> at line 577 so panelRef properly encapsulates the entire dialog content and removes the bottom clipping/overflow artifact. 2. ICON HYDRATION: In src/components/Candidate/CubaCandidateShell.jsx buildCommands (and any other portal shells), ensure item.icon is preserved and passed to the command object so every navigation row renders its authentic Cuba icon. 3. CUSTOM SCROLLBAR & SLEEK STYLING: Replace unstyled OS scrollbars with a custom Cuba thin scrollbar (.cuba-custom-scrollbar or sleek webkit/firefox scrollbar utility) so bulky Windows scrollbars and arrow buttons never bleed into the modal. 4. M3 SEGMENTED MODE SWITCHER: Refactor the top Navigation vs AI Copilot tabs into a sleek Cuba executive segmented pill control with smooth transition, subtle glassmorphic backdrop, and keyboard accelerator badges. 5. GROUPED VISUAL HIERARCHY & KEYBOARD FOOTER: Organize search results into clean visual sections (Workspace, Job Intelligence, Account & Security) with subtle group headers. Add an executive bottom hint bar ([↑↓ Navigate] [↵ Select] [Tab AI Mode] [Esc Close]). 6. CANDIDATE ENTITY SEARCH ENRICHMENT: Wire candidate entities (resumes, portfolios, cover letters) into commandSearchProvider so typing document names surfaces actual records. 7. INVARIANTS: Preserve existing tests/cuba-design-system.test.mjs (zero hardcoded label literals in CubaCommandPalette.jsx), tests/copilot-command-surface.test.mjs, WCAG 2.1 AA combobox accessibility, and sub-4s build budget.",
+  "invariants": [],
+  "acceptanceCriteria": [],
+  "plan": null,
+  "evidence": null,
+  "reviews": [],
+  "freeze": null
+}

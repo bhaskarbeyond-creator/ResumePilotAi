@@ -1,16 +1,16 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-11T02:25:25.881Z",
-  "eventCount": 2620,
-  "activeDirectiveId": "DIR-072",
-  "activeDirectiveTitle": "DIR-072: Decouple Notification vs Message Pipelines & Establish Dedicated Routing",
-  "activeDirectiveStatus": "IN_PROGRESS",
+  "updatedAt": "2026-10-11T02:28:17.907Z",
+  "eventCount": 2623,
+  "activeDirectiveId": null,
+  "activeDirectiveTitle": null,
+  "activeDirectiveStatus": null,
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
   "stallDeadline": "2026-10-11T02:16:37.016Z",
-  "unreadForLead": 90,
-  "unreadForDev": 140,
+  "unreadForLead": 91,
+  "unreadForDev": 142,
   "pendingBlockers": 1,
   "latestHeartbeat": {
     "timestamp": "2026-10-11T02:16:37.016Z",
@@ -19,7 +19,7 @@
   },
   "integrity": {
     "ok": false,
-    "checked": 2620,
+    "checked": 2623,
     "legacy": 8,
     "bad": 7
   }
