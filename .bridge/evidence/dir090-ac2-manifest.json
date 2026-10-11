@@ -1,0 +1,64 @@
+{
+  "directive": "DIR-090",
+  "acceptanceCriterion": "AC2 — bottom analytics row compared against the reference",
+  "servedBy": "XAMPP Apache",
+  "base": "http://localhost",
+  "apacheStatus": 200,
+  "dataMode": "REAL (MariaDB via the managed backend API, authenticated with a Google-signed ID token)",
+  "identity": "b***@gmail.com",
+  "sessionSource": "tests/e2e/dir006-session.mjs -> mintFirebaseSession()",
+  "capturedAt": "2026-10-11T11:07:06.416Z",
+  "renderProbe": {
+    "rail": 1,
+    "hud": 1,
+    "band": 1,
+    "bodyText": 20493,
+    "url": "http://localhost/dashboard",
+    "title": "My Dashboard — IME365",
+    "bodySnippet": "Skip to main content Skip to main content Search jobs, skills, or run a command... Keyboard shortcut: Ctrl K + AI Assistant ✦ AI Engine Ready . The platform reports an AI provider configuration it can currently use. BB Bhaskar Beyond SUPER ADMIN Candidate Suite WORKSPACE Overview Resumes & Master CV Cover Letters Portfolios & Web CV Saved Favorites & Bookmarks Notifications JOB INTELLIGENCE Browse",
+    "hasPasswordField": false,
+    "seededAuthKeyPresent": false
+  },
+  "scroll": {
+    "found": true,
+    "tag": "DIV",
+    "before": 0,
+    "after": 1215,
+    "scrollHeight": 1916,
+    "clientHeight": 701
+  },
+  "belowFoldIsDistinct": true,
+  "scrollVerified": true,
+  "artifacts": [
+    {
+      "name": "dir090-ac2-authenticated-live-1920.png",
+      "bytes": 369670,
+      "md5": "4A031731B75341D680BF787394994A80"
+    },
+    {
+      "name": "dir090-ac2-authenticated-bottom-analytics.png",
+      "bytes": 381045,
+      "md5": "0B90E5F3CBD9796801823A6440BD5453"
+    },
+    {
+      "name": "dir090-ac2-authenticated-fullpage.png",
+      "bytes": 401498,
+      "md5": "D3138951D139B19BF768750D3CD6FF0F"
+    }
+  ],
+  "failedApiResponses": [],
+  "consoleErrorCount": 0,
+  "consoleErrors": [],
+  "dom": {
+    "railInsightRows": [
+      "Your resume is 69% ATS ready Add quantified achievements to reach 80%.",
+      "5 resumes in your workspace."
+    ],
+    "atsCardText": "69% Avg. ATS Score Target 80%+",
+    "analyticsBandText": "📊 Application Progress Last 6 months · current pipeline stage View Details No applications with a recorded date fall inside the last six months. No applications yet Track a job on your board and its real stage will appear here by month. 💼 Top Job Matches for You Recommended based on your profile View All O Research Engineer (Model Evaluation & Benchmarking) OpenAI San Francisco, CA 2 weeks ago C Contract Terraform & AWS Automation Consultant CloudScale Consulting Remote (Global) 2 weeks ago F Senior Frontend Engineer (Mobile Web Performance) Flipkart Bengaluru, India (On-site) 2 weeks ago M Senior Cloud Security Architect (Azure Sentinel) Microsoft Redmond, WA (Hybrid) 2 weeks ago T Part-Time UI / Visual Designer TechFlow Studio Remote (US / Canada) 2 weeks ago Browse all jobs ✔ Your Next Steps View All 3 of 4 complete Complete your profile Add your name, email, phone and location so every document starts from an accurate master profile. Create your first resume Create or edit resumes with our easy-to-use builder, 20+ templates and advanced AI capabilities for customization and job-specific tailoring. Write a cover letter Generate a role-specific cover letter that matches the resume you just built. Apply to your first job Submit your first application from the job portal and track it in your pipeline.",
+    "matchPercentTokensInBand": [],
+    "sortControlPresent": true,
+    "viewTogglePresent": true,
+    "resumeCardCount": 12
+  }
+}

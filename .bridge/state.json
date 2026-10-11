@@ -1,26 +1,26 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-11T10:44:18.855Z",
-  "eventCount": 2896,
-  "activeDirectiveId": "DIR-090",
-  "activeDirectiveTitle": "Lead Delivery Forensic Review & Gap Audit — Candidate Dashboard 100% Reference Parity",
-  "activeDirectiveStatus": "IN_PROGRESS",
+  "updatedAt": "2026-10-11T11:01:48.926Z",
+  "eventCount": 2903,
+  "activeDirectiveId": null,
+  "activeDirectiveTitle": null,
+  "activeDirectiveStatus": null,
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-11T09:13:39.905Z",
-  "unreadForLead": 188,
-  "unreadForDev": 314,
+  "stallDeadline": "2026-10-11T10:51:33.854Z",
+  "unreadForLead": 191,
+  "unreadForDev": 317,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-11T09:13:39.905Z",
-    "status": "S2-S5 done + dir094 suite 8/8. Found a THIRD pre-existing DIR-091 supersession miss: dir058 AC3 asserted label=Job Applications inside CubaCandidateHero, but DIR-091 moved the cards to CubaMetricCardRow - PROVEN red at HEAD by reading the HEAD blob (anchor absent, file unmodified by me). Retargeted preserving intent, as in DIR-093. Regression battery now 101/101, XAMPP 4/4, build 3.51s, lint 0 errors. Running npm test + frozen gate.",
-    "percent": 80
+    "timestamp": "2026-10-11T10:51:33.854Z",
+    "status": "S1-S4 landed: rail fabrications removed (real insights memo render), PROGRESS_SERIES colours corrected (interview=success, offer=warning), Sort+Grid/List wired to real state, recency spelled out, header quote inlined. 52/52 pinned tests still green, frozen templates diff=0. Now repairing the capture harness (F-EV-1).",
+    "percent": 55
   },
   "integrity": {
-    "ok": true,
-    "checked": 2896,
-    "legacy": 0,
-    "bad": 0
+    "ok": false,
+    "checked": 2903,
+    "legacy": 1,
+    "bad": 1
   }
 }
