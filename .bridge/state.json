@@ -1,25 +1,25 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-11T06:02:48.854Z",
-  "eventCount": 2768,
-  "activeDirectiveId": "DIR-084",
-  "activeDirectiveTitle": "Candidate Suite Single-Viewport Golden 10/10 Master Layout Refactor & Zero-Gap Functional Verification",
+  "updatedAt": "2026-10-11T06:13:42.066Z",
+  "eventCount": 2778,
+  "activeDirectiveId": "DIR-085",
+  "activeDirectiveTitle": "Candidate Overview Unified Command Center — Above-The-Fold Resume Workspace, Compact AI Copilot HUD & Friendly Native Mascot",
   "activeDirectiveStatus": "IN_PROGRESS",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-11T06:00:48.434Z",
-  "unreadForLead": 148,
-  "unreadForDev": 228,
+  "stallDeadline": "2026-10-11T06:05:29.156Z",
+  "unreadForLead": 151,
+  "unreadForDev": 235,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-11T06:00:48.434Z",
-    "status": "S1-S6 + S8 delivered: opt-in viewportLock on CubaAppShell (candidate-only), compacted single-viewport Overview (2xl bounded grid + internal scroll), 6 document-level min-h-screen page roots removed, dir084 suite 8/8, 149/149 pinned. Running the remaining gates.",
-    "percent": 70
+    "timestamp": "2026-10-11T06:05:29.156Z",
+    "status": "All gates green: dir084 8/8, 149/149 pinned, product EXIT 0, security 67/67, xampp 4/4, build 3.41s isolated, lint 0 errors, frozen diff 0. Submitting evidence.",
+    "percent": 95
   },
   "integrity": {
     "ok": false,
-    "checked": 2768,
+    "checked": 2778,
     "legacy": 2,
     "bad": 2
   }

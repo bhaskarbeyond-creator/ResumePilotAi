@@ -2,11 +2,11 @@
   "id": "DIR-084",
   "title": "Candidate Suite Single-Viewport Golden 10/10 Master Layout Refactor & Zero-Gap Functional Verification",
   "priority": "P0",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-11T05:49:35.293Z",
-  "updatedAt": "2026-10-11T06:05:47.637Z",
+  "updatedAt": "2026-10-11T06:05:49.195Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "MANDATE: User explicitly requests: 'Refactor layouts of all pages, unlock them and make 10/10 updates. I need SWOT 10/10 rated and extremely high and smooth User experience and Best 10/10 layout for each page. Check the functionality after update and prove that nothing fails and everything is working 100% with no gaps. single Viewport layout is preferable to give best user experience.' (Bridge unlocked for 60 min). PHASE 1 - SINGLE-VIEWPORT OVERVIEW MASTER REFACTOR: In CubaCandidateShell.jsx, DashboardHomepage.jsx, and CandidateExecutiveRail.jsx, re-engineer the Overview layout geometry so the Hero banner, 4 Stat Cards, AI Career Briefing, and Executive Right Rail ALL fit simultaneously within a SINGLE VIEWPORT (1080p/1440p) with ZERO vertical page scrollbar. Compact padding (py-3/p-3.5), tight gaps (gap-2.5/gap-3), and cohesive briefing placement. PHASE 2 - SINGLE-VIEWPORT PARADIGM ACROSS ALL 15 PAGES: Enforce the single-viewport architecture across all Candidate Suite pages (Resumes, Cover Letters split-view, Portfolios Bento grid, Job Tracker intra-column Kanban, Applications, Interview Coach, Messages, Plans, Settings, Support). Every page body must lock within h-[calc(100vh-var(--cuba-header-h))] with internal scrolling where applicable and zero document-level page overflow. PHASE 3 - SWOT 10/10 NATIVE TOKENS & SMOOTH UX: Strict Cuba M3 glassmorphism in both light and dark modes, fluid transitions, and zero layout shift. PHASE 4 - ZERO-GAP FUNCTIONAL VERIFICATION: Author tests/dir084-single-viewport-mastery.test.mjs (AC1-AC8) proving 100% functional integrity, test all interactive controls, maintain build under 4s and lint clean, then submit evidence.",
   "invariants": [],
@@ -71,8 +71,30 @@
       }
     }
   ],
-  "freeze": null,
-  "lastTransitionReason": "lead review",
+  "freeze": {
+    "freezeHash": "3499dea27af1ebe71d4231cbeae133c080f64c4d",
+    "certifiedAt": "2026-10-11T06:05:49.195Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "Autonomous Lead (Antigravity): evidence audit passed, no human review.",
+    "evidenceHash": "17f7adfaac3e5ebd6bfadf8bc71b32947f19b7a6ff849e9f6b63b407cfebebe0",
+    "automated": true,
+    "certificationKind": "automated",
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "declared-automation",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "non-tty"
+      ],
+      "pid": 4760,
+      "parentPid": 2024,
+      "tty": false,
+      "at": "2026-10-11T06:05:48.550Z",
+      "explicitlyAllowed": true
+    }
+  },
+  "lastTransitionReason": "gatekeeper certification",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {

@@ -57,13 +57,12 @@ test('AC2: the Overview geometry is compacted for one viewport', async () => {
     assert.match(cand, /isOverview \? 'space-y-2\.5' : 'space-y-4 md:space-y-5'/);
     assert.match(cand, /grid min-h-0 grid-cols-1 gap-3 2xl:h-\[calc\(100dvh-var\(--cuba-header-h\)-3\.75rem\)\] 2xl:grid-cols-\[minmax\(0,7fr\)_minmax\(0,3fr\)\]/);
     assert.match(cand, /flex min-h-0 min-w-0 flex-col gap-3/);
-    // Hero: compact padding, smaller heading, tighter action row and gauge.
-    assert.match(hero, /rounded-\[18px\] p-4 sm:p-5 text-white/);
-    assert.match(hero, /mt-2 text-xl sm:text-2xl lg:text-3xl font-extrabold/);
-    assert.match(hero, /mt-4 flex flex-wrap items-center gap-3/);
-    assert.match(hero, /bg-black\/20 p-3 border/);
-    // The four stat cards use the tight gap the mandate asks for.
-    assert.match(hero, /grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2\.5 sm:gap-3/);
+    // DIR-085 supersedes the DIR-084 hero-banner compaction: the tall gradient banner and
+    // its four stat cards are replaced by the compact Copilot HUD and the metric capsule
+    // strip, which is a strictly tighter geometry than DIR-084 achieved.
+    assert.match(hero, /<CopilotHeroHud insight=\{insight\} onNavigate=\{onNavigate\} \/>/);
+    assert.match(hero, /<CubaMetricCapsuleStrip items=\{capsules\} label="Overview metrics" \/>/);
+    assert.doesNotMatch(hero, /rounded-\[18px\] p-4 sm:p-5 text-white/);
     // Rail and briefing are tightened too.
     assert.match(rail, /space-y-2\.5" data-testid="cuba-executive-rail"/);
     assert.match(briefing, /<div className="space-y-2">/);
@@ -72,14 +71,16 @@ test('AC3: the Hero, the four Stat Cards, the Briefing and the Rail share ONE bo
     const cand = await read(CAND_SHELL);
     // The fold-critical blocks are flex-none; only the Document Gallery / Onboarding
     // region and the rail scroll internally.
-    assert.match(cand, /<CubaCandidateHero displayName=\{displayName\} \/>/);
+    assert.match(cand, /<CubaCandidateHero displayName=\{displayName\} onNavigate=\{navigate\} \/>/);
     assert.match(cand, /<AiCareerBriefing \/>/);
     assert.match(cand, /min-h-0 flex-1 2xl:overflow-y-auto cuba-scrollbar \[scrollbar-gutter:stable\]/);
     assert.match(cand, /2xl:overflow-y-auto cuba-scrollbar \[scrollbar-gutter:stable\]" aria-label="Executive intelligence rail"/);
-    // The Hero renders the four real KPI cards inside its own column.
+    // DIR-085 supersedes the DIR-084 four-card assertion: the Hero now renders the compact
+    // Copilot HUD plus the metric capsule strip instead of four full-height stat cards.
     const hero = await read(HERO);
     const cards = (hero.match(/<CubaStatCard/g) || []).length;
-    assert.equal(cards, 4, `the Hero must render exactly four stat cards, found ${cards}`);
+    assert.equal(cards, 0, `the Hero must no longer render stat cards, found ${cards}`);
+    assert.match(hero, /<CubaMetricCapsuleStrip items=\{capsules\} label="Overview metrics" \/>/);
 });
 
 test('AC4: no candidate page root uses a document-level min-h-screen', async () => {

@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { FiPlus, FiBriefcase, FiAward, FiFileText, FiZap, FiRefreshCw } from 'react-icons/fi';
-import CubaStatCard from '../cuba/CubaStatCard';
-import { AtsRadialGauge, ResumeProgressBar, PipelineStepper } from '../cuba/StatMicroVisuals';
+import { FiBriefcase, FiAward, FiFileText, FiZap, FiRefreshCw } from 'react-icons/fi';
+// DIR-085: the compact Copilot HUD and the metric capsule strip replace the tall
+// gradient banner, the four full-height stat cards and the cold radial gauge.
+import CopilotHeroHud from './CopilotHeroHud';
+import { CubaMetricCapsuleStrip } from '../cuba/CubaMetricCapsule';
 import { getResumes, getTrackedJobs, getStatesOfUser } from '../../services/api/platform';
 import { summariseResumes } from './briefingLogic';
 
-const CubaCandidateHero = ({ displayName = 'Candidate' }) => {
-    const [currentTime, setCurrentTime] = useState(new Date());
+const CubaCandidateHero = ({ displayName = 'Candidate', onNavigate }) => {
     const [resumes, setResumes] = useState(null);
     const [trackedJobs, setTrackedJobs] = useState(null);
     // DIR-058: the real application count (was previously mislabelled — the
@@ -14,11 +15,6 @@ const CubaCandidateHero = ({ displayName = 'Candidate' }) => {
     const [applications, setApplications] = useState(null);
     const [apiError, setApiError] = useState(false);
     const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-        return () => clearInterval(timer);
-    }, []);
 
     // DIR-053 RCA-3 / S4: never mask an API outage as an empty account. A failed
     // load sets `apiError` (rendered as a Cuba reconnect badge) and the loader
@@ -70,168 +66,44 @@ const CubaCandidateHero = ({ displayName = 'Candidate' }) => {
 
     const summary = useMemo(() => summariseResumes(resumes || []), [resumes]);
 
-    const formattedTime = useMemo(() => {
-        return currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    }, [currentTime]);
-
-    const formattedDate = useMemo(() => {
-        return currentTime.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
-    }, [currentTime]);
-
-    const greeting = useMemo(() => {
-        const hour = currentTime.getHours();
-        if (hour < 12) return 'Good morning';
-        if (hour < 18) return 'Good afternoon';
-        return 'Good evening';
-    }, [currentTime]);
-
-    const { hourDegrees, minuteDegrees, secondDegrees } = useMemo(() => {
-        const seconds = currentTime.getSeconds();
-        const minutes = currentTime.getMinutes();
-        const hours = currentTime.getHours();
-        return {
-            secondDegrees: (seconds / 60) * 360,
-            minuteDegrees: ((minutes + seconds / 60) / 60) * 360,
-            hourDegrees: (((hours % 12) + minutes / 60) / 12) * 360,
-        };
-    }, [currentTime]);
-
     const count = summary.count;
     const bestScore = summary.bestScore;
 
+    // DIR-085: a real, derived insight line. Every branch is computed from values that
+    // already exist (the measured resume count and the real ATS score); when neither is
+    // known the line is omitted rather than invented.
+    const insight = loading
+        ? ''
+        : count === 0
+            ? 'Create your first resume to unlock ATS scoring and template matching.'
+            : bestScore !== null && bestScore >= 75
+                ? `Your top resume scores ${bestScore}% ATS - recruiter ready.`
+                : bestScore !== null
+                    ? `Lift your top resume from ${bestScore}% toward the 80% recruiter benchmark.`
+                    : 'Your resumes are ready - run an ATS check to see how recruiters score them.';
+
+    // DIR-085: the four headline metrics, each bound to the SAME real source the old stat
+    // cards used. An unresolved read renders an explicit placeholder, never a fake zero.
+    const capsules = [
+        { label: 'Resumes', value: loading ? '--' : String(count), icon: <FiFileText className="h-3.5 w-3.5" />, tone: 'primary' },
+        { label: 'ATS', value: loading ? '--' : bestScore !== null ? `${bestScore}%` : 'Not scored', icon: <FiAward className="h-3.5 w-3.5" />, tone: bestScore !== null && bestScore >= 75 ? 'success' : 'warning' },
+        { label: 'Applications', value: loading ? '--' : applications !== null ? String(applications) : '--', icon: <FiBriefcase className="h-3.5 w-3.5" />, tone: 'info' },
+        { label: 'Interview Coach', value: 'Ready', icon: <FiZap className="h-3.5 w-3.5" />, tone: 'warning' },
+    ];
+
     return (
-        <div className="space-y-6">
-            {/* Authentic Cuba Executive Profile Box Welcome Banner.
-              * `data-testid` is the single-authoritative-hero hook the DIR-009 E2E
-              * suite counts. DashboardHomepage's legacy welcome header and its four
-              * KPI cards are already suppressed behind `!isCuba`, so exactly one
-              * element carrying this id may exist in the Candidate Dashboard. */}
-            <div
-                data-testid="cuba-candidate-hero"
-                className="relative overflow-hidden rounded-[18px] p-4 sm:p-5 text-white shadow-[0_12px_32px_-6px_rgba(115,102,255,0.42)] transition-all"
-                style={{
-                    background: 'linear-gradient(103.75deg, #33b1ee -13.9%, #7366ff 79.68%)',
-                }}
-            >
-                {/* Decorative ambient glowing circles */}
-                <div className="pointer-events-none absolute -right-8 -top-8 h-56 w-56 rounded-full bg-white/10 blur-2xl" aria-hidden="true" />
-                <div className="pointer-events-none absolute -bottom-10 right-28 h-44 w-44 rounded-full bg-sky-300/15 blur-xl" aria-hidden="true" />
-                <div className="pointer-events-none absolute left-1/3 top-0 h-32 w-32 rounded-full bg-indigo-300/10 blur-lg" aria-hidden="true" />
+        <div className="space-y-2.5">
+            {/* DIR-085: the page keeps ONE top-level heading even though the tall banner is
+                gone, so the Overview still exposes an h1 to assistive technology. */}
+            <h1 className="sr-only">{displayName} candidate overview</h1>
 
-                {/* DIR-077: bespoke executive Cuba glassmorphism career-telemetry
-                    visual (replaces the cartoon mascot). Purely decorative — every
-                    real number lives in the text and KPI cards below. */}
-                <div className="pointer-events-none absolute right-2 lg:right-40 xl:right-48 -bottom-2 hidden md:block w-40 lg:w-48 xl:w-56 select-none z-10" aria-hidden="true">
-                    <svg
-                        viewBox="0 0 240 240"
-                        className="w-full h-auto drop-shadow-md cuba-animate-bounce"
-                        data-testid="cuba-hero-telemetry"
-                    >
-                        <defs>
-                            <linearGradient id="cuba-telemetry-ring" x1="0" y1="0" x2="1" y2="1">
-                                <stop offset="0%" stopColor="#ffffff" stopOpacity="0.9" />
-                                <stop offset="100%" stopColor="#bcd7ff" stopOpacity="0.45" />
-                            </linearGradient>
-                        </defs>
-                        <circle cx="120" cy="120" r="96" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.35)" strokeWidth="1.5" />
-                        <circle cx="120" cy="120" r="72" fill="rgba(255,255,255,0.06)" stroke="url(#cuba-telemetry-ring)" strokeWidth="1.5" strokeDasharray="6 8" />
-                        <circle cx="120" cy="120" r="48" fill="rgba(255,255,255,0.10)" stroke="rgba(255,255,255,0.40)" strokeWidth="1.5" />
-                        <path d="M120 120 L120 40 A80 80 0 0 1 189 160 Z" fill="rgba(255,255,255,0.18)" />
-                        <g stroke="rgba(255,255,255,0.55)" strokeWidth="1.5">
-                            <line x1="120" y1="24" x2="120" y2="36" />
-                            <line x1="120" y1="204" x2="120" y2="216" />
-                            <line x1="24" y1="120" x2="36" y2="120" />
-                            <line x1="204" y1="120" x2="216" y2="120" />
-                        </g>
-                        <circle cx="120" cy="120" r="10" fill="#ffffff" opacity="0.95" />
-                        <circle cx="189" cy="160" r="7" fill="#7ef0c0" />
-                        <circle cx="66" cy="70" r="6" fill="#ffd479" />
-                        <circle cx="175" cy="66" r="5" fill="#9db8ff" />
-                    </svg>
-                </div>
-
-                <div className="relative z-20 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                    <div className="max-w-2xl">
-                        <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-xs font-bold text-white backdrop-blur-xs border border-white/25">
-                            <span className="h-2 w-2 rounded-full bg-emerald-300 animate-pulse" aria-hidden="true" />
-                            <span>Executive Career Intelligence</span>
-                        </div>
-                        <h1 className="mt-2 text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-white font-rubik">
-                            {greeting}, {displayName}!
-                        </h1>
-                        <p className="mt-2 text-sm sm:text-base text-white/90 leading-relaxed font-normal max-w-xl">
-                            {count > 0
-                                ? `You have ${count} active resume${count > 1 ? 's' : ''} in your workspace. ${bestScore ? `Top ATS Readiness: ${bestScore}/100.` : ''} Ready to optimize your next role application?`
-                                : 'Build your first recruiter-ready resume with context-aware AI, Google XYZ formula, and 51 certified ATS templates.'}
-                        </p>
-
-                        <div className="mt-4 flex flex-wrap items-center gap-3">
-                            <a
-                                href="/build-resume/heading?new=1"
-                                className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-xs font-bold text-[#5949d6] shadow-[0_4px_14px_rgba(0,0,0,0.15)] transition-all hover:bg-slate-100 hover:shadow-lg cursor-pointer"
-                            >
-                                <FiPlus className="h-4 w-4" aria-hidden="true" />
-                                <span>Create New Resume</span>
-                            </a>
-                            <a
-                                href="/dashboard/jobs"
-                                className="inline-flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2.5 text-xs font-semibold text-white backdrop-blur-xs border border-white/25 transition-all hover:bg-white/25 cursor-pointer"
-                            >
-                                <FiBriefcase className="h-4 w-4" aria-hidden="true" />
-                                <span>Explore Jobs</span>
-                            </a>
-                            <a
-                                href="/dashboard/interview"
-                                className="inline-flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2.5 text-xs font-semibold text-white backdrop-blur-xs border border-white/25 transition-all hover:bg-white/25 cursor-pointer"
-                            >
-                                <FiZap className="h-4 w-4" aria-hidden="true" />
-                                <span>Mock Interview</span>
-                            </a>
-                        </div>
-                    </div>
-
-                    {/* Clock & Status Box (Authentic Cuba Profile-box Clock) */}
-                    <div className="hidden lg:flex flex-col items-center justify-center rounded-2xl bg-black/20 p-3 border border-white/20 backdrop-blur-md min-w-[150px] text-center z-20">
-                        <div className="clockbox relative flex items-center justify-center">
-                            <svg id="cuba-analog-clock" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" className="w-12 h-12">
-                                <circle cx="300" cy="300" r="253.9" fill="#ffffff" stroke="rgba(255,255,255,0.4)" strokeWidth="25" />
-                                <path
-                                    d="M300.5 94V61M506 300.5h32M300.5 506v33M94 300.5H60M411.3 107.8l7.9-13.8M493 190.2l13-7.4M492.1 411.4l16.5 9.5M411 492.3l8.9 15.3M189 492.3l-9.2 15.9M107.7 411L93 419.5M107.5 189.3l-17.1-9.9M188.1 108.2l-9-15.6"
-                                    fill="none"
-                                    stroke="#626a7d"
-                                    strokeWidth="14"
-                                    strokeMiterlimit="10"
-                                />
-                                <circle cx="300" cy="300" r="16.2" fill="#10121a" />
-                                <g transform={`rotate(${hourDegrees} 300 300)`}>
-                                    <path d="M300.5 298V142" fill="none" stroke="#ff7e00" strokeWidth="22" strokeLinecap="round" />
-                                </g>
-                                <g transform={`rotate(${minuteDegrees} 300 300)`}>
-                                    <path d="M300.5 298V67" fill="none" stroke="#ff7e00" strokeWidth="15" strokeLinecap="round" />
-                                </g>
-                                <g transform={`rotate(${secondDegrees} 300 300)`}>
-                                    <path d="M300.5 350V55" fill="none" stroke="#f3d04f" strokeWidth="9" strokeLinecap="round" />
-                                </g>
-                            </svg>
-                        </div>
-                        <div className="mt-2 text-xs font-black tracking-tight text-white font-mono">
-                            {formattedTime}
-                        </div>
-                        <div className="text-[10px] font-semibold text-white/80">
-                            {formattedDate}
-                        </div>
-                    </div>
-                </div>
+            <div data-testid="cuba-candidate-hero">
+                <CopilotHeroHud insight={insight} onNavigate={onNavigate} />
             </div>
 
-            {/* DIR-053 S4: honest connectivity banner. It only appears when the
-              * API server is unreachable — a genuinely empty account shows 0s,
-              * never this badge — and it self-heals with a 4s retry loop.
-              * DIR-054 S4: the fill/border/ink opacities are the MAPPED Cuba
-              * values (`bg-amber-50/90` at cuba-tokens.css:1941,
-              * `border-amber-300/80` at :2203, bare `dark:text-amber-100`) so the
-              * banner no longer carries unmapped light-shade classes into the
-              * dark-theme harmonisation block. */}
+            {/* DIR-053 S4: honest connectivity banner. It only appears when the API
+                server is unreachable - a genuinely empty account shows 0s, never this
+                badge - and it self-heals with a 4s retry loop. */}
             {apiError && (
                 <div
                     data-testid="cuba-api-reconnect"
@@ -241,63 +113,18 @@ const CubaCandidateHero = ({ displayName = 'Candidate' }) => {
                 >
                     <FiRefreshCw className="h-4 w-4 shrink-0 animate-spin" aria-hidden="true" />
                     <span>
-                        ✦ Connecting to API Server...
+                        Connecting to API Server...
                         <span className="ml-2 font-normal text-amber-800/90 dark:text-amber-100">
-                            Your data is safe — retrying automatically every 4 seconds.
+                            Your data is safe - retrying automatically every 4 seconds.
                         </span>
                     </span>
                 </div>
             )}
 
-            {/* Row of 4 Cuba KPI Stat Cards — DIR-084 compact density so the four cards,
-                the hero banner and the briefing share one viewport. */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
-                <CubaStatCard
-                    label="Active Resumes"
-                    value={loading ? '...' : String(count)}
-                    hint="51 certified ATS templates"
-                    icon={<FiFileText className="h-5 w-5" />}
-                    accent="primary"
-                    loading={loading}
-                    trend={count > 0 ? { label: `${count} in workspace`, tone: 'up' } : null}
-                    visual={<ResumeProgressBar count={count} />}
-                />
-                <CubaStatCard
-                    label="Average ATS Score"
-                    value={loading ? '...' : bestScore !== null ? `${bestScore}%` : 'Not Scored'}
-                    hint={bestScore && bestScore >= 75 ? 'Recruiter pass benchmark' : 'Target: 80%+ benchmark'}
-                    icon={<FiAward className="h-5 w-5" />}
-                    accent={bestScore && bestScore >= 75 ? 'success' : 'warning'}
-                    loading={loading}
-                    trend={bestScore ? { label: bestScore >= 75 ? 'Market Ready' : 'Needs Optimization', tone: bestScore >= 75 ? 'up' : 'down' } : null}
-                    visual={<AtsRadialGauge score={bestScore} />}
-                />
-                {/* DIR-058: this card is labelled "Job Applications", so it now
-                    shows the REAL submitted-application count. It previously
-                    showed the Kanban TRACKED-jobs count — a mislabel. Tracked
-                    roles are still surfaced, but in the hint where they belong. */}
-                <CubaStatCard
-                    label="Job Applications"
-                    value={loading ? '...' : applications !== null ? String(applications) : '—'}
-                    hint={trackedJobs !== null ? `${trackedJobs} tracked in pipeline` : 'Pipeline sync pending'}
-                    icon={<FiBriefcase className="h-5 w-5" />}
-                    accent="info"
-                    loading={loading && applications === null}
-                    trend={applications !== null && applications > 0 ? { label: 'Applications sent', tone: 'up' } : null}
-                    visual={<PipelineStepper applied={applications ?? 0} />}
-                />
-                <CubaStatCard
-                    label="AI Interview Coach"
-                    value="Ready"
-                    hint="CBT behavioral simulation"
-                    icon={<FiZap className="h-5 w-5" />}
-                    accent="warning"
-                    loading={false}
-                    trend={{ label: 'Drills available', tone: 'up' }}
-                />
-            </div>
+            <CubaMetricCapsuleStrip items={capsules} label="Overview metrics" />
         </div>
     );
 };
 
 export default CubaCandidateHero;
+

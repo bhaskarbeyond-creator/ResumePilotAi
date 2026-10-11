@@ -71,21 +71,24 @@ test('AC4: the candidate overview is a 2-column grid with the executive rail', a
     assert.match(rail, /role="alert"/);
 });
 
-test('AC5: the cartoon mascot is replaced by the telemetry visual', async () => {
+test('AC5: the hero is the single authoritative hero (DIR-085 compact Copilot HUD)', async () => {
     const hero = await read(HERO);
     assert.doesNotMatch(hero, /cartoon\.svg/);
-    assert.match(hero, /data-testid="cuba-hero-telemetry"/);
+    // DIR-085 supersedes the DIR-077 telemetry visual: the hero is now the compact HUD,
+    // so the Overview leads with the resume workspace instead of a tall banner.
+    assert.match(hero, /<CopilotHeroHud/);
     // The single-authoritative-hero hook survives for the DIR-009 E2E.
     assert.match(hero, /data-testid="cuba-candidate-hero"/);
 });
 
-test('AC6: the stat cards carry native SVG micro-visuals', async () => {
+test('AC6: the micro-visual primitives survive; the hero now uses the capsule strip', async () => {
     const [hero, stat, visuals] = await Promise.all([read(HERO), read(STATCARD), read(VISUALS)]);
     assert.match(stat, /visual = null,/);
     assert.match(stat, /\{visual && !loading && \(/);
-    assert.match(hero, /<ResumeProgressBar count=\{count\} \/>/);
-    assert.match(hero, /<AtsRadialGauge score=\{bestScore\} \/>/);
-    assert.match(hero, /<PipelineStepper applied=\{applications \?\? 0\} \/>/);
+    // DIR-085: the hero no longer mounts the four stat cards or the radial gauge; the
+    // compact capsule strip replaces them. The primitives themselves are untouched.
+    assert.match(hero, /<CubaMetricCapsuleStrip/);
+    assert.doesNotMatch(hero, /AtsRadialGauge/);
     assert.match(visuals, /data-testid="cuba-ats-radial-gauge"/);
     assert.match(visuals, /data-testid="cuba-resume-progress"/);
     assert.match(visuals, /data-testid="cuba-pipeline-stepper"/);

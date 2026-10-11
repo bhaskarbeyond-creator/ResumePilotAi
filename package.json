@@ -44,6 +44,7 @@
     "test:dir082": "node --test tests/dir082-viewport-density.test.mjs",
     "test:dir083": "node --test tests/dir083-candidate-page-migrations.test.mjs",
     "test:dir084": "node --test tests/dir084-single-viewport-mastery.test.mjs",
+    "test:dir085": "node --test tests/dir085-overview-workspace-mastery.test.mjs",
     "release:manifest": "node scripts/generate-certified-freeze-manifest.mjs",
     "test:dir064:visual": "node template-lab/docx-visual-parity.mjs",
     "test:api-resilience": "node tests/test_api_server_e2e_resilience.cjs",

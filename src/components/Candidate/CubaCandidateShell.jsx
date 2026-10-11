@@ -472,14 +472,21 @@ const CubaCandidateShell = ({ children, copilotResume = null }) => {
                        rail scroll internally. */
                     <div className="grid min-h-0 grid-cols-1 gap-3 2xl:h-[calc(100dvh-var(--cuba-header-h)-3.75rem)] 2xl:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]">
                         <div className="flex min-h-0 min-w-0 flex-col gap-3">
-                            <CubaCandidateHero displayName={displayName} />
-                            <AiCareerBriefing />
+                            {/* DIR-085: the compact Copilot HUD + metric capsules replace the
+                                tall banner, so the RESUME WORKSPACE is the first real content
+                                and is immediately browsable above the fold. */}
+                            <CubaCandidateHero displayName={displayName} onNavigate={navigate} />
                             <div className="min-h-0 flex-1 2xl:overflow-y-auto cuba-scrollbar [scrollbar-gutter:stable]">
                                 {children}
                             </div>
                         </div>
                         <aside className="min-h-0 min-w-0 2xl:overflow-y-auto cuba-scrollbar [scrollbar-gutter:stable]" aria-label="Executive intelligence rail">
-                            <CandidateExecutiveRail onNavigate={navigate} />
+                            {/* DIR-085: the AI Career Briefing moves into the ~32% right column
+                                beside the Live Copilot Quick-Pitch, as the mandate specifies. */}
+                            <div className="space-y-2.5">
+                                <AiCareerBriefing />
+                                <CandidateExecutiveRail onNavigate={navigate} />
+                            </div>
                         </aside>
                     </div>
                 ) : (
