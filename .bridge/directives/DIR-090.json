@@ -2,13 +2,17 @@
   "id": "DIR-090",
   "title": "Candidate Workspace (/dashboard) 10/10 Transformation — Workspace-First Layout, Collapsible Copilot, Grid/List Views & Golden-Ratio Cards",
   "priority": "P0",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-11T07:40:50.943Z",
-  "updatedAt": "2026-10-11T07:48:00.942Z",
+  "updatedAt": "2026-10-11T07:48:02.275Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
-  "spec": "MANDATE: Execute end-to-end 10/10 transformation of the Candidate Dashboard (/dashboard, DashboardHomepage.jsx, CubaCandidateShell.jsx, CandidateExecutiveRail.jsx, CopilotHeroHud.jsx): 1) FLEXIBLE WORKSPACE-FIRST LAYOUT: Replace rigid static 7fr/3fr split with an expansive workspace-first layout featuring a collapsible/expandable AI Career Copilot rail/drawer. When collapsed, the resume workspace expands to full width; when docked, it smoothly shares the viewport. 2) CONDENSED COMMAND HUD (~75-90px): Unify greeting, friendly mascot, live status pill, metric capsules (Resumes, ATS, Applications, Coach), and the SINGLE authoritative [+ Create Resume] CTA into one sleek horizontal HUD, eradicating the duplicate button from the toolbar and freeing vertical space. 3) WORKSPACE TOOLBAR WITH VIEW TOGGLE & SORT: Clean segmented category pills ([scrollbar-width:none]), responsive search input (Ctrl+K), Sort dropdown (Last Updated, ATS Score, Title), and View Toggle (Grid vs. Compact List). 4) GOLDEN-RATIO RESUME CARDS: Readable title + relative timestamp ('Updated 2h ago') + color-coded ATS badge + crisp proportional thumbnail + 1-click Primary [Edit Resume] button + secondary icon actions [PDF], [Word] and [•••] overflow menu (Share, Duplicate, Rename, Delete). List View option for dense document management. 5) CONTEXT-AWARE AI COPILOT: Bind AI Briefing and Quick-Pitch to active resume data; display actionable keyword gap pills ([+ Docker], [+ CI/CD]) with 1-click tailoring flow. 6) VERIFICATION: Author tests/dir090-candidate-dashboard-mastery.test.mjs (AC1-AC7), ensure zero whole-window scroll, sub-4s build, 0 lint errors, frozen 55 CV templates diff 0.",
+  "references": [
+    "d:\\xampp\\htdocs\\IME365\\.bridge\\references\\candidate-dashboard-target-reference.png",
+    "C:\\Users\\mbhas\\.gemini\\antigravity-ide\\brain\\a97e1dfc-8786-49f1-af66-3de9b20fbc00\\.user_uploaded\\media_1791704526080.png"
+  ],
+  "spec": "MANDATE: The user explicitly provided authoritative target screenshot (d:\\xampp\\htdocs\\IME365\\.bridge\\references\\candidate-dashboard-target-reference.png) with command 'I exactly want something like attached ss'. Execute 100% visual and functional transformation of Candidate Dashboard (/dashboard, DashboardHomepage.jsx, CubaCandidateShell.jsx, CandidateExecutiveRail.jsx, CopilotHeroHud.jsx) to match this reference screenshot:\n\n1. WELCOME & ACTION HEADER ROW:\n- Left: 'Good morning, Bhaskar! 👋' (bold) + subtitle 'Take the next step towards your dream career. Your candidate workspace at a glance.'\n- Right: Quote '\"Better resumes. Brighter opportunities.\"' (muted italic) + Action Button Group:\n  * '+ Create Resume ∨' (Solid purple primary dropdown CTA, bg-[#6366f1] / cuba-primary)\n  * '🔍 Explore Jobs' (Outline button with search icon)\n  * '🎙️ Mock Interview' (Outline button with mic icon)\n\n2. 4 HIGH-DENSITY METRIC CARDS (Rounded glass/white cards, soft border, chevron '>'):\n- 'Total Resumes': Soft blue doc icon container, large value '5', '↑ 2 this month' (green text with up arrow), chevron '>'\n- 'Avg. ATS Score': Donut ring gauge '69%' with green arc & centered label, label 'Avg. ATS Score', '↑ +12%' (green) 'Target 80%+', chevron '>'\n- 'Job Applications': Soft blue paper airplane container, large value '1', '↑ 1 this week' (green), chevron '>'\n- 'Interview Coach': Soft red/rose users icon container, value 'Ready', 'Start a session' (purple link), chevron '>'\n\n3. WORKSPACE FILTER & SEARCH TOOLBAR:\n- Segmented category pills: 'All Resumes (5)' (Active solid purple pill), 'Tailored (3)' (white pill), 'Master (1)', 'Drafts (1)' using plugin-free [scrollbar-width:none] [&::-webkit-scrollbar]:hidden\n- Right controls:\n  * Search input: '🔍 Search resumes by title, role, or keyword...' (Ctrl+K binding)\n  * 'Sort ∨' dropdown (Last Updated, ATS Score, Title)\n  * View Toggle: [ ⊞ ] (Grid active) / [ ☰ ] (List inactive)\n\n4. RESUME CARDS (4 ACTIVE DOCUMENT CARDS + 1 DASHED CONTAINER):\n- Cards 1-4: Top status badge ('🟢 Master', '🟣 Tailored', '⚪ Draft') + '•••' overflow menu; realistic thumbnail paper preview; Title ('Master Resume', 'Software Engineer - Product', 'Data Analyst Resume', 'UX Designer Resume') + date ('Updated Oct 11, 2026'); dual metadata badges ('ATS: XX/100', 'X job matches'); full-width solid purple '✏️ Edit Resume' primary button; 4-icon action row: [📄 PDF], [📝 Word], [🔗 Share], [••• More].\n- Card 5: Dashed container '+ Create a New Resume' with soft blue/purple background, plus icon, 'Start from scratch or use AI to create a professional resume.', 'Create with AI' (solid purple) and 'Upload Resume' (outline) buttons.\n\n5. BOTTOM INTELLIGENCE & ANALYTICS (3 COLUMNS):\n- Col 1: 'Application Progress' monthly bar chart (Jan-Jun) with grouped bars (Applied, Shortlisted, Interview, Offers) + 'View Details' link.\n- Col 2: 'Top Job Matches for You' with company logos (Google, Accenture, Infosys), job titles, locations, match badges ('92% Match', '86% Match', '78% Match') + bookmarks + 'View All' link.\n- Col 3: 'Your Next Steps' checklist stepper (Complete resume ✓, Improve ATS to 80%+ ○, Apply to matching jobs ○, Take a mock interview ○) + 'View All' link.\n\n6. RIGHT RAIL AI CAREER ASSISTANT:\n- Header: 'AI Career Assistant' + '● Live' status badge + 'Your Career Co-pilot' + 'Get personalised insights, improve your resume, and prepare for interviews.'\n- Navigation Tabs: 'Suggestions' (active purple underline), 'Resume Insights', 'Job Match'\n- 4 Quick Action Cards: 'Improve ATS score', 'Tailor to a job description', 'Generate cover letter', 'Prepare for interview' (with colored icon circles and chevron '>')\n- Interactive prompt input: 'Ask me anything about your career...' + purple send button '➤' + prompt chips ('Improve my resume', 'Find jobs for me', 'Interview tips')\n- 'Today's Insights' section: Warning (69% ATS), Job Matches (3 new jobs), Complete profile.\n\n7. LEFT SIDEBAR PROMO:\n- '👑 Upgrade to Pro' card with 'Unlock advanced AI tools...' + 'Upgrade Now →' button.\n\nINVARIANTS: Frozen 55 CV templates diff=0, build under 4s, 0 lint errors, XAMPP-only servers, zero synthetic data, tests/dir090-candidate-dashboard-mastery.test.mjs passing 100%.",
   "invariants": [],
   "acceptanceCriteria": [],
   "plan": {
@@ -67,8 +71,30 @@
       }
     }
   ],
-  "freeze": null,
-  "lastTransitionReason": "lead review",
+  "freeze": {
+    "freezeHash": "9a00e16aeff7a38aeecb7356828796ede9738eb5",
+    "certifiedAt": "2026-10-11T07:48:02.275Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "Autonomous Lead (Antigravity): evidence audit passed, no human review.",
+    "evidenceHash": "6f81ac5ff1f16b71f216d429b762a8c55c70ac66ee8a121f34118313a9e7924d",
+    "automated": true,
+    "certificationKind": "automated",
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "declared-automation",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "non-tty"
+      ],
+      "pid": 12584,
+      "parentPid": 5468,
+      "tty": false,
+      "at": "2026-10-11T07:48:01.564Z",
+      "explicitlyAllowed": true
+    }
+  },
+  "lastTransitionReason": "gatekeeper certification",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {

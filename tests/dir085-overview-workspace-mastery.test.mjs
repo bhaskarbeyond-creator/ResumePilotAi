@@ -25,9 +25,14 @@ test('AC1: the compact HUD and capsule strip exist and the heavy hero pieces are
 
     // The new compact surface is present.
     assert.match(hero, /import CopilotHeroHud from '\.\/CopilotHeroHud'/);
-    assert.match(hero, /import \{ CubaMetricCapsuleStrip \} from '\.\.\/cuba\/CubaMetricCapsule'/);
-    assert.match(hero, /<CopilotHeroHud insight=\{insight\} onNavigate=\{onNavigate\} \/>/);
-    assert.match(hero, /<CubaMetricCapsuleStrip items=\{capsules\} label="Overview metrics" \/>/);
+    // DIR-091 supersedes the DIR-085 capsule strip: the authoritative reference restores a
+    // high-density METRIC CARD row as the headline surface, now carrying a real ATS donut. The
+    // intent of these assertions is unchanged — the hero must expose a real metric surface bound
+    // to the platform's own reads — so they are retargeted rather than deleted.
+    assert.match(hero, /import CubaMetricCardRow from '\.\/CubaMetricCardRow'/);
+    assert.match(hero, /<CubaMetricCardRow/);
+    assert.match(hero, /bestScore=\{bestScore\}/);
+    assert.match(hero, /applications=\{applications\}/);
 
     // The four full-height stat cards and the cold radial gauge are retired.
     assert.doesNotMatch(hero, /import CubaStatCard/);
@@ -68,19 +73,21 @@ test('AC2: the workspace leads the main column and the briefing lives in the rai
 
 test('AC3: the de-duplication rule holds — no headline metric is printed twice', async () => {
     const [hero, rail] = await Promise.all([read(HERO), read(RAIL)]);
-    // The capsule strip is the ONLY headline surface: the hero no longer renders any
-    // stat card, and it never reprints the ATS figure as a second headline.
+    // DIR-091 supersedes the DIR-085 capsule strip as the sole headline surface: the reference
+    // mandates a metric CARD row. The hero still renders no CubaStatCard, so that guard stands.
     assert.doesNotMatch(hero, /<CubaStatCard/);
-    assert.match(hero, /const capsules = \[/);
+    assert.match(hero, /<CubaMetricCardRow/);
     // DIR-086 supersedes the DIR-085 two-widget rail: the ATS Keyword Strength and
     // Application Milestones widgets were removed because they duplicated the capsule
     // strip, so the rail now holds ONLY the Live Copilot Quick-Pitch and fits the viewport.
     assert.doesNotMatch(rail, /<WidgetCard title="ATS Keyword Strength"/);
     assert.doesNotMatch(rail, /<WidgetCard title="Application Milestones"/);
     assert.match(rail, /title="Live Copilot Quick-Pitch"/);
-    // The hero's headline labels are exactly the four capsule labels.
-    for (const label of ['Resumes', 'ATS', 'Applications', 'Interview Coach']) {
-        assert.ok(hero.includes(`label: '${label}'`), `the capsule strip must own the ${label} headline`);
+    // DIR-091: the headline labels moved into the metric card row, so the assertion follows them
+    // there rather than being dropped. The intent is unchanged: four real headline metrics exist.
+    const cardRow = await read('src/components/Candidate/CubaMetricCardRow.jsx');
+    for (const label of ['Total Resumes', 'Avg. ATS Score', 'Job Applications', 'Interview Coach']) {
+        assert.ok(cardRow.includes(`label="${label}"`), `the metric card row must own the ${label} headline`);
     }
 });
 
@@ -131,10 +138,12 @@ test('AC6: no new dependency, no new binary asset and no fabricated telemetry', 
     assert.match(mascot, /<svg/);
     assert.doesNotMatch(mascot, /from '\.\.\/\.\.\/assets\//, 'the mascot must not import a binary asset');
 
-    // Honesty: an unresolved read renders an explicit placeholder, never a fake zero.
+    // Honesty: an unresolved read renders an explicit placeholder, never a fake zero. DIR-091
+    // moved this contract into the metric card row, so the assertion follows it there.
+    const cardRow = await read('src/components/Candidate/CubaMetricCardRow.jsx');
+    assert.match(cardRow, /count === null \? '--' : String\(count\)/);
+    assert.match(cardRow, /applications === null \? '--' : String\(applications\)/);
     const hero = await read(HERO);
-    assert.match(hero, /value: loading \? '--' : String\(count\)/);
-    assert.match(hero, /applications !== null \? String\(applications\) : '--'/);
     // The insight line is derived from real values and is omitted when unknown.
     assert.match(hero, /const insight = loading\s*\?\s*''/);
     assert.doesNotMatch(hero, /mockTelemetry|fakeMetric|sampleData/i);

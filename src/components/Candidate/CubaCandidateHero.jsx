@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { FiBriefcase, FiAward, FiFileText, FiZap, FiRefreshCw } from 'react-icons/fi';
-// DIR-085: the compact Copilot HUD and the metric capsule strip replace the tall
-// gradient banner, the four full-height stat cards and the cold radial gauge.
+// DIR-085: the compact Copilot HUD replaced the tall gradient banner and the four
+// full-height stat cards.
+// DIR-091: the authoritative reference brings back a high-density metric card row, now
+// carrying a real ATS donut, in place of the DIR-085 capsule strip.
 import CopilotHeroHud from './CopilotHeroHud';
-import { CubaMetricCapsuleStrip } from '../cuba/CubaMetricCapsule';
+import CubaMetricCardRow from './CubaMetricCardRow';
 import { getResumes, getTrackedJobs, getStatesOfUser } from '../../services/api/platform';
 import { summariseResumes } from './briefingLogic';
 
@@ -82,14 +84,8 @@ const CubaCandidateHero = ({ displayName = 'Candidate', onNavigate }) => {
                     ? `Lift your top resume from ${bestScore}% toward the 80% recruiter benchmark.`
                     : 'Your resumes are ready - run an ATS check to see how recruiters score them.';
 
-    // DIR-085: the four headline metrics, each bound to the SAME real source the old stat
-    // cards used. An unresolved read renders an explicit placeholder, never a fake zero.
-    const capsules = [
-        { label: 'Resumes', value: loading ? '--' : String(count), icon: <FiFileText className="h-3.5 w-3.5" />, tone: 'primary' },
-        { label: 'ATS', value: loading ? '--' : bestScore !== null ? `${bestScore}%` : 'Not scored', icon: <FiAward className="h-3.5 w-3.5" />, tone: bestScore !== null && bestScore >= 75 ? 'success' : 'warning' },
-        { label: 'Applications', value: loading ? '--' : applications !== null ? String(applications) : '--', icon: <FiBriefcase className="h-3.5 w-3.5" />, tone: 'info' },
-        { label: 'Interview Coach', value: 'Ready', icon: <FiZap className="h-3.5 w-3.5" />, tone: 'warning' },
-    ];
+    // DIR-091: the capsule array was retired with the strip. The metric card row consumes the
+    // same real values (count / bestScore / applications) directly.
 
     return (
         <div className="space-y-2.5">
@@ -121,7 +117,15 @@ const CubaCandidateHero = ({ displayName = 'Candidate', onNavigate }) => {
                 </div>
             )}
 
-            <CubaMetricCapsuleStrip items={capsules} label="Overview metrics" />
+            {/* DIR-091: the authoritative reference replaces the capsule strip with four
+                high-density metric cards carrying a real ATS donut. The values come from the
+                SAME real sources the capsules used - nothing is hardcoded. */}
+            <CubaMetricCardRow
+                loading={loading}
+                count={count}
+                bestScore={bestScore}
+                applications={applications}
+            />
         </div>
     );
 };
