@@ -9,6 +9,10 @@ import {
     stageForStatus, summarizePipeline, validateTrackedJob, WORK_MODES,
 } from '../../utils/jobTracker';
 import { downloadTextFile } from '../../utils/interviewCoach';
+// DIR-081: the shared page frame so loading / empty / error swap only the content
+// region and never replace the whole page with a blank body.
+import CubaPageFrame from '../cuba/CubaPageFrame';
+import CubaEmptyState from '../cuba/CubaEmptyState';
 
 // The stage list is the single source of truth for the board; the persisted
 // `status` enum is untouched (see JOB_TRACKER_STAGES in utils/jobTracker.js).
@@ -503,20 +507,39 @@ export default function JobTracker({ showToast }) {
         }
     };
 
-    if (!user?.uid) return <main className="p-8 text-center" style={{ color: 'var(--cuba-ink-muted)' }}>Sign in to use your private job tracker.</main>;
-    if (loading) return (
-        <main className="flex min-h-64 items-center justify-center" aria-busy="true" style={{ color: 'var(--cuba-ink-muted)' }}>
-            <p role="status">Loading job tracker…</p>
-        </main>
-    );
-    if (loadError) return (
-        <main className="flex min-h-64 items-center justify-center px-4">
-            <div role="alert" className="text-center">
-                <p className="mb-3" style={{ color: 'var(--cuba-ink)' }}>{loadError}</p>
-                <button type="button" onClick={() => setRetryCount((count) => count + 1)} className="cuba-btn-primary rounded-xl px-4 py-2 text-sm font-bold shadow-xs">Try again</button>
-            </div>
-        </main>
-    );
+    // DIR-081: the page identity is declared ONCE and rendered in every state, so a
+    // signed-out, loading or failed tracker still shows its real title, subtitle and
+    // retry affordance instead of a blank page body.
+    const pageIdentity = {
+        title: 'Job Tracker',
+        subtitle: 'Move every application through Wishlist, Applied, Interviewing, Offer Received and Archived — with live interview scheduling and calendar export.',
+    };
+
+    if (!user?.uid) {
+        return (
+            <CubaPageFrame {...pageIdentity} state="empty">
+                <CubaEmptyState
+                    title="Sign in required"
+                    description="Sign in to use your private job tracker."
+                />
+            </CubaPageFrame>
+        );
+    }
+    if (loading) {
+        return (
+            <CubaPageFrame {...pageIdentity} state="loading" loadingLabel="Loading job tracker" loadingRows={5} />
+        );
+    }
+    if (loadError) {
+        return (
+            <CubaPageFrame
+                {...pageIdentity}
+                state="error"
+                error={loadError}
+                onRetry={() => setRetryCount((count) => count + 1)}
+            />
+        );
+    }
 
     return (
         <main

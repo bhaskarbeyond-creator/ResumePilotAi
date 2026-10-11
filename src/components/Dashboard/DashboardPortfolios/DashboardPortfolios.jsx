@@ -4,6 +4,10 @@ import { FiPlus, FiEye, FiEdit3, FiTrash2, FiExternalLink, FiGrid, FiList } from
 import { Link } from 'react-router-dom';
 import fire from '../../../conf/fire';
 import { getUserPortfolios, deletePortfolio } from '../../../services/api/platform';
+// DIR-081: page-frame + honest empty/error states so a failed read can never be
+// rendered as "you have no portfolios".
+import CubaPageFrame from '../../cuba/CubaPageFrame';
+import CubaEmptyState from '../../cuba/CubaEmptyState';
 
 // Import portfolio preview images
 import darkCyberPreview from '../../../assets/portfolioPreview/Dark Cyber Portfolio.JPG';
@@ -46,6 +50,9 @@ const DashboardPortfolios = ({ t, showToast }) => {
     const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedTheme, setSelectedTheme] = useState('');
+    // DIR-081: a FAILED read is tracked separately from an empty account, so the
+    // page can tell the user the truth instead of showing a false empty state.
+    const [loadError, setLoadError] = useState('');
 
     const themes = [
         { value: '', label: t('DashboardPortfolios.themes.allThemes') },
@@ -64,6 +71,7 @@ const DashboardPortfolios = ({ t, showToast }) => {
     const loadUserPortfolios = async () => {
         try {
             setLoading(true);
+            setLoadError('');
             const user = fire.auth().currentUser;
             if (user) {
                 const userPortfolios = await getUserPortfolios(user.uid, true); // Include unpublished portfolios
@@ -75,8 +83,11 @@ const DashboardPortfolios = ({ t, showToast }) => {
             }
         } catch (error) {
             console.error('Error loading portfolios:', error);
-            // Set empty portfolios on error to prevent undefined state
+            // DIR-081: previously the catch emptied the array and relied on a toast, so
+            // a genuine network/API failure rendered the "no portfolios" empty state and
+            // told the user their work had disappeared. Record the real error instead.
             setPortfolios([]);
+            setLoadError(error?.message || t('DashboardPortfolios.messages.loadError'));
             showToast && showToast('error', 'Error', t('DashboardPortfolios.messages.loadError'));
         } finally {
             setLoading(false);
@@ -123,13 +134,14 @@ const DashboardPortfolios = ({ t, showToast }) => {
         return matchesSearch && matchesTheme;
     });
 
+    // DIR-081: theme chips resolve through Cuba tokens instead of the legacy palette.
     const getThemeColor = (theme) => {
         const colors = {
-            default: 'bg-blue-100 text-blue-800',
-            dark: 'bg-gray-800 text-white',
-            minimal: 'bg-gray-100 text-gray-800',
-            creative: 'bg-purple-100 text-purple-800',
-            professional: 'bg-slate-100 text-slate-800',
+            default: 'bg-cuba-primary-soft text-cuba-primary-ink-strong',
+            dark: 'bg-cuba-ink text-cuba-canvas',
+            minimal: 'bg-cuba-card text-cuba-ink border border-cuba-line',
+            creative: 'bg-cuba-info-soft text-cuba-ink',
+            professional: 'bg-cuba-success-soft text-cuba-ink',
         };
         return colors[theme] || colors.default;
     };
@@ -342,26 +354,40 @@ const DashboardPortfolios = ({ t, showToast }) => {
         </div>
     );
 
+    // DIR-081: the page identity is rendered in every state, so loading and failure
+    // keep the real title instead of collapsing the page body.
+    const pageIdentity = {
+        title: t('DashboardPortfolios.title'),
+        subtitle: t('DashboardPortfolios.subtitle'),
+    };
+
     if (loading) {
+        return <CubaPageFrame {...pageIdentity} state="loading" loadingLabel={t('DashboardPortfolios.loading', 'Loading your portfolios')} loadingRows={4} />;
+    }
+
+    if (loadError) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7366ff]"></div>
-            </div>
+            <CubaPageFrame
+                {...pageIdentity}
+                state="error"
+                error={loadError}
+                onRetry={loadUserPortfolios}
+            />
         );
     }
 
     return (
-        <div className="min-h-screen bg-cuba-canvas">
+        <div className="min-h-screen bg-cuba-canvas" data-testid="cuba-page-frame" data-page-state="ready">
             <div className="mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-4 sm:py-6 max-w-none w-full" style={{maxWidth: '1600px'}}>
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
                     <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-slate-100 rounded-lg">
-                            <FiGrid className="w-5 h-5 text-slate-600" />
+                        <div className="p-2 bg-cuba-primary-soft rounded-lg">
+                            <FiGrid className="w-5 h-5 text-cuba-primary-ink-strong" />
                         </div>
                         <div>
-                            <h1 className="text-xl font-semibold text-slate-900">{t('DashboardPortfolios.title')}</h1>
-                            <p className="text-sm text-slate-600 mt-0.5">{t('DashboardPortfolios.subtitle')}</p>
+                            <h1 className="text-xl font-semibold text-cuba-ink">{t('DashboardPortfolios.title')}</h1>
+                            <p className="text-sm text-cuba-ink-muted mt-0.5">{t('DashboardPortfolios.subtitle')}</p>
                         </div>
                     </div>
                         <Link to="/portfolio/builder?create=1" className="cuba-btn-primary inline-flex items-center px-4 py-2.5 text-white text-sm font-bold rounded-xl transition-all min-h-[44px] shadow-sm">
@@ -402,12 +428,12 @@ const DashboardPortfolios = ({ t, showToast }) => {
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={() => setViewMode('grid')}
-                                className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-slate-100 text-slate-600' : 'text-slate-400 hover:text-slate-600'}`}>
+                                className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-cuba-primary-soft text-cuba-primary-ink-strong' : 'text-cuba-ink-subtle hover:text-cuba-ink'}`}>
                                 <FiGrid className="w-5 h-5" />
                             </button>
                             <button
                                 onClick={() => setViewMode('list')}
-                                className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-slate-100 text-slate-600' : 'text-slate-400 hover:text-slate-600'}`}>
+                                className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-cuba-primary-soft text-cuba-primary-ink-strong' : 'text-cuba-ink-subtle hover:text-cuba-ink'}`}>
                                 <FiList className="w-5 h-5" />
                             </button>
                         </div>
@@ -416,15 +442,19 @@ const DashboardPortfolios = ({ t, showToast }) => {
 
                 {/* Content */}
                 {filteredPortfolios.length === 0 ? (
-                    <div className="text-center py-12 bg-cuba-card rounded-[15px] border border-cuba-line">
-                        <div className="text-6xl mb-4">🎨</div>
-                        <h3 className="text-lg font-medium text-slate-900 mb-2">{t('DashboardPortfolios.emptyState.title')}</h3>
-                        <p className="text-slate-600 mb-6 text-sm">{searchTerm || selectedTheme ? t('DashboardPortfolios.emptyState.noSearchResults') : t('DashboardPortfolios.emptyState.noPortfolios')}</p>
-                        <Link to="/portfolio/builder" className="cuba-btn-primary inline-flex items-center px-5 py-2.5 text-white text-sm font-bold rounded-xl transition-all min-h-[44px] shadow-sm">
-                            <FiPlus className="w-5 h-5 mr-2" />
-                            {t('DashboardPortfolios.emptyState.createFirstPortfolio')}
-                        </Link>
-                    </div>
+                    /* DIR-081: the real Cuba empty state — no raw emoji placeholder, and a
+                       genuine load failure is an error state above, never this. */
+                    <CubaEmptyState
+                        icon={<FiGrid className="h-5 w-5" aria-hidden="true" />}
+                        title={t('DashboardPortfolios.emptyState.title')}
+                        description={searchTerm || selectedTheme ? t('DashboardPortfolios.emptyState.noSearchResults') : t('DashboardPortfolios.emptyState.noPortfolios')}
+                        action={(
+                            <Link to="/portfolio/builder" className="cuba-btn-primary inline-flex items-center px-5 py-2.5 text-white text-sm font-bold rounded-xl transition-all min-h-[44px] shadow-sm">
+                                <FiPlus className="w-5 h-5 mr-2" />
+                                {t('DashboardPortfolios.emptyState.createFirstPortfolio')}
+                            </Link>
+                        )}
+                    />
                 ) : (
                     <>{viewMode === 'grid' ? renderGridView() : renderListView()}</>
                 )}

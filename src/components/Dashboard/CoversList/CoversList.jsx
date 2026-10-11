@@ -1,7 +1,10 @@
 import React, { Component } from 'react';
 import { getCovers, removeCover } from '../../../services/api/platform';
 import { Link } from 'react-router-dom';
-import addResumesImage from '../../../assets/undraw_add_document_0hek.svg';
+// DIR-081: Cover Letters was a legacy-styled, non-responsive surface — it now uses the
+// shared page header, Cuba tokens, real breakpoints and a genuine empty state.
+import CubaPageHeader from '../../cuba/CubaPageHeader';
+import CubaEmptyState from '../../cuba/CubaEmptyState';
 import fire from '../../../conf/fire';
 import { withTranslation } from 'react-i18next';
 import LoadingAnimation from '../../../assets/animations/lottie.loading.json';
@@ -58,27 +61,28 @@ class CoversList extends Component {
         var covers = [];
         for (let index = 0; index < this.state.covers.length; index++) {
             covers[index] = (
-                <li key={index} className="resumeItem">
-                    <div className="resumeItemStatus" style={{ backgroundColor: '#2ecc71' }}></div>
-                    <div className="resumeItemContent">
-                        <div className="resumeItemContentWrapper">
-                            <span className="name">{this.state.covers[index].item.firstname + ' ' + this.state.covers[index].item.lastname}</span>
-                            <span className="occupation">{this.state.covers[index].item.title || 'Cover Letter'}</span>
+                <li key={index} className="flex flex-col gap-3 rounded-cuba-lg border border-cuba-line bg-cuba-card p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                        <span className="h-2.5 w-2.5 flex-none rounded-full bg-cuba-success" aria-hidden="true" />
+                        <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-cuba-ink">{this.state.covers[index].item.firstname + ' ' + this.state.covers[index].item.lastname}</p>
+                            <p className="truncate text-xs text-cuba-ink-muted">{this.state.covers[index].item.title || 'Cover Letter'}</p>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Link
-                                onClick={() => this.setAsCurrentCover(this.state.covers[index].id, JSON.stringify(this.state.covers[index]))}
-                                className="inline-flex items-center px-3.5 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-lg shadow-sm transition-colors"
-                                to={'/?step=Cover'}>
-                                Edit Cover Letter
-                            </Link>
-                            <button
-                                type="button"
-                                onClick={() => this.deleteCover(fire.auth().currentUser?.uid, this.state.covers[index].id, index)}
-                                className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 active:bg-rose-800 rounded-lg shadow-sm transition-colors">
-                                Remove
-                            </button>
-                        </div>
+                    </div>
+                    <div className="flex flex-none flex-wrap items-center gap-2">
+                        <Link
+                            onClick={() => this.setAsCurrentCover(this.state.covers[index].id, JSON.stringify(this.state.covers[index]))}
+                            className="cuba-btn-primary inline-flex items-center rounded-cuba-sm px-3.5 py-1.5 text-xs font-bold"
+                            to={'/?step=Cover'}>
+                            Edit Cover Letter
+                        </Link>
+                        <button
+                            type="button"
+                            onClick={() => this.deleteCover(fire.auth().currentUser?.uid, this.state.covers[index].id, index)}
+                            className="inline-flex items-center rounded-cuba-sm px-3 py-1.5 text-xs font-semibold text-white"
+                            style={{ background: 'var(--cuba-danger)' }}>
+                            Remove
+                        </button>
                     </div>
                 </li>
             );
@@ -108,40 +112,32 @@ class CoversList extends Component {
     render() {
         const { t } = this.props;
         return (
-            <div className="dashboardContent">
-                <div className="head">
-                    <div className="headContent">
-                        <h2>Cover Letters </h2>
-                        {this.state.covers != null && (
-                            <Link onClick={() => this.addNewCover()} to="/?step=Cover" style={{ fontSize: '17px' }} className="btn-default">
-                                {' '}
-                                + {t('dashboard.addNew')}{' '}
-                            </Link>
-                        )}
-                    </div>
-                    <hr />
-                    {/* Covers List */}
-                    <div className="resumesList">
-                        {this.state.covers == 'loading' ? (
-                            // <Lottie height="50" width="50" options={loadingSettings} />
-                            <>{View}</>
-                        ) : this.state.covers == null ? (
-                            <div
-                                style={{
-                                    textAlign: 'center',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                }}>
-                                <img className="noResumesImage" src={addResumesImage} alt="" />
-                            </div>
-                        ) : (
-                            <ul>
-                                {/*  Return Covers */}
-                                {this.returnCovers()}
-                            </ul>
-                        )}
-                    </div>
-                    ddddddddddddddddddddddddd
+            <div className="min-w-0">
+                <CubaPageHeader
+                    title={t('dashboard.coverLetters', 'Cover Letters')}
+                    subtitle="Every cover letter you have generated, ready to edit or remove."
+                    actions={this.state.covers != null && (
+                        <Link onClick={() => this.addNewCover()} to="/?step=Cover" className="cuba-btn-primary inline-flex items-center rounded-cuba-sm px-4 py-2.5 text-sm font-bold">
+                            + {t('dashboard.addNew')}
+                        </Link>
+                    )}
+                />
+                <div className="mt-5">
+                    {this.state.covers == 'loading' ? (
+                        <>{View}</>
+                    ) : this.state.covers == null ? (
+                        /* DIR-081: a real empty state. This used to be a bare image with an
+                           empty alt and no message, so a signed-out or empty account saw an
+                           unexplained picture. */
+                        <CubaEmptyState
+                            title="No cover letters yet"
+                            description="Generate a cover letter and it will appear here, ready to edit or remove."
+                        />
+                    ) : (
+                        <ul className="space-y-3">
+                            {this.returnCovers()}
+                        </ul>
+                    )}
                 </div>
             </div>
         );

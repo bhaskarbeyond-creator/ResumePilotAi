@@ -7,6 +7,10 @@ import { AuthContext } from '../../context/AuthContext';
 import { getUserJobApplications, getJobById, withdrawJobApplication, createTrackedJob, getTrackedJobs } from '../../services/api/platform';
 import { formatSafeDate } from '../../utils/subscriptionUtils.js';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
+// DIR-081: the shared page frame so loading / empty / error swap only the content
+// region and never replace the whole page with a blank body.
+import CubaPageFrame from '../cuba/CubaPageFrame';
+import CubaEmptyState from '../cuba/CubaEmptyState';
 
 /**
  * DIR-059: the `applications` table stores its own status vocabulary (default
@@ -251,55 +255,38 @@ const AppliedJobs = ({ showToast, t }) => {
         return appliedJobs.filter((job) => job.status === status).length;
     };
 
+    // DIR-081: the page identity is rendered in every state, so a signed-out,
+    // loading or failed applications list keeps its real title and retry action
+    // instead of collapsing to a blank page body.
+    const pageIdentity = {
+        title: t('JobsUpdate.AppliedJobs.title', 'Applied Jobs'),
+        subtitle: t('JobsUpdate.AppliedJobs.subtitle', 'Track your job applications and their current status'),
+    };
+
     if (loading) {
-        return (
-            <div className="min-h-screen bg-cuba-canvas">
-                <div className="mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-4 sm:py-6 max-w-none w-full" style={{maxWidth: '1600px'}}>
-                    <div className="flex items-center justify-center h-64" aria-busy="true">
-                        <div className="text-center" role="status" aria-live="polite">
-                            {/* AC-1: the spinner accent is the Cuba brand token, not the
-                                legacy `border-t-slate-600`, so it follows the active
-                                theme (including dark mode) automatically. */}
-                            <div aria-hidden="true" className="animate-spin rounded-full h-10 w-10 border-2 border-cuba-line border-t-cuba-primary mx-auto mb-3"></div>
-                            <p className="text-cuba-ink-muted text-sm font-medium">{t('JobsUpdate.AppliedJobs.loading', 'Loading your applications...')}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
+        return <CubaPageFrame {...pageIdentity} state="loading" loadingLabel={t('JobsUpdate.AppliedJobs.loading', 'Loading your applications')} loadingRows={4} />;
     }
 
     // Check if user is logged in
     if (!user?.uid) {
         return (
-            <div className="min-h-screen bg-cuba-canvas">
-                <div className="mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-4 sm:py-6 max-w-none w-full" style={{maxWidth: '1600px'}}>
-                    <div className="flex items-center justify-center h-64">
-                        <div className="text-center">
-                            <div className="p-4 bg-cuba-elevated rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                                <FaBriefcase className="w-8 h-8 text-cuba-ink-subtle" />
-                            </div>
-                            <h3 className="text-sm font-medium text-cuba-ink mb-2">{t('JobsUpdate.AppliedJobs.loginRequired.title', 'Please log in')}</h3>
-                            <p className="text-cuba-ink-muted text-sm">{t('JobsUpdate.AppliedJobs.loginRequired.message', 'You need to be logged in to view your job applications.')}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <CubaPageFrame {...pageIdentity} state="empty">
+                <CubaEmptyState
+                    title={t('JobsUpdate.AppliedJobs.loginRequired.title', 'Please log in')}
+                    description={t('JobsUpdate.AppliedJobs.loginRequired.message', 'You need to be logged in to view your job applications.')}
+                />
+            </CubaPageFrame>
         );
     }
 
     if (loadError) {
         return (
-            <main className="min-h-screen bg-cuba-canvas flex items-center justify-center px-4">
-                <div className="max-w-md text-center" role="alert">
-                    <FaInfoCircle aria-hidden="true" className="w-10 h-10 text-cuba-warning mx-auto mb-3" />
-                    <h1 className="text-lg font-semibold text-cuba-ink mb-2">Applications unavailable</h1>
-                    <p className="text-sm text-cuba-ink-muted mb-4">{loadError}</p>
-                    <button type="button" onClick={() => setRetryCount((count) => count + 1)} className="cuba-btn-primary px-4 py-2 rounded-xl text-sm font-bold shadow-xs">
-                        Try again
-                    </button>
-                </div>
-            </main>
+            <CubaPageFrame
+                {...pageIdentity}
+                state="error"
+                error={loadError}
+                onRetry={() => setRetryCount((count) => count + 1)}
+            />
         );
     }
 

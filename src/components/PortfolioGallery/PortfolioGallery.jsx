@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getPublicPortfolios } from '../../services/api/platform';
+// DIR-081: PortfolioGallery was the last legacy-styled public surface — it now uses the
+// real Cuba tokens, the shared page header, a skeleton grid and honest empty/error states.
+import CubaPageHeader from '../cuba/CubaPageHeader';
+import CubaEmptyState from '../cuba/CubaEmptyState';
+import CubaErrorState from '../cuba/CubaErrorState';
+import CubaSkeleton from '../cuba/CubaSkeleton';
 import modernMinimalPreview from '../../assets/portfolioPreview/modern-minimal.png';
 import executivePreview from '../../assets/portfolioPreview/executive.png';
 import creativeDarkPreview from '../../assets/portfolioPreview/creative-dark.png';
@@ -11,6 +17,9 @@ const PortfolioGallery = () => {
     const [loading, setLoading] = useState(true);
     const [selectedTheme, setSelectedTheme] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
+    // DIR-081: the failure was previously swallowed to the console, so a broken read
+    // silently rendered the "no portfolios found" empty state.
+    const [loadError, setLoadError] = useState('');
 
     const themes = [
         { value: '', label: 'All Themes' },
@@ -29,10 +38,13 @@ const PortfolioGallery = () => {
     const loadPortfolios = async () => {
         try {
             setLoading(true);
+            setLoadError('');
             const data = await getPublicPortfolios(20, selectedTheme || null);
-            setPortfolios(data);
+            setPortfolios(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Error loading portfolios:', error);
+            setPortfolios([]);
+            setLoadError(error?.message || 'The portfolio gallery could not be loaded.');
         } finally {
             setLoading(false);
         }
@@ -45,13 +57,15 @@ const PortfolioGallery = () => {
             (portfolio.metadata?.tags && portfolio.metadata.tags.some((tag) => tag.toLowerCase().includes(searchTerm.toLowerCase())))
     );
 
+    // DIR-081: theme chips resolve through Cuba tokens instead of the legacy
+    // blue/gray/purple/slate utility palette.
     const getThemeColor = (theme) => {
         const colors = {
-            default: 'bg-blue-100 text-blue-800',
-            dark: 'bg-gray-800 text-white',
-            minimal: 'bg-gray-100 text-gray-800',
-            creative: 'bg-purple-100 text-purple-800',
-            professional: 'bg-slate-100 text-slate-800',
+            default: 'bg-cuba-primary-soft text-cuba-primary-ink-strong',
+            dark: 'bg-cuba-ink text-cuba-canvas',
+            minimal: 'bg-cuba-card text-cuba-ink border border-cuba-line',
+            creative: 'bg-cuba-info-soft text-cuba-ink',
+            professional: 'bg-cuba-success-soft text-cuba-ink',
         };
         return colors[theme] || colors.default;
     };
@@ -67,73 +81,90 @@ const PortfolioGallery = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <div className="bg-white shadow-sm">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <div className="text-center">
-                        <h1 className="text-3xl font-bold text-gray-900 mb-4">Portfolio Gallery</h1>
-                        <p className="text-lg text-gray-600 mb-8">Discover amazing portfolios created by our community</p>
+        <div className="min-h-screen bg-cuba-canvas">
+            {/* DIR-081: the shared Cuba page header replaces the legacy centred hero. */}
+            <div className="border-b border-cuba-line bg-cuba-card">
+                <div className="mx-auto max-w-[1680px] px-4 py-6 sm:px-6 lg:px-8">
+                    <CubaPageHeader
+                        eyebrow="Community"
+                        title="Portfolio Gallery"
+                        subtitle="Discover portfolios published by the IME365 community."
+                    />
 
-                        {/* Search and Filter */}
-                        <div className="max-w-2xl mx-auto flex flex-col sm:flex-row gap-4">
-                            <div className="flex-1">
-                                <input
-                                    type="text"
-                                    placeholder="Search portfolios..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                            </div>
-                            <div className="sm:w-48">
-                                <select
-                                    value={selectedTheme}
-                                    onChange={(e) => setSelectedTheme(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    {themes.map((theme) => (
-                                        <option key={theme.value} value={theme.value}>
-                                            {theme.label}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
+                    {/* Search and Filter */}
+                    <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+                        <div className="flex-1">
+                            <label className="sr-only" htmlFor="portfolio-gallery-search">Search portfolios</label>
+                            <input
+                                id="portfolio-gallery-search"
+                                type="search"
+                                placeholder="Search portfolios..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="cuba-focusable w-full rounded-cuba-sm border border-cuba-line-strong bg-cuba-canvas px-4 py-2.5 text-sm text-cuba-ink"
+                            />
+                        </div>
+                        <div className="sm:w-56">
+                            <label className="sr-only" htmlFor="portfolio-gallery-theme">Filter by theme</label>
+                            <select
+                                id="portfolio-gallery-theme"
+                                value={selectedTheme}
+                                onChange={(e) => setSelectedTheme(e.target.value)}
+                                className="cuba-focusable w-full rounded-cuba-sm border border-cuba-line-strong bg-cuba-canvas px-4 py-2.5 text-sm text-cuba-ink">
+                                {themes.map((theme) => (
+                                    <option key={theme.value} value={theme.value}>
+                                        {theme.label}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* Portfolio Grid */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {loading ? (
-                    <div className="flex justify-center items-center h-64">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <div className="mx-auto max-w-[1680px] px-4 py-8 sm:px-6 lg:px-8">
+                {loadError ? (
+                    <CubaErrorState
+                        title="The portfolio gallery could not be loaded"
+                        message={loadError}
+                        onRetry={loadPortfolios}
+                    />
+                ) : loading ? (
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3" aria-busy="true">
+                        {Array.from({ length: 6 }).map((_, index) => (
+                            <div key={index} className="rounded-cuba-lg border border-cuba-line bg-cuba-card p-5">
+                                <CubaSkeleton height="9rem" rounded="rounded-cuba-lg" text="Loading portfolio preview" />
+                                <CubaSkeleton className="mt-4" height="1rem" width="70%" text="Loading portfolio title" />
+                                <CubaSkeleton className="mt-2" height="0.8rem" width="45%" text="Loading portfolio metadata" />
+                            </div>
+                        ))}
                     </div>
                 ) : (
                     <>
                         <div className="mb-6">
-                            <p className="text-gray-600">
+                            <p className="text-sm font-medium text-cuba-ink-muted">
                                 {filteredPortfolios.length} portfolio{filteredPortfolios.length !== 1 ? 's' : ''} found
                             </p>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {filteredPortfolios.map((portfolio) => (
-                                <div key={portfolio.id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden">
+                                <div key={portfolio.id} className="cuba-glass overflow-hidden rounded-cuba-lg border border-cuba-line transition-shadow hover:shadow-cuba-lg">
                                     {/* Preview Image */}
-                                    <div className="h-48 relative overflow-hidden bg-slate-100">
+                                    <div className="relative h-48 overflow-hidden bg-cuba-canvas">
                                         <img
                                             src={getPreviewImage(portfolio)}
                                             alt={`${portfolio.title} preview`}
                                             className="w-full h-full object-cover"
                                             onError={(e) => {
                                                 e.target.style.display = 'none';
-                                                e.target.parentElement.classList.add('bg-gradient-to-br', 'from-slate-400', 'to-purple-500');
+                                                e.target.parentElement.classList.add('bg-cuba-primary-soft');
                                             }}
                                         />
-                                        <div className="absolute inset-0 bg-black bg-opacity-20 hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center opacity-0 hover:opacity-100">
-                                            <div className="text-white text-center">
-                                                <h3 className="text-lg font-bold mb-1">{portfolio.title}</h3>
+                                        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-20 opacity-0 transition-all duration-200 hover:bg-opacity-40 hover:opacity-100">
+                                            <div className="text-center text-white">
+                                                <h3 className="mb-1 text-lg font-bold">{portfolio.title}</h3>
                                                 <p className="text-xs font-medium">View Portfolio</p>
                                             </div>
                                         </div>
@@ -141,31 +172,31 @@ const PortfolioGallery = () => {
 
                                     {/* Portfolio Info */}
                                     <div className="p-6">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <h3 className="text-lg font-semibold text-gray-900 truncate">{portfolio.title}</h3>
-                                            <span className={`px-2 py-1 text-xs font-medium rounded ${getThemeColor(portfolio.theme)}`}>{portfolio.theme}</span>
+                                        <div className="mb-3 flex items-center justify-between gap-3">
+                                            <h3 className="truncate text-lg font-semibold text-cuba-ink">{portfolio.title}</h3>
+                                            <span className={`rounded-cuba-sm px-2 py-1 text-xs font-medium ${getThemeColor(portfolio.theme)}`}>{portfolio.theme}</span>
                                         </div>
 
-                                        {portfolio.metadata?.description && <p className="text-gray-600 text-sm mb-3 line-clamp-2">{portfolio.metadata.description}</p>}
+                                        {portfolio.metadata?.description && <p className="mb-3 line-clamp-2 text-sm text-cuba-ink-muted">{portfolio.metadata.description}</p>}
 
                                         {portfolio.metadata?.tags && portfolio.metadata.tags.length > 0 && (
                                             <div className="flex flex-wrap gap-1 mb-4">
                                                 {portfolio.metadata.tags.slice(0, 3).map((tag, index) => (
-                                                    <span key={index} className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
+                                                    <span key={index} className="rounded-cuba-sm border border-cuba-line bg-cuba-card px-2 py-1 text-xs text-cuba-ink-muted">
                                                         {tag}
                                                     </span>
                                                 ))}
                                                 {portfolio.metadata.tags.length > 3 && (
-                                                    <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">+{portfolio.metadata.tags.length - 3} more</span>
+                                                    <span className="rounded-cuba-sm border border-cuba-line bg-cuba-card px-2 py-1 text-xs text-cuba-ink-muted">+{portfolio.metadata.tags.length - 3} more</span>
                                                 )}
                                             </div>
                                         )}
 
                                         <div className="flex items-center justify-between">
-                                            <div className="text-sm text-gray-500">{portfolio.views || 0} views</div>
+                                            <div className="text-sm text-cuba-ink-subtle">{portfolio.views || 0} views</div>
                                             <Link
                                                 to={`/portfolio/${portfolio.slug}`}
-                                                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition-colors">
+                                                className="cuba-btn-primary inline-flex items-center rounded-cuba-sm px-4 py-2 text-sm font-semibold">
                                                 View Portfolio
                                                 <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path
@@ -183,20 +214,19 @@ const PortfolioGallery = () => {
                         </div>
 
                         {filteredPortfolios.length === 0 && !loading && (
-                            <div className="text-center py-12">
-                                <div className="text-6xl mb-4">🎨</div>
-                                {/* An empty-state message is not a document heading. As an h3 it skipped a
-                                    level from the page h1 and announced a status line as a
-                                    section. Tailwind classes unchanged, so rendering is identical. */}
-                                <p className="text-xl font-medium text-gray-900 mb-2">No portfolios found</p>
-                                <p className="text-gray-600 mb-6">{searchTerm || selectedTheme ? 'Try adjusting your search or filter criteria.' : 'Be the first to publish a portfolio!'}</p>
-                                <Link to="/portfolio/builder?create=1" className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
-                                    Create Portfolio
-                                    <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                    </svg>
-                                </Link>
-                            </div>
+                            /* DIR-081: the real Cuba empty state — no raw emoji placeholder and no
+                               legacy blue button. A failed read is the error state above, not this. */
+                            <CubaEmptyState
+                                title="No portfolios found"
+                                description={searchTerm || selectedTheme
+                                    ? 'Try adjusting your search or filter criteria.'
+                                    : 'Be the first to publish a portfolio!'}
+                                action={(
+                                    <Link to="/portfolio/builder?create=1" className="cuba-btn-primary inline-flex items-center rounded-cuba-sm px-6 py-3 font-semibold">
+                                        Create Portfolio
+                                    </Link>
+                                )}
+                            />
                         )}
                     </>
                 )}

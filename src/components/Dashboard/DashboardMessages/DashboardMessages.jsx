@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { withTranslation } from 'react-i18next';
-import { FiSearch, FiPaperclip, FiSend, FiMoreVertical, FiEdit, FiChevronUp, FiMessageCircle, FiUser, FiUsers } from 'react-icons/fi';
+import { FiSearch, FiPaperclip, FiSend, FiMoreVertical, FiEdit, FiChevronUp, FiMessageCircle, FiUser, FiUsers, FiArrowLeft } from 'react-icons/fi';
 import { getConversationParticipantProfile, getConversations, subscribeConversationMessages, getMessagesPaginated, sendMessage, markConversationRead } from '../../../services/api/platform';
 import fire from '../../../conf/fire';
 import userPlaceholder from '../../../assets/user.png';
@@ -371,9 +371,13 @@ const DashboardMessages = ({ t }) => {
     };
 
     return (
-        <div className={`flex h-screen font-sans ${CHAT_SURFACE}`}>
-            {/* Left Sidebar - Conversations List */}
-            <div className={`w-[280px] flex-shrink-0 border-r flex flex-col ${CHAT_SURFACE} ${CHAT_LINE}`}>
+        <div className={`flex h-full min-h-[70vh] font-sans lg:h-[calc(100vh-9rem)] ${CHAT_SURFACE}`}>
+            {/* Left Sidebar - Conversations List.
+                DIR-081: the list and the thread coexist only from `lg` up. Below that the
+                fixed 280px column starved the thread on phones, so the list is shown
+                alone until a conversation is picked and the thread then takes over with a
+                back-to-list control. */}
+            <div className={`${selectedConversation ? 'hidden lg:flex' : 'flex'} w-full flex-shrink-0 flex-col border-r lg:w-[320px] ${CHAT_SURFACE} ${CHAT_LINE}`}>
                 {/* Search Bar */}
                 <div className={`px-3 py-3 border-b ${CHAT_LINE}`}>
                     <div className="relative">
@@ -453,12 +457,23 @@ const DashboardMessages = ({ t }) => {
             </div>
 
             {/* Right Panel - Chat Area */}
-            <div className="flex-1 flex flex-col h-full bg-[var(--cuba-primary-soft)]">
+            <div className={`${selectedConversation ? 'flex' : 'hidden lg:flex'} flex-1 flex-col h-full bg-[var(--cuba-primary-soft)]`}>
                 {selectedConversation ? (
                     <>
                         {/* Chat Header */}
                         <div className={`flex items-center justify-between px-5 py-3 border-b flex-shrink-0 shadow-sm ${CHAT_SURFACE} ${CHAT_LINE}`}>
                             <div className="flex items-center space-x-3">
+                                {/* DIR-081: mobile back-to-list. Below `lg` the conversation
+                                    list is hidden once a thread is open, so the user needs an
+                                    explicit way back to it. */}
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedConversation(null)}
+                                    className={`cuba-focusable lg:hidden inline-flex h-9 w-9 flex-none items-center justify-center rounded-full border transition-colors ${CHAT_INK_SUBTLE} hover:bg-[var(--cuba-primary-soft)]`}
+                                    aria-label={t('JobsUpdate.DashboardMessages.backToList', 'Back to conversations')}
+                                >
+                                    <FiArrowLeft className="h-4 w-4" aria-hidden="true" />
+                                </button>
                                 <div className="relative flex-shrink-0">
                                     <div className="w-10 h-10 rounded-full overflow-hidden ring-2 hover:ring-[var(--cuba-primary-soft)] transition-all duration-200" style={{ '--tw-ring-color': 'var(--cuba-line)' }}>
                                         <img src={selectedConversation.avatar} alt="" className="w-full h-full object-cover" />
@@ -551,20 +566,20 @@ const DashboardMessages = ({ t }) => {
                                                 msg.sender === 'me'
                                                     ? CHAT_PRIMARY
                                                     : msg.sender === 'system' && msg.isError
-                                                    ? 'bg-red-50 text-red-700 border border-red-200'
+                                                    ? 'bg-cuba-danger-soft text-cuba-danger border border-cuba-danger/30'
                                                     : `border ${CHAT_SURFACE} shadow-md`
                                             }`}>
                                             <p className="text-sm leading-relaxed break-words">{msg.text}</p>
                                             {msg.isError && (
-                                                <p className="text-xs mt-2 text-red-600">
+                                                <p className="text-xs mt-2 text-cuba-danger">
                                                     {t('JobsUpdate.DashboardMessages.errors.connection', 'Check your connection and try again.')}
                                                 </p>
                                             )}
                                         </div>
-                                        {/* DIR-026 / INV-4: this timestamp was `text-gray-400`
-                                            (~2.9:1 on white — below the AA floor). It now uses
-                                            the audited `--cuba-ink-subtle` token, which clears
-                                            4.5:1 in BOTH light and dark themes. */}
+                                        {/* DIR-026 / INV-4: this timestamp used a legacy
+                                            grey utility (~2.9:1 on white — below the AA floor).
+                                            It now uses the audited `--cuba-ink-subtle` token,
+                                            which clears 4.5:1 in BOTH light and dark themes. */}
                                         {msg.sender !== 'system' && <span className={`text-[10px] flex-shrink-0 px-1 self-end ${CHAT_INK_SUBTLE}`}>{msg.time}</span>}
                                     </div>
                                 ))
@@ -574,9 +589,9 @@ const DashboardMessages = ({ t }) => {
                                     <p className="text-sm font-medium">{t('JobsUpdate.DashboardMessages.loading.messages', 'Loading messages...')}</p>
                                 </div>
                             ) : messagesError ? (
-                                <div className="flex flex-col items-center justify-center h-full text-red-500">
-                                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                                        <FiMessageCircle className="w-8 h-8 text-red-400" />
+                                <div className="flex flex-col items-center justify-center h-full text-cuba-danger">
+                                    <div className="w-16 h-16 bg-cuba-danger-soft rounded-full flex items-center justify-center mb-4">
+                                        <FiMessageCircle className="w-8 h-8 text-cuba-danger" />
                                     </div>
                                     <p className="text-sm font-medium mb-2">{t('JobsUpdate.DashboardMessages.errors.loadFailed', 'Failed to load messages')}</p>
                                     <p className={`text-xs text-center max-w-sm ${CHAT_INK_MUTED}`}>{messagesError}</p>

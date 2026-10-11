@@ -40,6 +40,7 @@
     "test:dir078": "node --test tests/dir078-branding-logo-and-top-whitespace.test.mjs",
     "test:dir079": "node --test tests/dir079-header-brand-block.test.mjs",
     "test:dir080": "node --test tests/dir080-enlarge-brand-logo.test.mjs",
+    "test:dir081": "node --test tests/dir081-candidate-suite-parity.test.mjs",
     "release:manifest": "node scripts/generate-certified-freeze-manifest.mjs",
     "test:dir064:visual": "node template-lab/docx-visual-parity.mjs",
     "test:api-resilience": "node tests/test_api_server_e2e_resilience.cjs",

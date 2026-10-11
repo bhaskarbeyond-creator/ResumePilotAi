@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-11T04:18:51.681Z",
-  "seq": 2720,
-  "id": "evt_mv3bcqyv_77270c8490a5",
-  "type": "EVIDENCE_SUBMITTED",
-  "title": "[Evidence] DIR-080: DIR-080: Enlarge Brand Logo in Header and Chrome Surfaces for High-Impact Visual Presence",
+  "timestamp": "2026-10-11T05:03:25.306Z",
+  "seq": 2735,
+  "id": "evt_mv3cy1xp_89989e06a95c",
+  "type": "HEARTBEAT",
+  "title": "[Heartbeat] Gates green: dir081 7/7, 130/130 pinned, 19/19 dir048/055, product EXIT 0, security 67/67, xampp 4/4, build 3.03s, lint 0 errors, frozen diff 0. S7/S8 large monolith sweeps are declared backlog with a",
   "sender": "STAFF_DEVELOPER",
-  "directiveId": "DIR-080",
-  "summary": "DIR-080 complete. The brand logo is now enlarged across every chrome surface. Header: CubaAppShell.jsx:394 the expanded logo (cuba-header-brand) went from h-10 md:h-11 max-w-[185px] to h-12 md:h-[50px] w-auto max-w-[200px] object-contain shrink-0 (~15-20% scale-up, 48px mobile / 50px md+), and CubaAppShell.jsx:341 the brand block padding went from px-3.5 sm:px-4 to pl-3 pr-2 sm:pl-3.5 sm:pr-2.5 so the 260px band now yields 240px/236px of logo width. Drawer: CubaAppShell.jsx:599 the drawer logo (cuba-drawer-brand) went from h-8 max-w-[130px] to h-10 w-auto max-w-[160px] object-contain, with its monogram fallback tile raised h-8 w-8 -> h-10 w-10 for consistency. Compact rail: both marks (cuba-header-brand-mark at :365 and cuba-sidebar-brand-mark at :559) went from h-8 w-8 to h-9 w-9 object-contain, with both monogram tiles raised to h-9 w-9. The cuba-sidebar-toggle tile is untouched (w-9 h-9 flex-none rounded-xl with aria-label, aria-pressed, min-[1025px]:inline-flex) and stays keyboard accessible. Layout math is measured against the real tokens (--cuba-sidebar-w 260px, --cuba-sidebar-w-collapsed 72px): at 1025px+ the 236px content box exactly fits a 200px w-auto logo plus the 36px flex-none toggle; at 768-1024px the toggle is suppressed so the logo owns the full 236px; the collapsed rail keeps 18px gutters around the 36px mark. New tests/dir080-enlarge-brand-logo.test.mjs (AC1-AC6) plus test:dir080; dir078:40, dir079:37 and dir079 AC6 pins updated. Gates: dir080 6/6, 93/93 combined, test:product EXIT 0, security:static 67/67, xampp-policy 4/4, build 2.78s, lint 0 errors, dir063..dir080 green, frozen cv-templates diff 0."
+  "directiveId": "DIR-081",
+  "summary": "Gates green: dir081 7/7, 130/130 pinned, 19/19 dir048/055, product EXIT 0, security 67/67, xampp 4/4, build 3.03s, lint 0 errors, frozen diff 0. S7/S8 large monolith sweeps are declared backlog with a ratchet. Submitting evidence."
 }

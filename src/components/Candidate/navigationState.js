@@ -10,6 +10,22 @@
 export const pathOf = (to) => String(to || '').split('?')[0].replace(/\/+$/, '');
 
 /**
+ * DIR-081: the query half of a navigation target, as a normalised [key, value]
+ * list. Case-insensitive on both halves, because `?tab=Security` and
+ * `?tab=security` address the same surface.
+ */
+export const queryOf = (to) => {
+    const raw = String(to || '');
+    const index = raw.indexOf('?');
+    if (index === -1) return [];
+    const entries = [];
+    new URLSearchParams(raw.slice(index + 1)).forEach((value, key) => {
+        entries.push([key.toLowerCase(), String(value).toLowerCase()]);
+    });
+    return entries;
+};
+
+/**
  * Resolves the active item for a pathname.
  *
  * Precedence:
@@ -24,17 +40,35 @@ export function resolveActiveItem(pathname, groups) {
     const target = pathOf(pathname);
     if (!target) return null;
 
+    const targetQuery = queryOf(pathname);
+    let firstExact = null;
     let best = null;
+
     for (const group of groups) {
         for (const item of group.items) {
             const base = pathOf(item.to);
-            if (target === base) return item;
+            if (target === base) {
+                if (!firstExact) firstExact = item;
+                // DIR-081: a query-scoped destination (e.g. ?tab=Security) must only
+                // claim the highlight when the live URL carries the same param. Before
+                // this, every ?tab= item collapsed onto the same bare path and the
+                // FIRST one declared (Master Profile Data) won unconditionally, so
+                // Security & 2FA Hub could never be highlighted.
+                const itemQuery = queryOf(item.to);
+                if (itemQuery.length > 0
+                    && itemQuery.every(([key, value]) => targetQuery.some(([tKey, tValue]) => tKey === key && tValue === value))) {
+                    return item;
+                }
+                continue;
+            }
             if (target.startsWith(`${base}/`) && (!best || base.length > pathOf(best.to).length)) {
                 best = item;
             }
         }
     }
-    return best;
+    // Bare path with no matching query param: fall back to the first declared item
+    // for that path, preserving the previous behaviour for /dashboard/settings.
+    return firstExact || best;
 }
 
 export default resolveActiveItem;

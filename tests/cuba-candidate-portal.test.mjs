@@ -124,6 +124,18 @@ describe('Candidate navigation integrity (§16, zero dead links)', () => {
         assert.equal(resolveActiveItem('/dashboard2', CANDIDATE_NAVIGATION), null);
         assert.equal(resolveActiveItem('/employer/jobs', CANDIDATE_NAVIGATION), null);
     });
+
+    it('DIR-081: distinguishes two destinations that share a pathname', () => {
+        // Master Profile Data and Security & 2FA Hub both live at /dashboard/settings and
+        // differ only by ?tab=. Before DIR-081 the resolver stripped the query and returned
+        // the FIRST declaration, so Security could never be highlighted.
+        assert.equal(resolveActiveItem('/dashboard/settings?tab=Profile', CANDIDATE_NAVIGATION)?.id, 'profile');
+        assert.equal(resolveActiveItem('/dashboard/settings?tab=Security', CANDIDATE_NAVIGATION)?.id, 'security');
+        assert.equal(resolveActiveItem('/dashboard/settings?tab=security', CANDIDATE_NAVIGATION)?.id, 'security');
+        assert.equal(resolveActiveItem('/dashboard/settings?tab=2fa', CANDIDATE_NAVIGATION)?.id, 'profile');
+        // The bare path keeps its historical resolution.
+        assert.equal(resolveActiveItem('/dashboard/settings', CANDIDATE_NAVIGATION)?.id, 'profile');
+    });
 });
 
 describe('AI Career Briefing truthfulness (§23, §46)', () => {
