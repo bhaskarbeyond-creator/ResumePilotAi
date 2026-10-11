@@ -1207,20 +1207,10 @@ class DashboardHomepage extends Component {
                   </button>
                 )}
               </div>
-              {isCuba && (
-                <button
-                  type="button"
-                  className="cuba-btn-primary px-3.5 py-2 rounded-xl flex items-center gap-1.5 text-xs font-bold shrink-0"
-                  onClick={() => {
-                    localStorage.removeItem("currentResumeId");
-                    localStorage.removeItem("currentResumeItem");
-                    this.props.navigate("/build-resume/heading?new=1");
-                  }}
-                >
-                  <FaPlus className="w-3 h-3" />
-                  <span>Create Resume</span>
-                </button>
-              )}
+              {/* DIR-090: the toolbar's duplicate [+ Create Resume] was REMOVED. The command HUD
+                  CTA above performs the identical action (clear the current draft pointer, then
+                  navigate to /build-resume/heading?new=1), so this was a behaviour-neutral
+                  deletion that frees horizontal space for the sort and view controls. */}
             </div>
           </div>
 

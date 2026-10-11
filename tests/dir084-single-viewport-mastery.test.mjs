@@ -55,7 +55,14 @@ test('AC2: the Overview geometry is compacted for one viewport', async () => {
     ]);
     // The Overview wrapper and grid are tightened and bounded to the viewport.
     assert.match(cand, /isOverview \? 'space-y-2\.5' : 'space-y-4 md:space-y-5'/);
-    assert.match(cand, /grid min-h-0 grid-cols-1 gap-3 2xl:h-\[calc\(100dvh-var\(--cuba-header-h\)-3\.75rem\)\] 2xl:grid-cols-\[minmax\(0,7fr\)_minmax\(0,3fr\)\]/);
+    // DIR-090 supersedes the literal grid string: the rigid 7fr/3fr split became a COLLAPSIBLE
+    // layout, so the class is now a template literal. The assertion keeps the intent — the
+    // single-viewport lock is intact AND the workspace/rail share the viewport in a defined
+    // ratio — and additionally pins the new collapsed full-width variant.
+    assert.match(cand, /grid min-h-0 grid-cols-1 gap-3 2xl:h-\[calc\(100dvh-var\(--cuba-header-h\)-3\.75rem\)\]/);
+    assert.match(cand, /2xl:grid-cols-\[minmax\(0,7fr\)_minmax\(0,3fr\)\]/);
+    assert.match(cand, /2xl:grid-cols-\[minmax\(0,1fr\)\]/);
+    assert.match(cand, /const \[railCollapsed, setRailCollapsed\] = useState/);
     assert.match(cand, /flex min-h-0 min-w-0 flex-col gap-3/);
     // DIR-085 supersedes the DIR-084 hero-banner compaction: the tall gradient banner and
     // its four stat cards are replaced by the compact Copilot HUD and the metric capsule

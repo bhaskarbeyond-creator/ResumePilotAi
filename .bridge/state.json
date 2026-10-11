@@ -1,26 +1,26 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-11T06:54:26.677Z",
-  "eventCount": 2801,
-  "activeDirectiveId": "DIR-087",
-  "activeDirectiveTitle": "MASTER CANDIDATE_PAGES Phase 1 — Comprehensive Inventory, Industry Benchmarks, Baseline Scoring & JobSearchBar Scrollbar Guard",
-  "activeDirectiveStatus": "ISSUED",
+  "updatedAt": "2026-10-11T07:45:38.124Z",
+  "eventCount": 2835,
+  "activeDirectiveId": "DIR-090",
+  "activeDirectiveTitle": "Candidate Workspace (/dashboard) 10/10 Transformation — Workspace-First Layout, Collapsible Copilot, Grid/List Views & Golden-Ratio Cards",
+  "activeDirectiveStatus": "IN_PROGRESS",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-11T06:50:48.336Z",
-  "unreadForLead": 158,
-  "unreadForDev": 251,
+  "stallDeadline": "2026-10-11T07:38:59.317Z",
+  "unreadForLead": 168,
+  "unreadForDev": 274,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-11T06:50:48.336Z",
-    "status": "S1-S5 delivered: Quick-Pitch routing fixed via a shared resolveActionHref resolver (tailor -> /build-resume/heading, cover letter -> /dashboard/cover-letters, mock drill -> /dashboard/interview; no action resolves to /dashboard), native scrollbar tracks hidden with Tailwind v4 arbitrary utilities and the no-op scrollbar-none retired, card collapsed to one primary + one compact row, rail reduced to the Quick-Pitch alone. dir086 6/6, 161/161 pinned, product EXIT 0, security 67/67, xampp 4/4, build 2.77s, lint 0 errors, frozen diff 0. Submitting evidence.",
+    "timestamp": "2026-10-11T07:38:59.317Z",
+    "status": "Target MET - measured 9.3/10, up from a measured 3.7. Tokenised 1293 of 1340 legacy colour utilities (96.5%) with an explicit table that avoids two verified traps: --cuba-primary-ink is WHITE so accent text maps to ink-strong, and the pill tokens are SOLID so tints use -soft. The last increment came from fixing a REAL defect - the account load only console.error'd, leaving the hub silently half-empty, so I added a role=alert failure surface with retry, which lifted guards 0.667 to 1.0 and the score 8.5 to 9.3. 47 residual are deferred gradient stops (compositional, one pinned by a test) plus one shadow-colour case, and AC1 proves nothing else remains. I superseded one pinned focus-ring class and said so. dir089 5/5, 78/78 settings suites, product EXIT 0, security EXIT 0, xampp EXIT 0, build 2.80s, lint 0 errors, frozen diff 0. Submitting.",
     "percent": 95
   },
   "integrity": {
-    "ok": true,
-    "checked": 2801,
-    "legacy": 0,
-    "bad": 0
+    "ok": false,
+    "checked": 2835,
+    "legacy": 1,
+    "bad": 1
   }
 }

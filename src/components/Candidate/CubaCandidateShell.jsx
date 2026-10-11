@@ -408,6 +408,27 @@ const CubaCandidateShell = ({ children, copilotResume = null }) => {
      * confirm that would be a fabricated claim about someone's money.
      */
     const [entitlementProfile, setEntitlementProfile] = useState(null);
+    // DIR-090: the Copilot rail is collapsible. When collapsed the resume workspace takes the
+    // FULL width instead of being permanently squeezed into the rigid 7fr/3fr split. The choice
+    // is persisted so it survives navigation.
+    const [railCollapsed, setRailCollapsed] = useState(() => {
+        try {
+            return window.localStorage.getItem('cuba_workspace_rail') === 'collapsed';
+        } catch {
+            return false;
+        }
+    });
+    const toggleRail = useCallback(() => {
+        setRailCollapsed((current) => {
+            const next = !current;
+            try {
+                window.localStorage.setItem('cuba_workspace_rail', next ? 'collapsed' : 'docked');
+            } catch {
+                // storage unavailable — the layout still works for this session
+            }
+            return next;
+        });
+    }, []);
 
     useEffect(() => {
         let mounted = true;
@@ -470,17 +491,30 @@ const CubaCandidateShell = ({ children, copilotResume = null }) => {
                        instead of being squashed into a fixed height. The fold-critical blocks
                        are flex-none and only the Document Gallery / Onboarding region and the
                        rail scroll internally. */
-                    <div className="grid min-h-0 grid-cols-1 gap-3 2xl:h-[calc(100dvh-var(--cuba-header-h)-3.75rem)] 2xl:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]">
+                    <div className={`grid min-h-0 grid-cols-1 gap-3 2xl:h-[calc(100dvh-var(--cuba-header-h)-3.75rem)] ${railCollapsed ? '2xl:grid-cols-[minmax(0,1fr)]' : '2xl:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]'}`}>
                         <div className="flex min-h-0 min-w-0 flex-col gap-3">
                             {/* DIR-085: the compact Copilot HUD + metric capsules replace the
                                 tall banner, so the RESUME WORKSPACE is the first real content
                                 and is immediately browsable above the fold. */}
                             <CubaCandidateHero displayName={displayName} onNavigate={navigate} />
+                            {/* DIR-090: dock/collapse the Copilot rail. Collapsed, the workspace
+                                takes the full viewport width instead of the fixed 7fr/3fr split. */}
+                            <button
+                                type="button"
+                                onClick={toggleRail}
+                                aria-expanded={!railCollapsed}
+                                aria-controls="cuba-copilot-rail"
+                                data-testid="cuba-rail-toggle"
+                                className="cuba-focusable hidden self-end rounded-cuba-sm border border-cuba-line px-2.5 py-1 text-[11px] font-bold text-cuba-ink-muted 2xl:inline-flex"
+                            >
+                                {railCollapsed ? 'Show Copilot' : 'Hide Copilot'}
+                            </button>
                             <div className="min-h-0 flex-1 2xl:overflow-y-auto cuba-scrollbar [scrollbar-gutter:stable]">
                                 {children}
                             </div>
                         </div>
-                        <aside className="min-h-0 min-w-0 2xl:overflow-y-auto cuba-scrollbar [scrollbar-gutter:stable]" aria-label="Executive intelligence rail">
+                        {!railCollapsed && (
+                        <aside id="cuba-copilot-rail" className="min-h-0 min-w-0 2xl:overflow-y-auto cuba-scrollbar [scrollbar-gutter:stable]" aria-label="Executive intelligence rail">
                             {/* DIR-085: the AI Career Briefing moves into the ~32% right column
                                 beside the Live Copilot Quick-Pitch, as the mandate specifies. */}
                             <div className="space-y-2.5">
@@ -488,6 +522,7 @@ const CubaCandidateShell = ({ children, copilotResume = null }) => {
                                 <CandidateExecutiveRail onNavigate={navigate} />
                             </div>
                         </aside>
+                        )}
                     </div>
                 ) : (
                     children

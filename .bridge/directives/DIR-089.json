@@ -2,11 +2,11 @@
   "id": "DIR-089",
   "title": "CANDIDATE_PAGES Wave 2 — Settings & 2FA Hub 10/10 Modernization, Token Harmonization & P0 Debt Eradication",
   "priority": "P0",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-11T07:29:36.573Z",
-  "updatedAt": "2026-10-11T07:39:14.399Z",
+  "updatedAt": "2026-10-11T07:39:15.899Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "MANDATE: Execute Wave 2 of the Candidate Suite Master Transformation on Settings & 2FA Hub (/dashboard/settings, DashboardSettings.jsx, 6171 lines): 1) Elevate Settings & 2FA from baseline 3.7/10 (POOR) to >= 9.0/10. 2) Eradicate the P0 blocker: tokenize the 1340 legacy color utilities using Cuba tokens (--cuba-canvas, --cuba-surface, --cuba-ink, --cuba-line, --cuba-primary, and the -soft semantic tint variants per the DIR-088 learning). 3) Modernize tab experiences across Profile, Security & 2FA, Account, and Preferences: clean executive glassmorphism, responsive segmented tabs, crisp input focus rings, and clear password/TOTP lifecycle UX. 4) Security & Invariants: Preserve zero secret leakage, keep TOTP verification and backup recovery codes functional with visual copy-to-clipboard feedback, preserve auth/Firebase token invariants. 5) Responsive layout: 375px mobile, 768px tablet, 1080p desktop with zero horizontal overflow and proper CubaDensityProvider integration. 6) Author tests/dir089-settings-security-mastery.test.mjs with comprehensive ACs. 7) Invariants: 55 CV templates diff = 0, build under 4s, 0 lint errors, XAMPP server policy.",
   "invariants": [],
@@ -67,8 +67,30 @@
       }
     }
   ],
-  "freeze": null,
-  "lastTransitionReason": "lead review",
+  "freeze": {
+    "freezeHash": "8d732c7483d2a2b68ee824bc03ea0aa1ff6cdbe2",
+    "certifiedAt": "2026-10-11T07:39:15.898Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "Autonomous Lead (Antigravity): evidence audit passed, no human review.",
+    "evidenceHash": "73ebd08f335fd09f72dd2e2ff4d8aa1a063d5c68802c88171989398049d82242",
+    "automated": true,
+    "certificationKind": "automated",
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "declared-automation",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "non-tty"
+      ],
+      "pid": 18864,
+      "parentPid": 8528,
+      "tty": false,
+      "at": "2026-10-11T07:39:15.227Z",
+      "explicitlyAllowed": true
+    }
+  },
+  "lastTransitionReason": "gatekeeper certification",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {
