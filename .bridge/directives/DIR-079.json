@@ -1,0 +1,81 @@
+{
+  "id": "DIR-079",
+  "title": "DIR-079: Align Top-Left Header Brand Block with Logo, GoSidebarCollapse Button & Vertical Divider",
+  "priority": "P0",
+  "status": "IN_PROGRESS",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-11T04:03:21.044Z",
+  "updatedAt": "2026-10-11T04:05:24.328Z",
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "spec": "MISSION & TARGET SPECIFICATION:\nThe user provided a target reference design for the top-left header zone:\n[ Full IME365.com Logo ] [ GoSidebarCollapse Button in rounded-xl border tile ] | [ Vertical Divider Line ]\n\nMANDATORY IMPLEMENTATION REQUIREMENTS:\n1. Header Left Brand Block in CubaAppShell.jsx:\n   - Import GoSidebarCollapse and GoSidebarExpand from 'react-icons/go'.\n   - In the sticky <header className='cuba-glass sticky top-0 ...'>, create a dedicated top-left brand zone that spans the width of the sidebar:\n     * When expanded on desktop (md:flex): width is w-[var(--cuba-sidebar-w)] (260px) with border-r border-cuba-line (or border-r border-slate-200 dark:border-cuba-line) separating it from the rest of the header.\n     * Inner layout: flex items-center justify-between h-full px-3.5 sm:px-4.\n     * Left side: Authentic logo (<a data-testid='cuba-header-brand' href='/dashboard' ...><img src={activeLogo} alt='IME365.com' className='h-10 md:h-11 w-auto max-w-[185px] object-contain shrink-0' onError={...} /></a>).\n     * Right side: Sidebar toggle button (data-testid='cuba-sidebar-toggle') styled as a rounded-xl bordered tile:\n       className='cuba-focusable w-9 h-9 flex-none rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 dark:border-cuba-line dark:bg-cuba-card text-slate-600 hover:text-slate-900 dark:text-slate-300 flex items-center justify-center transition-colors shadow-2xs'\n       Rendering <GoSidebarCollapse className='w-4 h-4' /> when expanded, and <GoSidebarExpand className='w-4 h-4' /> when collapsed.\n     * When collapsed: width collapses cleanly to w-[var(--cuba-sidebar-w-collapsed)] (72px) with centered toggle button / brand mark.\n2. Ensure Zero Horizontal Drift in Header:\n   - The central command search pill remains centered in the remaining header space.\n   - Right rail (notifications, user menu, AI engine status) remains intact.\n3. Verification & Quality Gates:\n   - Add tests/dir079-header-brand-block.test.mjs verifying:\n     * GoSidebarCollapse and GoSidebarExpand used in header.\n     * Logo placed before the toggle button in the header brand block.\n     * Border-r divider present on the brand block.\n     * Tests pass with 0 errors.\n   - Pinned gates: dir078, dir077, dir048, test:product, test:security:static, test:xampp-policy, build (<4s), 0 lint errors, 0 diff on frozen CV templates.",
+  "invariants": [],
+  "acceptanceCriteria": [],
+  "plan": {
+    "submittedAt": "2026-10-11T04:05:22.261Z",
+    "summary": "DIR-079 P0 recon complete, every finding cited to file:line. INVARIANTS AND CONTRACT BOUNDARIES: XAMPP-only servers (no detached node/vite daemon); preserve dir078, dir077, dir076, dir075, dir074, dir073, dir072, cuba-design-system, copilot-command-surface, cuba-candidate-portal and dir048-shell-and-controls; zero fabrication; no auth, token or API contract change; sub-4s build; 0 lint errors; 55 frozen CV templates diff 0. RCA AND FINDINGS: (1) CubaAppShell.jsx:318-376 (post DIR-078) the header left region is FRAGMENTED - a 40px mobile hamburger at :319, the old collapse chevron with FiChevronLeft at :329-340 (min-[1025px]:inline-flex), then a SEPARATE DIR-078 brand link at :346-373 (hidden md:flex) and a flex-1 spacer at :376 - so nothing spans the sidebar width, the header left band does not align with the 260px sidebar and there is no vertical divider. (2) The exact widths are the tokens --cuba-sidebar-w 260px and --cuba-sidebar-w-collapsed 72px (cuba-tokens.css:252-253). (3) GoSidebarCollapse and GoSidebarExpand both exist in react-icons/go (index.d.ts:57-58). (4) Pins that must move in lockstep: dir048-shell-and-controls.test.mjs:68 pins the OLD chevron class hover:bg-cuba-primary-soft min-[1025px]:inline-flex, dir078 AC2 pins the header logo class h-8 md:h-9 w-auto max-w-[150px], and dir077 AC2 pins the DIR-077 header spacer. CHANGES: (1) import GoSidebarCollapse and GoSidebarExpand from react-icons/go; (2) replace the old chevron, the DIR-078 brand link and the spacer with ONE dedicated brand block (data-testid cuba-header-brand-block) that is hidden h-full flex-none items-center border-r md:flex with width railCollapsed ? w-[var(--cuba-sidebar-w-collapsed)] : w-[var(--cuba-sidebar-w)], inner justify-between px-3.5 sm:px-4 when expanded and justify-center px-1 when compact; (3) expanded left side renders the authentic logo link (data-testid cuba-header-brand) with the mandated img class h-10 md:h-11 w-auto max-w-[185px] object-contain shrink-0 and onError degradation, and the right side renders the sidebar toggle tile (data-testid cuba-sidebar-toggle) with the mandated rounded-xl bordered class carrying min-[1025px]:inline-flex so it is never a dead control inside the tablet band, rendering GoSidebarCollapse when expanded and GoSidebarExpand when collapsed; (4) when compact the block centers the toggle at 1025px and up and the brand mark below 1025px so the tablet band is never an empty void; (5) header padding becomes pl-3 pr-3 sm:pr-5 md:pl-0 so the block starts at x=0 and its border-r divider aligns exactly with the sidebar edge; (6) zero horizontal drift - the centre command search keeps its own md:flex-1 centring, the DIR-077 spacer is removed because the brand block now balances the left, and the right rail (notifications, user menu, AI engine status) is untouched; (7) update the pinned assertions in dir048, dir078 and dir077. ACCESSIBILITY (WCAG 2.1 AA): the logo link keeps an accessible name from alt and aria-label, the toggle keeps aria-label and aria-pressed and a 36px tile with cuba-focusable keyboard focus rings, exactly one banner header and one breadcrumb nav remain, and contrast stays at or above 4.5 to 1 with Cuba tokens. UX STATES: the branding read remains best-effort chrome so the bundled logo renders immediately with no layout shift and no skeleton, a failed image degrades gracefully to the brand mark, and the toggle is only rendered where it can act so it is never a dead control. RESPONSIVE: the block is hidden below md where the hamburger owns the corner, spans 260px expanded and 72px compact, is validated at 375px mobile, 768px tablet, 1025px and 1280px desktop and 1680px wide. PERFORMANCE: this is pure markup and CSS with no new fetch, no state, no memo invalidation and no re-render loop, so the sub-100ms render budget and the sub-4s build are unaffected. ACCEPTANCE CRITERIA: AC1 GoSidebarCollapse and GoSidebarExpand are imported and rendered in the header; AC2 the logo link precedes the toggle inside the brand block; AC3 the block carries border-r and the sidebar-width classes; AC4 the toggle tile uses the mandated rounded-xl bordered class with min-[1025px]:inline-flex and aria-label and aria-pressed; AC5 the header keeps zero horizontal drift with the search centred and the right rail intact; AC6 the dir048, dir077 and dir078 assertions are updated; AC7 all pinned suites pass; AC8 build under 4s; AC9 lint 0 errors; AC10 the 55 frozen CV templates diff 0. TEST PLAN: new tests/dir079-header-brand-block.test.mjs asserting AC1 through AC6, plus preserved dir078, dir077, dir048-shell-and-controls, dir076, dir075, dir074, cuba-design-system and cuba-candidate-portal. RISK AND ROLLBACK: blast radius is one shell file plus three test files; no data, auth, routing or API change; rollback is a single git revert. VERIFICATION: npm run test:dir079, test:dir078, test:dir077, test:dir048, test:design-system, test:product, test:security:static, test:xampp-policy, npm run build under 4s, npm run lint 0 errors, frozen cv-templates diff 0.",
+    "steps": [
+      "1. CubaAppShell.jsx: import GoSidebarCollapse and GoSidebarExpand from react-icons/go (AC1)",
+      "2. CubaAppShell.jsx: replace the old FiChevronLeft chevron, the DIR-078 brand link and the DIR-077 spacer with ONE dedicated brand block (data-testid cuba-header-brand-block) that is hidden h-full flex-none items-center border-r md:flex with width railCollapsed ? w-[var(--cuba-sidebar-w-collapsed)] : w-[var(--cuba-sidebar-w)] and inner justify-between px-3.5 sm:px-4 expanded or justify-center px-1 compact (AC2, AC3)",
+      "3. CubaAppShell.jsx: render the authentic logo link (data-testid cuba-header-brand) with the mandated h-10 md:h-11 w-auto max-w-[185px] object-contain shrink-0 img class and onError, followed by the sidebar toggle tile (data-testid cuba-sidebar-toggle) with the mandated rounded-xl bordered class carrying min-[1025px]:inline-flex, aria-label and aria-pressed, rendering GoSidebarCollapse when expanded and GoSidebarExpand when collapsed (AC2, AC4)",
+      "4. CubaAppShell.jsx: when compact, center the toggle at 1025px and up and the brand mark below 1025px so the tablet band is never an empty void (AC4)",
+      "5. CubaAppShell.jsx: change the header padding to pl-3 pr-3 sm:pr-5 md:pl-0 so the block starts at x=0 and its border-r divider aligns with the sidebar edge, keeping the centre search centered and the right rail intact (AC5)",
+      "6. Update tests/dir048-shell-and-controls.test.mjs:68, tests/dir078-branding-logo-and-top-whitespace.test.mjs AC2 and tests/dir077-candidate-dashboard-overhaul.test.mjs AC2 to the new brand block (AC6)",
+      "7. NEW tests/dir079-header-brand-block.test.mjs asserting AC1 through AC6",
+      "8. Gates: dir079, dir078, dir077, dir076, dir075, dir074, cuba-design-system, cuba-candidate-portal, dir048-shell-and-controls, test:product, test:security:static, test:xampp-policy, build under 4s, lint 0 errors, frozen cv-templates diff 0 (AC7-AC10), then submit evidence."
+    ],
+    "planHash": "2ea73914958769cb0e0222c182c455baa1e345fd99440714c1a8d18b38aa932a"
+  },
+  "evidence": null,
+  "reviews": [],
+  "freeze": null,
+  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "continuationPending": false,
+  "revisionTarget": null,
+  "planApproval": {
+    "approvedAt": "2026-10-11T04:05:24.328Z",
+    "automated": true,
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "declared-automation",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "non-tty"
+      ],
+      "pid": 11252,
+      "parentPid": 19860,
+      "tty": false,
+      "at": "2026-10-11T04:05:24.327Z",
+      "explicitlyAllowed": true
+    },
+    "feedback": "Auto-approved by the autonomous plan-scorer (score 100/100, reviewer verdict approved). NOT a human Lead review."
+  },
+  "heartbeats": [
+    {
+      "at": "2026-10-11T04:06:42.318Z",
+      "status": "ACT started. Building the sidebar-width header brand block (logo + GoSidebarCollapse toggle + divider).",
+      "percent": 10,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    },
+    {
+      "at": "2026-10-11T04:07:55.722Z",
+      "status": "S1-S7 implemented. build 3.08s, lint 0 errors, dir079 24/24 (incl dir078/dir077/dir048). Running full pinned suites + product gates.",
+      "percent": 60,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    },
+    {
+      "at": "2026-10-11T04:09:18.204Z",
+      "status": "All mandates implemented and verified. build 3.08s, lint 0 errors, dir079 6/6, 223/223 pinned, product EXIT 0, security 67/67, xampp 4/4, dir063..079 green. Submitting evidence.",
+      "percent": 95,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    }
+  ],
+  "lastHeartbeatAt": "2026-10-11T04:09:18.204Z"
+}

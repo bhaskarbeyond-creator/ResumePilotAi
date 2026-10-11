@@ -15,7 +15,9 @@
  *     second nested scrollbar (§36).
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FiChevronLeft, FiMenu, FiSearch, FiSun, FiMoon, FiX } from 'react-icons/fi';
+import { FiMenu, FiSearch, FiSun, FiMoon, FiX } from 'react-icons/fi';
+// DIR-079: the header brand block's sidebar toggle glyphs.
+import { GoSidebarCollapse, GoSidebarExpand } from 'react-icons/go';
 import AiEngineStatus from './AiEngineStatus';
 import CubaCommandPalette from './CubaCommandPalette';
 // DIR-026 / AC-2: the live unread-message badge. It is its OWN header action
@@ -315,7 +317,7 @@ const CubaAppShell = ({
                 status + identity. `flex-wrap` with `min-w-0` truncation is what
                 keeps it one clean row instead of letting any item overflow. */}
             {!hideTopBar && (
-            <header className="cuba-glass sticky top-0 z-50 flex h-[var(--cuba-header-h)] flex-none items-center gap-2 border-x-0 border-t-0 px-3 sm:gap-3 sm:px-5">
+            <header className="cuba-glass sticky top-0 z-50 flex h-[var(--cuba-header-h)] flex-none items-center gap-2 border-x-0 border-t-0 pl-3 pr-3 sm:gap-3 sm:pr-5 md:pl-0">
                 <button
                     type="button"
                     onClick={() => setMobileOpen(true)}
@@ -326,54 +328,96 @@ const CubaAppShell = ({
                     <FiMenu className="h-5 w-5" aria-hidden="true" />
                 </button>
 
-                <button
-                    type="button"
-                    onClick={() => setCollapsed((value) => !value)}
-                    aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                    aria-pressed={collapsed}
-                    className="cuba-focusable hidden h-10 w-10 flex-none items-center justify-center rounded-cuba-sm text-cuba-ink-muted hover:bg-cuba-primary-soft min-[1025px]:inline-flex"
-                >
-                    <FiChevronLeft
-                        className={cx('h-5 w-5 transition-transform duration-200', collapsed && 'rotate-180')}
-                        aria-hidden="true"
-                    />
-                </button>
-
-                {/* DIR-078: the top-left corner is anchored with the authentic
-                    brand identity (Super Admin logo → bundled fallback) so the
-                    sticky header never opens with a dead glass void above the
-                    sidebar. Below md the hamburger owns this corner. */}
-                <a
-                    href="/dashboard"
-                    onClick={(event) => {
-                        if (onNavigate && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey && event.button === 0) {
-                            event.preventDefault();
-                            onNavigate('/dashboard');
-                        }
-                    }}
-                    data-testid="cuba-header-brand"
-                    aria-label={`${brandName} home`}
-                    className="cuba-focusable hidden min-w-0 flex-none items-center gap-2.5 md:flex"
-                >
-                    {showLogoImage ? (
-                        <img
-                            src={activeLogo}
-                            alt={brandName}
-                            className="h-8 md:h-9 w-auto max-w-[150px] object-contain shrink-0"
-                            onError={() => setLogoFailed(true)}
-                        />
-                    ) : (
-                        <span
-                            className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-cuba-primary text-white text-xs font-black"
-                            aria-hidden="true"
-                        >
-                            {brandName.charAt(0).toUpperCase()}
-                        </span>
+                {/* DIR-079: ONE dedicated top-left brand block that spans the
+                    sidebar width — [ authentic logo ] [ sidebar toggle tile ] |
+                    vertical divider — so the header's left band aligns exactly with
+                    the 260px sidebar and never opens as a dead glass void. */}
+                <div
+                    data-testid="cuba-header-brand-block"
+                    className={cx(
+                        'hidden h-full flex-none items-center border-r md:flex',
+                        railCollapsed
+                            ? 'w-[var(--cuba-sidebar-w-collapsed)] justify-center px-1'
+                            : 'w-[var(--cuba-sidebar-w)] justify-between px-3.5 sm:px-4',
                     )}
-                </a>
+                    style={{ borderColor: 'var(--cuba-line)' }}
+                >
+                    {railCollapsed ? (
+                        /* Compact rail: below 1025px the brand mark fills the 72px
+                           band; at/above it the toggle is centred instead, because a
+                           toggle inside the tablet band would be a dead control. */
+                        <a
+                            href="/dashboard"
+                            onClick={(event) => {
+                                if (onNavigate && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey && event.button === 0) {
+                                    event.preventDefault();
+                                    onNavigate('/dashboard');
+                                }
+                            }}
+                            data-testid="cuba-header-brand-mark"
+                            aria-label={`${brandName} home`}
+                            className="cuba-focusable flex items-center justify-center min-[1025px]:hidden"
+                        >
+                            {showLogoImage ? (
+                                <img
+                                    src={activeLogo}
+                                    alt={brandName}
+                                    className="h-8 w-8 object-contain shrink-0"
+                                    onError={() => setLogoFailed(true)}
+                                />
+                            ) : (
+                                <span
+                                    className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-cuba-primary text-white text-xs font-black"
+                                    aria-hidden="true"
+                                >
+                                    {brandName.charAt(0).toUpperCase()}
+                                </span>
+                            )}
+                        </a>
+                    ) : (
+                        <a
+                            href="/dashboard"
+                            onClick={(event) => {
+                                if (onNavigate && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey && event.button === 0) {
+                                    event.preventDefault();
+                                    onNavigate('/dashboard');
+                                }
+                            }}
+                            data-testid="cuba-header-brand"
+                            aria-label={`${brandName} home`}
+                            className="cuba-focusable flex min-w-0 items-center"
+                        >
+                            {showLogoImage ? (
+                                <img
+                                    src={activeLogo}
+                                    alt={brandName}
+                                    className="h-10 md:h-11 w-auto max-w-[185px] object-contain shrink-0"
+                                    onError={() => setLogoFailed(true)}
+                                />
+                            ) : (
+                                <span
+                                    className="flex h-9 w-9 flex-none items-center justify-center rounded-lg bg-cuba-primary text-white text-xs font-black"
+                                    aria-hidden="true"
+                                >
+                                    {brandName.charAt(0).toUpperCase()}
+                                </span>
+                            )}
+                        </a>
+                    )}
 
-                {/* DIR-077: this spacer keeps the centred command search centred. */}
-                <div className="hidden min-w-0 flex-1 md:block" aria-hidden="true" />
+                    <button
+                        type="button"
+                        onClick={() => setCollapsed((value) => !value)}
+                        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                        aria-pressed={collapsed}
+                        data-testid="cuba-sidebar-toggle"
+                        className="cuba-focusable hidden w-9 h-9 flex-none rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 dark:border-cuba-line dark:bg-cuba-card text-slate-600 hover:text-slate-900 dark:text-slate-300 items-center justify-center transition-colors shadow-2xs min-[1025px]:inline-flex"
+                    >
+                        {collapsed
+                            ? <GoSidebarExpand className="w-4 h-4" aria-hidden="true" />
+                            : <GoSidebarCollapse className="w-4 h-4" aria-hidden="true" />}
+                    </button>
+                </div>
 
                 {/* CENTRE: Material 3 pill command search — the header's dominant
                     affordance, replacing the old small right-aligned trigger.

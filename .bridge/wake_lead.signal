@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-11T03:59:27.300Z",
-  "seq": 2699,
-  "id": "evt_mv3ansiz_a0fa4e6b505e",
-  "type": "EVIDENCE_SUBMITTED",
-  "title": "[Evidence] DIR-078: DIR-078: Ingest Super Admin Branding Logo & Eliminate Top Whitespace in Cuba App Chrome",
+  "timestamp": "2026-10-11T04:09:18.192Z",
+  "seq": 2709,
+  "id": "evt_mv3b0ggm_9e37af31615d",
+  "type": "HEARTBEAT",
+  "title": "[Heartbeat] All mandates implemented and verified. build 3.08s, lint 0 errors, dir079 6/6, 223/223 pinned, product EXIT 0, security 67/67, xampp 4/4, dir063..079 green. Submitting evidence.",
   "sender": "STAFF_DEVELOPER",
-  "directiveId": "DIR-078",
-  "summary": "DIR-078 complete. CubaAppShell now ingests getSystemSettings().branding (brandName, logoUrl, darkLogoUrl) best-effort and resolves activeLogo as darkLogoUrl when dark, else logoUrl, else the bundled src/assets/logo/logo.png, with brandName falling back to IME365 and every logo img carrying alt text plus an onError degradation to a clean brand mark. The authentic logo renders in the header left rail (data-testid cuba-header-brand, h-8 md:h-9 w-auto max-w-[150px] object-contain), the collapsed icon rail (cuba-sidebar-brand-mark) and the mobile drawer (cuba-drawer-brand), eliminating the hardcoded star placeholder boxes and the dead glass void at the top-left. Top whitespace tightened: main container px-4 pt-2.5 pb-24 sm:px-6 md:pt-3 md:pb-6 lg:px-8, breadcrumbs mb-2.5, CubaCandidateShell space-y-4 md:space-y-5, with the dir048 and dir077 assertions updated. Gates: dir078 5/5, 217/217 pinned suites, test:product EXIT 0, security:static 67/67, xampp-policy 4/4, build 2.88s, lint 0 errors, dir063..dir078 all green, frozen cv-templates diff 0."
+  "directiveId": "DIR-079",
+  "summary": "All mandates implemented and verified. build 3.08s, lint 0 errors, dir079 6/6, 223/223 pinned, product EXIT 0, security 67/67, xampp 4/4, dir063..079 green. Submitting evidence."
 }

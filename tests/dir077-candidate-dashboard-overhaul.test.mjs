@@ -34,8 +34,9 @@ test('AC2: the breadcrumbs anchor the main workspace column', async () => {
     assert.ok(mainIndex > -1, 'the main content region must exist');
     assert.ok(crumbIndex > mainIndex, 'the trail must render inside #cuba-main-content');
     assert.ok(crumbIndex < childIndex, 'the trail must render above the route content');
-    // The header keeps only an aria-hidden spacer where the trail used to be.
-    assert.match(shell, /<div className="hidden min-w-0 flex-1 md:block" aria-hidden="true" \/>/);
+    // DIR-079: the header's left band is now the sidebar-width brand block (the
+    // DIR-077 spacer was retired when the brand block took that slot).
+    assert.match(shell, /data-testid="cuba-header-brand-block"/);
     // Exactly one breadcrumb renderer remains (the dir011 landmark contract).
     assert.equal((shell.match(/<M3Breadcrumbs /g) || []).length, 1);
 });

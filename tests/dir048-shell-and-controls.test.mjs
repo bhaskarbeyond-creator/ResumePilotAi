@@ -65,7 +65,9 @@ test('S10 tablet: the rail appears at md and is always compact in the tablet ban
     assert.match(shell, /const railCollapsed = collapsed \|\| tabletRail;/);
     // The collapse toggle is offered only ABOVE the tablet band: inside it the
     // rail is forced compact, so a toggle there would be a dead control.
-    assert.match(shell, /hover:bg-cuba-primary-soft min-\[1025px\]:inline-flex/);
+    // DIR-079: the toggle moved into the header brand block as a rounded-xl tile.
+    assert.match(shell, /data-testid="cuba-sidebar-toggle"/);
+    assert.match(shell, /min-\[1025px\]:inline-flex/);
     // The sidebar is visible from md up, and the drawer/hamburger hand over there.
     assert.match(shell, /border-l-0 md:flex/);
     assert.match(shell, /hover:bg-cuba-primary-soft md:hidden/);
