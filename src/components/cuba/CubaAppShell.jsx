@@ -28,6 +28,10 @@ import M3NotificationCenter from './M3NotificationCenter';
 import ContextSwitcher from '../common/ContextSwitcher';
 import { useDialogA11y } from './useDialogA11y';
 import { useLocation } from 'react-router-dom';
+import { getSystemSettings } from '../../services/api/platform';
+// DIR-078: the official bundled brand asset — the fallback when the Super Admin
+// has not uploaded a logo (getSystemSettings().branding defaults to empty URLs).
+import bundledLogo from '../../assets/logo/logo.png';
 
 const cx = (...parts) => parts.filter(Boolean).join(' ');
 
@@ -216,6 +220,46 @@ const CubaAppShell = ({
     const railCollapsed = collapsed || tabletRail;
 
     /**
+     * DIR-078: Super Admin branding ingestion.
+     *
+     * The brand tile previously rendered a hardcoded gradient star box and static
+     * text, ignoring the logo / brandName the Super Admin uploads in
+     * BrandingSettings.jsx. Branding is read BEST-EFFORT: the bundled asset renders
+     * immediately (no layout shift), and a failed read or a broken image degrades
+     * gracefully to a clean brand mark rather than an empty glass box.
+     */
+    const [branding, setBranding] = useState({ brandName: 'IME365', logoUrl: '', darkLogoUrl: '' });
+    const [logoFailed, setLogoFailed] = useState(false);
+
+    useEffect(() => {
+        let cancelled = false;
+        getSystemSettings()
+            .then((settings) => {
+                if (cancelled) return;
+                const config = settings?.branding || {};
+                setBranding({
+                    brandName: String(config.brandName || '').trim() || 'IME365',
+                    logoUrl: String(config.logoUrl || '').trim(),
+                    darkLogoUrl: String(config.darkLogoUrl || '').trim(),
+                });
+            })
+            .catch(() => {
+                // Cosmetic read: keep the bundled default rather than surfacing an error.
+            });
+        return () => { cancelled = true; };
+    }, []);
+
+    const brandName = branding.brandName || 'IME365';
+    // Dark theme prefers the dark logo; otherwise the light logo; otherwise the
+    // bundled asset. Memoised so the resolution never causes an extra re-render.
+    const activeLogo = useMemo(() => {
+        if (theme === 'dark' && branding.darkLogoUrl) return branding.darkLogoUrl;
+        if (branding.logoUrl) return branding.logoUrl;
+        return bundledLogo;
+    }, [theme, branding]);
+    const showLogoImage = !logoFailed;
+
+    /**
      * SPA route jump: intercept left-clicks on INTERNAL hrefs only and hand them
      * to the shell's router-aware handler (react-router `navigate`) so palette,
      * sidebar and drawer jumps never reload the document (§25). Modifier-clicks
@@ -295,10 +339,40 @@ const CubaAppShell = ({
                     />
                 </button>
 
-                {/* DIR-077: the breadcrumb trail moved into the MAIN workspace
-                    column (see #cuba-main-content) so it anchors that column instead
-                    of floating over the sidebar header. This spacer keeps the
-                    centred command search visually centred. */}
+                {/* DIR-078: the top-left corner is anchored with the authentic
+                    brand identity (Super Admin logo → bundled fallback) so the
+                    sticky header never opens with a dead glass void above the
+                    sidebar. Below md the hamburger owns this corner. */}
+                <a
+                    href="/dashboard"
+                    onClick={(event) => {
+                        if (onNavigate && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey && event.button === 0) {
+                            event.preventDefault();
+                            onNavigate('/dashboard');
+                        }
+                    }}
+                    data-testid="cuba-header-brand"
+                    aria-label={`${brandName} home`}
+                    className="cuba-focusable hidden min-w-0 flex-none items-center gap-2.5 md:flex"
+                >
+                    {showLogoImage ? (
+                        <img
+                            src={activeLogo}
+                            alt={brandName}
+                            className="h-8 md:h-9 w-auto max-w-[150px] object-contain shrink-0"
+                            onError={() => setLogoFailed(true)}
+                        />
+                    ) : (
+                        <span
+                            className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-cuba-primary text-white text-xs font-black"
+                            aria-hidden="true"
+                        >
+                            {brandName.charAt(0).toUpperCase()}
+                        </span>
+                    )}
+                </a>
+
+                {/* DIR-077: this spacer keeps the centred command search centred. */}
                 <div className="hidden min-w-0 flex-1 md:block" aria-hidden="true" />
 
                 {/* CENTRE: Material 3 pill command search — the header's dominant
@@ -416,10 +490,10 @@ const CubaAppShell = ({
                     )}
                     data-testid="cuba-sidebar"
                 >
-                    {/* DIR-077: ONE cohesive executive pill — the IME365 brand tile
-                        and the context switcher share a single rounded container with
-                        a single inner divider, removing the previous double
-                        `border-b` stack and the awkward gap between them. */}
+                    {/* DIR-078: the brand identity now anchors the sticky header at
+                        y=0, so the sidebar pill holds ONLY the context switcher when
+                        expanded (no duplicated brand mark), and the collapsed icon
+                        rail renders the authentic brand mark cleanly centered. */}
                     {collapsed ? (
                         <div className="flex h-14 flex-none items-center justify-center border-b border-cuba-line/50 px-1">
                             <a
@@ -430,43 +504,30 @@ const CubaAppShell = ({
                                         onNavigate('/dashboard');
                                     }
                                 }}
-                                className="flex items-center gap-2.5 min-w-0 text-cuba-ink"
+                                data-testid="cuba-sidebar-brand-mark"
+                                aria-label={`${brandName} home`}
+                                className="cuba-focusable flex items-center justify-center"
                             >
-                                <div className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-gradient-to-tr from-cuba-primary to-cuba-primary-fill text-white font-black text-xs shadow-cuba-primary">
-                                    ✦
-                                </div>
+                                {showLogoImage ? (
+                                    <img
+                                        src={activeLogo}
+                                        alt={brandName}
+                                        className="h-8 w-8 object-contain shrink-0"
+                                        onError={() => setLogoFailed(true)}
+                                    />
+                                ) : (
+                                    <span
+                                        className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-cuba-primary text-white text-xs font-black"
+                                        aria-hidden="true"
+                                    >
+                                        {brandName.charAt(0).toUpperCase()}
+                                    </span>
+                                )}
                             </a>
                         </div>
                     ) : (
                         <div className="flex-none border-b border-cuba-line/40 px-3 pb-2 pt-3">
                             <div className="cuba-glass flex flex-col gap-2 rounded-cuba-lg border border-cuba-line p-2">
-                                <a
-                                    href="/dashboard"
-                                    onClick={(event) => {
-                                        if (onNavigate && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey && event.button === 0) {
-                                            event.preventDefault();
-                                            onNavigate('/dashboard');
-                                        }
-                                    }}
-                                    className="flex min-w-0 items-center gap-2.5 rounded-cuba-md px-1.5 py-1 text-cuba-ink"
-                                >
-                                    <div className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-gradient-to-tr from-cuba-primary to-cuba-primary-fill text-white font-black text-xs shadow-cuba-primary">
-                                        ✦
-                                    </div>
-                                    <div className="min-w-0 truncate">
-                                        <div className="text-sm font-extrabold tracking-tight text-cuba-ink flex items-center gap-1.5">
-                                            <span>IME365</span>
-                                            {/* DIR-017 AC-5: the "AI" chip label is 8px text, so it is
-                                                held to the full 4.5:1 AA bar, not the 3:1 large-text
-                                                bar. The raw brand violet #7366ff is only 3.8:1 on the
-                                                light canvas, so the chip uses the AA-safe primary ink
-                                                (6.92:1) over the existing soft primary wash. */}
-                                            <span className="rounded bg-cuba-primary-soft px-1 py-0.5 text-[8px] font-black text-cuba-primary-ink-strong uppercase tracking-wider">AI</span>
-                                        </div>
-                                        <div className="text-[9px] font-semibold text-cuba-ink-subtle uppercase tracking-wider">Executive Suite</div>
-                                    </div>
-                                </a>
-                                <div className="h-px" style={{ backgroundColor: 'var(--cuba-header-divider)' }} />
                                 <ContextSwitcher variant="sidebar" />
                             </div>
                         </div>
@@ -486,11 +547,23 @@ const CubaAppShell = ({
                             className="cuba-glass-strong absolute inset-y-0 left-0 flex w-[min(84vw,var(--cuba-sidebar-w))] flex-col shadow-cuba-lg"
                         >
                             <div className="flex h-14 flex-none items-center justify-between border-b border-cuba-line/60 px-4">
-                                <div className="flex items-center gap-2.5 min-w-0">
-                                    <div className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-gradient-to-tr from-cuba-primary to-cuba-primary-fill text-white font-black text-xs shadow-cuba-primary">
-                                        ✦
-                                    </div>
-                                    <span className="text-sm font-extrabold tracking-tight text-cuba-ink">IME365 Career Suite</span>
+                                <div className="flex items-center gap-2.5 min-w-0" data-testid="cuba-drawer-brand">
+                                    {showLogoImage ? (
+                                        <img
+                                            src={activeLogo}
+                                            alt={brandName}
+                                            className="h-8 w-auto max-w-[130px] object-contain shrink-0"
+                                            onError={() => setLogoFailed(true)}
+                                        />
+                                    ) : (
+                                        <span
+                                            className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-cuba-primary text-white text-xs font-black"
+                                            aria-hidden="true"
+                                        >
+                                            {brandName.charAt(0).toUpperCase()}
+                                        </span>
+                                    )}
+                                    <span className="truncate text-sm font-extrabold tracking-tight text-cuba-ink">{brandName}</span>
                                 </div>
                                 <button
                                     ref={mobileCloseRef}
@@ -524,12 +597,12 @@ const CubaAppShell = ({
                         bottom tab bar so it can never cover content.
                         DIR-077: the cap is raised from max-w-7xl to max-w-[1680px] so
                         a wide executive viewport stops wasting ~30% of its width. */}
-                    <div className="mx-auto w-full max-w-[1680px] px-4 py-6 pb-24 sm:px-6 md:pb-6 lg:px-8">
+                    <div className="mx-auto w-full max-w-[1680px] px-4 pt-2.5 pb-24 sm:px-6 md:pt-3 md:pb-6 lg:px-8">
                         {/* DIR-077: the semantic trail now anchors the MAIN workspace
                             column at its left edge (exactly one Breadcrumb landmark),
                             instead of floating over the sidebar header. */}
                         {(breadcrumbs || breadcrumb) && (
-                            <div className="mb-4 hidden min-w-0 md:block" data-testid="cuba-main-breadcrumbs">
+                            <div className="mb-2.5 hidden min-w-0 md:block" data-testid="cuba-main-breadcrumbs">
                                 {breadcrumbs ? (
                                     <M3Breadcrumbs items={breadcrumbs} onNavigate={onNavigate} />
                                 ) : (

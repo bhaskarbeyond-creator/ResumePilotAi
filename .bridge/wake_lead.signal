@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-11T03:39:07.912Z",
-  "seq": 2688,
-  "id": "evt_mv39xnn3_b76180a0cd08",
-  "type": "EVIDENCE_SUBMITTED",
-  "title": "[Evidence] DIR-077: DIR-077: Candidate Dashboard UI/UX 10/10 Overhaul — Zero-Waste Fluid Grid & Native Visual Intelligence",
+  "timestamp": "2026-10-11T03:59:15.502Z",
+  "seq": 2698,
+  "id": "evt_mv3anjeu_99e866395d62",
+  "type": "HEARTBEAT",
+  "title": "[Heartbeat] All mandates implemented and verified. build 2.88s, lint 0 errors, dir078 5/5, 217/217 pinned, product EXIT 0, security 67/67, xampp 4/4, dir063..078 green. Submitting evidence.",
   "sender": "STAFF_DEVELOPER",
-  "directiveId": "DIR-077",
-  "summary": "DIR-077 complete. Raised the shell content cap from max-w-7xl to max-w-[1680px] w-full and refactored the candidate /dashboard overview into a 2-column executive grid at the 1280px xl breakpoint (main column ~70 percent with Hero, briefing, Document Gallery and Onboarding; new CandidateExecutiveRail ~30 percent with Live Copilot Quick-Pitch, ATS Keyword Strength and Application Milestones), stacking to one column below xl. Moved the M3Breadcrumbs trail into the main content container so it anchors the main workspace column (exactly one Breadcrumb landmark) and merged the sidebar brand tile and ContextSwitcher into ONE cuba-glass pill with a single divider. Replaced the cartoon mascot with a bespoke Cuba glassmorphism SVG career-telemetry visual and added native SVG micro-visuals (AtsRadialGauge, ResumeProgressBar role=progressbar, PipelineStepper aria-current) through a new visual prop on CubaStatCard. All widgets bind to real services with honest loading/empty/error states. Gates: dir077 6/6, 212/212 pinned suites, test:product EXIT 0, security:static 67/67, xampp-policy 4/4, build 3.42s, lint 0 errors, dir063..dir077 all green, frozen cv-templates diff 0."
+  "directiveId": "DIR-078",
+  "summary": "All mandates implemented and verified. build 2.88s, lint 0 errors, dir078 5/5, 217/217 pinned, product EXIT 0, security 67/67, xampp 4/4, dir063..078 green. Submitting evidence."
 }

@@ -1,25 +1,25 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-11T03:10:59.252Z",
-  "eventCount": 2658,
-  "activeDirectiveId": "DIR-075",
-  "activeDirectiveTitle": "DIR-075: Decouple Master Profile Data from Account & Security Switcher",
-  "activeDirectiveStatus": "IN_PROGRESS",
+  "updatedAt": "2026-10-11T03:48:25.595Z",
+  "eventCount": 2690,
+  "activeDirectiveId": null,
+  "activeDirectiveTitle": null,
+  "activeDirectiveStatus": null,
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-11T03:08:54.085Z",
-  "unreadForLead": 105,
-  "unreadForDev": 163,
+  "stallDeadline": "2026-10-11T03:38:52.444Z",
+  "unreadForLead": 119,
+  "unreadForDev": 181,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-11T03:08:54.085Z",
-    "status": "S1-S6 implemented. build 3.55s, lint 0 errors, dir075 4/4, 183/183 pinned. Running product/security/policy gates.",
-    "percent": 60
+    "timestamp": "2026-10-11T03:38:52.444Z",
+    "status": "All mandates implemented and verified. build 3.42s, lint 0 errors, dir077 6/6, 212/212 pinned, product EXIT 0, security 67/67, xampp 4/4, dir063..077 green. Submitting evidence.",
+    "percent": 95
   },
   "integrity": {
     "ok": true,
-    "checked": 2658,
+    "checked": 2690,
     "legacy": 0,
     "bad": 0
   }

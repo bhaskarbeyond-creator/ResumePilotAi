@@ -453,7 +453,7 @@ const CubaCandidateShell = ({ children, copilotResume = null }) => {
             // DIR-026 / AC-2: the candidate shell owns the real destination.
             messagesHref="/dashboard/messages"
         >
-            <div className="space-y-6">
+            <div className="space-y-4 md:space-y-5">
                 {/* DIR-022 / AC-4: renewal recovery. Renders only when the
                     server reports PAST_DUE with a live grace deadline. */}
                 <PaymentGraceBanner profile={entitlementProfile} />

@@ -2,11 +2,11 @@
   "id": "DIR-077",
   "title": "DIR-077: Candidate Dashboard UI/UX 10/10 Overhaul — Zero-Waste Fluid Grid & Native Visual Intelligence",
   "priority": "P0",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-11T03:30:01.192Z",
-  "updatedAt": "2026-10-11T03:39:09.682Z",
+  "updatedAt": "2026-10-11T03:39:10.831Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "P0 ARCHITECTURAL & VISUAL MANDATES: 1. ELIMINATE WASTED VIEWPORT SPACE & INTRODUCE EXECUTIVE RIGHT RAIL: In src/components/cuba/CubaAppShell.jsx (line 512), expand the container cap from max-w-7xl to max-w-[1680px] w-full. In src/components/Candidate/CubaCandidateShell.jsx and DashboardHomepage.jsx, refactor the candidate overview layout on >=1280px viewports into a high-density 2-column executive grid: Main Workspace Column (approx 70% width) for Hero, Document Gallery, and Onboarding; Executive Right Rail Column (approx 30% width) occupying the former empty right void with high-value intelligence (Live Copilot Quick-Pitch actions, ATS Keyword Strength Radar, and Application Milestone Tracker). 2. TOP-LEFT HEADER & SIDEBAR HARMONIZATION: Realign the breadcrumbs in CubaAppShell so they visually anchor the main workspace column rather than floating awkwardly over the sidebar header. In CubaAppShell aside header, unify the IME365 brand tile and the Candidate Suite context switcher into a single, cohesive executive pill container, removing redundant nested borders and awkward stacked gaps. 3. ELEVATE NATIVE DATA VISUALIZATIONS: In src/components/Candidate/CubaCandidateHero.jsx, replace the cartoon mascot (cartoon.svg) with a bespoke executive Cuba glassmorphism career telemetry visual. In CubaStatCard.jsx and hero stat cards, integrate native SVG micro-visuals: an SVG circular radial gauge for Average ATS Score, a visual progress bar for Active Resumes, and a pipeline status stepper for Job Applications. 4. INVARIANTS: Preserve all existing functional contracts and tests (dir074, dir075, dir076, cuba-candidate-portal, cuba-design-system), ensure build under 4s, 0 lint errors, and zero regressions across all 55 frozen CV templates.",
   "invariants": [],
@@ -69,8 +69,30 @@
       }
     }
   ],
-  "freeze": null,
-  "lastTransitionReason": "lead review",
+  "freeze": {
+    "freezeHash": "570b0d66c1eb086d00a86f0b9afc7f363531446d",
+    "certifiedAt": "2026-10-11T03:39:10.831Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "Autonomous Lead (Antigravity): evidence audit passed, no human review.",
+    "evidenceHash": "2e33d48efe202db997daa7a828c392f08196d4b43f72a1626a57a12e1498cec3",
+    "automated": true,
+    "certificationKind": "automated",
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "declared-automation",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "non-tty"
+      ],
+      "pid": 17984,
+      "parentPid": 7736,
+      "tty": false,
+      "at": "2026-10-11T03:39:10.198Z",
+      "explicitlyAllowed": true
+    }
+  },
+  "lastTransitionReason": "gatekeeper certification",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {
