@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-11T03:23:51.503Z",
-  "seq": 2677,
-  "id": "evt_mv39e0j9_206ce21c1c0a",
-  "type": "EVIDENCE_SUBMITTED",
-  "title": "[Evidence] DIR-076: DIR-076: Remediate Command Palette Search Bar Focus Outline Visual Defect",
+  "timestamp": "2026-10-11T03:38:52.472Z",
+  "seq": 2687,
+  "id": "evt_mv39xbq3_7dc67230a859",
+  "type": "HEARTBEAT",
+  "title": "[Heartbeat] All mandates implemented and verified. build 3.42s, lint 0 errors, dir077 6/6, 212/212 pinned, product EXIT 0, security 67/67, xampp 4/4, dir063..077 green. Submitting evidence.",
   "sender": "STAFF_DEVELOPER",
-  "directiveId": "DIR-076",
-  "summary": "DIR-076 complete. src/index.css now exempts seamless inputs from the global unlayered input:focus-visible outline (input:not([data-seamless='true']):not(.cuba-seamless-input):focus-visible) and adds an explicit .cuba-seamless-input:focus/.cuba-seamless-input:focus-visible override that forces outline, outline-offset, box-shadow and border off. The palette input carries data-seamless=true and the cuba-seamless-input class while keeping the borderless className substrings the dir073/dir074 suites pin, so the sharp rectangular purple box no longer renders inside the rounded search bar; the cuba-command-searchbar container remains the sole unified focus ring (focus-within:ring-2 focus-within:ring-cuba-primary) preserving WCAG 2.1 AA SC 2.4.7 focus visibility. Gates: dir076 4/4, 141/141 pinned suites, test:product EXIT 0, security:static 67/67, xampp-policy 4/4, build 3.04s, lint 0 errors, dir063..dir076 all green, frozen cv-templates diff 0."
+  "directiveId": "DIR-077",
+  "summary": "All mandates implemented and verified. build 3.42s, lint 0 errors, dir077 6/6, 212/212 pinned, product EXIT 0, security 67/67, xampp 4/4, dir063..077 green. Submitting evidence."
 }

@@ -60,6 +60,7 @@ const CubaStatCard = ({
     hint,
     icon,
     trend,
+    visual = null,
     loading = false,
     accent = 'primary',
     className = '',
@@ -108,13 +109,21 @@ const CubaStatCard = ({
                         {value}
                     </p>
                 )}
-                <p className="text-xs font-semibold uppercase tracking-wider text-cuba-ink-subtle">
-                    {label}
-                </p>
+                {label && (
+                    <p className="text-xs font-semibold uppercase tracking-wider text-cuba-ink-subtle">
+                        {label}
+                    </p>
+                )}
                 {hint && !loading && (
                     <p className="text-[11px] font-medium text-cuba-ink-muted leading-tight pt-0.5">
                         {hint}
                     </p>
+                )}
+                {/* DIR-077: optional native SVG micro-visual (radial gauge,
+                    progress bar, pipeline stepper). Rendered only once the real
+                    value has resolved, so a loading card never shows a fake 0. */}
+                {visual && !loading && (
+                    <div className="pt-2.5">{visual}</div>
                 )}
             </div>
         </CubaCard>

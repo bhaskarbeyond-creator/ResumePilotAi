@@ -36,6 +36,7 @@
     "test:dir074": "node --test tests/dir074-user-identity-menu.test.mjs",
     "test:dir075": "node --test tests/dir075-profile-account-decoupling.test.mjs",
     "test:dir076": "node --test tests/dir076-palette-focus-outline.test.mjs",
+    "test:dir077": "node --test tests/dir077-candidate-dashboard-overhaul.test.mjs",
     "release:manifest": "node scripts/generate-certified-freeze-manifest.mjs",
     "test:dir064:visual": "node template-lab/docx-visual-parity.mjs",
     "test:api-resilience": "node tests/test_api_server_e2e_resilience.cjs",

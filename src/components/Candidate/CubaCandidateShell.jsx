@@ -24,6 +24,8 @@ import { isApplicationShellRoute } from '../AppShell/applicationShell';
 import { CANDIDATE_NAVIGATION } from '../cuba/candidateNavigation';
 // DIR-073: live entity search (resumes / portfolios / cover letters) for ⌘K.
 import { searchCandidateEntities } from './command/candidateEntitySearch';
+// DIR-077: the executive right-rail intelligence column.
+import CandidateExecutiveRail from './CandidateExecutiveRail';
 import { useUnreadMessages } from '../../hooks/useUnreadMessages';
 import { resolveMessagesVisibility } from '../../utils/moduleFlags';
 import { getSystemSettings } from '../../services/api/platform';
@@ -420,6 +422,8 @@ const CubaCandidateShell = ({ children, copilotResume = null }) => {
         return () => { mounted = false; };
     }, []);
 
+    const isOverview = location.pathname === '/dashboard' || location.pathname === '/dashboard/';
+
     return (
         <CubaAppShell
             navigation={groups}
@@ -453,13 +457,26 @@ const CubaCandidateShell = ({ children, copilotResume = null }) => {
                 {/* DIR-022 / AC-4: renewal recovery. Renders only when the
                     server reports PAST_DUE with a live grace deadline. */}
                 <PaymentGraceBanner profile={entitlementProfile} />
-                {(location.pathname === '/dashboard' || location.pathname === '/dashboard/') && (
-                    <>
-                        <CubaCandidateHero displayName={displayName} />
-                        <AiCareerBriefing />
-                    </>
+                {isOverview ? (
+                    /* DIR-077: high-density 2-column executive grid on >=1280px
+                       (xl). The main workspace column (~70%) holds the Hero, the
+                       briefing, the Document Gallery and Onboarding; the executive
+                       right rail (~30%) fills the former empty right void with live
+                       intelligence. Below xl it stacks to ONE column, so the mobile
+                       (375px) and tablet (768px) flows are unchanged. */
+                    <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]">
+                        <div className="min-w-0 space-y-6">
+                            <CubaCandidateHero displayName={displayName} />
+                            <AiCareerBriefing />
+                            {children}
+                        </div>
+                        <aside className="min-w-0" aria-label="Executive intelligence rail">
+                            <CandidateExecutiveRail onNavigate={navigate} />
+                        </aside>
+                    </div>
+                ) : (
+                    children
                 )}
-                {children}
             </div>
         </CubaAppShell>
     );

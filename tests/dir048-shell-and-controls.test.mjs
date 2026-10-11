@@ -48,7 +48,7 @@ test('S8: a narrowed applicant pipeline can always be restored to the full list'
 
 test('S9: the shell owns one responsive gutter for every portal', () => {
     const shell = read(SHELL);
-    assert.match(shell, /max-w-7xl px-4 py-6 pb-24 sm:px-6 md:pb-6 lg:px-8/);
+    assert.match(shell, /max-w-\[1680px\] px-4 py-6 pb-24 sm:px-6 md:pb-6 lg:px-8/);
     assert.doesNotMatch(shell, /max-w-\[1400px\]/, 'the ad-hoc 1400px cap is retired');
 });
 

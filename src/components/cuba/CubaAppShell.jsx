@@ -295,15 +295,11 @@ const CubaAppShell = ({
                     />
                 </button>
 
-                {/* Left rail: semantic trail. Hidden below md so the centred search
-                    keeps the visual centre of mass on small screens. */}
-                <div className="hidden min-w-0 flex-1 md:block">
-                    {breadcrumbs ? (
-                        <M3Breadcrumbs items={breadcrumbs} onNavigate={onNavigate} />
-                    ) : breadcrumb ? (
-                        <div className="min-w-0 truncate text-sm font-medium text-cuba-ink-muted">{breadcrumb}</div>
-                    ) : null}
-                </div>
+                {/* DIR-077: the breadcrumb trail moved into the MAIN workspace
+                    column (see #cuba-main-content) so it anchors that column instead
+                    of floating over the sidebar header. This spacer keeps the
+                    centred command search visually centred. */}
+                <div className="hidden min-w-0 flex-1 md:block" aria-hidden="true" />
 
                 {/* CENTRE: Material 3 pill command search — the header's dominant
                     affordance, replacing the old small right-aligned trigger.
@@ -420,42 +416,59 @@ const CubaAppShell = ({
                     )}
                     data-testid="cuba-sidebar"
                 >
-                    <div className={cx(
-                        'flex items-center h-14 px-4 border-b border-cuba-line/50 flex-none',
-                        collapsed ? 'justify-center px-1' : 'justify-between'
-                    )}>
-                    <a
-                        href="/dashboard"
-                        onClick={(event) => {
-                            if (onNavigate && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey && event.button === 0) {
-                                event.preventDefault();
-                                onNavigate('/dashboard');
-                            }
-                        }}
-                        className="flex items-center gap-2.5 min-w-0 text-cuba-ink"
-                    >
-                            <div className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-gradient-to-tr from-cuba-primary to-cuba-primary-fill text-white font-black text-xs shadow-cuba-primary">
-                                ✦
-                            </div>
-                            {!collapsed && (
-                                <div className="min-w-0 truncate">
-                                    <div className="text-sm font-extrabold tracking-tight text-cuba-ink flex items-center gap-1.5">
-                                        <span>IME365</span>
-                                        {/* DIR-017 AC-5: the "AI" chip label is 8px text, so it is
-                                            held to the full 4.5:1 AA bar, not the 3:1 large-text
-                                            bar. The raw brand violet #7366ff is only 3.8:1 on the
-                                            light canvas, so the chip uses the AA-safe primary ink
-                                            (6.92:1) over the existing soft primary wash. */}
-                                        <span className="rounded bg-cuba-primary-soft px-1 py-0.5 text-[8px] font-black text-cuba-primary-ink-strong uppercase tracking-wider">AI</span>
-                                    </div>
-                                    <div className="text-[9px] font-semibold text-cuba-ink-subtle uppercase tracking-wider">Executive Suite</div>
+                    {/* DIR-077: ONE cohesive executive pill — the IME365 brand tile
+                        and the context switcher share a single rounded container with
+                        a single inner divider, removing the previous double
+                        `border-b` stack and the awkward gap between them. */}
+                    {collapsed ? (
+                        <div className="flex h-14 flex-none items-center justify-center border-b border-cuba-line/50 px-1">
+                            <a
+                                href="/dashboard"
+                                onClick={(event) => {
+                                    if (onNavigate && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey && event.button === 0) {
+                                        event.preventDefault();
+                                        onNavigate('/dashboard');
+                                    }
+                                }}
+                                className="flex items-center gap-2.5 min-w-0 text-cuba-ink"
+                            >
+                                <div className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-gradient-to-tr from-cuba-primary to-cuba-primary-fill text-white font-black text-xs shadow-cuba-primary">
+                                    ✦
                                 </div>
-                            )}
-                        </a>
-                    </div>
-                    {!collapsed && (
-                        <div className="px-3 pt-3 pb-2 border-b border-cuba-line/40">
-                            <ContextSwitcher variant="sidebar" />
+                            </a>
+                        </div>
+                    ) : (
+                        <div className="flex-none border-b border-cuba-line/40 px-3 pb-2 pt-3">
+                            <div className="cuba-glass flex flex-col gap-2 rounded-cuba-lg border border-cuba-line p-2">
+                                <a
+                                    href="/dashboard"
+                                    onClick={(event) => {
+                                        if (onNavigate && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey && event.button === 0) {
+                                            event.preventDefault();
+                                            onNavigate('/dashboard');
+                                        }
+                                    }}
+                                    className="flex min-w-0 items-center gap-2.5 rounded-cuba-md px-1.5 py-1 text-cuba-ink"
+                                >
+                                    <div className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-gradient-to-tr from-cuba-primary to-cuba-primary-fill text-white font-black text-xs shadow-cuba-primary">
+                                        ✦
+                                    </div>
+                                    <div className="min-w-0 truncate">
+                                        <div className="text-sm font-extrabold tracking-tight text-cuba-ink flex items-center gap-1.5">
+                                            <span>IME365</span>
+                                            {/* DIR-017 AC-5: the "AI" chip label is 8px text, so it is
+                                                held to the full 4.5:1 AA bar, not the 3:1 large-text
+                                                bar. The raw brand violet #7366ff is only 3.8:1 on the
+                                                light canvas, so the chip uses the AA-safe primary ink
+                                                (6.92:1) over the existing soft primary wash. */}
+                                            <span className="rounded bg-cuba-primary-soft px-1 py-0.5 text-[8px] font-black text-cuba-primary-ink-strong uppercase tracking-wider">AI</span>
+                                        </div>
+                                        <div className="text-[9px] font-semibold text-cuba-ink-subtle uppercase tracking-wider">Executive Suite</div>
+                                    </div>
+                                </a>
+                                <div className="h-px" style={{ backgroundColor: 'var(--cuba-header-divider)' }} />
+                                <ContextSwitcher variant="sidebar" />
+                            </div>
                         </div>
                     )}
                     <CubaNavGroups groups={groups} collapsed={railCollapsed} onNavigate={handleNavClick} headingId="cuba-nav-heading" navigationLabel={navigationLabel} />
@@ -506,10 +519,26 @@ const CubaAppShell = ({
                 )}
 
                 <main id="cuba-main-content" tabIndex={-1} className="w-full min-w-0 flex-1 overflow-x-hidden">
-                    {/* DIR-048 S9: the single responsive gutter + width cap shared
-                        by every portal (max-w-7xl), with `pb-24` on mobile reserving
-                        room for the bottom tab bar so it can never cover content. */}
-                    <div className="mx-auto w-full max-w-7xl px-4 py-6 pb-24 sm:px-6 md:pb-6 lg:px-8">{children}</div>
+                    {/* DIR-048 S9: the single responsive gutter + width cap shared by
+                        every portal, with `pb-24` on mobile reserving room for the
+                        bottom tab bar so it can never cover content.
+                        DIR-077: the cap is raised from max-w-7xl to max-w-[1680px] so
+                        a wide executive viewport stops wasting ~30% of its width. */}
+                    <div className="mx-auto w-full max-w-[1680px] px-4 py-6 pb-24 sm:px-6 md:pb-6 lg:px-8">
+                        {/* DIR-077: the semantic trail now anchors the MAIN workspace
+                            column at its left edge (exactly one Breadcrumb landmark),
+                            instead of floating over the sidebar header. */}
+                        {(breadcrumbs || breadcrumb) && (
+                            <div className="mb-4 hidden min-w-0 md:block" data-testid="cuba-main-breadcrumbs">
+                                {breadcrumbs ? (
+                                    <M3Breadcrumbs items={breadcrumbs} onNavigate={onNavigate} />
+                                ) : (
+                                    <div className="min-w-0 truncate text-sm font-medium text-cuba-ink-muted">{breadcrumb}</div>
+                                )}
+                            </div>
+                        )}
+                        {children}
+                    </div>
                 </main>
             </div>
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { FiPlus, FiBriefcase, FiAward, FiFileText, FiZap, FiRefreshCw } from 'react-icons/fi';
 import CubaStatCard from '../cuba/CubaStatCard';
+import { AtsRadialGauge, ResumeProgressBar, PipelineStepper } from '../cuba/StatMicroVisuals';
 import { getResumes, getTrackedJobs, getStatesOfUser } from '../../services/api/platform';
 import { summariseResumes } from './briefingLogic';
 
@@ -117,13 +118,36 @@ const CubaCandidateHero = ({ displayName = 'Candidate' }) => {
                 <div className="pointer-events-none absolute -bottom-10 right-28 h-44 w-44 rounded-full bg-sky-300/15 blur-xl" aria-hidden="true" />
                 <div className="pointer-events-none absolute left-1/3 top-0 h-32 w-32 rounded-full bg-indigo-300/10 blur-lg" aria-hidden="true" />
 
-                {/* Cuba Vector Character Animation */}
-                <div className="pointer-events-none absolute right-4 lg:right-48 xl:right-56 -bottom-3 hidden md:block w-40 lg:w-48 xl:w-56 select-none z-10">
-                    <img
-                        src="/images/dashboard/cartoon.svg"
-                        alt="Cuba Executive Candidate"
+                {/* DIR-077: bespoke executive Cuba glassmorphism career-telemetry
+                    visual (replaces the cartoon mascot). Purely decorative — every
+                    real number lives in the text and KPI cards below. */}
+                <div className="pointer-events-none absolute right-2 lg:right-40 xl:right-48 -bottom-2 hidden md:block w-40 lg:w-48 xl:w-56 select-none z-10" aria-hidden="true">
+                    <svg
+                        viewBox="0 0 240 240"
                         className="w-full h-auto drop-shadow-md cuba-animate-bounce"
-                    />
+                        data-testid="cuba-hero-telemetry"
+                    >
+                        <defs>
+                            <linearGradient id="cuba-telemetry-ring" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stopColor="#ffffff" stopOpacity="0.9" />
+                                <stop offset="100%" stopColor="#bcd7ff" stopOpacity="0.45" />
+                            </linearGradient>
+                        </defs>
+                        <circle cx="120" cy="120" r="96" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.35)" strokeWidth="1.5" />
+                        <circle cx="120" cy="120" r="72" fill="rgba(255,255,255,0.06)" stroke="url(#cuba-telemetry-ring)" strokeWidth="1.5" strokeDasharray="6 8" />
+                        <circle cx="120" cy="120" r="48" fill="rgba(255,255,255,0.10)" stroke="rgba(255,255,255,0.40)" strokeWidth="1.5" />
+                        <path d="M120 120 L120 40 A80 80 0 0 1 189 160 Z" fill="rgba(255,255,255,0.18)" />
+                        <g stroke="rgba(255,255,255,0.55)" strokeWidth="1.5">
+                            <line x1="120" y1="24" x2="120" y2="36" />
+                            <line x1="120" y1="204" x2="120" y2="216" />
+                            <line x1="24" y1="120" x2="36" y2="120" />
+                            <line x1="204" y1="120" x2="216" y2="120" />
+                        </g>
+                        <circle cx="120" cy="120" r="10" fill="#ffffff" opacity="0.95" />
+                        <circle cx="189" cy="160" r="7" fill="#7ef0c0" />
+                        <circle cx="66" cy="70" r="6" fill="#ffd479" />
+                        <circle cx="175" cy="66" r="5" fill="#9db8ff" />
+                    </svg>
                 </div>
 
                 <div className="relative z-20 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
@@ -235,6 +259,7 @@ const CubaCandidateHero = ({ displayName = 'Candidate' }) => {
                     accent="primary"
                     loading={loading}
                     trend={count > 0 ? { label: `${count} in workspace`, tone: 'up' } : null}
+                    visual={<ResumeProgressBar count={count} />}
                 />
                 <CubaStatCard
                     label="Average ATS Score"
@@ -244,6 +269,7 @@ const CubaCandidateHero = ({ displayName = 'Candidate' }) => {
                     accent={bestScore && bestScore >= 75 ? 'success' : 'warning'}
                     loading={loading}
                     trend={bestScore ? { label: bestScore >= 75 ? 'Market Ready' : 'Needs Optimization', tone: bestScore >= 75 ? 'up' : 'down' } : null}
+                    visual={<AtsRadialGauge score={bestScore} />}
                 />
                 {/* DIR-058: this card is labelled "Job Applications", so it now
                     shows the REAL submitted-application count. It previously
@@ -257,6 +283,7 @@ const CubaCandidateHero = ({ displayName = 'Candidate' }) => {
                     accent="info"
                     loading={loading && applications === null}
                     trend={applications !== null && applications > 0 ? { label: 'Applications sent', tone: 'up' } : null}
+                    visual={<PipelineStepper applied={applications ?? 0} />}
                 />
                 <CubaStatCard
                     label="AI Interview Coach"
