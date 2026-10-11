@@ -564,7 +564,8 @@ const CubaCommandPalette = ({
                                     ? 'Ask for help with your career, or pick an action below'
                                     : placeholder}
                                 autoFocus
-                                className="h-12 w-full border-0 bg-transparent text-sm text-cuba-ink outline-none ring-0 placeholder:text-cuba-ink-subtle focus:outline-none focus:ring-0 focus-visible:outline-none"
+                                data-seamless="true"
+                                className="cuba-seamless-input h-12 w-full border-0 bg-transparent text-sm text-cuba-ink outline-none ring-0 placeholder:text-cuba-ink-subtle focus:outline-none focus:ring-0 focus-visible:outline-none"
                             />
                             <kbd className="hidden flex-none rounded border border-cuba-line px-1.5 py-0.5 text-[10px] font-semibold text-cuba-ink-subtle sm:block">
                                 Esc

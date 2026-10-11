@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-11T03:11:16.330Z",
-  "seq": 2660,
-  "id": "evt_mv38xtub_4c8200f18cfd",
-  "type": "EVIDENCE_SUBMITTED",
-  "title": "[Evidence] DIR-075: DIR-075: Decouple Master Profile Data from Account & Security Switcher",
+  "timestamp": "2026-10-11T03:23:41.378Z",
+  "seq": 2676,
+  "id": "evt_mv39dspy_31f399a06457",
+  "type": "HEARTBEAT",
+  "title": "[Heartbeat] All mandates implemented and verified. build 3.04s, lint 0 errors, dir076 4/4, 141/141 pinned, product EXIT 0, security 67/67, xampp 4/4, dir063..076 green. Submitting evidence.",
   "sender": "STAFF_DEVELOPER",
-  "directiveId": "DIR-075",
-  "summary": "DIR-075 complete. Removed the redundant in-page [Master Profile | Account and Security] switcher from the DashboardSettings header card (its FaUser and FaCog imports dropped; the Expand View / Show Guidance toggle retained and right-aligned), so Master Profile Data is a pure URL-driven workspace. Surfaces are now driven by the URL: ?tab=Security or ?tab=Account renders the Account and Security Center and ?tab=Profile or default renders Master Profile Data. The profile header identity is sanitized through parseUserIdentity so Bhaskar Beyond (Super Admin) renders as clean Bhaskar Beyond plus a dedicated role badge, eliminating raw parentheses from the h1. The dir017 E2E STAGE 1 was rewritten to the URL-driven contract with a negative assertion that the switcher is gone. Gates: dir075 4/4, 183/183 pinned suites, test:product EXIT 0, security:static 67/67, xampp-policy 4/4, build 3.55s, lint 0 errors, dir063..dir075 all green, frozen cv-templates diff 0."
+  "directiveId": "DIR-076",
+  "summary": "All mandates implemented and verified. build 3.04s, lint 0 errors, dir076 4/4, 141/141 pinned, product EXIT 0, security 67/67, xampp 4/4, dir063..076 green. Submitting evidence."
 }

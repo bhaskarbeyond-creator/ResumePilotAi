@@ -122,11 +122,28 @@ input[type="reset"] {
 a[href]:focus-visible,
 button:focus-visible,
 [role="button"]:focus-visible,
-input:focus-visible,
+input:not([data-seamless='true']):not(.cuba-seamless-input):focus-visible,
 select:focus-visible,
 textarea:focus-visible {
     outline: 2px solid #4f46e5 !important;
     outline-offset: 2px !important;
+}
+
+/* DIR-076: a seamless input (the command-palette search bar) must NEVER paint the
+ * global rectangular focus outline. This rule is unlayered and !important, so it
+ * outranks Tailwind's outline-none utility — which is exactly why the sharp
+ * purple box used to appear inside the rounded pill. The visible focus affordance
+ * for that surface is the CONTAINER's own focus-within ring
+ * (cuba-command-searchbar, focus-within:ring-2 focus-within:ring-cuba-primary), so
+ * WCAG 2.1 AA SC 2.4.7 focus visibility is preserved while the input itself stays
+ * borderless and boxless. */
+.cuba-seamless-input:focus,
+.cuba-seamless-input:focus-visible {
+    outline: none !important;
+    outline-offset: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: transparent !important;
 }
 
 button:disabled,
