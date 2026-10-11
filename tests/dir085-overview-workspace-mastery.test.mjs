@@ -72,9 +72,11 @@ test('AC3: the de-duplication rule holds — no headline metric is printed twice
     // stat card, and it never reprints the ATS figure as a second headline.
     assert.doesNotMatch(hero, /<CubaStatCard/);
     assert.match(hero, /const capsules = \[/);
-    // The rail keeps ATS and applications strictly as DETAIL widgets.
-    assert.match(rail, /title="ATS Keyword Strength"/);
-    assert.match(rail, /title="Application Milestones"/);
+    // DIR-086 supersedes the DIR-085 two-widget rail: the ATS Keyword Strength and
+    // Application Milestones widgets were removed because they duplicated the capsule
+    // strip, so the rail now holds ONLY the Live Copilot Quick-Pitch and fits the viewport.
+    assert.doesNotMatch(rail, /<WidgetCard title="ATS Keyword Strength"/);
+    assert.doesNotMatch(rail, /<WidgetCard title="Application Milestones"/);
     assert.match(rail, /title="Live Copilot Quick-Pitch"/);
     // The hero's headline labels are exactly the four capsule labels.
     for (const label of ['Resumes', 'ATS', 'Applications', 'Interview Coach']) {

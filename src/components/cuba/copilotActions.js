@@ -52,27 +52,34 @@ const ACTIONS = [
     {
         id: 'candidate-tailor-resume',
         portal: COPILOT_PORTALS.CANDIDATE,
-        routes: ['/dashboard', '/build-resume'],
+        // DIR-086: the SPECIFIC destination leads. Listing '/dashboard' first made every
+        // Quick-Pitch click navigate to the page the user was already on, and the real
+        // tailor workspace is the resume builder's heading step.
+        routes: ['/build-resume', '/dashboard'],
         label: 'Tailor resume to job description',
         keywords: 'tailor resume job description target role',
         operation: 'generate-summary',
         promptKey: 'tailorResume',
+        navigateTo: '/build-resume/heading',
         icon: '⚡',
     },
     {
         id: 'candidate-cover-letter',
         portal: COPILOT_PORTALS.CANDIDATE,
-        routes: ['/dashboard', '/cover-letter'],
+        // DIR-086: '/cover-letter' was never a mounted route; the workspace is
+        // '/dashboard/cover-letters'.
+        routes: ['/dashboard/cover-letters', '/dashboard'],
         label: 'Generate cover letter',
         keywords: 'cover letter generate pitch write',
         operation: 'generate-ai-cover-letter',
         promptKey: 'coverLetter',
+        navigateTo: '/dashboard/cover-letters',
         icon: '✍️',
     },
     {
         id: 'candidate-mock-interview',
         portal: COPILOT_PORTALS.CANDIDATE,
-        routes: ['/dashboard', '/dashboard/interview'],
+        routes: ['/dashboard/interview', '/dashboard'],
         label: 'Start mock interview session',
         keywords: 'mock interview practice session start',
         // The interview coach owns the real session lifecycle (media devices,
@@ -190,6 +197,23 @@ const normalisePath = (pathname) => {
  * True when `action` is meaningful at `pathname`.
  * `routes: null` means "anywhere in this portal".
  */
+/**
+ * DIR-086: resolve an action's REAL destination.
+ *
+ * `navigateTo` is authoritative when present. Otherwise take the MOST SPECIFIC route
+ * rather than routes[0]: the candidate actions used to list '/dashboard' first, so every
+ * Quick-Pitch click navigated to the page the user was already on (a complete no-op).
+ * Sorting by length keeps the deepest path, so the fallback can never regress either.
+ */
+export function resolveActionHref(action) {
+    if (!action) return null;
+    if (action.navigateTo) return action.navigateTo;
+    const routes = Array.isArray(action.routes) ? action.routes.filter(Boolean) : [];
+    if (!routes.length) return null;
+    return [...routes].sort((a, b) => String(b).length - String(a).length)[0];
+}
+
+
 export function actionMatchesRoute(action, pathname) {
     if (!action || action.portal == null) return false;
     if (action.routes == null) return true;

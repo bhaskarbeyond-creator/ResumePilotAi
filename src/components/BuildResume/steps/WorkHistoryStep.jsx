@@ -282,7 +282,7 @@ const WorkHistoryStep = ({ resumeData, updateResumeData, onNavigate: _onNavigate
                 </div>
 
                 {employments.length > 1 && (
-                    <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none">
+                    <div className="flex items-center gap-1 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                         {employments.map((emp, idx) => (
                             <button
                                 key={emp.id}

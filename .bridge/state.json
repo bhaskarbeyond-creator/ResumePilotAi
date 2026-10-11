@@ -1,25 +1,25 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-11T06:13:42.066Z",
-  "eventCount": 2778,
-  "activeDirectiveId": "DIR-085",
-  "activeDirectiveTitle": "Candidate Overview Unified Command Center — Above-The-Fold Resume Workspace, Compact AI Copilot HUD & Friendly Native Mascot",
+  "updatedAt": "2026-10-11T06:48:03.083Z",
+  "eventCount": 2790,
+  "activeDirectiveId": "DIR-086",
+  "activeDirectiveTitle": "Candidate Overview 10/10 Polish — Zero Horizontal Scrollbars, Working Copilot Quick-Pitch Routing, Compact Action Cards & Streamlined Rail",
   "activeDirectiveStatus": "IN_PROGRESS",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-11T06:05:29.156Z",
-  "unreadForLead": 151,
-  "unreadForDev": 235,
+  "stallDeadline": "2026-10-11T06:23:35.274Z",
+  "unreadForLead": 154,
+  "unreadForDev": 244,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-11T06:05:29.156Z",
-    "status": "All gates green: dir084 8/8, 149/149 pinned, product EXIT 0, security 67/67, xampp 4/4, build 3.41s isolated, lint 0 errors, frozen diff 0. Submitting evidence.",
+    "timestamp": "2026-10-11T06:23:35.274Z",
+    "status": "S1-S7 delivered: friendly AI Copilot mascot (inline SVG, aurora tokens), compact Copilot HUD, 4-capsule metric strip, hero banner + 4 stat cards + radial gauge retired, workspace promoted above the fold, briefing moved to the rail. dir085 6/6, 155/155 pinned, product EXIT 0 quiet, security 67/67, xampp 4/4, build 3.19s, lint 0 errors, frozen diff 0. Submitting evidence.",
     "percent": 95
   },
   "integrity": {
     "ok": false,
-    "checked": 2778,
+    "checked": 2790,
     "legacy": 2,
     "bad": 2
   }

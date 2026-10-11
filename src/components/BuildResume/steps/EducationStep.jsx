@@ -466,7 +466,7 @@ const EducationStep = ({ resumeData, updateResumeData, onNavigate }) => {
                         <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
                             Active Qualification
                         </span>
-                        <div className="flex items-center gap-1 overflow-x-auto pb-0.5 scrollbar-none max-w-[190px]">
+                        <div className="flex items-center gap-1 overflow-x-auto pb-0.5 max-w-[190px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                             {educations.map((edu, idx) => (
                                 <button
                                     key={edu.id}

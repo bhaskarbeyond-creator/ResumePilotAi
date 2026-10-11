@@ -1,0 +1,63 @@
+{
+  "id": "DIR-086",
+  "title": "Candidate Overview 10/10 Polish — Zero Horizontal Scrollbars, Working Copilot Quick-Pitch Routing, Compact Action Cards & Streamlined Rail",
+  "priority": "P0",
+  "status": "IN_PROGRESS",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-11T06:37:59.305Z",
+  "updatedAt": "2026-10-11T06:38:45.915Z",
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "spec": "MANDATE: User feedback on DIR-085 overview screenshot: 1) 'i see horizontal scroll bars which is ackward' - remove awkward native scrollbar track under category pills with Tailwind v4 arbitrary utilities [scrollbar-width:none] and [&::-webkit-scrollbar]:hidden, and ensure zero horizontal overflow. 2) 'Live Copilot Quick-Pitch links are not working' - in CandidateExecutiveRail.jsx and copilotActions.js, fix the navigation target so tailor resume routes to /build-resume/heading, generate cover letter routes to /dashboard/cover-letters, and mock interview routes to /dashboard/interview (never falling back to /dashboard which is a no-op). 3) 10/10 Card and Rail Refactor: Resume cards have 4 stacked heavy buttons (Edit, PDF, Word, Share) creating visual clutter and excessive height; streamline into primary [Edit Resume] plus clean icon actions [PDF], [Word], and overflow menu [...]. Remove redundant duplicate ATS donut and application milestone widgets from the right rail so the rail fits the viewport and doesn't repeat the capsule strip. 4) Author tests/dir086-candidate-overview-polish.test.mjs, verify clean build, lint, and all test suites pass.",
+  "invariants": [],
+  "acceptanceCriteria": [],
+  "plan": {
+    "submittedAt": "2026-10-11T06:38:43.207Z",
+    "summary": "DIR-086 recon complete. FOUR defects confirmed with file:line evidence. (1) THE QUICK-PITCH NO-OP: CandidateExecutiveRail.jsx:106 computes href as action.routes[0], and in copilotActions.js all three candidate actions list /dashboard FIRST - candidate-tailor-resume routes ['/dashboard','/build-resume'] at :55, candidate-cover-letter routes ['/dashboard','/cover-letter'] at :65, candidate-mock-interview routes ['/dashboard','/dashboard/interview'] at :75 - so every Quick-Pitch click resolves to /dashboard, the page the user is already on. candidate-mock-interview even carries the correct navigateTo '/dashboard/interview' at :84 but the rail never reads it, and '/cover-letter' at :65 is not a mounted route at all (the real one is '/dashboard/cover-letters'). (2) THE AWKWARD SCROLLBAR TRACK: the category pill row at DashboardHomepage.jsx:1179 is 'flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0' with no scrollbar styling, so the browser paints its native track. WORSE, the class the repo already uses for this - scrollbar-none at EducationStep.jsx:469 and WorkHistoryStep.jsx:2285 - is a NO-OP: package.json pins tailwindcss ^4.1.8 and NO scrollbar plugin is installed, so it generates no CSS. The real fix is the Tailwind v4 arbitrary form [scrollbar-width:none] plus [&::-webkit-scrollbar]:hidden, which needs no plugin. (3) CARD CLUTTER: the resume card renders a primary button at :1552 and then a grid grid-cols-2 of FOUR full-width secondary buttons spanning :1566-1650 (Edit, PDF, Word, Share) while an overflow menu ALREADY exists at :1460-1490 - that is the stacked-button wall in the screenshot. (4) RAIL DUPLICATION: CandidateExecutiveRail renders three WidgetCards - Live Copilot Quick-Pitch at :100, ATS Keyword Strength at :129 and Application Milestones at :153 - and the last two repeat exactly what the DIR-085 capsule strip already shows, which is why the rail overflows. PLAN. S1 routing: give each candidate action an explicit navigateTo (tailor -> /build-resume/heading, cover letter -> /dashboard/cover-letters, mock interview -> /dashboard/interview), reorder their routes so /dashboard is never first, and make the rail PREFER navigateTo and otherwise fall back to the MOST SPECIFIC route rather than routes[0], so no action can resolve to a no-op again. S2 scrollbars: hide the native track with the Tailwind v4 arbitrary utilities and repair the two no-op scrollbar-none usages, keeping every row scrollable and keyboard reachable. S3 card: one primary Edit Resume plus icon-only PDF and Word actions plus the EXISTING overflow menu, each with an accessible name and a 44px target. S4 rail: delete the ATS Keyword Strength and Application Milestones widgets so the rail holds only the Live Copilot Quick-Pitch and fits the viewport. INVARIANTS: XAMPP-only servers, no detached node/vite/nodemon daemon; frozen src/cv-templates diff 0; no auth, token, API, DB or RBAC change since every fix is presentational or a navigation target; ZERO FABRICATED DATA - the rail stops repeating real figures rather than inventing replacements; preserve every DIR-048/055/072-085 pin and the dir081-dir085 suites; sub-4s build; 0 lint errors. UX STATES: removing two rail widgets must not remove their empty-state handling - the Quick-Pitch keeps its CubaEmptyState - and the card keeps its download and share gating (allowsPdfExport / allowsDocxDownload / allowsShareLink) so a non-premium user still sees the honest locked state rather than a broken button. RESPONSIVE: the icon actions stay tappable at 375px, the pill row scrolls without a visible track at every width, and the streamlined card reduces height so more cards sit above the fold at 1080p. QA: tests/dir086-candidate-overview-polish.test.mjs with AC1 the three candidate actions resolve to their real destinations and none resolves to /dashboard, AC2 the rail prefers navigateTo and no longer renders the ATS or milestone widgets, AC3 the pill row hides its scrollbar with a real utility and the repo no longer relies on the no-op scrollbar-none, AC4 the card exposes one primary Edit plus PDF and Word icon actions plus the overflow menu, AC5 a11y with accessible names and the overflow menu roles, AC6 no new dependency and the build stays under 4s. A11Y: the icon-only PDF and Word buttons carry aria-labels, the overflow menu keeps role=menu/menuitem and its Escape dismissal, the pill row stays keyboard scrollable with focus-visible, and contrast stays AA in both themes. PERFORMANCE: no new dependency and no timer, and removing two rail widgets plus three card buttons REDUCES node count and paint work so build and first paint improve. SEQUENCING AND RISK: the routing fix first (the user-visible bug), then the scrollbar utility, then the card and rail simplification, then the tests. ROLLBACK: each fix is independently revertible; no schema, API or data surface is touched.",
+    "steps": [
+      "S1 - Fix the Copilot Quick-Pitch routing: add an explicit navigateTo to candidate-tailor-resume (/build-resume/heading), candidate-cover-letter (/dashboard/cover-letters) and candidate-mock-interview (/dashboard/interview) in copilotActions.js, reorder their routes arrays so /dashboard is never first, and make CandidateExecutiveRail prefer navigateTo and fall back to the most specific route instead of routes[0].",
+      "S2 - Kill the native scrollbar tracks: add the Tailwind v4 arbitrary utilities [scrollbar-width:none] and [&::-webkit-scrollbar]:hidden to the category pill row in DashboardHomepage.jsx and repair the no-op scrollbar-none usages in EducationStep.jsx and WorkHistoryStep.jsx, keeping every row scrollable and keyboard reachable.",
+      "S3 - Streamline the resume card: replace the four stacked full-width buttons with one primary Edit Resume action, icon-only PDF and Word actions and the EXISTING overflow menu, each with an accessible name and a 44px touch target, preserving the premium gating.",
+      "S4 - Streamline the rail: remove the ATS Keyword Strength and Application Milestones widgets from CandidateExecutiveRail so it holds only the Live Copilot Quick-Pitch and fits the viewport, keeping the Quick-Pitch empty state.",
+      "S5 - Author tests/dir086-candidate-overview-polish.test.mjs (AC1-AC6 as described) and register test:dir086 in package.json.",
+      "S6 - Run dir086, dir085..dir072, cuba-candidate-portal, cuba-design-system, the dir048 suites, test:product, test:security:static, test:xampp-policy, dir063..dir086, build (under 4s), lint (0 errors), confirm frozen cv-templates diff 0, write .bridge/evidence/dir086-evidence.log and submit."
+    ],
+    "planHash": "28b9c818309debf34fbb4397a9fb9b9805b1140f3c8662c88e1f6b554a6206c0"
+  },
+  "evidence": null,
+  "reviews": [],
+  "freeze": null,
+  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "continuationPending": false,
+  "revisionTarget": null,
+  "planApproval": {
+    "approvedAt": "2026-10-11T06:38:45.915Z",
+    "automated": true,
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "declared-automation",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "non-tty"
+      ],
+      "pid": 18492,
+      "parentPid": 6172,
+      "tty": false,
+      "at": "2026-10-11T06:38:45.914Z",
+      "explicitlyAllowed": true
+    },
+    "feedback": "Auto-approved by the autonomous plan-scorer (score 100/100, reviewer verdict approved). NOT a human Lead review."
+  },
+  "heartbeats": [
+    {
+      "at": "2026-10-11T06:50:48.381Z",
+      "status": "S1-S5 delivered: Quick-Pitch routing fixed via a shared resolveActionHref resolver (tailor -> /build-resume/heading, cover letter -> /dashboard/cover-letters, mock drill -> /dashboard/interview; no action resolves to /dashboard), native scrollbar tracks hidden with Tailwind v4 arbitrary utilities and the no-op scrollbar-none retired, card collapsed to one primary + one compact row, rail reduced to the Quick-Pitch alone. dir086 6/6, 161/161 pinned, product EXIT 0, security 67/67, xampp 4/4, build 2.77s, lint 0 errors, frozen diff 0. Submitting evidence.",
+      "percent": 95,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    }
+  ],
+  "lastHeartbeatAt": "2026-10-11T06:50:48.381Z"
+}

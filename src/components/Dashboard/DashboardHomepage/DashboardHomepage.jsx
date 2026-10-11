@@ -1176,7 +1176,7 @@ class DashboardHomepage extends Component {
 
           {/* Real-Time Search & Category Folder Filter Tabs */}
           <div className={isCuba ? "flex flex-col md:flex-row md:items-center md:justify-between mb-6 pb-3 border-b border-cuba-line gap-3" : "flex flex-col md:flex-row md:items-center md:justify-between mb-6 pb-2 border-b border-slate-200 gap-3"}>
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <button type="button" aria-pressed={this.state.activeTab === 'all'} onClick={() => this.setState({ activeTab: 'all' })} className={isCuba ? (this.state.activeTab === 'all' ? 'cuba-fill-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-xs transition-colors shrink-0' : 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-[#1e222d] border border-cuba-line text-cuba-ink-muted hover:text-[#7366ff] hover:bg-[#7366ff]/5 transition-colors shrink-0') : `px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'all' ? 'bg-[#7366ff] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>All Resumes ({this.state.pagination?.totalItems ?? this.state.fetchedDocuments?.length ?? 0})</button>
               {this.state.enableCoverLetterModule && (
               <button type="button" aria-pressed={this.state.activeTab === 'cover-letters'} onClick={() => this.setState({ activeTab: 'cover-letters' })} className={isCuba ? (this.state.activeTab === 'cover-letters' ? 'cuba-fill-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-xs transition-colors shrink-0' : 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-[#1e222d] border border-cuba-line text-cuba-ink-muted hover:text-[#7366ff] hover:bg-[#7366ff]/5 transition-colors shrink-0') : `px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'cover-letters' ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'}`}>Cover Letters ({this.state.savedCoverLetters?.length || 0})</button>
@@ -1545,11 +1545,11 @@ class DashboardHomepage extends Component {
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="space-y-2 mt-auto">
+                      <div className="flex flex-wrap items-center gap-2 mt-auto">
                         {/* Primary Action - Edit Resume */}
                         <button
                           className={
-                            "cuba-btn-primary w-full text-xs font-bold py-2.5 px-4 rounded-xl flex items-center justify-center space-x-2 cursor-pointer shadow-xs"
+                            "cuba-btn-primary flex-1 basis-full min-w-0 text-xs font-bold py-2.5 px-4 rounded-xl flex items-center justify-center space-x-2 cursor-pointer shadow-xs"
                           }
                           onClick={() => this.setAsCurrentResume(document.id, document)}
                         >
@@ -1563,10 +1563,10 @@ class DashboardHomepage extends Component {
                         </button>
 
                         {/* Export Actions (PDF + DOCX in sleek 2-col row in Cuba mode) */}
-                        <div className={isCuba ? "grid grid-cols-2 gap-2" : "space-y-2.5"}>
+                        <div className={isCuba ? "flex items-center gap-2 flex-1 min-w-0" : "space-y-2.5"}>
                           {/* Download PDF Button */}
                           <button className={isCuba
-                            ? `cuba-btn-outline w-full text-xs font-semibold py-2 px-3 rounded-xl flex items-center justify-center space-x-1.5 cursor-pointer ${
+                            ? `cuba-btn-outline flex-1 min-w-0 text-xs font-semibold py-2 px-3 rounded-xl flex items-center justify-center space-x-1.5 cursor-pointer ${
                                 this.state.downloadingResumeIds.has(document.id) ? "opacity-60 cursor-not-allowed" : ""
                               }`
                             : `w-full text-white text-sm font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 shadow-sm ${
@@ -1594,7 +1594,7 @@ class DashboardHomepage extends Component {
 
                           {/* Download Word (DOCX) Button */}
                           <button className={isCuba
-                            ? `cuba-btn-outline w-full text-xs font-semibold py-2 px-3 rounded-xl flex items-center justify-center space-x-1.5 cursor-pointer ${
+                            ? `cuba-btn-outline flex-1 min-w-0 text-xs font-semibold py-2 px-3 rounded-xl flex items-center justify-center space-x-1.5 cursor-pointer ${
                                 this.state.downloadingDocxIds.has(document.id) ? "opacity-60 cursor-not-allowed" : ""
                               }`
                             : `w-full text-white text-sm font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 shadow-sm ${
@@ -1624,7 +1624,7 @@ class DashboardHomepage extends Component {
                         {/* Share Button */}
                         <button
                           className={isCuba
-                            ? `cuba-btn-outline w-full text-xs font-semibold py-2 px-4 rounded-xl flex items-center justify-center space-x-1.5 cursor-pointer ${
+                            ? `cuba-btn-outline flex-1 min-w-0 text-xs font-semibold py-2 px-4 rounded-xl flex items-center justify-center space-x-1.5 cursor-pointer ${
                                 this.state.sharingResumeIds?.has(document.id) ? "opacity-60 cursor-not-allowed" : ""
                               }`
                             : `w-full border border-slate-300 text-slate-700 text-sm font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 shadow-sm ${

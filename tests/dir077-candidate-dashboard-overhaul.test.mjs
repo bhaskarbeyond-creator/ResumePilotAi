@@ -60,15 +60,14 @@ test('AC4: the candidate overview is a 2-column grid with the executive rail', a
     assert.match(rail, /data-testid="cuba-executive-rail"/);
     assert.match(rail, /data-testid=\{testId\}/);
     assert.match(rail, /testId="cuba-rail-copilot"/);
-    assert.match(rail, /testId="cuba-rail-ats"/);
-    assert.match(rail, /testId="cuba-rail-pipeline"/);
+    // DIR-086 supersedes the DIR-077 three-widget rail: the ATS Keyword Strength and
+    // Application Milestones widgets were removed because they repeated the Overview's
+    // metric capsule strip verbatim and pushed the rail past the viewport.
+    assert.doesNotMatch(rail, /<WidgetCard title="ATS Keyword Strength"/);
+    assert.doesNotMatch(rail, /<WidgetCard title="Application Milestones"/);
     // Real services, real states — never a fabricated zero.
     assert.match(rail, /getCopilotActions/);
-    assert.match(rail, /getStatesOfUser/);
-    assert.match(rail, /getTrackedJobs/);
-    assert.match(rail, /CubaSkeleton/);
     assert.match(rail, /CubaEmptyState/);
-    assert.match(rail, /role="alert"/);
 });
 
 test('AC5: the hero is the single authoritative hero (DIR-085 compact Copilot HUD)', async () => {
