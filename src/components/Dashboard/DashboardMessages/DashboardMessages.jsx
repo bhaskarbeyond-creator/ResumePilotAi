@@ -371,13 +371,16 @@ const DashboardMessages = ({ t }) => {
     };
 
     return (
-        <div className={`flex h-full min-h-[70vh] font-sans lg:h-[calc(100vh-9rem)] ${CHAT_SURFACE}`}>
+        <div
+            data-testid="messages-viewport-lock"
+            className={`flex h-[calc(100vh-var(--cuba-header-h))] max-h-[calc(100vh-var(--cuba-header-h))] overflow-hidden font-sans ${CHAT_SURFACE}`}
+        >
             {/* Left Sidebar - Conversations List.
                 DIR-081: the list and the thread coexist only from `lg` up. Below that the
                 fixed 280px column starved the thread on phones, so the list is shown
                 alone until a conversation is picked and the thread then takes over with a
                 back-to-list control. */}
-            <div className={`${selectedConversation ? 'hidden lg:flex' : 'flex'} w-full flex-shrink-0 flex-col border-r lg:w-[320px] ${CHAT_SURFACE} ${CHAT_LINE}`}>
+            <div className={`${selectedConversation ? 'hidden lg:flex' : 'flex'} min-h-0 w-full flex-shrink-0 flex-col overflow-hidden border-r lg:w-[320px] ${CHAT_SURFACE} ${CHAT_LINE}`}>
                 {/* Search Bar */}
                 <div className={`px-3 py-3 border-b ${CHAT_LINE}`}>
                     <div className="relative">
@@ -457,7 +460,7 @@ const DashboardMessages = ({ t }) => {
             </div>
 
             {/* Right Panel - Chat Area */}
-            <div className={`${selectedConversation ? 'flex' : 'hidden lg:flex'} flex-1 flex-col h-full bg-[var(--cuba-primary-soft)]`}>
+            <div className={`${selectedConversation ? 'flex' : 'hidden lg:flex'} min-h-0 flex-1 flex-col overflow-hidden bg-[var(--cuba-primary-soft)]`}>
                 {selectedConversation ? (
                     <>
                         {/* Chat Header */}

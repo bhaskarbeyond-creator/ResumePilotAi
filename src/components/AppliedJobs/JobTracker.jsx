@@ -13,6 +13,8 @@ import { downloadTextFile } from '../../utils/interviewCoach';
 // region and never replace the whole page with a blank body.
 import CubaPageFrame from '../cuba/CubaPageFrame';
 import CubaEmptyState from '../cuba/CubaEmptyState';
+// DIR-083: the compact pipeline HUD (bound to the real summarizePipeline result).
+import CubaHud from '../cuba/CubaHud';
 
 // The stage list is the single source of truth for the board; the persisted
 // `status` enum is untouched (see JOB_TRACKER_STAGES in utils/jobTracker.js).
@@ -233,6 +235,20 @@ export default function JobTracker({ showToast }) {
     // AC-6: the ribbon reflects the WHOLE pipeline, never the filtered view, so
     // typing in search cannot silently change the reported interview rate.
     const summary = useMemo(() => summarizePipeline(jobs), [jobs]);
+    // DIR-083: the HUD binds to the REAL pipeline summary that already drives the board,
+    // so every figure is computed from the tracked jobs and nothing is invented. An empty
+    // tracker yields no items, and CubaHud then renders nothing at all.
+    const hudItems = useMemo(() => {
+        if (!summary || !summary.total) return [];
+        return [
+            { label: 'Tracked', value: summary.total },
+            { label: 'Active', value: summary.active },
+            { label: 'Submitted', value: summary.submitted },
+            { label: 'Interview rate', value: `${summary.interviewRate}%` },
+            { label: 'Awaiting reply', value: summary.pendingResponses },
+            { label: 'Offers', value: summary.offerCount },
+        ];
+    }, [summary]);
 
     const closeForm = () => {
         setForm(EMPTY_FORM);
@@ -542,9 +558,10 @@ export default function JobTracker({ showToast }) {
     }
 
     return (
-        <main
-            className="min-h-screen p-4 sm:p-6"
-            style={{ background: 'var(--cuba-canvas)', color: 'var(--cuba-ink)' }}
+        <CubaPageFrame
+            {...pageIdentity}
+            dense
+            hud={<CubaHud items={hudItems} label="Pipeline metrics" />}
         >
             {deleteTarget && (
                 <div
@@ -823,7 +840,7 @@ export default function JobTracker({ showToast }) {
                                 // shrink to its share of the row, so five columns never force the
                                 // page wider than the viewport. The canvas is a `rounded-xl`
                                 // bordered surface per the Lead's viewport ruling.
-                                className="flex min-w-0 flex-col rounded-xl p-3 transition-colors"
+                                className="flex min-h-0 min-w-0 flex-col rounded-xl p-3 transition-colors md:max-h-[calc(100vh-var(--cuba-header-h)-16rem)] md:overflow-y-auto cuba-scrollbar"
                                 style={{
                                     background: isDropTarget ? 'var(--cuba-elevated)' : 'color-mix(in srgb, var(--cuba-canvas) 60%, transparent)',
                                     border: `1px solid ${isDropTarget ? 'var(--cuba-primary)' : 'var(--cuba-line)'}`,
@@ -1052,6 +1069,6 @@ export default function JobTracker({ showToast }) {
                     })}
                 </div>
             </div>
-        </main>
+        </CubaPageFrame>
     );
 }

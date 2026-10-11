@@ -78,15 +78,22 @@ test('AC4: Cover Letters and Messages are responsive and legacy-free', async () 
     const [covers, messages] = await Promise.all([read(COVERS), read(MESSAGES)]);
 
     // Cover Letters: real breakpoints, Cuba tokens, a page header and a real empty state.
-    assert.match(covers, /import CubaPageHeader from '\.\.\/\.\.\/cuba\/CubaPageHeader'/);
-    assert.match(covers, /sm:flex-row sm:items-center sm:justify-between/);
+    // DIR-083 supersedes the DIR-081 header assertion: the page now mounts the dense
+    // CubaPageFrame + CubaSplitView, and the flat-row mapping replaced the `.item` access
+    // that used to throw as soon as the account held one cover letter.
+    assert.match(covers, /import CubaPageFrame from '\.\.\/\.\.\/cuba\/CubaPageFrame'/);
+    assert.match(covers, /import CubaSplitView from '\.\.\/\.\.\/cuba\/CubaSplitView'/);
+    assert.doesNotMatch(covers, /covers\[index\]\.item/, 'Cover Letters must never read the non-existent .item field');
     assert.match(covers, /<CubaEmptyState/);
     assert.equal(countLegacy(covers), 0, 'Cover Letters must be free of legacy colour utilities');
     // The literal junk text that used to render in the DOM is gone.
     assert.doesNotMatch(covers, /d{8,}/);
 
     // Messages: a genuine lg split view with a mobile back-to-list affordance.
-    assert.match(messages, /lg:h-\[calc\(100vh-9rem\)\]/);
+    // DIR-083 supersedes the DIR-081 height approach: the pane is now LOCKED to the
+    // viewport (h-[calc(100vh-var(--cuba-header-h))]) with internal scrollbars.
+    assert.match(messages, /h-\[calc\(100vh-var\(--cuba-header-h\)\)\]/);
+    assert.match(messages, /messages-viewport-lock/);
     assert.match(messages, /hidden lg:flex/);
     assert.match(messages, /lg:w-\[320px\]/);
     assert.match(messages, /lg:hidden/);

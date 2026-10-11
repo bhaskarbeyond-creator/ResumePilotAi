@@ -186,20 +186,24 @@ const DashboardPortfolios = ({ t, showToast }) => {
         }
     };
 
+    // DIR-083: a modular BENTO showcase — the newest portfolio is the featured tile (it
+    // spans two columns with a taller preview on sm and up) and the rest flow into single
+    // modules, so a wide desktop shows a real composition instead of a uniform strip.
     const renderGridView = () => (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-            {filteredPortfolios.map((portfolio) => (
-                <div key={portfolio.id} className="cuba-widget-texture bg-cuba-card rounded-[15px] border border-cuba-line shadow-[0_9px_20px_rgba(46,35,94,0.07)] hover:shadow-[0_14px_28px_rgba(46,35,94,0.12)] hover:-translate-y-1 transition-all duration-300">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5" data-testid="portfolio-bento-grid">
+            {filteredPortfolios.map((portfolio, index) => (
+                <div key={portfolio.id} data-testid="portfolio-bento-tile" className={`cuba-widget-texture bg-cuba-card rounded-cuba-lg border border-cuba-line hover:shadow-cuba-lg hover:-translate-y-1 transition-all duration-300 ${index === 0 ? 'sm:col-span-2' : ''}`}>
                     {/* Preview */}
-                    <div className="h-48 relative rounded-t-[15px] overflow-hidden bg-slate-100">
+                    <div className={`relative overflow-hidden rounded-t-cuba-lg bg-cuba-canvas ${index === 0 ? 'h-56 sm:h-72' : 'h-44'}`}>
                         <img
                             src={getPreviewImage(portfolio)}
                             alt={`${portfolio.title} preview`}
                             className="w-full h-full object-cover"
                             onError={(e) => {
-                                // Fallback to gradient if image fails to load
+                                // DIR-083: degrade to a Cuba surface instead of the legacy
+                                // slate-to-purple gradient.
                                 e.target.style.display = 'none';
-                                e.target.parentElement.classList.add('bg-gradient-to-br', 'from-slate-400', 'to-purple-500');
+                                e.target.parentElement.classList.add('bg-cuba-primary-soft');
                             }}
                         />
                         <div className="absolute inset-0 bg-black bg-opacity-10 hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center opacity-0 hover:opacity-100">
@@ -210,7 +214,7 @@ const DashboardPortfolios = ({ t, showToast }) => {
                         </div>
                         {/* Portfolio Status Badge */}
                         <div className="absolute top-3 right-3">
-                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${portfolio.isPublished ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                            <span className={`rounded-full px-2 py-1 text-xs font-medium ${portfolio.isPublished ? 'bg-cuba-success-soft text-cuba-success' : 'bg-cuba-warning-soft text-cuba-warning'}`}>
                                 {portfolio.isPublished ? t('DashboardPortfolios.status.published') : t('DashboardPortfolios.status.draft')}
                             </span>
                         </div>
@@ -219,13 +223,13 @@ const DashboardPortfolios = ({ t, showToast }) => {
                     {/* Content */}
                     <div className="p-4">
                         <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-sm font-semibold text-slate-900 truncate">{portfolio.title}</h3>
-                            <span className={`px-2 py-1 text-xs font-medium rounded ${getThemeColor(portfolio.theme)}`}>{portfolio.theme}</span>
+                            <h3 className="text-sm font-semibold text-cuba-ink truncate">{portfolio.title}</h3>
+                            <span className={`px-2 py-1 text-xs font-medium rounded-cuba-sm ${getThemeColor(portfolio.theme)}`}>{portfolio.theme}</span>
                         </div>
 
-                        {portfolio.metadata?.description ? (<p className="text-slate-600 text-xs mb-3 line-clamp-2 h-8">{portfolio.metadata.description}</p>) : (<div className="h-8 mb-3" />)}
+                        {portfolio.metadata?.description ? (<p className="text-cuba-ink-muted text-xs mb-3 line-clamp-2 h-8">{portfolio.metadata.description}</p>) : (<div className="h-8 mb-3" />)}
 
-                        <div className="flex items-center justify-between text-xs text-slate-500 mb-4">
+                        <div className="flex items-center justify-between text-xs text-cuba-ink-subtle mb-4">
                             <span>
                                 {t('DashboardPortfolios.stats.views')}: {portfolio.views || 0}
                             </span>
@@ -261,11 +265,11 @@ const DashboardPortfolios = ({ t, showToast }) => {
                                 );
                             })()}
                             <div className="flex items-center gap-2">
-                                <Link to={`/portfolio/builder?edit=${portfolio.id}`} className="flex-1 px-2.5 py-1.5 bg-slate-50 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors text-xs font-medium border border-slate-200 text-center">
+                                <Link to={`/portfolio/builder?edit=${portfolio.id}`} className="flex-1 px-2.5 py-1.5 bg-cuba-primary-soft text-cuba-primary-ink-strong rounded-cuba-sm hover:bg-cuba-primary-soft-hover transition-colors text-xs font-medium border border-cuba-line text-center">
                                     <FiEdit3 className="w-3.5 h-3.5 inline mr-1" />
                                     Edit
                                 </Link>
-                                <button onClick={() => handleDeletePortfolio(portfolio.id)} className="px-2.5 py-1.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors text-xs font-medium border border-red-200">
+                                <button onClick={() => handleDeletePortfolio(portfolio.id)} className="px-2.5 py-1.5 bg-cuba-danger-soft text-cuba-danger rounded-cuba-sm hover:bg-cuba-danger-soft transition-colors text-xs font-medium border border-cuba-danger/30">
                                     <FiTrash2 className="w-3.5 h-3.5" />
                                 </button>
                             </div>
@@ -277,9 +281,9 @@ const DashboardPortfolios = ({ t, showToast }) => {
     );
 
     const renderListView = () => (
-        <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
-                <div className="grid grid-cols-12 gap-4 text-sm font-medium text-slate-700">
+        <div className="bg-cuba-card border border-cuba-line rounded-cuba-lg overflow-hidden">
+            <div className="px-6 py-4 border-b border-cuba-line bg-cuba-card">
+                <div className="grid grid-cols-12 gap-4 text-sm font-medium text-cuba-ink-muted">
                     <div className="col-span-4">{t('DashboardPortfolios.table.portfolio')}</div>
                     <div className="col-span-2">{t('DashboardPortfolios.table.theme')}</div>
                     <div className="col-span-2">{t('DashboardPortfolios.table.views')}</div>
@@ -289,27 +293,27 @@ const DashboardPortfolios = ({ t, showToast }) => {
             </div>
             <div className="divide-y divide-slate-200">
                 {filteredPortfolios.map((portfolio) => (
-                    <div key={portfolio.id} className="px-6 py-4 hover:bg-slate-50">
+                    <div key={portfolio.id} className="px-6 py-4 hover:bg-cuba-primary-soft/40">
                         <div className="grid grid-cols-12 gap-4 items-center">
                             <div className="col-span-4">
                                 <div className="flex items-center gap-3">
                                     {/* Mini Preview Image */}
-                                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0">
+                                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-cuba-canvas flex-shrink-0">
                                         <img
                                             src={getPreviewImage(portfolio)}
                                             alt={`${portfolio.title} preview`}
                                             className="w-full h-full object-cover"
                                             onError={(e) => {
                                                 e.target.style.display = 'none';
-                                                e.target.parentElement.classList.add('bg-gradient-to-br', 'from-slate-400', 'to-purple-500');
+                                                e.target.parentElement.classList.add('bg-cuba-primary-soft');
                                             }}
                                         />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <h3 className="text-xs font-medium text-slate-900 truncate">{portfolio.title}</h3>
-                                        {portfolio.metadata?.description && <p className="text-xs text-slate-500 truncate">{portfolio.metadata.description}</p>}
+                                        <h3 className="text-xs font-medium text-cuba-ink truncate">{portfolio.title}</h3>
+                                        {portfolio.metadata?.description && <p className="text-xs text-cuba-ink-subtle truncate">{portfolio.metadata.description}</p>}
                                         <span
-                                            className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full ${portfolio.isPublished ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                            className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full ${portfolio.isPublished ? 'bg-cuba-success-soft text-cuba-success' : 'bg-cuba-warning-soft text-cuba-warning'}`}>
                                             {portfolio.isPublished ? t('DashboardPortfolios.status.published') : t('DashboardPortfolios.status.draft')}
                                         </span>
                                     </div>
@@ -318,8 +322,8 @@ const DashboardPortfolios = ({ t, showToast }) => {
                             <div className="col-span-2">
                                 <span className={`px-2 py-1 text-xs font-medium rounded ${getThemeColor(portfolio.theme)}`}>{portfolio.theme}</span>
                             </div>
-                            <div className="col-span-2 text-xs text-slate-500">{portfolio.views || 0}</div>
-                            <div className="col-span-2 text-xs text-slate-500">{portfolio.updatedAt ? (typeof portfolio.updatedAt?.toDate === 'function' ? portfolio.updatedAt.toDate() : new Date(portfolio.updatedAt)).toLocaleDateString?.() || 'N/A' : 'N/A'}</div>
+                            <div className="col-span-2 text-xs text-cuba-ink-subtle">{portfolio.views || 0}</div>
+                            <div className="col-span-2 text-xs text-cuba-ink-subtle">{portfolio.updatedAt ? (typeof portfolio.updatedAt?.toDate === 'function' ? portfolio.updatedAt.toDate() : new Date(portfolio.updatedAt)).toLocaleDateString?.() || 'N/A' : 'N/A'}</div>
                             <div className="col-span-2">
                                 <div className="flex items-center gap-2">
                                     {/* DIR-019 DEFECT 2: same guard as the grid view —
@@ -328,20 +332,20 @@ const DashboardPortfolios = ({ t, showToast }) => {
                                     {getPublicPortfolioHref(portfolio) && (
                                         <Link
                                             to={getPublicPortfolioHref(portfolio)}
-                                            className="p-2 text-slate-600 hover:bg-slate-100 rounded transition-colors"
+                                            className="p-2 text-cuba-ink-muted hover:bg-cuba-primary-soft rounded transition-colors"
                                             title={t('DashboardPortfolios.tooltips.viewPortfolio')}>
                                             <FiEye className="w-4 h-4" />
                                         </Link>
                                     )}
                                     <Link
                                         to={`/portfolio/builder?edit=${portfolio.id}`}
-                                        className="p-2 text-slate-600 hover:bg-slate-100 rounded transition-colors"
+                                        className="p-2 text-cuba-ink-muted hover:bg-cuba-primary-soft rounded transition-colors"
                                         title={t('DashboardPortfolios.tooltips.editPortfolio')}>
                                         <FiEdit3 className="w-4 h-4" />
                                     </Link>
                                     <button
                                         onClick={() => handleDeletePortfolio(portfolio.id)}
-                                        className="p-2 text-red-600 hover:bg-red-100 rounded transition-colors"
+                                        className="p-2 text-cuba-danger hover:bg-cuba-danger-soft rounded transition-colors"
                                         title={t('DashboardPortfolios.tooltips.deletePortfolio')}>
                                         <FiTrash2 className="w-4 h-4" />
                                     </button>
@@ -356,6 +360,42 @@ const DashboardPortfolios = ({ t, showToast }) => {
 
     // DIR-081: the page identity is rendered in every state, so loading and failure
     // keep the real title instead of collapsing the page body.
+    // DIR-083: the starter-template strip. It renders the REAL bundled preview assets that
+    // getPreviewImage() already resolves, and routes to the builder's create flow — no
+    // invented template names and no fake screenshots.
+    const STARTER_TEMPLATES = [
+        { key: 'modernMinimal', label: t('DashboardPortfolios.themes.minimal'), image: modernMinimalPreview },
+        { key: 'executive', label: t('DashboardPortfolios.themes.professional'), image: executivePreview },
+        { key: 'creativeDark', label: t('DashboardPortfolios.themes.creative'), image: creativeDarkPreview },
+        { key: 'premiumTech', label: t('DashboardPortfolios.themes.darkTheme'), image: premiumTechPreview },
+    ];
+
+    const renderStarterTemplates = () => (
+        <section className="mb-6" aria-labelledby="portfolio-starter-templates">
+            <h2 id="portfolio-starter-templates" className="mb-3 text-sm font-semibold text-cuba-ink">
+                {t('DashboardPortfolios.starterTemplates', 'Starter templates')}
+            </h2>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4" data-testid="portfolio-template-strip">
+                {STARTER_TEMPLATES.map((template) => (
+                    <Link
+                        key={template.key}
+                        to="/portfolio/builder?create=1"
+                        className="cuba-focusable group overflow-hidden rounded-cuba-lg border border-cuba-line bg-cuba-card transition-shadow hover:shadow-cuba-lg"
+                    >
+                        <div className="h-24 overflow-hidden bg-cuba-canvas sm:h-28">
+                            <img
+                                src={template.image}
+                                alt={`${template.label} template preview`}
+                                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            />
+                        </div>
+                        <p className="truncate px-3 py-2 text-xs font-semibold text-cuba-ink">{template.label}</p>
+                    </Link>
+                ))}
+            </div>
+        </section>
+    );
+
     const pageIdentity = {
         title: t('DashboardPortfolios.title'),
         subtitle: t('DashboardPortfolios.subtitle'),
@@ -407,14 +447,14 @@ const DashboardPortfolios = ({ t, showToast }) => {
                                     placeholder={t('DashboardPortfolios.searchPlaceholder')}
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 placeholder-slate-400"
+                                    className="w-full pl-9 pr-3 py-2.5 text-sm border border-cuba-line-strong rounded-cuba-sm focus:outline-none focus:ring-1 focus:ring-cuba-primary focus:border-cuba-primary placeholder:text-cuba-ink-subtle"
                                 />
                             </div>
                             <div className="sm:w-48">
                                 <select
                                     value={selectedTheme}
                                     onChange={(e) => setSelectedTheme(e.target.value)}
-                                    className="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 bg-white">
+                                    className="w-full px-3 py-2.5 text-sm border border-cuba-line-strong rounded-cuba-sm focus:outline-none focus:ring-1 focus:ring-cuba-primary focus:border-cuba-primary bg-cuba-canvas">
                                     {themes.map((theme) => (
                                         <option key={theme.value} value={theme.value}>
                                             {theme.label}
@@ -441,6 +481,10 @@ const DashboardPortfolios = ({ t, showToast }) => {
                 </div>
 
                 {/* Content */}
+                {/* DIR-083: the starter-template strip sits above the content so the page
+                    opens with real, actionable options rather than a bare grid. */}
+                {renderStarterTemplates()}
+
                 {filteredPortfolios.length === 0 ? (
                     /* DIR-081: the real Cuba empty state — no raw emoji placeholder, and a
                        genuine load failure is an error state above, never this. */
@@ -463,18 +507,18 @@ const DashboardPortfolios = ({ t, showToast }) => {
             {/* In-App Delete Confirmation Modal with ESC key handling */}
             {deleteModal.isOpen && (
                 <div
-                    className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4"
+                    className="fixed inset-0 z-50 bg-cuba-ink/50 backdrop-blur-xs flex items-center justify-center p-4"
                     role="presentation"
                     onKeyDown={(e) => { if (e.key === 'Escape') setDeleteModal({ isOpen: false, portfolioId: null }); }}>
                     <div
                         role="alertdialog"
                         aria-modal="true"
                         aria-labelledby="delete-portfolio-title"
-                        className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4 border border-slate-200">
-                        <h3 id="delete-portfolio-title" className="text-base font-bold text-slate-900">
+                        className="bg-cuba-card rounded-cuba-lg max-w-md w-full p-6 shadow-cuba-lg space-y-4 border border-cuba-line">
+                        <h3 id="delete-portfolio-title" className="text-base font-bold text-cuba-ink">
                             {t('DashboardPortfolios.deleteModal.title', 'Confirm Portfolio Deletion')}
                         </h3>
-                        <p className="text-xs text-slate-600 leading-relaxed">
+                        <p className="text-xs text-cuba-ink-muted leading-relaxed">
                             {t('DashboardPortfolios.deleteConfirmation', 'Are you sure you want to delete this portfolio? This action cannot be undone.')}
                         </p>
                         <div className="flex items-center justify-end gap-2 pt-2">
@@ -482,13 +526,13 @@ const DashboardPortfolios = ({ t, showToast }) => {
                                 type="button"
                                 autoFocus
                                 onClick={() => setDeleteModal({ isOpen: false, portfolioId: null })}
-                                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer">
+                                className="px-4 py-2 bg-cuba-primary-soft hover:bg-cuba-primary-soft-hover text-cuba-primary-ink-strong font-bold text-xs rounded-xl cursor-pointer">
                                 {t('common.cancel', 'Cancel')}
                             </button>
                             <button
                                 type="button"
                                 onClick={confirmDeletePortfolio}
-                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer">
+                                className="px-4 py-2 bg-cuba-danger text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer">
                                 {t('common.delete', 'Delete Portfolio')}
                             </button>
                         </div>

@@ -1,0 +1,64 @@
+{
+  "id": "DIR-083",
+  "title": "Candidate Suite Viewport-Dense Page Migration & Golden 10/10 Native Experience Implementation",
+  "priority": "P0",
+  "status": "IN_PROGRESS",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-11T05:26:27.379Z",
+  "updatedAt": "2026-10-11T05:29:10.049Z",
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "spec": "MANDATE: Migrate Candidate Suite pages into the certified DIR-082 viewport-dense primitives (CubaPageFrame v2, CubaSplitView, CubaHud, CubaStickyRail, CubaToolbar, CubaViewport) to achieve golden 10/10 native user experience with minimum vertical scroll. EXECUTION PLAN: 1) Cover Letters: Mount into CubaSplitView (left: editor/list, right: live Cover1 preview with AI tone/keyword HUD). 2) Job Tracker: Mount into CubaPageFrame v2 with CubaHud + intra-column scrolling 5-stage Kanban. 3) Submitted Applications: Mount into CubaPageFrame v2 with CubaHud pipeline metrics + dense table/card view. 4) Portfolios: Modular Bento-grid showcase with starter templates and theme preview. 5) Messages: Lock dual-pane chat to 100vh viewport with internal scrollbars. 6) Verification: Author tests/dir083-candidate-page-migrations.test.mjs (AC1-AC6), ensure zero legacy color utilities, build under 4s, clean lint, submit evidence.",
+  "invariants": [],
+  "acceptanceCriteria": [],
+  "plan": {
+    "submittedAt": "2026-10-11T05:29:08.318Z",
+    "summary": "DIR-083 forensics complete; this is the plan. SCOPE: the five named migrations mounted on the certified DIR-082 primitives (CubaPageFrame v2, CubaSplitView, CubaHud, CubaStickyRail, CubaToolbar, CubaViewport, CubaDensityProvider), all of which landed and were certified at commit 7ac71308, so the prerequisites exist and are regression-free. CRITICAL FINDING (NEW, SEVERE - it blocks step 1): the Cover Letters page CRASHES whenever the account has at least one cover letter. Chain: MySQLRepository.js:1068-1071 getCovers returns FLAT rows of the form id plus the spread data JSON plus title, template, updated_at; backend/routes/covers.js:18-19 returns them verbatim as covers; platform.js:2521 getCovers returns them unchanged; but CoversList.jsx:68-69 reads this.state.covers[index].item.firstname and .item.title, and item does not exist. The render therefore throws a TypeError as soon as the list is non-empty - which is exactly why the reviewer only ever saw the empty-state wasteland. The stored payload confirms it: CoverLetter.jsx:322-340 saves a FLAT letterData (candidateFirstname, candidateLastname, jobTitle, companyName, recipientName, letterBody, templateId) and saveCover sets title = data.title || data.jobTitle. So the correct mapping is cover.candidateFirstname plus cover.candidateLastname and cover.title || cover.jobTitle, and the Cover1 preview needs a values object shaped as firstname, lastname, employerFullName, recipientName, companyName, companyAddress, companyCity, companyPostalCode, phone, email, letterBody, coverLetterContent and components (Cover1.jsx:53-84; the editor already builds exactly this at CoverLetter.jsx:867-885). Step 1 must therefore fix the crash AND mount the split view. STEP 2 Job Tracker: the pipeline metrics already exist as REAL data - summarizePipeline(jobs) in utils/jobTracker.js returns total, active, counts, submitted, interviewRate, pendingResponses and offerCount, and it is already computed at JobTracker.jsx:235 - so the CubaHud binds to it with zero fabrication. The board at JobTracker.jsx:813 is a reflowing grid (grid-cols-1, sm:2, lg:3, xl:5) with NO intra-column scroll, so one long column pushes the whole page down; the columns at :826 are already flex min-w-0 flex-col rounded-xl p-3 and only need a bounded max-height plus overflow-y-auto to become independently scrollable. STEP 3 Submitted Applications: the four stat tiles at AppliedJobs.jsx:315 become a CubaHud, and the header and list at :312-325 and :434/:522-528 move into CubaPageFrame v2 dense with a dense card and table view. STEP 4 Portfolios: renderGridView() at :189 already reflows to 2xl:grid-cols-5 and getPreviewImage() at :149 already resolves a real preview per template, so the Bento showcase reuses both and adds starter-template cards plus a theme preview strip fed by the existing themes select at :418. STEP 5 Messages: the root at DashboardMessages.jsx:374 is flex h-full min-h-[70vh] font-sans lg:h-[calc(100vh-9rem)], which still lets the document grow; it must be locked to the viewport with both panes owning their own internal scrollbars. INVARIANTS: XAMPP-only servers, no detached node/vite/nodemon daemon; frozen src/cv-templates diff 0 - the Cover1 template is READ ONLY and the preview must consume it, never edit it; no auth, token, API, DB or RBAC change, because the Cover Letters fix is a client-side mapping onto the shape the API already returns and NOT a schema change; zero fabricated data, so every HUD binds to summarizePipeline or the real stat tiles and the tone and keyword HUD must be computed from the stored letterBody text or omitted, never invented; preserve every DIR-048/055/072-082 pin and the dir081 and dir082 suites; sub-4s build; 0 lint errors. UX STATES: every migrated page keeps the DIR-081 four-state contract through CubaPageFrame v2, and each split view keeps a single-column fallback below lg with the back-to-list control. RESPONSIVE: 375px single pane, 768px two columns, 1280px+ the dense layout with the bounded Kanban and HUD, 1680px+ the Bento 5-up grid. QA: tests/dir083-candidate-page-migrations.test.mjs with AC1 the Cover Letters crash is fixed (the row mapping reads the flat fields and never touches .item) plus a render proving a populated list does not throw, AC2 the five pages mount the certified primitives, AC3 zero legacy colour utilities on the five files, AC4 a11y landmarks and labels, AC5 the dependency and build budget, AC6 no fabricated telemetry. A11Y: the split panes are labelled regions, the Kanban columns keep their aria-labelledby headings and count aria-labels, the HUD is a labelled dl, focus-visible is preserved, and contrast stays AA in both themes. PERFORMANCE: no new dependencies and no timers; the intra-column scroll and the viewport lock are layout-only and should reduce paint cost; the build stays under 4s. ROLLBACK: each page is independently revertible; no schema, API or data surface is touched.",
+    "steps": [
+      "S1 - Cover Letters (CoversList.jsx): fix the flat-row mapping by reading cover.candidateFirstname and cover.candidateLastname and cover.title || cover.jobTitle and removing the .item access that currently throws, then mount the page into CubaSplitView with the already-imported Cover1 on the right as a live preview fed by a values object in Cover1's real shape, plus a tone and keyword HUD computed from the stored letterBody or omitted when there is no text.",
+      "S2 - Job Tracker (JobTracker.jsx): move the happy path into CubaPageFrame v2 dense, add a CubaHud bound to the existing summarizePipeline(jobs) result, and give each of the five Kanban columns a bounded max-height with overflow-y-auto so a long column scrolls internally instead of pushing the page.",
+      "S3 - Submitted Applications (AppliedJobs.jsx): mount into CubaPageFrame v2 dense with a CubaHud built from the real stat tiles, a CubaToolbar carrying the existing search and status filters, and a dense card and table view.",
+      "S4 - Portfolios (DashboardPortfolios.jsx): a modular Bento showcase reusing renderGridView() and getPreviewImage(), with starter-template cards and a theme preview strip driven by the existing themes select.",
+      "S5 - Messages (DashboardMessages.jsx): lock the dual-pane chat to the viewport height with both the conversation list and the thread owning internal scrollbars, keeping the DIR-081 lg split and the mobile back-to-list behaviour.",
+      "S6 - Author tests/dir083-candidate-page-migrations.test.mjs (AC1 the Cover Letters crash is fixed and a populated list renders without throwing, AC2 the five pages mount the certified primitives, AC3 zero legacy colour utilities on the five files, AC4 a11y landmarks and labels, AC5 no new dependencies and build under 4s, AC6 no fabricated telemetry) and register test:dir083.",
+      "S7 - Run dir083, dir082, dir081, dir080..dir072, cuba-candidate-portal, cuba-design-system, the dir048 suites, test:product, test:security:static, test:xampp-policy, dir063..dir083, build (under 4s), lint (0 errors), confirm frozen cv-templates diff 0, write .bridge/evidence/dir083-evidence.log and submit."
+    ],
+    "planHash": "085d35dc2b48c9ccfb1011103c4cc92b8a4e4dfb796b80e91f0be168e8ffca64"
+  },
+  "evidence": null,
+  "reviews": [],
+  "freeze": null,
+  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "continuationPending": false,
+  "revisionTarget": null,
+  "planApproval": {
+    "approvedAt": "2026-10-11T05:29:10.049Z",
+    "automated": true,
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "declared-automation",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "non-tty"
+      ],
+      "pid": 4976,
+      "parentPid": 7060,
+      "tty": false,
+      "at": "2026-10-11T05:29:10.048Z",
+      "explicitlyAllowed": true
+    },
+    "feedback": "Auto-approved by the autonomous plan-scorer (score 85/100, reviewer verdict approved). NOT a human Lead review."
+  },
+  "heartbeats": [
+    {
+      "at": "2026-10-11T05:38:56.394Z",
+      "status": "S1-S6 delivered: Cover Letters crash fixed + CubaSplitView live Cover1 preview; Job Tracker dense frame + CubaHud + intra-column Kanban scroll; Applied dense frame + CubaHud; Portfolios Bento grid + starter templates + 0 legacy; Messages viewport lock. dir083 6/6, 118/118 pinned, product EXIT 0, security 67/67, xampp 4/4, build 3.81s, lint 0 errors, frozen diff 0. Submitting evidence.",
+      "percent": 90,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    }
+  ],
+  "lastHeartbeatAt": "2026-10-11T05:38:56.394Z"
+}

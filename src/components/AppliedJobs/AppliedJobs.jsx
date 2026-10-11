@@ -11,6 +11,8 @@ import useConfirmDialog from '../../hooks/useConfirmDialog';
 // region and never replace the whole page with a blank body.
 import CubaPageFrame from '../cuba/CubaPageFrame';
 import CubaEmptyState from '../cuba/CubaEmptyState';
+// DIR-083: the compact pipeline HUD (bound to the same real counts the stat tiles used).
+import CubaHud from '../cuba/CubaHud';
 
 /**
  * DIR-059: the `applications` table stores its own status vocabulary (default
@@ -293,74 +295,22 @@ const AppliedJobs = ({ showToast, t }) => {
     const redirectToJobs = () => {
         navigate('/jobs');
     };
+    // DIR-083: the HUD binds to the SAME real counts the stat tiles used, and the page now
+    // renders inside the dense frame so the header and the HUD stay pinned while the list
+    // scrolls inside the viewport.
+    const hudItems = [
+        { label: t('JobsUpdate.AppliedJobs.stats.totalApplied', 'Total applied'), value: appliedJobs.length },
+        { label: t('JobsUpdate.AppliedJobs.stats.pending', 'Under review'), value: getStatusCount('applied') },
+        { label: t('JobsUpdate.AppliedJobs.stats.interviews', 'Interviews'), value: getStatusCount('interview') },
+        { label: t('JobsUpdate.AppliedJobs.stats.successRate', 'Success rate'), value: `${appliedJobs.length > 0 ? Math.round((getStatusCount('accepted') / appliedJobs.length) * 100) : 0}%` },
+    ];
+
     return (
-        <div className="min-h-screen bg-cuba-canvas">
-            <div className="mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-4 sm:py-6 max-w-none w-full" style={{maxWidth: '1600px'}}>
-                {/* Header Section */}
-                <div className="mb-4 sm:mb-6">
-                    <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-center space-x-3 flex-1 min-w-0">
-                            <div className="p-2 bg-cuba-elevated rounded-lg">
-                                <FaBriefcase className="w-5 h-5 text-cuba-ink-muted" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <h1 className="text-lg sm:text-xl font-semibold text-cuba-ink tracking-tight truncate">{t('JobsUpdate.AppliedJobs.title', 'Applied Jobs')}</h1>
-                                <p className="text-cuba-ink-muted text-sm mt-0.5">{t('JobsUpdate.AppliedJobs.subtitle', 'Track your job applications and their current status')}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Statistics Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
-                    <div className="bg-cuba-card rounded-lg p-4 border border-cuba-line shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-xs font-medium text-cuba-ink-muted uppercase tracking-wide">{t('JobsUpdate.AppliedJobs.stats.totalApplied', 'Total Applied')}</p>
-                                <p className="text-lg font-semibold text-cuba-ink mt-1">{appliedJobs.length}</p>
-                            </div>
-                            <div className="p-2 bg-cuba-elevated rounded-md">
-                                <FaBriefcase className="w-4 h-4 text-cuba-ink-muted" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-cuba-card rounded-lg p-4 border border-cuba-line shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-xs font-medium text-cuba-ink-muted uppercase tracking-wide">{t('JobsUpdate.AppliedJobs.stats.pending', 'Under Review')}</p>
-                                <p className="text-lg font-semibold text-cuba-ink mt-1">{getStatusCount('applied')}</p>
-                            </div>
-                            <div className="p-2 bg-cuba-warning-soft rounded-md">
-                                <FaHourglass className="w-4 h-4 text-cuba-warning" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-cuba-card rounded-lg p-4 border border-cuba-line shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-xs font-medium text-cuba-ink-muted uppercase tracking-wide">{t('JobsUpdate.AppliedJobs.stats.interviews', 'Interviews')}</p>
-                                <p className="text-lg font-semibold text-cuba-ink mt-1">{getStatusCount('interview')}</p>
-                            </div>
-                            <div className="p-2 bg-cuba-primary-soft rounded-md">
-                                <FaClock className="w-4 h-4 text-cuba-primary" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-cuba-card rounded-lg p-4 border border-cuba-line shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-xs font-medium text-cuba-ink-muted uppercase tracking-wide">{t('JobsUpdate.AppliedJobs.stats.successRate', 'Success Rate')}</p>
-                                <p className="text-lg font-semibold text-cuba-ink mt-1">{appliedJobs.length > 0 ? Math.round((getStatusCount('accepted') / appliedJobs.length) * 100) : 0}%</p>
-                            </div>
-                            <div className="p-2 bg-cuba-success-soft rounded-md">
-                                <FaCheckCircle className="w-4 h-4 text-cuba-success" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        <CubaPageFrame
+            {...pageIdentity}
+            dense
+            hud={<CubaHud items={hudItems} label="Applications pipeline" />}
+        >
 
                 {/* Search and Filter Section */}
                 <div className="bg-cuba-card rounded-lg p-4 border border-cuba-line shadow-sm mb-6">
@@ -592,10 +542,9 @@ const AppliedJobs = ({ showToast, t }) => {
                     )}
                 </div>
 
-            </div>
             {/* DIR-059: the shared Cuba confirmation dialog for withdrawal. */}
             {confirmationDialog}
-        </div>
+        </CubaPageFrame>
     );
 };
 
