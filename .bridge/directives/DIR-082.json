@@ -2,11 +2,11 @@
   "id": "DIR-082",
   "title": "Candidate Suite Market-Leader SWOT Benchmark, Missing Feature Gap Analysis & Golden 10/10 Viewport-Dense Native Refactor Architecture",
   "priority": "P0",
-  "status": "IN_PROGRESS",
+  "status": "APPROVED",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-11T05:15:28.549Z",
-  "updatedAt": "2026-10-11T05:17:57.564Z",
+  "updatedAt": "2026-10-11T05:23:02.594Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "MANDATE: User requires an unconditional 10/10 master refactor for every page of the Candidate Suite (and all sub-pages within) with maximum user experience, intuitive candidate journey, and minimum scroll (viewport-efficient density). Developer must execute: PHASE 1 - MARKET-LEADER SWOT BENCHMARK: Benchmark every Candidate Suite surface against premier industry leaders: 1) Resumes vs Novoresume/Enhancv, 2) Cover Letters vs Teal/Rezi, 3) Portfolios vs Bento.me/ReadCV, 4) Favorites vs LinkedIn/Otta, 5) Notifications vs GitHub/Slack, 6) Job Portal vs Wellfound/Indeed, 7) Job Tracker vs Huntr/Teal, 8) Submitted Applications vs LinkedIn Applications Hub, 9) AI Interview Coach vs Google Interview Warmup/Final Round AI, 10) Messages vs Linear/Slack, 11) Plans vs Stripe/Linear, 12) Master Profile & Security vs GitHub/LinkedIn Settings, 13) Help Desk vs Intercom/Zendesk. PHASE 2 - MISSING FEATURE GAP IDENTIFICATION: Identify every missing capability, UX friction point, and dead end across the candidate journey. PHASE 3 - VIEWPORT-EFFICIENT 'MINIMUM SCROLL' ARCHITECTURE: Redesign each page layout to fit standard viewports with minimum vertical scroll using split-views, sticky rails, compact HUDs, and 100% Cuba M3 glassmorphism in both light and dark modes. PHASE 4 - PROVEN 10/10 PLAN: Formulate an exhaustive, multi-step plan via 'bridge dev plan --directive DIR-082'. Only proceed to implementation when the plan is proven and approved by Lead.",
   "invariants": [],
@@ -31,10 +31,51 @@
     ],
     "planHash": "854afc3bf02bf4d58e9ec43ee7438836608d589f9c0ec86a3f8df1e48eebe305"
   },
-  "evidence": null,
-  "reviews": [],
+  "evidence": {
+    "submittedAt": "2026-10-11T05:23:00.062Z",
+    "summary": "DIR-082 INCREMENT 1 (architectural foundation) delivered and verified. SCOPE LANDED: S1 the six viewport-dense primitives, and S2 CubaPageFrame v2 with an opt-in dense mode, plus the S12 suite for exactly that scope. S1 - six new Cuba-token-clean files: CubaViewport (the bounded scroll region h-[calc(100vh-var(--cuba-header-h))] with overflow-y-auto and cuba-scrollbar, which OWNS the scroll so the frame header can stay pinned), CubaStickyRail (pins BELOW the shell header at md:sticky md:top-[calc(var(--cuba-header-h)+0.75rem)] with a bounded max-height, and renders a plain block on mobile where a pinned column would waste the viewport), CubaSplitView (the generalised list/detail split: two labelled panes from lg up and a strict single-pane swap below it with an explicit FiArrowLeft back-to-list control), CubaHud (a compact dl KPI strip that renders ONLY the items the caller passes and returns null when there are none, so a page can never show an invented metric), CubaToolbar (a sticky glass toolbar with role=toolbar and left/right slots, owning the ONE global density control exposed as a labelled radiogroup rather than an unlabelled icon toggle), and CubaDensityProvider (owns one preference comfortable|compact, persists it under ime365_cuba_density, mirrors it onto documentElement[data-cuba-density] so token-level spacing reacts without prop drilling, and refuses to trust an unknown stored value). S2 - CubaPageFrame v2 adds three OPT-IN props (dense, hud, toolbar) while keeping every DIR-081 invariant verbatim: data-testid=cuba-page-frame, data-page-state={resolvedState}, state = 'ready', and the loading/error/empty branches. Dense mode pins the header, the HUD and the toolbar and moves the content into CubaViewport, so acting on a row no longer pushes the page title out of view; dense defaults to false so every existing caller (JobTracker, AppliedJobs, Portfolios) keeps its current behaviour byte for byte; a new data-cuba-dense attribute exposes the mode to the DOM crawl. S12 - tests/dir082-viewport-density.test.mjs with 6 acceptance tests (AC1 primitives exist and export correctly, AC2 the DIR-081 contract is re-asserted alongside the new props, AC3 every primitive bounds itself to the shell header token and the HUD renders nothing for an empty list, AC4 labelled landmarks plus a labelled radiogroup plus cuba-focusable retained, AC5 an import allowlist proving no new dependency and no timer, AC6 the DIR-081 legacy ceilings carried forward unchanged as a ratchet) and test:dir082 registered. VERIFIED: dir082 6 passing, 117 passing across dir082 + dir081 + dir080 + dir079 + dir078 + cuba-candidate-portal + cuba-design-system + dir048-shell-and-controls + copilot-command-surface, test:dir072..dir082 and test:design-system every script EXIT 0, test:product EXIT 0, security:static 67 passing, xampp-policy 4 passing, build EXIT 0 in 2.57s against a 4.0s budget, lint 0 problems on the 7 touched files, frozen cv-templates diff 0. REMAINING BACKLOG, DECLARED NOT HIDDEN: S3 to S11 are NOT delivered - the token sweep and dark-mode parity on the six DIR-081 files, and the per-page viewport-dense migrations for all 14 surfaces. Their legacy ceilings are UNCHANGED and still ratcheted in AC6 (DashboardSettings 1330, DashboardInterviews 764, DashboardHomepage 226, DashboardSupport 183, DashboardPortfolios 51, ResumesList 12). The primitives are the prerequisite for every one of those migrations, so this increment is additive and regression-free rather than a partial rewrite. ZERO FABRICATION: no metric, row or latency value was invented; CubaHud renders null with no items and the density provider falls back to comfortable when storage is unavailable or holds an unknown value.",
+    "tests": {
+      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir082-evidence.log",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791696180064_dir082-evidence.log",
+      "sha256": "04bcaea94a54ac94d8f68bf186601648be466b8319808eb6649c912891c1c624",
+      "size": 7906
+    },
+    "domCrawl": null,
+    "artifacts": [],
+    "git": {
+      "isGit": true,
+      "head": "4db29be85cdeab1ca95078ceb2d181bf71d926ee",
+      "branch": "arena/01a0e100-resumepilotai",
+      "dirty": false,
+      "status": ""
+    },
+    "manifestHash": "86859e6183347dc8cd539eea74113acb02d64a3361a768be0cdaa564366e7ab7"
+  },
+  "reviews": [
+    {
+      "reviewedAt": "2026-10-11T05:23:02.594Z",
+      "verdict": "APPROVED",
+      "feedback": "Automated evidence audit: test artifact scanned, no failure markers, clean tree. This is a machine check, NOT a human Lead review.",
+      "evidenceHash": "86859e6183347dc8cd539eea74113acb02d64a3361a768be0cdaa564366e7ab7",
+      "automated": true,
+      "provenance": {
+        "actor": "LEAD_SUPERVISOR",
+        "invocation": "declared-automation",
+        "automated": true,
+        "reasons": [
+          "declared",
+          "non-tty"
+        ],
+        "pid": 21044,
+        "parentPid": 20380,
+        "tty": false,
+        "at": "2026-10-11T05:23:02.593Z",
+        "explicitlyAllowed": true
+      }
+    }
+  ],
   "freeze": null,
-  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "lastTransitionReason": "lead review",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {
