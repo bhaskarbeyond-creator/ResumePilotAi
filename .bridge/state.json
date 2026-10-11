@@ -1,26 +1,26 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-09T15:51:50.612Z",
-  "eventCount": 2600,
-  "activeDirectiveId": "DIR-071",
-  "activeDirectiveTitle": "DIR-071: Recruiter Applicant ATS Pipeline Word/PDF Export Fix & Global Candidate Photo Visibility Toggle Enforcement",
-  "activeDirectiveStatus": "ISSUED",
+  "updatedAt": "2026-10-11T02:25:25.881Z",
+  "eventCount": 2620,
+  "activeDirectiveId": "DIR-072",
+  "activeDirectiveTitle": "DIR-072: Decouple Notification vs Message Pipelines & Establish Dedicated Routing",
+  "activeDirectiveStatus": "IN_PROGRESS",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-09T15:12:14.096Z",
-  "unreadForLead": 81,
-  "unreadForDev": 130,
-  "pendingBlockers": 0,
+  "stallDeadline": "2026-10-11T02:16:37.016Z",
+  "unreadForLead": 90,
+  "unreadForDev": 140,
+  "pendingBlockers": 1,
   "latestHeartbeat": {
-    "timestamp": "2026-10-09T15:12:14.096Z",
-    "status": "ACT authorized (plan 85/100). Starting multi-tier compaction + Page-1 void invariant + balanced 2-page.",
+    "timestamp": "2026-10-11T02:16:37.016Z",
+    "status": "ACT started. Implementing S1 (decouple message route) + S2 (resolver deep-link) + S3 (migration 025).",
     "percent": 10
   },
   "integrity": {
     "ok": false,
-    "checked": 2600,
-    "legacy": 7,
-    "bad": 6
+    "checked": 2620,
+    "legacy": 8,
+    "bad": 7
   }
 }

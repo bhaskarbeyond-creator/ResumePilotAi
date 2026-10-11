@@ -372,6 +372,21 @@ const M3NotificationCenter = ({ onNavigate }) => {
                         )}
                     </div>
 
+                    {/* DIR-072: a real, working footer CTA into the dedicated
+                        full-page notifications workspace. Wired through the
+                        EXISTING `onNavigate` prop, so the DIR-055 dead-footer
+                        regression guard still holds. */}
+                    <div className="h-px flex-none" style={{ backgroundColor: 'var(--cuba-header-divider)' }} />
+                    <div className="flex-none p-2">
+                        <button
+                            type="button"
+                            onClick={() => { setOpen(false); onNavigate?.('/dashboard/notifications'); }}
+                            data-testid="cuba-notification-view-all"
+                            className="cuba-focusable w-full rounded-cuba-sm px-3 py-2 text-center text-xs font-bold uppercase tracking-wide text-cuba-primary-ink-strong transition-colors hover:bg-cuba-primary-soft"
+                        >
+                            View all notifications
+                        </button>
+                    </div>
                 </div>
             )}
         </div>

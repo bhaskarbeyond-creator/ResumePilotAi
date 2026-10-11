@@ -2,11 +2,11 @@
   "id": "DIR-071",
   "title": "DIR-071: Recruiter Applicant ATS Pipeline Word/PDF Export Fix & Global Candidate Photo Visibility Toggle Enforcement",
   "priority": "P0",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-09T15:28:40.043Z",
-  "updatedAt": "2026-10-09T16:17:04.145Z",
+  "updatedAt": "2026-10-09T16:17:05.425Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "P0 ARCHITECTURAL MANDATES: 1. RECRUITER ATS PIPELINE DOCX/PDF EXPORT: In src/components/EmployerPortal/EmployerApplicantPipeline.jsx, change withAuth: false to withAuth: true, and robustly pass jobId (jobId or job_id) and applicationId. 2. OPTIONAL AUTH MIDDLEWARE FOR PUBLIC EXPORT ROUTES: In backend/security/auth.js, export optionalAuth middleware that decodes Bearer token when present without rejecting when absent. In backend/index.js, ensure optionalAuth runs on publicApiPaths so req.user is populated when a recruiter Bearer token is provided. 3. EMPLOYER CLAIM ON PUBLIC-EXPORT (PDF & DOCX): In backend/index.js /api/public-export and /api/public-export-docx, verify the employer claim when jobId and applicationId are provided and req.user owns the job. When verified, export candidate's actual applied resume from repo.getResume(applicantId, resumeId) instead of failing 404 or reading stale public_resumes. 4. GLOBAL PHOTO VISIBILITY SUPPRESSION: When showPhoto is false (or hidePhoto: true / includePhoto: false), photo MUST be null. Enforce in: (A) src/cv-templates/templateUtils.js line 104, (B) src/utils/resumeData.js normalizeResumeData, (C) backend/repositories/MySQLRepository.js _resumeSnapshot, (D) src/components/BuildResume/BuildResume.jsx pass persistLatest to downloadResumePdf. 5. REGRESSION & SECURITY GUARDS: Zero IDOR (an employer can only export their own job applicants), src/cv-templates remains git diff 0, tests/dir071-recruiter-export-photo-toggle.test.mjs created and passing.",
   "invariants": [],
@@ -73,8 +73,30 @@
       }
     }
   ],
-  "freeze": null,
-  "lastTransitionReason": "lead review",
+  "freeze": {
+    "freezeHash": "7b7c77291795dc91d67b6775a4e7bc6f3dd7f6e3",
+    "certifiedAt": "2026-10-09T16:17:05.425Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "Autonomous Lead (Antigravity): evidence audit passed, no human review.",
+    "evidenceHash": "74b6864e2baf1a3b072b446ecb5111a470aea6c47491a9b26397734d9f92fa8d",
+    "automated": true,
+    "certificationKind": "automated",
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "declared-automation",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "non-tty"
+      ],
+      "pid": 23064,
+      "parentPid": 25720,
+      "tty": false,
+      "at": "2026-10-09T16:17:04.721Z",
+      "explicitlyAllowed": true
+    }
+  },
+  "lastTransitionReason": "gatekeeper certification",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {

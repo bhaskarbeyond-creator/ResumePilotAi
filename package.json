@@ -31,6 +31,7 @@
     "test:dir070:build-probe": "vite build --config vite.dir070probe.config.js",
     "test:dir070:void": "node template-lab/dir070-void-probe.mjs --fixture gridDense --templates Cv1,Cv51",
     "test:dir071": "node --test tests/dir071-recruiter-export-photo-toggle.test.mjs",
+    "test:dir072": "node --test tests/dir072-notifications-messages-decoupling.test.mjs",
     "release:manifest": "node scripts/generate-certified-freeze-manifest.mjs",
     "test:dir064:visual": "node template-lab/docx-visual-parity.mjs",
     "test:api-resilience": "node tests/test_api_server_e2e_resilience.cjs",

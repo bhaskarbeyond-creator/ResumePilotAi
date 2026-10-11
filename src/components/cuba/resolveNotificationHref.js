@@ -120,6 +120,31 @@ export function notificationType(row) {
     return '';
 }
 
+/** A well-formed conversation id, matching the producer's id shape. */
+const CONVERSATION_ID = /^[A-Za-z0-9_-]{1,128}$/;
+
+/**
+ * DIR-072 — the conversation id a row is about, if any.
+ *
+ * The `notifications` table has NO `conversationId` column, so a conversation
+ * notification carries its target inside the JSON `data` payload (written by the
+ * producer as `{ conversationId, senderId }`). Only a well-formed id is accepted;
+ * anything else yields `''`, so a malformed value degrades to the generic inbox
+ * instead of producing a broken deep link.
+ */
+function conversationIdOf(row) {
+    if (!row || typeof row !== 'object') return '';
+    const data = row.data;
+    const fromData = (data && typeof data === 'object')
+        ? (data.conversationId ?? data.conversation_id)
+        : undefined;
+    const id = String(fromData ?? row.conversationId ?? '').trim();
+    return CONVERSATION_ID.test(id) ? id : '';
+}
+
+/** Types that belong to one specific chat thread. */
+const CONVERSATION_TYPES = new Set(['message', 'new_message', 'conversation']);
+
 /**
  * Resolve a notification row to a mounted route.
  * @returns {string|null} a real route, or null when there is no honest target.
@@ -127,7 +152,18 @@ export function notificationType(row) {
 export function resolveNotificationHref(row) {
     const type = notificationType(row);
     if (!type) return null;
-    return NOTIFICATION_ROUTE_BY_TYPE[type] ?? null;
+    const base = NOTIFICATION_ROUTE_BY_TYPE[type];
+    if (!base) return null;
+    // DIR-072: a conversation row deep-links to the SPECIFIC thread. The static
+    // map above stays query-free (a route-table entry must name a clean, mounted
+    // path), so the `?conversationId=` payload is appended HERE and only when the
+    // row actually carries a real, well-formed conversation id. A conversation
+    // row with no id still resolves to the generic inbox, never a broken link.
+    if (CONVERSATION_TYPES.has(type)) {
+        const conversationId = conversationIdOf(row);
+        if (conversationId) return `${base}?conversationId=${encodeURIComponent(conversationId)}`;
+    }
+    return base;
 }
 
 /** Contextual icon kind; falls back to 'system' so the UI always has one. */

@@ -35,6 +35,9 @@ export const CANDIDATE_NAVIGATION = Object.freeze([
             // actually types for this feature. The route path is still appended
             // automatically below, so the two can never drift apart.
             { id: 'favorites', label: 'Saved Favorites & Bookmarks', to: '/dashboard/favorites', keywords: 'saved jobs bookmarked resumes starred favorites' },
+            // DIR-072: the dedicated full-page notifications workspace. Mounted in
+            // DashboardMain.jsx, so the cross-check test below can verify it.
+            { id: 'notifications', label: 'Notifications', to: '/dashboard/notifications', keywords: 'notifications alerts activity bell updates unread' },
         ],
     },
     {

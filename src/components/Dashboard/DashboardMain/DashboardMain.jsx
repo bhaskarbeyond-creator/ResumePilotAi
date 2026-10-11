@@ -41,6 +41,8 @@ const DesignSystemShowcase = lazy(() => import('../../cuba/DesignSystemShowcase'
 const CubaCandidateShell = lazy(() => import('../../Candidate/CubaCandidateShell'));
 import { isCubaShellEnabled } from '../../cuba/cubaShellFlag';
 const MainJobListings = lazy(() => import('../../JobsListings/MainJobListings'));
+// DIR-072: the dedicated full-page notifications workspace.
+const DashboardNotifications = lazy(() => import('../DashboardNotifications/DashboardNotifications'));
 class DashboardMain extends Component {
     static contextType = AuthContext;
     constructor(props) {
@@ -310,6 +312,7 @@ class DashboardMain extends Component {
                                         />
                                         <Route path="settings" element={<DashboardSettings showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
                                         <Route path="messages" element={<MessagesModuleGate home="/dashboard" notify={this.showToast}><DashboardMessages showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} /></MessagesModuleGate>} />     
+                                        <Route path="notifications" element={<DashboardNotifications showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
                                         <Route path="favorites" element={<DashboardFavourites showToast={this.showToast} />} />
                                         <Route path="interview" element={<DashboardInterviews showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
                                         <Route path="cover-letters" element={<CoverLetter />} />

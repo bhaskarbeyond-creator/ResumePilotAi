@@ -4,6 +4,7 @@ import { FiSearch, FiPaperclip, FiSend, FiMoreVertical, FiEdit, FiChevronUp, FiM
 import { getConversationParticipantProfile, getConversations, subscribeConversationMessages, getMessagesPaginated, sendMessage, markConversationRead } from '../../../services/api/platform';
 import fire from '../../../conf/fire';
 import userPlaceholder from '../../../assets/user.png';
+import { useSearchParams } from 'react-router-dom';
 
 // DIR-026 / INV-4: the chat surface is restyled onto the Cuba design tokens.
 //
@@ -54,6 +55,12 @@ const DashboardMessages = ({ t }) => {
     const activeAccountUidRef = useRef(null);
     const selectedConversationIdRef = useRef(null);
     const chatContainerRef = useRef(null);
+
+    // DIR-072: a conversation notification deep-links to
+    // /dashboard/messages?conversationId=<id>. Read that param so the matching
+    // thread can be auto-selected once the list loads.
+    const [searchParams] = useSearchParams();
+    const deepLinkConversationId = searchParams.get('conversationId');
 
     // Initialize Firebase auth listener and keep listener ownership account-scoped.
     useEffect(() => {
@@ -115,6 +122,19 @@ const DashboardMessages = ({ t }) => {
             stopRealtimeListeners();
         };
     }, [t]);
+
+    // DIR-072: auto-select the deep-linked conversation. Account-scoped by
+    // construction — only a conversation that is actually present in THIS user's
+    // loaded list is selected, so a forged id in the URL can never open a thread
+    // the user is not a participant of.
+    useEffect(() => {
+        if (!deepLinkConversationId) return;
+        setSelectedConversation((prev) => {
+            if (prev?.id === deepLinkConversationId) return prev;
+            const match = conversations.find((conversation) => conversation.id === deepLinkConversationId);
+            return match || prev;
+        });
+    }, [deepLinkConversationId, conversations]);
 
     // Load initial messages when conversation is selected
     const loadInitialMessages = useCallback(

@@ -1,0 +1,67 @@
+{
+  "id": "DIR-072",
+  "title": "DIR-072: Decouple Notification vs Message Pipelines & Establish Dedicated Routing",
+  "priority": "P0",
+  "status": "IN_PROGRESS",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-11T02:11:20.237Z",
+  "updatedAt": "2026-10-11T02:14:41.036Z",
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "spec": "P0 ARCHITECTURAL MANDATES: 1. RCA & PIPELINE DECOUPLING: In backend/index.js line 2351, sending a direct chat message via /api/messages/send automatically inserts a row into the notifications table (type: message). This pollutes the candidate notification bell with duplicate chat spam (e.g. 25 unread identical New message notifications). Decouple direct chat messaging from the system notification feed. Peer-to-peer chat messages belong strictly to conversations and conversation_messages, tracked by useUnreadMessages and MessagesNavBadge. 2. DISTINCT REDIRECTION & ROUTING: In src/components/cuba/resolveNotificationHref.js, resolveNotificationHref currently routes all message types directly to CANDIDATE_ROUTES.messages (/dashboard/messages). The top header has both MessagesNavBadge (speech bubble) and M3NotificationCenter (bell), both collapsing to /dashboard/messages. Ensure system notifications route to their respective distinct functional areas (applied jobs, interviews, job tracker, plans, settings, portfolios). If a conversation notification is ever dispatched, it must deep-link to the specific conversation (/dashboard/messages?conversationId=...) rather than generic chat. 3. DEDICATED NOTIFICATIONS WORKSPACE: Mount a first-class /dashboard/notifications route in src/components/Dashboard/DashboardMain/DashboardMain.jsx so candidates have a dedicated full-page notifications management view, and wire a 'View all notifications' CTA in the M3NotificationCenter popover footer pointing to /dashboard/notifications. 4. DATA REMEDIATION & HYGIENE: Provide a safe, non-destructive migration or cleanup for stale placeholder duplicate 'message' notifications in the notifications table so the user's bell is unblocked from legacy chat spam. 5. REGRESSION & TEST GUARDS: Ensure all tests across DIR-063..DIR-071 stay green, and create tests/dir072-notifications-messages-decoupling.test.mjs validating decoupled pipelines, distinct routing, deep-linking, and clean quality gates.",
+  "invariants": [],
+  "acceptanceCriteria": [],
+  "plan": {
+    "submittedAt": "2026-10-11T02:14:39.717Z",
+    "summary": "DIR-072 P0 recon complete, every finding cited to file:line. INVARIANTS: XAMPP-only servers (no detached node/vite daemon), zero IDOR, DIR-055 notification contract preserved (owner-scoped PATCH read-state, mark-all-read, kind icons, removed 'View all activity'/onOpenAll stays removed), frozen surfaces untouched, DIR-063..071 suites stay green. RCA-1 CONFIRMED at backend/index.js:2331-2359: every /api/messages/send inserts a type='message' row via repo.saveNotification(recipientUid, notificationEventId('message', conversationId, messageId), {...}). Because the event id embeds the generated message id, EACH chat message is a distinct unread row, which is exactly the 25 identical 'New message' bell spam. Peer unread is ALREADY authoritatively tracked by conversation_participants.last_read_message_id (migration 024) + useUnreadMessages + MessagesNavBadge, so the notification insert is redundant. FIX: delete the notification-creation block from the message route (chat belongs to conversations/conversation_messages only), response keeps messageId. This REQUIRES rewriting tests/notification-lifecycle.test.mjs, which currently pins notificationEventId('message', ...) and repo.saveNotification(recipientUid - those pins assert the very coupling DIR-072 removes, so the test is updated to assert the decoupled contract (message route must NOT call saveNotification) while keeping every other producer pin. RCA-2 at resolveNotificationHref.js:61-92: message/new_message/conversation all collapse to /dashboard/messages (generic chat). Keep the STATIC map query-free (dir055 asserts no query param in the map and that {type:'message'} still resolves) but make resolveNotificationHref() deep-link conversation rows: when the row kind is message/conversation AND row.data.conversationId is a valid id, return /dashboard/messages?conversationId=<id>. System types keep distinct functional targets (applied-jobs, interview, job-tracker, plans, settings, portfolios). RCA-2b: DashboardMessages.jsx has NO query-param handling today, so deep-linking needs useSearchParams support that auto-selects the conversation once the list loads (account-scoped guard). RCA-3: no /dashboard/notifications route exists. Mount a lazy first-class route in DashboardMain.renderRoutes() + a NEW DashboardNotifications full-page workspace + a 'View all notifications' footer CTA in M3NotificationCenter wired through the EXISTING onNavigate prop (onOpenAll stays absent so dir055 dead-footer guard holds) + a nav entry in candidateNavigation.js. RCA-4: add migration 025_notification_message_decoupling.sql (+ .down.sql) that NON-DESTRUCTIVELY marks legacy type='message' unread rows read (UPDATE ... SET is_read=1 WHERE type='message' AND is_read=0, no DELETE), auto-discovered by migrationRunner. RCA-5: new tests/dir072-notifications-messages-decoupling.test.mjs + npm script test:dir072.",
+    "steps": [
+      "1. backend/index.js: remove the message-to-notification insert (approx lines 2325-2360), chat writes only conversation_messages, response returns success + messageId",
+      "2. Update tests/notification-lifecycle.test.mjs to the decoupled contract (message route must not call saveNotification or notificationEventId('message'), keep all other producer pins)",
+      "3. resolveNotificationHref.js: add conversation deep-link resolution via row.data.conversationId while keeping the static map query-free and unknown types null",
+      "4. DashboardMessages.jsx: add useSearchParams deep-link (?conversationId=) auto-select with account-scoped guard",
+      "5. NEW src/components/Dashboard/DashboardNotifications/DashboardNotifications.jsx full-page Cuba workspace reading real /api/notifications-data with per-row read toggle and mark-all-read",
+      "6. DashboardMain.jsx: lazy-import and mount Route path=notifications in renderRoutes, and add a Notifications entry to candidateNavigation.js",
+      "7. M3NotificationCenter.jsx: add View all notifications footer CTA pointing to /dashboard/notifications via onNavigate, keep onOpenAll absent",
+      "8. Migration 025_notification_message_decoupling.sql plus .down.sql, non-destructive mark-read of legacy message notifications",
+      "9. tests/dir072-notifications-messages-decoupling.test.mjs plus package.json test:dir072 script",
+      "10. Gates: npm run test:dir072, test:dir055, notification-lifecycle, test:product, test:security:static, test:xampp-policy, build under 4s, eslint 0, frozen surfaces diff 0, then submit evidence."
+    ],
+    "planHash": "bd184ac44c2aba931d3a5ccb7a697dd95c586f884b635b3c361884c176fa327a"
+  },
+  "evidence": null,
+  "reviews": [],
+  "freeze": null,
+  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "continuationPending": false,
+  "revisionTarget": null,
+  "planApproval": {
+    "approvedAt": "2026-10-11T02:14:41.036Z",
+    "automated": true,
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "declared-automation",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "non-tty"
+      ],
+      "pid": 19472,
+      "parentPid": 18820,
+      "tty": false,
+      "at": "2026-10-11T02:14:41.035Z",
+      "explicitlyAllowed": true
+    },
+    "feedback": "Auto-approved by the autonomous plan-scorer (score 70/100, reviewer verdict approved). NOT a human Lead review."
+  },
+  "heartbeats": [
+    {
+      "at": "2026-10-11T02:16:37.046Z",
+      "status": "ACT started. Implementing S1 (decouple message route) + S2 (resolver deep-link) + S3 (migration 025).",
+      "percent": 10,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    }
+  ],
+  "lastHeartbeatAt": "2026-10-11T02:16:37.046Z"
+}

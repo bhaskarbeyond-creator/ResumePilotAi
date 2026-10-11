@@ -29,11 +29,12 @@ test('message writes reject non-participants and derive sender identity from the
   assert.match(send, /req\.user\.uid/);
   assert.doesNotMatch(send, /senderId\s*=\s*req\.body/);
   assert.match(send, /INSERT INTO conversation_messages/);
-  // DIR-048: the recipient's notification must carry WHO wrote and a preview of
-  // WHAT was written — the former generic literals made every row identical.
-  assert.match(send, /New message from \$\{senderName\}/);
-  assert.match(send, /const preview = String\(text\)/);
-  assert.doesNotMatch(send, /title: 'New message', message: 'You have a new message\.'/);
+  // DIR-072: direct chat is decoupled from the notification feed — the message
+  // route must never mint a notification row. Chat unread is tracked by the
+  // per-participant conversation read cursor instead (migration 024 +
+  // useUnreadMessages + MessagesNavBadge), so no notification may be written here.
+  assert.doesNotMatch(send, /saveNotification/);
+  assert.doesNotMatch(send, /notificationEventId\('message'/);
 });
 
 test('conversation creation is limited to the application parties and idempotent', async () => {

@@ -2322,42 +2322,19 @@ app.post('/api/messages/send', async (req, res) => {
             'INSERT INTO conversation_messages (id, conversation_id, sender_id, text, timestamp) VALUES (?, ?, ?, ?, ?)',
             [messageId, conversationId, req.user.uid, text, timestamp]
         );
-        let notificationState = 'NOTIFICATION_CREATED';
-        const [partRows] = await pool.query(
-            'SELECT user_id FROM conversation_participants WHERE conversation_id = ?',
-            [conversationId]
-        );
-        const recipientUid = partRows.map(r => r.user_id).find(uid => uid !== req.user.uid && !uid.startsWith('deleted_'));
-        if (recipientUid) {
-            try {
-                const eventId = notificationEventId('message', conversationId, messageId);
-                // Authoritative notification record goes to MySQL; the Firestore
-                // data plane is never required.
-                const { getRepository } = require('./repositories');
-                const repo = getRepository();
-                // DIR-048: a generic "New message" bubble tells the recipient
-                // nothing and makes every row in the feed identical. Resolve the
-                // sender's display name and a bounded preview of the body at
-                // write time; both are best-effort, because the message row is
-                // already persisted and a profile read must not undo that.
-                let senderName = '';
-                try {
-                    const sender = (await repo.getUser(req.user.uid)) || {};
-                    const senderProfile = sender.profile || {};
-                    senderName = String(senderProfile.name || sender.displayName || `${sender.firstname || ''} ${sender.lastname || ''}`.trim() || '')
-                        .replace(/\p{Cc}/gu, ' ').trim().slice(0, 80);
-                } catch { senderName = ''; }
-                const preview = String(text).replace(/[\p{Cc}\s]+/gu, ' ').trim().slice(0, 120);
-                await repo.saveNotification(recipientUid, eventId, {
-                    eventId, state: 'NOTIFICATION_CREATED', deliveryState: 'NOT_REQUESTED', type: 'message',
-                    title: senderName ? `New message from ${senderName}` : 'New message',
-                    message: preview || 'You have a new message.',
-                    data: { conversationId, senderId: req.user.uid }, read: false,
-                    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
-                });
-            } catch { notificationState = 'NOTIFICATION_CREATION_FAILED'; }
-        } else notificationState = 'NOTIFICATION_CREATION_FAILED';
-        return res.status(201).json({ success: true, messageId, notificationState });
+        // DIR-072 — direct chat is DELIBERATELY decoupled from the system
+        // notification feed. Peer-to-peer messages live ONLY in
+        // `conversations`/`conversation_messages`, and their unread state is
+        // tracked per participant by `conversation_participants.last_read_message_id`
+        // (migration 024) and surfaced by `useUnreadMessages` + `MessagesNavBadge`.
+        //
+        // WHY THE OLD INSERT IS GONE: the previous code minted a notification row
+        // keyed by a deterministic per-message event id (conversation + message id).
+        // Because the event id embeds the generated message id, EVERY message was
+        // a distinct unread row, so one chat thread produced N identical "New
+        // message" rows that polluted the candidate bell with chat spam. A chat
+        // message must never appear in the system notification feed.
+        return res.status(201).json({ success: true, messageId });
     } catch (error) {
         console.error('[Send message]', error.message);
         return res.status(503).json({ success: false, error: 'Messaging service unavailable.' });
