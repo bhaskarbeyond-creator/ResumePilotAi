@@ -2,11 +2,11 @@
   "id": "DIR-077",
   "title": "DIR-077: Candidate Dashboard UI/UX 10/10 Overhaul — Zero-Waste Fluid Grid & Native Visual Intelligence",
   "priority": "P0",
-  "status": "IN_PROGRESS",
+  "status": "APPROVED",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-11T03:30:01.192Z",
-  "updatedAt": "2026-10-11T03:32:19.538Z",
+  "updatedAt": "2026-10-11T03:39:09.682Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "P0 ARCHITECTURAL & VISUAL MANDATES: 1. ELIMINATE WASTED VIEWPORT SPACE & INTRODUCE EXECUTIVE RIGHT RAIL: In src/components/cuba/CubaAppShell.jsx (line 512), expand the container cap from max-w-7xl to max-w-[1680px] w-full. In src/components/Candidate/CubaCandidateShell.jsx and DashboardHomepage.jsx, refactor the candidate overview layout on >=1280px viewports into a high-density 2-column executive grid: Main Workspace Column (approx 70% width) for Hero, Document Gallery, and Onboarding; Executive Right Rail Column (approx 30% width) occupying the former empty right void with high-value intelligence (Live Copilot Quick-Pitch actions, ATS Keyword Strength Radar, and Application Milestone Tracker). 2. TOP-LEFT HEADER & SIDEBAR HARMONIZATION: Realign the breadcrumbs in CubaAppShell so they visually anchor the main workspace column rather than floating awkwardly over the sidebar header. In CubaAppShell aside header, unify the IME365 brand tile and the Candidate Suite context switcher into a single, cohesive executive pill container, removing redundant nested borders and awkward stacked gaps. 3. ELEVATE NATIVE DATA VISUALIZATIONS: In src/components/Candidate/CubaCandidateHero.jsx, replace the cartoon mascot (cartoon.svg) with a bespoke executive Cuba glassmorphism career telemetry visual. In CubaStatCard.jsx and hero stat cards, integrate native SVG micro-visuals: an SVG circular radial gauge for Average ATS Score, a visual progress bar for Active Resumes, and a pipeline status stepper for Job Applications. 4. INVARIANTS: Preserve all existing functional contracts and tests (dir074, dir075, dir076, cuba-candidate-portal, cuba-design-system), ensure build under 4s, 0 lint errors, and zero regressions across all 55 frozen CV templates.",
   "invariants": [],
@@ -26,10 +26,51 @@
     ],
     "planHash": "adfe0b2599191aef22662b74d9847ed91a5af56aa26b1fac4e184ca511d0b3df"
   },
-  "evidence": null,
-  "reviews": [],
+  "evidence": {
+    "submittedAt": "2026-10-11T03:39:07.152Z",
+    "summary": "DIR-077 complete. Raised the shell content cap from max-w-7xl to max-w-[1680px] w-full and refactored the candidate /dashboard overview into a 2-column executive grid at the 1280px xl breakpoint (main column ~70 percent with Hero, briefing, Document Gallery and Onboarding; new CandidateExecutiveRail ~30 percent with Live Copilot Quick-Pitch, ATS Keyword Strength and Application Milestones), stacking to one column below xl. Moved the M3Breadcrumbs trail into the main content container so it anchors the main workspace column (exactly one Breadcrumb landmark) and merged the sidebar brand tile and ContextSwitcher into ONE cuba-glass pill with a single divider. Replaced the cartoon mascot with a bespoke Cuba glassmorphism SVG career-telemetry visual and added native SVG micro-visuals (AtsRadialGauge, ResumeProgressBar role=progressbar, PipelineStepper aria-current) through a new visual prop on CubaStatCard. All widgets bind to real services with honest loading/empty/error states. Gates: dir077 6/6, 212/212 pinned suites, test:product EXIT 0, security:static 67/67, xampp-policy 4/4, build 3.42s, lint 0 errors, dir063..dir077 all green, frozen cv-templates diff 0.",
+    "tests": {
+      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir077-evidence.log",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791689947153_dir077-evidence.log",
+      "sha256": "73c8aa6fa0e650cdafa1946412cc788639c5b669438b4d4abdabde196614f5ff",
+      "size": 4311
+    },
+    "domCrawl": null,
+    "artifacts": [],
+    "git": {
+      "isGit": true,
+      "head": "5337dbf12ba5ad4e84641cf70b4d8a20ade0df52",
+      "branch": "arena/01a0e100-resumepilotai",
+      "dirty": false,
+      "status": ""
+    },
+    "manifestHash": "2e33d48efe202db997daa7a828c392f08196d4b43f72a1626a57a12e1498cec3"
+  },
+  "reviews": [
+    {
+      "reviewedAt": "2026-10-11T03:39:09.682Z",
+      "verdict": "APPROVED",
+      "feedback": "Automated evidence audit: test artifact scanned, no failure markers, clean tree. This is a machine check, NOT a human Lead review.",
+      "evidenceHash": "2e33d48efe202db997daa7a828c392f08196d4b43f72a1626a57a12e1498cec3",
+      "automated": true,
+      "provenance": {
+        "actor": "LEAD_SUPERVISOR",
+        "invocation": "declared-automation",
+        "automated": true,
+        "reasons": [
+          "declared",
+          "non-tty"
+        ],
+        "pid": 12312,
+        "parentPid": 21140,
+        "tty": false,
+        "at": "2026-10-11T03:39:09.681Z",
+        "explicitlyAllowed": true
+      }
+    }
+  ],
   "freeze": null,
-  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "lastTransitionReason": "lead review",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {
