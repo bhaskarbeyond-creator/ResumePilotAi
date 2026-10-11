@@ -2,11 +2,11 @@
   "id": "DIR-078",
   "title": "DIR-078: Ingest Super Admin Branding Logo & Eliminate Top Whitespace in Cuba App Chrome",
   "priority": "P0",
-  "status": "IN_PROGRESS",
+  "status": "APPROVED",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-11T03:50:10.517Z",
-  "updatedAt": "2026-10-11T03:51:51.047Z",
+  "updatedAt": "2026-10-11T03:59:28.758Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "MISSION & CONTEXT:\nThe candidate dashboard chrome currently exhibits two visual and architectural defects:\n1. Missing Real Logo: In CubaAppShell.jsx and child chrome, the brand tile displays a hardcoded 32x32 CSS gradient box with a unicode star (✦) and static text 'IME365 AI Executive Suite'. It completely ignores getSystemSettings().branding (logoUrl, darkLogoUrl, brandName) configured and uploaded by the Super Admin in BrandingSettings.jsx, as well as the official bundled fallback asset (src/assets/logo/logo.png).\n2. Excessive Top Whitespace: The sticky top bar (h-[var(--cuba-header-h)], 64px) spans full width across the sidebar and main workspace, leaving a massive blank empty glass void on the left above the sidebar. Furthermore, the main workspace container has stacked vertical padding (py-6 + breadcrumbs mb-4 + shell space-y-6 = ~148px vertical drop), pushing the Hero card down and wasting prime above-the-fold screen space.\n\nMANDATORY ARCHITECTURAL REQUIREMENTS:\n1. Super Admin Dynamic Branding Ingestion (CubaAppShell.jsx):\n   - Ingest branding configuration from getSystemSettings(): branding.logoUrl, branding.darkLogoUrl, and branding.brandName.\n   - Dynamic Logo Resolution:\n     * If theme === 'dark' and branding.darkLogoUrl is set, use branding.darkLogoUrl.\n     * Else if branding.logoUrl is set, use branding.logoUrl.\n     * Fallback: use official bundled high-resolution asset src/assets/logo/logo.png (or import logo from '../../assets/logo/logo.png').\n     * If image load fails (onError), fail gracefully to a clean brand mark.\n   - Render Authentic Logo:\n     * In expanded brand tile: render the authentic logo image (<img src={activeLogo} alt={brandName || 'IME365'} className='h-8 md:h-9 w-auto max-w-[150px] object-contain shrink-0' />).\n     * In collapsed icon rail: render the brand mark/glyph cleanly centered.\n     * In mobile drawer (data-testid='cuba-mobile-drawer'): render the authentic logo image and brand name instead of the generic ✦ box.\n2. Eliminate Top Whitespace & Header Left Void:\n   - Header Left Rail Harmonization:\n     * Anchor the top-left section of the sticky header with the authentic brand logo (or seamlessly connect the brand identity to y=0) so the top-left corner of the application is never an empty dead glass void.\n     * Keep the sidebar collapse chevron (<FiChevronLeft>) accessible and properly aligned.\n   - Main Canvas Top Padding Tightening:\n     * In CubaAppShell.jsx main container, reduce the top padding from py-6 to pt-2.5 pb-24 md:pt-3 md:pb-6 (or pt-3 pb-24 sm:px-6 md:pb-6 lg:px-8).\n     * Reduce breadcrumbs bottom margin from mb-4 to mb-2.5.\n     * In CubaCandidateShell.jsx, tighten the top container spacing from space-y-6 to space-y-4 md:space-y-5.\n     * Update tests/dir048-shell-and-controls.test.mjs and tests/dir077-candidate-dashboard-overhaul.test.mjs assertions to match the updated container padding.\n3. Verification & Regression Protection:\n   - Create tests/dir078-branding-logo-and-top-whitespace.test.mjs asserting:\n     * getSystemSettings().branding logo ingestion with fallback to logo.png.\n     * Real <img> rendering in expanded sidebar and mobile drawer with alt text.\n     * Zero hardcoded ✦ placeholder boxes.\n     * Tightened top padding classes on main content container.\n   - Run gates: dir078, dir077, dir048-shell-and-controls, test:product, test:security:static, test:xampp-policy, build (<4s), 0 lint errors, 0 diff on frozen CV templates.",
   "invariants": [],
@@ -26,10 +26,51 @@
     ],
     "planHash": "0622232497ff7ce3a2d72faee065dd115eaeff8256300ced2099a154bb8e58be"
   },
-  "evidence": null,
-  "reviews": [],
+  "evidence": {
+    "submittedAt": "2026-10-11T03:59:26.533Z",
+    "summary": "DIR-078 complete. CubaAppShell now ingests getSystemSettings().branding (brandName, logoUrl, darkLogoUrl) best-effort and resolves activeLogo as darkLogoUrl when dark, else logoUrl, else the bundled src/assets/logo/logo.png, with brandName falling back to IME365 and every logo img carrying alt text plus an onError degradation to a clean brand mark. The authentic logo renders in the header left rail (data-testid cuba-header-brand, h-8 md:h-9 w-auto max-w-[150px] object-contain), the collapsed icon rail (cuba-sidebar-brand-mark) and the mobile drawer (cuba-drawer-brand), eliminating the hardcoded star placeholder boxes and the dead glass void at the top-left. Top whitespace tightened: main container px-4 pt-2.5 pb-24 sm:px-6 md:pt-3 md:pb-6 lg:px-8, breadcrumbs mb-2.5, CubaCandidateShell space-y-4 md:space-y-5, with the dir048 and dir077 assertions updated. Gates: dir078 5/5, 217/217 pinned suites, test:product EXIT 0, security:static 67/67, xampp-policy 4/4, build 2.88s, lint 0 errors, dir063..dir078 all green, frozen cv-templates diff 0.",
+    "tests": {
+      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir078-evidence.log",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791691166534_dir078-evidence.log",
+      "sha256": "ccfab121eef7f99ba4b0814af584de641a22aa5693c2b3db83f78bf007097a0d",
+      "size": 3887
+    },
+    "domCrawl": null,
+    "artifacts": [],
+    "git": {
+      "isGit": true,
+      "head": "f2efa0daed8a6513c22dfe1e032e35f32a0fd0ca",
+      "branch": "arena/01a0e100-resumepilotai",
+      "dirty": false,
+      "status": ""
+    },
+    "manifestHash": "acd4e0be65eada95471950f7a96198713825dce3b579c00da49e9b0c214a284d"
+  },
+  "reviews": [
+    {
+      "reviewedAt": "2026-10-11T03:59:28.758Z",
+      "verdict": "APPROVED",
+      "feedback": "Automated evidence audit: test artifact scanned, no failure markers, clean tree. This is a machine check, NOT a human Lead review.",
+      "evidenceHash": "acd4e0be65eada95471950f7a96198713825dce3b579c00da49e9b0c214a284d",
+      "automated": true,
+      "provenance": {
+        "actor": "LEAD_SUPERVISOR",
+        "invocation": "declared-automation",
+        "automated": true,
+        "reasons": [
+          "declared",
+          "non-tty"
+        ],
+        "pid": 6484,
+        "parentPid": 17072,
+        "tty": false,
+        "at": "2026-10-11T03:59:28.758Z",
+        "explicitlyAllowed": true
+      }
+    }
+  ],
   "freeze": null,
-  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "lastTransitionReason": "lead review",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {
