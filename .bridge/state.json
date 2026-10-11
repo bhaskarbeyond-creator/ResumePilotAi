@@ -1,26 +1,26 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-11T04:45:46.995Z",
-  "eventCount": 2722,
+  "updatedAt": "2026-10-11T05:10:35.353Z",
+  "eventCount": 2741,
   "activeDirectiveId": null,
   "activeDirectiveTitle": null,
   "activeDirectiveStatus": null,
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-11T04:18:44.527Z",
-  "unreadForLead": 133,
-  "unreadForDev": 199,
+  "stallDeadline": "2026-10-11T05:03:25.262Z",
+  "unreadForLead": 140,
+  "unreadForDev": 210,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-11T04:18:44.527Z",
-    "status": "All mandates verified. dir080 6/6, 93/93 combined, product EXIT 0, security 67/67, xampp 4/4, build 2.78s, lint 0 errors, dir063..080 green, frozen diff 0. Submitting evidence.",
+    "timestamp": "2026-10-11T05:03:25.262Z",
+    "status": "Gates green: dir081 7/7, 130/130 pinned, 19/19 dir048/055, product EXIT 0, security 67/67, xampp 4/4, build 3.03s, lint 0 errors, frozen diff 0. S7/S8 large monolith sweeps are declared backlog with a ratchet. Submitting evidence.",
     "percent": 95
   },
   "integrity": {
-    "ok": true,
-    "checked": 2722,
-    "legacy": 0,
-    "bad": 0
+    "ok": false,
+    "checked": 2741,
+    "legacy": 1,
+    "bad": 1
   }
 }
