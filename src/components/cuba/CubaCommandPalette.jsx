@@ -535,31 +535,41 @@ const CubaCommandPalette = ({
                             ))}
                         </div>
                     )}
-                    <div className="flex items-center gap-3 border-b border-cuba-line px-4">
-                        <FiSearch className="h-5 w-5 flex-none text-cuba-ink-subtle" aria-hidden="true" />
-                        <input
-                            ref={inputRef}
-                            type="text"
-                            role="combobox"
-                            aria-expanded="true"
-                            aria-controls="cuba-command-list"
-                            aria-autocomplete="list"
-                            aria-activedescendant={mode === MODE_NAVIGATION && results[activeIndex]
-                                ? `cuba-command-${activeIndex}`
-                                : (copilotActions[activeIndex] ? `cuba-copilot-${activeIndex}` : undefined)}
-                            aria-busy={entitySearching || copilotStatus === 'running' || undefined}
-                            value={query}
-                            onChange={(event) => setQuery(event.target.value)}
-                            onKeyDown={onInputKeyDown}
-                            placeholder={mode === MODE_COPILOT
-                                ? 'Ask for help with your career, or pick an action below'
-                                : placeholder}
-                            autoFocus
-                            className="cuba-focus-ring h-14 w-full bg-transparent text-sm text-cuba-ink outline-none placeholder:text-cuba-ink-subtle"
-                        />
-                        <kbd className="hidden flex-none rounded border border-cuba-line px-1.5 py-0.5 text-[10px] font-semibold text-cuba-ink-subtle sm:block">
-                            Esc
-                        </kbd>
+                    {/* DIR-074: the search row is ONE unified, borderless executive
+                        bar (Linear / Spotlight style). The focus ring belongs to the
+                        whole bar via focus-within, never to an isolated box around
+                        the text — which is what left FiSearch and the Esc badge
+                        stranded outside a purple outline. */}
+                    <div className="px-3 pb-1 pt-2">
+                        <div
+                            data-testid="cuba-command-searchbar"
+                            className="flex h-12 items-center gap-3 rounded-cuba-md bg-cuba-primary-soft px-3 transition-shadow focus-within:ring-2 focus-within:ring-cuba-primary"
+                        >
+                            <FiSearch className="h-5 w-5 flex-none text-cuba-ink-subtle" aria-hidden="true" />
+                            <input
+                                ref={inputRef}
+                                type="text"
+                                role="combobox"
+                                aria-expanded="true"
+                                aria-controls="cuba-command-list"
+                                aria-autocomplete="list"
+                                aria-activedescendant={mode === MODE_NAVIGATION && results[activeIndex]
+                                    ? `cuba-command-${activeIndex}`
+                                    : (copilotActions[activeIndex] ? `cuba-copilot-${activeIndex}` : undefined)}
+                                aria-busy={entitySearching || copilotStatus === 'running' || undefined}
+                                value={query}
+                                onChange={(event) => setQuery(event.target.value)}
+                                onKeyDown={onInputKeyDown}
+                                placeholder={mode === MODE_COPILOT
+                                    ? 'Ask for help with your career, or pick an action below'
+                                    : placeholder}
+                                autoFocus
+                                className="h-12 w-full border-0 bg-transparent text-sm text-cuba-ink outline-none ring-0 placeholder:text-cuba-ink-subtle focus:outline-none focus:ring-0 focus-visible:outline-none"
+                            />
+                            <kbd className="hidden flex-none rounded border border-cuba-line px-1.5 py-0.5 text-[10px] font-semibold text-cuba-ink-subtle sm:block">
+                                Esc
+                            </kbd>
+                        </div>
                     </div>
                     {/* Announced rather than silent: an operator who types a name and
                         sees nothing must be told a lookup is still in flight.

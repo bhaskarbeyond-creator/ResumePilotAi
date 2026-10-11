@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-11T02:55:27.464Z",
-  "seq": 2644,
-  "id": "evt_mv38dhox_ff19f11909ce",
-  "type": "EVIDENCE_SUBMITTED",
-  "title": "[Evidence] DIR-074: DIR-074: Executive User Identity & M3 Account Dropdown Pipeline Overhaul",
+  "timestamp": "2026-10-11T02:58:48.927Z",
+  "seq": 2648,
+  "id": "evt_mv38ht50_514eb273f5ad",
+  "type": "HEARTBEAT",
+  "title": "[Heartbeat] Amendment implemented: seamless search bar. All gates green (dir074 9/9, 188/188 pinned, product EXIT 0, security 67/67, xampp 4/4, build 3.42s, lint 0). Submitting evidence.",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-074",
-  "summary": "DIR-074 complete. New pure parseUserIdentity module splits a parenthetical role out of the display name; M3UserMenu renders the clean name plus role label on the trigger chip and a role-tailored executive badge in the popover, and both shells parse the identity upstream. deep-clean-production.cjs now writes displayName Bhaskar Beyond while keeping customClaims.role SUPER_ADMIN. Candidate Settings moved to /dashboard/settings?tab=account so profile and settings are distinct destinations, and DashboardSettings smooth-scrolls to the TOTP card (id totp-security-hub) on ?tab=security or ?tab=2fa. Gates: dir074 8/8, 188/188 pinned suites, test:product EXIT 0, security:static 67/67, xampp-policy 4/4, build 3.04s, lint 0 errors, dir063..dir073 all green, frozen cv-templates diff 0."
+  "summary": "Amendment implemented: seamless search bar. All gates green (dir074 9/9, 188/188 pinned, product EXIT 0, security 67/67, xampp 4/4, build 3.42s, lint 0). Submitting evidence."
 }

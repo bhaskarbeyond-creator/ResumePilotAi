@@ -2,11 +2,11 @@
   "id": "DIR-074",
   "title": "DIR-074: Executive User Identity & M3 Account Dropdown Pipeline Overhaul",
   "priority": "P0",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-11T02:48:25.152Z",
-  "updatedAt": "2026-10-11T02:55:28.286Z",
+  "updatedAt": "2026-10-11T02:55:29.485Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "P0 ARCHITECTURAL MANDATES: 1. USER IDENTITY & ROLE ENHANCEMENT (NO RAW PARENTHESES): In src/components/cuba/M3UserMenu.jsx and shells (CubaCandidateShell.jsx, CubaPortalShell.jsx), implement robust identity parsing (parseUserIdentity utility). When a displayName contains parenthetical roles (e.g. 'Bhaskar Beyond (Super Admin)'), cleanly extract the clean name ('Bhaskar Beyond') and the role ('Super Admin'). On the top trigger chip, render the clean name on row 1 and the role on row 2 (text-[10px] font-semibold tracking-wide uppercase text-indigo-600 dark:text-indigo-400). In the dropdown popover, render the clean name, email, and a dedicated executive Cuba badge (not raw text with parentheses) with role-tailored styling (Super Admin, Admin, Recruiter, Org Admin, Candidate). 2. CLEAN UP SOURCE DATA: In scripts/deep-clean-production.cjs line 68, update displayName to 'Bhaskar Beyond' (clean name without parenthetical role) while preserving customClaims.role = 'SUPER_ADMIN'. 3. DROPDOWN PIPELINE AUDIT & DECOUPLING (10/10 EXPERIENCE): In src/components/cuba/accountLinks.js, fix the Candidate settings destination from '/dashboard/settings' to '/dashboard/settings?tab=account' so 'Your profile' (?tab=profile -> Master Profile) and 'Settings' (?tab=account -> Account & Preferences) have distinct, purposeful destinations rather than both landing on Profile. In DashboardSettings.jsx, ensure ?tab=security or ?tab=2fa smoothly scrolls to the 2FA / TOTP Security Hub card. 4. FULL PIPELINE VALIDATION: Verify each dropdown item across Candidate, Admin (/admin/operators or /admin/settings, /admin/security), Recruiter (/employer/settings), and Enterprise (/org/<slug>/settings, /org/<slug>/security). Verify Dark/Light theme toggles and Sign out pipeline. 5. COMMAND PALETTE SEARCH INPUT BOX STYLING (10/10 EXECUTIVE POLISH): In src/components/cuba/CubaCommandPalette.jsx, strip 'cuba-focus-ring' from <input> (which previously drew an isolated purple outline box around only the text string, leaving FiSearch on the left and [Esc] on the right stranded). Make the input completely borderless (border-0 outline-none ring-0 focus:outline-none focus:ring-0 focus-visible:outline-none). Style the search container row as a seamless, unified, elegant executive search bar (Linear/Spotlight style) without disjointed inner boxes. 6. INVARIANTS: Preserve existing tests/cuba-design-system.test.mjs, tests/copilot-command-surface.test.mjs, tests/dir072-notifications-messages-decoupling.test.mjs, tests/dir073-command-palette-overhaul.test.mjs, WCAG 2.1 AA accessibility (role=menu, role=menuitem, roving tabindex), zero regression on 55 frozen CV templates, and sub-4s Vite build.",
   "invariants": [],
@@ -69,8 +69,30 @@
       }
     }
   ],
-  "freeze": null,
-  "lastTransitionReason": "lead review",
+  "freeze": {
+    "freezeHash": "114432ceae9f5f92933f9af44c3a649e20f1302f",
+    "certifiedAt": "2026-10-11T02:55:29.485Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "Autonomous Lead (Antigravity): evidence audit passed, no human review.",
+    "evidenceHash": "a3557307d4870c87c8700ce0a3de78e2c395b10b93d88c921741a935effc6805",
+    "automated": true,
+    "certificationKind": "automated",
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "declared-automation",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "non-tty"
+      ],
+      "pid": 2868,
+      "parentPid": 15512,
+      "tty": false,
+      "at": "2026-10-11T02:55:28.938Z",
+      "explicitlyAllowed": true
+    }
+  },
+  "lastTransitionReason": "gatekeeper certification",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {
@@ -108,7 +130,23 @@
       "currentFile": null,
       "by": "STAFF_DEVELOPER",
       "continuationPending": false
+    },
+    {
+      "at": "2026-10-11T02:57:10.819Z",
+      "status": "Implementing the LEAD AMENDMENT: seamless executive search bar (strip cuba-focus-ring, focus-within ring on the whole bar).",
+      "percent": 80,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    },
+    {
+      "at": "2026-10-11T02:58:48.944Z",
+      "status": "Amendment implemented: seamless search bar. All gates green (dir074 9/9, 188/188 pinned, product EXIT 0, security 67/67, xampp 4/4, build 3.42s, lint 0). Submitting evidence.",
+      "percent": 95,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
     }
   ],
-  "lastHeartbeatAt": "2026-10-11T02:53:50.675Z"
+  "lastHeartbeatAt": "2026-10-11T02:58:48.944Z"
 }

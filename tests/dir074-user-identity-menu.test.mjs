@@ -24,6 +24,7 @@ const SHELL = 'src/components/Candidate/CubaCandidateShell.jsx';
 const PORTAL_SHELL = 'src/components/cuba/CubaPortalShell.jsx';
 const SETTINGS = 'src/components/Dashboard/DashboardSettings/DashboardSettings.jsx';
 const CLEAN_SCRIPT = 'scripts/deep-clean-production.cjs';
+const PALETTE = 'src/components/cuba/CubaCommandPalette.jsx';
 const read = (p) => fs.readFile(p, 'utf8');
 
 test('S1: parseUserIdentity splits a parenthetical role out of the display name', () => {
@@ -106,4 +107,19 @@ test('S2: the source data no longer bakes a parenthetical role into displayName'
     assert.match(src, /displayName: 'Bhaskar Beyond'/);
     assert.doesNotMatch(src, /displayName: 'Bhaskar Beyond \(Super Admin\)'/);
     assert.match(src, /role: 'SUPER_ADMIN'/);
+});
+
+test('S5 (amendment): the command palette search bar is seamless and borderless', async () => {
+    const src = await read(PALETTE);
+    // The unified executive bar owns the focus ring (never an isolated input box).
+    assert.match(src, /data-testid="cuba-command-searchbar"/);
+    assert.match(src, /focus-within:ring-2 focus-within:ring-cuba-primary/);
+    assert.doesNotMatch(src, /cuba-focus-ring/, 'the isolated input focus ring must be gone');
+    // The input is fully borderless.
+    assert.match(src, /border-0 bg-transparent text-sm text-cuba-ink outline-none ring-0/);
+    assert.match(src, /focus:outline-none focus:ring-0 focus-visible:outline-none/);
+    // The certified combobox contract survives.
+    assert.match(src, /role="combobox"/);
+    assert.match(src, /aria-activedescendant/);
+    assert.match(src, /aria-controls="cuba-command-list"/);
 });
