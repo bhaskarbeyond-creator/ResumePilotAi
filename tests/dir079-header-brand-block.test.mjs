@@ -34,7 +34,7 @@ test('AC3: the brand block carries border-r and the sidebar-width classes', asyn
     const shell = await read(SHELL);
     assert.match(shell, /'hidden h-full flex-none items-center border-r md:flex'/);
     assert.match(shell, /'w-\[var\(--cuba-sidebar-w-collapsed\)\] justify-center px-1'/);
-    assert.match(shell, /'w-\[var\(--cuba-sidebar-w\)\] justify-between px-3\.5 sm:px-4'/);
+    assert.match(shell, /'w-\[var\(--cuba-sidebar-w\)\] justify-between pl-3 pr-2 sm:pl-3\.5 sm:pr-2\.5'/);
 });
 
 test('AC4: the toggle tile uses the mandated class with min-[1025px] and a11y attributes', async () => {
@@ -62,5 +62,5 @@ test('AC6: the pinned suites track the new brand block', async () => {
     const [dir048, dir077, dir078] = await Promise.all([read(DIR048), read(DIR077), read(DIR078)]);
     assert.ok(dir048.includes('cuba-sidebar-toggle'), 'dir048 must pin the new toggle');
     assert.ok(dir077.includes('cuba-header-brand-block'), 'dir077 must pin the brand block');
-    assert.ok(dir078.includes('max-w-\\[185px\\]'), 'dir078 must pin the new logo class');
+    assert.ok(dir078.includes('max-w-\\[200px\\]'), 'dir078 must pin the new logo class');
 });

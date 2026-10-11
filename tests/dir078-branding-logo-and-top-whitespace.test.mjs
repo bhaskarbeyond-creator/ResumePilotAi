@@ -36,8 +36,8 @@ test('AC2: a real <img> with alt text renders in the header, sidebar and drawer'
     assert.match(shell, /data-testid="cuba-sidebar-brand-mark"/);
     assert.match(shell, /data-testid="cuba-drawer-brand"/);
     assert.match(shell, /data-testid="cuba-mobile-drawer"/);
-    // The mandated logo class string (DIR-079 supersedes the DIR-078 sizing).
-    assert.match(shell, /className="h-10 md:h-11 w-auto max-w-\[185px\] object-contain shrink-0"/);
+    // The mandated logo class string (DIR-080 supersedes the DIR-079 sizing).
+    assert.match(shell, /className="h-12 md:h-\[50px\] w-auto max-w-\[200px\] object-contain shrink-0"/);
     // alt text bound to the brand name, plus graceful onError degradation.
     const altMatches = shell.match(/alt=\{brandName\}/g) || [];
     assert.ok(altMatches.length >= 3, `expected alt text on the header, sidebar and drawer logos, found ${altMatches.length}`);

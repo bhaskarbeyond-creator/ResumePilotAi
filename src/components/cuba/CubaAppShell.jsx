@@ -338,7 +338,7 @@ const CubaAppShell = ({
                         'hidden h-full flex-none items-center border-r md:flex',
                         railCollapsed
                             ? 'w-[var(--cuba-sidebar-w-collapsed)] justify-center px-1'
-                            : 'w-[var(--cuba-sidebar-w)] justify-between px-3.5 sm:px-4',
+                            : 'w-[var(--cuba-sidebar-w)] justify-between pl-3 pr-2 sm:pl-3.5 sm:pr-2.5',
                     )}
                     style={{ borderColor: 'var(--cuba-line)' }}
                 >
@@ -362,12 +362,12 @@ const CubaAppShell = ({
                                 <img
                                     src={activeLogo}
                                     alt={brandName}
-                                    className="h-8 w-8 object-contain shrink-0"
+                                    className="h-9 w-9 object-contain shrink-0"
                                     onError={() => setLogoFailed(true)}
                                 />
                             ) : (
                                 <span
-                                    className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-cuba-primary text-white text-xs font-black"
+                                    className="flex h-9 w-9 flex-none items-center justify-center rounded-lg bg-cuba-primary text-white text-xs font-black"
                                     aria-hidden="true"
                                 >
                                     {brandName.charAt(0).toUpperCase()}
@@ -391,7 +391,7 @@ const CubaAppShell = ({
                                 <img
                                     src={activeLogo}
                                     alt={brandName}
-                                    className="h-10 md:h-11 w-auto max-w-[185px] object-contain shrink-0"
+                                    className="h-12 md:h-[50px] w-auto max-w-[200px] object-contain shrink-0"
                                     onError={() => setLogoFailed(true)}
                                 />
                             ) : (
@@ -556,12 +556,12 @@ const CubaAppShell = ({
                                     <img
                                         src={activeLogo}
                                         alt={brandName}
-                                        className="h-8 w-8 object-contain shrink-0"
+                                        className="h-9 w-9 object-contain shrink-0"
                                         onError={() => setLogoFailed(true)}
                                     />
                                 ) : (
                                     <span
-                                        className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-cuba-primary text-white text-xs font-black"
+                                        className="flex h-9 w-9 flex-none items-center justify-center rounded-lg bg-cuba-primary text-white text-xs font-black"
                                         aria-hidden="true"
                                     >
                                         {brandName.charAt(0).toUpperCase()}
@@ -596,12 +596,12 @@ const CubaAppShell = ({
                                         <img
                                             src={activeLogo}
                                             alt={brandName}
-                                            className="h-8 w-auto max-w-[130px] object-contain shrink-0"
+                                            className="h-10 w-auto max-w-[160px] object-contain shrink-0"
                                             onError={() => setLogoFailed(true)}
                                         />
                                     ) : (
                                         <span
-                                            className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-cuba-primary text-white text-xs font-black"
+                                            className="flex h-10 w-10 flex-none items-center justify-center rounded-lg bg-cuba-primary text-white text-xs font-black"
                                             aria-hidden="true"
                                         >
                                             {brandName.charAt(0).toUpperCase()}

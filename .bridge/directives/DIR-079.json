@@ -2,11 +2,11 @@
   "id": "DIR-079",
   "title": "DIR-079: Align Top-Left Header Brand Block with Logo, GoSidebarCollapse Button & Vertical Divider",
   "priority": "P0",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-11T04:03:21.044Z",
-  "updatedAt": "2026-10-11T04:09:31.442Z",
+  "updatedAt": "2026-10-11T04:09:32.563Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "MISSION & TARGET SPECIFICATION:\nThe user provided a target reference design for the top-left header zone:\n[ Full IME365.com Logo ] [ GoSidebarCollapse Button in rounded-xl border tile ] | [ Vertical Divider Line ]\n\nMANDATORY IMPLEMENTATION REQUIREMENTS:\n1. Header Left Brand Block in CubaAppShell.jsx:\n   - Import GoSidebarCollapse and GoSidebarExpand from 'react-icons/go'.\n   - In the sticky <header className='cuba-glass sticky top-0 ...'>, create a dedicated top-left brand zone that spans the width of the sidebar:\n     * When expanded on desktop (md:flex): width is w-[var(--cuba-sidebar-w)] (260px) with border-r border-cuba-line (or border-r border-slate-200 dark:border-cuba-line) separating it from the rest of the header.\n     * Inner layout: flex items-center justify-between h-full px-3.5 sm:px-4.\n     * Left side: Authentic logo (<a data-testid='cuba-header-brand' href='/dashboard' ...><img src={activeLogo} alt='IME365.com' className='h-10 md:h-11 w-auto max-w-[185px] object-contain shrink-0' onError={...} /></a>).\n     * Right side: Sidebar toggle button (data-testid='cuba-sidebar-toggle') styled as a rounded-xl bordered tile:\n       className='cuba-focusable w-9 h-9 flex-none rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 dark:border-cuba-line dark:bg-cuba-card text-slate-600 hover:text-slate-900 dark:text-slate-300 flex items-center justify-center transition-colors shadow-2xs'\n       Rendering <GoSidebarCollapse className='w-4 h-4' /> when expanded, and <GoSidebarExpand className='w-4 h-4' /> when collapsed.\n     * When collapsed: width collapses cleanly to w-[var(--cuba-sidebar-w-collapsed)] (72px) with centered toggle button / brand mark.\n2. Ensure Zero Horizontal Drift in Header:\n   - The central command search pill remains centered in the remaining header space.\n   - Right rail (notifications, user menu, AI engine status) remains intact.\n3. Verification & Quality Gates:\n   - Add tests/dir079-header-brand-block.test.mjs verifying:\n     * GoSidebarCollapse and GoSidebarExpand used in header.\n     * Logo placed before the toggle button in the header brand block.\n     * Border-r divider present on the brand block.\n     * Tests pass with 0 errors.\n   - Pinned gates: dir078, dir077, dir048, test:product, test:security:static, test:xampp-policy, build (<4s), 0 lint errors, 0 diff on frozen CV templates.",
   "invariants": [],
@@ -69,8 +69,30 @@
       }
     }
   ],
-  "freeze": null,
-  "lastTransitionReason": "lead review",
+  "freeze": {
+    "freezeHash": "2905661a3a6c46eb635a538d2e237626efcc1e2e",
+    "certifiedAt": "2026-10-11T04:09:32.563Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "Autonomous Lead (Antigravity): evidence audit passed, no human review.",
+    "evidenceHash": "fc10b42a729e2642a82fdb11f203449afb44f1f184d6745b69df7c9463419c03",
+    "automated": true,
+    "certificationKind": "automated",
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "declared-automation",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "non-tty"
+      ],
+      "pid": 5996,
+      "parentPid": 19596,
+      "tty": false,
+      "at": "2026-10-11T04:09:31.968Z",
+      "explicitlyAllowed": true
+    }
+  },
+  "lastTransitionReason": "gatekeeper certification",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {

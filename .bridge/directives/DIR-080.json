@@ -1,0 +1,73 @@
+{
+  "id": "DIR-080",
+  "title": "DIR-080: Enlarge Brand Logo in Header and Chrome Surfaces for High-Impact Visual Presence",
+  "priority": "P0",
+  "status": "IN_PROGRESS",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-11T04:13:20.234Z",
+  "updatedAt": "2026-10-11T04:15:12.936Z",
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "spec": "USER REQUIREMENT:\n'Make logo little bigger, it is looking small'\n\nARCHITECTURAL SPECIFICATION:\n1. Enlarge Header Brand Logo in CubaAppShell.jsx:\n   - In the header brand block (data-testid='cuba-header-brand-block'):\n     * Optimize padding to pl-3 pr-2 sm:pl-3.5 sm:pr-2.5 to maximize available width for the logo within the 260px sidebar band.\n     * Enlarge the expanded logo image (data-testid='cuba-header-brand'):\n       Increase from h-10 md:h-11 max-w-[185px] to h-12 md:h-[50px] w-auto max-w-[200px] object-contain shrink-0 (scale up by ~15-20% so the icon, IME365.com text, and subtitle are prominent, bold, and readable).\n     * Keep the sidebar toggle button (data-testid='cuba-sidebar-toggle') neatly positioned on the right with w-9 h-9 (or w-8.5 h-8.5) rounded-xl border.\n2. Polish Related Chrome Logo Displays:\n   - In the mobile drawer (data-testid='cuba-drawer-brand'): enlarge logo image from h-8 max-w-[130px] to h-10 w-auto max-w-[160px] object-contain.\n   - In the compact/collapsed rail brand mark (data-testid='cuba-header-brand-mark' and 'cuba-sidebar-brand-mark'): scale from h-8 w-8 to h-9 w-9 object-contain.\n3. Verification & Quality Gates:\n   - Create tests/dir080-enlarge-brand-logo.test.mjs asserting the enlarged logo dimensions (h-12 md:h-[50px] or max-w-[200px]) and updated drawer/mark sizing.\n   - Update any strict string assertions in tests/dir079-header-brand-block.test.mjs or dir078.\n   - Run gates: dir080, dir079, dir078, dir048, test:product, test:security:static, test:xampp-policy, build (<4s), 0 lint errors, 0 diff on frozen CV templates.",
+  "invariants": [],
+  "acceptanceCriteria": [],
+  "plan": {
+    "submittedAt": "2026-10-11T04:15:10.819Z",
+    "summary": "DIR-080 P0 recon complete, every finding cited to file:line. INVARIANTS AND CONTRACT BOUNDARIES: XAMPP-only servers (no detached node/vite/nodemon daemon); preserve dir079, dir078, dir077, dir076, dir075, dir074, dir073, dir072, dir048, cuba-design-system, copilot-command-surface, cuba-candidate/employer/enterprise/admin console and dir055; zero fabrication; NO auth, token, API or DB contract change; sub-4s build; 0 lint errors; 55 frozen CV templates diff 0 (only the DIR-071-authorized src/cv-templates/templateUtils.js). RCA AND FINDINGS: (1) CubaAppShell.jsx:394 the expanded header logo is still the DIR-079 sizing className=h-10 md:h-11 w-auto max-w-[185px] object-contain shrink-0, so at 44px tall and a 185px cap the IME365.com wordmark plus subtitle renders small against the 260px band. (2) CubaAppShell.jsx:341 the expanded band padding is justify-between px-3.5 sm:px-4, i.e. 28-32px of horizontal padding inside the 260px band, which needlessly starves the logo of width. (3) CubaAppShell.jsx:599 the mobile drawer logo is h-8 w-auto max-w-[130px], the smallest chrome logo in the app. (4) CubaAppShell.jsx:365 (cuba-header-brand-mark) and :559 (cuba-sidebar-brand-mark) are both h-8 w-8 object-contain, so the compact 72px rail mark is visually lighter than the 260px rail mark. (5) Token ground truth: src/styles/cuba-tokens.css:252-253 --cuba-sidebar-w 260px and --cuba-sidebar-w-collapsed 72px. (6) Blast-radius audit: a repo-wide scan of src for h-8 w-8 / h-8 w-auto / max-w-[130px] / max-w-[185px] shows the four chrome logos live ONLY in CubaAppShell.jsx (every other hit is an unrelated spinner or avatar); a test-wide scan shows only tests/dir078-branding-logo-and-top-whitespace.test.mjs:40 pins max-w-[185px] and tests/dir079-header-brand-block.test.mjs:37 pins the px-3.5 sm:px-4 padding (plus dir079 AC6 re-reads dir078), so the pin surface is exactly two assertions. LANE 1 - IMPLEMENTATION AND CONTRACT: S1 CubaAppShell.jsx:341 padding -> 'w-[var(--cuba-sidebar-w)] justify-between pl-3 pr-2 sm:pl-3.5 sm:pr-2.5' (frees 240px, resp. 236px, of content width inside the 260px band; the collapsed branch px-1 is untouched). S2 CubaAppShell.jsx:394 -> className=h-12 md:h-[50px] w-auto max-w-[200px] object-contain shrink-0 (48px mobile, 50px md+, a ~15-20 percent scale-up over h-10 md:h-11 with the cap raised 185->200px so the icon, wordmark and subtitle stay legible). S3 CubaAppShell.jsx:414 the toggle tile keeps its already-mandated w-9 h-9 rounded-xl bordered class, aria-label, aria-pressed and min-[1025px]:inline-flex, and stays flex-none so the enlarged logo can never squeeze it. S4 CubaAppShell.jsx:599 drawer brand -> h-10 w-auto max-w-[160px] object-contain shrink-0. S5 CubaAppShell.jsx:365 and :559 compact marks -> h-9 w-9 object-contain shrink-0, with their monogram fallback tiles (flex h-8 w-8 flex-none ...) raised to h-9 w-9 so the letter tile matches the enlarged mark; 36px inside the 72px band with px-1 leaves 18px gutters. LANE 2 - UX STATES: the logo keeps its graceful degradation chain (showLogoImage -> activeLogo with onError -> setLogoFailed -> monogram tile), so the enlarged sizing applies identically to the branding image and the fallback; no skeleton or empty state is introduced and no new loading path exists because the class swap is render-static. LANE 3 - RESPONSIVE AND BREAKPOINTS: 320-767px the brand block is hidden (md:flex) and the drawer logo grows to 160px inside w-[min(84vw,var(--cuba-sidebar-w))], i.e. 302px minus px-4 padding = 270px on a 360px phone, with 110px of slack against the close control; 768-1024px the block is visible but the toggle is suppressed by min-[1025px]:inline-flex, so the full 236px content box is available to the logo; at 1025px and up the content box is exactly 236px against a 200px logo cap plus a 36px flex-none toggle = 236px, and because the logo is w-auto it only reaches its cap when its aspect ratio demands it, while the min-w-0 anchor plus the flex-none toggle guarantee the band can never overflow the 260px sidebar; the compact rail keeps 18px gutters around the 36px mark. LANE 4 - QA: NEW tests/dir080-enlarge-brand-logo.test.mjs with AC1 header logo exactly h-12 md:h-[50px] w-auto max-w-[200px] object-contain shrink-0; AC2 band padding exactly pl-3 pr-2 sm:pl-3.5 sm:pr-2.5 with the collapsed px-1 branch intact; AC3 drawer logo exactly h-10 w-auto max-w-[160px] object-contain shrink-0; AC4 both compact marks exactly h-9 w-9 object-contain shrink-0 with the two monogram tiles at h-9 w-9; AC5 the toggle tile is unchanged (w-9 h-9 rounded-xl, aria-label, aria-pressed, min-[1025px]:inline-flex) and flex-none, and the retired FiChevronLeft stays absent; AC6 no superseded string survives anywhere in the file (no max-w-[185px], no max-w-[130px], no h-8 w-8 object-contain, no px-3.5 sm:px-4) and the alt={brandName} / onError counts stay >= 3 so the enlarged logos keep their accessible names and degradation. Plus test:dir080 registration and pin updates: dir078:40 -> the DIR-080 class with a supersession comment, dir079:37 -> the DIR-080 padding, and dir079 AC6 -> dir078.includes('max-w-\\\\[200px\\\\]'). LANE 5 - ACCESSIBILITY: all four enlarged images keep alt={brandName} and onError; every logo remains inside a cuba-focusable anchor with aria-label brandName home; the toggle keeps aria-label Expand/Collapse sidebar and aria-pressed; no colour, contrast or focus-ring change is introduced (pure sizing), and the enlarged 48-50px logo only improves legibility of the wordmark and subtitle. LANE 6 - PERFORMANCE: the change is a set of Tailwind className string swaps in one file - zero new dependencies, zero new JS, zero new state, zero timers and zero layout measurement, so there is no additional render or latency cost; the band widths remain fixed CSS variables so there is no layout thrash; build budget stays under 4s and lint stays at 0 errors. RISKS AND MITIGATIONS: the only measured tightness is at 1025px and up where 200px plus 36px equals the 236px content box exactly - mitigated by w-auto (the logo renders narrower than its cap whenever its aspect allows), the min-w-0 anchor and the flex-none toggle; a 1px sub-pixel rounding cannot clip because the img is object-contain inside a shrink-0 box and the block itself is a fixed-width flex-none band. ROLLBACK: revert the three className swaps and the two pin lines; no data, API or schema surface is touched.",
+    "steps": [
+      "S1 - CubaAppShell.jsx:341 expand the header brand block padding to 'w-[var(--cuba-sidebar-w)] justify-between pl-3 pr-2 sm:pl-3.5 sm:pr-2.5' (collapsed px-1 branch untouched) so the 260px band yields 240-236px of logo width.",
+      "S2 - CubaAppShell.jsx:394 enlarge the expanded header logo to className=h-12 md:h-[50px] w-auto max-w-[200px] object-contain shrink-0 (cuba-header-brand).",
+      "S3 - CubaAppShell.jsx:414 keep the cuba-sidebar-toggle tile at w-9 h-9 rounded-xl with its aria-label, aria-pressed, min-[1025px]:inline-flex and flex-none so the bigger logo cannot squeeze it.",
+      "S4 - CubaAppShell.jsx:599 enlarge the mobile drawer logo (cuba-drawer-brand) to h-10 w-auto max-w-[160px] object-contain shrink-0.",
+      "S5 - CubaAppShell.jsx:365 and :559 raise both compact marks (cuba-header-brand-mark, cuba-sidebar-brand-mark) to h-9 w-9 object-contain shrink-0 and match their monogram fallback tiles to h-9 w-9.",
+      "S6 - Author tests/dir080-enlarge-brand-logo.test.mjs (AC1-AC6: exact header logo, band padding, drawer logo, both marks, unchanged toggle, zero superseded strings plus alt/onError counts) and register test:dir080.",
+      "S7 - Update the two pin lines: dir078:40 to the DIR-080 logo class, dir079:37 to the DIR-080 padding, and dir079 AC6 to dir078.includes(max-w-[200px]).",
+      "S8 - Run dir080, dir079, dir078, dir077, dir048, test:design-system, test:product, test:security:static, test:xampp-policy, dir063..dir080, build (<4s), lint (0 errors) and confirm frozen cv-templates diff 0, then write .bridge/evidence/dir080-evidence.log and submit."
+    ],
+    "planHash": "06d37ae82a70a9fe595aad48566ec4c6402b86d596ed07164f6760e8b4e3a2a5"
+  },
+  "evidence": null,
+  "reviews": [],
+  "freeze": null,
+  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "continuationPending": false,
+  "revisionTarget": null,
+  "planApproval": {
+    "approvedAt": "2026-10-11T04:15:12.936Z",
+    "automated": true,
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "declared-automation",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "non-tty"
+      ],
+      "pid": 6284,
+      "parentPid": 10280,
+      "tty": false,
+      "at": "2026-10-11T04:15:12.935Z",
+      "explicitlyAllowed": true
+    },
+    "feedback": "Auto-approved by the autonomous plan-scorer (score 100/100, reviewer verdict approved). NOT a human Lead review."
+  },
+  "heartbeats": [
+    {
+      "at": "2026-10-11T04:17:21.818Z",
+      "status": "S1-S7 implemented: header logo h-12 md:h-[50px] max-w-[200px], band padding pl-3 pr-2 sm:pl-3.5 sm:pr-2.5, drawer logo h-10 max-w-[160px], both rail marks h-9 w-9. dir080 6/6, build 2.78s, lint 0 errors. Running full gates.",
+      "percent": 60,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    },
+    {
+      "at": "2026-10-11T04:18:44.577Z",
+      "status": "All mandates verified. dir080 6/6, 93/93 combined, product EXIT 0, security 67/67, xampp 4/4, build 2.78s, lint 0 errors, dir063..080 green, frozen diff 0. Submitting evidence.",
+      "percent": 95,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    }
+  ],
+  "lastHeartbeatAt": "2026-10-11T04:18:44.577Z"
+}
