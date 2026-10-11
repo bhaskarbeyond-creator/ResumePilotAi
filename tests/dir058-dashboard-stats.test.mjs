@@ -20,6 +20,9 @@ const CLIENT_API = 'src/services/api/platform.js';
 const BACKEND_ROUTE = 'backend/routes/miscData.js';
 const DASHBOARD = 'src/components/Dashboard/DashboardHomepage/DashboardHomepage.jsx';
 const HERO = 'src/components/Candidate/CubaCandidateHero.jsx';
+// DIR-094 RETARGET (see the note on the "Job Applications" card test below): DIR-091
+// moved the four KPI cards out of the hero and into this presenter.
+const CARDS = 'src/components/Candidate/CubaMetricCardRow.jsx';
 
 const read = (file) => fs.readFile(file, 'utf8');
 
@@ -74,11 +77,23 @@ test('DIR-058: the dashboard renders measured metrics with an honest unavailable
 /* ── The hero card is no longer mislabelled ────────────────────────────────── */
 
 test('DIR-058: the "Job Applications" card shows applications, not tracked jobs', async () => {
-  const src = await read(HERO);
-  const start = src.indexOf('label="Job Applications"');
+  // ── DIR-094 RETARGET — the assertion is MOVED, not deleted ──────────────────
+  // DIR-091 moved the four KPI cards out of CubaCandidateHero and into the
+  // CubaMetricCardRow presenter, so the `label="Job Applications"` anchor this test
+  // looked for no longer exists in HERO. That made this test RED at HEAD, before any
+  // DIR-094 change: reading the HEAD blob of CubaCandidateHero.jsx directly shows it
+  // does not contain the anchor, and DIR-094 never modified that file.
+  //
+  // The ORIGINAL INTENT is unchanged and is what still gets asserted: the card
+  // labelled "Job Applications" must show the REAL application count and must never
+  // show the Kanban tracked-jobs count. The assertion now follows the card to the file
+  // that actually renders it.
+  const [hero, cards] = await Promise.all([read(HERO), read(CARDS)]);
+  const start = cards.indexOf('label="Job Applications"');
   assert.ok(start > -1, 'the Job Applications card must exist');
-  const card = src.slice(start, start + 700);
-  assert.match(card, /applications !== null \? String\(applications\)/, 'the card must use the real application count');
+  const card = cards.slice(start, start + 700);
+  // DIR-093 S3 polished this into an honest em-dash placeholder for an unmeasured read.
+  assert.match(card, /applications === null \? '--' : String\(applications\)/, 'the card must use the real application count');
   assert.doesNotMatch(card, /value=\{[^}]*trackedJobs[^}]*\}/, 'the card value must not be the tracked-jobs count');
-  assert.match(src, /getStatesOfUser/, 'the hero must load the real metrics');
+  assert.match(hero, /getStatesOfUser/, 'the hero must load the real metrics');
 });

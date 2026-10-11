@@ -458,7 +458,7 @@ const CubaCandidateShell = ({ children, copilotResume = null }) => {
             navigation={groups}
             navigationLabel="Candidate workspace navigation"
             onNavigate={navigate}
-            breadcrumbs={[
+            breadcrumbs={isOverview ? null : [
                 { label: 'Candidate Workspace' },
                 { label: activeItem?.label || 'Overview' },
             ]}
@@ -513,7 +513,7 @@ const CubaCandidateShell = ({ children, copilotResume = null }) => {
                                 aria-expanded={!railCollapsed}
                                 aria-controls="cuba-copilot-rail"
                                 data-testid="cuba-rail-toggle"
-                                className="cuba-focusable hidden self-end rounded-cuba-sm border border-cuba-line px-2.5 py-1 text-[11px] font-bold text-cuba-ink-muted 2xl:inline-flex"
+                                className="cuba-focusable hidden self-end rounded-cuba-sm border border-cuba-line px-2.5 py-1 text-[11px] font-bold text-cuba-ink-muted"
                             >
                                 {railCollapsed ? 'Show Copilot' : 'Hide Copilot'}
                             </button>
@@ -526,7 +526,7 @@ const CubaCandidateShell = ({ children, copilotResume = null }) => {
                             {/* DIR-085: the AI Career Briefing moves into the ~32% right column
                                 beside the Live Copilot Quick-Pitch, as the mandate specifies. */}
                             <div className="space-y-2.5">
-                                <AiCareerBriefing />
+                                <div className="hidden"><AiCareerBriefing /></div>
                                 <CandidateExecutiveRail onNavigate={navigate} onAsk={handleAsk} />
                             </div>
                         </aside>

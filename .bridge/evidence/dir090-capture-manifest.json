@@ -1,0 +1,41 @@
+{
+  "directive": "DIR-090",
+  "servedBy": "XAMPP Apache",
+  "base": "http://localhost/IME365",
+  "apacheStatus": 200,
+  "dataMode": "REAL (MariaDB via the managed backend API)",
+  "capturedAt": "2026-10-11T10:56:27.895Z",
+  "scroll": {
+    "found": true,
+    "tag": "HTML",
+    "before": 0,
+    "after": 0,
+    "scrollHeight": 1080,
+    "clientHeight": 1080
+  },
+  "artifacts": [
+    {
+      "name": "current_dashboard_live_1920.png",
+      "bytes": 50330,
+      "md5": "0A65161A9D91973517425AA9B1790755"
+    },
+    {
+      "name": "current_dashboard_bottom_analytics.png",
+      "bytes": 50330,
+      "md5": "0A65161A9D91973517425AA9B1790755"
+    },
+    {
+      "name": "current_dashboard_fullpage.png",
+      "bytes": 50330,
+      "md5": "0A65161A9D91973517425AA9B1790755"
+    },
+    {
+      "name": "current_dashboard_tall_1300.png",
+      "bytes": 52673,
+      "md5": "99CB1671F31419DDA8C6B572F565D38B"
+    }
+  ],
+  "belowFoldIsDistinct": false,
+  "consoleErrorCount": 0,
+  "consoleErrors": []
+}

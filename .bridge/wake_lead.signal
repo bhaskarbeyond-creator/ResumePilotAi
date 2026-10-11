@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-11T08:55:23.888Z",
-  "seq": 2876,
-  "id": "evt_mv3l8dkz_d7e472094001",
-  "type": "EVIDENCE_SUBMITTED",
-  "title": "[Evidence] DIR-093: Candidate Workspace (/dashboard) Reference Parity - Part A: Welcome Header, Metric Card Polish, Workspace Toolbar, Resume Cards & AI Career Assistant Rail",
+  "timestamp": "2026-10-11T10:51:33.886Z",
+  "seq": 2898,
+  "id": "evt_mv3pdroe_2af62b53635d",
+  "type": "HEARTBEAT",
+  "title": "[Heartbeat] S1-S4 landed: rail fabrications removed (real insights memo render), PROGRESS_SERIES colours corrected (interview=success, offer=warning), Sort+Grid/List wired to real state, recency spelled out, head",
   "sender": "STAFF_DEVELOPER",
-  "directiveId": "DIR-093",
-  "summary": "DIR-093 PARTIAL, STATED PLAINLY UP FRONT: of the five areas in this directive, THREE landed and TWO did not. LANDED: area 1 (the welcome header), area 2 (the metric-card polish), area 6 (the AI Career Assistant rail), plus the real defect fix in step S6. NOT LANDED: area 3 (the workspace toolbar taxonomy) and area 4 (the resume-card badges and the dashed create card). I am not dressing that up, and the new dir093 suite asserts only what actually landed so it can never imply otherwise.\r\n\r\nTHE REAL DEFECT I FIXED (S6): DashboardHomepage.jsx rendered each resume card's date as document.item?.created_at?.seconds"
+  "directiveId": "DIR-090",
+  "summary": "S1-S4 landed: rail fabrications removed (real insights memo render), PROGRESS_SERIES colours corrected (interview=success, offer=warning), Sort+Grid/List wired to real state, recency spelled out, header quote inlined. 52/52 pinned tests still green, frozen templates diff=0. Now repairing the capture harness (F-EV-1)."
 }

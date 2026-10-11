@@ -1,0 +1,89 @@
+{
+  "id": "DIR-094",
+  "title": "Candidate Workspace (/dashboard) Reference Parity - Part B: Bottom Three-Column Analytics (Application Progress chart, Top Job Matches, Your Next Steps)",
+  "priority": "P1",
+  "status": "IN_PROGRESS",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-11T08:33:53.137Z",
+  "updatedAt": "2026-10-11T08:56:11.431Z",
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "spec": "VISUAL TARGET: d:\\xampp\\htdocs\\IME365\\.bridge\\references\\candidate-dashboard-target-reference.png\r\n\r\nUser command: i",
+  "invariants": [],
+  "acceptanceCriteria": [],
+  "plan": {
+    "submittedAt": "2026-10-11T08:56:10.273Z",
+    "summary": "DIR-094 recon complete, and I am leading with the ONE thing that decides whether this can be built honestly: DATA LINEAGE. This is the only genuinely greenfield area of the reference, and my sweep confirms it does not exist anywhere in src - no Application Progress chart, no Top Job Matches list, no Your Next Steps stepper, and no charting dependency (no recharts, chart.js, d3, visx or apexcharts in package.json). So unlike Part A, this cannot be built by re-skinning existing reads; each of the three columns needs a real source or an honest empty state. Column 1, Application Progress: the series must come from the real application and pipeline-state data (the job-tracker / getStatesOfUser surface). I will NOT synthesise a Jan-to-Jun series. If the real data cannot be bucketed by month, the chart renders an explicit empty state rather than a plausible-looking shape, and it will be a hand-built SVG so ZERO charting dependency is added. Column 2, Top Job Matches: the reference names Google, Accenture and Infosys with 92/86/78 percent - those are ILLUSTRATION and must not be hardcoded. I will bind to the real matching module (src/components/Dashboard/DashbaordJobMatching/DashboardJobMatching.jsx) and the real jobs API, and if a real match percentage is not produced by the platform I will show the real fields and omit the percentage rather than invent one. Column 3, Your Next Steps: completion must be DERIVED from real profile and document completeness, not a hardcoded checklist. IMPORTANT RISK I AM FLAGGING UP FRONT: Part A could not confirm a real master/tailored/draft document-state field, and column 3 needs a similar completeness signal. If my S1 recon cannot find a real completeness source, I will report that as a blocker rather than fabricate a completion state - the same rule that made me refuse to invent the toolbar taxonomy in DIR-093. Second: I will reuse the Part A discipline on supersession. Mounting a three-column band in the Overview touches the DIR-084 single-viewport geometry and the DIR-085/086/090 pins on CubaCandidateShell.jsx, so I will preserve every certified testid and retarget any superseded assertion so its intent survives, deleting no guard. Third: this directive is deliberately separate from DIR-093 because it needs new data lineage rather than new markup, and bundling it would repeat the DIR-088/DIR-090/DIR-091/DIR-092 pattern of a certified partial.",
+    "steps": [
+      "S1 Data-lineage recon for all three columns: confirm or declare-absent a real monthly application/pipeline series, a real job-match source with a real score, and a real profile/document completeness signal. Report findings to the Lead before writing any component, and escalate as a blocker if a column has no honest source.",
+      "S2 NEW src/components/Candidate/CubaApplicationProgressChart.jsx - a hand-built SVG grouped bar chart (Applied / Shortlisted / Interview / Offers) over the last six real months, zero charting dependency, y-scale derived from the real maximum, role=img plus a text summary for non-visual users, and an explicit empty state when the real series is unavailable.",
+      "S3 NEW src/components/Candidate/CubaTopJobMatches.jsx - the real matched jobs with title, company, location and recency from the real matching module and jobs API",
+      "a real bookmark action",
+      "and the match percentage rendered ONLY when the platform actually produces one.",
+      "S4 NEW src/components/Candidate/CubaNextSteps.jsx - a checklist whose completed/pending state is derived from real profile and document completeness, each item deep-linking to the surface that advances it.",
+      "S5 Mount the three-column band in the candidate Overview (CubaCandidateShell.jsx) as a 3-column grid at lg and above that stacks below lg, preserving the certified testids and retargeting any superseded geometry assertion so its intent survives.",
+      "S6 Author tests/dir094-candidate-dashboard-analytics.test.mjs, register test:dir094, run the full pinned suite plus build, lint, frozen-template and XAMPP gates, and submit evidence stating precisely which of the three columns landed and which were blocked by absent data lineage."
+    ],
+    "planHash": "1b1ab7f1a6334477b5dbdf9ed9642498910c99c93d3cad49c79bd2a684b7afec"
+  },
+  "evidence": null,
+  "reviews": [],
+  "freeze": null,
+  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "continuationPending": false,
+  "revisionTarget": null,
+  "planApproval": {
+    "approvedAt": "2026-10-11T08:56:11.431Z",
+    "automated": true,
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "declared-automation",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "non-tty"
+      ],
+      "pid": 21276,
+      "parentPid": 8720,
+      "tty": false,
+      "at": "2026-10-11T08:56:11.430Z",
+      "explicitlyAllowed": true
+    },
+    "feedback": "Auto-approved by the autonomous plan-scorer (score 85/100, reviewer verdict approved). NOT a human Lead review."
+  },
+  "heartbeats": [
+    {
+      "at": "2026-10-11T08:57:51.102Z",
+      "status": "S1 data-lineage recon starting: locating real application/pipeline, job-match and profile-completeness sources for the three analytics columns.",
+      "percent": 10,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    },
+    {
+      "at": "2026-10-11T09:01:11.932Z",
+      "status": "S1 recon DONE. Col1 Application Progress: REAL (getTrackedJobs + JOB_TRACKER_STAGES). Col3 Your Next Steps: REAL but ORPHANED state - found a real defect (DIR-058 checklist rendered nowhere). Col2 Top Job Matches: real jobs bindable, NO match-% source exists anywhere - will omit the badge, not invent it. Mount point = DashboardHomepage.jsx:1774 after Pagination.",
+      "percent": 25,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    },
+    {
+      "at": "2026-10-11T09:05:53.887Z",
+      "status": "S2-S5 written: CubaApplicationProgressChart (real job_tracker rows, hand-built SVG, no charting dep), CubaTopJobMatches (real jobs, real favourite toggle, NO invented match %), CubaNextSteps (renders the previously-orphaned DIR-058 onboardingSteps = real defect fix). Mounted as a 3-col band at DashboardHomepage.jsx:1796, gated on the Cuba shell. Building + linting now.",
+      "percent": 55,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    },
+    {
+      "at": "2026-10-11T09:13:39.968Z",
+      "status": "S2-S5 done + dir094 suite 8/8. Found a THIRD pre-existing DIR-091 supersession miss: dir058 AC3 asserted label=Job Applications inside CubaCandidateHero, but DIR-091 moved the cards to CubaMetricCardRow - PROVEN red at HEAD by reading the HEAD blob (anchor absent, file unmodified by me). Retargeted preserving intent, as in DIR-093. Regression battery now 101/101, XAMPP 4/4, build 3.51s, lint 0 errors. Running npm test + frozen gate.",
+      "percent": 80,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    }
+  ],
+  "lastHeartbeatAt": "2026-10-11T09:13:39.968Z"
+}

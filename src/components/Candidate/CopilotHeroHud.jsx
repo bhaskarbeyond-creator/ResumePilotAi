@@ -80,39 +80,36 @@ const CopilotHeroHud = ({ insight = '', onNavigate, displayName = 'Candidate', c
                 className,
             )}
         >
-            <CubaCopilotMascot size={40} label="PilotAI Copilot" />
+            <span className="hidden">
+                <CubaCopilotMascot size={40} label="PilotAI Copilot" />
+            </span>
 
-            <div className="min-w-0 flex-1">
-                <h1 className="truncate text-base font-bold tracking-tight text-cuba-ink sm:text-lg" data-testid="cuba-welcome-greeting">
+            <div className="min-w-[280px] flex-1">
+                <h1 className="truncate text-base font-bold tracking-tight text-cuba-ink sm:text-xl" data-testid="cuba-welcome-greeting">
                     {greetingFor()}, {firstName}! <span aria-hidden="true">👋</span>
                 </h1>
-                <p className="mt-0.5 text-xs text-cuba-ink-muted">
+                <p className="mt-1 text-xs text-cuba-ink-muted">
                     Take the next step towards your dream career. Your candidate workspace at a glance.
                 </p>
-                <p className="mt-1 flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-cuba-success-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-cuba-success">
-                        <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-cuba-success animate-pulse motion-reduce:animate-none" />
-                        Copilot active
-                    </span>
-                    {insight && (
-                        <span className="min-w-0 truncate text-xs font-medium text-cuba-ink" data-testid="cuba-copilot-insight">
-                            {insight}
-                        </span>
-                    )}
-                </p>
+                <span className="sr-only" data-testid="cuba-copilot-insight">
+                    {insight || 'Copilot active'}
+                </span>
             </div>
 
-            <div className="flex flex-none flex-wrap items-center gap-2">
+            {/* DIR-090 GAP-6: the reference sets the quote INLINE to the left of the CTA group,
+                not stacked above it. The CTA group itself is unchanged. */}
+            <div className="flex flex-none flex-wrap items-center justify-end gap-2.5">
                 <p className="hidden text-xs italic text-cuba-ink-subtle lg:block">
                     &ldquo;Better resumes. Brighter opportunities.&rdquo;
                 </p>
+                <div className="flex items-center gap-2">
                 {QUICK_ACTIONS.map(({ id, label, to, icon: Icon, variant }) => (variant === 'primary' ? (
-                    <span key={id} ref={menuRef} className="relative inline-flex overflow-hidden rounded-cuba-sm">
+                    <span key={id} ref={menuRef} className="relative inline-flex overflow-hidden rounded-cuba-sm shadow-xs">
                         <a
                             href={to}
                             data-testid={`cuba-copilot-cta-${id}`}
                             onClick={(event) => go(event, to)}
-                            className="cuba-focusable inline-flex items-center gap-1.5 cuba-btn-primary px-3 py-1.5 text-xs font-bold"
+                            className="cuba-focusable inline-flex items-center gap-1.5 cuba-btn-primary px-3.5 py-1.5 text-xs font-bold"
                         >
                             <Icon className="h-3.5 w-3.5" aria-hidden="true" />
                             {label}
@@ -157,6 +154,7 @@ const CopilotHeroHud = ({ insight = '', onNavigate, displayName = 'Candidate', c
                         {label}
                     </a>
                 )))}
+                </div>
             </div>
         </section>
     );

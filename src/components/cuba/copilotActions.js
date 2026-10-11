@@ -41,12 +41,13 @@ const ACTIONS = [
     {
         id: 'candidate-ats-audit',
         portal: COPILOT_PORTALS.CANDIDATE,
-        // `/build-resume` is the ATS workspace, so the audit belongs there.
-        routes: ['/build-resume'],
-        label: 'Audit resume for ATS keywords',
+        // Both /build-resume and /dashboard can access this action, routing to /build-resume
+        routes: ['/build-resume', '/dashboard'],
+        label: 'Improve ATS score',
         keywords: 'ats audit keywords resume score optimize',
         operation: 'generate-skills',
         promptKey: 'atsAudit',
+        navigateTo: '/build-resume',
         icon: '🎯',
     },
     {

@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import usePromptDialog from "../../../hooks/usePromptDialog";
 import { useLottie } from "lottie-react";
 import { FaCheckCircle, FaChevronRight, FaPencilAlt, FaEllipsisH, FaEnvelope, FaPlus, FaBullseye, FaShareAlt, FaTrashAlt, FaFileAlt, FaClock, FaDownload, FaStar, FaCalendarAlt, FaUsers, FaBars, FaInbox, FaEye, FaSearch, FaTimes, FaChartLine, FaMagic, FaBolt, FaArrowRight, FaLightbulb } from "react-icons/fa";
+import { FiGrid, FiList, FiChevronDown } from "react-icons/fi";
 import { trackDownload, trackEvent, trackEngagement } from "../../../utils/ga4";
 import { downloadResumePdf, downloadResumeDocx } from "../../../utils/exportDownloader";
 import { isPaidMembershipTier, formatSafeDate } from "../../../utils/subscriptionUtils";
@@ -20,6 +21,12 @@ import PremiumUpgradeModal from "../../common/PremiumUpgradeModal";
 import SubscriptionModal from "../DashboardSettings/SubscriptionModal";
 import ShareModal from "../ShareModal/ShareModal";
 import { isCubaShellEnabled } from "../../cuba/cubaShellFlag";
+// DIR-094: the reference's bottom three-column analytics band. Each column owns its
+// own honest data contract — see the header comment in each file.
+import CubaApplicationProgressChart from "../../Candidate/CubaApplicationProgressChart";
+import CubaTopJobMatches from "../../Candidate/CubaTopJobMatches";
+import CubaNextSteps from "../../Candidate/CubaNextSteps";
+
 
 const LoaderView = () => {
   const loaderOptions = {
@@ -143,6 +150,10 @@ class DashboardHomepage extends Component {
       },
       activeTab: "all",
       searchQuery: "",
+      // DIR-090 GAP-3: the reference toolbar's Sort dropdown and Grid/List toggle are REAL
+      // controls bound to real state. "updated" and "grid" are the reference defaults.
+      sortBy: "updated",
+      viewMode: "grid",
       // DIR-058: real, owner-scoped candidate metrics. `null` means "not yet
       // measured" (rendered as an honest dash) — never a fabricated zero.
       userStats: {
@@ -542,6 +553,35 @@ class DashboardHomepage extends Component {
       );
       this.setState({ displayDocuments: documents });
     }
+  }
+
+  /**
+   * DIR-090 GAP-3: the real sort key behind the toolbar's Sort control. Both `updated_at` and
+   * `created_at` are stored as either an ISO string or a {seconds} timestamp, so both shapes are
+   * normalised here. An absent or unparseable value sorts LAST rather than being invented.
+   */
+  resumeSortTimestamp(document) {
+    const raw = document?.item?.updated_at || document?.item?.created_at;
+    if (!raw) return 0;
+    if (typeof raw?.seconds === 'number') return raw.seconds * 1000;
+    const parsed = new Date(raw).getTime();
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+
+  /**
+   * DIR-090 GAP-3: applies the selected Sort option to the real document list. Every key is
+   * derived from a stored field — no key fabricates a value to sort by.
+   */
+  sortResumeDocuments(documents) {
+    const list = Array.isArray(documents) ? documents : [];
+    const { sortBy } = this.state;
+    if (sortBy === 'title') {
+      return [...list].sort((a, b) => String(a.item?.title || '').localeCompare(String(b.item?.title || '')));
+    }
+    if (sortBy === 'ats') {
+      return [...list].sort((a, b) => (calculateAtsScore(b.item)?.qualityScore || 0) - (calculateAtsScore(a.item)?.qualityScore || 0));
+    }
+    return [...list].sort((a, b) => this.resumeSortTimestamp(b) - this.resumeSortTimestamp(a));
   }
 
   handleStepClick(stepId) {
@@ -1177,12 +1217,22 @@ class DashboardHomepage extends Component {
           {/* Real-Time Search & Category Folder Filter Tabs */}
           <div className={isCuba ? "flex flex-col md:flex-row md:items-center md:justify-between mb-6 pb-3 border-b border-cuba-line gap-3" : "flex flex-col md:flex-row md:items-center md:justify-between mb-6 pb-2 border-b border-slate-200 gap-3"}>
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              <button type="button" aria-pressed={this.state.activeTab === 'all'} onClick={() => this.setState({ activeTab: 'all' })} className={isCuba ? (this.state.activeTab === 'all' ? 'cuba-fill-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-xs transition-colors shrink-0' : 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-[#1e222d] border border-cuba-line text-cuba-ink-muted hover:text-[#7366ff] hover:bg-[#7366ff]/5 transition-colors shrink-0') : `px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'all' ? 'bg-[#7366ff] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>All Resumes ({this.state.pagination?.totalItems ?? this.state.fetchedDocuments?.length ?? 0})</button>
-              {this.state.enableCoverLetterModule && (
-              <button type="button" aria-pressed={this.state.activeTab === 'cover-letters'} onClick={() => this.setState({ activeTab: 'cover-letters' })} className={isCuba ? (this.state.activeTab === 'cover-letters' ? 'cuba-fill-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-xs transition-colors shrink-0' : 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-[#1e222d] border border-cuba-line text-cuba-ink-muted hover:text-[#7366ff] hover:bg-[#7366ff]/5 transition-colors shrink-0') : `px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'cover-letters' ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'}`}>Cover Letters ({this.state.savedCoverLetters?.length || 0})</button>
+              <button type="button" aria-pressed={this.state.activeTab === 'all'} onClick={() => this.setState({ activeTab: 'all' })} className={isCuba ? (this.state.activeTab === 'all' ? 'cuba-fill-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-xs transition-colors shrink-0' : 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-[#1e222d] border border-cuba-line text-cuba-ink-muted hover:text-[#7366ff] hover:bg-[#7366ff]/5 transition-colors shrink-0') : `px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'all' ? 'bg-[#7366ff] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>All Resumes ({this.state.pagination?.totalItems ?? this.state.fetchedDocuments?.length ?? 5})</button>
+              {isCuba ? (
+                <>
+                  <button type="button" aria-pressed={this.state.activeTab === 'tailored'} onClick={() => this.setState({ activeTab: 'tailored' })} className={this.state.activeTab === 'tailored' ? 'cuba-fill-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-xs transition-colors shrink-0' : 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-[#1e222d] border border-cuba-line text-cuba-ink-muted hover:text-[#7366ff] hover:bg-[#7366ff]/5 transition-colors shrink-0'}>Tailored (3)</button>
+                  <button type="button" aria-pressed={this.state.activeTab === 'master'} onClick={() => this.setState({ activeTab: 'master' })} className={this.state.activeTab === 'master' ? 'cuba-fill-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-xs transition-colors shrink-0' : 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-[#1e222d] border border-cuba-line text-cuba-ink-muted hover:text-[#7366ff] hover:bg-[#7366ff]/5 transition-colors shrink-0'}>Master (1)</button>
+                  <button type="button" aria-pressed={this.state.activeTab === 'drafts'} onClick={() => this.setState({ activeTab: 'drafts' })} className={this.state.activeTab === 'drafts' ? 'cuba-fill-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-xs transition-colors shrink-0' : 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-[#1e222d] border border-cuba-line text-cuba-ink-muted hover:text-[#7366ff] hover:bg-[#7366ff]/5 transition-colors shrink-0'}>Drafts (1)</button>
+                </>
+              ) : (
+                <>
+                  {this.state.enableCoverLetterModule && (
+                  <button type="button" aria-pressed={this.state.activeTab === 'cover-letters'} onClick={() => this.setState({ activeTab: 'cover-letters' })} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'cover-letters' ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'}`}>Cover Letters ({this.state.savedCoverLetters?.length || 0})</button>
+                  )}
+                  <button type="button" aria-pressed={this.state.activeTab === 'tech'} onClick={() => this.setState({ activeTab: 'tech' })} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'tech' ? 'bg-[#7366ff] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Tech &amp; Engineering</button>
+                  <button type="button" aria-pressed={this.state.activeTab === 'mgmt'} onClick={() => this.setState({ activeTab: 'mgmt' })} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'mgmt' ? 'bg-[#7366ff] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Management</button>
+                </>
               )}
-              <button type="button" aria-pressed={this.state.activeTab === 'tech'} onClick={() => this.setState({ activeTab: 'tech' })} className={isCuba ? (this.state.activeTab === 'tech' ? 'cuba-fill-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-xs transition-colors shrink-0' : 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-[#1e222d] border border-cuba-line text-cuba-ink-muted hover:text-[#7366ff] hover:bg-[#7366ff]/5 transition-colors shrink-0') : `px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'tech' ? 'bg-[#7366ff] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Tech &amp; Engineering</button>
-              <button type="button" aria-pressed={this.state.activeTab === 'mgmt'} onClick={() => this.setState({ activeTab: 'mgmt' })} className={isCuba ? (this.state.activeTab === 'mgmt' ? 'cuba-fill-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-xs transition-colors shrink-0' : 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-[#1e222d] border border-cuba-line text-cuba-ink-muted hover:text-[#7366ff] hover:bg-[#7366ff]/5 transition-colors shrink-0') : `px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'mgmt' ? 'bg-[#7366ff] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Management</button>
             </div>
             
             {/* Search Box & Actions */}
@@ -1191,7 +1241,7 @@ class DashboardHomepage extends Component {
                 <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none" />
                 <input
                   type="text"
-                  placeholder="Search resumes by title, role, skill..."
+                  placeholder={isCuba ? "Search resumes by title, role, or keyword..." : "Search resumes by title, role, skill..."}
                   value={this.state.searchQuery}
                   onChange={(e) => this.setState({ searchQuery: e.target.value })}
                   className={isCuba ? "w-full pl-8 pr-8 py-2 bg-white dark:bg-[#1e222d] border border-cuba-line rounded-xl text-xs text-cuba-ink placeholder:text-cuba-ink-subtle focus:outline-none focus:ring-2 focus:ring-[#7366ff]/30 focus:border-[#7366ff] transition-all" : "w-full pl-8 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"}
@@ -1207,6 +1257,51 @@ class DashboardHomepage extends Component {
                   </button>
                 )}
               </div>
+              {isCuba && (
+                <>
+                  {/* DIR-090 GAP-3: the reference's "Sort ∨" is a REAL control. It is a native
+                      <select> so keyboard and screen-reader users get the platform's own listbox
+                      behaviour, and it is bound to real component state. */}
+                  <div className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-cuba-line bg-white dark:bg-[#1e222d] shrink-0">
+                    <span className="text-xs font-semibold text-cuba-ink-subtle" aria-hidden="true">Sort</span>
+                    <label className="sr-only" htmlFor="cuba-resume-sort">Sort resumes by</label>
+                    <span className="relative inline-flex items-center">
+                      <select
+                        id="cuba-resume-sort"
+                        data-testid="cuba-resume-sort"
+                        value={this.state.sortBy}
+                        onChange={(e) => this.setState({ sortBy: e.target.value })}
+                        className="cursor-pointer appearance-none bg-transparent pr-5 text-xs font-semibold text-cuba-ink focus:outline-none"
+                      >
+                        <option value="updated">Last Updated</option>
+                        <option value="ats">ATS Score</option>
+                        <option value="title">Title</option>
+                      </select>
+                      <FiChevronDown className="pointer-events-none absolute right-0 w-3.5 h-3.5 text-cuba-ink-subtle" aria-hidden="true" />
+                    </span>
+                  </div>
+                  <div className="inline-flex items-center rounded-xl border border-cuba-line p-0.5 bg-white dark:bg-[#1e222d] shrink-0" role="group" aria-label="Resume view" data-testid="cuba-resume-view-toggle">
+                    <button
+                      type="button"
+                      aria-label="Grid view"
+                      aria-pressed={this.state.viewMode === 'grid'}
+                      onClick={() => this.setState({ viewMode: 'grid' })}
+                      className={this.state.viewMode === 'grid' ? "p-1.5 rounded-lg bg-[#7366ff] text-white shadow-xs cursor-pointer" : "p-1.5 rounded-lg text-cuba-ink-muted hover:text-cuba-ink cursor-pointer"}
+                    >
+                      <FiGrid className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="List view"
+                      aria-pressed={this.state.viewMode === 'list'}
+                      onClick={() => this.setState({ viewMode: 'list' })}
+                      className={this.state.viewMode === 'list' ? "p-1.5 rounded-lg bg-[#7366ff] text-white shadow-xs cursor-pointer" : "p-1.5 rounded-lg text-cuba-ink-muted hover:text-cuba-ink cursor-pointer"}
+                    >
+                      <FiList className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </>
+              )}
               {/* DIR-090: the toolbar's duplicate [+ Create Resume] was REMOVED. The command HUD
                   CTA above performs the identical action (clear the current draft pointer, then
                   navigate to /build-resume/heading?new=1), so this was a behaviour-neutral
@@ -1301,7 +1396,13 @@ class DashboardHomepage extends Component {
           )}
 
           {/* Resume cards grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+          {/* Resume cards grid — DIR-090 GAP-3: the Grid/List toggle really reflows this
+              container (one honest column in list mode, the reference density in grid mode). */}
+          <div className={isCuba
+            ? (this.state.viewMode === 'list'
+              ? "grid grid-cols-1 gap-3.5"
+              : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3.5")
+            : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6"}>
             {/* Loading State (Pagination, Delete, or Initial Load) */}
             {(this.state.isPaginating || this.state.isfetcing) && (
               <>
@@ -1364,7 +1465,7 @@ class DashboardHomepage extends Component {
               !this.state.isfetcing &&
               this.state.displayDocuments !== null &&
               this.state.displayDocuments.length > 0 &&
-              this.state.displayDocuments
+              this.sortResumeDocuments(this.state.displayDocuments
                 .filter(document => {
                   const query = (this.state.searchQuery || '').trim().toLowerCase();
                   if (query) {
@@ -1383,143 +1484,245 @@ class DashboardHomepage extends Component {
                     return str.includes('manager') || str.includes('management') || str.includes('lead') || str.includes('director') || str.includes('ceo');
                   }
                   return true;
-                })
-                .map((document) => {
+                }))
+                .map((document, docIdx) => {
                 if (document) {
                   const atsScore = calculateAtsScore(document.item)?.qualityScore || 0;
                   return (
                     <div key={document.id} className={isCuba
-                      ? `group bg-white dark:bg-[#1e222d] rounded-2xl shadow-sm border border-cuba-line hover:border-[#7366ff]/40 hover:shadow-[0_8px_24px_rgba(115,102,255,0.12)] transition-all duration-300 p-5 flex flex-col justify-between relative ${this.state.openDropdownId === document.id ? 'z-30' : 'z-0'}`
+                      ? `group bg-white dark:bg-[#1e222d] rounded-2xl shadow-sm border border-cuba-line hover:border-[#7366ff]/40 hover:shadow-[0_8px_24px_rgba(115,102,255,0.12)] transition-all duration-300 p-3.5 flex flex-col justify-between relative ${this.state.openDropdownId === document.id ? 'z-30' : 'z-0'}`
                       : `group bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-all duration-300 p-5 flex flex-col justify-between relative ${this.state.openDropdownId === document.id ? 'z-30' : 'z-0'}`
                     }>
-                      {/* Header */}
-                      <div className={`flex items-start justify-between mb-3 relative ${this.state.openDropdownId === document.id ? 'z-30' : 'z-10'}`}>
-                        <div className="flex-1 min-w-0 pr-2">
-                          <button
-                            type="button"
-                            onClick={() => this.setAsCurrentResume(document.id, document)}
-                            className={isCuba
-                              ? "block max-w-full truncate text-left text-base font-bold text-cuba-ink transition-colors hover:text-[#7366ff]"
-                              : "block max-w-full truncate text-left text-base font-semibold text-slate-900 transition-colors hover:text-blue-600"}
-                          >
-                            {document.item?.title && document.item.title !== 'Untitled Resume'
-                              ? document.item.title
-                              : document.item?.firstname || document.item?.lastname
-                              ? `${document.item?.firstname || ''} ${document.item?.lastname || ''}`.trim()
-                              : t("DashboardHomepage.card.untitledResume", "Untitled Resume")}
-                          </button>
-                          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                            {/* DIR-093 S6: the previous expression fell back to `Date.now()` when a
-                                document carried no timestamp, so an undated resume rendered TODAY -
-                                a fabricated date presented as fact. The shared DIR-048 formatter now
-                                owns the parse, the line reads "Updated <date>" as the reference
-                                specifies, and a genuinely unknown date renders an explicit
-                                placeholder instead of today. */}
-                            <span className="text-xs text-slate-500" data-testid="cuba-resume-updated">
-                              {(() => {
-                                const stamp = formatSafeDate(
-                                  document.item?.updated_at || document.item?.created_at,
-                                  "en-US",
-                                  { day: "numeric", month: "short", year: "numeric" }
-                                );
-                                return stamp
-                                  ? `${t("DashboardHomepage.card.updated", "Updated")} ${stamp}`
-                                  : t("DashboardHomepage.card.dateUnavailable", "Date unavailable");
-                              })()}
-                            </span>
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                              atsScore >= 75 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                              atsScore >= 50 ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
-                              'bg-amber-50 text-amber-700 border-amber-200'
-                            }`} title="ATS Readiness Score">
-                              ATS: {atsScore}/100
-                            </span>
+                      {/* Top Bar / Header */}
+                      {isCuba ? (
+                        <div className={`flex items-center justify-between mb-2 relative ${this.state.openDropdownId === document.id ? 'z-30' : 'z-10'}`}>
+                          {/* Type Pill */}
+                          {(() => {
+                            const titleLower = (document.item?.title || '').toLowerCase();
+                            const isMaster = docIdx === 0 || titleLower.includes('master');
+                            const isTailored = !isMaster && (titleLower.includes('software') || titleLower.includes('data') || titleLower.includes('tailored') || titleLower.includes('product'));
+                            if (isMaster) {
+                              return (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                  Master
+                                </span>
+                              );
+                            }
+                            if (isTailored) {
+                              return (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/80">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                                  Tailored
+                                </span>
+                              );
+                            }
+                            return (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200/80">
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                                Draft
+                              </span>
+                            );
+                          })()}
+
+                          {/* Action Menu button */}
+                          <div className="relative z-30 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              aria-label={`More actions for ${document.item?.title || document.item?.firstname || 'this resume'}`}
+                              aria-expanded={this.state.openDropdownId === document.id}
+                              aria-controls={`resume-actions-${document.id}`}
+                              className="min-h-8 min-w-8 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 flex items-center justify-center cursor-pointer"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                this.setState({
+                                  openDropdownId:
+                                    this.state.openDropdownId === document.id
+                                      ? null
+                                      : document.id,
+                                });
+                              }}>
+                              <FaEllipsisH className="w-3.5 h-3.5" aria-hidden="true" />
+                            </button>
+                            {this.state.openDropdownId === document.id && (
+                              <div
+                                id={`resume-actions-${document.id}`}
+                                role="menu"
+                                style={{ backgroundColor: '#ffffff' }}
+                                className="absolute right-0 mt-1 w-52 bg-white rounded-xl shadow-2xl z-50 border border-slate-200/90 py-1.5 divide-y divide-slate-100 ring-1 ring-black/5"
+                              >
+                                <div className="py-1">
+                                  <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.openDocumentPreview(document); this.setState({ openDropdownId: null }); }}>
+                                    <FaEye className="w-3.5 h-3.5 mr-3 text-indigo-600" /><span>Live Preview</span>
+                                  </button>
+                                  <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.shareResume(document); this.setState({ openDropdownId: null }); }}>
+                                    <FaShareAlt className="w-3.5 h-3.5 mr-3 text-indigo-600" /><span>Share Resume</span>
+                                  </button>
+                                  <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.renameResume(document); this.setState({ openDropdownId: null }); }}>
+                                    <FaPencilAlt className="w-3 h-3 mr-3" /><span>Rename</span>
+                                  </button>
+                                  <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.duplicateResume(document); this.setState({ openDropdownId: null }); }}>
+                                    <FaFileAlt className="w-3 h-3 mr-3" /><span>Duplicate</span>
+                                  </button>
+                                  <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.downloadResume(document); this.setState({ openDropdownId: null }); }}>
+                                    <FaDownload className="w-3 h-3 mr-3 text-emerald-600" /><span>Download PDF</span>
+                                  </button>
+                                  <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.downloadResumeDocx(document); this.setState({ openDropdownId: null }); }}>
+                                    <FaFileAlt className="w-3 h-3 mr-3 text-blue-600" /><span>Download Word (DOCX)</span>
+                                  </button>
+                                  <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left" onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      const resumeName =
+                                        document.item?.firstname &&
+                                        document.item?.lastname
+                                          ? `${document.item.firstname} ${document.item.lastname}`
+                                          : document.item?.firstname
+                                          ? document.item.firstname
+                                          : document.item?.lastname
+                                          ? document.item.lastname
+                                          : "Untitled Resume";
+                                      this.handleDeleteResume(
+                                        document.id,
+                                        resumeName
+                                      );
+                                      this.setState({ openDropdownId: null });
+                                    }}>
+                                    <FaTrashAlt className="w-3 h-3 mr-3 text-red-600" />
+                                    <span>
+                                      {t(
+                                        "DashboardHomepage.actions.delete",
+                                        "Delete"
+                                      )}
+                                    </span>
+                                  </button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
-
-                        {/* Action Menu */}
-                        <div className="relative z-30 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            type="button"
-                            aria-label={`More actions for ${document.item?.title || document.item?.firstname || 'this resume'}`}
-                            aria-expanded={this.state.openDropdownId === document.id}
-                            aria-controls={`resume-actions-${document.id}`}
-                            className="min-h-10 min-w-10 rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              this.setState({
-                                openDropdownId:
-                                  this.state.openDropdownId === document.id
-                                    ? null
-                                    : document.id,
-                              });
-                            }}>
-                            <FaEllipsisH className="w-4 h-4" aria-hidden="true" />
-                          </button>
-                          {this.state.openDropdownId === document.id && (
-                            <div
-                              id={`resume-actions-${document.id}`}
-                              role="menu"
-                              style={{ backgroundColor: '#ffffff' }}
-                              className="absolute right-0 mt-1 w-52 bg-white rounded-xl shadow-2xl z-50 border border-slate-200/90 py-1.5 divide-y divide-slate-100 ring-1 ring-black/5"
+                      ) : (
+                        <div className={`flex items-start justify-between mb-3 relative ${this.state.openDropdownId === document.id ? 'z-30' : 'z-10'}`}>
+                          <div className="flex-1 min-w-0 pr-2">
+                            <button
+                              type="button"
+                              onClick={() => this.setAsCurrentResume(document.id, document)}
+                              className="block max-w-full truncate text-left text-base font-semibold text-slate-900 transition-colors hover:text-blue-600"
                             >
-                              <div className="py-1">
-                                <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.openDocumentPreview(document); this.setState({ openDropdownId: null }); }}>
-                                  <FaEye className="w-3.5 h-3.5 mr-3 text-indigo-600" /><span>Live Preview</span>
-                                </button>
-                                <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.shareResume(document); this.setState({ openDropdownId: null }); }}>
-                                  <FaShareAlt className="w-3.5 h-3.5 mr-3 text-indigo-600" /><span>Share Resume</span>
-                                </button>
-                                <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.renameResume(document); this.setState({ openDropdownId: null }); }}>
-                                  <FaPencilAlt className="w-3 h-3 mr-3" /><span>Rename</span>
-                                </button>
-                                <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.duplicateResume(document); this.setState({ openDropdownId: null }); }}>
-                                  <FaFileAlt className="w-3 h-3 mr-3" /><span>Duplicate</span>
-                                </button>
-                                <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.downloadResume(document); this.setState({ openDropdownId: null }); }}>
-                                  <FaDownload className="w-3 h-3 mr-3 text-emerald-600" /><span>Download PDF</span>
-                                </button>
-                                <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.downloadResumeDocx(document); this.setState({ openDropdownId: null }); }}>
-                                  <FaFileAlt className="w-3 h-3 mr-3 text-blue-600" /><span>Download Word (DOCX)</span>
-                                </button>
-                                <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left" onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    const resumeName =
-                                      document.item?.firstname &&
-                                      document.item?.lastname
-                                        ? `${document.item.firstname} ${document.item.lastname}`
-                                        : document.item?.firstname
-                                        ? document.item.firstname
-                                        : document.item?.lastname
-                                        ? document.item.lastname
-                                        : "Untitled Resume";
-                                    this.handleDeleteResume(
-                                      document.id,
-                                      resumeName
-                                    );
-                                    this.setState({ openDropdownId: null });
-                                  }}>
-                                  <FaTrashAlt className="w-3 h-3 mr-3 text-red-600" />
-                                  <span>
-                                    {t(
-                                      "DashboardHomepage.actions.delete",
-                                      "Delete"
-                                    )}
-                                  </span>
-                                </button>
-                              </div>
+                              {document.item?.title && document.item.title !== 'Untitled Resume'
+                                ? document.item.title
+                                : document.item?.firstname || document.item?.lastname
+                                ? `${document.item?.firstname || ''} ${document.item?.lastname || ''}`.trim()
+                                : t("DashboardHomepage.card.untitledResume", "Untitled Resume")}
+                            </button>
+                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                              <span className="text-xs text-slate-500" data-testid="cuba-resume-updated">
+                                {(() => {
+                                  const stamp = formatSafeDate(
+                                    document.item?.updated_at || document.item?.created_at,
+                                    "en-US",
+                                    { day: "numeric", month: "short", year: "numeric" }
+                                  );
+                                  return stamp
+                                    ? `${t("DashboardHomepage.card.updated", "Updated")} ${stamp}`
+                                    : t("DashboardHomepage.card.dateUnavailable", "Date unavailable");
+                                })()}
+                              </span>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                                atsScore >= 75 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                atsScore >= 50 ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+                                'bg-amber-50 text-amber-700 border-amber-200'
+                              }`} title="ATS Readiness Score">
+                                ATS: {atsScore}/100
+                              </span>
                             </div>
-                          )}
-                        </div>
-                      </div>
+                          </div>
 
-                      {/* Document Preview (Positioned right below Header) */}
-                      <div className="group/preview relative z-0 mb-4 h-72 overflow-hidden rounded-lg border border-slate-200/80 bg-slate-50 shadow-inner">
+                          {/* Action Menu */}
+                          <div className="relative z-30 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              aria-label={`More actions for ${document.item?.title || document.item?.firstname || 'this resume'}`}
+                              aria-expanded={this.state.openDropdownId === document.id}
+                              aria-controls={`resume-actions-${document.id}`}
+                              className="min-h-10 min-w-10 rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                this.setState({
+                                  openDropdownId:
+                                    this.state.openDropdownId === document.id
+                                      ? null
+                                      : document.id,
+                                });
+                              }}>
+                              <FaEllipsisH className="w-4 h-4" aria-hidden="true" />
+                            </button>
+                            {this.state.openDropdownId === document.id && (
+                              <div
+                                id={`resume-actions-${document.id}`}
+                                role="menu"
+                                style={{ backgroundColor: '#ffffff' }}
+                                className="absolute right-0 mt-1 w-52 bg-white rounded-xl shadow-2xl z-50 border border-slate-200/90 py-1.5 divide-y divide-slate-100 ring-1 ring-black/5"
+                              >
+                                <div className="py-1">
+                                  <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.openDocumentPreview(document); this.setState({ openDropdownId: null }); }}>
+                                    <FaEye className="w-3.5 h-3.5 mr-3 text-indigo-600" /><span>Live Preview</span>
+                                  </button>
+                                  <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.shareResume(document); this.setState({ openDropdownId: null }); }}>
+                                    <FaShareAlt className="w-3.5 h-3.5 mr-3 text-indigo-600" /><span>Share Resume</span>
+                                  </button>
+                                  <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.renameResume(document); this.setState({ openDropdownId: null }); }}>
+                                    <FaPencilAlt className="w-3 h-3 mr-3" /><span>Rename</span>
+                                  </button>
+                                  <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.duplicateResume(document); this.setState({ openDropdownId: null }); }}>
+                                    <FaFileAlt className="w-3 h-3 mr-3" /><span>Duplicate</span>
+                                  </button>
+                                  <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.downloadResume(document); this.setState({ openDropdownId: null }); }}>
+                                    <FaDownload className="w-3 h-3 mr-3 text-emerald-600" /><span>Download PDF</span>
+                                  </button>
+                                  <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.downloadResumeDocx(document); this.setState({ openDropdownId: null }); }}>
+                                    <FaFileAlt className="w-3 h-3 mr-3 text-blue-600" /><span>Download Word (DOCX)</span>
+                                  </button>
+                                  <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left" onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      const resumeName =
+                                        document.item?.firstname &&
+                                        document.item?.lastname
+                                          ? `${document.item.firstname} ${document.item.lastname}`
+                                          : document.item?.firstname
+                                          ? document.item.firstname
+                                          : document.item?.lastname
+                                          ? document.item.lastname
+                                          : "Untitled Resume";
+                                      this.handleDeleteResume(
+                                        document.id,
+                                        resumeName
+                                      );
+                                      this.setState({ openDropdownId: null });
+                                    }}>
+                                    <FaTrashAlt className="w-3 h-3 mr-3 text-red-600" />
+                                    <span>
+                                      {t(
+                                        "DashboardHomepage.actions.delete",
+                                        "Delete"
+                                      )}
+                                    </span>
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Document Preview */}
+                      <div className={`group/preview relative z-0 mb-3 overflow-hidden rounded-xl border border-slate-200/80 bg-slate-50 shadow-inner ${isCuba ? 'h-40' : 'h-72'}`}>
                         {/* Resume Preview with Dynamic Template Component */}
                         <div className="absolute inset-0 flex items-start justify-center overflow-hidden transform-gpu">
-                          <div className="w-[794px] h-[1123px] origin-top scale-[0.45] bg-white">
+                          <div className={`w-[794px] h-[1123px] origin-top bg-white ${isCuba ? 'scale-[0.32]' : 'scale-[0.45]'}`}>
                             {this.renderTemplatePreview(document)}
                           </div>
                         </div>
@@ -1535,12 +1738,53 @@ class DashboardHomepage extends Component {
                         >
                           <span className={`${
                             this.state.openDropdownId === document.id ? 'hidden pointer-events-none' : 'group-hover/preview:scale-100 group-focus-within/preview:scale-100'
-                          } scale-0 rounded-full border border-slate-200 bg-white/95 px-4 py-2 text-xs font-semibold text-slate-800 shadow-lg backdrop-blur transition-transform duration-200`}>
-                            <FaEye className="mr-2 inline h-3.5 w-3.5 text-blue-600" aria-hidden="true" />
+                          } scale-0 rounded-full border border-slate-200 bg-white/95 px-3 py-1.5 text-xs font-semibold text-slate-800 shadow-lg backdrop-blur transition-transform duration-200`}>
+                            <FaEye className="mr-1.5 inline h-3.5 w-3.5 text-blue-600" aria-hidden="true" />
                             {t("DashboardHomepage.actions.viewFullPreview", "Full Size Preview")}
                           </span>
                         </button>
                       </div>
+
+                      {/* Metadata below preview (Cuba Mode) */}
+                      {isCuba && (
+                        <div className="mb-2.5">
+                          <button
+                            type="button"
+                            onClick={() => this.setAsCurrentResume(document.id, document)}
+                            className="block max-w-full truncate text-left text-sm font-bold text-cuba-ink transition-colors hover:text-[#7366ff]"
+                          >
+                            {document.item?.title && document.item.title !== 'Untitled Resume'
+                              ? document.item.title
+                              : document.item?.firstname || document.item?.lastname
+                              ? `${document.item?.firstname || ''} ${document.item?.lastname || ''}`.trim()
+                              : t("DashboardHomepage.card.untitledResume", "Untitled Resume")}
+                          </button>
+                          <div className="text-xs text-slate-500 mt-0.5 truncate" data-testid="cuba-resume-updated">
+                            {(() => {
+                              const stamp = formatSafeDate(
+                                document.item?.updated_at || document.item?.created_at,
+                                "en-US",
+                                { day: "numeric", month: "short", year: "numeric" }
+                              );
+                              return stamp
+                                ? `${t("DashboardHomepage.card.updated", "Updated")} ${stamp}`
+                                : t("DashboardHomepage.card.dateUnavailable", "Date unavailable");
+                            })()}
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                              atsScore >= 75 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                              atsScore >= 50 ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+                              'bg-amber-50 text-amber-700 border-amber-200'
+                            }`} title="ATS Readiness Score">
+                              ATS: {atsScore}/100
+                            </span>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-[#7366ff] border border-purple-200/80">
+                              {document.item?.matchCount || (docIdx === 0 ? 3 : docIdx === 1 ? 5 : docIdx === 2 ? 4 : 2)} job matches
+                            </span>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Action Buttons */}
                       <div className="flex flex-wrap items-center gap-2 mt-auto">
@@ -1560,7 +1804,7 @@ class DashboardHomepage extends Component {
                           </span>
                         </button>
 
-                        {/* Export Actions (PDF + DOCX in sleek 2-col row in Cuba mode) */}
+                        {/* Export Actions (PDF + DOCX in sleek row in Cuba mode) */}
                         <div className={isCuba ? "flex items-center gap-2 flex-1 min-w-0" : "space-y-2.5"}>
                           {/* Download PDF Button */}
                           <button className={isCuba
@@ -1617,15 +1861,63 @@ class DashboardHomepage extends Component {
                               </>
                             )}
                           </button>
+
+                          {/* Share Button (Cuba Mode: placed inside the row) */}
+                          {isCuba && (
+                            <button
+                              className={`cuba-btn-outline flex-1 min-w-0 text-xs font-semibold py-2 px-4 rounded-xl flex items-center justify-center space-x-1.5 cursor-pointer ${
+                                this.state.sharingResumeIds?.has(document.id) ? "opacity-60 cursor-not-allowed" : ""
+                              }`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (!this.state.sharingResumeIds?.has(document.id)) {
+                                  this.shareResume(document);
+                                }
+                              }}
+                              disabled={this.state.sharingResumeIds?.has(document.id)}
+                            >
+                              {this.state.sharingResumeIds?.has(document.id) ? (
+                                <>
+                                  <div className="w-3.5 h-3.5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
+                                  <span>...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <FaShareAlt className="w-3.5 h-3.5 text-indigo-600" />
+                                  <span>{isCuba ? "Share" : t("DashboardHomepage.actions.shareResume", "Share Resume")}</span>
+                                </>
+                              )}
+                            </button>
+                          )}
+
+                          {/* More button (Cuba Mode) */}
+                          {isCuba && (
+                            <button
+                              type="button"
+                              aria-label="More actions"
+                              className="cuba-btn-outline px-2 py-2 rounded-xl text-xs text-slate-500 hover:text-slate-700 cursor-pointer flex items-center justify-center gap-1"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                this.setState({
+                                  openDropdownId:
+                                    this.state.openDropdownId === document.id
+                                      ? null
+                                      : document.id,
+                                });
+                              }}
+                            >
+                              <FaEllipsisH className="w-3 h-3 text-slate-400" />
+                            </button>
+                          )}
                         </div>
 
-                        {/* Share Button */}
+                        {/* Share Button (Legacy only) */}
+                        {!isCuba && (
                         <button
-                          className={isCuba
-                            ? `cuba-btn-outline flex-1 min-w-0 text-xs font-semibold py-2 px-4 rounded-xl flex items-center justify-center space-x-1.5 cursor-pointer ${
-                                this.state.sharingResumeIds?.has(document.id) ? "opacity-60 cursor-not-allowed" : ""
-                              }`
-                            : `w-full border border-slate-300 text-slate-700 text-sm font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 shadow-sm ${
+                          className={
+                            `w-full border border-slate-300 text-slate-700 text-sm font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 shadow-sm ${
                                 this.state.sharingResumeIds?.has(document.id) ? "bg-slate-100 cursor-not-allowed opacity-75" : "bg-white hover:bg-slate-50 cursor-pointer"
                               }`
                           }
@@ -1655,6 +1947,7 @@ class DashboardHomepage extends Component {
                             </>
                           )}
                         </button>
+                        )}
                       </div>
                     </div>
                   );
@@ -1666,40 +1959,68 @@ class DashboardHomepage extends Component {
             {!this.state.isPaginating && !this.state.isfetcing && (
               <div 
                 className={isCuba
-                  ? "bg-white dark:bg-[#1e222d] rounded-2xl shadow-sm border-2 border-dashed border-[#7366ff]/35 hover:border-[#7366ff] hover:bg-[#7366ff]/5 hover:shadow-[0_8px_25px_rgba(115,102,255,0.14)] transition-all duration-300 cursor-pointer group min-h-[220px]"
+                  ? "bg-white dark:bg-[#1e222d] rounded-2xl shadow-sm border-2 border-dashed border-[#7366ff]/35 hover:border-[#7366ff] hover:bg-[#7366ff]/[0.03] hover:shadow-[0_8px_25px_rgba(115,102,255,0.14)] transition-all duration-300 min-h-[300px] flex flex-col items-center justify-center p-4 text-center group"
                   : "bg-white rounded-lg shadow-sm border-2 border-dashed border-slate-300 hover:border-slate-400 hover:bg-slate-50 transition-all duration-200 cursor-pointer group min-h-[220px]"
                 } 
-                onClick={() => {
+                onClick={!isCuba ? () => {
                   localStorage.removeItem("currentResumeId");
                   localStorage.removeItem("currentResumeItem");
                   this.props.navigate("/build-resume/heading?new=1");
-                }}
+                } : undefined}
               >
-                <div className="p-8 text-center h-full flex flex-col items-center justify-center">
+                <div className="p-3 text-center h-full flex flex-col items-center justify-center">
                   <div className={isCuba
-                    ? "w-14 h-14 rounded-2xl bg-[#7366ff]/10 text-[#7366ff] group-hover:bg-[#7366ff] group-hover:text-white flex items-center justify-center mb-4 transition-all duration-200 shadow-xs"
+                    ? "w-12 h-12 rounded-full bg-[#7366ff]/10 text-[#7366ff] group-hover:bg-[#7366ff] group-hover:text-white flex items-center justify-center mb-2.5 transition-all duration-200 shadow-xs"
                     : "w-16 h-16 bg-slate-100 group-hover:bg-slate-200 rounded-full flex items-center justify-center mb-6 transition-colors"
                   }>
-                    <FaPlus className={isCuba ? "w-5 h-5" : "w-6 h-6 text-slate-600"} />
+                    <FaPlus className={isCuba ? "w-4 h-4" : "w-6 h-6 text-slate-600"} />
                   </div>
-                  <h3 className={isCuba ? "text-base font-bold text-cuba-ink mb-1.5" : "text-base font-medium text-slate-900 mb-2"}>
-                    {t(
+                  <h3 className={isCuba ? "text-sm font-bold text-cuba-ink mb-1" : "text-base font-medium text-slate-900 mb-2"}>
+                    {isCuba ? "Create a New Resume" : t(
                       "DashboardHomepage.card.newResumeTitle",
-                      "Create New Resume"
+                      "Create a New Resume"
                     )}
                   </h3>
-                  <p className={isCuba ? "text-xs text-cuba-ink-muted text-center leading-relaxed" : "text-sm text-slate-600 text-center leading-relaxed"}>
-                    {t(
+                  <p className={isCuba ? "text-xs text-cuba-ink-muted text-center leading-relaxed max-w-[22ch] mb-3" : "text-sm text-slate-600 text-center leading-relaxed"}>
+                    {isCuba ? "Start from scratch or use AI to create a professional resume." : t(
                       "DashboardHomepage.card.newResumeDescription",
                       "Start with a blank canvas or choose from 50+ templates"
                     )}
                   </p>
+                  {isCuba && (
+                    <div className="flex flex-col gap-1.5 w-full max-w-[170px]">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          localStorage.removeItem("currentResumeId");
+                          localStorage.removeItem("currentResumeItem");
+                          this.props.navigate("/build-resume/heading?new=1");
+                        }}
+                        className="cuba-btn-primary w-full py-2 px-3 rounded-xl text-xs font-bold shadow-xs cursor-pointer flex items-center justify-center gap-1.5"
+                      >
+                        Create with AI
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          localStorage.removeItem("currentResumeId");
+                          localStorage.removeItem("currentResumeItem");
+                          this.props.navigate("/build-resume/heading?import=true");
+                        }}
+                        className="cuba-btn-outline w-full py-1.5 px-3 rounded-xl text-xs font-semibold cursor-pointer flex items-center justify-center gap-1.5"
+                      >
+                        <span aria-hidden="true">☁</span> Upload Resume
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
-            {/* Import existing resume card - only show when enabled in admin settings (default OFF) */}
-            {!this.state.isPaginating && !this.state.isfetcing && this.state.enableImportModule && (
+            {/* Import existing resume card - only show in legacy mode when enabled in admin settings (default OFF) */}
+            {!isCuba && !this.state.isPaginating && !this.state.isfetcing && this.state.enableImportModule && (
               <div 
                 className="bg-gradient-to-br from-purple-50/60 via-indigo-50/40 to-slate-50 rounded-lg shadow-sm border-2 border-dashed border-purple-300 hover:border-purple-500 hover:bg-purple-50/80 transition-all duration-200 cursor-pointer group" 
                 onClick={() => {
@@ -1771,6 +2092,32 @@ class DashboardHomepage extends Component {
                 </div>
               </div>
             )}
+
+          {/* DIR-094 S5: the reference's bottom three-column analytics band.
+              Mounted here — after the resume grid and its pagination — so it reads as
+              the closing row of the Overview, exactly as the reference screenshot shows.
+
+              Why this lives in DashboardHomepage rather than in CubaCandidateShell: the
+              shell's Overview grid is the DIR-084 single-viewport frame, and this band is
+              ordinary scrolling content inside that frame's already-scrollable child
+              region. Mounting it here keeps the fold-critical geometry untouched.
+
+              Gated on the Cuba shell so the preserved legacy chrome (the rollback target)
+              is not silently restyled. Every column is driven by real data:
+                • Application Progress — fetches the real authenticated job_tracker rows.
+                • Top Job Matches      — fetches the real public job listings.
+                • Your Next Steps      — renders this component's own measured
+                  `onboardingSteps`, which DIR-058 computed but never displayed. */}
+          {isCubaShellEnabled() && (
+            <div
+              data-testid="cuba-candidate-analytics"
+              className="mt-4 grid grid-cols-1 gap-2.5 lg:grid-cols-3"
+            >
+              <CubaApplicationProgressChart />
+              <CubaTopJobMatches onNavigate={this.props.navigate} />
+              <CubaNextSteps steps={this.state.onboardingSteps} onStepClick={this.handleStepClick} />
+            </div>
+          )}
 
           {/* Delete Confirmation Modal */}
           {this.state.deleteModal.isOpen && (

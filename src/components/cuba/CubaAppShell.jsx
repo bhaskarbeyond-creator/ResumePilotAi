@@ -464,7 +464,7 @@ const CubaAppShell = ({
                         >
                             <FiSearch className="h-4 w-4 flex-none text-cuba-ink-subtle" aria-hidden="true" />
                             <span className="min-w-0 flex-1 truncate text-sm text-cuba-ink-muted">
-                                Search or run a command
+                                Search jobs, skills, or run a command...
                             </span>
                             <kbd
                                 data-testid="cuba-command-search-shortcut"
@@ -523,7 +523,17 @@ const CubaAppShell = ({
                         } : undefined}
                     />
 
-                    <AiEngineStatus status={aiStatus} className="hidden sm:inline-flex" />
+                    <button
+                        type="button"
+                        onClick={() => setPaletteOpen(true)}
+                        aria-label="Open AI Assistant"
+                        className="cuba-focusable hidden sm:inline-flex items-center gap-1.5 rounded-full bg-[#7366ff]/10 hover:bg-[#7366ff]/20 text-[#7366ff] font-semibold text-xs px-3.5 py-1.5 transition-colors border border-[#7366ff]/25"
+                    >
+                        <span className="text-sm font-bold leading-none">+</span>
+                        <span>AI Assistant</span>
+                    </button>
+
+                    <AiEngineStatus status={aiStatus} className="hidden" />
 
                     <M3NotificationCenter onNavigate={onNavigate} />
 

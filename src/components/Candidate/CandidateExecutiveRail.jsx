@@ -1,54 +1,26 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FiZap, FiArrowRight, FiSend, FiCheckCircle, FiAlertTriangle } from 'react-icons/fi';
+import { FiZap, FiSend, FiCheckCircle, FiAlertTriangle, FiChevronRight, FiBriefcase } from 'react-icons/fi';
 import CubaCard from '../cuba/CubaCard';
 import CubaEmptyState from '../cuba/CubaEmptyState';
 import { getCopilotActions, COPILOT_PORTALS, resolveActionHref } from '../cuba/copilotActions';
 import { getResumes } from '../../services/api/platform';
 import { summariseResumes } from './briefingLogic';
 
-/**
- * CandidateExecutiveRail — DIR-077 executive right rail for the candidate overview.
- *
- * Occupies the right void on >=1280px viewports with ONE high-value widget:
- *   Live Copilot Quick-Pitch — the REAL context-aware candidate actions
- *   (`getCopilotActions`) routed to their own mounted workspaces.
- *
- * DIR-086: the ATS Keyword Strength and Application Milestones widgets were REMOVED.
- * They repeated the Overview's metric capsule strip verbatim, so the rail both duplicated
- * the page's own headline numbers and overflowed the viewport. Their data reads (and the
- * 4s retry loop they carried) were removed with them, which also drops three API calls
- * from the Overview's first paint.
- *
- * TRUTHFULNESS (§46): the remaining action list is the platform's own
- * (`getCopilotActions`) and every destination is a REAL mounted route, resolved through
- * `resolveActionHref` so an action can never navigate to the page the user is already on.
- * An empty action list renders an explicit empty state — never a fabricated shortcut.
- *
- * DIR-093 S7 — restyled into the AUTHORITATIVE REFERENCE "AI Career Assistant":
- *   - a "Live" status badge, the "Your Career Co-pilot" strapline,
- *   - three real tabs (Suggestions / Resume Insights / Job Match),
- *   - the four quick-action cards, each routing to a genuinely mounted workspace,
- *   - an interactive prompt input whose submit really runs the shell's AI dispatcher,
- *   - prompt chips, and
- *   - a "Today's Insights" block built ONLY from values this component actually measured.
- *
- * The DIR-077/084/086 certified contract is preserved: the wrapper still carries
- * `data-testid="cuba-executive-rail"` and the primary card still carries
- * `testId="cuba-rail-copilot"`.
- */
-
 const cx = (...parts) => parts.filter(Boolean).join(' ');
 
-const WidgetCard = ({ title, icon, testId, children }) => (
+const WidgetCard = ({ title, icon, testId, headerAction, children }) => (
     <CubaCard className="p-4" data-testid={testId}>
-        <div className="mb-3 flex items-center gap-2">
-            <span
-                className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-cuba-primary-soft text-cuba-primary-ink-strong"
-                aria-hidden="true"
-            >
-                {icon}
-            </span>
-            <h2 className="text-xs font-bold uppercase tracking-wider text-cuba-ink-subtle">{title}</h2>
+        <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+                <span
+                    className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-cuba-primary-soft text-cuba-primary-ink-strong"
+                    aria-hidden="true"
+                >
+                    {icon}
+                </span>
+                <h2 className="text-xs font-bold uppercase tracking-wider text-cuba-ink-subtle">{title}</h2>
+            </div>
+            {headerAction}
         </div>
         {children}
     </CubaCard>
@@ -61,6 +33,17 @@ const TABS = [
 ];
 
 const PROMPT_CHIPS = ['Improve my resume', 'Find jobs for me', 'Interview tips'];
+
+/**
+ * DIR-090 P0-1: the icon tile is the ONLY literal in the Today's Insights list. The copy
+ * itself always comes from the measured `insights` memo below, so the row can never state a
+ * number this component did not read. Tones map onto the existing Cuba soft-tint surfaces.
+ */
+const INSIGHT_TONES = {
+    success: { icon: <FiCheckCircle className="h-4 w-4" />, tile: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' },
+    warning: { icon: <FiAlertTriangle className="h-4 w-4" />, tile: 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' },
+    info: { icon: <FiBriefcase className="h-4 w-4" />, tile: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' },
+};
 
 const CandidateExecutiveRail = ({ onNavigate, onAsk }) => {
     const [tab, setTab] = useState('suggestions');
@@ -184,9 +167,16 @@ const CandidateExecutiveRail = ({ onNavigate, onAsk }) => {
                 {tab === 'suggestions' && (quickActions.length === 0 ? (
                     <CubaEmptyState compact title="No suggestions yet" description="Copilot suggestions appear once your workspace has activity." />
                 ) : (
-                    <ul className="space-y-2">
+                    <ul className="space-y-2.5">
                         {quickActions.map((action) => {
                             const href = resolveActionHref(action);
+                            const meta = action.id === 'candidate-ats-audit'
+                                ? { subtitle: 'Get AI-powered suggestions', bg: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400', icon: '⚙️' }
+                                : action.id === 'candidate-tailor-resume'
+                                ? { subtitle: 'Optimise for a specific role', bg: 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400', icon: '📄' }
+                                : action.id === 'candidate-cover-letter'
+                                ? { subtitle: 'Create a professional cover letter', bg: 'bg-pink-50 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400', icon: '✎' }
+                                : { subtitle: 'Start a mock interview session', bg: 'bg-cyan-50 text-cyan-600 dark:bg-cyan-900/30 dark:text-cyan-400', icon: '🎙️' };
                             return (
                                 <li key={action.id}>
                                     <button
@@ -194,13 +184,24 @@ const CandidateExecutiveRail = ({ onNavigate, onAsk }) => {
                                         disabled={!href}
                                         onClick={() => href && go(href)}
                                         className={cx(
-                                            'cuba-focusable flex w-full items-center gap-2 rounded-cuba-md border border-cuba-line px-3 py-2 text-left text-xs font-semibold text-cuba-ink transition-colors',
-                                            href ? 'hover:bg-cuba-primary-soft' : 'opacity-50',
+                                            'cuba-focusable flex w-full items-center gap-3 rounded-xl border border-cuba-line p-2.5 text-left transition-all',
+                                            href ? 'hover:bg-cuba-primary-soft hover:border-[#7366ff]/40 shadow-xs' : 'opacity-50',
                                         )}
                                     >
-                                        <span aria-hidden="true">{action.icon}</span>
-                                        <span className="min-w-0 flex-1 truncate">{action.label}</span>
-                                        <FiArrowRight className="h-3.5 w-3.5 flex-none text-cuba-ink-subtle" aria-hidden="true" />
+                                        <span className={cx('flex h-8 w-8 flex-none items-center justify-center rounded-lg text-sm font-semibold', meta.bg)} aria-hidden="true">
+                                            {meta.icon}
+                                        </span>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-xs font-bold text-cuba-ink">
+                                                {action.id === 'candidate-tailor-resume'
+                                                    ? 'Tailor to a job description'
+                                                    : action.id === 'candidate-mock-interview'
+                                                    ? 'Prepare for interview'
+                                                    : action.label}
+                                            </p>
+                                            <p className="truncate text-[11px] text-cuba-ink-muted">{meta.subtitle}</p>
+                                        </div>
+                                        <FiChevronRight className="h-4 w-4 flex-none text-cuba-ink-subtle" aria-hidden="true" />
                                     </button>
                                 </li>
                             );
@@ -278,25 +279,42 @@ const CandidateExecutiveRail = ({ onNavigate, onAsk }) => {
                 </form>
             </WidgetCard>
 
-            <WidgetCard title="Today's Insights" icon={<FiCheckCircle className="h-3.5 w-3.5" />} testId="cuba-rail-insights">
+            <WidgetCard title="Today's Insights" icon={<FiCheckCircle className="h-3.5 w-3.5" />} testId="cuba-rail-insights"
+                headerAction={
+                    <button type="button" onClick={() => go('/dashboard')} className="text-[11px] font-bold text-[#7366ff] hover:underline">
+                        View All
+                    </button>
+                }
+            >
                 {insights.length === 0 ? (
-                    <p className="text-xs text-cuba-ink-muted">Reading your workspace...</p>
+                    <CubaEmptyState
+                        compact
+                        title={resumeState.resumes === null ? 'Reading your workspace' : 'No insights yet'}
+                        description={resumeState.resumes === null
+                            ? 'Insights appear as soon as your resume read resolves.'
+                            : 'Add a resume to unlock ATS scoring and job matching.'}
+                    />
                 ) : (
-                    <ul className="space-y-2">
-                        {insights.map((row) => (
-                            <li key={row.id} className="flex items-start gap-2 text-xs text-cuba-ink">
-                                <span
-                                    aria-hidden="true"
-                                    className={cx(
-                                        'mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full',
-                                        row.tone === 'warning' ? 'bg-cuba-warning-soft text-cuba-warning' : row.tone === 'info' ? 'bg-cuba-info-soft text-cuba-info' : 'bg-cuba-success-soft text-cuba-success',
-                                    )}
-                                >
-                                    {row.tone === 'warning' ? <FiAlertTriangle className="h-3 w-3" /> : <FiCheckCircle className="h-3 w-3" />}
-                                </span>
-                                <span className="min-w-0 flex-1">{row.text}</span>
-                            </li>
-                        ))}
+                    <ul className="space-y-3" data-testid="cuba-rail-insights-list">
+                        {insights.map((insight) => {
+                            const meta = INSIGHT_TONES[insight.tone] || INSIGHT_TONES.info;
+                            // The measured sentence is split into a bold lead and a muted detail
+                            // line. Both halves are the SAME measured string — nothing is appended.
+                            const [headline, ...rest] = String(insight.text).split('. ');
+                            return (
+                                <li key={insight.id} className="flex items-start gap-3">
+                                    <span className={cx('flex h-8 w-8 flex-none items-center justify-center rounded-lg', meta.tile)} aria-hidden="true">
+                                        {meta.icon}
+                                    </span>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-xs font-bold text-cuba-ink">{headline}</p>
+                                        {rest.length > 0 && (
+                                            <p className="text-[11px] text-cuba-ink-muted">{rest.join('. ')}</p>
+                                        )}
+                                    </div>
+                                </li>
+                            );
+                        })}
                     </ul>
                 )}
             </WidgetCard>

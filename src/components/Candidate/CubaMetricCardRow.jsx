@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiFileText, FiAward, FiBriefcase, FiZap, FiChevronRight, FiTrendingUp } from 'react-icons/fi';
+import { FiFileText, FiAward, FiSend, FiUsers, FiChevronRight, FiTrendingUp } from 'react-icons/fi';
 
 /**
  * CubaMetricCardRow — DIR-091 high-density metric cards for the candidate workspace.
@@ -78,25 +78,41 @@ const MetricCard = ({ label, value, caption, icon, tone = 'primary', children, t
         <Tag
             {...(interactive ? { type: 'button', onClick: onOpen, 'aria-label': openLabel } : {})}
             data-testid={testId}
-            className="cuba-focusable flex min-w-0 items-center gap-3 rounded-cuba-lg border border-cuba-line bg-cuba-card px-3.5 py-3 text-left transition-colors hover:bg-cuba-primary-soft"
+            className="cuba-focusable flex min-w-0 items-center gap-3 rounded-cuba-lg border border-cuba-line bg-cuba-card px-3.5 py-3 text-left transition-colors hover:bg-cuba-primary-soft cursor-pointer"
         >
-            <span
-                className="flex h-9 w-9 flex-none items-center justify-center rounded-cuba-md"
-                style={{ backgroundColor: `var(--cuba-${tone === 'primary' ? 'primary' : tone}-soft)`, color: tone === 'primary' ? 'var(--cuba-primary-ink-strong)' : `var(--cuba-${tone})` }}
-            >
-                {icon}
-            </span>
+            {children ? (
+                <div className="flex-none">{children}</div>
+            ) : (
+                <span
+                    className="flex h-9 w-9 flex-none items-center justify-center rounded-cuba-md"
+                    style={{ backgroundColor: `var(--cuba-${tone === 'primary' ? 'primary' : tone}-soft)`, color: tone === 'primary' ? 'var(--cuba-primary-ink-strong)' : `var(--cuba-${tone})` }}
+                >
+                    {icon}
+                </span>
+            )}
             <span className="min-w-0 flex-1">
-                <span className="block truncate text-[11px] font-semibold uppercase tracking-wider text-cuba-ink-subtle">{label}</span>
-                <span className="block text-lg font-bold leading-tight text-cuba-ink">{value}</span>
-                {(trend !== undefined || caption) && (
-                    <span className="mt-0.5 flex items-center gap-2">
+                <span className="block truncate text-[11px] font-semibold text-cuba-ink-subtle">{label}</span>
+                {children ? (
+                    <div className="flex items-center gap-2 mt-0.5">
                         <TrendChip delta={trend} unit={trendUnit} />
-                        {caption && <span className="truncate text-[11px] text-cuba-ink-muted">{caption}</span>}
-                    </span>
+                        {caption && <span className="truncate text-[11px] font-medium text-cuba-ink-muted">{caption}</span>}
+                    </div>
+                ) : (
+                    <>
+                        <span className="block text-lg font-bold leading-tight text-cuba-ink">{value}</span>
+                        {(trend !== undefined || caption) && (
+                            <span className="mt-0.5 flex items-center gap-2">
+                                <TrendChip delta={trend} unit={trendUnit} />
+                                {(!trend || !trendUnit) && caption && (
+                                    <span className={value === 'Ready' ? "truncate text-[11px] font-semibold text-cuba-primary hover:underline" : "truncate text-[11px] text-cuba-ink-muted"}>
+                                        {caption}
+                                    </span>
+                                )}
+                            </span>
+                        )}
+                    </>
                 )}
             </span>
-            {children}
             {interactive && <FiChevronRight className="h-4 w-4 flex-none text-cuba-ink-subtle" aria-hidden="true" />}
         </Tag>
     );
@@ -140,7 +156,7 @@ const CubaMetricCardRow = ({ loading = false, count = null, bestScore = null, ap
             <MetricCard
                 testId="cuba-metric-applications"
                 label="Job Applications"
-                icon={<FiBriefcase className="h-4 w-4" />}
+                icon={<FiSend className="h-4 w-4" />}
                 tone="info"
                 value={dash ? '--' : applications === null ? '--' : String(applications)}
                 caption={dash ? 'Loading' : 'Submitted'}
@@ -152,8 +168,8 @@ const CubaMetricCardRow = ({ loading = false, count = null, bestScore = null, ap
             <MetricCard
                 testId="cuba-metric-coach"
                 label="Interview Coach"
-                icon={<FiZap className="h-4 w-4" />}
-                tone="warning"
+                icon={<FiUsers className="h-4 w-4" />}
+                tone="danger"
                 value="Ready"
                 caption="Start a session"
                 onOpen={() => go('/dashboard/interview')}

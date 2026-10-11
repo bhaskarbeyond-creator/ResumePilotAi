@@ -1,14 +1,12 @@
 {
-  "active": false,
+  "active": true,
   "reason": "user-requested",
-  "note": "User forwarded the Lead Liveness Guard wake (DIR-060-mv0i96nf-b76c29) and instructed: execute it. No Lead agent is running (only the bridge watchers; no await --role lead consumer), so the DIR-060 blocker has no reader. Assuming the Lead role to rule on the frozen-template boundary, declared and auditable per bridge.cjs:3886-3923.",
+  "note": "User explicitly instructed: stop developer here, delete all his directives. you handle this task independently. Match the live dashboard with the reference exactly 100%.",
   "evidence": {
-    "note": "User forwarded the Lead Liveness Guard wake (DIR-060-mv0i96nf-b76c29) and instructed: execute it. No Lead agent is running (only the bridge watchers; no await --role lead consumer), so the DIR-060 blocker has no reader. Assuming the Lead role to rule on the frozen-template boundary, declared and auditable per bridge.cjs:3886-3923."
+    "note": "User explicitly instructed: stop developer here, delete all his directives. you handle this task independently. Match the live dashboard with the reference exactly 100%."
   },
-  "startedAt": "2026-10-09T05:11:07.280Z",
+  "startedAt": "2026-10-11T09:20:07.974Z",
   "startedBy": "lead",
   "directiveId": null,
-  "projectRoot": "D:\\xampp\\htdocs\\IME365",
-  "endedAt": "2026-10-09T05:17:42.226Z",
-  "endedBy": "lead"
+  "projectRoot": "D:\\xampp\\htdocs\\IME365"
 }
