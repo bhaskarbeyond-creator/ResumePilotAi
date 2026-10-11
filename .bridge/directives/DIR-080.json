@@ -2,11 +2,11 @@
   "id": "DIR-080",
   "title": "DIR-080: Enlarge Brand Logo in Header and Chrome Surfaces for High-Impact Visual Presence",
   "priority": "P0",
-  "status": "IN_PROGRESS",
+  "status": "APPROVED",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-11T04:13:20.234Z",
-  "updatedAt": "2026-10-11T04:15:12.936Z",
+  "updatedAt": "2026-10-11T04:18:53.331Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "USER REQUIREMENT:\n'Make logo little bigger, it is looking small'\n\nARCHITECTURAL SPECIFICATION:\n1. Enlarge Header Brand Logo in CubaAppShell.jsx:\n   - In the header brand block (data-testid='cuba-header-brand-block'):\n     * Optimize padding to pl-3 pr-2 sm:pl-3.5 sm:pr-2.5 to maximize available width for the logo within the 260px sidebar band.\n     * Enlarge the expanded logo image (data-testid='cuba-header-brand'):\n       Increase from h-10 md:h-11 max-w-[185px] to h-12 md:h-[50px] w-auto max-w-[200px] object-contain shrink-0 (scale up by ~15-20% so the icon, IME365.com text, and subtitle are prominent, bold, and readable).\n     * Keep the sidebar toggle button (data-testid='cuba-sidebar-toggle') neatly positioned on the right with w-9 h-9 (or w-8.5 h-8.5) rounded-xl border.\n2. Polish Related Chrome Logo Displays:\n   - In the mobile drawer (data-testid='cuba-drawer-brand'): enlarge logo image from h-8 max-w-[130px] to h-10 w-auto max-w-[160px] object-contain.\n   - In the compact/collapsed rail brand mark (data-testid='cuba-header-brand-mark' and 'cuba-sidebar-brand-mark'): scale from h-8 w-8 to h-9 w-9 object-contain.\n3. Verification & Quality Gates:\n   - Create tests/dir080-enlarge-brand-logo.test.mjs asserting the enlarged logo dimensions (h-12 md:h-[50px] or max-w-[200px]) and updated drawer/mark sizing.\n   - Update any strict string assertions in tests/dir079-header-brand-block.test.mjs or dir078.\n   - Run gates: dir080, dir079, dir078, dir048, test:product, test:security:static, test:xampp-policy, build (<4s), 0 lint errors, 0 diff on frozen CV templates.",
   "invariants": [],
@@ -26,10 +26,51 @@
     ],
     "planHash": "06d37ae82a70a9fe595aad48566ec4c6402b86d596ed07164f6760e8b4e3a2a5"
   },
-  "evidence": null,
-  "reviews": [],
+  "evidence": {
+    "submittedAt": "2026-10-11T04:18:50.742Z",
+    "summary": "DIR-080 complete. The brand logo is now enlarged across every chrome surface. Header: CubaAppShell.jsx:394 the expanded logo (cuba-header-brand) went from h-10 md:h-11 max-w-[185px] to h-12 md:h-[50px] w-auto max-w-[200px] object-contain shrink-0 (~15-20% scale-up, 48px mobile / 50px md+), and CubaAppShell.jsx:341 the brand block padding went from px-3.5 sm:px-4 to pl-3 pr-2 sm:pl-3.5 sm:pr-2.5 so the 260px band now yields 240px/236px of logo width. Drawer: CubaAppShell.jsx:599 the drawer logo (cuba-drawer-brand) went from h-8 max-w-[130px] to h-10 w-auto max-w-[160px] object-contain, with its monogram fallback tile raised h-8 w-8 -> h-10 w-10 for consistency. Compact rail: both marks (cuba-header-brand-mark at :365 and cuba-sidebar-brand-mark at :559) went from h-8 w-8 to h-9 w-9 object-contain, with both monogram tiles raised to h-9 w-9. The cuba-sidebar-toggle tile is untouched (w-9 h-9 flex-none rounded-xl with aria-label, aria-pressed, min-[1025px]:inline-flex) and stays keyboard accessible. Layout math is measured against the real tokens (--cuba-sidebar-w 260px, --cuba-sidebar-w-collapsed 72px): at 1025px+ the 236px content box exactly fits a 200px w-auto logo plus the 36px flex-none toggle; at 768-1024px the toggle is suppressed so the logo owns the full 236px; the collapsed rail keeps 18px gutters around the 36px mark. New tests/dir080-enlarge-brand-logo.test.mjs (AC1-AC6) plus test:dir080; dir078:40, dir079:37 and dir079 AC6 pins updated. Gates: dir080 6/6, 93/93 combined, test:product EXIT 0, security:static 67/67, xampp-policy 4/4, build 2.78s, lint 0 errors, dir063..dir080 green, frozen cv-templates diff 0.",
+    "tests": {
+      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir080-evidence.log",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791692330744_dir080-evidence.log",
+      "sha256": "a488a30eba32068773b86420a2f214068825bf6a94599444e92488ab0b9f3136",
+      "size": 4776
+    },
+    "domCrawl": null,
+    "artifacts": [],
+    "git": {
+      "isGit": true,
+      "head": "d7fd84a675c48001e6a16e7c0c192a2fb69dbbe7",
+      "branch": "arena/01a0e100-resumepilotai",
+      "dirty": false,
+      "status": ""
+    },
+    "manifestHash": "c4b0cec0f40c196a106ebdddfe62303e5ad35895cad0f6c3e00f782ad627d3ad"
+  },
+  "reviews": [
+    {
+      "reviewedAt": "2026-10-11T04:18:53.331Z",
+      "verdict": "APPROVED",
+      "feedback": "Automated evidence audit: test artifact scanned, no failure markers, clean tree. This is a machine check, NOT a human Lead review.",
+      "evidenceHash": "c4b0cec0f40c196a106ebdddfe62303e5ad35895cad0f6c3e00f782ad627d3ad",
+      "automated": true,
+      "provenance": {
+        "actor": "LEAD_SUPERVISOR",
+        "invocation": "declared-automation",
+        "automated": true,
+        "reasons": [
+          "declared",
+          "non-tty"
+        ],
+        "pid": 2576,
+        "parentPid": 4508,
+        "tty": false,
+        "at": "2026-10-11T04:18:53.330Z",
+        "explicitlyAllowed": true
+      }
+    }
+  ],
   "freeze": null,
-  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "lastTransitionReason": "lead review",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {
