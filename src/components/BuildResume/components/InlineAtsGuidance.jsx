@@ -105,7 +105,7 @@ const InlineAtsGuidance = ({ resumeData = {}, targetJd = '', stepPath = 'heading
                                     : `${ Math.max(0, bulletCount - weakBullets.length) }/${bulletCount} strong`}
                             </span>
                         </div>
-                        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-[var(--cuba-surface)]">
+                        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-[var(--cuba-line)]">
                             <div
                                 className="h-full rounded-full bg-[var(--cuba-primary)] transition-all"
                                 style={{

@@ -1,16 +1,16 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-12T04:04:04.399Z",
-  "eventCount": 2960,
-  "activeDirectiveId": "DIR-093",
-  "activeDirectiveTitle": "DIR-093: Comprehensive End-to-End UI/UX Forensic Audit & Enhancement Planning",
-  "activeDirectiveStatus": "CHANGES_REQUESTED",
+  "updatedAt": "2026-10-12T04:17:07.369Z",
+  "eventCount": 2963,
+  "activeDirectiveId": null,
+  "activeDirectiveTitle": null,
+  "activeDirectiveStatus": null,
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
   "stallDeadline": "2026-10-12T04:02:02.810Z",
-  "unreadForLead": 213,
-  "unreadForDev": 352,
+  "unreadForLead": 214,
+  "unreadForDev": 354,
   "pendingBlockers": 0,
   "latestHeartbeat": {
     "timestamp": "2026-10-12T04:02:02.810Z",
@@ -19,7 +19,7 @@
   },
   "integrity": {
     "ok": true,
-    "checked": 2960,
+    "checked": 2963,
     "legacy": 0,
     "bad": 0
   }

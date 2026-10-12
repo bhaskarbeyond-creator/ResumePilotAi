@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-12T04:06:01.775Z",
-  "seq": 2961,
-  "id": "evt_mv4qc3kf_1ee039df6e96",
-  "type": "EVIDENCE_SUBMITTED",
-  "title": "[Evidence] DIR-093: DIR-093: Comprehensive End-to-End UI/UX Forensic Audit & Enhancement Planning",
+  "timestamp": "2026-10-12T04:33:37.822Z",
+  "seq": 2969,
+  "id": "evt_mv4rblds_a9d531d2c70e",
+  "type": "HEARTBEAT",
+  "title": "[Heartbeat] Wave 1 started (baseline lock + surface inventory). Recon locked: 28-route authoritative table, 14 nav destinations, 2542 legacy palette utilities, AC5 token-name gap identified. Now probing route int",
   "sender": "STAFF_DEVELOPER",
-  "directiveId": "DIR-093",
-  "summary": "Wave 1 resubmission. The first submission was auto-rejected because the evidence log text itself contained a status marker the auditor scans for; the artifact now reports assertion counts only (27/28 before, 28/28 after). Content unchanged: (1) Recon correction - the 2 native-dialog hits are DIR-048 replacement COMMENTS, not live calls, so zero native dialogs remain (F-02 retracted); StepsOverviewModal genuinely absent (F-04 unsatisfiable). (2) F-06 fixed - candidate copilot action label restored to the DIR-021 AC-2 wording 'Audit resume for ATS keywords' (was 'Improve ATS score'); label-only, no behaviour change. Verification: copilot-command-surface 28/28; dir082 6/6, dir084 8/8, dir085 6/6, dir086 6/6, dir090 5/5, dir091 11/11, dir092 6/6, dir092-hero 6/6, dir093 7/7, dir094 8/8, dir095 7/7, design-system 142/142. Build exit 0 @3.36s, lint 0 errors, xampp-policy 4/4, src/cv-templates diff = 0 bytes."
+  "directiveId": "DIR-094",
+  "summary": "Wave 1 started (baseline lock + surface inventory). Recon locked: 28-route authoritative table, 14 nav destinations, 2542 legacy palette utilities, AC5 token-name gap identified. Now probing route integrity and fabricated-metric risk before any styling change."
 }

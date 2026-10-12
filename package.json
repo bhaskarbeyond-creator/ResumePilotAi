@@ -55,6 +55,7 @@
   "test:dir092-hero": "node --test tests/dir092-candidate-hero-metric-executive.test.mjs",
     "test:dir093": "node --test tests/dir093-candidate-dashboard-reference-parity.test.mjs",
     "test:dir094": "node --test tests/dir094-candidate-dashboard-analytics.test.mjs",
+    "test:dir094-tokens": "node --test tests/dir094-design-token-integrity.test.mjs",
     "test:dir095": "node --test tests/dir095-candidate-dashboard-data-lineage.test.mjs",
     "release:manifest": "node scripts/generate-certified-freeze-manifest.mjs",
     "test:dir064:visual": "node template-lab/docx-visual-parity.mjs",
