@@ -99,8 +99,9 @@ async function sendTelegramPhoto(filePath, caption = '') {
     prefix += `--${boundary}\r\n`;
     prefix += `Content-Disposition: form-data; name="parse_mode"\r\n\r\nHTML\r\n`;
     if (caption) {
+      const safeCaption = caption.length > 950 ? caption.slice(0, 940) + '...' : caption;
       prefix += `--${boundary}\r\n`;
-      prefix += `Content-Disposition: form-data; name="caption"\r\n\r\n${caption}\r\n`;
+      prefix += `Content-Disposition: form-data; name="caption"\r\n\r\n${safeCaption}\r\n`;
     }
     prefix += `--${boundary}\r\n`;
     prefix += `Content-Disposition: form-data; name="photo"; filename="${path.basename(filePath)}"\r\n`;

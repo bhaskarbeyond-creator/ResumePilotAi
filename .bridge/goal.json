@@ -1,5 +1,5 @@
 {
-  "goal": "Ship IME365 v1.0 to production-ready",
+  "goal": "Master UI/UX Transformation Programme: every in-scope review unit reviewed, remediated, tested and ACCEPTED at >=98/100",
   "definitionOfDone": [
     {
       "id": "tests-green",
@@ -12,30 +12,28 @@
       "command": "npm run build"
     },
     {
+      "id": "ux-gates",
+      "kind": "command_exit_zero",
+      "command": "npm run test:ux-gates"
+    },
+    {
+      "id": "ux-complete",
+      "kind": "command_exit_zero",
+      "command": "node scripts/ux-completeness.mjs"
+    },
+    {
       "id": "no-p0p1-open",
       "kind": "no_active_directives_at_or_above",
       "priority": "P1"
-    },
-    {
-      "id": "app-up",
-      "kind": "http_probe",
-      "url": "http://localhost/",
-      "expectStatus": 200
-    },
-    {
-      "id": "dist-built",
-      "kind": "file_exists",
-      "path": "dist/index.html"
     }
   ],
-  "status": "COMPLETE",
+  "status": "IN_PROGRESS",
   "createdAt": "2026-10-12T06:43:10.427Z",
-  "updatedAt": "2026-10-12T07:46:24.756Z",
-  "lastDirectorDecisionAt": "2026-10-12T07:46:24.756Z",
+  "updatedAt": "2026-10-12T08:32:47.158Z",
+  "lastDirectorDecisionAt": "2026-10-12T08:32:46.916Z",
   "lastDirectorDirectiveTitles": [
-    "Fix failing unit tests for CopilotHeroHud component"
+    "Master UI/UX Transformation: review and ACCEPT the next outstanding review units at >=98/100"
   ],
   "consecutiveDirectorFailures": 0,
-  "directorSeq": 1,
-  "completedAt": "2026-10-12T07:46:24.756Z"
+  "directorSeq": 2
 }

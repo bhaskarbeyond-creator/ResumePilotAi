@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-12T08:10:27.211Z",
-  "seq": 3047,
-  "id": "evt_mv4z2fhs_bb9a19627eb6",
-  "type": "EVIDENCE_SUBMITTED",
-  "title": "[Evidence] DIR-098: DIR-098: Master UI/UX Transformation Programme - Phase One Discovery, Baseline Evidence & Acceptance-Gate Scaffolding",
+  "timestamp": "2026-10-12T08:34:28.498Z",
+  "seq": 3052,
+  "id": "evt_mv4zxblb_b4e49865027d",
+  "type": "PLAN_SUBMITTED",
+  "title": "[Plan] DIR-099: Master UI/UX Transformation: review and ACCEPT the next outstanding review units at >=98/100",
   "sender": "STAFF_DEVELOPER",
-  "directiveId": "DIR-098",
-  "summary": "DIR-098 Phase One COMPLETE. (S1) review-unit inventory scripts/ux-inventory.mjs -> .bridge/evidence/dir098/inventory.json: 58 routes -> 58 review units, 7 viewports 320-1920, 13 interaction states, 195 test suites. (S2) npm run test:ux-gates acceptance harness tests/ux-gates.test.mjs - 6/6 green (inventory completeness, 7-viewport matrix, state matrix, >=98 acceptance invariant, unit description, baseline coverage). (S3) prioritised defect/task register .bridge/evidence/dir098/register.json. (S4) baseline screenshot set COMPLETED via scripts/ux-baseline-capture.mjs (XAMPP-served Playwright, Apache 80): 58 units x 7 viewports = 406 screenshots at .bridge/evidence/dir098/baseline/, manifest baseline-manifest.json, 0 horizontal-overflow violations. EVIDENCE: npm run test:ux-gates 6/6 pass; ux-gates.log; baseline-manifest.json; inventory.json; register.json. INVARIANTS: src/cv-templates/ git diff = 0 bytes; no rogue servers (XAMPP only)."
+  "directiveId": "DIR-099",
+  "summary": "DIR-099 Phase Two plan (Master UI/UX Transformation - screenshot-first audit + remediation + objective scoring). S1: build scripts/ux-audit.mjs - a Playwright audit engine that, for every review unit at all 7 viewports, measures real defects: horizontal overflow, console errors, failed network requests, and accessibility basics (landmark regions, exactly-one-h1, image alt text, form control labels, focus-visible affordance, touch-target >= 44x44px). S2: run the audit across all 58 units and record findings + an objective score per unit using the mandated 6-dimension rubric (Visual consistency 25 / Responsive 20 / Usability+navigation 20 / Functional correctness 20 / Accessibility+feedback 10 / Performance 5); write results into inventory.json (defects[], score, status). S3: remediate the highest-severity real defects at root cause (fix the source component, never a CSS override that hides the symptom), highest user impact first. S4: re-run the audit and npm run test:ux-gates and npm test; mark a unit ACCEPTED only when its evidence-backed score is >= 98/100 and it has no unresolved P0/P1 defect. S5: submit evidence; units not yet at >=98 remain INVENTORIED/IN_REVIEW and the director issues the next batch. Acceptance: audit engine runs, scores recorded for every unit, at least the top-priority units remediated and ACCEPTED at >=98, npm test + ux-gates green, src/cv-templates 0-byte diff."
 }

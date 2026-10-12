@@ -19,7 +19,7 @@ const MANIFEST = path.join(ROOT, '.bridge', 'evidence', 'dir098', 'baseline-mani
 
 const arg = (n, d) => { const i = process.argv.indexOf(n); return i >= 0 ? process.argv[i + 1] : d; };
 const MAX = Number(arg('--max', '0')) || Infinity;
-const BASE = (arg('--base', process.env.UX_BASE || 'http://localhost/IME365')).replace(/\/+$/, '');
+const BASE = (arg('--base', process.env.UX_BASE || 'http://ime365.local')).replace(/\/+$/, '');
 
 const inv = JSON.parse(fs.readFileSync(INV, 'utf8'));
 const units = inv.units.slice(0, MAX === Infinity ? inv.units.length : MAX);

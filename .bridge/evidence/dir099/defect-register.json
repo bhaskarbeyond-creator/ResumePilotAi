@@ -1,0 +1,5357 @@
+{
+  "generatedAt": "2026-10-12T08:43:23.342Z",
+  "directive": "DIR-099",
+  "summary": {
+    "units": 58,
+    "audited": 58,
+    "accepted": 0,
+    "avgScore": 90,
+    "defectCounts": {
+      "navigation": 1,
+      "heading": 55,
+      "landmark": 78,
+      "console-error": 9,
+      "perf": 1,
+      "tap-target": 385,
+      "form-label": 225,
+      "failed-request": 8
+    },
+    "p0p1": 18
+  },
+  "defects": [
+    {
+      "reviewId": "RU-001",
+      "route": "*",
+      "severity": "P1",
+      "kind": "navigation",
+      "detail": "route did not load"
+    },
+    {
+      "reviewId": "RU-001",
+      "route": "*",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @320"
+    },
+    {
+      "reviewId": "RU-001",
+      "route": "*",
+      "severity": "P2",
+      "kind": "landmark",
+      "detail": "no main landmark @320"
+    },
+    {
+      "reviewId": "RU-001",
+      "route": "*",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @320"
+    },
+    {
+      "reviewId": "RU-001",
+      "route": "*",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @375"
+    },
+    {
+      "reviewId": "RU-001",
+      "route": "*",
+      "severity": "P2",
+      "kind": "landmark",
+      "detail": "no main landmark @375"
+    },
+    {
+      "reviewId": "RU-001",
+      "route": "*",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @375"
+    },
+    {
+      "reviewId": "RU-001",
+      "route": "*",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @768"
+    },
+    {
+      "reviewId": "RU-001",
+      "route": "*",
+      "severity": "P2",
+      "kind": "landmark",
+      "detail": "no main landmark @768"
+    },
+    {
+      "reviewId": "RU-001",
+      "route": "*",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @768"
+    },
+    {
+      "reviewId": "RU-001",
+      "route": "*",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @1024"
+    },
+    {
+      "reviewId": "RU-001",
+      "route": "*",
+      "severity": "P2",
+      "kind": "landmark",
+      "detail": "no main landmark @1024"
+    },
+    {
+      "reviewId": "RU-001",
+      "route": "*",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1024"
+    },
+    {
+      "reviewId": "RU-001",
+      "route": "*",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @1280"
+    },
+    {
+      "reviewId": "RU-001",
+      "route": "*",
+      "severity": "P2",
+      "kind": "landmark",
+      "detail": "no main landmark @1280"
+    },
+    {
+      "reviewId": "RU-001",
+      "route": "*",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1280"
+    },
+    {
+      "reviewId": "RU-001",
+      "route": "*",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @1440"
+    },
+    {
+      "reviewId": "RU-001",
+      "route": "*",
+      "severity": "P2",
+      "kind": "landmark",
+      "detail": "no main landmark @1440"
+    },
+    {
+      "reviewId": "RU-001",
+      "route": "*",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1440"
+    },
+    {
+      "reviewId": "RU-001",
+      "route": "*",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @1920"
+    },
+    {
+      "reviewId": "RU-001",
+      "route": "*",
+      "severity": "P2",
+      "kind": "landmark",
+      "detail": "no main landmark @1920"
+    },
+    {
+      "reviewId": "RU-001",
+      "route": "*",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1920"
+    },
+    {
+      "reviewId": "RU-002",
+      "route": "/",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @320"
+    },
+    {
+      "reviewId": "RU-002",
+      "route": "/",
+      "severity": "P2",
+      "kind": "landmark",
+      "detail": "no main landmark @320"
+    },
+    {
+      "reviewId": "RU-002",
+      "route": "/",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @320"
+    },
+    {
+      "reviewId": "RU-002",
+      "route": "/",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @375"
+    },
+    {
+      "reviewId": "RU-002",
+      "route": "/",
+      "severity": "P2",
+      "kind": "landmark",
+      "detail": "no main landmark @375"
+    },
+    {
+      "reviewId": "RU-002",
+      "route": "/",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @375"
+    },
+    {
+      "reviewId": "RU-002",
+      "route": "/",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @768"
+    },
+    {
+      "reviewId": "RU-002",
+      "route": "/",
+      "severity": "P2",
+      "kind": "landmark",
+      "detail": "no main landmark @768"
+    },
+    {
+      "reviewId": "RU-002",
+      "route": "/",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @768"
+    },
+    {
+      "reviewId": "RU-002",
+      "route": "/",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @1024"
+    },
+    {
+      "reviewId": "RU-002",
+      "route": "/",
+      "severity": "P2",
+      "kind": "landmark",
+      "detail": "no main landmark @1024"
+    },
+    {
+      "reviewId": "RU-002",
+      "route": "/",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1024"
+    },
+    {
+      "reviewId": "RU-002",
+      "route": "/",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @1280"
+    },
+    {
+      "reviewId": "RU-002",
+      "route": "/",
+      "severity": "P2",
+      "kind": "landmark",
+      "detail": "no main landmark @1280"
+    },
+    {
+      "reviewId": "RU-002",
+      "route": "/",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1280"
+    },
+    {
+      "reviewId": "RU-002",
+      "route": "/",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @1440"
+    },
+    {
+      "reviewId": "RU-002",
+      "route": "/",
+      "severity": "P2",
+      "kind": "landmark",
+      "detail": "no main landmark @1440"
+    },
+    {
+      "reviewId": "RU-002",
+      "route": "/",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1440"
+    },
+    {
+      "reviewId": "RU-002",
+      "route": "/",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @1920"
+    },
+    {
+      "reviewId": "RU-002",
+      "route": "/",
+      "severity": "P2",
+      "kind": "landmark",
+      "detail": "no main landmark @1920"
+    },
+    {
+      "reviewId": "RU-002",
+      "route": "/",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1920"
+    },
+    {
+      "reviewId": "RU-002",
+      "route": "/",
+      "severity": "P1",
+      "kind": "console-error",
+      "detail": "30 console errors: The Cross-Origin-Opener-Policy header has been ignored, because the URL's origin was untrustworthy. It was defined either in the final response or a redirect. P"
+    },
+    {
+      "reviewId": "RU-002",
+      "route": "/",
+      "severity": "P3",
+      "kind": "perf",
+      "detail": "load 30613ms"
+    },
+    {
+      "reviewId": "RU-003",
+      "route": "/about",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-003",
+      "route": "/about",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-003",
+      "route": "/about",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "5 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-003",
+      "route": "/about",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "5 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-003",
+      "route": "/about",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-003",
+      "route": "/about",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-003",
+      "route": "/about",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-004",
+      "route": "/about-us",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-004",
+      "route": "/about-us",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-004",
+      "route": "/about-us",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "5 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-004",
+      "route": "/about-us",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "5 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-004",
+      "route": "/about-us",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-004",
+      "route": "/about-us",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-004",
+      "route": "/about-us",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-005",
+      "route": "/adm/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @320"
+    },
+    {
+      "reviewId": "RU-005",
+      "route": "/adm/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "21 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-005",
+      "route": "/adm/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-005",
+      "route": "/adm/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "27 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-005",
+      "route": "/adm/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-005",
+      "route": "/adm/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "35 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-005",
+      "route": "/adm/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-005",
+      "route": "/adm/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "35 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-005",
+      "route": "/adm/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-005",
+      "route": "/adm/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-005",
+      "route": "/adm/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-005",
+      "route": "/adm/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-005",
+      "route": "/adm/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-005",
+      "route": "/adm/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-006",
+      "route": "/admin/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @320"
+    },
+    {
+      "reviewId": "RU-006",
+      "route": "/admin/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "21 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-006",
+      "route": "/admin/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-006",
+      "route": "/admin/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "25 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-006",
+      "route": "/admin/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-006",
+      "route": "/admin/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-006",
+      "route": "/admin/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-006",
+      "route": "/admin/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-006",
+      "route": "/admin/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-006",
+      "route": "/admin/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-006",
+      "route": "/admin/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-006",
+      "route": "/admin/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-006",
+      "route": "/admin/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-006",
+      "route": "/admin/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-007",
+      "route": "/billing/plans",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @320"
+    },
+    {
+      "reviewId": "RU-007",
+      "route": "/billing/plans",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "3 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-007",
+      "route": "/billing/plans",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @375"
+    },
+    {
+      "reviewId": "RU-007",
+      "route": "/billing/plans",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-007",
+      "route": "/billing/plans",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @768"
+    },
+    {
+      "reviewId": "RU-007",
+      "route": "/billing/plans",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-007",
+      "route": "/billing/plans",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @1024"
+    },
+    {
+      "reviewId": "RU-007",
+      "route": "/billing/plans",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-007",
+      "route": "/billing/plans",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @1280"
+    },
+    {
+      "reviewId": "RU-007",
+      "route": "/billing/plans",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "7 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-007",
+      "route": "/billing/plans",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @1440"
+    },
+    {
+      "reviewId": "RU-007",
+      "route": "/billing/plans",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "7 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-007",
+      "route": "/billing/plans",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @1920"
+    },
+    {
+      "reviewId": "RU-007",
+      "route": "/billing/plans",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "7 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-008",
+      "route": "/blog",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-008",
+      "route": "/blog",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-008",
+      "route": "/blog",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "9 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-008",
+      "route": "/blog",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "12 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-008",
+      "route": "/blog",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "13 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-008",
+      "route": "/blog",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "13 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-008",
+      "route": "/blog",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "13 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-009",
+      "route": "/blog-editor",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @320"
+    },
+    {
+      "reviewId": "RU-009",
+      "route": "/blog-editor",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "19 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-009",
+      "route": "/blog-editor",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-009",
+      "route": "/blog-editor",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "25 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-009",
+      "route": "/blog-editor",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-009",
+      "route": "/blog-editor",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-009",
+      "route": "/blog-editor",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-009",
+      "route": "/blog-editor",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-009",
+      "route": "/blog-editor",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-009",
+      "route": "/blog-editor",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-009",
+      "route": "/blog-editor",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-009",
+      "route": "/blog-editor",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-009",
+      "route": "/blog-editor",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-009",
+      "route": "/blog-editor",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-010",
+      "route": "/blog-editor/:postId",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @320"
+    },
+    {
+      "reviewId": "RU-010",
+      "route": "/blog-editor/:postId",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "19 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-010",
+      "route": "/blog-editor/:postId",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-010",
+      "route": "/blog-editor/:postId",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "25 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-010",
+      "route": "/blog-editor/:postId",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-010",
+      "route": "/blog-editor/:postId",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-010",
+      "route": "/blog-editor/:postId",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-010",
+      "route": "/blog-editor/:postId",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-010",
+      "route": "/blog-editor/:postId",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-010",
+      "route": "/blog-editor/:postId",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-010",
+      "route": "/blog-editor/:postId",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-010",
+      "route": "/blog-editor/:postId",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-010",
+      "route": "/blog-editor/:postId",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-010",
+      "route": "/blog-editor/:postId",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-011",
+      "route": "/blog/:slug",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @320"
+    },
+    {
+      "reviewId": "RU-011",
+      "route": "/blog/:slug",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-011",
+      "route": "/blog/:slug",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-011",
+      "route": "/blog/:slug",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "5 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-011",
+      "route": "/blog/:slug",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "5 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-011",
+      "route": "/blog/:slug",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-011",
+      "route": "/blog/:slug",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-011",
+      "route": "/blog/:slug",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-011",
+      "route": "/blog/:slug",
+      "severity": "P1",
+      "kind": "console-error",
+      "detail": "1 console errors: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "reviewId": "RU-011",
+      "route": "/blog/:slug",
+      "severity": "P1",
+      "kind": "failed-request",
+      "detail": "1 failed requests: 401 https://ime365.local/api/blog-data/slug/%3Aslug"
+    },
+    {
+      "reviewId": "RU-012",
+      "route": "/build-resume/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @320"
+    },
+    {
+      "reviewId": "RU-012",
+      "route": "/build-resume/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "19 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-012",
+      "route": "/build-resume/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-012",
+      "route": "/build-resume/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "25 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-012",
+      "route": "/build-resume/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-012",
+      "route": "/build-resume/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-012",
+      "route": "/build-resume/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-012",
+      "route": "/build-resume/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-012",
+      "route": "/build-resume/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-012",
+      "route": "/build-resume/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-012",
+      "route": "/build-resume/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-012",
+      "route": "/build-resume/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-012",
+      "route": "/build-resume/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-012",
+      "route": "/build-resume/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-013",
+      "route": "/career-resources",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "9 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-013",
+      "route": "/career-resources",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "9 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-013",
+      "route": "/career-resources",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "12 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-013",
+      "route": "/career-resources",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "12 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-013",
+      "route": "/career-resources",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "13 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-013",
+      "route": "/career-resources",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "13 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-013",
+      "route": "/career-resources",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "13 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-014",
+      "route": "/contact",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @320"
+    },
+    {
+      "reviewId": "RU-014",
+      "route": "/contact",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @320"
+    },
+    {
+      "reviewId": "RU-014",
+      "route": "/contact",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "1 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-014",
+      "route": "/contact",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-014",
+      "route": "/contact",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "5 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-014",
+      "route": "/contact",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "5 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-014",
+      "route": "/contact",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-014",
+      "route": "/contact",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-014",
+      "route": "/contact",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-015",
+      "route": "/cookies",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-015",
+      "route": "/cookies",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-015",
+      "route": "/cookies",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "5 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-015",
+      "route": "/cookies",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "5 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-015",
+      "route": "/cookies",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-015",
+      "route": "/cookies",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-015",
+      "route": "/cookies",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-016",
+      "route": "/cover-letter",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @320"
+    },
+    {
+      "reviewId": "RU-016",
+      "route": "/cover-letter",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "19 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-016",
+      "route": "/cover-letter",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-016",
+      "route": "/cover-letter",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "25 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-016",
+      "route": "/cover-letter",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-016",
+      "route": "/cover-letter",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-016",
+      "route": "/cover-letter",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-016",
+      "route": "/cover-letter",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-016",
+      "route": "/cover-letter",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-016",
+      "route": "/cover-letter",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-016",
+      "route": "/cover-letter",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-016",
+      "route": "/cover-letter",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-016",
+      "route": "/cover-letter",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-016",
+      "route": "/cover-letter",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-017",
+      "route": "/cover-letter/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @320"
+    },
+    {
+      "reviewId": "RU-017",
+      "route": "/cover-letter/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "19 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-017",
+      "route": "/cover-letter/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-017",
+      "route": "/cover-letter/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "25 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-017",
+      "route": "/cover-letter/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-017",
+      "route": "/cover-letter/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-017",
+      "route": "/cover-letter/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-017",
+      "route": "/cover-letter/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-017",
+      "route": "/cover-letter/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-017",
+      "route": "/cover-letter/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-017",
+      "route": "/cover-letter/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-017",
+      "route": "/cover-letter/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-017",
+      "route": "/cover-letter/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-017",
+      "route": "/cover-letter/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-018",
+      "route": "/coverletter",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @320"
+    },
+    {
+      "reviewId": "RU-018",
+      "route": "/coverletter",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "19 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-018",
+      "route": "/coverletter",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-018",
+      "route": "/coverletter",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "25 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-018",
+      "route": "/coverletter",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-018",
+      "route": "/coverletter",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-018",
+      "route": "/coverletter",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-018",
+      "route": "/coverletter",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-018",
+      "route": "/coverletter",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-018",
+      "route": "/coverletter",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-018",
+      "route": "/coverletter",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-018",
+      "route": "/coverletter",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-018",
+      "route": "/coverletter",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-018",
+      "route": "/coverletter",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-019",
+      "route": "/coverletter/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @320"
+    },
+    {
+      "reviewId": "RU-019",
+      "route": "/coverletter/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "21 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-019",
+      "route": "/coverletter/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-019",
+      "route": "/coverletter/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "25 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-019",
+      "route": "/coverletter/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-019",
+      "route": "/coverletter/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-019",
+      "route": "/coverletter/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-019",
+      "route": "/coverletter/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-019",
+      "route": "/coverletter/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-019",
+      "route": "/coverletter/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-019",
+      "route": "/coverletter/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-019",
+      "route": "/coverletter/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-019",
+      "route": "/coverletter/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-019",
+      "route": "/coverletter/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-020",
+      "route": "/create-resume",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @320"
+    },
+    {
+      "reviewId": "RU-020",
+      "route": "/create-resume",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "19 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-020",
+      "route": "/create-resume",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-020",
+      "route": "/create-resume",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "25 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-020",
+      "route": "/create-resume",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-020",
+      "route": "/create-resume",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-020",
+      "route": "/create-resume",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-020",
+      "route": "/create-resume",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-020",
+      "route": "/create-resume",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-020",
+      "route": "/create-resume",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-020",
+      "route": "/create-resume",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-020",
+      "route": "/create-resume",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-020",
+      "route": "/create-resume",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-020",
+      "route": "/create-resume",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-021",
+      "route": "/create-resume/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @320"
+    },
+    {
+      "reviewId": "RU-021",
+      "route": "/create-resume/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "19 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-021",
+      "route": "/create-resume/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-021",
+      "route": "/create-resume/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "25 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-021",
+      "route": "/create-resume/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-021",
+      "route": "/create-resume/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-021",
+      "route": "/create-resume/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-021",
+      "route": "/create-resume/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-021",
+      "route": "/create-resume/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-021",
+      "route": "/create-resume/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-021",
+      "route": "/create-resume/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-021",
+      "route": "/create-resume/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-021",
+      "route": "/create-resume/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-021",
+      "route": "/create-resume/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-022",
+      "route": "/dashboard/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @320"
+    },
+    {
+      "reviewId": "RU-022",
+      "route": "/dashboard/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "19 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-022",
+      "route": "/dashboard/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-022",
+      "route": "/dashboard/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "25 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-022",
+      "route": "/dashboard/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-022",
+      "route": "/dashboard/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-022",
+      "route": "/dashboard/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-022",
+      "route": "/dashboard/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-022",
+      "route": "/dashboard/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-022",
+      "route": "/dashboard/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-022",
+      "route": "/dashboard/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-022",
+      "route": "/dashboard/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-022",
+      "route": "/dashboard/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-022",
+      "route": "/dashboard/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-023",
+      "route": "/dashboard2",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @320"
+    },
+    {
+      "reviewId": "RU-023",
+      "route": "/dashboard2",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "19 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-023",
+      "route": "/dashboard2",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-023",
+      "route": "/dashboard2",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "25 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-023",
+      "route": "/dashboard2",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-023",
+      "route": "/dashboard2",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-023",
+      "route": "/dashboard2",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-023",
+      "route": "/dashboard2",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-023",
+      "route": "/dashboard2",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-023",
+      "route": "/dashboard2",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-023",
+      "route": "/dashboard2",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-023",
+      "route": "/dashboard2",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-023",
+      "route": "/dashboard2",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-023",
+      "route": "/dashboard2",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-024",
+      "route": "/dashboard2/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @320"
+    },
+    {
+      "reviewId": "RU-024",
+      "route": "/dashboard2/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "19 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-024",
+      "route": "/dashboard2/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-024",
+      "route": "/dashboard2/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "25 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-024",
+      "route": "/dashboard2/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-024",
+      "route": "/dashboard2/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-024",
+      "route": "/dashboard2/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-024",
+      "route": "/dashboard2/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-024",
+      "route": "/dashboard2/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-024",
+      "route": "/dashboard2/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-024",
+      "route": "/dashboard2/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-024",
+      "route": "/dashboard2/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-024",
+      "route": "/dashboard2/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-024",
+      "route": "/dashboard2/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-025",
+      "route": "/employer/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @320"
+    },
+    {
+      "reviewId": "RU-025",
+      "route": "/employer/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "19 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-025",
+      "route": "/employer/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-025",
+      "route": "/employer/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "25 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-025",
+      "route": "/employer/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-025",
+      "route": "/employer/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-025",
+      "route": "/employer/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-025",
+      "route": "/employer/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-025",
+      "route": "/employer/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-025",
+      "route": "/employer/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-025",
+      "route": "/employer/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-025",
+      "route": "/employer/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-025",
+      "route": "/employer/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-025",
+      "route": "/employer/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-026",
+      "route": "/enterprise/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @320"
+    },
+    {
+      "reviewId": "RU-026",
+      "route": "/enterprise/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "19 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-026",
+      "route": "/enterprise/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-026",
+      "route": "/enterprise/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "25 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-026",
+      "route": "/enterprise/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-026",
+      "route": "/enterprise/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-026",
+      "route": "/enterprise/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-026",
+      "route": "/enterprise/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-026",
+      "route": "/enterprise/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-026",
+      "route": "/enterprise/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-026",
+      "route": "/enterprise/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-026",
+      "route": "/enterprise/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-026",
+      "route": "/enterprise/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-026",
+      "route": "/enterprise/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-027",
+      "route": "/faq",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "16 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-027",
+      "route": "/faq",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "22 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-027",
+      "route": "/faq",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "30 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-027",
+      "route": "/faq",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "30 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-027",
+      "route": "/faq",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "34 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-027",
+      "route": "/faq",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "34 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-027",
+      "route": "/faq",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "34 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-028",
+      "route": "/faqs",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "16 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-028",
+      "route": "/faqs",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "22 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-028",
+      "route": "/faqs",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "30 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-028",
+      "route": "/faqs",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "30 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-028",
+      "route": "/faqs",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "34 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-028",
+      "route": "/faqs",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "34 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-028",
+      "route": "/faqs",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "34 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-029",
+      "route": "/features",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @320"
+    },
+    {
+      "reviewId": "RU-029",
+      "route": "/features",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @320"
+    },
+    {
+      "reviewId": "RU-029",
+      "route": "/features",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "1 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-029",
+      "route": "/features",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-029",
+      "route": "/features",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "7 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-029",
+      "route": "/features",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "7 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-029",
+      "route": "/features",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "7 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-029",
+      "route": "/features",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "7 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-029",
+      "route": "/features",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "7 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-030",
+      "route": "/front",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "16 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-030",
+      "route": "/front",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "22 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-030",
+      "route": "/front",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "30 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-030",
+      "route": "/front",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "30 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-030",
+      "route": "/front",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "34 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-030",
+      "route": "/front",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "34 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-030",
+      "route": "/front",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "34 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-031",
+      "route": "/jobs",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @320"
+    },
+    {
+      "reviewId": "RU-031",
+      "route": "/jobs",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-031",
+      "route": "/jobs",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-031",
+      "route": "/jobs",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-031",
+      "route": "/jobs",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-031",
+      "route": "/jobs",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "7 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-031",
+      "route": "/jobs",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-031",
+      "route": "/jobs",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "7 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-031",
+      "route": "/jobs",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-031",
+      "route": "/jobs",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "7 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-031",
+      "route": "/jobs",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-031",
+      "route": "/jobs",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "7 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-031",
+      "route": "/jobs",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-031",
+      "route": "/jobs",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "7 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-032",
+      "route": "/jobs/browse",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @320"
+    },
+    {
+      "reviewId": "RU-032",
+      "route": "/jobs/browse",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @320"
+    },
+    {
+      "reviewId": "RU-032",
+      "route": "/jobs/browse",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "1 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-032",
+      "route": "/jobs/browse",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "3 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-032",
+      "route": "/jobs/browse",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "9 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-032",
+      "route": "/jobs/browse",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "3 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-032",
+      "route": "/jobs/browse",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "12 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-032",
+      "route": "/jobs/browse",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "16 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-032",
+      "route": "/jobs/browse",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "71 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-032",
+      "route": "/jobs/browse",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "16 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-032",
+      "route": "/jobs/browse",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "72 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-032",
+      "route": "/jobs/browse",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "16 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-032",
+      "route": "/jobs/browse",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "72 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-032",
+      "route": "/jobs/browse",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "16 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-032",
+      "route": "/jobs/browse",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "72 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-033",
+      "route": "/jobs/categories",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @320"
+    },
+    {
+      "reviewId": "RU-033",
+      "route": "/jobs/categories",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @320"
+    },
+    {
+      "reviewId": "RU-033",
+      "route": "/jobs/categories",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "1 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-033",
+      "route": "/jobs/categories",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @375"
+    },
+    {
+      "reviewId": "RU-033",
+      "route": "/jobs/categories",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @375"
+    },
+    {
+      "reviewId": "RU-033",
+      "route": "/jobs/categories",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "1 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-033",
+      "route": "/jobs/categories",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @768"
+    },
+    {
+      "reviewId": "RU-033",
+      "route": "/jobs/categories",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @768"
+    },
+    {
+      "reviewId": "RU-033",
+      "route": "/jobs/categories",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-033",
+      "route": "/jobs/categories",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @1024"
+    },
+    {
+      "reviewId": "RU-033",
+      "route": "/jobs/categories",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1024"
+    },
+    {
+      "reviewId": "RU-033",
+      "route": "/jobs/categories",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-033",
+      "route": "/jobs/categories",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-033",
+      "route": "/jobs/categories",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "7 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-033",
+      "route": "/jobs/categories",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-033",
+      "route": "/jobs/categories",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "7 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-033",
+      "route": "/jobs/categories",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-033",
+      "route": "/jobs/categories",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "7 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-034",
+      "route": "/jobs/category/:catName",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "3 unlabeled controls @320"
+    },
+    {
+      "reviewId": "RU-034",
+      "route": "/jobs/category/:catName",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "9 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-034",
+      "route": "/jobs/category/:catName",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "3 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-034",
+      "route": "/jobs/category/:catName",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "55 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-034",
+      "route": "/jobs/category/:catName",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "3 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-034",
+      "route": "/jobs/category/:catName",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "58 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-034",
+      "route": "/jobs/category/:catName",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "16 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-034",
+      "route": "/jobs/category/:catName",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "71 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-034",
+      "route": "/jobs/category/:catName",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "16 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-034",
+      "route": "/jobs/category/:catName",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "72 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-034",
+      "route": "/jobs/category/:catName",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "16 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-034",
+      "route": "/jobs/category/:catName",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "72 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-034",
+      "route": "/jobs/category/:catName",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "16 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-034",
+      "route": "/jobs/category/:catName",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "72 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-035",
+      "route": "/jobs/city/:slug",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @320"
+    },
+    {
+      "reviewId": "RU-035",
+      "route": "/jobs/city/:slug",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @320"
+    },
+    {
+      "reviewId": "RU-035",
+      "route": "/jobs/city/:slug",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "1 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-035",
+      "route": "/jobs/city/:slug",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @375"
+    },
+    {
+      "reviewId": "RU-035",
+      "route": "/jobs/city/:slug",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @375"
+    },
+    {
+      "reviewId": "RU-035",
+      "route": "/jobs/city/:slug",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "1 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-035",
+      "route": "/jobs/city/:slug",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @768"
+    },
+    {
+      "reviewId": "RU-035",
+      "route": "/jobs/city/:slug",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-035",
+      "route": "/jobs/city/:slug",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1024"
+    },
+    {
+      "reviewId": "RU-035",
+      "route": "/jobs/city/:slug",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-035",
+      "route": "/jobs/city/:slug",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1280"
+    },
+    {
+      "reviewId": "RU-035",
+      "route": "/jobs/city/:slug",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-035",
+      "route": "/jobs/city/:slug",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1440"
+    },
+    {
+      "reviewId": "RU-035",
+      "route": "/jobs/city/:slug",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-035",
+      "route": "/jobs/city/:slug",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1920"
+    },
+    {
+      "reviewId": "RU-035",
+      "route": "/jobs/city/:slug",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-036",
+      "route": "/jobs/in/:slug",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @320"
+    },
+    {
+      "reviewId": "RU-036",
+      "route": "/jobs/in/:slug",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "1 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-036",
+      "route": "/jobs/in/:slug",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @375"
+    },
+    {
+      "reviewId": "RU-036",
+      "route": "/jobs/in/:slug",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "1 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-036",
+      "route": "/jobs/in/:slug",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @768"
+    },
+    {
+      "reviewId": "RU-036",
+      "route": "/jobs/in/:slug",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-036",
+      "route": "/jobs/in/:slug",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1024"
+    },
+    {
+      "reviewId": "RU-036",
+      "route": "/jobs/in/:slug",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-036",
+      "route": "/jobs/in/:slug",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1280"
+    },
+    {
+      "reviewId": "RU-036",
+      "route": "/jobs/in/:slug",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-036",
+      "route": "/jobs/in/:slug",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1440"
+    },
+    {
+      "reviewId": "RU-036",
+      "route": "/jobs/in/:slug",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-036",
+      "route": "/jobs/in/:slug",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1920"
+    },
+    {
+      "reviewId": "RU-036",
+      "route": "/jobs/in/:slug",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-037",
+      "route": "/jobs/portal",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "3 unlabeled controls @320"
+    },
+    {
+      "reviewId": "RU-037",
+      "route": "/jobs/portal",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "9 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-037",
+      "route": "/jobs/portal",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "3 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-037",
+      "route": "/jobs/portal",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "55 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-037",
+      "route": "/jobs/portal",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "3 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-037",
+      "route": "/jobs/portal",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "58 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-037",
+      "route": "/jobs/portal",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "16 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-037",
+      "route": "/jobs/portal",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "71 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-037",
+      "route": "/jobs/portal",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "16 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-037",
+      "route": "/jobs/portal",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "72 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-037",
+      "route": "/jobs/portal",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "16 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-037",
+      "route": "/jobs/portal",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "72 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-037",
+      "route": "/jobs/portal",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "16 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-037",
+      "route": "/jobs/portal",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "72 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-038",
+      "route": "/jobs/portal/:jobId",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "3 unlabeled controls @320"
+    },
+    {
+      "reviewId": "RU-038",
+      "route": "/jobs/portal/:jobId",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "9 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-038",
+      "route": "/jobs/portal/:jobId",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "3 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-038",
+      "route": "/jobs/portal/:jobId",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "55 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-038",
+      "route": "/jobs/portal/:jobId",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "3 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-038",
+      "route": "/jobs/portal/:jobId",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "58 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-038",
+      "route": "/jobs/portal/:jobId",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "16 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-038",
+      "route": "/jobs/portal/:jobId",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "71 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-038",
+      "route": "/jobs/portal/:jobId",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "16 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-038",
+      "route": "/jobs/portal/:jobId",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "72 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-038",
+      "route": "/jobs/portal/:jobId",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "16 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-038",
+      "route": "/jobs/portal/:jobId",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "72 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-038",
+      "route": "/jobs/portal/:jobId",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "16 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-038",
+      "route": "/jobs/portal/:jobId",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "72 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-038",
+      "route": "/jobs/portal/:jobId",
+      "severity": "P1",
+      "kind": "console-error",
+      "detail": "1 console errors: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "reviewId": "RU-038",
+      "route": "/jobs/portal/:jobId",
+      "severity": "P1",
+      "kind": "failed-request",
+      "detail": "2 failed requests: 401 https://ime365.local/api/jobs-data/%3AjobId"
+    },
+    {
+      "reviewId": "RU-039",
+      "route": "/login",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @320"
+    },
+    {
+      "reviewId": "RU-039",
+      "route": "/login",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @320"
+    },
+    {
+      "reviewId": "RU-039",
+      "route": "/login",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "1 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-039",
+      "route": "/login",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-039",
+      "route": "/login",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "28 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-039",
+      "route": "/login",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-039",
+      "route": "/login",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "35 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-039",
+      "route": "/login",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-039",
+      "route": "/login",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "35 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-039",
+      "route": "/login",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-039",
+      "route": "/login",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "39 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-039",
+      "route": "/login",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-039",
+      "route": "/login",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "39 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-039",
+      "route": "/login",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-039",
+      "route": "/login",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "39 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-040",
+      "route": "/org/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @320"
+    },
+    {
+      "reviewId": "RU-040",
+      "route": "/org/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "19 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-040",
+      "route": "/org/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-040",
+      "route": "/org/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "25 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-040",
+      "route": "/org/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-040",
+      "route": "/org/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-040",
+      "route": "/org/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-040",
+      "route": "/org/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-040",
+      "route": "/org/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-040",
+      "route": "/org/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-040",
+      "route": "/org/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-040",
+      "route": "/org/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-040",
+      "route": "/org/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-040",
+      "route": "/org/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-041",
+      "route": "/org/:slug/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @320"
+    },
+    {
+      "reviewId": "RU-041",
+      "route": "/org/:slug/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "19 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-041",
+      "route": "/org/:slug/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-041",
+      "route": "/org/:slug/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "25 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-041",
+      "route": "/org/:slug/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-041",
+      "route": "/org/:slug/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-041",
+      "route": "/org/:slug/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-041",
+      "route": "/org/:slug/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-041",
+      "route": "/org/:slug/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-041",
+      "route": "/org/:slug/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-041",
+      "route": "/org/:slug/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-041",
+      "route": "/org/:slug/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-041",
+      "route": "/org/:slug/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-041",
+      "route": "/org/:slug/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-042",
+      "route": "/p/:custompage",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @320"
+    },
+    {
+      "reviewId": "RU-042",
+      "route": "/p/:custompage",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @320"
+    },
+    {
+      "reviewId": "RU-042",
+      "route": "/p/:custompage",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "1 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-042",
+      "route": "/p/:custompage",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @375"
+    },
+    {
+      "reviewId": "RU-042",
+      "route": "/p/:custompage",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "1 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-042",
+      "route": "/p/:custompage",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @768"
+    },
+    {
+      "reviewId": "RU-042",
+      "route": "/p/:custompage",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-042",
+      "route": "/p/:custompage",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1024"
+    },
+    {
+      "reviewId": "RU-042",
+      "route": "/p/:custompage",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-042",
+      "route": "/p/:custompage",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1280"
+    },
+    {
+      "reviewId": "RU-042",
+      "route": "/p/:custompage",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-042",
+      "route": "/p/:custompage",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1440"
+    },
+    {
+      "reviewId": "RU-042",
+      "route": "/p/:custompage",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-042",
+      "route": "/p/:custompage",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1920"
+    },
+    {
+      "reviewId": "RU-042",
+      "route": "/p/:custompage",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-042",
+      "route": "/p/:custompage",
+      "severity": "P1",
+      "kind": "console-error",
+      "detail": "1 console errors: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "reviewId": "RU-042",
+      "route": "/p/:custompage",
+      "severity": "P1",
+      "kind": "failed-request",
+      "detail": "1 failed requests: 401 https://ime365.local/api/public/custom-pages/%3Acustompage"
+    },
+    {
+      "reviewId": "RU-043",
+      "route": "/plans",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @320"
+    },
+    {
+      "reviewId": "RU-043",
+      "route": "/plans",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-043",
+      "route": "/plans",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @375"
+    },
+    {
+      "reviewId": "RU-043",
+      "route": "/plans",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-043",
+      "route": "/plans",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @768"
+    },
+    {
+      "reviewId": "RU-043",
+      "route": "/plans",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-043",
+      "route": "/plans",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @1024"
+    },
+    {
+      "reviewId": "RU-043",
+      "route": "/plans",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-043",
+      "route": "/plans",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @1280"
+    },
+    {
+      "reviewId": "RU-043",
+      "route": "/plans",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "7 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-043",
+      "route": "/plans",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @1440"
+    },
+    {
+      "reviewId": "RU-043",
+      "route": "/plans",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "7 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-043",
+      "route": "/plans",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @1920"
+    },
+    {
+      "reviewId": "RU-043",
+      "route": "/plans",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "7 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-044",
+      "route": "/platform/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @320"
+    },
+    {
+      "reviewId": "RU-044",
+      "route": "/platform/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "19 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-044",
+      "route": "/platform/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-044",
+      "route": "/platform/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "25 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-044",
+      "route": "/platform/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-044",
+      "route": "/platform/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-044",
+      "route": "/platform/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-044",
+      "route": "/platform/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-044",
+      "route": "/platform/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-044",
+      "route": "/platform/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-044",
+      "route": "/platform/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-044",
+      "route": "/platform/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-044",
+      "route": "/platform/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-044",
+      "route": "/platform/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-045",
+      "route": "/portfolio/:slug",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @320"
+    },
+    {
+      "reviewId": "RU-045",
+      "route": "/portfolio/:slug",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @320"
+    },
+    {
+      "reviewId": "RU-045",
+      "route": "/portfolio/:slug",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @375"
+    },
+    {
+      "reviewId": "RU-045",
+      "route": "/portfolio/:slug",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @768"
+    },
+    {
+      "reviewId": "RU-045",
+      "route": "/portfolio/:slug",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1024"
+    },
+    {
+      "reviewId": "RU-045",
+      "route": "/portfolio/:slug",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1280"
+    },
+    {
+      "reviewId": "RU-045",
+      "route": "/portfolio/:slug",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1440"
+    },
+    {
+      "reviewId": "RU-045",
+      "route": "/portfolio/:slug",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1920"
+    },
+    {
+      "reviewId": "RU-045",
+      "route": "/portfolio/:slug",
+      "severity": "P1",
+      "kind": "console-error",
+      "detail": "1 console errors: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "reviewId": "RU-045",
+      "route": "/portfolio/:slug",
+      "severity": "P1",
+      "kind": "failed-request",
+      "detail": "1 failed requests: 401 https://ime365.local/api/portfolios/public/%3Aslug"
+    },
+    {
+      "reviewId": "RU-046",
+      "route": "/portfolio/builder",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @320"
+    },
+    {
+      "reviewId": "RU-046",
+      "route": "/portfolio/builder",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "19 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-046",
+      "route": "/portfolio/builder",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-046",
+      "route": "/portfolio/builder",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "25 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-046",
+      "route": "/portfolio/builder",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-046",
+      "route": "/portfolio/builder",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-046",
+      "route": "/portfolio/builder",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-046",
+      "route": "/portfolio/builder",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-046",
+      "route": "/portfolio/builder",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-046",
+      "route": "/portfolio/builder",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-046",
+      "route": "/portfolio/builder",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-046",
+      "route": "/portfolio/builder",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-046",
+      "route": "/portfolio/builder",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-046",
+      "route": "/portfolio/builder",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-047",
+      "route": "/portfolios",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @320"
+    },
+    {
+      "reviewId": "RU-047",
+      "route": "/portfolios",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-047",
+      "route": "/portfolios",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @375"
+    },
+    {
+      "reviewId": "RU-047",
+      "route": "/portfolios",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-047",
+      "route": "/portfolios",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @768"
+    },
+    {
+      "reviewId": "RU-047",
+      "route": "/portfolios",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-047",
+      "route": "/portfolios",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1024"
+    },
+    {
+      "reviewId": "RU-047",
+      "route": "/portfolios",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-047",
+      "route": "/portfolios",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1280"
+    },
+    {
+      "reviewId": "RU-047",
+      "route": "/portfolios",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-047",
+      "route": "/portfolios",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1440"
+    },
+    {
+      "reviewId": "RU-047",
+      "route": "/portfolios",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-047",
+      "route": "/portfolios",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1920"
+    },
+    {
+      "reviewId": "RU-047",
+      "route": "/portfolios",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-048",
+      "route": "/pricing",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @320"
+    },
+    {
+      "reviewId": "RU-048",
+      "route": "/pricing",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-048",
+      "route": "/pricing",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @375"
+    },
+    {
+      "reviewId": "RU-048",
+      "route": "/pricing",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-048",
+      "route": "/pricing",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @768"
+    },
+    {
+      "reviewId": "RU-048",
+      "route": "/pricing",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-048",
+      "route": "/pricing",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @1024"
+    },
+    {
+      "reviewId": "RU-048",
+      "route": "/pricing",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-048",
+      "route": "/pricing",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @1280"
+    },
+    {
+      "reviewId": "RU-048",
+      "route": "/pricing",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "7 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-048",
+      "route": "/pricing",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @1440"
+    },
+    {
+      "reviewId": "RU-048",
+      "route": "/pricing",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "7 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-048",
+      "route": "/pricing",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @1920"
+    },
+    {
+      "reviewId": "RU-048",
+      "route": "/pricing",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "7 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-049",
+      "route": "/privacy",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-049",
+      "route": "/privacy",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-049",
+      "route": "/privacy",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "5 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-049",
+      "route": "/privacy",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "5 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-049",
+      "route": "/privacy",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-049",
+      "route": "/privacy",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-049",
+      "route": "/privacy",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-050",
+      "route": "/resume-builder",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @320"
+    },
+    {
+      "reviewId": "RU-050",
+      "route": "/resume-builder",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "19 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-050",
+      "route": "/resume-builder",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-050",
+      "route": "/resume-builder",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "25 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-050",
+      "route": "/resume-builder",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-050",
+      "route": "/resume-builder",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-050",
+      "route": "/resume-builder",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-050",
+      "route": "/resume-builder",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-050",
+      "route": "/resume-builder",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-050",
+      "route": "/resume-builder",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-050",
+      "route": "/resume-builder",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-050",
+      "route": "/resume-builder",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-050",
+      "route": "/resume-builder",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-050",
+      "route": "/resume-builder",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-051",
+      "route": "/resume-builder/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @320"
+    },
+    {
+      "reviewId": "RU-051",
+      "route": "/resume-builder/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "21 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-051",
+      "route": "/resume-builder/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-051",
+      "route": "/resume-builder/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "25 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-051",
+      "route": "/resume-builder/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-051",
+      "route": "/resume-builder/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-051",
+      "route": "/resume-builder/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-051",
+      "route": "/resume-builder/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-051",
+      "route": "/resume-builder/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-051",
+      "route": "/resume-builder/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-051",
+      "route": "/resume-builder/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-051",
+      "route": "/resume-builder/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-051",
+      "route": "/resume-builder/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-051",
+      "route": "/resume-builder/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-052",
+      "route": "/resume/:step",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @320"
+    },
+    {
+      "reviewId": "RU-052",
+      "route": "/resume/:step",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "19 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-052",
+      "route": "/resume/:step",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-052",
+      "route": "/resume/:step",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "25 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-052",
+      "route": "/resume/:step",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-052",
+      "route": "/resume/:step",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-052",
+      "route": "/resume/:step",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-052",
+      "route": "/resume/:step",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-052",
+      "route": "/resume/:step",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-052",
+      "route": "/resume/:step",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-052",
+      "route": "/resume/:step",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-052",
+      "route": "/resume/:step",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-052",
+      "route": "/resume/:step",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-052",
+      "route": "/resume/:step",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-053",
+      "route": "/resumes",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @320"
+    },
+    {
+      "reviewId": "RU-053",
+      "route": "/resumes",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "19 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-053",
+      "route": "/resumes",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-053",
+      "route": "/resumes",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "25 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-053",
+      "route": "/resumes",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-053",
+      "route": "/resumes",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-053",
+      "route": "/resumes",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-053",
+      "route": "/resumes",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-053",
+      "route": "/resumes",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-053",
+      "route": "/resumes",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-053",
+      "route": "/resumes",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-053",
+      "route": "/resumes",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-053",
+      "route": "/resumes",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-053",
+      "route": "/resumes",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-054",
+      "route": "/resumes/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @320"
+    },
+    {
+      "reviewId": "RU-054",
+      "route": "/resumes/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "19 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-054",
+      "route": "/resumes/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-054",
+      "route": "/resumes/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "25 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-054",
+      "route": "/resumes/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-054",
+      "route": "/resumes/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-054",
+      "route": "/resumes/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-054",
+      "route": "/resumes/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-054",
+      "route": "/resumes/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-054",
+      "route": "/resumes/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-054",
+      "route": "/resumes/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-054",
+      "route": "/resumes/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-054",
+      "route": "/resumes/*",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-054",
+      "route": "/resumes/*",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-055",
+      "route": "/shared/:resumeId",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @320"
+    },
+    {
+      "reviewId": "RU-055",
+      "route": "/shared/:resumeId",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @320"
+    },
+    {
+      "reviewId": "RU-055",
+      "route": "/shared/:resumeId",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "3 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-055",
+      "route": "/shared/:resumeId",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @375"
+    },
+    {
+      "reviewId": "RU-055",
+      "route": "/shared/:resumeId",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @375"
+    },
+    {
+      "reviewId": "RU-055",
+      "route": "/shared/:resumeId",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "3 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-055",
+      "route": "/shared/:resumeId",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @768"
+    },
+    {
+      "reviewId": "RU-055",
+      "route": "/shared/:resumeId",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @768"
+    },
+    {
+      "reviewId": "RU-055",
+      "route": "/shared/:resumeId",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "3 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-055",
+      "route": "/shared/:resumeId",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @1024"
+    },
+    {
+      "reviewId": "RU-055",
+      "route": "/shared/:resumeId",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1024"
+    },
+    {
+      "reviewId": "RU-055",
+      "route": "/shared/:resumeId",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "3 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-055",
+      "route": "/shared/:resumeId",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @1280"
+    },
+    {
+      "reviewId": "RU-055",
+      "route": "/shared/:resumeId",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1280"
+    },
+    {
+      "reviewId": "RU-055",
+      "route": "/shared/:resumeId",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "3 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-055",
+      "route": "/shared/:resumeId",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @1440"
+    },
+    {
+      "reviewId": "RU-055",
+      "route": "/shared/:resumeId",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1440"
+    },
+    {
+      "reviewId": "RU-055",
+      "route": "/shared/:resumeId",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "3 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-055",
+      "route": "/shared/:resumeId",
+      "severity": "P3",
+      "kind": "heading",
+      "detail": "0 h1 elements @1920"
+    },
+    {
+      "reviewId": "RU-055",
+      "route": "/shared/:resumeId",
+      "severity": "P3",
+      "kind": "landmark",
+      "detail": "no nav landmark @1920"
+    },
+    {
+      "reviewId": "RU-055",
+      "route": "/shared/:resumeId",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "3 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-055",
+      "route": "/shared/:resumeId",
+      "severity": "P1",
+      "kind": "console-error",
+      "detail": "1 console errors: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "reviewId": "RU-055",
+      "route": "/shared/:resumeId",
+      "severity": "P1",
+      "kind": "failed-request",
+      "detail": "3 failed requests: 401 https://ime365.local/api/resumes/public/:resumeId"
+    },
+    {
+      "reviewId": "RU-056",
+      "route": "/sign-up",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @320"
+    },
+    {
+      "reviewId": "RU-056",
+      "route": "/sign-up",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "19 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-056",
+      "route": "/sign-up",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @375"
+    },
+    {
+      "reviewId": "RU-056",
+      "route": "/sign-up",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "25 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-056",
+      "route": "/sign-up",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @768"
+    },
+    {
+      "reviewId": "RU-056",
+      "route": "/sign-up",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-056",
+      "route": "/sign-up",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1024"
+    },
+    {
+      "reviewId": "RU-056",
+      "route": "/sign-up",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "33 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-056",
+      "route": "/sign-up",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1280"
+    },
+    {
+      "reviewId": "RU-056",
+      "route": "/sign-up",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-056",
+      "route": "/sign-up",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1440"
+    },
+    {
+      "reviewId": "RU-056",
+      "route": "/sign-up",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-056",
+      "route": "/sign-up",
+      "severity": "P2",
+      "kind": "form-label",
+      "detail": "2 unlabeled controls @1920"
+    },
+    {
+      "reviewId": "RU-056",
+      "route": "/sign-up",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "37 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-056",
+      "route": "/sign-up",
+      "severity": "P1",
+      "kind": "console-error",
+      "detail": "2 console errors: Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "reviewId": "RU-056",
+      "route": "/sign-up",
+      "severity": "P1",
+      "kind": "failed-request",
+      "detail": "1 failed requests: 429 https://ime365.local/api/public/custom-pages"
+    },
+    {
+      "reviewId": "RU-057",
+      "route": "/templates",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "16 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-057",
+      "route": "/templates",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "22 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-057",
+      "route": "/templates",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "30 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-057",
+      "route": "/templates",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "30 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-057",
+      "route": "/templates",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "34 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-057",
+      "route": "/templates",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "34 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-057",
+      "route": "/templates",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "34 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-057",
+      "route": "/templates",
+      "severity": "P1",
+      "kind": "console-error",
+      "detail": "2 console errors: Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "reviewId": "RU-057",
+      "route": "/templates",
+      "severity": "P1",
+      "kind": "failed-request",
+      "detail": "1 failed requests: 429 https://ime365.local/api/public/custom-pages"
+    },
+    {
+      "reviewId": "RU-058",
+      "route": "/terms",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @320"
+    },
+    {
+      "reviewId": "RU-058",
+      "route": "/terms",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "2 targets < 44px @375"
+    },
+    {
+      "reviewId": "RU-058",
+      "route": "/terms",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "5 targets < 44px @768"
+    },
+    {
+      "reviewId": "RU-058",
+      "route": "/terms",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "5 targets < 44px @1024"
+    },
+    {
+      "reviewId": "RU-058",
+      "route": "/terms",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @1280"
+    },
+    {
+      "reviewId": "RU-058",
+      "route": "/terms",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @1440"
+    },
+    {
+      "reviewId": "RU-058",
+      "route": "/terms",
+      "severity": "P2",
+      "kind": "tap-target",
+      "detail": "6 targets < 44px @1920"
+    },
+    {
+      "reviewId": "RU-058",
+      "route": "/terms",
+      "severity": "P1",
+      "kind": "console-error",
+      "detail": "1 console errors: Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "reviewId": "RU-058",
+      "route": "/terms",
+      "severity": "P1",
+      "kind": "failed-request",
+      "detail": "2 failed requests: 429 https://ime365.local/api/public/custom-pages"
+    }
+  ]
+}
