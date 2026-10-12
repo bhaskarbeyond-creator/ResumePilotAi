@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-12T08:07:01.350Z",
-  "seq": 3043,
-  "id": "evt_mv4yy0nf_068ff3cc671e",
+  "timestamp": "2026-10-12T08:10:27.211Z",
+  "seq": 3047,
+  "id": "evt_mv4z2fhs_bb9a19627eb6",
   "type": "EVIDENCE_SUBMITTED",
   "title": "[Evidence] DIR-098: DIR-098: Master UI/UX Transformation Programme - Phase One Discovery, Baseline Evidence & Acceptance-Gate Scaffolding",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-098",
-  "summary": "DIR-098 Phase One evidence. DELIVERED: (S1) review-unit inventory via scripts/ux-inventory.mjs -> .bridge/evidence/dir098/inventory.json (58 routes -> 58 review units, 7 viewports 320-1920, 13 interaction states, 195 test suites, surfaces candidate 27 / admin 24); (S2) npm run test:ux-gates acceptance harness (tests/ux-gates.test.mjs, 5/5 green) asserting inventory completeness, the 7-viewport responsive matrix, the state matrix, and the >=98/100 acceptance invariant; (S3) prioritised defect/task register at .bridge/evidence/dir098/register.json. NOT EXECUTED (honest, not claimed as done): S4 baseline screenshot capture per review unit - this is the first task of Phase Two and requires the XAMPP-served Playwright crawl. EVIDENCE: npm run test:ux-gates 5/5 pass; ux-gates.log; inventory.json; register.json. INVARIANTS: src/cv-templates/ git diff = 0 bytes."
+  "summary": "DIR-098 Phase One COMPLETE. (S1) review-unit inventory scripts/ux-inventory.mjs -> .bridge/evidence/dir098/inventory.json: 58 routes -> 58 review units, 7 viewports 320-1920, 13 interaction states, 195 test suites. (S2) npm run test:ux-gates acceptance harness tests/ux-gates.test.mjs - 6/6 green (inventory completeness, 7-viewport matrix, state matrix, >=98 acceptance invariant, unit description, baseline coverage). (S3) prioritised defect/task register .bridge/evidence/dir098/register.json. (S4) baseline screenshot set COMPLETED via scripts/ux-baseline-capture.mjs (XAMPP-served Playwright, Apache 80): 58 units x 7 viewports = 406 screenshots at .bridge/evidence/dir098/baseline/, manifest baseline-manifest.json, 0 horizontal-overflow violations. EVIDENCE: npm run test:ux-gates 6/6 pass; ux-gates.log; baseline-manifest.json; inventory.json; register.json. INVARIANTS: src/cv-templates/ git diff = 0 bytes; no rogue servers (XAMPP only)."
 }
