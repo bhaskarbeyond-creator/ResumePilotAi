@@ -6,7 +6,7 @@
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-12T09:22:27.739Z",
-  "updatedAt": "2026-10-12T09:37:28.627Z",
+  "updatedAt": "2026-10-12T09:47:29.921Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "# SECTION 1 — EXECUTIVE MANDATE\nAutonomous roadmap step 5 of the project goal. GOAL: Master UI/UX Transformation Programme: every in-scope review unit reviewed, remediated, tested and ACCEPTED at >=98/100\nOBJECTIVE: Master UI/UX Transformation: review and ACCEPT the next outstanding review units at >=98/100\nContinue the Master UI/UX Transformation (see .bridge/evidence/dir098/inventory.json). Pick the highest-severity outstanding review unit(s), capture before/after screenshots across the 7 viewports, remediate the defects at root cause, run npm run test:ux-gates and npm test, score the unit >=98/100 with evidence, and mark it ACCEPTED in the inventory. Definition of done: node scripts/ux-completeness.mjs progresses toward exit 0.\n\n# SECTION 2 — ABSOLUTE MODE RESTRICTIONS: PLAN MODE VS ACT MODE\nPLAN MODE: reconnaissance and plan submission only. ACT MODE (after Lead approval): surgical implementation, tests, and XAMPP-served Playwright DOM crawls.\n\n# SECTION 3 — PRE-FLIGHT REPOSITORY AND WORKSPACE VERIFICATION\nWorkspace D:\\xampp\\htdocs\\IME365. Baseline: src/cv-templates/ git diff must be 0 bytes. Servers strictly via XAMPP (Apache 80/443, MySQL 3306).\n\n# SECTION 4 — NON-NEGOTIABLE PROJECT INVARIANTS\nFrozen: src/cv-templates/**, docs/contracts/**, cuba-tokens.css, cuba-print.css, template-pagination.css. Real MariaDB data only (no fabrication). Cuba design tokens only. Zero horizontal overflow 320-1920. Build < 4.0s. Server-only secrets.\n\n# SECTION 5 — AUTHORITATIVE REFERENCES AND PARITY REQUIREMENTS\nPrecedence: .bridge/project.json (Master Manifest) > .bridge/references/*.png > certified tests.\n\n# SECTION 6 — MANDATORY INVESTIGATION AND COVERAGE\nEnumerate affected routes/surfaces from .bridge/evidence/dir098/inventory.json; map shared components and dependencies.\n\n# SECTION 7 — QUALITY, RESPONSIVENESS, ACCESSIBILITY, AND NON-FUNCTIONAL REQUIREMENTS\nVisual consistency; responsive validation across 320/375/768/1024/1280/1440/1920; WCAG 2.1 AA (contrast >= 4.5:1, touch >= 44x44px, focus-visible); sub-100ms render, build < 4.0s.\n\n# SECTION 8 — DATA INTEGRITY, STATE MANAGEMENT, AND EDGE CASES\nReal-data wiring; loading/empty/error/permission-denied/success states; honest empty states, no synthetic placeholders.\n\n# SECTION 9 — TEST STRATEGY AND ACCEPTANCE REQUIREMENTS\nExisting suites green (npm test exit 0); npm run test:ux-gates green; evidence-backed score >= 98/100 per review unit.\n\n# SECTION 10 — REQUIRED FORENSIC AND ENGINEERING DELIVERABLES\nInventory updates, screenshots, defect register, evidence index, updated scorecards.\n\n# SECTION 11 — SEVERITY, PRIORITISATION, AND IMPLEMENTATION SEQUENCING\nP0 security/data-integrity -> P1 functionality/navigation -> P2 usability/a11y/responsive -> P3 polish.\n\n# SECTION 12 — REQUIRED FINAL RESPONSE AND COMPLETION REPORT\nReport exact commands + exit codes, orthogonal status, evidence classification, git HEAD + src/cv-templates 0-byte verification.\n\n# SECTION 13 — MANDATORY BRIDGE PLAN SUBMISSION AND TOOL EXECUTION GOVERNANCE\nSubmit the plan with: bridge dev plan --directive <ID> --projectDir \"D:\\xampp\\htdocs\\IME365\" --summary \"<...>\" --steps \"S1;S2\", then bridge dev submit-evidence. Emit heartbeats <= 480s.\n\n# SECTION 14 — FINAL EXECUTIVE INSTRUCTION\nInvestigate first; root-cause over symptom-patching; validate every materially affected surface; never fabricate evidence; never approve below 98/100.",
   "invariants": [
@@ -30,24 +30,24 @@
     "planHash": "ea50bcb2b9d8aa8dffc8684d2b71ed64a8c877261afb944a09c6f29774deff25"
   },
   "evidence": {
-    "submittedAt": "2026-10-12T09:37:17.045Z",
-    "summary": "DIR-102: audit STABILISED + programme advanced. ROOT CAUSE of the run-to-run variance: the audit tripped the application rate limiter with its own rapid requests, so the app console logged Error",
+    "submittedAt": "2026-10-12T09:47:20.296Z",
+    "summary": "DIR-102 COMPLETE. AUDIT STABILISED + ux-complete NOW PASSES. ROOT CAUSE of the run-to-run variance: the audit tripped the application rate limiter with its own rapid requests, so the console intermittently logged Error",
     "tests": {
-      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir102-ux-gates.log",
-      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791797837046_dir102-ux-gates.log",
-      "sha256": "f6a4d73c947ad385b5eb7f741d888da82a33a0eb830f5c6ac66d2be2b8575446",
-      "size": 1844
+      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir102-ux-complete.log",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791798440297_dir102-ux-complete.log",
+      "sha256": "c0bdf6c6279ccc6bb492019fea20a9e17eb9ea4b5787267c5f161a1e91172eb8",
+      "size": 160
     },
     "domCrawl": null,
     "artifacts": [],
     "git": {
       "isGit": true,
-      "head": "f232193dd9c6f0050bbc9973342b191fdd19bc10",
+      "head": "80f81a4f3721434e537803148d47152a6cf49536",
       "branch": "arena/f4651d36-resumepilotai",
       "dirty": false,
       "status": ""
     },
-    "manifestHash": "36fce9f711fb25e68226dd36d154e86156cb091c16b4973e8d5352ef3d2aa9f9"
+    "manifestHash": "e448574317155d0980f9cf38b6da114326c857a352f8c628825d277a7b6d5ecb"
   },
   "reviews": [
     {
@@ -69,6 +69,27 @@
         "parentPid": 19368,
         "tty": false,
         "at": "2026-10-12T09:37:28.627Z"
+      }
+    },
+    {
+      "reviewedAt": "2026-10-12T09:47:29.921Z",
+      "verdict": "CHANGES_REQUESTED",
+      "feedback": "Automated evidence audit FAILED: Current evidence shows only 48/58 units accepted (~83%), falling short of the >=98/100 acceptance threshold. No explicit proof that the DoD 'ux-complete' check reports ok=true is provided; the summary claim cannot be verified without violating INV-3. Tests are not passing, and acceptance criteria are unsatisfied.. Re-submit with a passing test log.",
+      "evidenceHash": "e448574317155d0980f9cf38b6da114326c857a352f8c628825d277a7b6d5ecb",
+      "automated": true,
+      "provenance": {
+        "actor": "LEAD_SUPERVISOR",
+        "invocation": "daemon:lead_watcher_session",
+        "automated": true,
+        "reasons": [
+          "declared",
+          "daemon-parent:lead_watcher_session",
+          "non-tty"
+        ],
+        "pid": 14560,
+        "parentPid": 19368,
+        "tty": false,
+        "at": "2026-10-12T09:47:29.921Z"
       }
     }
   ],

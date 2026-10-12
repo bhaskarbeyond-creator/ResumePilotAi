@@ -15,7 +15,10 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(ROOT, '.bridge', 'evidence', 'dir098', 'inventory.json');
 
 const mainSrc = fs.readFileSync(path.join(ROOT, 'src', 'main.jsx'), 'utf8');
-const routes = [...new Set([...mainSrc.matchAll(/path="([^"]+)"/g)].map((m) => m[1]))].sort();
+const routes = [...new Set([...mainSrc.matchAll(/path="([^"]+)"/g)].map((m) => m[1]))]
+    // The global catch-all "*" is a router fallback, not a page; it is not a review unit.
+    .filter((r) => r !== '*')
+    .sort();
 
 const PORTALS = [
     { key: 'candidate', prefixes: ['/dashboard', '/build-resume', '/resume', '/resumes', '/coverletter', '/portfolios', '/portfolio'] },

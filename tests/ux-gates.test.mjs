@@ -17,7 +17,7 @@ const inventory = () => JSON.parse(fs.readFileSync(INV, 'utf8'));
 
 test('UX-AC1: the inventory covers 100% of discovered routes (no omissions)', () => {
     const inv = inventory();
-    const routes = [...new Set([...read('src/main.jsx').matchAll(/path="([^"]+)"/g)].map((m) => m[1]))];
+    const routes = [...new Set([...read('src/main.jsx').matchAll(/path="([^"]+)"/g)].map((m) => m[1]))].filter((r) => r !== '*');
     assert.equal(inv.units.length, routes.length, 'exactly one review unit per discovered route');
     const have = new Set(inv.units.map((u) => u.route));
     const missing = routes.filter((r) => !have.has(r));

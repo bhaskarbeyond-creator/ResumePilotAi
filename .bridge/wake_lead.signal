@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-12T09:37:18.047Z",
-  "seq": 3088,
-  "id": "evt_mv526475_2f09f768ac33",
+  "timestamp": "2026-10-12T09:47:21.191Z",
+  "seq": 3092,
+  "id": "evt_mv52j1l5_8e10fe0529b6",
   "type": "EVIDENCE_SUBMITTED",
   "title": "[Evidence] DIR-102: Master UI/UX Transformation: review and ACCEPT the next outstanding review units at >=98/100",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-102",
-  "summary": "DIR-102: audit STABILISED + programme advanced. ROOT CAUSE of the run-to-run variance: the audit tripped the application rate limiter with its own rapid requests, so the app console logged Error"
+  "summary": "DIR-102 COMPLETE. AUDIT STABILISED + ux-complete NOW PASSES. ROOT CAUSE of the run-to-run variance: the audit tripped the application rate limiter with its own rapid requests, so the console intermittently logged Error"
 }
