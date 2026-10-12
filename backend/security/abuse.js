@@ -1,5 +1,6 @@
 const crypto = require('crypto');
-const { resolveEffectiveEntitlement } = require('./entitlements');
+// DIR-106: the single AI governance resolver + its quota-source vocabulary.
+const { resolveAiGovernance, QUOTA_SOURCE } = require('./aiGovernance');
 
 let injectedCounterStore = null;
 
@@ -301,8 +302,41 @@ async function enforceDailyAiQuota(req, res, next) {
     const uidHash = crypto.createHash('sha256').update(req.user.uid).digest('hex').slice(0, 40);
     const day = dayKey();
     const pool = require('../database/mysql').getPool();
-    let limit = Number(process.env.AI_BASIC_DAILY_LIMIT || 10);
+
+    // DIR-106 / P0-1 — entitlement is decided by the SINGLE governance resolver
+    // that index.js installs BEFORE this middleware. Previously this gate read
+    // `req.tenantContext`, which is only ever populated inside the enterprise
+    // router (i.e. after this code runs), so `tenantData` was always null and
+    // every organization member was charged against their personal allowance.
+    const governance = req.aiGovernance || await resolveAiGovernance(req);
+    if (governance?.error) {
+      return res.status(governance.error.status || 400).json({
+        error: {
+          code: governance.error.code,
+          message: governance.error.message,
+          requestId: res.locals.requestId,
+        },
+      });
+    }
+    const quota = governance?.quota || null;
+    if (!quota || governance.source === QUOTA_SOURCE.NONE || !(Number(quota.userLimit) > 0)) {
+      return res.status(403).json({
+        error: {
+          code: 'AI_ENTITLEMENT_REQUIRED',
+          message: 'No active AI entitlement is available for this account',
+          requestId: res.locals.requestId,
+        },
+      });
+    }
+
+    const isOrganization = quota.scope === QUOTA_SOURCE.ORGANIZATION;
+    const tenantId = isOrganization ? String(quota.sharedScopeKey) : null;
+    // Rule A: the organization's shared budget is a HARD cap. A null sharedLimit
+    // means "not configured" — never "unlimited", and never a personal fallback.
+    const sharedLimit = isOrganization && Number(quota.sharedLimit) > 0 ? Number(quota.sharedLimit) : null;
+    let limit = Number(quota.userLimit);
     let count = 0;
+    let sharedCount = 0;
     const maxAttempts = 3;
     let attempts = 0;
 
@@ -311,18 +345,44 @@ async function enforceDailyAiQuota(req, res, next) {
       const conn = await pool.getConnection();
       try {
         await conn.beginTransaction();
-        const [userRows] = await conn.query('SELECT * FROM users WHERE id = ? LIMIT 1', [req.user.uid]);
-        const userData = userRows[0] || {};
-        const [quotaRows] = await conn.query("SELECT data FROM system_settings WHERE category = 'ai_quota' LIMIT 1");
-        const quotaConfig = quotaRows[0]
-          ? (typeof quotaRows[0].data === 'string' ? JSON.parse(quotaRows[0].data) : quotaRows[0].data)
-          : {};
-        const entitlement = resolveEffectiveEntitlement(userData, {
-          userClaims: req.user || {},
-          tenantData: req.tenantContext?.tenant || null,
-          quotaConfig,
-        });
-        limit = entitlement.dailyLimit;
+
+        // (1) SHARED organization counter. Locked FIRST so concurrent members of
+        //     the same tenant serialise on the organization budget, not merely on
+        //     their own row (Rule A: "including concurrent requests").
+        if (sharedLimit !== null) {
+          await conn.query(
+            `INSERT INTO ai_quota_counters (scope, scope_key, uid, day_key, count, limit_used)
+             VALUES ('TENANT', ?, '', ?, 0, ?)
+             ON DUPLICATE KEY UPDATE limit_used = VALUES(limit_used)`,
+            [tenantId, day, sharedLimit]
+          );
+          const [sharedRows] = await conn.query(
+            `SELECT count FROM ai_quota_counters
+              WHERE scope = 'TENANT' AND scope_key = ? AND uid = '' AND day_key = ?
+              FOR UPDATE`,
+            [tenantId, day]
+          );
+          sharedCount = sharedRows.length ? Number(sharedRows[0].count || 0) + 1 : 1;
+          if (sharedCount > sharedLimit) {
+            // Rule A: an exhausted ORGANIZATION budget must NOT silently fall
+            // back to the member's personal subscription or another provider key.
+            const error = new Error('AI_ORG_QUOTA_EXCEEDED');
+            error.status = 429;
+            error.code = 'AI_ORG_QUOTA_EXCEEDED';
+            throw error;
+          }
+        }
+
+        // (2) PER-USER counter — the existing `ai_usage` ledger, unchanged in
+        //     meaning, now carrying tenant attribution for correct accounting.
+        //     Pre-seed row if not exists to take an exact row lock on (day_key, uid_hash)
+        //     instead of an InnoDB gap lock.
+        await conn.query(
+          `INSERT INTO ai_usage (day_key, uid_hash, uid, tenant_id, scope, email, count, limit_used)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE limit_used = VALUES(limit_used)`,
+          [day, uidHash, req.user.uid, tenantId, quota.scope, String(req.user?.email || '').slice(0, 255), 0, limit]
+        );
         const [rows] = await conn.query(
           'SELECT count FROM ai_usage WHERE day_key = ? AND uid_hash = ? FOR UPDATE',
           [day, uidHash]
@@ -331,13 +391,25 @@ async function enforceDailyAiQuota(req, res, next) {
         if (count > limit) {
           const error = new Error('AI_DAILY_QUOTA_EXCEEDED');
           error.status = 429;
+          error.code = 'AI_DAILY_QUOTA_EXCEEDED';
           throw error;
         }
+
+        // (3) Commit BOTH counters in ONE transaction: a request is charged to
+        //     both, or to neither. No partial deduction is possible.
+        if (sharedLimit !== null) {
+          await conn.query(
+            `UPDATE ai_quota_counters
+                SET count = ?, limit_used = ?, last_used_at = CURRENT_TIMESTAMP
+              WHERE scope = 'TENANT' AND scope_key = ? AND uid = '' AND day_key = ?`,
+            [sharedCount, sharedLimit, tenantId, day]
+          );
+        }
         await conn.query(
-          `INSERT INTO ai_usage (day_key, uid_hash, uid, email, count, limit_used, last_used_at)
-           VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-           ON DUPLICATE KEY UPDATE count = VALUES(count), email = VALUES(email), limit_used = VALUES(limit_used), last_used_at = CURRENT_TIMESTAMP`,
-          [day, uidHash, req.user.uid, String(req.user?.email || '').slice(0, 255), count, limit]
+          `INSERT INTO ai_usage (day_key, uid_hash, uid, tenant_id, scope, email, count, limit_used, last_used_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+           ON DUPLICATE KEY UPDATE count = VALUES(count), tenant_id = VALUES(tenant_id), scope = VALUES(scope), email = VALUES(email), limit_used = VALUES(limit_used), last_used_at = CURRENT_TIMESTAMP`,
+          [day, uidHash, req.user.uid, tenantId, quota.scope, String(req.user?.email || '').slice(0, 255), count, limit]
         );
         await conn.commit();
         break;
@@ -355,8 +427,26 @@ async function enforceDailyAiQuota(req, res, next) {
     }
     res.setHeader('X-AI-Daily-Limit', String(limit));
     res.setHeader('X-AI-Daily-Remaining', String(Math.max(0, limit - count)));
+    // DIR-106: the client can now see WHICH budget was charged. The values are
+    // server-calculated; the client never reports or supplies them.
+    res.setHeader('X-AI-Quota-Source', String(quota.scope));
+    if (sharedLimit !== null) {
+      res.setHeader('X-AI-Org-Daily-Limit', String(sharedLimit));
+      res.setHeader('X-AI-Org-Daily-Remaining', String(Math.max(0, sharedLimit - sharedCount)));
+    }
     return next();
   } catch (error) {
+    // Rule A: organization exhaustion has its own code so it can never be
+    // mistaken for a personal-plan limit, and it never triggers a fallback.
+    if (error.code === 'AI_ORG_QUOTA_EXCEEDED') {
+      return res.status(429).json({
+        error: {
+          code: 'AI_ORG_QUOTA_EXCEEDED',
+          message: 'Organization AI quota reached',
+          requestId: res.locals.requestId,
+        },
+      });
+    }
     if (error.status === 429 || error.message === 'AI_DAILY_QUOTA_EXCEEDED') {
       return res.status(429).json({ error: { code: 'AI_DAILY_QUOTA_EXCEEDED', message: 'Daily AI quota reached', requestId: res.locals.requestId } });
     }

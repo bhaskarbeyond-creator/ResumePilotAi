@@ -32,6 +32,31 @@ function resolveActiveTenantMembership(_userData = {}) {
 }
 
 /**
+ * DIR-106 / P0-3 — an organization entitlement only counts when it is VALID.
+ *
+ * Rule A: "Suspended, expired, disabled, or otherwise invalid organizational
+ * entitlements must not grant access."
+ *
+ * FAIL-CLOSED ON EXPLICIT INVALIDITY: a tenant/membership state that is present
+ * and not ACTIVE denies the organizational entitlement outright. A state that is
+ * absent is tolerated so that legacy callers which pass a bare `{ id }` tenant
+ * object keep working; the authoritative path (`security/aiGovernance.js`)
+ * always supplies both fields from MariaDB, so real requests are always checked.
+ */
+const ACTIVE_TENANT_STATES = new Set(['ACTIVE']);
+const ACTIVE_MEMBERSHIP_STATES = new Set(['ACTIVE']);
+
+function isTenantEntitlementValid(tenantData = {}) {
+  if (!tenantData) return false;
+  const tenantState = String(tenantData.status ?? tenantData.lifecycleState ?? '').toUpperCase();
+  if (tenantState && !ACTIVE_TENANT_STATES.has(tenantState)) return false;
+  const membershipState = String(tenantData.membershipStatus ?? tenantData.membershipState ?? '').toUpperCase();
+  if (membershipState && !ACTIVE_MEMBERSHIP_STATES.has(membershipState)) return false;
+  if (tenantData.decommissionedAt) return false;
+  return true;
+}
+
+/**
  * Resolves the effective capability tier for a user.
  * 
  * @param {Object} userData - Stored user profile document from `users/{uid}`
@@ -44,7 +69,10 @@ function resolveActiveTenantMembership(_userData = {}) {
 function resolveEffectiveEntitlement(userData = {}, { userClaims = {}, tenantData = null, quotaConfig = {} } = {}) {
   const admin = isUserAdmin(userData, userClaims);
   const activeTenantMembership = null;
-  const isEnterprise = Boolean(tenantData);
+  // DIR-106 / P0-3: an organization entitlement is only recognized when the
+  // tenant is live and the membership is active. Invalid membership grants
+  // nothing and falls through to individual resolution (Rule A + Rule B).
+  const isEnterprise = Boolean(tenantData) && isTenantEntitlementValid(tenantData);
   
   // B2C consumer subscription state is owned by MariaDB billing/profile data.
   // Enterprise rights are never inferred from this string; they require a
@@ -76,14 +104,20 @@ function resolveEffectiveEntitlement(userData = {}, { userClaims = {}, tenantDat
     removesWatermark = true;
   } else if (isEnterprise) {
     effectiveTier = 'Enterprise';
-    // Use tenant-specific daily limit if available, otherwise default to enterprise baseline (5,000)
+    // DIR-106 / P1-1: the tenant's configured limit is authoritative. The former
+    // `Math.max(1000, ...)` floor silently overrode a tenant configured for less
+    // than 1000/day, contradicting "governed by that organization's assigned
+    // configuration" (Rule A). Only a genuinely unusable value falls back.
     const tenantDailyLimit = Number(
       tenantData?.aiPolicy?.dailyLimit ||
+      tenantData?.aiPolicy?.perUserDailyLimit ||
       tenantData?.quotaPolicy?.aiRequestsPerDay ||
       quotaConfig?.enterpriseDailyLimit ||
       5000
     );
-    dailyLimit = Math.max(1000, tenantDailyLimit);
+    dailyLimit = Number.isFinite(tenantDailyLimit) && tenantDailyLimit > 0
+      ? Math.floor(tenantDailyLimit)
+      : 5000;
     allowsDocxExport = true;
     allowsAllTemplates = true;
     removesWatermark = true;
@@ -95,17 +129,18 @@ function resolveEffectiveEntitlement(userData = {}, { userClaims = {}, tenantDat
     removesWatermark = true;
   } else if (admin) {
     // Admin role without active paid candidate subscription (e.g. SUPER_ADMIN + Basic + INACTIVE):
-    // Role grants administrative console privileges (isAdmin: true, dailyLimit for admin tasks),
-    // but candidate resume features behave strictly according to paid entitlement (Basic tier).
+    // Role grants administrative console privileges (isAdmin: true), but candidate resume features
+    // and candidate AI quota behave strictly according to paid entitlement (Basic tier, Rule C).
     effectiveTier = 'Basic';
-    dailyLimit = Number(quotaConfig?.adminDailyLimit || process.env.AI_ADMIN_DAILY_LIMIT || 10000);
+    dailyLimit = Number(quotaConfig?.basicDailyLimit || process.env.AI_BASIC_DAILY_LIMIT || 10);
     allowsDocxExport = false;
     allowsAllTemplates = false;
     removesWatermark = false;
   }
 
-  // Account for manual single-user AI quota override if configured
-  if (userData?.aiQuotaOverride) {
+  // DIR-106 / P1-2: a personal per-user override must never widen or narrow an
+  // organization's configured allowance — the organization governs its members.
+  if (userData?.aiQuotaOverride && !isEnterprise) {
     const override = userData.aiQuotaOverride;
     const expiresAt = override.expiresAt ? new Date(override.expiresAt).getTime() : Infinity;
     if (expiresAt > Date.now() && Number.isFinite(Number(override.dailyLimit))) {
@@ -129,6 +164,7 @@ function resolveEffectiveEntitlement(userData = {}, { userClaims = {}, tenantDat
 
 module.exports = {
   isUserAdmin,
+  isTenantEntitlementValid,
   resolveActiveTenantMembership,
   resolveEffectiveEntitlement,
   isPaidMembershipTier,

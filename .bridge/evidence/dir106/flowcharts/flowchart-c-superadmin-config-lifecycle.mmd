@@ -1,0 +1,24 @@
+flowchart TD
+    A[Super Admin authenticates] --> B{requireAuth + requireSuperAdmin<br/>+ requireRecentAdminAuthentication}
+    B -- fail --> B1[401 / 403 / RECENT_AUTH_REQUIRED]
+    B -- pass --> C[AI settings interface<br/>AiSettings.jsx]
+    C --> D{Operation}
+    D -- read --> E[GET /api/admin/ai-settings<br/>FIX P0-4: add route authz + policy map]
+    D -- write --> F[POST /api/admin/ai-settings<br/>requireRecentAdminAuthentication]
+    D -- test --> G[POST /api/admin/ai/test-provider]
+    E --> H[Masked keys only<br/>maskApiKey aiAdmin.js:24]
+    F --> I{Secret field state}
+    I -- masked/blank --> I1[Preserve existing credential<br/>MASKED_PATTERN guard]
+    I -- clearSecrets --> I2[Revoke credential]
+    I -- new value --> I3[Validate length 12-512]
+    I3 --> J[Persist to ai_providers<br/>revision check expectedRevision]
+    I2 --> J
+    I1 --> J
+    G --> K[Connectivity + model validation<br/>testAiProvider / fetchProviderModels]
+    K -- ok --> L[Status: configured & reachable]
+    K -- fail --> L1[422/503 typed error<br/>AI_PROVIDER_AUTHENTICATION_FAILED etc.]
+    J --> M[Audit log<br/>createAdminAuditMiddleware index.js:2652]
+    L --> M
+    L1 --> M
+    M --> N[Runtime config retrieval<br/>loadProviderConfiguration + cache clear]
+    N --> O[AI execution pipeline]

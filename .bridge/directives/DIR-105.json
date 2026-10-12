@@ -1,0 +1,75 @@
+{
+  "id": "DIR-105",
+  "title": "Restore Full 26+ Platform Settings Operations to Superadmin",
+  "priority": "P0",
+  "status": "IN_PROGRESS",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-12T16:55:44.109Z",
+  "updatedAt": "2026-10-12T17:14:26.776Z",
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "spec": "# SECTION 1 â€” EXECUTIVE MANDATE\nRestore full 26+ Platform Settings Operations to Superadmin across both the modern Cuba Chrome and the Settings Viewport.\nUSER OBJECTIVE: The options shown in the screenshot under Platform Settings (SYSTEM CONFIGURATION) were missing from Superadmin. Review them and add them back. Make them completely operational and test them, reiterating until 10/10 production standard.\nROOT CAUSE:\n1) The screenshot reflects the legacy sidebar (src/components/admin/sidebar/sidebar.jsx) which rendered 6 categories (Modules & Addons, General & Branding, AI Engine & Services, Payments & Gateways, Security & Health, Content & Media) containing 26+ granular configuration tabs.\n2) When Cuba Chrome (AdminPortalCuba/CubaPortalShell) was made default, the legacy sidebar was unmounted.\n3) In portalNavigation.js (ADMIN_PORTAL_NAVIGATION), System Configuration was compressed down to a single link ('/admin/settings').\n4) Settings.jsx lacked in-page category/tab navigation, stranding administrators on the default 'modulesSettings' with zero UI controls to access or switch to the other 25+ setting panels (AI providers, Firebase, Database & persistence engine, payment gateways, orders, branding, SEO, feature flags, code injection, templates, etc.).\nSCOPE:\n1) Build an executive Cuba-grade Settings Navigation Hub directly inside Settings.jsx:\n   - Category selector pills for all 6 groups matching the screenshot.\n   - Search filter for rapid lookup of all 26+ configuration modules.\n   - Tab buttons/chips with icons and active status indicators.\n   - Seamless deep-linking with reactive URL search param ?tab=<key>.\n   - Superadmin privilege & permission gating preserved.\n2) Enhance Superadmin portal navigation & command palette (portalNavigation.js, portalCommands.js, or sidebar) so all 26+ settings modules are discoverable, indexed, and directly navigable.\n3) Full runtime verification of all 26+ setting panels rendering and operating cleanly without crash or regression.\n\n# SECTION 2 â€” ABSOLUTE MODE RESTRICTIONS: PLAN MODE VS ACT MODE\nPLAN MODE: Read-only reconnaissance, AST inspect, dependency trace, test review, and plan submission via bridge dev plan.\nACT MODE: Authorized surgical implementation of Settings Navigation Hub, portal navigation indexing, tests, and DOM crawl verification.\n\n# SECTION 3 â€” PRE-FLIGHT REPOSITORY AND WORKSPACE VERIFICATION\nWorkspace: D:\\xampp\\htdocs\\IME365. Baseline: src/cv-templates/ 0-byte diff. Node runtime on Windows. Existing tests/cuba-admin-console.test.mjs must stay green.\n\n# SECTION 4 â€” NON-NEGOTIABLE PROJECT INVARIANTS\n1) Zero security bypass: respect superAdminOnly and permission requirements across all tabs.\n2) Zero secret leakage: credentials and API keys remain masked server-side with zero plaintext exposure in DOM or payloads.\n3) Cuba Executive Design tokens: use var(--cuba-*) tokens, WCAG 2.1 AA contrast ratios (>= 4.5:1), responsive layout without horizontal overflow.\n4) Do not modify frozen modules without Lead authorization.\n\n# SECTION 5 â€” AUTHORITATIVE REFERENCES AND PARITY REQUIREMENTS\nReferences: User screenshot of Platform Settings navigation, src/components/admin/sidebar/sidebar.jsx (SETTINGS_GROUPS), src/components/admin/settings/Settings.jsx (ALL_SETTINGS), src/components/cuba/portalNavigation.js (ADMIN_PORTAL_NAVIGATION).\n\n# SECTION 6 â€” MANDATORY INVESTIGATION AND COVERAGE\nInvestigate Settings.jsx, SettingsContent, SettingsWrapper, SETTINGS_GROUPS, ALL_SETTINGS, portalNavigation.js, and portalCommands.js. Ensure every single key from the screenshot is operational:\n- Modules & Addons: modulesSettings (Addon Modules)\n- General & Branding: websiteSettings (Brand Identity & Meta), brandingSettings (Branding & Assets), geoSeoSettings (Indian Geo-SEO), llmGeoSettings (LLM GEO / AI Search), firebaseSettings (Firebase Identity), databaseSettings (Database & Persistence Engine), socialAuthSettings (Social Sign-On & OAuth), emailSettings (Email & SMTP)\n- AI Engine & Services: storageSettings (Cloud Storage), aiSettings (AI & Gemini Providers), exportPdfSettings (PDF Exporter), jobScraperSettings (Job & Naukri Scraper), twilioSmsSettings (Twilio SMS Gateway)\n- Payments & Gateways: currencySettings (Platform Currency), ordersManagement (Orders & Transactions), subscriptionsSettings (Subscriptions & Gateways), watermarkSettings (PDF Watermark)\n- Security & Health: integrationsSettings (Maps & API Keys), securityLimitsSettings (Security & Limits), systemHealthSettings (System Health), featureFlagsSettings (Feature Flags), platformConfigSettings (Platform Config), codeInjectionSettings (Code Injection), gdprLegalSettings (GDPR & Legal Compliance)\n- Content & Media: templateManagerSettings (Templates Manager), pages (Pages & CMS), blog (Blog Engine), socialSettings (Social Channels), analytics (Analytics & Tracking), ads (Ads Manager).\n\n# SECTION 7 â€” QUALITY, RESPONSIVENESS, ACCESSIBILITY, AND NON-FUNCTIONAL REQUIREMENTS\nWCAG 2.1 AA compliant, keyboard navigable, responsive down to 320px mobile viewport, clean Cuba glassmorphism aesthetic, zero console errors.\n\n# SECTION 8 â€” DATA INTEGRITY, STATE MANAGEMENT, AND EDGE CASES\nHandle loading states, server error states, unsaved changes warnings where applicable, and maintain bidirectional sync between URL ?tab=<key> and active panel state.\n\n# SECTION 9 â€” TEST STRATEGY AND ACCEPTANCE REQUIREMENTS\n1) node --test tests/cuba-admin-console.test.mjs must exit 0.\n2) New automated integration/unit test tests/admin-settings-navigation.test.mjs verifying all 26+ settings tabs are mapped, navigable, and gated properly.\n3) Real DOM or Playwright crawl proving all 6 groups and 26+ tabs can be navigated to and render their respective panels.\n\n# SECTION 10 â€” REQUIRED FORENSIC AND ENGINEERING DELIVERABLES\n1) Implemented and verified Settings.jsx (with Executive Cuba Settings Hub).\n2) Updated portalNavigation.js / portalCommands.js for command palette & navigation indexing.\n3) Test suite tests/admin-settings-navigation.test.mjs with 100% pass rate.\n4) Evidence logs submitted via bridge dev submit-evidence.\n\n# SECTION 11 â€” SEVERITY, PRIORITISATION, AND IMPLEMENTATION SEQUENCING\nP0: Core navigation restoration and tab accessibility in Settings.jsx.\nP1: Command palette & Cuba navigation indexing.\nP2: Visual polish, mobile responsiveness, and accessibility focus rings.\n\n# SECTION 12 â€” REQUIRED FINAL RESPONSE AND COMPLETION REPORT\nReport exact commands + exit codes, orthogonal status, evidence classification, git HEAD + src/cv-templates 0-byte verification.\n\n# SECTION 13 â€” MANDATORY BRIDGE PLAN SUBMISSION AND TOOL EXECUTION GOVERNANCE\nSubmit the plan with:\nbridge dev plan --directive <ID> --projectDir D:\\xampp\\htdocs\\IME365 --summary <...> --steps S1;S2, then bridge dev submit-evidence. Emit heartbeats <= 480s.\n\n# SECTION 14 â€” FINAL EXECUTIVE INSTRUCTION\nInvestigate first; root-cause over symptom-patching; validate every materially affected surface; never fabricate evidence; reiterate until 10/10 operational standard. Every single option from the screenshot must be verified operational in Superadmin.\n",
+  "invariants": [
+    "[Zero security bypass: respect superAdminOnly and permission requirements,Zero secret leakage: keep credentials masked server-side,Maintain Cuba Executive Glassmorphism design tokens]"
+  ],
+  "acceptanceCriteria": [
+    "[All 6 groups and 26+ settings modules accessible and functional in Superadmin Settings.jsx,URL search param ?tab=<key> reactively switches active panel with deep-linking,Ctrl+K Command Palette indexes all settings tabs for rapid access,tests/cuba-admin-console.test.mjs and new settings regression tests pass with 0 failures]"
+  ],
+  "dependsOn": [],
+  "sourceEventId": null,
+  "plan": {
+    "submittedAt": "2026-10-12T17:14:14.172Z",
+    "summary": "ROOT CAUSE CONFIRMED (evidence-based; no code changed). Cuba is the DEFAULT shell (cubaShellFlag.js:58 returns 'cuba' whenever nothing valid is stored), and Admin.jsx:712 renders the legacy Sidebar ONLY when !isCubaChrome. That Sidebar owns SETTINGS_GROUPS (sidebar.jsx:75-119) = 6 groups / 31 settings surfaces and navigates via navigate('/admin/settings?tab=<key>') (sidebar.jsx:209-211). Under Cuba, AdminPortalCuba.jsx:42 renders ADMIN_PORTAL_NAVIGATION, whose 'System Configuration' group (portalNavigation.js:177-183) exposes exactly ONE entry {to:'/admin/settings', permission:'*'} with NO ?tab. Settings.jsx:184 defaults activeTab to 'modulesSettings' and the component has NO internal rail/tabs/drawer. NET EFFECT: a Super Admin reaches /admin/settings and sees only 'Addon Modules'; the other ~30 surfaces (Firebase, Database, AI providers, Payments, Security, Feature Flags, Platform Config, Code Injection, GDPR, Templates, Pages, Blog, Analytics, Ads) have NO navigable path in the default shell. ALL_SETTINGS (Settings.jsx:40-74) declares 33 keys; SETTINGS_GROUPS declares 31; facebookAuthSettings and paymentSettings exist only in ALL_SETTINGS. SEVERITY: reachability/UX defect, NOT a security hole - authorization is already enforced twice (RequireTabPerm required='*' in Admin.jsx, plus SettingsWrapper isDenied gate at Settings.jsx:192-195 for superAdminOnly/permission). Restoring navigation therefore CANNOT widen access. PLAN: add a Cuba-glassmorphism in-page settings navigator INSIDE Settings.jsx driven by the existing ALL_SETTINGS array (single source of truth) and filtered by the SAME hasPerm/superAdminOnly logic the wrapper already uses, so no second client-side authorization opinion can disagree with the server; then give the existing 'System Settings' rail entry a deep-link so it lands on the first permitted tab instead of a bare default. No backend change; no new permission semantics; secret masking untouched.",
+    "steps": [
+      "S1 Confirm the defect in-browser: load /admin/settings under Cuba chrome and record that only 'Addon Modules' is reachable",
+      "capture as evidence before any edit.",
+      "S2 Reconcile the two settings inventories: prove ALL_SETTINGS (33) is a superset of SETTINGS_GROUPS (31) and document the 2 aliases, so the navigator is built from ONE list.",
+      "S3 Add an in-page navigator to Settings.jsx: grouped rail/index over ALL_SETTINGS using Cuba Executive Glassmorphism tokens only (cuba-* classes, no raw hex), responsive from 320px to 1920px.",
+      "S4 Drive selection through the existing ?tab= contract via setSearchParams so deep links, browser back/forward and the legacy sidebar stay byte-compatible.",
+      "S5 Filter navigator entries with the SAME hasPerm + superAdminOnly predicate SettingsWrapper already computes - extract it to one helper used by BOTH the navigator and the isDenied gate so they cannot drift.",
+      "S6 Give portalNavigation.js 'admin-settings' a deep-link to the first permitted tab, keeping tests/cuba-portal-navigation.test.mjs green and adding NO new permission tag.",
+      "S7 Verify zero security regression: prove a non-super-admin still cannot reach a superAdminOnly tab by URL, and that the navigator hides exactly what the server denies.",
+      "S8 Verify zero secret leakage: confirm no settings component is modified and that masked keys remain masked in both the DOM and the API payloads.",
+      "S9 Evidence: build under 4.0s, cuba-admin-console + cuba-portal-navigation + cuba-design-system suites green, and an authenticated Playwright crawl proving all reachable tabs at 320/768/1440px with 0 console errors.",
+      "S10 Preserve INV-1: src/cv-templates/ and backend/services/aiRuntime.js must stay a 0-byte diff."
+    ],
+    "planHash": "3e22e54322ef2d09e7dc157f214a09c96ea37f2aa7f30244f39f0e932c131e42"
+  },
+  "evidence": null,
+  "reviews": [],
+  "freeze": null,
+  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "continuationPending": false,
+  "revisionTarget": null,
+  "planApproval": {
+    "approvedAt": "2026-10-12T17:14:26.776Z",
+    "automated": true,
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "daemon:lead_watcher_session",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "daemon-parent:lead_watcher_session",
+        "non-tty"
+      ],
+      "pid": 27208,
+      "parentPid": 15736,
+      "tty": false,
+      "at": "2026-10-12T17:14:26.775Z",
+      "explicitlyAllowed": true
+    },
+    "feedback": "Auto-approved by the autonomous plan-scorer (score 85/100, reviewer verdict approved). NOT a human Lead review."
+  },
+  "heartbeats": [
+    {
+      "at": "2026-10-12T17:38:59.639Z",
+      "status": "Implemented settings navigation hub; build 3.02s; 20/0 + 142/0 tests; live crawl PASS (33 panels, 0 console errors)",
+      "percent": 100,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    }
+  ],
+  "lastHeartbeatAt": "2026-10-12T17:38:59.639Z"
+}

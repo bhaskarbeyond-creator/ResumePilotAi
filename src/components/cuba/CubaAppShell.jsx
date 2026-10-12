@@ -15,12 +15,16 @@
  *     second nested scrollbar (§36).
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FiMenu, FiSearch, FiSun, FiMoon, FiX } from 'react-icons/fi';
+import { FiMenu, FiSearch, FiSun, FiMoon, FiX, FiHelpCircle } from 'react-icons/fi';
 // DIR-079: the header brand block's sidebar toggle glyphs.
 import { GoSidebarCollapse, GoSidebarExpand } from 'react-icons/go';
 // DIR-092 area 7: the sidebar "Upgrade to Pro" promo card.
 import CubaUpgradeCard from './CubaUpgradeCard';
 import AiEngineStatus from './AiEngineStatus';
+// The signed-in user's own daily AI allowance, rendered in the header trail.
+// It self-sources from `/api/ai-usage` (the same resolver that gates AI
+// requests), so the shell needs no new props and cannot disagree with the gate.
+import AiTokenMeter from './AiTokenMeter';
 import CubaCommandPalette from './CubaCommandPalette';
 // DIR-026 / AC-2: the live unread-message badge. It is its OWN header action
 // (icon + server-sourced pill) rather than an `item.badge` string, because the
@@ -459,16 +463,16 @@ const CubaAppShell = ({
                             data-testid="cuba-command-search"
                             aria-label="Search or run a command"
                             aria-keyshortcuts="Control+K Meta+K"
-                            className="cuba-focusable group hidden w-full items-center gap-2.5 rounded-full border border-cuba-header-search-border px-4 py-2.5 text-left shadow-cuba-sm transition-colors hover:bg-cuba-header-search-hover md:flex"
+                            className="cuba-focusable group hidden w-full items-center gap-3 rounded-full border border-cuba-header-search-border px-4 py-2.5 text-left shadow-cuba-sm transition-all duration-200 hover:-translate-y-px hover:border-cuba-line-strong hover:bg-cuba-header-search-hover hover:shadow-cuba-md focus-visible:shadow-cuba-md md:flex"
                             style={{ backgroundColor: 'var(--cuba-header-search-bg)' }}
                         >
-                            <FiSearch className="h-4 w-4 flex-none text-cuba-ink-subtle" aria-hidden="true" />
+                            <FiSearch className="h-4 w-4 flex-none text-cuba-ink-subtle transition-colors group-hover:text-cuba-ink-muted" aria-hidden="true" />
                             <span className="min-w-0 flex-1 truncate text-sm text-cuba-ink-muted">
                                 Search jobs, skills, or run a command...
                             </span>
                             <kbd
                                 data-testid="cuba-command-search-shortcut"
-                                className="hidden flex-none items-center gap-0.5 rounded-md border border-cuba-line px-1.5 py-0.5 font-mono text-[10px] font-bold sm:inline-flex"
+                                className="hidden flex-none items-center gap-0.5 rounded-md border border-cuba-line px-1.5 py-0.5 font-mono text-[10px] font-bold shadow-cuba-sm transition-colors group-hover:border-cuba-line-strong sm:inline-flex"
                                 style={{
                                     backgroundColor: 'var(--cuba-header-kbd-bg)',
                                     color: 'var(--cuba-header-kbd-ink)',
@@ -485,7 +489,7 @@ const CubaAppShell = ({
                             data-testid="cuba-command-search-mobile"
                             aria-label="Search or run a command"
                             aria-keyshortcuts="Control+K Meta+K"
-                            className="cuba-focusable inline-flex h-10 w-10 flex-none items-center justify-center rounded-cuba-sm text-cuba-ink-muted hover:bg-cuba-primary-soft md:hidden"
+                            className="cuba-focusable inline-flex h-10 w-10 flex-none items-center justify-center rounded-full text-cuba-ink-muted transition-colors hover:bg-cuba-primary-soft hover:text-cuba-ink md:hidden"
                         >
                             <FiSearch className="h-5 w-5" aria-hidden="true" />
                         </button>
@@ -523,17 +527,33 @@ const CubaAppShell = ({
                         } : undefined}
                     />
 
+                    {/* Help & Support quick action. This replaces the former "AI Assistant"
+                        pill, which was redundant: it merely opened the SAME command palette
+                        that the search field and the Ctrl-K shortcut already open, so it
+                        added a dead-feeling control to the chrome. Help & Support is a real,
+                        previously-missing destination. */}
                     <button
                         type="button"
-                        onClick={() => setPaletteOpen(true)}
-                        aria-label="Open AI Assistant"
-                        className="cuba-focusable hidden sm:inline-flex items-center gap-1.5 rounded-full bg-[#7366ff]/10 hover:bg-[#7366ff]/20 text-[#7366ff] font-semibold text-xs px-3.5 py-1.5 transition-colors border border-[#7366ff]/25"
+                        onClick={() => onNavigate && onNavigate('/dashboard/support')}
+                        aria-label="Help and support"
+                        title="Help & Support"
+                        className="cuba-focusable inline-flex h-9 w-9 items-center justify-center rounded-full text-cuba-ink-muted transition-colors hover:bg-cuba-primary-soft hover:text-cuba-ink"
                     >
-                        <span className="text-sm font-bold leading-none">+</span>
-                        <span>AI Assistant</span>
+                        <FiHelpCircle className="h-5 w-5" aria-hidden="true" />
                     </button>
 
                     <AiEngineStatus status={aiStatus} className="hidden" />
+
+                    {/* The viewer's OWN AI allowance, in the units the server
+                        enforces: requests per day. It sits immediately beside
+                        the message icon so "how much AI do I have left?" is
+                        answered by the same glance that answers "do I have
+                        messages?". Renders nothing when signed out or when the
+                        ledger is unreadable, so the header never advertises a
+                        number the platform did not measure (§46). Hidden below
+                        `sm` where the trail has no room; the account menu
+                        carries the same figure there. */}
+                    <AiTokenMeter enabled={Boolean(user)} className="hidden sm:inline-flex" />
 
                     <M3NotificationCenter onNavigate={onNavigate} />
 

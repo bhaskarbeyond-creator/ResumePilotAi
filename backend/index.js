@@ -86,7 +86,7 @@ const { getRepository } = require('./repositories');
 const app = express();
 const cors = require('cors');
 const cryptoRandom = require('crypto');
-const { requireAuth, optionalAuth, requirePermission, _permissionsFor, requireRecentAdminAuthentication, isSuperAdmin, testVerifierEnabled, issueLocalTestToken } = require('./security/auth');
+const { requireAuth, optionalAuth, requirePermission, _permissionsFor, requireRecentAdminAuthentication, requireSuperAdmin, isSuperAdmin, testVerifierEnabled, issueLocalTestToken } = require('./security/auth');
 const { enforceApiPolicy } = require('./security/policy');
 const { createEnterpriseAuthMiddleware } = require('./enterprise/enterpriseAuth');
 const {
@@ -128,6 +128,9 @@ const {
     generalApiLimiter,
     enforceDailyAiQuota
 } = require('./security/abuse');
+// DIR-106: the single authoritative AI governance resolver. Installed BEFORE the
+// AI quota gate so tenant context is never guessed at.
+const { aiGovernanceMiddleware } = require('./security/aiGovernance');
 // DIR-040: canonical security headers (one policy shared with the Apache configs),
 // the universal request sanitizer, and the boot-time secret-integrity linter.
 const { securityHeaders } = require('./security/headers');
@@ -525,7 +528,12 @@ app.use('/api', async (req, res, next) => {
         || req.path.startsWith('/live-interview')
         || req.path === '/generate-content'
         || req.path === '/parse-resume'
-        || req.path === '/generate-ai-cover-letter';
+        || req.path === '/generate-ai-cover-letter'
+        // DIR-106: the usage readout is tenant-aware by construction — it resolves
+        // the caller's organization entitlement. Without this entry the guard
+        // below rejected the header with 400, so a member of two organizations
+        // could never pin one and always saw an ambiguous (individual) answer.
+        || req.path === '/ai-usage';
     if (!asksForTenantContext || isTenantAwareRoute) return next();
     try {
         const { enterpriseFeatureEnabledAsync } = require('./enterprise/featureFlags');
@@ -541,15 +549,15 @@ const aiPaths = [
     '/api/generate-interview', '/api/check-grammar', '/api/generate-ai-cover-letter',
     '/api/generate-content', '/api/parse-resume'
 ];
-app.use(aiPaths, aiAccountLimiter, enforceDailyAiQuota);
+app.use(aiPaths, aiAccountLimiter, aiGovernanceMiddleware(), enforceDailyAiQuota);
 // A live session refresh/discard is a database read/write, not an AI inference.
 // Only POST lifecycle operations consume the AI quota; this avoids charging a
 // candidate merely for recovering after a browser refresh or network reconnect.
 app.use('/api/live-interview', (req, res, next) => {
     if (req.method !== 'POST') return next();
-    return aiAccountLimiter(req, res, () => enforceDailyAiQuota(req, res, next));
+    return aiAccountLimiter(req, res, () => aiGovernanceMiddleware()(req, res, () => enforceDailyAiQuota(req, res, next)));
 });
-app.use('/api/ai', aiAccountLimiter, enforceDailyAiQuota);
+app.use('/api/ai', aiAccountLimiter, aiGovernanceMiddleware(), enforceDailyAiQuota);
 // Reject unauthorized operators before touching the durable admission store or
 // disclosing its availability. The route repeats this guard as defense in depth.
 app.use('/api/admin/ai/test-provider', requireRecentAdminAuthentication, aiAccountLimiter);
@@ -2668,7 +2676,14 @@ app.get('/api/admin/payment-settings', requirePermission(['payments.read', 'syst
 
 // AI provider configuration is split: secrets remain in a server-only document while
 // browser-readable settings contain models/toggles only.
-app.get('/api/admin/ai-settings', async (req, res) => {
+//
+// DIR-106 / P0-4: this READ previously carried no authorization of its own. It
+// survived only because `resolveAdminReadPermission()` had no entry for this
+// hyphenated path, so `required === undefined` and the RBAC check denied every
+// principal except a `*` holder — while POST required only `system.config.write`.
+// The result was an operator who could WRITE AI configuration but not READ it.
+// The route now states its own requirement explicitly.
+app.get('/api/admin/ai-settings', requireSuperAdmin, async (req, res) => {
     try {
         const result = await loadAiAdminSettings();
         return res.json({ success: true, ...result });

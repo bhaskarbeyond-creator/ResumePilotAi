@@ -1,0 +1,187 @@
+// DIR-105 — Platform Settings reachability + authorization guards.
+//
+// Context: Cuba is the default shell and the legacy sidebar (which owned the 31
+// settings surfaces) only renders when the Cuba flag is OFF. `portalNavigation.js`
+// exposes a single `/admin/settings` link with no `?tab=`, so operators landed on
+// `modulesSettings` with no way to reach the other panels.
+//
+// What must stay true:
+//   1. Every declared setting reaches a panel that is actually mounted (no dead entry).
+//   2. Authorization is unchanged and decided in exactly one place — the hub may
+//      never widen access. `superAdminOnly` stays super-admin-only.
+//   3. The navigator handles no secrets and uses Cuba tokens only.
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+
+import { canAccessSetting, SETTINGS_GROUP_ORDER, presentGroups } from '../src/components/admin/settings/settingsAccess.js';
+
+const root = path.resolve(import.meta.dirname, '..');
+const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
+
+const SETTINGS = read('src/components/admin/settings/Settings.jsx');
+const NAVIGATOR = read('src/components/admin/settings/SettingsNavigator.jsx');
+
+/** Parses the ALL_SETTINGS inventory out of Settings.jsx. */
+function allSettings() {
+    const start = SETTINGS.indexOf('const ALL_SETTINGS');
+    const body = SETTINGS.slice(start, SETTINGS.indexOf('\n];', start));
+    const re = /\{\s*key:\s*'([^']+)',\s*label:\s*'([^']+)',\s*group:\s*'([^']+)',\s*description:\s*'([^']+)',\s*(superAdminOnly:\s*true|permission:\s*'[^']+')/g;
+    return [...body.matchAll(re)].map((m) => ({
+        key: m[1],
+        label: m[2],
+        group: m[3],
+        description: m[4],
+        superAdminOnly: m[5].startsWith('superAdminOnly'),
+        permission: m[5].startsWith('permission') ? m[5].match(/'([^']+)'/)[1] : undefined,
+    }));
+}
+
+/** Panels the content component actually renders. */
+function mountedPanels() {
+    const body = SETTINGS.slice(SETTINGS.indexOf('class SettingsContent'));
+    const keys = new Set();
+    for (const m of body.matchAll(/step === '([A-Za-z]+)'/g)) keys.add(m[1]);
+    return keys;
+}
+
+/** Comments explain policy; they are not executable surface. */
+const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+
+const NAV_CODE = stripComments(NAVIGATOR);
+
+const INVENTORY = allSettings();
+const MOUNTED = mountedPanels();
+
+describe('DIR-105 settings inventory is complete and reachable', () => {
+    it('declares a non-trivial inventory (26+ operations)', () => {
+        assert.ok(INVENTORY.length >= 26, `expected 26+ settings, found ${INVENTORY.length}`);
+    });
+
+    it('parses every entry with a key, label and group', () => {
+        for (const s of INVENTORY) {
+            assert.ok(s.key && s.label && s.group, `incomplete entry: ${JSON.stringify(s)}`);
+        }
+    });
+
+    it('mounts a panel for every declared setting (no dead navigation target)', () => {
+        for (const s of INVENTORY) {
+            assert.ok(MOUNTED.has(s.key), `"${s.label}" (${s.key}) has no mounted panel`);
+        }
+    });
+
+    it('gives every setting either a permission or an explicit superAdminOnly flag', () => {
+        for (const s of INVENTORY) {
+            assert.ok(
+                s.superAdminOnly || s.permission,
+                `"${s.key}" is neither permission-gated nor superAdminOnly`,
+            );
+        }
+    });
+
+    it('assigns every group to the canonical order (no orphan group)', () => {
+        const declared = new Set(INVENTORY.map((s) => s.group));
+        for (const g of declared) {
+            assert.ok(SETTINGS_GROUP_ORDER.includes(g), `group "${g}" is not in SETTINGS_GROUP_ORDER`);
+        }
+        assert.deepEqual(presentGroups(INVENTORY).sort(), [...declared].sort());
+    });
+});
+
+describe('DIR-105 the navigator cannot widen authorization', () => {
+    it('denies superAdminOnly entries to a non-super-admin with every permission', () => {
+        const gated = INVENTORY.filter((s) => s.superAdminOnly);
+        assert.ok(gated.length > 0, 'expected some superAdminOnly entries to guard');
+        for (const s of gated) {
+            assert.equal(
+                canAccessSetting(s, { isSuperAdmin: false, permissions: ['*'] }),
+                false,
+                `${s.key} leaked to a non-super-admin holding '*'`,
+            );
+        }
+    });
+
+    it('grants superAdminOnly entries to a super admin', () => {
+        for (const s of INVENTORY.filter((x) => x.superAdminOnly)) {
+            assert.equal(canAccessSetting(s, { isSuperAdmin: true, permissions: [] }), true);
+        }
+    });
+
+    it('requires the exact permission for permission-gated entries', () => {
+        for (const s of INVENTORY.filter((x) => !x.superAdminOnly)) {
+            assert.equal(canAccessSetting(s, { isSuperAdmin: false, permissions: [] }), false);
+            assert.equal(canAccessSetting(s, { isSuperAdmin: false, permissions: [s.permission] }), true);
+        }
+    });
+
+    it('honours a wildcard grant for permission entries but not for superAdminOnly', () => {
+        const plain = INVENTORY.find((s) => !s.superAdminOnly && s.permission);
+        assert.equal(canAccessSetting(plain, { isSuperAdmin: false, permissions: ['*'] }), true);
+    });
+
+    it('treats array-form permissions as an OR', () => {
+        const entry = { key: 'x', permission: ['a.read', 'b.read'] };
+        assert.equal(canAccessSetting(entry, { isSuperAdmin: false, permissions: ['b.read'] }), true);
+        assert.equal(canAccessSetting(entry, { isSuperAdmin: false, permissions: ['c.read'] }), false);
+    });
+
+    it('is total — a missing setting never grants access', () => {
+        assert.equal(canAccessSetting(undefined, { isSuperAdmin: true }), false);
+        assert.equal(canAccessSetting(null, { isSuperAdmin: false, permissions: ['*'] }), false);
+    });
+});
+
+
+describe('DIR-105 the wrapper and hub share one predicate', () => {
+    it('routes the denial gate through canAccessSetting', () => {
+        assert.match(SETTINGS, /!canAccessSetting\(targetSetting, \{ isSuperAdmin, permissions \}\)/);
+    });
+
+    it('no longer carries a second, inline permission helper', () => {
+        assert.doesNotMatch(SETTINGS, /const hasPerm\s*=/);
+    });
+
+    it('mounts the navigator on both the allowed and the denied branch', () => {
+        const wrapper = SETTINGS.slice(SETTINGS.indexOf('function SettingsWrapper'));
+        assert.equal(
+            [...wrapper.matchAll(/\{navigator\}/g)].length,
+            2,
+            'the hub must render whether or not the tab is denied',
+        );
+    });
+
+    it('filters the hub through the same predicate', () => {
+        assert.match(NAVIGATOR, /settings\.filter\(\(s\) => canAccessSetting\(s, accessContext\)\)/);
+    });
+});
+
+describe('DIR-105 preserves the ?tab= contract and Cuba design tokens', () => {
+    it('drives selection through the URL rather than private state', () => {
+        assert.match(NAVIGATOR, /useSearchParams\(\)/);
+        assert.match(NAVIGATOR, /setSearchParams\(\{ tab: key \}\)/);
+        assert.match(SETTINGS, /searchParams\.get\('tab'\)/);
+    });
+
+    it('labels its landmark and marks the active tab', () => {
+        assert.match(NAVIGATOR, /aria-label="Platform settings navigation"/);
+        assert.match(NAVIGATOR, /aria-current=\{isActive \? 'page' : undefined\}/);
+    });
+
+    it('exposes no raw colour values (Cuba tokens only)', () => {
+        assert.doesNotMatch(NAVIGATOR, /#[0-9a-fA-F]{3,8}\b/);
+        assert.doesNotMatch(NAVIGATOR, /\b(?:bg|text|border)-(?:slate|gray|zinc|rose|blue)-\d{2,3}\b/);
+    });
+
+    it('never handles a credential', () => {
+        for (const bad of [/api[_-]?key/i, /secret/i, /password/i, /bearer/i, /private[_-]?key/i]) {
+            assert.doesNotMatch(NAV_CODE, bad, `navigator must not reference ${bad}`);
+        }
+    });
+
+    it('stays responsive and non-overflowing', () => {
+        assert.match(NAVIGATOR, /grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3/);
+        assert.match(NAVIGATOR, /flex-wrap/);
+    });
+});
+

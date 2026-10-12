@@ -125,7 +125,10 @@
     "dr:test": "node --test tests/dr-hardening.test.mjs",
     "dr:drill": "node scripts/dr-restore-drill.mjs",
     "dr:watch": "node scripts/dr-external-watch.mjs",
-    "test:design-system": "node --test tests/cuba-design-system.test.mjs tests/cuba-candidate-portal.test.mjs tests/cuba-employer-portal.test.mjs tests/cuba-enterprise-console.test.mjs tests/cuba-admin-console.test.mjs tests/cuba-public-and-certification.test.mjs"
+    "test:design-system": "node --test tests/cuba-design-system.test.mjs tests/cuba-candidate-portal.test.mjs tests/cuba-employer-portal.test.mjs tests/cuba-enterprise-console.test.mjs tests/cuba-admin-console.test.mjs tests/cuba-public-and-certification.test.mjs",
+    "test:ai-token-meter": "node --test tests/ai-token-meter.test.mjs",
+    "test:dir105": "node --test tests/dir105-settings-navigator.test.mjs",
+    "verify:ai-allowance": "node .bridge/evidence/dir105/e2e-ai-usage.mjs && node .bridge/evidence/dir105/verify-authenticated.mjs"
   },
   "dependencies": {
     "@lexical/react": "^0.32.1",

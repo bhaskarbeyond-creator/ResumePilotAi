@@ -1,16 +1,16 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-12T08:08:11.322Z",
-  "eventCount": 3045,
-  "activeDirectiveId": "DIR-098",
-  "activeDirectiveTitle": "DIR-098: Master UI/UX Transformation Programme - Phase One Discovery, Baseline Evidence & Acceptance-Gate Scaffolding",
-  "activeDirectiveStatus": "CHANGES_REQUESTED",
+  "updatedAt": "2026-10-12T17:36:01.901Z",
+  "eventCount": 3134,
+  "activeDirectiveId": "DIR-105",
+  "activeDirectiveTitle": "Restore Full 26+ Platform Settings Operations to Superadmin",
+  "activeDirectiveStatus": "IN_PROGRESS",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
   "stallDeadline": "2026-10-12T06:30:09.630Z",
-  "unreadForLead": 22,
-  "unreadForDev": 41,
+  "unreadForLead": 1,
+  "unreadForDev": 6,
   "pendingBlockers": 0,
   "latestHeartbeat": {
     "timestamp": "2026-10-12T06:30:09.630Z",
@@ -19,7 +19,7 @@
   },
   "integrity": {
     "ok": true,
-    "checked": 3045,
+    "checked": 3134,
     "legacy": 0,
     "bad": 0
   }

@@ -1,0 +1,21 @@
+flowchart TD
+    A[Request context + effective entitlement] --> B[Platform provider registry<br/>system_settings.ai_providers]
+    A --> C{Tenant provider policy present?}
+    C -- yes --> D[Apply allowlist / model allow+deny<br/>applyTenantAiPolicy tenantAi.js:36]
+    C -- no --> E[Platform defaults]
+    D --> F{Tenant has customProviderKeys?}
+    E --> G[Credential policy resolution<br/>NEW explicit providerMode]
+    F -- yes --> G
+    F -- no --> G
+    G --> H{Credential policy verdict}
+    H -- TENANT_ONLY, no key --> H1[DENY 403<br/>never silently substitute]
+    H -- PLATFORM --> I[Use platform key<br/>record credential source]
+    H -- TENANT --> J[Use tenant key]
+    I --> K{Provider enabled + model allowed?}
+    J --> K
+    K -- no --> K1[CONTROLLED FAILURE<br/>TENANT_AI_PROVIDER_UNAVAILABLE 403]
+    K -- yes --> L{Provider reachable?}
+    L -- no --> L1[CONTROLLED FAILURE 503<br/>no other provider substituted]
+    L -- yes --> M[Selected provider + model]
+    M --> N[Secret handling: masked display only,<br/>no plaintext in logs/responses]
+    N --> O[Audit event: provider, model, credential source]

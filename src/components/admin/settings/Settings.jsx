@@ -31,6 +31,8 @@ import ModulesSettings from './ModulesSettings';
 import FeatureFlagsSettings from './FeatureFlagsSettings';
 import PlatformConfigSettings from './PlatformConfigSettings';
 import PlatformCurrencySettings from './PlatformCurrencySettings';
+import SettingsNavigator from './SettingsNavigator';
+import { canAccessSetting } from './settingsAccess';
 import { FaCircle } from 'react-icons/fa';
 import { getAdminSystemSettings } from '../../../services/api/platform';
 import { useAdminSession } from '../AdminContext';
@@ -187,16 +189,26 @@ function SettingsWrapper() {
     const targetSetting = ALL_SETTINGS.find(s => s.key === activeTab);
     const isSuperAdmin = adminSession?.isSuperAdmin === true;
     const permissions = adminSession?.permissions || [];
-    const hasPerm = (p) => isSuperAdmin || permissions.includes('*') || (Array.isArray(p) ? p.some(x => permissions.includes(x)) : permissions.includes(p));
 
-    const isDenied = targetSetting && (
-        (targetSetting.superAdminOnly && !isSuperAdmin) ||
-        (targetSetting.permission && !hasPerm(targetSetting.permission))
+    // DIR-105: authorization is resolved by ONE predicate, shared with the
+    // navigator, so the hub can never offer a panel this gate would refuse.
+    const isDenied = Boolean(targetSetting)
+        && !canAccessSetting(targetSetting, { isSuperAdmin, permissions });
+
+    // Rendered on both branches: a denied operator must still be able to reach
+    // the panels they ARE entitled to (previously they were stranded).
+    const navigator = (
+        <SettingsNavigator
+            settings={ALL_SETTINGS}
+            isSuperAdmin={isSuperAdmin}
+            permissions={permissions}
+        />
     );
 
     if (isDenied) {
         return (
             <div className="space-y-6">
+                {navigator}
                 <div className="rounded-2xl border border-rose-200 bg-rose-50/70 p-8 text-center shadow-xs">
                     <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-100 text-rose-600 shadow-inner">
                         <FiLock className="h-7 w-7" />
@@ -214,7 +226,12 @@ function SettingsWrapper() {
         );
     }
 
-    return <SettingsContent activeTab={activeTab} />;
+    return (
+        <div className="space-y-6">
+            {navigator}
+            <SettingsContent activeTab={activeTab} />
+        </div>
+    );
 }
 
 export default SettingsWrapper;

@@ -23,8 +23,23 @@ class AiQuotaMariaDbPool {
     this.usage = new Map();
   }
 
-  async query() {
+  // DIR-106: governance resolution is a PRE-TRANSACTION read and therefore uses
+  // the pool directly (no locks held). Only the quota charge itself must go
+  // through a connection. These handlers model that split explicitly.
+  async query(sql, params = []) {
     if (this.unavailable) throw Object.assign(new Error('MariaDB unavailable'), { code: 'ECONNREFUSED' });
+    const normalized = String(sql).replace(/\s+/g, ' ').trim();
+    if (/^SELECT \* FROM users WHERE id = \? LIMIT 1$/i.test(normalized)) {
+      const row = this.users.get(params[0]);
+      return [[row ? { ...row } : null].filter(Boolean), []];
+    }
+    if (/^SELECT data FROM system_settings WHERE category = 'ai_quota' LIMIT 1$/i.test(normalized)) {
+      return [[], []];
+    }
+    // No organization membership for these fixtures -> individual resolution.
+    if (/FROM enterprise_memberships m/i.test(normalized)) {
+      return [[], []];
+    }
     throw new Error('Direct queries are not part of the AI quota transaction contract');
   }
 
@@ -47,10 +62,25 @@ class AiQuotaMariaDbPool {
           return [[row ? { count: row.count } : null].filter(Boolean), []];
         }
         if (/^INSERT INTO ai_usage /i.test(normalized)) {
-          pool.usage.set(`${params[0]}:${params[1]}`, {
-            uid: params[2], email: params[3], count: params[4], limit: params[5],
-          });
+          // DIR-106 column order: (day_key, uid_hash, uid, tenant_id, scope, email, count, limit_used)
+          const key = `${params[0]}:${params[1]}`;
+          if (!pool.usage.has(key)) {
+            pool.usage.set(key, {
+              uid: params[2], tenantId: params[3], scope: params[4], email: params[5], count: params[6], limit: params[7],
+            });
+          } else {
+            const row = pool.usage.get(key);
+            row.limit = params[7];
+            if (params[6] !== undefined && params[6] > 0) row.count = params[6];
+            if (params[3]) row.tenantId = params[3];
+          }
           return [{ affectedRows: 1 }, []];
+        }
+        // DIR-106: the shared organization counter only runs for org scope. These
+        // fixtures resolve to INDIVIDUAL, so any such SQL means the wrong branch
+        // was taken and must fail loudly.
+        if (/ai_quota_counters/i.test(normalized)) {
+          throw new Error(`Unexpected organization counter SQL for an individual fixture: ${normalized}`);
         }
         throw new Error(`Unexpected AI quota SQL: ${normalized}`);
       },

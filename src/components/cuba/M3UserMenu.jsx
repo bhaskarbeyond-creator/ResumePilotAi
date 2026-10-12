@@ -120,6 +120,10 @@ const M3UserMenu = ({ user, theme = 'light', onToggleTheme, onNavigate, onSignOu
     // below are only the last-resort fallback for a shell that supplies no
     // `user` object at all, and they are the CANDIDATE paths, so they can never
     // send an admin into a candidate workspace.
+    // DIR-105: the AI allowance is NOT rendered here. It has a single home —
+    // the menubar chip beside the message icon — and duplicating it inside the
+    // account menu put the same figure on screen twice at once. One surface,
+    // one owner (§7): a second copy could only ever drift from the first.
     const menuItems = [
         { key: 'profile', label: 'Your profile', href: user?.profileHref || accountLinksFor(ACCOUNT_PORTALS.CANDIDATE).profile, Icon: FiUser },
         { key: 'settings', label: 'Settings', href: user?.settingsHref || accountLinksFor(ACCOUNT_PORTALS.CANDIDATE).settings, Icon: FiSettings },

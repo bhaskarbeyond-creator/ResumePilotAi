@@ -66,6 +66,11 @@ function resolveAdminReadPermission(pathname) {
   if (pathname.startsWith('/admin/payments/') || pathname === '/admin/payment-orders') return 'payments.read';
   if (pathname.startsWith('/admin/subscriptions')) return 'payments.read';
   if (pathname === '/admin/ai/entitlements') return 'ai.usage.read';
+  // DIR-106 / P0-4: the real route is hyphenated (`/admin/ai-settings`), which the
+  // slash-separated entries above never matched. Without this entry the read
+  // resolved to `undefined` and was denied for everyone except a `*` holder,
+  // while the matching POST required only `system.config.write`.
+  if (pathname === '/admin/ai-settings') return 'system.config.read';
   if (pathname.startsWith('/admin/ai/quota-limits')) return 'ai.entitlements.manage';
   if (pathname.startsWith('/admin/ai/quota-stats')) return 'ai.usage.read';
   if (pathname === '/platform/search') return ['users.read', 'tenants.read', 'payments.read', 'tickets.manage', 'audit.read', 'security.read', 'system.config.read'];

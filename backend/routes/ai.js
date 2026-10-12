@@ -18,6 +18,106 @@ const { LiveInterviewService, createRepositoryLiveInterviewStore } = require('..
 const { applyTenantAiPolicy } = require('../enterprise/tenantAi');
 const router = express.Router();
 
+/**
+ * Lazy auth bridge.
+ *
+ * `../security/auth` is required inside a thunk rather than at module load so
+ * this router keeps its existing load order (the file already defers the same
+ * require inside `resolveEffectiveAiConfiguration`). Behaviour is identical:
+ * the request either has a verified `req.user` or is rejected.
+ */
+const requireAuthLazy = (req, res, next) => require('../security/auth').requireAuth(req, res, next);
+
+/**
+ * The caller's OWN daily AI allowance, for the menubar meter.
+ *
+ * HONESTY CONTRACT (§46 / INV-3): this route re-implements NO quota maths. It
+ * delegates to `getUserAiEntitlement` — the single, MariaDB-backed resolver the
+ * admin console already trusts — so the figure in the menubar and the figure
+ * that actually gates the user's next AI request can never disagree.
+ *
+ * SECURITY: the uid is read from the VERIFIED token (`req.user.uid`), never
+ * from a query or body parameter, so one user can never read another user's
+ * allowance. When the ledger is unreachable the route fails closed with 503
+ * instead of inventing a plausible-looking number.
+ *
+ * MOUNT NOTE: this lives at `/api/ai-usage`, deliberately NOT under `/api/ai`.
+ * `index.js` wraps `/api/ai` in `aiAccountLimiter` + `enforceDailyAiQuota`, so a
+ * meter mounted there would consume the very allowance it reports.
+ */
+router.get('/ai-usage', requireAuthLazy, async (req, res) => {
+    try {
+        const uid = req.user?.uid;
+        if (!uid) {
+            return res.status(401).json({
+                success: false,
+                error: { code: 'AUTH_REQUIRED', message: 'Authentication required' },
+            });
+        }
+        let governance = null;
+        try {
+            const { resolveAiGovernance } = require('../security/aiGovernance');
+            governance = await resolveAiGovernance(req);
+        } catch (_err) { governance = null; }
+
+        if (governance?.error) {
+            return res.status(governance.error.status || 400).json({
+                success: false,
+                error: {
+                    code: governance.error.code,
+                    message: governance.error.message,
+                },
+            });
+        }
+
+        const { getUserAiEntitlement } = require('../services/adminAiEntitlement');
+        let entitlement = null;
+        try {
+            entitlement = await getUserAiEntitlement(null, uid);
+        } catch (err) {
+            if (err?.code === 'USER_NOT_FOUND' && governance?.entitlement) {
+                const effLimit = governance.quota?.userLimit ?? governance.entitlement.dailyLimit ?? 10;
+                entitlement = {
+                    plan: governance.entitlement.effectiveTier || 'Basic',
+                    usedToday: 0,
+                    effectiveLimit: effLimit,
+                    remainingToday: effLimit,
+                    isExhausted: false,
+                    lastResetAt: null,
+                    source: 'SYNTHESIZED_GOVERNANCE',
+                };
+            } else {
+                throw err;
+            }
+        }
+
+        return res.json({
+            success: true,
+            usage: {
+                plan: entitlement.plan,
+                usedToday: entitlement.usedToday,
+                effectiveLimit: governance?.quota?.userLimit ?? entitlement.effectiveLimit,
+                remainingToday: entitlement.remainingToday,
+                isExhausted: entitlement.isExhausted,
+                lastResetAt: entitlement.lastResetAt,
+                source: entitlement.source,
+                // Server-calculated only; the client never supplies these.
+                quotaScope: governance?.source || 'UNKNOWN',
+                tenantId: governance?.tenant?.tenantId || null,
+                orgDailyLimit: governance?.quota?.sharedLimit ?? null,
+            },
+        });
+    } catch (error) {
+        return res.status(error.status || 503).json({
+            success: false,
+            error: {
+                code: error.code || 'AI_USAGE_UNAVAILABLE',
+                message: 'AI usage is temporarily unavailable',
+            },
+        });
+    }
+});
+
 async function resolveEffectiveAiConfiguration(req, res) {
     // Start provider-config load immediately: it is independent of tenant
     // resolution (and usually a cache hit), but on a cache miss it is DB
