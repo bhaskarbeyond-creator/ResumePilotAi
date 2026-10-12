@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-12T06:24:43.145Z",
+  "generatedAt": "2026-10-12T06:29:50.052Z",
   "directive": "DIR-096",
   "manifestPath": ".bridge/project.json",
   "manifestSchemaVersion": "4.2.0",
@@ -45,10 +45,10 @@
     "componentUiDirExists": false,
     "componentCubaDirCount": 36,
     "taskGraphDeclared": 118,
-    "tasksJsonExists": false,
-    "contractsManifestExists": false,
-    "contractsOpenapiExists": false,
-    "contractsSchemaSqlExists": false
+    "tasksJsonExists": true,
+    "contractsManifestExists": true,
+    "contractsOpenapiExists": true,
+    "contractsSchemaSqlExists": true
   },
   "rules": [
     {
@@ -96,7 +96,7 @@
     {
       "id": "buildSpecification.taskGraph.length === docs/build/tasks.json length",
       "declared": 118,
-      "discovered": null,
+      "discovered": "present",
       "status": "DRIFT",
       "note": "docs/build/tasks.json is absent; the task graph is declared but not materialised"
     }

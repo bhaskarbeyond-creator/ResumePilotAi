@@ -1,0 +1,10 @@
+{
+  "name": "AiFailover",
+  "states": [
+    "primary",
+    "secondary",
+    "tertiary",
+    "exhausted",
+    "recovered"
+  ]
+}

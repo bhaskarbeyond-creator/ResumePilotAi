@@ -1,0 +1,499 @@
+openapi: 3.1.0
+info:
+  title: "Universal Enterprise AI Career Platform & Multi-Portal Ecosystem"
+  version: 4.2.0
+servers:
+  - url: /api/v1
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+paths:
+  /api/v1/auth/signup:
+    post:
+      operationId: AuthSignup
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  description: string
+                password:
+                  type: string
+                  description: string
+                fullName:
+                  type: string
+                  description: string
+                role:
+                  type: string
+                  description: candidate|employer_recruiter|employer_admin
+      responses:
+        '201':
+          description: "201 response"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: object }
+        '400':
+          description: "400 response"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: object }
+        '409':
+          description: "409 response"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: object }
+        '429':
+          description: "429 response"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: object }
+  /api/v1/auth/login:
+    post:
+      operationId: AuthLogin
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  description: string
+                password:
+                  type: string
+                  description: string
+                totp:
+                  type: string
+                  description: "string?"
+      responses:
+        '200':
+          description: "200 response"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: object }
+        '401':
+          description: "401 response"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: object }
+        '423':
+          description: "423 response"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: object }
+  /api/v1/auth/refresh:
+    post:
+      operationId: AuthRefresh
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: "200 response"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: object }
+        '401':
+          description: "401 response"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: object }
+  /api/v1/auth/logout:
+    post:
+      operationId: AuthLogout
+      security: [{ bearerAuth: [] }]
+      responses:
+        '204':
+          description: "204 response"
+  /api/v1/auth/mfa/enroll:
+    post:
+      operationId: AuthMfaEnroll
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: "200 response"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: object }
+  /api/v1/billing/plans:
+    get:
+      operationId: BillingPlans
+      security: []
+      responses:
+        '200':
+          description: "200 response"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: object }
+  /api/v1/billing/checkout:
+    post:
+      operationId: BillingCheckout
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                planId:
+                  type: string
+                  description: string
+                provider:
+                  type: string
+                  description: razorpay|stripe
+                couponCode:
+                  type: string
+                  description: "string?"
+      responses:
+        '201':
+          description: "201 response"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: object }
+        '402':
+          description: "402 response"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: object }
+  /api/v1/webhooks/billing/:provider:
+    post:
+      operationId: BillingWebhook
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: "200 response"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: object }
+        '400':
+          description: "400 response"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: object }
+        '409':
+          description: "409 response"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: object }
+  /api/v1/resumes:
+    get:
+      operationId: ResumesList
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: "200 response"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: object }
+                  pagination: { type: object }
+  /api/v1/resumes:
+    post:
+      operationId: ResumesCreate
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  description: string
+                templateId:
+                  type: string
+                  description: cv1..cv51
+      responses:
+        '201':
+          description: "201 response"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: object }
+  /api/v1/resumes/:id/export:
+    post:
+      operationId: ResumesExport
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                format:
+                  type: string
+                  description: docx|pdf
+                themeId:
+                  type: string
+                  description: "string?"
+                includePhoto:
+                  type: string
+                  description: "boolean?"
+      responses:
+        '200':
+          description: "200 response"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: object }
+        '429':
+          description: "429 response"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: object }
+  /api/v1/ai/bio:
+    post:
+      operationId: AiGenerateBio
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                resumeId:
+                  type: string
+                  description: bigint
+                tone:
+                  type: string
+                  description: professional|charismatic|concise
+                maxWords:
+                  type: string
+                  description: "int?"
+      responses:
+        '200':
+          description: "200 response"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: object }
+        '402':
+          description: "402 response"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: object }
+        '502':
+          description: "502 response"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: object }
+  /api/v1/interviews:
+    post:
+      operationId: InterviewsStart
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role:
+                  type: string
+                  description: string
+                seniority:
+                  type: string
+                  description: string
+                mode:
+                  type: string
+                  description: behavioral|technical|mixed
+      responses:
+        '201':
+          description: "201 response"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: object }
+  /api/v1/interviews/:id/answer:
+    post:
+      operationId: InterviewsAnswer
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                audioUrl:
+                  type: string
+                  description: string
+                transcript:
+                  type: string
+                  description: "string?"
+      responses:
+        '200':
+          description: "200 response"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: object }
+  /api/v1/messages:
+    post:
+      operationId: MessagesSend
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                conversationId:
+                  type: string
+                  description: bigint
+                body:
+                  type: string
+                  description: string
+                attachments:
+                  type: string
+                  description: "string?"
+      responses:
+        '201':
+          description: "201 response"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: object }
+  /api/v1/tracker/:id:
+    patch:
+      operationId: TrackerMove
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                stage:
+                  type: string
+                  description: wishlist|applied|interviewing|offer|rejected
+                note:
+                  type: string
+                  description: "string?"
+      responses:
+        '200':
+          description: "200 response"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: object }
+  /api/v1/admin/database-settings/switch:
+    post:
+      operationId: AdminDatabaseSwitch
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                target:
+                  type: string
+                  description: mariadb|firestore
+                reason:
+                  type: string
+                  description: string
+      responses:
+        '202':
+          description: "202 response"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: object }
+        '409':
+          description: "409 response"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: object }

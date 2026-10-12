@@ -1,0 +1,10 @@
+{
+  "name": "AuthSession",
+  "states": [
+    "anonymous",
+    "authenticated",
+    "mfa-required",
+    "locked",
+    "expired"
+  ]
+}

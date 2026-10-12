@@ -1,0 +1,11 @@
+{
+  "name": "InterviewSession",
+  "states": [
+    "created",
+    "questioning",
+    "answering",
+    "evaluating",
+    "complete",
+    "aborted"
+  ]
+}

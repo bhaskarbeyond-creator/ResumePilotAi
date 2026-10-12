@@ -1,0 +1,160 @@
+{
+  "schemaVersion": "4.2.0",
+  "generatedFrom": ".bridge/project.json",
+  "total": 68,
+  "portals": {
+    "publicMarketing": 33,
+    "candidatePortal": 15,
+    "employerPortal": 5,
+    "enterpriseConsole": 6,
+    "adminConsole": 5,
+    "systemUtility": 4
+  },
+  "routers": [
+    {
+      "file": "backend/routes/health.js",
+      "mount": "/healthz,/readyz,/livez,/metrics",
+      "purpose": "Liveness, readiness, dependency probes, Prometheus metrics"
+    },
+    {
+      "file": "backend/routes/auth.js",
+      "mount": "/api/auth",
+      "purpose": "Signup, login, logout, token refresh, password reset, email verification, MFA/TOTP, OAuth"
+    },
+    {
+      "file": "backend/routes/billing.js",
+      "mount": "/api/billing",
+      "purpose": "Plans, checkout, subscriptions, invoices, credit notes, payment webhooks, refunds"
+    },
+    {
+      "file": "backend/routes/resumes.js",
+      "mount": "/api/resumes",
+      "purpose": "Resume CRUD, duplication, versions, ATS score calculation, download tokens"
+    },
+    {
+      "file": "backend/routes/portfolios.js",
+      "mount": "/api/portfolios",
+      "purpose": "WebCV portfolio builder, public slug verification, theme options, analytics"
+    },
+    {
+      "file": "backend/routes/covers.js",
+      "mount": "/api/covers",
+      "purpose": "AI cover letter generation, history, target company association, export"
+    },
+    {
+      "file": "backend/routes/support.js",
+      "mount": "/api/support",
+      "purpose": "Candidate support ticket creation, message replies, status tracking"
+    },
+    {
+      "file": "backend/routes/jobsData.js",
+      "mount": "/api/jobs-data",
+      "purpose": "Job listings, company data, location filters, job application tracking"
+    },
+    {
+      "file": "backend/routes/publicDiscovery.js",
+      "mount": "/api/public",
+      "purpose": "Robots.txt, sitemap.xml, llms.txt, canonical document delivery"
+    },
+    {
+      "file": "backend/routes/blogData.js",
+      "mount": "/api/blog-data",
+      "purpose": "Editorial articles, tags, authors, CMS management endpoints"
+    },
+    {
+      "file": "backend/routes/notificationsData.js",
+      "mount": "/api/notifications-data",
+      "purpose": "User notification inbox, mark as read, event dispatch"
+    },
+    {
+      "file": "backend/routes/usersData.js",
+      "mount": "/api/users-data",
+      "purpose": "User profile, work history, education, skills, custom achievements"
+    },
+    {
+      "file": "backend/routes/messages.js",
+      "mount": "/api/messages",
+      "purpose": "Conversations, participants, messages, read receipts, attachments"
+    },
+    {
+      "file": "backend/routes/interviews.js",
+      "mount": "/api/interviews",
+      "purpose": "Live interview sessions, audio turns, evaluations, scorecards"
+    },
+    {
+      "file": "backend/routes/favorites.js",
+      "mount": "/api/favorites",
+      "purpose": "Saved jobs and bookmarks"
+    },
+    {
+      "file": "backend/routes/tracker.js",
+      "mount": "/api/tracker",
+      "purpose": "Kanban application tracker CRUD and stage transitions"
+    },
+    {
+      "file": "backend/routes/uploads.js",
+      "mount": "/api/uploads",
+      "purpose": "Resume, avatar, portfolio, message attachment upload and malware scan"
+    },
+    {
+      "file": "backend/routes/webhooks.js",
+      "mount": "/api/webhooks",
+      "purpose": "Payment, email, AI provider callbacks with signature verification and idempotency"
+    },
+    {
+      "file": "backend/routes/enterprise.js",
+      "mount": "/api/enterprise",
+      "purpose": "Tenant configuration, workspaces, members, roles, security policies"
+    },
+    {
+      "file": "backend/routes/enterpriseM2m.js",
+      "mount": "/api/enterprise/m2m",
+      "purpose": "Machine-to-machine OAuth2 token exchange and automated APIs"
+    },
+    {
+      "file": "backend/routes/platform.js",
+      "mount": "/api/platform",
+      "purpose": "Platform health metrics, multi-currency support, announcements"
+    },
+    {
+      "file": "backend/routes/databaseAdmin.js",
+      "mount": "/api/admin/database-settings",
+      "purpose": "Dual-database engine status, failover triggers, migration history"
+    },
+    {
+      "file": "backend/routes/ai.js",
+      "mount": "/api/ai",
+      "purpose": "Executive bio, work bullets, skills deduplication, cover letter generation"
+    },
+    {
+      "file": "backend/routes/email.js",
+      "mount": "/api/email",
+      "purpose": "Transactional emails, password resets, verification links, notifications"
+    },
+    {
+      "file": "backend/routes/adminUsers.js",
+      "mount": "/api/admin/users",
+      "purpose": "SuperAdmin user search, role updates, account lifecycle overrides"
+    },
+    {
+      "file": "backend/routes/adminAudit.js",
+      "mount": "/api/admin/audit",
+      "purpose": "Administrative security audit trail and forensic logs"
+    },
+    {
+      "file": "backend/routes/adminPlatformOperations.js",
+      "mount": "/api/admin/platform",
+      "purpose": "Global feature flags, AI provider live connectivity probes"
+    },
+    {
+      "file": "backend/routes/miscData.js",
+      "mount": "/api",
+      "purpose": "Global search, contact form, coupon validation, reviews, public testimonials"
+    },
+    {
+      "file": "backend/routes/errorResponder.js",
+      "mount": "/api/errors",
+      "purpose": "Centralized error normalization with zero secret leakage"
+    }
+  ]
+}

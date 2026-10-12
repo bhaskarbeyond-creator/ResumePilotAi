@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "IME365 Collaboration Bridge Message",
+  "type": "object",
+  "required": [
+    "type",
+    "sender",
+    "recipient"
+  ],
+  "properties": {
+    "type": {
+      "enum": [
+        "DIRECTIVE",
+        "PLAN_REVIEW",
+        "PLAN_APPROVED",
+        "PLAN_REJECTED",
+        "HEARTBEAT",
+        "EVIDENCE_SUBMITTED",
+        "EVIDENCE_ACCEPTED",
+        "EVIDENCE_REJECTED",
+        "BLOCKED",
+        "ABORT"
+      ]
+    },
+    "sender": {
+      "enum": [
+        "LEAD_SUPERVISOR",
+        "STAFF_DEVELOPER"
+      ]
+    },
+    "recipient": {
+      "enum": [
+        "LEAD_SUPERVISOR",
+        "STAFF_DEVELOPER",
+        "ALL"
+      ]
+    },
+    "body": {
+      "type": "string"
+    },
+    "payload": {
+      "type": "object"
+    }
+  },
+  "auth": "shared secret/HMAC (BRIDGE_HMAC_SECRET)",
+  "replayProtection": "nonce + monotonic sequence + durable inbox",
+  "timeouts": {
+    "heartbeatSeconds": 480,
+    "ackSeconds": 30
+  }
+}

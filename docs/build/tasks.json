@@ -1,0 +1,511 @@
+{
+  "schemaVersion": "4.2.0",
+  "generatedFrom": ".bridge/project.json",
+  "graphKind": "derived",
+  "note": "The manifest declares totalTasks=118 but does not enumerate them; this graph is derived strictly from real, enumerated sources (sampleTasks + acceptanceCriteria + discovered codebase gaps). It is NOT a fabricated 118-task list.",
+  "declaredTotalTasks": 118,
+  "derivedTaskCount": 30,
+  "taskShape": {
+    "id": "TASK-001",
+    "title": "Implement POST /api/v1/auth/signup",
+    "dependsOn": [],
+    "targets": [
+      "backend/routes/auth.js",
+      "backend/services/authService.js",
+      "tests/auth-session-mfa.test.mjs"
+    ],
+    "acceptanceCriteria": [
+      "Returns 201 with { userId, accessToken, refreshToken }",
+      "Rejects weak passwords with code WEAK_PASSWORD",
+      "Idempotent on duplicate email with code EMAIL_EXISTS",
+      "Rate-limited at 5/min/IP",
+      "Covered by ≥ 3 unit tests and 1 integration test"
+    ],
+    "evidenceRequired": [
+      "git diff",
+      "test log",
+      "openapi.yaml updated",
+      "curl transcript"
+    ],
+    "definitionOfDone": [
+      "tests pass",
+      "lint clean",
+      "openapi diff clean",
+      "reviewer APPROVED"
+    ],
+    "rollbackPlan": "revert commit + no migration to roll back"
+  },
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "title": "Scaffold Express backend with security middleware",
+      "source": "manifest.buildSpecification.sampleTasks",
+      "dependsOn": [],
+      "targets": [
+        "backend/index.js",
+        "backend/middleware/*.js"
+      ],
+      "definitionOfDone": [
+        "healthz returns 200",
+        "helmet active",
+        "rate limiter active",
+        "request-id propagated"
+      ],
+      "acceptanceCriteria": [],
+      "evidenceRequired": []
+    },
+    {
+      "id": "TASK-002",
+      "title": "Run MariaDB migrations to schema v25",
+      "source": "manifest.buildSpecification.sampleTasks",
+      "dependsOn": [
+        "TASK-001"
+      ],
+      "targets": [
+        "backend/database/migrations/*.sql"
+      ],
+      "definitionOfDone": [
+        "117 tables created",
+        "indexes verified",
+        "rollback scripts present"
+      ],
+      "acceptanceCriteria": [],
+      "evidenceRequired": []
+    },
+    {
+      "id": "TASK-003",
+      "title": "Implement auth router (signup, login, refresh, logout, MFA)",
+      "source": "manifest.buildSpecification.sampleTasks",
+      "dependsOn": [
+        "TASK-002"
+      ],
+      "targets": [
+        "backend/routes/auth.js",
+        "backend/services/authService.js"
+      ],
+      "definitionOfDone": [
+        "openapi.yaml updated",
+        "tests/auth-session-mfa.test.mjs green",
+        "curl transcript attached"
+      ],
+      "acceptanceCriteria": [],
+      "evidenceRequired": []
+    },
+    {
+      "id": "TASK-004",
+      "title": "Implement billing router + webhook HMAC",
+      "source": "manifest.buildSpecification.sampleTasks",
+      "dependsOn": [
+        "TASK-003"
+      ],
+      "targets": [
+        "backend/routes/billing.js",
+        "backend/routes/webhooks.js"
+      ],
+      "definitionOfDone": [
+        "idempotency verified",
+        "duplicate webhook returns 409",
+        "invoice PDF generated"
+      ],
+      "acceptanceCriteria": [],
+      "evidenceRequired": []
+    },
+    {
+      "id": "TASK-005",
+      "title": "Build Cuba design tokens + component inventory",
+      "source": "manifest.buildSpecification.sampleTasks",
+      "dependsOn": [],
+      "targets": [
+        "src/styles/cuba-tokens.css",
+        "src/components/ui/*.jsx"
+      ],
+      "definitionOfDone": [
+        "token-drift test green",
+        "component-states test green",
+        "storybook-less visual review approved"
+      ],
+      "acceptanceCriteria": [],
+      "evidenceRequired": []
+    },
+    {
+      "id": "TASK-006",
+      "title": "Wire Candidate Portal shell + 15 routes",
+      "source": "manifest.buildSpecification.sampleTasks",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-003"
+      ],
+      "targets": [
+        "src/components/Candidate/CubaCandidateShell.jsx",
+        "src/components/Dashboard/**"
+      ],
+      "definitionOfDone": [
+        "all routes render",
+        "state matrix present per route",
+        "no horizontal overflow at 320px"
+      ],
+      "acceptanceCriteria": [],
+      "evidenceRequired": []
+    },
+    {
+      "id": "TASK-007",
+      "title": "Implement AI interview coach (browser + backend)",
+      "source": "manifest.buildSpecification.sampleTasks",
+      "dependsOn": [
+        "TASK-006"
+      ],
+      "targets": [
+        "src/components/InterviewCoach/InterviewCoach.jsx",
+        "backend/services/liveInterviewSession.js"
+      ],
+      "definitionOfDone": [
+        "audio loop works",
+        "radar chart renders",
+        "PII redaction test green"
+      ],
+      "acceptanceCriteria": [],
+      "evidenceRequired": []
+    },
+    {
+      "id": "TASK-008",
+      "title": "AC1: All 68 routes (manifest.routeInventory.total) operational with zero dead links, zero stubs, and full screenStateMatrix coverage",
+      "source": "directive.acceptanceCriteria",
+      "dependsOn": [],
+      "targets": [],
+      "definitionOfDone": [
+        "All acceptance criteria met",
+        "Unit + integration + contract tests green",
+        "Lint clean",
+        "OpenAPI diff clean",
+        "Manifest-consistency CI green",
+        "Token-drift + axe + copy-lint green",
+        "Evidence bundle attached to task"
+      ]
+    },
+    {
+      "id": "TASK-009",
+      "title": "AC2: OpenAPI contracts (manifest.openapiInline, 17 endpoints) and response envelope { data, error, meta, requestId } validated with zero contract drift; 'npm run test:openapi-diff' clean",
+      "source": "directive.acceptanceCriteria",
+      "dependsOn": [],
+      "targets": [],
+      "definitionOfDone": [
+        "All acceptance criteria met",
+        "Unit + integration + contract tests green",
+        "Lint clean",
+        "OpenAPI diff clean",
+        "Manifest-consistency CI green",
+        "Token-drift + axe + copy-lint green",
+        "Evidence bundle attached to task"
+      ]
+    },
+    {
+      "id": "TASK-010",
+      "title": "AC3: All 117 tables migrated; DDL matches manifest.ddlInline exactly; FK and index policies enforced; backup RPO 15m / RTO 60m verified by restore test",
+      "source": "directive.acceptanceCriteria",
+      "dependsOn": [],
+      "targets": [],
+      "definitionOfDone": [
+        "All acceptance criteria met",
+        "Unit + integration + contract tests green",
+        "Lint clean",
+        "OpenAPI diff clean",
+        "Manifest-consistency CI green",
+        "Token-drift + axe + copy-lint green",
+        "Evidence bundle attached to task"
+      ]
+    },
+    {
+      "id": "TASK-011",
+      "title": "AC4: Multi-provider AI router resilience verified across NVIDIA NIM primary and full failover chain with circuit breaker; extractJson path tested; PII redaction test green",
+      "source": "directive.acceptanceCriteria",
+      "dependsOn": [],
+      "targets": [],
+      "definitionOfDone": [
+        "All acceptance criteria met",
+        "Unit + integration + contract tests green",
+        "Lint clean",
+        "OpenAPI diff clean",
+        "Manifest-consistency CI green",
+        "Token-drift + axe + copy-lint green",
+        "Evidence bundle attached to task"
+      ]
+    },
+    {
+      "id": "TASK-012",
+      "title": "AC5: DOCX adaptive partitioner and @media print contracts verified with zero orphaned headers; visual regression green for all 51 templates",
+      "source": "directive.acceptanceCriteria",
+      "dependsOn": [],
+      "targets": [],
+      "definitionOfDone": [
+        "All acceptance criteria met",
+        "Unit + integration + contract tests green",
+        "Lint clean",
+        "OpenAPI diff clean",
+        "Manifest-consistency CI green",
+        "Token-drift + axe + copy-lint green",
+        "Evidence bundle attached to task"
+      ]
+    },
+    {
+      "id": "TASK-013",
+      "title": "AC6: Responsive multi-viewport lock verified with zero horizontal overflow at all 7 viewports",
+      "source": "directive.acceptanceCriteria",
+      "dependsOn": [],
+      "targets": [],
+      "definitionOfDone": [
+        "All acceptance criteria met",
+        "Unit + integration + contract tests green",
+        "Lint clean",
+        "OpenAPI diff clean",
+        "Manifest-consistency CI green",
+        "Token-drift + axe + copy-lint green",
+        "Evidence bundle attached to task"
+      ]
+    },
+    {
+      "id": "TASK-014",
+      "title": "AC7: Full test pyramid green (manifest.qualityAssuranceAndTesting.totalTestSuites = 292) with coverage >= 80% statements, 0 lint errors, build < 4.0s",
+      "source": "directive.acceptanceCriteria",
+      "dependsOn": [],
+      "targets": [],
+      "definitionOfDone": [
+        "All acceptance criteria met",
+        "Unit + integration + contract tests green",
+        "Lint clean",
+        "OpenAPI diff clean",
+        "Manifest-consistency CI green",
+        "Token-drift + axe + copy-lint green",
+        "Evidence bundle attached to task"
+      ]
+    },
+    {
+      "id": "TASK-015",
+      "title": "AC8: Playwright real-DOM crawl manifest submitted with 0 console errors and 0 failed network requests across all portal shells",
+      "source": "directive.acceptanceCriteria",
+      "dependsOn": [],
+      "targets": [],
+      "definitionOfDone": [
+        "All acceptance criteria met",
+        "Unit + integration + contract tests green",
+        "Lint clean",
+        "OpenAPI diff clean",
+        "Manifest-consistency CI green",
+        "Token-drift + axe + copy-lint green",
+        "Evidence bundle attached to task"
+      ]
+    },
+    {
+      "id": "TASK-016",
+      "title": "AC9: manifest-consistency CI gate green (route/router/table/test/component/task counts all match)",
+      "source": "directive.acceptanceCriteria",
+      "dependsOn": [],
+      "targets": [],
+      "definitionOfDone": [
+        "All acceptance criteria met",
+        "Unit + integration + contract tests green",
+        "Lint clean",
+        "OpenAPI diff clean",
+        "Manifest-consistency CI green",
+        "Token-drift + axe + copy-lint green",
+        "Evidence bundle attached to task"
+      ]
+    },
+    {
+      "id": "TASK-017",
+      "title": "AC10: token-drift, axe, copy-lint, component-states gates green",
+      "source": "directive.acceptanceCriteria",
+      "dependsOn": [],
+      "targets": [],
+      "definitionOfDone": [
+        "All acceptance criteria met",
+        "Unit + integration + contract tests green",
+        "Lint clean",
+        "OpenAPI diff clean",
+        "Manifest-consistency CI green",
+        "Token-drift + axe + copy-lint green",
+        "Evidence bundle attached to task"
+      ]
+    },
+    {
+      "id": "TASK-018",
+      "title": "AC11: Idempotency + webhook HMAC + replay protection tests green",
+      "source": "directive.acceptanceCriteria",
+      "dependsOn": [],
+      "targets": [],
+      "definitionOfDone": [
+        "All acceptance criteria met",
+        "Unit + integration + contract tests green",
+        "Lint clean",
+        "OpenAPI diff clean",
+        "Manifest-consistency CI green",
+        "Token-drift + axe + copy-lint green",
+        "Evidence bundle attached to task"
+      ]
+    },
+    {
+      "id": "TASK-019",
+      "title": "AC12: Every task in docs/build/tasks.json has all evidenceRequired artifacts attached and definitionOfDone satisfied",
+      "source": "directive.acceptanceCriteria",
+      "dependsOn": [],
+      "targets": [],
+      "definitionOfDone": [
+        "All acceptance criteria met",
+        "Unit + integration + contract tests green",
+        "Lint clean",
+        "OpenAPI diff clean",
+        "Manifest-consistency CI green",
+        "Token-drift + axe + copy-lint green",
+        "Evidence bundle attached to task"
+      ]
+    },
+    {
+      "id": "TASK-020",
+      "title": "AC13: Bridge protocol HMAC, nonce, and heartbeat compliance verified; zero missed heartbeats or invalid signatures",
+      "source": "directive.acceptanceCriteria",
+      "dependsOn": [],
+      "targets": [],
+      "definitionOfDone": [
+        "All acceptance criteria met",
+        "Unit + integration + contract tests green",
+        "Lint clean",
+        "OpenAPI diff clean",
+        "Manifest-consistency CI green",
+        "Token-drift + axe + copy-lint green",
+        "Evidence bundle attached to task"
+      ]
+    },
+    {
+      "id": "TASK-021",
+      "title": "AC14: uiuxSystem component inventory implemented; every component has documented variants, states, a11y roles, and token usage",
+      "source": "directive.acceptanceCriteria",
+      "dependsOn": [],
+      "targets": [],
+      "definitionOfDone": [
+        "All acceptance criteria met",
+        "Unit + integration + contract tests green",
+        "Lint clean",
+        "OpenAPI diff clean",
+        "Manifest-consistency CI green",
+        "Token-drift + axe + copy-lint green",
+        "Evidence bundle attached to task"
+      ]
+    },
+    {
+      "id": "TASK-022",
+      "title": "Modularise backend/routes/health.js from the monolithic backend/index.js",
+      "source": "derived.routerModularisationBacklog",
+      "dependsOn": [],
+      "targets": [
+        "backend/routes/health.js"
+      ],
+      "definitionOfDone": [
+        "endpoints served by the module",
+        "tests green"
+      ]
+    },
+    {
+      "id": "TASK-023",
+      "title": "Modularise backend/routes/auth.js from the monolithic backend/index.js",
+      "source": "derived.routerModularisationBacklog",
+      "dependsOn": [],
+      "targets": [
+        "backend/routes/auth.js"
+      ],
+      "definitionOfDone": [
+        "endpoints served by the module",
+        "tests green"
+      ]
+    },
+    {
+      "id": "TASK-024",
+      "title": "Modularise backend/routes/billing.js from the monolithic backend/index.js",
+      "source": "derived.routerModularisationBacklog",
+      "dependsOn": [],
+      "targets": [
+        "backend/routes/billing.js"
+      ],
+      "definitionOfDone": [
+        "endpoints served by the module",
+        "tests green"
+      ]
+    },
+    {
+      "id": "TASK-025",
+      "title": "Modularise backend/routes/messages.js from the monolithic backend/index.js",
+      "source": "derived.routerModularisationBacklog",
+      "dependsOn": [],
+      "targets": [
+        "backend/routes/messages.js"
+      ],
+      "definitionOfDone": [
+        "endpoints served by the module",
+        "tests green"
+      ]
+    },
+    {
+      "id": "TASK-026",
+      "title": "Modularise backend/routes/interviews.js from the monolithic backend/index.js",
+      "source": "derived.routerModularisationBacklog",
+      "dependsOn": [],
+      "targets": [
+        "backend/routes/interviews.js"
+      ],
+      "definitionOfDone": [
+        "endpoints served by the module",
+        "tests green"
+      ]
+    },
+    {
+      "id": "TASK-027",
+      "title": "Modularise backend/routes/favorites.js from the monolithic backend/index.js",
+      "source": "derived.routerModularisationBacklog",
+      "dependsOn": [],
+      "targets": [
+        "backend/routes/favorites.js"
+      ],
+      "definitionOfDone": [
+        "endpoints served by the module",
+        "tests green"
+      ]
+    },
+    {
+      "id": "TASK-028",
+      "title": "Modularise backend/routes/tracker.js from the monolithic backend/index.js",
+      "source": "derived.routerModularisationBacklog",
+      "dependsOn": [],
+      "targets": [
+        "backend/routes/tracker.js"
+      ],
+      "definitionOfDone": [
+        "endpoints served by the module",
+        "tests green"
+      ]
+    },
+    {
+      "id": "TASK-029",
+      "title": "Modularise backend/routes/uploads.js from the monolithic backend/index.js",
+      "source": "derived.routerModularisationBacklog",
+      "dependsOn": [],
+      "targets": [
+        "backend/routes/uploads.js"
+      ],
+      "definitionOfDone": [
+        "endpoints served by the module",
+        "tests green"
+      ]
+    },
+    {
+      "id": "TASK-030",
+      "title": "Modularise backend/routes/webhooks.js from the monolithic backend/index.js",
+      "source": "derived.routerModularisationBacklog",
+      "dependsOn": [],
+      "targets": [
+        "backend/routes/webhooks.js"
+      ],
+      "definitionOfDone": [
+        "endpoints served by the module",
+        "tests green"
+      ]
+    }
+  ]
+}

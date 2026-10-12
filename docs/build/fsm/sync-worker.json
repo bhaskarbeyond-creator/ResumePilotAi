@@ -1,0 +1,10 @@
+{
+  "name": "SyncWorker",
+  "states": [
+    "idle",
+    "draining",
+    "paused",
+    "backoff",
+    "failed"
+  ]
+}
