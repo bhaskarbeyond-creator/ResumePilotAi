@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-12T04:46:15.487Z",
-  "seq": 2973,
-  "id": "evt_mv4rrtzf_1ffb5af32de2",
+  "timestamp": "2026-10-12T04:51:59.217Z",
+  "seq": 2974,
+  "id": "evt_mv4rz77z_71f4c333ed65",
   "type": "HEARTBEAT",
-  "title": "[Heartbeat] Wave 4 complete: DashboardSupport swept 182 -> 14 legacy utilities onto Cuba tokens (169 removed) and the certified ratchet tightened 183 -> 14. Stale ceilings for DashboardSettings (1330 vs 39) and D",
+  "title": "[Heartbeat] Wave 6 complete: closed the stale-ratchet finding (DashboardSettings 1330 -> 39, DashboardPortfolios 51 -> 0). DashboardHomepage deliberately left un-swept because it still carries a live legacy fallb",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-094",
-  "summary": "Wave 4 complete: DashboardSupport swept 182 -> 14 legacy utilities onto Cuba tokens (169 removed) and the certified ratchet tightened 183 -> 14. Stale ceilings for DashboardSettings (1330 vs 39) and DashboardPortfolios (51 vs 0) reported. Submitting evidence."
+  "summary": "Wave 6 complete: closed the stale-ratchet finding (DashboardSettings 1330 -> 39, DashboardPortfolios 51 -> 0). DashboardHomepage deliberately left un-swept because it still carries a live legacy fallback branch. Submitting evidence."
 }

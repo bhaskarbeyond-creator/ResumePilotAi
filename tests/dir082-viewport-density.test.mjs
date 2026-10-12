@@ -133,7 +133,10 @@ test('AC6: the DIR-081 legacy ceiling is carried forward unchanged (sweep still 
     // identical — if any of these DROPPED, this assertion still passes (the debt only
     // shrinks), but it can never grow.
     const backlog = {
-        'src/components/Dashboard/DashboardSettings/DashboardSettings.jsx': 1330,
+        // DIR-094: ceiling was stale by 1291 units — the file was swept to 39 by an earlier
+        // directive but the ratchet was never lowered, leaving that completed cleanup
+        // unprotected. Tightened to the measured reality.
+        'src/components/Dashboard/DashboardSettings/DashboardSettings.jsx': 39,
         // DIR-094 Wave 5 swept DashboardInterviews onto Cuba tokens: 764 -> 196. Tightened to
         // the post-sweep reality. The residue is neutral fills (bg-slate-50/100/200/900),
         // purple accents (no Cuba equivalent token), shadow tints and a few prefixed shades.
@@ -144,7 +147,8 @@ test('AC6: the DIR-081 legacy ceiling is carried forward unchanged (sweep still 
         // The 14 that remain are neutral fills (bg-slate-100, hover:bg-slate-50/100) and one
         // shadow tint, for which the Cuba system ships no exact equivalent token.
         'src/components/Dashboard/DashboardSupport/DashboardSupport.jsx': 14,
-        'src/components/Dashboard/DashboardPortfolios/DashboardPortfolios.jsx': 51,
+        // DIR-094: ceiling was stale — the file is already fully swept (0 legacy utilities).
+        'src/components/Dashboard/DashboardPortfolios/DashboardPortfolios.jsx': 0,
         'src/components/Dashboard/ResumesList/ResumesList.jsx': 12,
     };
     for (const [file, ceiling] of Object.entries(backlog)) {

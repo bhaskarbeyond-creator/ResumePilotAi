@@ -134,7 +134,15 @@
       "currentFile": null,
       "by": "STAFF_DEVELOPER",
       "continuationPending": false
+    },
+    {
+      "at": "2026-10-12T04:51:59.231Z",
+      "status": "Wave 6 complete: closed the stale-ratchet finding (DashboardSettings 1330 -> 39, DashboardPortfolios 51 -> 0). DashboardHomepage deliberately left un-swept because it still carries a live legacy fallback branch. Submitting evidence.",
+      "percent": 80,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
     }
   ],
-  "lastHeartbeatAt": "2026-10-12T04:46:15.502Z"
+  "lastHeartbeatAt": "2026-10-12T04:51:59.231Z"
 }
