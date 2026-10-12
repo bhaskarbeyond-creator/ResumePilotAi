@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-12T17:48:22.541Z",
-  "seq": 3141,
-  "id": "evt_mv5jpn5b_594306ccf6a4",
-  "type": "EVIDENCE_SUBMITTED",
-  "title": "[Evidence] DIR-105: Restore Full 26+ Platform Settings Operations to Superadmin",
+  "timestamp": "2026-10-12T18:05:21.710Z",
+  "seq": 3147,
+  "id": "evt_mv5kbhjd_f112f497843a",
+  "type": "HEARTBEAT",
+  "title": "[Heartbeat] CHANGES_REQUESTED closed: Ctrl+K palette now indexes settings tabs (live-proven at 320/768/1440). 35/0 tests, build 2.68s, design 142/0, eslint clean, crawl 32/0 PASS, INV-1 0-byte",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-105",
-  "summary": "DIR-105 FINAL. P0 navigation restoration COMPLETE. NEW settingsAccess.js (single canAccessSetting predicate) + NEW SettingsNavigator.jsx hub mounted on BOTH the allowed and denied branch of SettingsWrapper; inline hasPerm deleted. Hub generated from the single ALL_SETTINGS inventory (33 keys) - closes the 31-vs-33 drift. ?tab= contract preserved via setSearchParams. Spec-named suite tests/admin-settings-navigation.test.mjs (S9.2/S10.3) = 26/0, covering inventory reachability, authorization, hub wiring, Cuba tokens and palette indexing. P1 palette indexing: NEW buildSettingsCommands() in portalCommands.js (S10.2) - pure, 6 guards, deep-links each entitled panel to /admin/settings?tab=<key>; NOT yet wired into CubaPortalShell (flagged honestly, not claimed). EVIDENCE: build 3.64s exit 0 (<4.0s); design-system 142/0 incl. cuba-admin-console + cuba-portal-navigation; ESLint 0 errors 0 warnings; live crawl RESULT PASS 23 checks 0 failures - Super Admin (real Firebase claims role=SUPER_ADMIN,superAdmin=true,permissions=[*], real MariaDB) sees 33 panels + 7 category pills at 320/768/1440px with 0 console errors; operator (role ADMIN, isSuperAdmin=false) is NOT advertised any of the 5 superAdminOnly panels and a hand-typed ?tab=firebaseSettings never yields the gated panel. INV-1 src/cv-templates + backend/services/aiRuntime.js = 0-byte diff. Lead already committed the core as 9fee79fd."
+  "summary": "CHANGES_REQUESTED closed: Ctrl+K palette now indexes settings tabs (live-proven at 320/768/1440). 35/0 tests, build 2.68s, design 142/0, eslint clean, crawl 32/0 PASS, INV-1 0-byte"
 }

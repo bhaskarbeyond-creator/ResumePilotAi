@@ -50,19 +50,30 @@ export function buildPortalCommands(groups, activeLabel) {
  * @param {{isSuperAdmin?:boolean,permissions?:string[],canAccess?:(s:object)=>boolean}} [access]
  * @param {string} [activeTab] currently open `?tab=` key, surfaced for context
  */
-export function buildSettingsCommands(settings, access = {}, activeTab) {
-    const { isSuperAdmin = false, permissions = [], canAccess } = access;
-    const allowed = typeof canAccess === 'function'
-        ? canAccess
-        : (setting) => {
-            if (isSuperAdmin) return true;
-            if (setting?.superAdminOnly) return false;
-            if (!setting?.permission) return true;
-            const granted = Array.isArray(permissions) ? permissions : [];
-            if (granted.includes('*')) return true;
-            const required = Array.isArray(setting.permission) ? setting.permission : [setting.permission];
-            return required.some((p) => granted.includes(p));
-        };
+export function buildSettingsCommands(settings, access, activeTab) {
+    // Access filtering is OPT-IN.
+    //
+    // With NO access context this behaves as a search INDEX: it enumerates the full
+    // inventory and lets the denial gate adjudicate a click. That is exactly what the
+    // Ctrl+K palette needs (DIR-105) — indexing a panel is a site map, not a grant,
+    // and `SettingsWrapper` still refuses an unentitled panel.
+    //
+    // The settings HUB always passes access, so it only ever offers entitled panels.
+    const hasAccess = Boolean(access) && typeof access === 'object';
+    const { isSuperAdmin = false, permissions = [], canAccess } = access || {};
+    const allowed = !hasAccess
+        ? () => true
+        : (typeof canAccess === 'function'
+            ? canAccess
+            : (setting) => {
+                if (isSuperAdmin) return true;
+                if (setting?.superAdminOnly) return false;
+                if (!setting?.permission) return true;
+                const granted = Array.isArray(permissions) ? permissions : [];
+                if (granted.includes('*')) return true;
+                const required = Array.isArray(setting.permission) ? setting.permission : [setting.permission];
+                return required.some((p) => granted.includes(p));
+            });
 
     return (settings || [])
         .filter((setting) => setting && setting.key && allowed(setting))
@@ -75,6 +86,24 @@ export function buildSettingsCommands(settings, access = {}, activeTab) {
             isActive: setting.key === activeTab,
             to: `/admin/settings?tab=${encodeURIComponent(setting.key)}`,
         }));
+}
+
+/**
+ * Filters the settings palette commands by a search term.
+ *
+ * Split from the browser glue (`adminEntitySearch.js`) so it stays Node-testable —
+ * that module reaches `platformApi` and cannot be imported outside a browser.
+ *
+ * @param {Array<object>} settings the settings inventory
+ * @param {string} term raw query
+ * @param {object} [access] forwarded to `buildSettingsCommands`
+ */
+export function matchSettingsCommands(settings, term, access) {
+    const needle = String(term || '').trim().toLowerCase();
+    if (!needle) return [];
+    return buildSettingsCommands(settings, access).filter(
+        (command) => command.keywords.toLowerCase().includes(needle),
+    );
 }
 
 export default buildPortalCommands;

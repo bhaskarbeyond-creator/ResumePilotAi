@@ -1,6 +1,8 @@
 import { FiServer, FiUsers, FiHelpCircle } from 'react-icons/fi';
 import { FaReceipt } from 'react-icons/fa';
 import { searchPlatform } from '../../../services/platformApi';
+import { matchSettingsCommands } from '../../cuba/portalCommands';
+import { ALL_SETTINGS } from '../settings/settingsAccess';
 
 /**
  * DIR-012 — live entity search for the platform admin command palette.
@@ -97,10 +99,44 @@ export function mapPlatformSearchResult(result) {
     return hits;
 }
 
-/** The provider handed to `CubaCommandPalette`. Errors surface as "no entity hits". */
+/**
+ * DIR-105 — Platform Settings panels as palette hits.
+ *
+ * The settings console puts 26+ panels behind a SINGLE `/admin/settings` route,
+ * so the nav-model command builder cannot see them (one nav item, many panels).
+ * This indexes the settings inventory itself, which is why the Ctrl+K palette can
+ * now reach `Firebase Identity`, `Code Injection`, `Templates` and the rest.
+ *
+ * ENFORCEMENT IS NOT HERE. This is a search index, not a gate: a hit only carries
+ * a `?tab=` deep link. If the caller is not entitled to that panel, `SettingsWrapper`
+ * renders "Settings Access Restricted" exactly as it does for a hand-typed URL, and
+ * the route's `RequireTabPerm` / the backend policy engine remain the authorities.
+ * Indexing the full inventory is therefore not a bypass — it is a site map (§7).
+ *
+ * Pure and exported so it can be asserted in Node without a browser.
+ */
+export function settingsCommandHits(term, settings = ALL_SETTINGS) {
+    return matchSettingsCommands(settings, term);
+}
+
+/**
+ * The provider handed to `CubaCommandPalette`. Errors surface as "no entity hits".
+ *
+ * DIR-105: settings hits are resolved LOCALLY (they are static inventory, not a
+ * network call) and lead the list, so a platform-search outage degrades to "no
+ * record hits" instead of emptying the palette of settings too.
+ */
 export async function searchAdminEntities(term) {
-    const result = await searchPlatform(term);
-    return mapPlatformSearchResult(result);
+    const settings = settingsCommandHits(term);
+
+    let records = [];
+    try {
+        records = mapPlatformSearchResult(await searchPlatform(term));
+    } catch {
+        records = [];
+    }
+
+    return [...settings, ...records];
 }
 
 export default searchAdminEntities;

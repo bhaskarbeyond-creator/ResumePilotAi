@@ -82,26 +82,45 @@ Operator session (`role: ADMIN`, `isSuperAdmin === false`):
 - **Cuba design tokens** — a guard test rejects raw hex and off-token Tailwind colour ramps in the navigator.
 - **INV-1** — 0-byte diff.
 
-## 6. Honest status — one item carried forward
+## 6. Command palette indexing — CLOSED (was the CHANGES_REQUESTED gap)
 
-§10.2 asks that the **command palette** index all 26+ settings modules. Delivered:
-`buildSettingsCommands()` in `portalCommands.js`, pure and unit-tested (6 guards) —
-it emits one command per *entitled* panel, each deep-linked to
-`/admin/settings?tab=<key>`, reusing the same predicate so it can never leak a gated
-panel.
+The Lead's first review verdict was **CHANGES_REQUESTED**: *"evidence does not
+confirm the Ctrl+K Command Palette indexes all settings tabs as required."* That is
+now closed and **live-proven**, not merely unit-tested.
 
-**Not yet wired into `CubaPortalShell.jsx`.** The shell currently derives commands
-from the nav model only (`buildPortalCommands(groups, …)`). Appending the settings
-commands requires threading the settings inventory + admin session from
-`AdminPortalCuba.jsx` into the shell — a two-component prop change that I did **not**
-rush, because a half-wired palette is worse than a tested, ready-to-wire primitive.
-This is the remaining P1 item; §10.1 (the P0 navigation restoration) is complete.
+| Layer | Change |
+|---|---|
+| `settingsAccess.js` | `ALL_SETTINGS` **hoisted here** from `Settings.jsx`. The hub, the denial gate and the palette now read ONE list. |
+| `portalCommands.js` | `buildSettingsCommands()` + `matchSettingsCommands()`. Access filtering is **opt-in**: with no access context it is a search *index*. |
+| `adminEntitySearch.js` | `searchAdminEntities()` now merges settings hits ahead of the live platform records. |
 
-I am flagging this rather than claiming it, per the no-fabrication invariant.
+**Design note — why indexing the full inventory is not a bypass.** The palette is a
+search index, not a gate. A hit only carries a `?tab=` deep link; `SettingsWrapper`
+still refuses an unentitled panel exactly as it does for a hand-typed URL, and
+`RequireTabPerm` / `backend/security/policy.js` remain the authorities (§7). The
+settings *hub* still passes access and therefore only ever offers entitled panels.
 
-## 7. Artifacts
-`verify-settings-nav.mjs` · `verify-settings-nav.log` · `crawl-final.log` (23 checks, PASS)
+**Guard preserved.** `AdminPortalCuba.jsx` still reads no permission and issues no
+request — a new test asserts this explicitly, so `cuba-admin-console.test.mjs` stays
+true.
+
+### Live proof (all three viewports)
+| Check | 320 px | 768 px | 1440 px |
+|---|---|---|---|
+| Ctrl+K palette opens | PASS | PASS | PASS |
+| Indexes "Firebase Identity" | PASS | PASS | PASS |
+| Indexes "Code Injection" (superAdminOnly) | PASS | PASS | PASS |
+
+## 7. Honest status — carried forward
+
+Nothing in §10.1–§10.4 is now outstanding. The remaining DIR-106 governance items
+(P1-3/P1-4 reservation ledger, P1-5 credential policy, P1-6 key encryption at rest)
+are **separate directives**, not part of DIR-105, and are not touched here.
+
+## 8. Artifacts
+`verify-settings-nav.mjs` · `crawl-palette3.log` (32 checks, PASS)
 `screenshots: settings-nav-{mobile-320,tablet-768,desktop-1440,operator-denied}.png`
-`build-dir105.log` (3.64 s) · `dir105-tests.log` (26/0) · `design-system.log` (142/0)
+`build-dir105.log` (3.57 s) · `dir105-tests.log` (35/0) · `design-system.log` (142/0)
 `eslint-dir105.log` (empty = clean) · `DIR105-IMPLEMENTATION.md` (this file)
+
 

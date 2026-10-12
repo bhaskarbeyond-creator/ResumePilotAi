@@ -156,6 +156,40 @@ async function main() {
                 `tab=${url.searchParams.get('tab')} expected=${firstKey}`,
             );
 
+            // DIR-105 (CHANGES_REQUESTED): the Lead required live proof that the
+            // Ctrl+K palette actually INDEXES the settings panels. Scoped to the
+            // palette dialog so a matching tab label in the hub cannot fake a hit.
+            await page.keyboard.press('Control+k');
+            const palette = page.locator('[data-testid="cuba-command-palette"]');
+            const paletteOpen = await palette.first()
+                .waitFor({ state: 'visible', timeout: 15000 })
+                .then(() => true).catch(() => false);
+            check(`${vp.name}: Ctrl+K command palette opens`, paletteOpen);
+
+            if (paletteOpen) {
+                const searchBar = page.locator('[data-testid="cuba-command-searchbar"] input');
+                // Poll rather than sleep: the palette debounces, then renders. A fixed
+                // wait raced the first query on the 320px viewport.
+                const awaitHit = (text) => palette.locator(`text=${text}`).first()
+                    .waitFor({ state: 'visible', timeout: 10000 })
+                    .then(() => true).catch(() => false);
+
+                await searchBar.fill('firebase');
+                check(
+                    `${vp.name}: palette indexes the "Firebase Identity" settings panel`,
+                    await awaitHit('Firebase Identity'),
+                );
+
+                await searchBar.fill('code injection');
+                check(
+                    `${vp.name}: palette indexes a superAdminOnly panel ("Code Injection")`,
+                    await awaitHit('Code Injection'),
+                );
+
+                await page.keyboard.press('Escape');
+                await page.waitForTimeout(400);
+            }
+
             await page.screenshot({ path: path.join(OUT_DIR, `settings-nav-${vp.name}.png`) });
             check(`${vp.name}: zero console errors`, consoleErrors.length === 0, consoleErrors.slice(0, 2).join(' | '));
             await context.close();

@@ -15,29 +15,14 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { canAccessSetting, SETTINGS_GROUP_ORDER, presentGroups } from '../src/components/admin/settings/settingsAccess.js';
-import { buildSettingsCommands } from '../src/components/cuba/portalCommands.js';
+import { canAccessSetting, SETTINGS_GROUP_ORDER, presentGroups, ALL_SETTINGS } from '../src/components/admin/settings/settingsAccess.js';
+import { buildSettingsCommands, matchSettingsCommands } from '../src/components/cuba/portalCommands.js';
 
 const root = path.resolve(import.meta.dirname, '..');
 const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
 
 const SETTINGS = read('src/components/admin/settings/Settings.jsx');
 const NAVIGATOR = read('src/components/admin/settings/SettingsNavigator.jsx');
-
-/** Parses the ALL_SETTINGS inventory out of Settings.jsx. */
-function allSettings() {
-    const start = SETTINGS.indexOf('const ALL_SETTINGS');
-    const body = SETTINGS.slice(start, SETTINGS.indexOf('\n];', start));
-    const re = /\{\s*key:\s*'([^']+)',\s*label:\s*'([^']+)',\s*group:\s*'([^']+)',\s*description:\s*'([^']+)',\s*(superAdminOnly:\s*true|permission:\s*'[^']+')/g;
-    return [...body.matchAll(re)].map((m) => ({
-        key: m[1],
-        label: m[2],
-        group: m[3],
-        description: m[4],
-        superAdminOnly: m[5].startsWith('superAdminOnly'),
-        permission: m[5].startsWith('permission') ? m[5].match(/'([^']+)'/)[1] : undefined,
-    }));
-}
 
 /** Panels the content component actually renders. */
 function mountedPanels() {
@@ -52,7 +37,7 @@ const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$
 
 const NAV_CODE = stripComments(NAVIGATOR);
 
-const INVENTORY = allSettings();
+const INVENTORY = ALL_SETTINGS;
 const MOUNTED = mountedPanels();
 const SUPER_ADMIN_ONLY_KEYS = INVENTORY.filter((s) => s.superAdminOnly).map((s) => s.key);
 
@@ -234,6 +219,83 @@ describe('DIR-105 command palette indexes every entitled settings panel', () => 
     it('is empty (not throwing) for an absent inventory', () => {
         assert.deepEqual(buildSettingsCommands(undefined, superAdmin), []);
         assert.deepEqual(buildSettingsCommands([], superAdmin), []);
+    });
+});
+
+
+describe('DIR-105 Ctrl+K palette indexes ALL settings tabs', () => {
+    // The Lead's CHANGES_REQUESTED verdict was explicit: "evidence does not confirm
+    // the Ctrl+K Command Palette indexes all settings tabs as required." These tests
+    // are that confirmation.
+
+    it('reaches EVERY settings panel by its own label', () => {
+        for (const setting of INVENTORY) {
+            const hits = matchSettingsCommands(INVENTORY, setting.label);
+            assert.ok(
+                hits.some((h) => h.to === `/admin/settings?tab=${setting.key}`),
+                `palette cannot reach "${setting.label}" (${setting.key})`,
+            );
+        }
+    });
+
+    it('reaches every panel by its raw key too', () => {
+        for (const setting of INVENTORY) {
+            const hits = matchSettingsCommands(INVENTORY, setting.key);
+            assert.ok(
+                hits.some((h) => h.to.includes(`tab=${setting.key}`)),
+                `palette cannot reach ${setting.key} by key`,
+            );
+        }
+    });
+
+    it('indexes every panel — no gaps across the full inventory', () => {
+        const reached = new Set();
+        for (const setting of INVENTORY) {
+            for (const hit of matchSettingsCommands(INVENTORY, setting.label)) {
+                const key = hit.to.replace('/admin/settings?tab=', '');
+                reached.add(key);
+            }
+        }
+        assert.equal(reached.size, INVENTORY.length, `indexed ${reached.size} of ${INVENTORY.length}`);
+        assert.ok(reached.size >= 26);
+    });
+
+    it('is case-insensitive and trims the query', () => {
+        const lower = matchSettingsCommands(INVENTORY, 'firebase');
+        const upper = matchSettingsCommands(INVENTORY, '  FIREBASE  ');
+        assert.deepEqual(lower.map((h) => h.to), upper.map((h) => h.to));
+        assert.ok(lower.length > 0);
+    });
+
+    it('finds panels by group name', () => {
+        const hits = matchSettingsCommands(INVENTORY, 'Security & Health');
+        assert.ok(hits.length >= 5, `expected the Security & Health group, got ${hits.length}`);
+    });
+
+    it('returns nothing for an empty query rather than the whole inventory', () => {
+        assert.deepEqual(matchSettingsCommands(INVENTORY, ''), []);
+        assert.deepEqual(matchSettingsCommands(INVENTORY, '   '), []);
+        assert.deepEqual(matchSettingsCommands(INVENTORY, undefined), []);
+    });
+
+    it('every palette hit carries a deep link the gate can adjudicate', () => {
+        for (const hit of matchSettingsCommands(INVENTORY, 'settings')) {
+            assert.match(hit.to, /^\/admin\/settings\?tab=[A-Za-z]+$/);
+        }
+    });
+
+    it('is wired into the admin console palette provider', () => {
+        const SEARCH = read('src/components/admin/command/adminEntitySearch.js');
+        assert.match(SEARCH, /matchSettingsCommands/, 'adminEntitySearch must index settings');
+        assert.match(SEARCH, /settingsCommandHits/);
+        // The provider must merge settings with the live platform records.
+        assert.match(SEARCH, /\[\.\.\.settings, \.\.\.records\]/);
+    });
+
+    it('keeps the admin wrapper free of permission logic (guard stays true)', () => {
+        const WRAPPER = stripComments(read('src/components/admin/AdminPortalCuba.jsx'));
+        assert.doesNotMatch(WRAPPER, /permissionsFor|isSuperAdmin|role\s*===|RequireTabPerm/);
+        assert.doesNotMatch(WRAPPER, /fetch\(|axios|\/api\//);
     });
 });
 
