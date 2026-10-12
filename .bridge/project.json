@@ -1,0 +1,4249 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ime365.local/schemas/project-manifest-4.2.0.json",
+  "title": "ResumePilotAI / IME365 Master Build Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "manifestGovernance",
+    "project",
+    "runtimeStack",
+    "environmentAndSecrets",
+    "routeInventory",
+    "fourPortalsEcosystem",
+    "publicAndMarketingSurfaces",
+    "resumeStudioAndTemplates",
+    "exportPipeline",
+    "aiCapabilitiesSuite",
+    "uiuxSystem",
+    "backendApiTopology",
+    "apiContracts",
+    "openapiInline",
+    "databaseSchema",
+    "ddlInline",
+    "dataGovernanceAndSchema",
+    "securityAndCompliance",
+    "observabilityAndSre",
+    "deliveryAndOperations",
+    "aiGovernance",
+    "accessibilityI18nSeo",
+    "qualityAssuranceAndTesting",
+    "buildSpecification",
+    "collaborationBridgeControlPlane",
+    "collaborationBridgeProtocol"
+  ],
+  "manifestGovernance": {
+    "schemaVersion": "4.2.0",
+    "singleSourceOfTruth": "docs/contracts/manifest.json",
+    "generatedArtifacts": [
+      "docs/contracts/openapi.yaml",
+      "docs/contracts/schema.sql",
+      "docs/contracts/bridge-message.schema.json",
+      "docs/contracts/route-inventory.json",
+      "docs/build/tasks.json",
+      "docs/build/error-codes.json",
+      "docs/build/fsm/*.json"
+    ],
+    "countValidation": {
+      "enforcedByCI": true,
+      "gate": "npm run test:manifest-consistency",
+      "rules": [
+        "project.summary.frontendRouteCount === routeInventory.total",
+        "backendApiTopology.totalRouters === routers.length",
+        "databaseSchema.totalTables === ddlInline count",
+        "resumeStudioAndTemplates.totalCount === templatesCatalog.length",
+        "qualityAssuranceAndTesting.totalTestSuites === discovered test files",
+        "uiuxSystem.componentInventory length === src/components/ui/*.jsx count",
+        "buildSpecification.taskGraph.length === docs/build/tasks.json length"
+      ]
+    },
+    "frozenModules": [
+      "src/cv-templates/**",
+      "src/styles/cuba-tokens.css",
+      "src/styles/cuba-print.css",
+      "src/styles/template-pagination.css",
+      "docs/contracts/**"
+    ],
+    "humanApprovalRequiredFor": [
+      "auth",
+      "billing",
+      "security",
+      "databaseSchema",
+      "bridgeProtocol",
+      "aiGovernance",
+      "dataGovernance",
+      "uiuxSystem.designSourceOfTruth"
+    ],
+    "changeControl": {
+      "mode": "contract-first",
+      "prerequisites": [
+        "directiveId",
+        "acceptanceCriteria",
+        "rollbackPlan",
+        "evidenceBundle"
+      ],
+      "reviewer": "LEAD_SUPERVISOR",
+      "authorizer": "STAFF_DEVELOPER"
+    }
+  },
+  "project": {
+    "name": "ResumePilotAI",
+    "codename": "IME365",
+    "version": "4.2.0",
+    "title": "Universal Enterprise AI Career Platform & Multi-Portal Ecosystem",
+    "summary": "Full-stack production platform featuring 4 enterprise portals, 68 front-end application routes, 51-template resume studio, high-fidelity DOCX/PDF export pipelines, real-time AI audio interview simulator, dual-database synchronized persistence, an autonomous multi-provider LLM routing engine, a fully specified Cuba design system, and an executable build task graph enabling autonomous end-to-end delivery.",
+    "rootDirectory": "D:\\xampp\\htdocs\\IME365",
+    "entryPoints": {
+      "client": "src/main.jsx",
+      "server": "backend/index.js",
+      "aiRouter": "c:\\Users\\mbhas\\.ai-bridge\\auto_ai_router.cjs",
+      "bridgeControlPlane": "c:\\Users\\mbhas\\.ai-bridge\\bridge.cjs"
+    },
+    "canonicalOrigins": {
+      "application": "https://ime365.local",
+      "backendApi": "http://127.0.0.1:8080",
+      "aiRoutingService": "http://127.0.0.1:48200/v1"
+    },
+    "governanceStandard": "AEDS-001 (Autonomous Engineering Directive Standard 10/10)"
+  },
+  "runtimeStack": {
+    "frontend": {
+      "framework": "React 18.2.0 (SPA)",
+      "bundler": "Vite 5.0",
+      "router": "React Router DOM 6",
+      "stylingApproach": "Vanilla CSS Design Tokens + Scoped Component SCSS (Strict Zero-Tailwind Policy in Cuba surfaces)",
+      "designSystem": "Cuba Executive Glassmorphism & Google Material 3 Token Architecture",
+      "designTokenFile": "src/styles/cuba-tokens.css",
+      "printStylesheet": "src/styles/cuba-print.css",
+      "templatePaginationStylesheet": "src/styles/template-pagination.css",
+      "internationalization": {
+        "engine": "i18next",
+        "configFile": "src/i18n.js",
+        "localeFiles": "src/locales/{en,es,fr,de,hi,ar}.json",
+        "supportedLanguages": [
+          "en",
+          "es",
+          "fr",
+          "de",
+          "hi",
+          "ar"
+        ],
+        "rtlLanguages": [
+          "ar"
+        ],
+        "fallbackLanguage": "en"
+      },
+      "performanceBudgets": {
+        "maxBuildDurationSeconds": 4.0,
+        "maxFirstContentfulPaintMs": 100,
+        "maxLargestContentfulPaintMs": 2500,
+        "maxTotalBundleKb": 850,
+        "zeroHorizontalOverflow": true,
+        "responsiveBreakpoints": [
+          320,
+          375,
+          768,
+          1024,
+          1280,
+          1440,
+          1920
+        ]
+      }
+    },
+    "backend": {
+      "runtime": "Node.js 20+ LTS",
+      "framework": "Express 4",
+      "httpPort": 8080,
+      "pidFile": "C:\\Users\\mbhas\\.ai-bridge\\backend_api.pid",
+      "logFile": "C:\\Users\\mbhas\\.ai-bridge\\backend_api.log",
+      "processManager": "PM2 or systemd",
+      "probes": {
+        "health": "http://127.0.0.1:8080/healthz",
+        "readiness": "http://127.0.0.1:8080/readyz",
+        "liveness": "http://127.0.0.1:8080/livez",
+        "metrics": "http://127.0.0.1:8080/metrics"
+      },
+      "securityMiddleware": [
+        "Helmet Content Security Policy",
+        "Express Rate Limiters (Global, Auth Burst, AI Quotas, Export Limiter, Webhook Limiter)",
+        "Firebase Admin Bearer Token Validator",
+        "Enterprise Tenant Context Injector",
+        "CSRF Double-Submit Token",
+        "CORS Allowlist Enforcer",
+        "Request-ID Correlation Injector",
+        "Idempotency-Key Validator",
+        "SSRF Denylist Guard",
+        "Input Schema Validator (zod)",
+        "Structured Audit Logger"
+      ]
+    },
+    "webServer": {
+      "server": "Apache HTTP Server 2.4",
+      "distribution": "XAMPP (D:\\xampp\\apache)",
+      "ports": [
+        80,
+        443
+      ],
+      "sslCertificate": "OpenSSL Certified Self-Signed for ime365.local",
+      "proxyConfiguration": "Reverse proxy /api/ requests to Node.js backend (:8080)",
+      "sslRenewal": "Documented self-signed rotation + certbot-ready for production"
+    },
+    "database": {
+      "architecture": "Dual-Database Platform with Autonomous Intelligent Sync",
+      "primaryRelational": {
+        "engine": "MariaDB 10.4+ / MySQL 8.0+",
+        "host": "127.0.0.1",
+        "port": 3306,
+        "database": "ai_resume_builder",
+        "authority": "ACID System of Record (Enterprise, Billing, Portals, Credentials, Core Records)",
+        "tablesCount": 117,
+        "migrationsDirectory": "backend/database/migrations",
+        "migrationFilesCount": 25,
+        "migrationPolicy": "forward-only with tested rollback scripts and pre-migration snapshot",
+        "connectionPool": {
+          "min": 2,
+          "max": 20,
+          "idleTimeoutMs": 30000
+        }
+      },
+      "secondaryDocument": {
+        "engine": "Google Cloud Firestore",
+        "authority": "Live State Synchronization, Real-time Feeds, Resilient Node",
+        "invariants": [
+          "Zero hard-dependency on Firestore for authentication or billing",
+          "Durable SQLite/MariaDB outbox queue captures mutations for guaranteed replay",
+          "Plaintext credentials and API keys strictly prohibited in Firestore payloads",
+          "Firestore is always reconstructible from MariaDB canonical documents"
+        ]
+      }
+    },
+    "aiOrchestration": {
+      "service": "Dynamic Multi-Provider AI Routing Proxy",
+      "port": 48200,
+      "endpoint": "http://127.0.0.1:48200/v1",
+      "primaryModel": "NVIDIA NIM (meta/llama-3.2-11b-vision-instruct)",
+      "failoverChain": [
+        "nvidia/nemotron-mini-4b-instruct",
+        "OpenRouter (DeepSeek-V3, Llama 3.3 70B, Qwen 2.5 72B)",
+        "Groq (High-throughput Llama 3.3 70B Versatile)",
+        "OpenAI (GPT-4o, GPT-4o-mini)",
+        "Google Gemini (gemini-2.0-flash)"
+      ],
+      "safetyGuards": [
+        "extractJson normalization helper mandatory for all LLM parsing",
+        "Zero synthetic fallback: real provider errors propagated with actionable diagnostics",
+        "All third-party API keys stored exclusively on server side with zero client DOM exposure"
+      ]
+    }
+  },
+  "environmentAndSecrets": {
+    "envFiles": [
+      ".env.example",
+      ".env.local",
+      ".env.staging",
+      ".env.production"
+    ],
+    "secretPolicy": "server-side only; never expose AI/provider/payment keys to Vite client",
+    "viteClientAllowlist": [
+      "VITE_APP_NAME",
+      "VITE_API_BASE_URL",
+      "VITE_PUBLIC_ORIGIN"
+    ],
+    "requiredEnv": [
+      "NODE_ENV",
+      "PORT",
+      "DATABASE_URL",
+      "MARIADB_HOST",
+      "MARIADB_PORT",
+      "MARIADB_USER",
+      "MARIADB_PASSWORD",
+      "MARIADB_DATABASE",
+      "FIREBASE_PROJECT_ID",
+      "FIREBASE_CLIENT_EMAIL",
+      "FIREBASE_PRIVATE_KEY",
+      "JWT_SECRET",
+      "JWT_REFRESH_SECRET",
+      "SESSION_SECRET",
+      "CSRF_SECRET",
+      "RAZORPAY_KEY_ID",
+      "RAZORPAY_KEY_SECRET",
+      "RAZORPAY_WEBHOOK_SECRET",
+      "STRIPE_SECRET_KEY",
+      "STRIPE_WEBHOOK_SECRET",
+      "NVIDIA_NIM_API_KEY",
+      "OPENROUTER_API_KEY",
+      "GROQ_API_KEY",
+      "OPENAI_API_KEY",
+      "GEMINI_API_KEY",
+      "SMTP_HOST",
+      "SMTP_PORT",
+      "SMTP_USER",
+      "SMTP_PASS",
+      "AI_ROUTER_URL",
+      "BRIDGE_HMAC_SECRET"
+    ],
+    "rotationPolicyDays": 90,
+    "secretScanning": [
+      "gitleaks",
+      "trufflehog",
+      "npm run test:security:static"
+    ]
+  },
+  "routeInventory": {
+    "publicMarketing": 33,
+    "candidatePortal": 15,
+    "employerPortal": 5,
+    "enterpriseConsole": 6,
+    "adminConsole": 5,
+    "systemUtility": 4,
+    "total": 68,
+    "validatedByCI": "npm run test:manifest-consistency"
+  },
+  "fourPortalsEcosystem": {
+    "candidatePortal": {
+      "portalId": "PORTAL_CANDIDATE",
+      "displayName": "Candidate Career Command Center",
+      "shellComponent": "src/components/Candidate/CubaCandidateShell.jsx",
+      "navigationConfig": "src/utils/candidateNavigation.js",
+      "routesCount": 15,
+      "routes": [
+        {
+          "route": "/dashboard",
+          "name": "Overview",
+          "component": "src/components/Dashboard/DashboardHomepage/DashboardHomepage.jsx"
+        },
+        {
+          "route": "/dashboard?tab=resumes",
+          "name": "Resumes & Master CV",
+          "component": "src/components/BuildResume/BuildResume.jsx"
+        },
+        {
+          "route": "/dashboard?tab=cover-letters",
+          "name": "Cover Letters",
+          "component": "src/components/CoverLetter/CoverLetter.jsx"
+        },
+        {
+          "route": "/dashboard?tab=portfolios",
+          "name": "Portfolios & WebCV",
+          "component": "src/components/PortfolioBuilder/PortfolioBuilder.jsx"
+        },
+        {
+          "route": "/dashboard?tab=favorites",
+          "name": "Favorites",
+          "component": "src/components/JobsListings/FavoritesModal.jsx"
+        },
+        {
+          "route": "/dashboard?tab=notifications",
+          "name": "Notifications",
+          "component": "src/components/Dashboard/Notifications/NotificationCenter.jsx"
+        },
+        {
+          "route": "/dashboard?tab=jobs",
+          "name": "Job Portal & Intelligence",
+          "component": "src/components/JobsListings/MainJobListings.jsx"
+        },
+        {
+          "route": "/dashboard?tab=tracker",
+          "name": "Job Application Tracker",
+          "component": "src/components/Dashboard/JobTracker/JobTracker.jsx"
+        },
+        {
+          "route": "/dashboard?tab=applied",
+          "name": "Applied Jobs",
+          "component": "src/components/AppliedJobs/AppliedJobs.jsx"
+        },
+        {
+          "route": "/dashboard?tab=interview",
+          "name": "AI Interview Coach & Audio CBT",
+          "component": "src/components/InterviewCoach/InterviewCoach.jsx"
+        },
+        {
+          "route": "/dashboard?tab=messages",
+          "name": "Direct Messages",
+          "component": "src/components/Dashboard/Messaging/MessagingCenter.jsx"
+        },
+        {
+          "route": "/dashboard?tab=plans",
+          "name": "Plans & Subscriptions",
+          "component": "src/components/Billing/Plans/Plans.jsx"
+        },
+        {
+          "route": "/dashboard?tab=settings&sub=profile",
+          "name": "Candidate Profile",
+          "component": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx"
+        },
+        {
+          "route": "/dashboard?tab=settings&sub=security",
+          "name": "Security & MFA",
+          "component": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx"
+        },
+        {
+          "route": "/dashboard?tab=support",
+          "name": "Support & Help",
+          "component": "src/components/Contact/SupportCenter.jsx"
+        }
+      ]
+    },
+    "employerPortal": {
+      "portalId": "PORTAL_EMPLOYER",
+      "displayName": "Employer & Recruiter Talent Suite",
+      "shellComponent": "src/components/EmployerPortal/EmployerPortal.jsx",
+      "routesCount": 5,
+      "routes": [
+        {
+          "route": "/employer/dashboard",
+          "component": "src/components/EmployerPortal/EmployerDashboard.jsx"
+        },
+        {
+          "route": "/employer/jobs/create",
+          "component": "src/components/EmployerPortal/JobCreate.jsx"
+        },
+        {
+          "route": "/employer/pipeline",
+          "component": "src/components/EmployerPortal/PipelineBoard.jsx"
+        },
+        {
+          "route": "/employer/candidates",
+          "component": "src/components/EmployerPortal/CandidateSearch.jsx"
+        },
+        {
+          "route": "/employer/interviews",
+          "component": "src/components/EmployerPortal/InterviewScheduler.jsx"
+        }
+      ],
+      "inModalResumeReviewer": "src/components/JobsListings/JobApplicationModal.jsx"
+    },
+    "enterpriseConsole": {
+      "portalId": "PORTAL_ENTERPRISE",
+      "displayName": "Enterprise Multi-Tenant Administration Console",
+      "shellComponent": "src/enterprise/EnterpriseConsole.jsx",
+      "routesCount": 6,
+      "routes": [
+        {
+          "route": "/enterprise/overview",
+          "component": "src/enterprise/pages/Overview.jsx"
+        },
+        {
+          "route": "/enterprise/tenants",
+          "component": "src/enterprise/pages/Tenants.jsx"
+        },
+        {
+          "route": "/enterprise/policy",
+          "component": "src/enterprise/pages/Policy.jsx"
+        },
+        {
+          "route": "/enterprise/quota",
+          "component": "src/enterprise/pages/Quota.jsx"
+        },
+        {
+          "route": "/enterprise/security",
+          "component": "src/enterprise/pages/Security.jsx"
+        },
+        {
+          "route": "/enterprise/audit-logs",
+          "component": "src/enterprise/pages/AuditLogs.jsx"
+        }
+      ],
+      "backendService": "backend/enterprise/",
+      "securityInvariants": [
+        "Strict multi-tenant SQL parameter isolation (`tenant_id` guard)",
+        "Zero cross-tenant data leakage across all queries and API responses",
+        "Durable outbox retry for asynchronous enterprise events"
+      ]
+    },
+    "adminConsole": {
+      "portalId": "PORTAL_ADMIN",
+      "displayName": "SuperAdmin Global Operations Console",
+      "shellComponent": "src/components/admin/Admin.jsx",
+      "routesCount": 5,
+      "routes": [
+        {
+          "route": "/admin/dashboard",
+          "component": "src/components/admin/pages/AdminDashboard.jsx"
+        },
+        {
+          "route": "/admin/ai-settings",
+          "component": "src/components/admin/pages/AiSettings.jsx"
+        },
+        {
+          "route": "/admin/database",
+          "component": "src/components/admin/pages/DatabaseAdmin.jsx"
+        },
+        {
+          "route": "/admin/users",
+          "component": "src/components/admin/pages/UsersAdmin.jsx"
+        },
+        {
+          "route": "/admin/audit",
+          "component": "src/components/admin/pages/AuditAdmin.jsx"
+        }
+      ],
+      "backendService": "backend/routes/databaseAdmin.js"
+    }
+  },
+  "publicAndMarketingSurfaces": {
+    "routesCount": 33,
+    "routes": [
+      {
+        "route": "/",
+        "component": "src/components/welcome/Welcome.jsx"
+      },
+      {
+        "route": "/front",
+        "component": "src/components/Front/Front.jsx"
+      },
+      {
+        "route": "/features",
+        "component": "src/components/Features/Features.jsx"
+      },
+      {
+        "route": "/templates",
+        "component": "src/components/Marketing/TemplatesShowcase.jsx"
+      },
+      {
+        "route": "/pricing",
+        "component": "src/components/Billing/Plans/Plans.jsx"
+      },
+      {
+        "route": "/plans",
+        "component": "src/components/Billing/Plans/Plans.jsx"
+      },
+      {
+        "route": "/faq",
+        "component": "src/components/Marketing/FAQPage.jsx"
+      },
+      {
+        "route": "/career-resources",
+        "component": "src/components/Marketing/CareerResources.jsx"
+      },
+      {
+        "route": "/contact",
+        "component": "src/components/Contact/Contact.jsx"
+      },
+      {
+        "route": "/privacy",
+        "component": "src/components/Marketing/PrivacyPolicy.jsx"
+      },
+      {
+        "route": "/terms",
+        "component": "src/components/Marketing/TermsOfService.jsx"
+      },
+      {
+        "route": "/cookies",
+        "component": "src/components/Marketing/CookiePolicy.jsx"
+      },
+      {
+        "route": "/about",
+        "component": "src/components/Marketing/AboutUs.jsx"
+      },
+      {
+        "route": "/p/:custompage",
+        "component": "src/components/CustomPage/CustomePage.jsx"
+      },
+      {
+        "route": "/login",
+        "component": "src/components/auth/Login.jsx"
+      },
+      {
+        "route": "/sign-up",
+        "component": "src/components/auth/SignUp.jsx"
+      },
+      {
+        "route": "/forgot-password",
+        "component": "src/components/auth/ForgotPassword.jsx"
+      },
+      {
+        "route": "/reset-password",
+        "component": "src/components/auth/ResetPassword.jsx"
+      },
+      {
+        "route": "/verify-email",
+        "component": "src/components/auth/VerifyEmail.jsx"
+      },
+      {
+        "route": "/mfa",
+        "component": "src/components/auth/MfaChallenge.jsx"
+      },
+      {
+        "route": "/jobs",
+        "component": "src/components/JobsLanding/JobsLanding.jsx"
+      },
+      {
+        "route": "/jobs/browse",
+        "component": "src/components/JobsListings/MainJobListings.jsx"
+      },
+      {
+        "route": "/jobs/portal/:jobId",
+        "component": "src/components/JobsListings/JobDetailsModal.jsx"
+      },
+      {
+        "route": "/jobs/categories",
+        "component": "src/components/JobsListings/JobCategories.jsx"
+      },
+      {
+        "route": "/jobs/category/:catName",
+        "component": "src/components/JobsListings/CategoryJobs.jsx"
+      },
+      {
+        "route": "/jobs/city/:slug",
+        "component": "src/components/JobsListings/RegionalJobsPage.jsx"
+      },
+      {
+        "route": "/jobs/in/:slug",
+        "component": "src/components/JobsListings/RegionalJobsPage.jsx"
+      },
+      {
+        "route": "/blog",
+        "component": "src/components/Blog/BlogList/BlogList.jsx"
+      },
+      {
+        "route": "/blog/:slug",
+        "component": "src/components/Blog/BlogPost/BlogPost.jsx"
+      },
+      {
+        "route": "/blog-editor",
+        "component": "src/components/Blog/BlogEditor/BlogEditor.jsx"
+      },
+      {
+        "route": "/portfolios",
+        "component": "src/components/PortfolioGallery/PortfolioGallery.jsx"
+      },
+      {
+        "route": "/portfolio/:slug",
+        "component": "src/components/PublicPortfolio/PublicPortfolio.jsx"
+      },
+      {
+        "route": "/shared/:resumeId",
+        "component": "src/components/PublicResume/PublicResume.jsx"
+      }
+    ],
+    "systemUtilityRoutes": [
+      {
+        "route": "/404",
+        "component": "src/components/system/NotFound.jsx"
+      },
+      {
+        "route": "/unauthorized",
+        "component": "src/components/system/Unauthorized.jsx"
+      },
+      {
+        "route": "/forbidden",
+        "component": "src/components/system/Forbidden.jsx"
+      },
+      {
+        "route": "/maintenance",
+        "component": "src/components/system/Maintenance.jsx"
+      }
+    ]
+  },
+  "resumeStudioAndTemplates": {
+    "directory": "src/cv-templates/",
+    "totalCount": 51,
+    "lockPolicy": "STRICT 0-BYTE DIFF LOCK: Antigravity and automated tools must never modify the 51 certified templates without explicit human authorization.",
+    "rendererComponent": "src/components/TemplateRenderer.jsx",
+    "templatesCatalog": [
+      {
+        "id": "cv1",
+        "name": "Executive Traditional",
+        "category": "Corporate & Legal",
+        "layout": "Single Column",
+        "atsScore": 99
+      },
+      {
+        "id": "cv2",
+        "name": "Modern Tech Minimalist",
+        "category": "Technology & Engineering",
+        "layout": "Two Column Modern",
+        "atsScore": 98
+      },
+      {
+        "id": "cv3",
+        "name": "Creative Designer Portfolio",
+        "category": "Creative & Design",
+        "layout": "Left Accent Sidebar",
+        "atsScore": 92
+      },
+      {
+        "id": "cv4",
+        "name": "Academic Curriculum Vitae",
+        "category": "Academia & Research",
+        "layout": "Dense Multi-Page",
+        "atsScore": 97
+      },
+      {
+        "id": "cv5",
+        "name": "Corporate Finance & Banking",
+        "category": "Finance & Consulting",
+        "layout": "Structured Grid",
+        "atsScore": 98
+      },
+      {
+        "id": "cv6",
+        "name": "Clean Modern Compact",
+        "category": "General Professional",
+        "layout": "Single Column Compact",
+        "atsScore": 96
+      },
+      {
+        "id": "cv7",
+        "name": "Nordic Clean Slate",
+        "category": "Minimalist",
+        "layout": "Two Column Minimal",
+        "atsScore": 95
+      },
+      {
+        "id": "cv8",
+        "name": "Bold Header Executive",
+        "category": "Leadership & C-Suite",
+        "layout": "Top Header Banner",
+        "atsScore": 94
+      },
+      {
+        "id": "cv9",
+        "name": "Engineering Matrix",
+        "category": "Software & DevOps",
+        "layout": "Skills-Forward Grid",
+        "atsScore": 97
+      },
+      {
+        "id": "cv10",
+        "name": "Healthcare & Clinical",
+        "category": "Medical & Clinical",
+        "layout": "Credentials-First",
+        "atsScore": 96
+      },
+      {
+        "id": "cv11",
+        "name": "Product Strategy Leader",
+        "category": "Product & Agile",
+        "layout": "Impact Metrics Highlight",
+        "atsScore": 95
+      },
+      {
+        "id": "cv12",
+        "name": "Data Science & AI Specialist",
+        "category": "AI & Analytics",
+        "layout": "Two Column Tech",
+        "atsScore": 96
+      },
+      {
+        "id": "cv13",
+        "name": "Global Enterprise Consultant",
+        "category": "Consulting & Strategy",
+        "layout": "Structured Timeline",
+        "atsScore": 97
+      },
+      {
+        "id": "cv14",
+        "name": "Marketing & Brand Strategist",
+        "category": "Marketing & PR",
+        "layout": "Creative Banner Accent",
+        "atsScore": 93
+      },
+      {
+        "id": "cv15",
+        "name": "Sales & Revenue Executive",
+        "category": "Sales & Growth",
+        "layout": "Quota & Numbers Grid",
+        "atsScore": 95
+      },
+      {
+        "id": "cv16",
+        "name": "Legal Counsel & Compliance",
+        "category": "Legal & Risk",
+        "layout": "Formal Traditional",
+        "atsScore": 98
+      },
+      {
+        "id": "cv17",
+        "name": "Startup Founder & Operator",
+        "category": "Entrepreneurship",
+        "layout": "Milestones & Traction",
+        "atsScore": 94
+      },
+      {
+        "id": "cv18",
+        "name": "Supply Chain & Logistics",
+        "category": "Operations",
+        "layout": "Efficiency Metrics",
+        "atsScore": 96
+      },
+      {
+        "id": "cv19",
+        "name": "Human Resources & People Ops",
+        "category": "HR & Talent",
+        "layout": "People-First Timeline",
+        "atsScore": 95
+      },
+      {
+        "id": "cv20",
+        "name": "Cybersecurity & InfoSec",
+        "category": "Security & Defense",
+        "layout": "Certifications-Header",
+        "atsScore": 97
+      },
+      {
+        "id": "cv21",
+        "name": "Architecture & Built Environment",
+        "category": "Architecture & Engineering",
+        "layout": "Projects Portfolio",
+        "atsScore": 91
+      },
+      {
+        "id": "cv22",
+        "name": "Early Career Graduate",
+        "category": "Entry-Level & Students",
+        "layout": "Education & Coursework Focus",
+        "atsScore": 96
+      },
+      {
+        "id": "cv23",
+        "name": "Media, Film & Audio Specialist",
+        "category": "Media & Entertainment",
+        "layout": "Credits & Production Grid",
+        "atsScore": 90
+      },
+      {
+        "id": "cv24",
+        "name": "Customer Experience Director",
+        "category": "Support & Retention",
+        "layout": "CSAT/NPS Metrics Header",
+        "atsScore": 95
+      },
+      {
+        "id": "cv25",
+        "name": "Fintech & Blockchain Engineer",
+        "category": "Web3 & Crypto",
+        "layout": "Protocol & Repos Grid",
+        "atsScore": 95
+      },
+      {
+        "id": "cv26",
+        "name": "Government & Public Policy",
+        "category": "Civil Service & NGO",
+        "layout": "Formal Clearance Layout",
+        "atsScore": 98
+      },
+      {
+        "id": "cv27",
+        "name": "Hospitality & Tourism Executive",
+        "category": "Hospitality",
+        "layout": "Guest Services Accent",
+        "atsScore": 93
+      },
+      {
+        "id": "cv28",
+        "name": "Education & University Dean",
+        "category": "Higher Education",
+        "layout": "Pedagogy & Research",
+        "atsScore": 97
+      },
+      {
+        "id": "cv29",
+        "name": "DevSecOps & Cloud Architect",
+        "category": "Cloud Architecture",
+        "layout": "Infrastructure Blueprint",
+        "atsScore": 96
+      },
+      {
+        "id": "cv30",
+        "name": "Biotech & Pharmaceutical",
+        "category": "Life Sciences",
+        "layout": "Publications & Patents",
+        "atsScore": 97
+      },
+      {
+        "id": "cv31",
+        "name": "Venture Capital Analyst",
+        "category": "Private Equity & VC",
+        "layout": "Deal Flow & Due Diligence",
+        "atsScore": 96
+      },
+      {
+        "id": "cv32",
+        "name": "UX Research & Service Design",
+        "category": "Design & Research",
+        "layout": "Case Studies Breakdown",
+        "atsScore": 92
+      },
+      {
+        "id": "cv33",
+        "name": "Nonprofit & Foundation Director",
+        "category": "Philanthropy",
+        "layout": "Grant & Fund Timeline",
+        "atsScore": 95
+      },
+      {
+        "id": "cv34",
+        "name": "Industrial & Manufacturing Lead",
+        "category": "Manufacturing",
+        "layout": "Lean Six Sigma Grid",
+        "atsScore": 96
+      },
+      {
+        "id": "cv35",
+        "name": "Aviation & Aerospace Engineer",
+        "category": "Aerospace",
+        "layout": "Systems Engineering",
+        "atsScore": 97
+      },
+      {
+        "id": "cv36",
+        "name": "Renewable Energy & ESG Director",
+        "category": "Sustainability & CleanTech",
+        "layout": "Carbon & ESG Metrics",
+        "atsScore": 95
+      },
+      {
+        "id": "cv37",
+        "name": "International Trade & Customs",
+        "category": "Global Logistics",
+        "layout": "Cross-Border Matrix",
+        "atsScore": 96
+      },
+      {
+        "id": "cv38",
+        "name": "Retail & Omni-Channel Executive",
+        "category": "Retail & eCommerce",
+        "layout": "Store & GMV Performance",
+        "atsScore": 94
+      },
+      {
+        "id": "cv39",
+        "name": "Risk & Actuarial Consultant",
+        "category": "Insurance & Risk",
+        "layout": "Statistical Modeling",
+        "atsScore": 98
+      },
+      {
+        "id": "cv40",
+        "name": "Real Estate Investment & Assets",
+        "category": "Real Estate Development",
+        "layout": "Portfolio Value Highlights",
+        "atsScore": 95
+      },
+      {
+        "id": "cv41",
+        "name": "Defense & Intelligence Analyst",
+        "category": "Defense & Security",
+        "layout": "Security Cleared ATS",
+        "atsScore": 99
+      },
+      {
+        "id": "cv42",
+        "name": "Telecom & 5G Infrastructure",
+        "category": "Telecommunications",
+        "layout": "Network Rollout Matrix",
+        "atsScore": 96
+      },
+      {
+        "id": "cv43",
+        "name": "Gaming & 3D Interactive Lead",
+        "category": "Game Development",
+        "layout": "Engine & Title Credits",
+        "atsScore": 92
+      },
+      {
+        "id": "cv44",
+        "name": "Brand Identity & Art Director",
+        "category": "Creative Direction",
+        "layout": "Visual Typography Accent",
+        "atsScore": 91
+      },
+      {
+        "id": "cv45",
+        "name": "Public Relations & Crisis Comms",
+        "category": "Communications",
+        "layout": "Campaign Coverage Highlights",
+        "atsScore": 94
+      },
+      {
+        "id": "cv46",
+        "name": "Robotics & Hardware Systems",
+        "category": "Hardware & Embedded",
+        "layout": "Firmware & PCB Timeline",
+        "atsScore": 96
+      },
+      {
+        "id": "cv47",
+        "name": "Food & Beverage Operations",
+        "category": "Culinary & F&B",
+        "layout": "Hospitality Excellence",
+        "atsScore": 93
+      },
+      {
+        "id": "cv48",
+        "name": "Sports Management & Performance",
+        "category": "Athletics & Sports",
+        "layout": "Athletic Record & Coaching",
+        "atsScore": 94
+      },
+      {
+        "id": "cv49",
+        "name": "Environmental Science & Marine",
+        "category": "Earth Sciences",
+        "layout": "Fieldwork & Grants",
+        "atsScore": 97
+      },
+      {
+        "id": "cv50",
+        "name": "Fashion Merchandising & Design",
+        "category": "Fashion & Luxury",
+        "layout": "Lookbook & Collection Grid",
+        "atsScore": 91
+      },
+      {
+        "id": "cv51",
+        "name": "Cuba Executive 10/10 Master",
+        "category": "Universal High-Density",
+        "layout": "Adaptive Density Grid",
+        "atsScore": 100
+      }
+    ]
+  },
+  "exportPipeline": {
+    "docxExport": {
+      "service": "backend/services/docxExport.js",
+      "themes": "backend/services/docxThemes.js",
+      "capabilities": [
+        "1:1 visual fidelity with browser render",
+        "Adaptive content partitioner preventing orphaned headers or split bullets",
+        "Native Word paragraph styles, bullet indents, table borders, and font mapping",
+        "Photo toggle support for recruiter-friendly ATS formatting"
+      ]
+    },
+    "pdfPrintExport": {
+      "service": "src/utils/printSurface.js",
+      "contract": "src/styles/cuba-print.css",
+      "capabilities": [
+        "Browser native @media print output via hidden isolated iframe",
+        "A4 and US Letter page sizing with zero overflow clipping",
+        "Pagination breaks with template-pagination.css enforcement"
+      ]
+    },
+    "thumbnailGenerator": {
+      "service": "template-lab/regenerate-previews.mjs",
+      "format": "Optimized WebP / PNG previews for all 51 templates"
+    },
+    "exportSecurity": {
+      "tokenizedDownloads": true,
+      "tokenTTLSeconds": 300,
+      "singleUseTokens": true,
+      "rateLimiter": "exportLimiter"
+    }
+  },
+  "aiCapabilitiesSuite": {
+    "executiveBioGenerator": {
+      "module": "src/components/BuildResume/SummaryStep.jsx",
+      "backendService": "backend/services/candidateContext.js",
+      "behavior": "Evidence-grounded synthesis using prior work history, education, and achievements. Zero generic cliches."
+    },
+    "audioInterviewCoach": {
+      "module": "src/components/InterviewCoach/InterviewCoach.jsx",
+      "backendService": "backend/services/liveInterviewSession.js",
+      "behavior": "Real-time speech CBT simulator. Dynamic question generation, confidence scoring, radar chart evaluation."
+    },
+    "coverLetterSynthesizer": {
+      "module": "src/components/CoverLetter/CoverLetter.jsx",
+      "backendService": "backend/services/coverLetterAi.js",
+      "behavior": "Target company alignment, job posting requirements cross-referencing, professional/charismatic tone calibration."
+    },
+    "atsScoreEngine": {
+      "module": "src/utils/atsScore.js",
+      "behavior": "Keyword density verification, action verb analysis, contact info validation, layout parsability rating."
+    },
+    "smartBulletGenerator": {
+      "module": "src/components/BuildResume/WorkHistoryStep.jsx",
+      "backendService": "backend/services/aiRuntime.js",
+      "behavior": "XYZ formula enforcement (Accomplished [X] as measured by [Y], by doing [Z]). Quantitative metric insertion."
+    }
+  },
+  "uiuxSystem": {
+    "designSourceOfTruth": "figma://IME365-Cuba-v4",
+    "tokenSchema": {
+      "file": "src/styles/cuba-tokens.css",
+      "categories": [
+        "color",
+        "typography",
+        "space",
+        "radius",
+        "shadow",
+        "motion",
+        "zIndex",
+        "breakpoint"
+      ],
+      "naming": "--cuba-{category}-{role}-{variant}",
+      "versioned": true,
+      "driftTest": "npm run test:token-drift",
+      "colorScale": {
+        "roles": [
+          "bg",
+          "surface",
+          "surface-elevated",
+          "border",
+          "text-primary",
+          "text-secondary",
+          "accent",
+          "success",
+          "warning",
+          "danger",
+          "info"
+        ],
+        "variants": [
+          "50",
+          "100",
+          "200",
+          "300",
+          "400",
+          "500",
+          "600",
+          "700",
+          "800",
+          "900"
+        ],
+        "contrastMinimum": "4.5:1",
+        "darkMode": "required"
+      },
+      "typographyScale": {
+        "family": {
+          "sans": "Inter",
+          "serif": "Source Serif",
+          "mono": "JetBrains Mono"
+        },
+        "sizes": [
+          "xs",
+          "sm",
+          "base",
+          "lg",
+          "xl",
+          "2xl",
+          "3xl",
+          "4xl",
+          "5xl"
+        ],
+        "weights": [
+          400,
+          500,
+          600,
+          700
+        ],
+        "lineHeights": [
+          "tight",
+          "snug",
+          "normal",
+          "relaxed"
+        ]
+      },
+      "spaceScale": [
+        0,
+        4,
+        8,
+        12,
+        16,
+        20,
+        24,
+        32,
+        40,
+        48,
+        64,
+        80,
+        96
+      ],
+      "radiusScale": [
+        "none",
+        "sm",
+        "md",
+        "lg",
+        "xl",
+        "2xl",
+        "full"
+      ],
+      "shadowScale": [
+        "xs",
+        "sm",
+        "md",
+        "lg",
+        "xl"
+      ],
+      "motionTokens": {
+        "durations": {
+          "instant": 100,
+          "fast": 180,
+          "normal": 240,
+          "slow": 400
+        },
+        "easings": {
+          "standard": "cubic-bezier(.2,.8,.2,1)",
+          "emphasized": "cubic-bezier(.2,0,0,1)",
+          "decelerate": "cubic-bezier(0,0,.2,1)"
+        }
+      }
+    },
+    "componentInventory": [
+      {
+        "name": "CubaButton",
+        "file": "src/components/ui/CubaButton.jsx",
+        "variants": [
+          "primary",
+          "secondary",
+          "ghost",
+          "danger",
+          "link"
+        ],
+        "sizes": [
+          "sm",
+          "md",
+          "lg"
+        ],
+        "states": [
+          "default",
+          "hover",
+          "focus-visible",
+          "pressed",
+          "disabled",
+          "loading"
+        ],
+        "props": [
+          "variant",
+          "size",
+          "disabled",
+          "loading",
+          "iconLeft",
+          "iconRight",
+          "onClick",
+          "type",
+          "ariaLabel"
+        ],
+        "a11y": {
+          "role": "button",
+          "keyboard": [
+            "Enter",
+            "Space"
+          ],
+          "minTarget": "44x44",
+          "focusRing": "cuba-focusable"
+        },
+        "tokensUsed": [
+          "--cuba-color-accent-500",
+          "--cuba-radius-md",
+          "--cuba-space-3"
+        ]
+      },
+      {
+        "name": "CubaInput",
+        "file": "src/components/ui/CubaInput.jsx",
+        "variants": [
+          "text",
+          "password",
+          "email",
+          "number",
+          "textarea"
+        ],
+        "states": [
+          "default",
+          "focus",
+          "filled",
+          "error",
+          "disabled",
+          "readonly"
+        ],
+        "props": [
+          "name",
+          "value",
+          "onChange",
+          "label",
+          "helperText",
+          "error",
+          "required",
+          "maxLength",
+          "autoComplete"
+        ],
+        "a11y": {
+          "ariaDescribedBy": "helper + error id",
+          "invalid": "aria-invalid"
+        }
+      },
+      {
+        "name": "CubaSelect",
+        "file": "src/components/ui/CubaSelect.jsx",
+        "variants": [
+          "single",
+          "multi"
+        ],
+        "states": [
+          "default",
+          "open",
+          "disabled",
+          "error"
+        ],
+        "a11y": {
+          "role": "combobox",
+          "keyboard": [
+            "ArrowUp",
+            "ArrowDown",
+            "Enter",
+            "Escape",
+            "Home",
+            "End"
+          ]
+        }
+      },
+      {
+        "name": "CubaModal",
+        "file": "src/components/ui/CubaModal.jsx",
+        "variants": [
+          "default",
+          "fullscreen",
+          "drawer-right"
+        ],
+        "a11y": {
+          "role": "dialog",
+          "ariaModal": true,
+          "focusTrap": true,
+          "escapeClose": true
+        }
+      },
+      {
+        "name": "CubaCard",
+        "file": "src/components/ui/CubaCard.jsx",
+        "variants": [
+          "flat",
+          "elevated",
+          "glass"
+        ],
+        "props": [
+          "as",
+          "padding",
+          "interactive",
+          "onClick"
+        ]
+      },
+      {
+        "name": "CubaToast",
+        "file": "src/components/ui/CubaToast.jsx",
+        "variants": [
+          "info",
+          "success",
+          "warning",
+          "danger"
+        ],
+        "a11y": {
+          "role": "status",
+          "ariaLive": "polite",
+          "autoDismissMs": 5000
+        }
+      },
+      {
+        "name": "CubaSkeleton",
+        "file": "src/components/ui/CubaSkeleton.jsx",
+        "variants": [
+          "text",
+          "avatar",
+          "card",
+          "chart"
+        ],
+        "motion": "shimmer, disabled on prefers-reduced-motion"
+      },
+      {
+        "name": "CubaEmptyState",
+        "file": "src/components/ui/CubaEmptyState.jsx",
+        "props": [
+          "icon",
+          "title",
+          "description",
+          "primaryAction",
+          "secondaryAction"
+        ],
+        "contentRule": "{what goes here}. {primary action}."
+      },
+      {
+        "name": "CubaErrorState",
+        "file": "src/components/ui/CubaErrorState.jsx",
+        "props": [
+          "code",
+          "title",
+          "description",
+          "retryAction",
+          "supportLink"
+        ],
+        "contentRule": "{what happened}. {why}. {what to do next}."
+      },
+      {
+        "name": "CubaTabs",
+        "file": "src/components/ui/CubaTabs.jsx",
+        "a11y": {
+          "role": "tablist",
+          "keyboard": [
+            "ArrowLeft",
+            "ArrowRight",
+            "Home",
+            "End"
+          ],
+          "deepLink": "syncs to URL query"
+        }
+      },
+      {
+        "name": "CubaDataTable",
+        "file": "src/components/ui/CubaDataTable.jsx",
+        "features": [
+          "sort",
+          "filter",
+          "pagination",
+          "column-resize",
+          "row-select",
+          "sticky-header",
+          "empty-state"
+        ],
+        "a11y": {
+          "role": "table",
+          "ariaSort": true,
+          "caption": true
+        }
+      },
+      {
+        "name": "CubaChart",
+        "file": "src/components/ui/CubaChart.jsx",
+        "variants": [
+          "line",
+          "bar",
+          "area",
+          "radar",
+          "donut"
+        ],
+        "library": "recharts",
+        "a11y": {
+          "ariaLabel": true,
+          "dataTableFallback": true
+        }
+      }
+    ],
+    "screenStateMatrix": {
+      "applies": "every route",
+      "states": [
+        "loading",
+        "empty",
+        "partial",
+        "error",
+        "offline",
+        "permission-denied",
+        "quota-exceeded",
+        "stale",
+        "success"
+      ],
+      "requiredForEachRoute": true,
+      "example": {
+        "route": "/dashboard?tab=jobs",
+        "loading": "CubaSkeleton card grid x6",
+        "empty": "CubaEmptyState 'No jobs match your filters. Clear filters or widen location.'",
+        "error": "CubaErrorState with retry + support link",
+        "offline": "banner 'You're offline. Showing cached results.'",
+        "quotaExceeded": "paywall upsell card"
+      }
+    },
+    "interactionSpec": {
+      "motionDurationsMs": {
+        "instant": 100,
+        "fast": 180,
+        "normal": 240,
+        "slow": 400
+      },
+      "easings": {
+        "standard": "cubic-bezier(.2,.8,.2,1)",
+        "emphasized": "cubic-bezier(.2,0,0,1)"
+      },
+      "reducedMotion": "honor prefers-reduced-motion: reduce; disable non-essential motion",
+      "focusPolicy": "focus-visible ring required on every interactive element",
+      "hoverPolicy": "no state change that cannot also be triggered by keyboard"
+    },
+    "formSpec": {
+      "validationTiming": "onBlur + onSubmit; onInput after first error",
+      "errorPlacement": "below field, aria-describedby linked",
+      "autosave": {
+        "enabled": true,
+        "debounceMs": 800,
+        "indicator": "top-right pill"
+      },
+      "optimisticUi": [
+        "favorites",
+        "tracker-stage-move",
+        "notification-read"
+      ],
+      "submitPolicy": "disable on submit, re-enable on response, prevent double-submit"
+    },
+    "contentDesign": {
+      "tone": "confident, warm, precise, non-corporate",
+      "errorTemplate": "{what happened}. {why}. {what to do next}.",
+      "emptyStateTemplate": "{what goes here}. {primary action}.",
+      "ctaVerbPolicy": "action + object (e.g., 'Generate cover letter')",
+      "bannedPhrases": [
+        "Oops!",
+        "Something went wrong.",
+        "Please try again later."
+      ]
+    },
+    "navigationIA": {
+      "modalVsPage": "modal for ≤ 2 fields and reversible; page for multi-step or deep-linkable",
+      "deepLinkRules": "every filter, tab, and modal state must be URL-addressable",
+      "backStack": "browser back never loses unsaved form data; prompt if dirty"
+    },
+    "dataViz": {
+      "palette": "color-blind safe (Okabe-Ito + Cuba accents)",
+      "chartLibrary": "recharts",
+      "emptyStateRequired": true,
+      "a11y": "aria-label + data table fallback per chart"
+    },
+    "designQaGate": [
+      "npm run test:visual-regression",
+      "npm run test:axe",
+      "npm run test:token-drift",
+      "npm run test:component-states",
+      "npm run test:copy-lint"
+    ],
+    "uxAcceptanceCriteria": [
+      "Time-to-first-resume ≤ 90s from signup",
+      "Job apply flow ≤ 3 clicks",
+      "Interview coach start ≤ 2 clicks",
+      "Every error message names a next action",
+      "Zero horizontal overflow at 320px",
+      "All primary flows keyboard-completable"
+    ]
+  },
+  "backendApiTopology": {
+    "totalRouters": 29,
+    "routers": [
+      {
+        "file": "backend/routes/health.js",
+        "mount": "/healthz,/readyz,/livez,/metrics",
+        "purpose": "Liveness, readiness, dependency probes, Prometheus metrics"
+      },
+      {
+        "file": "backend/routes/auth.js",
+        "mount": "/api/auth",
+        "purpose": "Signup, login, logout, token refresh, password reset, email verification, MFA/TOTP, OAuth"
+      },
+      {
+        "file": "backend/routes/billing.js",
+        "mount": "/api/billing",
+        "purpose": "Plans, checkout, subscriptions, invoices, credit notes, payment webhooks, refunds"
+      },
+      {
+        "file": "backend/routes/resumes.js",
+        "mount": "/api/resumes",
+        "purpose": "Resume CRUD, duplication, versions, ATS score calculation, download tokens"
+      },
+      {
+        "file": "backend/routes/portfolios.js",
+        "mount": "/api/portfolios",
+        "purpose": "WebCV portfolio builder, public slug verification, theme options, analytics"
+      },
+      {
+        "file": "backend/routes/covers.js",
+        "mount": "/api/covers",
+        "purpose": "AI cover letter generation, history, target company association, export"
+      },
+      {
+        "file": "backend/routes/support.js",
+        "mount": "/api/support",
+        "purpose": "Candidate support ticket creation, message replies, status tracking"
+      },
+      {
+        "file": "backend/routes/jobsData.js",
+        "mount": "/api/jobs-data",
+        "purpose": "Job listings, company data, location filters, job application tracking"
+      },
+      {
+        "file": "backend/routes/publicDiscovery.js",
+        "mount": "/api/public",
+        "purpose": "Robots.txt, sitemap.xml, llms.txt, canonical document delivery"
+      },
+      {
+        "file": "backend/routes/blogData.js",
+        "mount": "/api/blog-data",
+        "purpose": "Editorial articles, tags, authors, CMS management endpoints"
+      },
+      {
+        "file": "backend/routes/notificationsData.js",
+        "mount": "/api/notifications-data",
+        "purpose": "User notification inbox, mark as read, event dispatch"
+      },
+      {
+        "file": "backend/routes/usersData.js",
+        "mount": "/api/users-data",
+        "purpose": "User profile, work history, education, skills, custom achievements"
+      },
+      {
+        "file": "backend/routes/messages.js",
+        "mount": "/api/messages",
+        "purpose": "Conversations, participants, messages, read receipts, attachments"
+      },
+      {
+        "file": "backend/routes/interviews.js",
+        "mount": "/api/interviews",
+        "purpose": "Live interview sessions, audio turns, evaluations, scorecards"
+      },
+      {
+        "file": "backend/routes/favorites.js",
+        "mount": "/api/favorites",
+        "purpose": "Saved jobs and bookmarks"
+      },
+      {
+        "file": "backend/routes/tracker.js",
+        "mount": "/api/tracker",
+        "purpose": "Kanban application tracker CRUD and stage transitions"
+      },
+      {
+        "file": "backend/routes/uploads.js",
+        "mount": "/api/uploads",
+        "purpose": "Resume, avatar, portfolio, message attachment upload and malware scan"
+      },
+      {
+        "file": "backend/routes/webhooks.js",
+        "mount": "/api/webhooks",
+        "purpose": "Payment, email, AI provider callbacks with signature verification and idempotency"
+      },
+      {
+        "file": "backend/routes/enterprise.js",
+        "mount": "/api/enterprise",
+        "purpose": "Tenant configuration, workspaces, members, roles, security policies"
+      },
+      {
+        "file": "backend/routes/enterpriseM2m.js",
+        "mount": "/api/enterprise/m2m",
+        "purpose": "Machine-to-machine OAuth2 token exchange and automated APIs"
+      },
+      {
+        "file": "backend/routes/platform.js",
+        "mount": "/api/platform",
+        "purpose": "Platform health metrics, multi-currency support, announcements"
+      },
+      {
+        "file": "backend/routes/databaseAdmin.js",
+        "mount": "/api/admin/database-settings",
+        "purpose": "Dual-database engine status, failover triggers, migration history"
+      },
+      {
+        "file": "backend/routes/ai.js",
+        "mount": "/api/ai",
+        "purpose": "Executive bio, work bullets, skills deduplication, cover letter generation"
+      },
+      {
+        "file": "backend/routes/email.js",
+        "mount": "/api/email",
+        "purpose": "Transactional emails, password resets, verification links, notifications"
+      },
+      {
+        "file": "backend/routes/adminUsers.js",
+        "mount": "/api/admin/users",
+        "purpose": "SuperAdmin user search, role updates, account lifecycle overrides"
+      },
+      {
+        "file": "backend/routes/adminAudit.js",
+        "mount": "/api/admin/audit",
+        "purpose": "Administrative security audit trail and forensic logs"
+      },
+      {
+        "file": "backend/routes/adminPlatformOperations.js",
+        "mount": "/api/admin/platform",
+        "purpose": "Global feature flags, AI provider live connectivity probes"
+      },
+      {
+        "file": "backend/routes/miscData.js",
+        "mount": "/api",
+        "purpose": "Global search, contact form, coupon validation, reviews, public testimonials"
+      },
+      {
+        "file": "backend/routes/errorResponder.js",
+        "mount": "/api/errors",
+        "purpose": "Centralized error normalization with zero secret leakage"
+      }
+    ]
+  },
+  "apiContracts": {
+    "openapi": "docs/contracts/openapi.yaml",
+    "versioning": "URI /api/v1 with deprecation headers (Sunset, Deprecation)",
+    "responseEnvelope": {
+      "success": true,
+      "data": {},
+      "error": null,
+      "requestId": "uuid"
+    },
+    "errorEnvelope": {
+      "success": false,
+      "error": {
+        "code": "STRING_CODE",
+        "message": "safe message",
+        "details": {}
+      },
+      "requestId": "uuid"
+    },
+    "pagination": {
+      "page": 1,
+      "pageSize": 20,
+      "total": 0,
+      "cursor": null
+    },
+    "idempotencyRequiredFor": [
+      "POST /api/billing/*",
+      "POST /api/ai/*",
+      "POST /api/webhooks/*",
+      "POST /api/uploads/*"
+    ],
+    "rateLimitHeaders": [
+      "X-RateLimit-Limit",
+      "X-RateLimit-Remaining",
+      "X-RateLimit-Reset"
+    ],
+    "correlationHeader": "X-Request-Id",
+    "tenantHeader": "X-Tenant-Id",
+    "contractTests": [
+      "npm run test:openapi",
+      "npm run test:openapi-diff"
+    ]
+  },
+  "openapiInline": {
+    "AuthSignup": {
+      "method": "POST",
+      "path": "/api/v1/auth/signup",
+      "auth": "public",
+      "request": {
+        "email": "string",
+        "password": "string",
+        "fullName": "string",
+        "role": "candidate|employer_recruiter|employer_admin"
+      },
+      "responses": {
+        "201": {
+          "data": {
+            "userId": "bigint",
+            "accessToken": "jwt",
+            "refreshToken": "string"
+          }
+        },
+        "400": {
+          "error": {
+            "code": "VALIDATION_ERROR"
+          }
+        },
+        "409": {
+          "error": {
+            "code": "EMAIL_EXISTS"
+          }
+        },
+        "429": {
+          "error": {
+            "code": "RATE_LIMITED"
+          }
+        }
+      }
+    },
+    "AuthLogin": {
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "auth": "public",
+      "request": {
+        "email": "string",
+        "password": "string",
+        "totp": "string?"
+      },
+      "responses": {
+        "200": {
+          "data": {
+            "accessToken": "jwt",
+            "refreshToken": "string",
+            "mfaRequired": "boolean"
+          }
+        },
+        "401": {
+          "error": {
+            "code": "INVALID_CREDENTIALS"
+          }
+        },
+        "423": {
+          "error": {
+            "code": "ACCOUNT_LOCKED"
+          }
+        }
+      }
+    },
+    "AuthRefresh": {
+      "method": "POST",
+      "path": "/api/v1/auth/refresh",
+      "auth": "refresh-cookie",
+      "responses": {
+        "200": {
+          "data": {
+            "accessToken": "jwt"
+          }
+        },
+        "401": {
+          "error": {
+            "code": "REFRESH_INVALID"
+          }
+        }
+      }
+    },
+    "AuthLogout": {
+      "method": "POST",
+      "path": "/api/v1/auth/logout",
+      "auth": "bearer",
+      "responses": {
+        "204": {}
+      }
+    },
+    "AuthMfaEnroll": {
+      "method": "POST",
+      "path": "/api/v1/auth/mfa/enroll",
+      "auth": "bearer",
+      "responses": {
+        "200": {
+          "data": {
+            "otpauthUrl": "string",
+            "recoveryCodes": [
+              "string"
+            ]
+          }
+        }
+      }
+    },
+    "BillingPlans": {
+      "method": "GET",
+      "path": "/api/v1/billing/plans",
+      "auth": "public",
+      "responses": {
+        "200": {
+          "data": [
+            {
+              "id": "string",
+              "name": "string",
+              "priceCents": 0,
+              "currency": "string",
+              "features": [
+                "string"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "BillingCheckout": {
+      "method": "POST",
+      "path": "/api/v1/billing/checkout",
+      "auth": "bearer",
+      "idempotency": true,
+      "request": {
+        "planId": "string",
+        "provider": "razorpay|stripe",
+        "couponCode": "string?"
+      },
+      "responses": {
+        "201": {
+          "data": {
+            "orderId": "string",
+            "checkoutUrl": "string"
+          }
+        },
+        "402": {
+          "error": {
+            "code": "PAYMENT_FAILED"
+          }
+        }
+      }
+    },
+    "BillingWebhook": {
+      "method": "POST",
+      "path": "/api/v1/webhooks/billing/:provider",
+      "auth": "hmac-signature",
+      "idempotency": true,
+      "responses": {
+        "200": {
+          "data": {
+            "processed": true
+          }
+        },
+        "400": {
+          "error": {
+            "code": "SIGNATURE_INVALID"
+          }
+        },
+        "409": {
+          "error": {
+            "code": "DUPLICATE_EVENT"
+          }
+        }
+      }
+    },
+    "ResumesList": {
+      "method": "GET",
+      "path": "/api/v1/resumes",
+      "auth": "bearer",
+      "query": {
+        "page": "int?",
+        "pageSize": "int?",
+        "status": "draft|active|archived?"
+      },
+      "responses": {
+        "200": {
+          "data": [
+            {
+              "id": "bigint",
+              "title": "string",
+              "templateId": "string",
+              "atsScore": "int",
+              "updatedAt": "iso"
+            }
+          ],
+          "pagination": {}
+        }
+      }
+    },
+    "ResumesCreate": {
+      "method": "POST",
+      "path": "/api/v1/resumes",
+      "auth": "bearer",
+      "idempotency": true,
+      "request": {
+        "title": "string",
+        "templateId": "cv1..cv51"
+      },
+      "responses": {
+        "201": {
+          "data": {
+            "id": "bigint"
+          }
+        }
+      }
+    },
+    "ResumesExport": {
+      "method": "POST",
+      "path": "/api/v1/resumes/:id/export",
+      "auth": "bearer",
+      "idempotency": true,
+      "request": {
+        "format": "docx|pdf",
+        "themeId": "string?",
+        "includePhoto": "boolean?"
+      },
+      "responses": {
+        "200": {
+          "data": {
+            "downloadUrl": "string",
+            "expiresAt": "iso"
+          }
+        },
+        "429": {
+          "error": {
+            "code": "EXPORT_QUOTA_EXCEEDED"
+          }
+        }
+      }
+    },
+    "AiGenerateBio": {
+      "method": "POST",
+      "path": "/api/v1/ai/bio",
+      "auth": "bearer",
+      "idempotency": true,
+      "request": {
+        "resumeId": "bigint",
+        "tone": "professional|charismatic|concise",
+        "maxWords": "int?"
+      },
+      "responses": {
+        "200": {
+          "data": {
+            "text": "string",
+            "provider": "string",
+            "tokensUsed": "int"
+          }
+        },
+        "402": {
+          "error": {
+            "code": "AI_QUOTA_EXCEEDED"
+          }
+        },
+        "502": {
+          "error": {
+            "code": "AI_PROVIDER_ERROR",
+            "details": {
+              "provider": "string",
+              "retryAfterMs": "int"
+            }
+          }
+        }
+      }
+    },
+    "InterviewsStart": {
+      "method": "POST",
+      "path": "/api/v1/interviews",
+      "auth": "bearer",
+      "idempotency": true,
+      "request": {
+        "role": "string",
+        "seniority": "string",
+        "mode": "behavioral|technical|mixed"
+      },
+      "responses": {
+        "201": {
+          "data": {
+            "sessionId": "string",
+            "firstQuestion": "string"
+          }
+        }
+      }
+    },
+    "InterviewsAnswer": {
+      "method": "POST",
+      "path": "/api/v1/interviews/:id/answer",
+      "auth": "bearer",
+      "request": {
+        "audioUrl": "string",
+        "transcript": "string?"
+      },
+      "responses": {
+        "200": {
+          "data": {
+            "evaluation": {},
+            "nextQuestion": "string?"
+          }
+        }
+      }
+    },
+    "MessagesSend": {
+      "method": "POST",
+      "path": "/api/v1/messages",
+      "auth": "bearer",
+      "idempotency": true,
+      "request": {
+        "conversationId": "bigint",
+        "body": "string",
+        "attachments": [
+          "string?"
+        ]
+      },
+      "responses": {
+        "201": {
+          "data": {
+            "messageId": "bigint"
+          }
+        }
+      }
+    },
+    "TrackerMove": {
+      "method": "PATCH",
+      "path": "/api/v1/tracker/:id",
+      "auth": "bearer",
+      "request": {
+        "stage": "wishlist|applied|interviewing|offer|rejected",
+        "note": "string?"
+      },
+      "responses": {
+        "200": {
+          "data": {
+            "id": "bigint",
+            "stage": "string"
+          }
+        }
+      }
+    },
+    "AdminDatabaseSwitch": {
+      "method": "POST",
+      "path": "/api/v1/admin/database-settings/switch",
+      "auth": "super_admin",
+      "idempotency": true,
+      "request": {
+        "target": "mariadb|firestore",
+        "reason": "string"
+      },
+      "responses": {
+        "202": {
+          "data": {
+            "switchId": "string",
+            "status": "pending"
+          }
+        },
+        "409": {
+          "error": {
+            "code": "SWITCH_IN_PROGRESS"
+          }
+        }
+      }
+    }
+  },
+  "databaseSchema": {
+    "engine": "MariaDB 10.4+ / MySQL 8.0+",
+    "totalTables": 117,
+    "functionalDomains": {
+      "identityAndAuthentication": [
+        "users",
+        "user_sessions",
+        "refresh_tokens",
+        "mfa_totp_secrets",
+        "mfa_recovery_codes",
+        "oauth_accounts",
+        "oauth_states",
+        "oauth_exchange_codes",
+        "password_reset_state",
+        "password_reset_tokens",
+        "email_verification_state",
+        "email_verification_tokens",
+        "consent_records",
+        "dsar_requests"
+      ],
+      "candidateCareerProducts": [
+        "resumes",
+        "resume_versions",
+        "public_resumes",
+        "covers",
+        "portfolios",
+        "favourites",
+        "applications",
+        "job_tracker",
+        "live_interview_sessions",
+        "interview_audio_recordings",
+        "work_experiences",
+        "education_records",
+        "skills",
+        "certifications",
+        "projects",
+        "achievements"
+      ],
+      "jobMarketplace": [
+        "jobs",
+        "companies",
+        "job_pipeline_stages",
+        "candidate_pipeline",
+        "interview_scorecards"
+      ],
+      "communicationAndEngagement": [
+        "conversations",
+        "conversation_messages",
+        "conversation_participants",
+        "message_attachments",
+        "notifications",
+        "notification_outbox"
+      ],
+      "employerAndRecruiter": [
+        "employer_profiles",
+        "recruiter_profiles"
+      ],
+      "enterpriseMultiTenancy": [
+        "enterprise_tenants",
+        "enterprise_tenant_configurations",
+        "enterprise_workspaces",
+        "enterprise_workspace_memberships",
+        "enterprise_memberships",
+        "enterprise_membership_invitations",
+        "enterprise_principal_tenants",
+        "enterprise_quota_buckets",
+        "enterprise_ai_usage",
+        "enterprise_audit_events",
+        "enterprise_observability_rollups",
+        "enterprise_outbox",
+        "enterprise_resources",
+        "enterprise_service_accounts",
+        "enterprise_support_grants",
+        "enterprise_teams",
+        "enterprise_team_members"
+      ],
+      "billingAndMonetization": [
+        "billing_customers",
+        "payment_methods",
+        "subscriptions",
+        "subscription_audit_log",
+        "invoices",
+        "invoice_counters",
+        "credit_notes",
+        "credit_note_counters",
+        "payment_orders",
+        "payment_webhook_events",
+        "webhook_idempotency_keys",
+        "payment_refund_provider_references",
+        "coupons",
+        "coupon_redemptions",
+        "transactions",
+        "tax_rates"
+      ],
+      "cmsAndMarketing": [
+        "blog",
+        "custom_pages",
+        "contact_messages",
+        "platform_announcements",
+        "trusted_by",
+        "reviews"
+      ],
+      "dualDatabaseSyncPlatform": [
+        "database_authority",
+        "database_engine_state",
+        "database_switch_audit",
+        "sync_outbox",
+        "sync_conflicts",
+        "sync_tombstones",
+        "sync_worker_state",
+        "processed_mutations",
+        "canonical_documents",
+        "deadlock_probe",
+        "failover_events"
+      ],
+      "aiAndGovernance": [
+        "ai_provider_health",
+        "ai_runs",
+        "ai_prompt_versions",
+        "ai_cost_ledger",
+        "ai_eval_results",
+        "ai_usage"
+      ],
+      "filesAndMedia": [
+        "file_uploads"
+      ],
+      "platformAdministration": [
+        "admin_audit_logs",
+        "security_audit_logs",
+        "system_settings",
+        "support_tickets",
+        "support_ticket_messages",
+        "export_render_tokens",
+        "email_logs",
+        "stats",
+        "schema_migrations",
+        "schema_migration_attempts"
+      ],
+      "operationsAndReliability": [
+        "feature_flags",
+        "alert_rules",
+        "backup_runs",
+        "restore_tests",
+        "deployment_releases",
+        "data_retention_policies",
+        "data_classification"
+      ]
+    }
+  },
+  "ddlInline": {
+    "users": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "BIGINT UNSIGNED",
+          "pk": true,
+          "autoIncrement": true
+        },
+        {
+          "name": "email",
+          "type": "VARCHAR(255)",
+          "unique": true,
+          "notNull": true
+        },
+        {
+          "name": "password_hash",
+          "type": "VARCHAR(255)",
+          "notNull": true
+        },
+        {
+          "name": "full_name",
+          "type": "VARCHAR(255)",
+          "notNull": true
+        },
+        {
+          "name": "role",
+          "type": "ENUM('candidate','employer_recruiter','employer_admin','enterprise_admin','enterprise_member','super_admin')",
+          "notNull": true,
+          "default": "candidate"
+        },
+        {
+          "name": "tenant_id",
+          "type": "BIGINT UNSIGNED",
+          "nullable": true,
+          "fk": "enterprise_tenants(id)"
+        },
+        {
+          "name": "email_verified_at",
+          "type": "TIMESTAMP",
+          "nullable": true
+        },
+        {
+          "name": "mfa_enabled",
+          "type": "TINYINT(1)",
+          "default": 0
+        },
+        {
+          "name": "failed_login_attempts",
+          "type": "INT",
+          "default": 0
+        },
+        {
+          "name": "locked_until",
+          "type": "TIMESTAMP",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP",
+          "default": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "type": "TIMESTAMP",
+          "default": "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "deleted_at",
+          "type": "TIMESTAMP",
+          "nullable": true
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_users_email",
+          "columns": [
+            "email"
+          ],
+          "unique": true
+        },
+        {
+          "name": "idx_users_tenant",
+          "columns": [
+            "tenant_id"
+          ]
+        },
+        {
+          "name": "idx_users_role",
+          "columns": [
+            "role"
+          ]
+        }
+      ]
+    },
+    "user_sessions": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "BIGINT UNSIGNED",
+          "pk": true,
+          "autoIncrement": true
+        },
+        {
+          "name": "user_id",
+          "type": "BIGINT UNSIGNED",
+          "notNull": true,
+          "fk": "users(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "refresh_token_hash",
+          "type": "CHAR(64)",
+          "notNull": true
+        },
+        {
+          "name": "user_agent",
+          "type": "VARCHAR(512)",
+          "nullable": true
+        },
+        {
+          "name": "ip_address",
+          "type": "VARBINARY(16)",
+          "nullable": true
+        },
+        {
+          "name": "expires_at",
+          "type": "TIMESTAMP",
+          "notNull": true
+        },
+        {
+          "name": "revoked_at",
+          "type": "TIMESTAMP",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP",
+          "default": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_sessions_user",
+          "columns": [
+            "user_id",
+            "expires_at"
+          ]
+        },
+        {
+          "name": "idx_sessions_token",
+          "columns": [
+            "refresh_token_hash"
+          ],
+          "unique": true
+        }
+      ]
+    },
+    "refresh_tokens": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "BIGINT UNSIGNED",
+          "pk": true,
+          "autoIncrement": true
+        },
+        {
+          "name": "user_id",
+          "type": "BIGINT UNSIGNED",
+          "notNull": true,
+          "fk": "users(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "token_hash",
+          "type": "CHAR(64)",
+          "notNull": true
+        },
+        {
+          "name": "family_id",
+          "type": "CHAR(36)",
+          "notNull": true
+        },
+        {
+          "name": "expires_at",
+          "type": "TIMESTAMP",
+          "notNull": true
+        },
+        {
+          "name": "revoked_at",
+          "type": "TIMESTAMP",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP",
+          "default": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_refresh_token",
+          "columns": [
+            "token_hash"
+          ],
+          "unique": true
+        },
+        {
+          "name": "idx_refresh_family",
+          "columns": [
+            "family_id"
+          ]
+        }
+      ]
+    },
+    "mfa_totp_secrets": {
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "BIGINT UNSIGNED",
+          "pk": true,
+          "fk": "users(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "secret_encrypted",
+          "type": "VARBINARY(255)",
+          "notNull": true
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP",
+          "default": "CURRENT_TIMESTAMP"
+        }
+      ]
+    },
+    "mfa_recovery_codes": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "BIGINT UNSIGNED",
+          "pk": true,
+          "autoIncrement": true
+        },
+        {
+          "name": "user_id",
+          "type": "BIGINT UNSIGNED",
+          "notNull": true,
+          "fk": "users(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "code_hash",
+          "type": "CHAR(64)",
+          "notNull": true
+        },
+        {
+          "name": "used_at",
+          "type": "TIMESTAMP",
+          "nullable": true
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_recovery_user",
+          "columns": [
+            "user_id"
+          ]
+        }
+      ]
+    },
+    "resumes": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "BIGINT UNSIGNED",
+          "pk": true,
+          "autoIncrement": true
+        },
+        {
+          "name": "user_id",
+          "type": "BIGINT UNSIGNED",
+          "notNull": true,
+          "fk": "users(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "title",
+          "type": "VARCHAR(255)",
+          "notNull": true
+        },
+        {
+          "name": "template_id",
+          "type": "VARCHAR(8)",
+          "notNull": true
+        },
+        {
+          "name": "content_json",
+          "type": "JSON",
+          "notNull": true
+        },
+        {
+          "name": "ats_score",
+          "type": "SMALLINT UNSIGNED",
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "ENUM('draft','active','archived')",
+          "default": "draft"
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP",
+          "default": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "type": "TIMESTAMP",
+          "default": "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_resumes_user_updated",
+          "columns": [
+            "user_id",
+            "updated_at"
+          ]
+        },
+        {
+          "name": "idx_resumes_status",
+          "columns": [
+            "status"
+          ]
+        }
+      ]
+    },
+    "resume_versions": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "BIGINT UNSIGNED",
+          "pk": true,
+          "autoIncrement": true
+        },
+        {
+          "name": "resume_id",
+          "type": "BIGINT UNSIGNED",
+          "notNull": true,
+          "fk": "resumes(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "version_number",
+          "type": "INT UNSIGNED",
+          "notNull": true
+        },
+        {
+          "name": "content_json",
+          "type": "JSON",
+          "notNull": true
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP",
+          "default": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_versions_resume_version",
+          "columns": [
+            "resume_id",
+            "version_number"
+          ],
+          "unique": true
+        }
+      ]
+    },
+    "jobs": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "BIGINT UNSIGNED",
+          "pk": true,
+          "autoIncrement": true
+        },
+        {
+          "name": "company_id",
+          "type": "BIGINT UNSIGNED",
+          "notNull": true,
+          "fk": "companies(id)"
+        },
+        {
+          "name": "posted_by_user_id",
+          "type": "BIGINT UNSIGNED",
+          "notNull": true,
+          "fk": "users(id)"
+        },
+        {
+          "name": "title",
+          "type": "VARCHAR(255)",
+          "notNull": true
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "notNull": true
+        },
+        {
+          "name": "location",
+          "type": "VARCHAR(255)",
+          "nullable": true
+        },
+        {
+          "name": "remote",
+          "type": "TINYINT(1)",
+          "default": 0
+        },
+        {
+          "name": "salary_min_cents",
+          "type": "BIGINT",
+          "nullable": true
+        },
+        {
+          "name": "salary_max_cents",
+          "type": "BIGINT",
+          "nullable": true
+        },
+        {
+          "name": "currency",
+          "type": "CHAR(3)",
+          "default": "USD"
+        },
+        {
+          "name": "skills_json",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "ENUM('draft','published','closed')",
+          "default": "draft"
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP",
+          "default": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "type": "TIMESTAMP",
+          "default": "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_jobs_company",
+          "columns": [
+            "company_id"
+          ]
+        },
+        {
+          "name": "idx_jobs_status_created",
+          "columns": [
+            "status",
+            "created_at"
+          ]
+        },
+        {
+          "name": "idx_jobs_location",
+          "columns": [
+            "location"
+          ]
+        },
+        {
+          "name": "ft_jobs_title_desc",
+          "columns": [
+            "title",
+            "description"
+          ],
+          "type": "FULLTEXT"
+        }
+      ]
+    },
+    "companies": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "BIGINT UNSIGNED",
+          "pk": true,
+          "autoIncrement": true
+        },
+        {
+          "name": "name",
+          "type": "VARCHAR(255)",
+          "notNull": true
+        },
+        {
+          "name": "slug",
+          "type": "VARCHAR(255)",
+          "unique": true,
+          "notNull": true
+        },
+        {
+          "name": "logo_url",
+          "type": "VARCHAR(512)",
+          "nullable": true
+        },
+        {
+          "name": "website",
+          "type": "VARCHAR(512)",
+          "nullable": true
+        },
+        {
+          "name": "industry",
+          "type": "VARCHAR(128)",
+          "nullable": true
+        },
+        {
+          "name": "size_bucket",
+          "type": "VARCHAR(32)",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP",
+          "default": "CURRENT_TIMESTAMP"
+        }
+      ]
+    },
+    "applications": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "BIGINT UNSIGNED",
+          "pk": true,
+          "autoIncrement": true
+        },
+        {
+          "name": "user_id",
+          "type": "BIGINT UNSIGNED",
+          "notNull": true,
+          "fk": "users(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "job_id",
+          "type": "BIGINT UNSIGNED",
+          "notNull": true,
+          "fk": "jobs(id)"
+        },
+        {
+          "name": "resume_id",
+          "type": "BIGINT UNSIGNED",
+          "nullable": true,
+          "fk": "resumes(id)"
+        },
+        {
+          "name": "cover_letter_id",
+          "type": "BIGINT UNSIGNED",
+          "nullable": true
+        },
+        {
+          "name": "stage",
+          "type": "ENUM('wishlist','applied','interviewing','offer','rejected')",
+          "default": "applied"
+        },
+        {
+          "name": "note",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "applied_at",
+          "type": "TIMESTAMP",
+          "default": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "type": "TIMESTAMP",
+          "default": "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_app_user_job",
+          "columns": [
+            "user_id",
+            "job_id"
+          ],
+          "unique": true
+        },
+        {
+          "name": "idx_app_stage",
+          "columns": [
+            "stage"
+          ]
+        }
+      ]
+    },
+    "job_tracker": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "BIGINT UNSIGNED",
+          "pk": true,
+          "autoIncrement": true
+        },
+        {
+          "name": "user_id",
+          "type": "BIGINT UNSIGNED",
+          "notNull": true,
+          "fk": "users(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "job_id",
+          "type": "BIGINT UNSIGNED",
+          "nullable": true,
+          "fk": "jobs(id)"
+        },
+        {
+          "name": "title",
+          "type": "VARCHAR(255)",
+          "notNull": true
+        },
+        {
+          "name": "company",
+          "type": "VARCHAR(255)",
+          "nullable": true
+        },
+        {
+          "name": "stage",
+          "type": "ENUM('wishlist','applied','interviewing','offer','rejected')",
+          "notNull": true
+        },
+        {
+          "name": "note",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "interview_at",
+          "type": "TIMESTAMP",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP",
+          "default": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_tracker_user_stage",
+          "columns": [
+            "user_id",
+            "stage"
+          ]
+        }
+      ]
+    },
+    "conversations": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "BIGINT UNSIGNED",
+          "pk": true,
+          "autoIncrement": true
+        },
+        {
+          "name": "subject",
+          "type": "VARCHAR(255)",
+          "nullable": true
+        },
+        {
+          "name": "last_message_at",
+          "type": "TIMESTAMP",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP",
+          "default": "CURRENT_TIMESTAMP"
+        }
+      ]
+    },
+    "conversation_participants": {
+      "columns": [
+        {
+          "name": "conversation_id",
+          "type": "BIGINT UNSIGNED",
+          "pk": true,
+          "fk": "conversations(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "user_id",
+          "type": "BIGINT UNSIGNED",
+          "pk": true,
+          "fk": "users(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "last_read_at",
+          "type": "TIMESTAMP",
+          "nullable": true
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_participants_user",
+          "columns": [
+            "user_id"
+          ]
+        }
+      ]
+    },
+    "conversation_messages": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "BIGINT UNSIGNED",
+          "pk": true,
+          "autoIncrement": true
+        },
+        {
+          "name": "conversation_id",
+          "type": "BIGINT UNSIGNED",
+          "notNull": true,
+          "fk": "conversations(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "sender_id",
+          "type": "BIGINT UNSIGNED",
+          "notNull": true,
+          "fk": "users(id)"
+        },
+        {
+          "name": "body",
+          "type": "TEXT",
+          "notNull": true
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP",
+          "default": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_messages_conversation",
+          "columns": [
+            "conversation_id",
+            "created_at"
+          ]
+        }
+      ]
+    },
+    "notifications": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "BIGINT UNSIGNED",
+          "pk": true,
+          "autoIncrement": true
+        },
+        {
+          "name": "user_id",
+          "type": "BIGINT UNSIGNED",
+          "notNull": true,
+          "fk": "users(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "type",
+          "type": "VARCHAR(64)",
+          "notNull": true
+        },
+        {
+          "name": "title",
+          "type": "VARCHAR(255)",
+          "notNull": true
+        },
+        {
+          "name": "body",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "read_at",
+          "type": "TIMESTAMP",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP",
+          "default": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_notif_user_read",
+          "columns": [
+            "user_id",
+            "read_at"
+          ]
+        }
+      ]
+    },
+    "subscriptions": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "BIGINT UNSIGNED",
+          "pk": true,
+          "autoIncrement": true
+        },
+        {
+          "name": "user_id",
+          "type": "BIGINT UNSIGNED",
+          "notNull": true,
+          "fk": "users(id)"
+        },
+        {
+          "name": "plan_id",
+          "type": "VARCHAR(64)",
+          "notNull": true
+        },
+        {
+          "name": "provider",
+          "type": "ENUM('razorpay','stripe')",
+          "notNull": true
+        },
+        {
+          "name": "provider_subscription_id",
+          "type": "VARCHAR(128)",
+          "notNull": true
+        },
+        {
+          "name": "status",
+          "type": "ENUM('active','past_due','cancelled','expired')",
+          "notNull": true
+        },
+        {
+          "name": "current_period_start",
+          "type": "TIMESTAMP",
+          "notNull": true
+        },
+        {
+          "name": "current_period_end",
+          "type": "TIMESTAMP",
+          "notNull": true
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP",
+          "default": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_subs_user",
+          "columns": [
+            "user_id"
+          ]
+        },
+        {
+          "name": "idx_subs_provider_sub",
+          "columns": [
+            "provider",
+            "provider_subscription_id"
+          ],
+          "unique": true
+        }
+      ]
+    },
+    "invoices": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "BIGINT UNSIGNED",
+          "pk": true,
+          "autoIncrement": true
+        },
+        {
+          "name": "user_id",
+          "type": "BIGINT UNSIGNED",
+          "notNull": true,
+          "fk": "users(id)"
+        },
+        {
+          "name": "subscription_id",
+          "type": "BIGINT UNSIGNED",
+          "nullable": true,
+          "fk": "subscriptions(id)"
+        },
+        {
+          "name": "number",
+          "type": "VARCHAR(64)",
+          "unique": true,
+          "notNull": true
+        },
+        {
+          "name": "amount_cents",
+          "type": "BIGINT",
+          "notNull": true
+        },
+        {
+          "name": "currency",
+          "type": "CHAR(3)",
+          "notNull": true
+        },
+        {
+          "name": "status",
+          "type": "ENUM('draft','open','paid','void','uncollectible')",
+          "notNull": true
+        },
+        {
+          "name": "issued_at",
+          "type": "TIMESTAMP",
+          "notNull": true
+        },
+        {
+          "name": "paid_at",
+          "type": "TIMESTAMP",
+          "nullable": true
+        },
+        {
+          "name": "pdf_url",
+          "type": "VARCHAR(512)",
+          "nullable": true
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_invoices_user",
+          "columns": [
+            "user_id",
+            "issued_at"
+          ]
+        }
+      ]
+    },
+    "payment_webhook_events": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "BIGINT UNSIGNED",
+          "pk": true,
+          "autoIncrement": true
+        },
+        {
+          "name": "provider",
+          "type": "ENUM('razorpay','stripe')",
+          "notNull": true
+        },
+        {
+          "name": "event_id",
+          "type": "VARCHAR(191)",
+          "notNull": true
+        },
+        {
+          "name": "payload_json",
+          "type": "JSON",
+          "notNull": true
+        },
+        {
+          "name": "processed_at",
+          "type": "TIMESTAMP",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP",
+          "default": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_webhook_provider_event",
+          "columns": [
+            "provider",
+            "event_id"
+          ],
+          "unique": true
+        }
+      ]
+    },
+    "webhook_idempotency_keys": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "BIGINT UNSIGNED",
+          "pk": true,
+          "autoIncrement": true
+        },
+        {
+          "name": "scope",
+          "type": "VARCHAR(64)",
+          "notNull": true
+        },
+        {
+          "name": "key",
+          "type": "VARCHAR(191)",
+          "notNull": true
+        },
+        {
+          "name": "response_json",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "expires_at",
+          "type": "TIMESTAMP",
+          "notNull": true
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP",
+          "default": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_idem_scope_key",
+          "columns": [
+            "scope",
+            "key"
+          ],
+          "unique": true
+        }
+      ]
+    },
+    "enterprise_tenants": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "BIGINT UNSIGNED",
+          "pk": true,
+          "autoIncrement": true
+        },
+        {
+          "name": "name",
+          "type": "VARCHAR(255)",
+          "notNull": true
+        },
+        {
+          "name": "slug",
+          "type": "VARCHAR(128)",
+          "unique": true,
+          "notNull": true
+        },
+        {
+          "name": "custom_domain",
+          "type": "VARCHAR(255)",
+          "nullable": true
+        },
+        {
+          "name": "branding_json",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "data_region",
+          "type": "VARCHAR(32)",
+          "notNull": true,
+          "default": "us"
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP",
+          "default": "CURRENT_TIMESTAMP"
+        }
+      ]
+    },
+    "enterprise_memberships": {
+      "columns": [
+        {
+          "name": "tenant_id",
+          "type": "BIGINT UNSIGNED",
+          "pk": true,
+          "fk": "enterprise_tenants(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "user_id",
+          "type": "BIGINT UNSIGNED",
+          "pk": true,
+          "fk": "users(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "role",
+          "type": "ENUM('owner','admin','member')",
+          "notNull": true
+        },
+        {
+          "name": "joined_at",
+          "type": "TIMESTAMP",
+          "default": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_ent_member_user",
+          "columns": [
+            "user_id"
+          ]
+        }
+      ]
+    },
+    "enterprise_ai_usage": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "BIGINT UNSIGNED",
+          "pk": true,
+          "autoIncrement": true
+        },
+        {
+          "name": "tenant_id",
+          "type": "BIGINT UNSIGNED",
+          "notNull": true,
+          "fk": "enterprise_tenants(id)"
+        },
+        {
+          "name": "user_id",
+          "type": "BIGINT UNSIGNED",
+          "nullable": true,
+          "fk": "users(id)"
+        },
+        {
+          "name": "provider",
+          "type": "VARCHAR(64)",
+          "notNull": true
+        },
+        {
+          "name": "model",
+          "type": "VARCHAR(128)",
+          "notNull": true
+        },
+        {
+          "name": "tokens_in",
+          "type": "INT UNSIGNED",
+          "notNull": true
+        },
+        {
+          "name": "tokens_out",
+          "type": "INT UNSIGNED",
+          "notNull": true
+        },
+        {
+          "name": "cost_micros_usd",
+          "type": "BIGINT UNSIGNED",
+          "notNull": true
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP",
+          "default": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_ai_usage_tenant_created",
+          "columns": [
+            "tenant_id",
+            "created_at"
+          ]
+        }
+      ]
+    },
+    "sync_outbox": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "BIGINT UNSIGNED",
+          "pk": true,
+          "autoIncrement": true
+        },
+        {
+          "name": "entity",
+          "type": "VARCHAR(64)",
+          "notNull": true
+        },
+        {
+          "name": "entity_id",
+          "type": "VARCHAR(64)",
+          "notNull": true
+        },
+        {
+          "name": "op",
+          "type": "ENUM('insert','update','delete')",
+          "notNull": true
+        },
+        {
+          "name": "payload_json",
+          "type": "JSON",
+          "notNull": true
+        },
+        {
+          "name": "status",
+          "type": "ENUM('pending','in_progress','done','failed')",
+          "notNull": true,
+          "default": "pending"
+        },
+        {
+          "name": "attempts",
+          "type": "INT UNSIGNED",
+          "notNull": true,
+          "default": 0
+        },
+        {
+          "name": "next_attempt_at",
+          "type": "TIMESTAMP",
+          "nullable": true
+        },
+        {
+          "name": "last_error",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP",
+          "default": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_outbox_status_next",
+          "columns": [
+            "status",
+            "next_attempt_at"
+          ]
+        }
+      ]
+    },
+    "audit_logs": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "BIGINT UNSIGNED",
+          "pk": true,
+          "autoIncrement": true
+        },
+        {
+          "name": "actor_id",
+          "type": "BIGINT UNSIGNED",
+          "nullable": true,
+          "fk": "users(id)"
+        },
+        {
+          "name": "actor_ip",
+          "type": "VARBINARY(16)",
+          "nullable": true
+        },
+        {
+          "name": "action",
+          "type": "VARCHAR(128)",
+          "notNull": true
+        },
+        {
+          "name": "target_type",
+          "type": "VARCHAR(64)",
+          "nullable": true
+        },
+        {
+          "name": "target_id",
+          "type": "VARCHAR(64)",
+          "nullable": true
+        },
+        {
+          "name": "metadata_json",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP",
+          "default": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_audit_actor_created",
+          "columns": [
+            "actor_id",
+            "created_at"
+          ]
+        },
+        {
+          "name": "idx_audit_action_created",
+          "columns": [
+            "action",
+            "created_at"
+          ]
+        }
+      ]
+    },
+    "feature_flags": {
+      "columns": [
+        {
+          "name": "key",
+          "type": "VARCHAR(128)",
+          "pk": true
+        },
+        {
+          "name": "enabled",
+          "type": "TINYINT(1)",
+          "notNull": true,
+          "default": 0
+        },
+        {
+          "name": "scope",
+          "type": "ENUM('global','tenant','user')",
+          "notNull": true,
+          "default": "global"
+        },
+        {
+          "name": "rollout_percent",
+          "type": "TINYINT UNSIGNED",
+          "default": 0
+        },
+        {
+          "name": "updated_at",
+          "type": "TIMESTAMP",
+          "default": "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+        }
+      ]
+    },
+    "file_uploads": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "BIGINT UNSIGNED",
+          "pk": true,
+          "autoIncrement": true
+        },
+        {
+          "name": "user_id",
+          "type": "BIGINT UNSIGNED",
+          "notNull": true,
+          "fk": "users(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "purpose",
+          "type": "VARCHAR(64)",
+          "notNull": true
+        },
+        {
+          "name": "storage_key",
+          "type": "VARCHAR(512)",
+          "notNull": true
+        },
+        {
+          "name": "mime_type",
+          "type": "VARCHAR(128)",
+          "notNull": true
+        },
+        {
+          "name": "size_bytes",
+          "type": "BIGINT UNSIGNED",
+          "notNull": true
+        },
+        {
+          "name": "scan_status",
+          "type": "ENUM('pending','clean','infected')",
+          "notNull": true,
+          "default": "pending"
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP",
+          "default": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_uploads_user",
+          "columns": [
+            "user_id",
+            "created_at"
+          ]
+        }
+      ]
+    }
+  },
+  "dataGovernanceAndSchema": {
+    "ddl": "docs/contracts/schema.sql",
+    "migrationPolicy": "forward-only, tested rollback, no destructive migration without backup",
+    "requiredIndexes": [
+      "users(email) UNIQUE",
+      "user_sessions(user_id,expires_at)",
+      "refresh_tokens(token_hash) UNIQUE",
+      "resumes(user_id,updated_at)",
+      "resume_versions(resume_id,version_number)",
+      "applications(user_id,job_id) UNIQUE",
+      "job_tracker(user_id,stage)",
+      "conversation_messages(conversation_id,created_at)",
+      "enterprise_*(tenant_id)",
+      "sync_outbox(status,next_attempt_at)",
+      "sync_conflicts(status,created_at)",
+      "ai_usage(tenant_id,created_at)",
+      "ai_runs(tenant_id,created_at)",
+      "ai_cost_ledger(tenant_id,month)",
+      "audit_logs(actor_id,created_at)",
+      "webhook_idempotency_keys(scope,key) UNIQUE",
+      "payment_webhook_events(provider,event_id) UNIQUE"
+    ],
+    "foreignKeyPolicy": "ON DELETE RESTRICT for financial/audit, ON DELETE CASCADE for child-only data",
+    "backup": {
+      "rpoMinutes": 15,
+      "rtoMinutes": 60,
+      "restoreTestCadence": "monthly",
+      "artifacts": [
+        "mysqldump",
+        "binlog",
+        "Firestore export"
+      ]
+    },
+    "dataClassification": [
+      "public",
+      "internal",
+      "confidential",
+      "PII",
+      "sensitive-auth"
+    ],
+    "retention": {
+      "interviewAudioDays": 30,
+      "resumeVersionsDays": 365,
+      "auditLogsDays": 2555,
+      "aiRunsDays": 90,
+      "dsarResponseDays": 30
+    }
+  },
+  "securityAndCompliance": {
+    "threatModel": "docs/security/threat-model.md (STRIDE + LINDDUN)",
+    "rbac": {
+      "roles": [
+        "candidate",
+        "employer_recruiter",
+        "employer_admin",
+        "enterprise_admin",
+        "enterprise_member",
+        "super_admin"
+      ],
+      "enforcement": "backend middleware + tenant_id guard + row-level checks"
+    },
+    "auth": {
+      "accessToken": "short-lived JWT 15m",
+      "refreshToken": "httpOnly Secure SameSite=Strict rotating 30d with family revocation",
+      "mfa": [
+        "TOTP",
+        "recovery codes",
+        "WebAuthn optional"
+      ],
+      "sessionRevocation": "user_sessions table + refresh_tokens denylist",
+      "passwordPolicy": "min 12 chars, breach check via HIBP k-anonymity"
+    },
+    "webSecurity": [
+      "CSRF double-submit for cookie routes",
+      "CORS allowlist",
+      "Helmet CSP with nonce",
+      "rate limits (global, auth, ai, export, webhook)",
+      "SSRF denylist",
+      "file upload MIME magic + AV scan",
+      "SQL parameterization + tenant_id guard",
+      "XSS output encoding",
+      "webhook signature verification (HMAC-SHA256)",
+      "open redirect prevention",
+      "prototype pollution guards"
+    ],
+    "webhookSecurity": {
+      "signatureAlgorithm": "HMAC-SHA256",
+      "timestampToleranceSeconds": 300,
+      "replayProtection": "event_id + idempotency_keys table",
+      "ipAllowlistProviders": true
+    },
+    "compliance": [
+      "GDPR",
+      "CCPA",
+      "SOC2-ready audit",
+      "WCAG 2.1 AA",
+      "PCI SAQ-A via Stripe/Razorpay"
+    ],
+    "dsar": {
+      "exportEndpoint": "/api/users-data/export",
+      "deleteEndpoint": "/api/users-data/delete",
+      "slaDays": 30,
+      "verificationRequired": true
+    },
+    "penTestCadence": "annual + on major release",
+    "vulnerabilityDisclosure": "security.txt published at /.well-known/security.txt"
+  },
+  "observabilityAndSre": {
+    "slo": {
+      "apiAvailability": "99.9%",
+      "apiP95LatencyMs": 300,
+      "aiP95LatencyMs": 8000,
+      "exportSuccessRate": "99.5%",
+      "errorBudgetPolicy": "freeze releases if burn > 2x in 1h"
+    },
+    "logging": {
+      "format": "JSON",
+      "correlationId": "requestId",
+      "redact": [
+        "password",
+        "token",
+        "apiKey",
+        "authorization",
+        "cookie",
+        "otp",
+        "cvv"
+      ],
+      "levels": [
+        "debug",
+        "info",
+        "warn",
+        "error",
+        "fatal"
+      ]
+    },
+    "tracing": {
+      "enabled": true,
+      "propagation": "W3C traceparent",
+      "sampler": "parent-based with 5% baseline"
+    },
+    "metrics": [
+      "http_requests_total",
+      "http_request_duration_ms",
+      "http_errors_total",
+      "ai_provider_errors_total",
+      "ai_latency_ms",
+      "ai_cost_usd_total",
+      "db_outbox_lag",
+      "db_deadlocks_total",
+      "sync_conflicts_total",
+      "export_failures_total",
+      "auth_failures_total",
+      "payment_webhook_failures_total"
+    ],
+    "alerts": [
+      "backend down (probe fail 2x)",
+      "db replication lag > 30s",
+      "AI failover exhausted",
+      "payment webhook failures > 5 in 5m",
+      "outbox backlog > 1000",
+      "disk > 85%",
+      "error budget burn > 2x",
+      "p95 latency breach"
+    ],
+    "dashboards": [
+      "platform-overview",
+      "ai-routing",
+      "db-sync",
+      "auth-security",
+      "billing"
+    ]
+  },
+  "deliveryAndOperations": {
+    "ciCd": [
+      "lint",
+      "unit",
+      "security",
+      "build",
+      "e2e",
+      "visual",
+      "migration dry-run",
+      "openapi diff",
+      "manifest-consistency",
+      "token-drift",
+      "axe",
+      "copy-lint"
+    ],
+    "environments": [
+      "local",
+      "staging",
+      "production"
+    ],
+    "deployment": "Apache static + Node systemd/PM2 behind reverse proxy; blue-green when possible",
+    "rollback": "previous release + DB migration rollback/forward fix",
+    "processManager": "PM2 or systemd",
+    "featureFlags": {
+      "store": "system_settings + feature_flags table",
+      "evaluation": "server + client SDK",
+      "killSwitch": true
+    },
+    "releaseChannels": [
+      "stable",
+      "canary",
+      "internal"
+    ],
+    "releaseNotes": "docs/releases/*.md"
+  },
+  "aiGovernance": {
+    "routingPolicy": "provider priority, health, cost ceiling, latency, tenant policy",
+    "timeouts": {
+      "connectMs": 3000,
+      "requestMs": 30000,
+      "maxRetries": 2
+    },
+    "circuitBreaker": {
+      "failureThreshold": 5,
+      "cooldownSeconds": 60
+    },
+    "safety": [
+      "prompt injection screening",
+      "PII redaction before provider",
+      "no secrets in prompts",
+      "extractJson validation",
+      "moderation pass-through",
+      "audit prompt hash",
+      "tenant data residency respect"
+    ],
+    "evaluation": [
+      "golden set regression",
+      "hallucination rate tracking",
+      "JSON parse rate",
+      "cost per task",
+      "latency P50/P95"
+    ],
+    "costControls": [
+      "tenant token quota",
+      "monthly budget",
+      "provider fallback only if cost <= ceiling"
+    ],
+    "promptManagement": {
+      "versioning": "ai_prompt_versions table",
+      "reviewRequired": true,
+      "rollback": "previous version activation"
+    },
+    "dataHandling": {
+      "piiRedactionBeforeProvider": true,
+      "retentionDays": 90,
+      "optOutSupported": true
+    }
+  },
+  "accessibilityI18nSeo": {
+    "accessibility": {
+      "standard": "WCAG 2.1 AA",
+      "minContrast": "4.5:1",
+      "minTouchTarget": "44x44px",
+      "keyboardFocusOutline": "Focus-visible Cuba ring (cuba-focusable)",
+      "landmarks": "Unique aria-label on all nav and main landmark regions",
+      "tests": [
+        "axe",
+        "keyboard-only",
+        "screen reader smoke",
+        "contrast"
+      ]
+    },
+    "i18n": {
+      "rtl": [
+        "ar"
+      ],
+      "fallback": "en",
+      "localeFiles": "src/locales/{en,es,fr,de,hi,ar}.json",
+      "hreflang": true,
+      "dateNumberFormat": "Intl API"
+    },
+    "seo": [
+      "per-route meta",
+      "JSON-LD JobPosting",
+      "JSON-LD Organization",
+      "sitemap.xml",
+      "robots.txt",
+      "llms.txt",
+      "canonical URLs",
+      "OpenGraph + Twitter cards"
+    ]
+  },
+  "qualityAssuranceAndTesting": {
+    "totalTestSuites": 292,
+    "pyramid": {
+      "staticAndSecurity": [
+        "npm run lint",
+        "npm run test:security:static",
+        "npm run test:xampp-policy",
+        "npm run audit:production",
+        "npm run test:manifest-consistency"
+      ],
+      "unitAndParity": [
+        "tests/cuba-design-system.test.mjs",
+        "tests/cuba-candidate-portal.test.mjs",
+        "tests/cuba-employer-portal.test.mjs",
+        "tests/cuba-enterprise-console.test.mjs",
+        "tests/cuba-admin-console.test.mjs",
+        "tests/dir062-bridge-provenance.test.mjs",
+        "tests/dir095-candidate-dashboard-data-lineage.test.mjs",
+        "tests/auth-session-mfa.test.mjs",
+        "tests/tenant-isolation.test.mjs",
+        "tests/payment-webhook-idempotency.test.mjs",
+        "tests/ai-eval-pii-redaction.test.mjs",
+        "tests/backup-restore.test.mjs",
+        "tests/openapi-contract.test.mjs",
+        "tests/bridge-replay-protection.test.mjs",
+        "tests/token-drift.test.mjs",
+        "tests/component-states.test.mjs",
+        "tests/copy-lint.test.mjs"
+      ],
+      "visualAndBrowser": [
+        "tests/full-system-audit.mjs",
+        "tests/test-interview-coach-browser.mjs",
+        "tests/test-enterprise-browser.mjs",
+        "tests/axe-accessibility.mjs",
+        "template-lab/visual-regression.mjs --check"
+      ]
+    },
+    "coverageTargets": {
+      "statements": 80,
+      "branches": 70,
+      "functions": 75,
+      "lines": 80
+    }
+  },
+  "buildSpecification": {
+    "taskGraph": "docs/build/tasks.json",
+    "totalTasks": 118,
+    "taskShape": {
+      "id": "TASK-001",
+      "title": "Implement POST /api/v1/auth/signup",
+      "dependsOn": [],
+      "targets": [
+        "backend/routes/auth.js",
+        "backend/services/authService.js",
+        "tests/auth-session-mfa.test.mjs"
+      ],
+      "acceptanceCriteria": [
+        "Returns 201 with { userId, accessToken, refreshToken }",
+        "Rejects weak passwords with code WEAK_PASSWORD",
+        "Idempotent on duplicate email with code EMAIL_EXISTS",
+        "Rate-limited at 5/min/IP",
+        "Covered by ≥ 3 unit tests and 1 integration test"
+      ],
+      "evidenceRequired": [
+        "git diff",
+        "test log",
+        "openapi.yaml updated",
+        "curl transcript"
+      ],
+      "definitionOfDone": [
+        "tests pass",
+        "lint clean",
+        "openapi diff clean",
+        "reviewer APPROVED"
+      ],
+      "rollbackPlan": "revert commit + no migration to roll back"
+    },
+    "sampleTasks": [
+      {
+        "id": "TASK-001",
+        "title": "Scaffold Express backend with security middleware",
+        "dependsOn": [],
+        "targets": [
+          "backend/index.js",
+          "backend/middleware/*.js"
+        ],
+        "definitionOfDone": [
+          "healthz returns 200",
+          "helmet active",
+          "rate limiter active",
+          "request-id propagated"
+        ]
+      },
+      {
+        "id": "TASK-002",
+        "title": "Run MariaDB migrations to schema v25",
+        "dependsOn": [
+          "TASK-001"
+        ],
+        "targets": [
+          "backend/database/migrations/*.sql"
+        ],
+        "definitionOfDone": [
+          "117 tables created",
+          "indexes verified",
+          "rollback scripts present"
+        ]
+      },
+      {
+        "id": "TASK-003",
+        "title": "Implement auth router (signup, login, refresh, logout, MFA)",
+        "dependsOn": [
+          "TASK-002"
+        ],
+        "targets": [
+          "backend/routes/auth.js",
+          "backend/services/authService.js"
+        ],
+        "definitionOfDone": [
+          "openapi.yaml updated",
+          "tests/auth-session-mfa.test.mjs green",
+          "curl transcript attached"
+        ]
+      },
+      {
+        "id": "TASK-004",
+        "title": "Implement billing router + webhook HMAC",
+        "dependsOn": [
+          "TASK-003"
+        ],
+        "targets": [
+          "backend/routes/billing.js",
+          "backend/routes/webhooks.js"
+        ],
+        "definitionOfDone": [
+          "idempotency verified",
+          "duplicate webhook returns 409",
+          "invoice PDF generated"
+        ]
+      },
+      {
+        "id": "TASK-005",
+        "title": "Build Cuba design tokens + component inventory",
+        "dependsOn": [],
+        "targets": [
+          "src/styles/cuba-tokens.css",
+          "src/components/ui/*.jsx"
+        ],
+        "definitionOfDone": [
+          "token-drift test green",
+          "component-states test green",
+          "storybook-less visual review approved"
+        ]
+      },
+      {
+        "id": "TASK-006",
+        "title": "Wire Candidate Portal shell + 15 routes",
+        "dependsOn": [
+          "TASK-005",
+          "TASK-003"
+        ],
+        "targets": [
+          "src/components/Candidate/CubaCandidateShell.jsx",
+          "src/components/Dashboard/**"
+        ],
+        "definitionOfDone": [
+          "all routes render",
+          "state matrix present per route",
+          "no horizontal overflow at 320px"
+        ]
+      },
+      {
+        "id": "TASK-007",
+        "title": "Implement AI interview coach (browser + backend)",
+        "dependsOn": [
+          "TASK-006"
+        ],
+        "targets": [
+          "src/components/InterviewCoach/InterviewCoach.jsx",
+          "backend/services/liveInterviewSession.js"
+        ],
+        "definitionOfDone": [
+          "audio loop works",
+          "radar chart renders",
+          "PII redaction test green"
+        ]
+      }
+    ],
+    "moduleBoundaries": {
+      "auth": {
+        "owner": "backend/routes/auth.js",
+        "frozenFor": [
+          "candidate-portal",
+          "employer-portal"
+        ]
+      },
+      "billing": {
+        "owner": "backend/routes/billing.js",
+        "frozenFor": [
+          "all except admin"
+        ]
+      },
+      "cuba-ui": {
+        "owner": "src/components/ui/*",
+        "frozenFor": [
+          "feature-teams without design lead approval"
+        ]
+      }
+    },
+    "stateMachines": [
+      {
+        "name": "AuthSession",
+        "file": "docs/build/fsm/auth-session.json",
+        "states": [
+          "anonymous",
+          "authenticated",
+          "mfa-required",
+          "locked",
+          "expired"
+        ]
+      },
+      {
+        "name": "Checkout",
+        "file": "docs/build/fsm/checkout.json",
+        "states": [
+          "idle",
+          "created",
+          "pending",
+          "paid",
+          "failed",
+          "refunded"
+        ]
+      },
+      {
+        "name": "InterviewSession",
+        "file": "docs/build/fsm/interview-session.json",
+        "states": [
+          "created",
+          "questioning",
+          "answering",
+          "evaluating",
+          "complete",
+          "aborted"
+        ]
+      },
+      {
+        "name": "SyncWorker",
+        "file": "docs/build/fsm/sync-worker.json",
+        "states": [
+          "idle",
+          "draining",
+          "paused",
+          "backoff",
+          "failed"
+        ]
+      },
+      {
+        "name": "AiFailover",
+        "file": "docs/build/fsm/ai-failover.json",
+        "states": [
+          "primary",
+          "secondary",
+          "tertiary",
+          "exhausted",
+          "recovered"
+        ]
+      }
+    ],
+    "errorTaxonomy": "docs/build/error-codes.json",
+    "seedAndFixtures": "docs/build/fixtures/",
+    "promptTemplates": "docs/build/prompts/*.md",
+    "workerSchedules": "docs/build/cron.json",
+    "infra": {
+      "dns": "docs/infra/dns.md",
+      "tls": "docs/infra/tls.md",
+      "backup": "docs/infra/backup.md",
+      "logShipping": "docs/infra/logs.md",
+      "alertRouting": "docs/infra/alerts.md"
+    },
+    "escalationPolicy": {
+      "blockedAfterMinutes": 30,
+      "escalateTo": "LEAD_SUPERVISOR",
+      "messageType": "BLOCKED"
+    },
+    "definitionOfDoneGlobal": [
+      "All acceptance criteria met",
+      "Unit + integration + contract tests green",
+      "Lint clean",
+      "OpenAPI diff clean",
+      "Manifest-consistency CI green",
+      "Token-drift + axe + copy-lint green",
+      "Evidence bundle attached to task"
+    ]
+  },
+  "collaborationBridgeControlPlane": {
+    "scriptPath": "c:\\Users\\mbhas\\.ai-bridge\\bridge.cjs",
+    "protocolVersion": "4.0.0",
+    "roles": {
+      "lead": {
+        "identity": "Antigravity (Google DeepMind)",
+        "roleKey": "LEAD_SUPERVISOR",
+        "mandates": [
+          "Executive Engineering Lead, Systems Architect, QA Lead, and Release Gatekeeper",
+          "Authors directives with strict acceptance criteria, invariants, and surgical file targets",
+          "Performs cognitive plan reviews (must meet >= 70/100 threshold for Act mode authorization)",
+          "Audits submitted evidence (git diffs, test logs, Playwright DOM crawls)",
+          "Never writes application product code directly (delegates all coding to Cline)"
+        ]
+      },
+      "dev": {
+        "identity": "Cline (Senior Staff Developer)",
+        "roleKey": "STAFF_DEVELOPER",
+        "mandates": [
+          "Implementation and Execution Engine for all authorized engineering directives",
+          "Executes surgical code changes respecting frozen module boundaries",
+          "Wires real MariaDB and backend API data with zero synthetic placeholders",
+          "Authors automated tests and captures real Playwright browser DOM crawls",
+          "Emits heartbeats (<= 480s) and submits cryptographic evidence bundles"
+        ]
+      }
+    },
+    "signaling": {
+      "leadToDev": "Deep IPC (port 48200) + short URI prompt-file fallback (saoudrizwan.claude-dev) with durable outbox replay",
+      "devToLead": "Triple-redundant UDP datagram (port 48222) + wake_lead_queue.jsonl + durable inbox",
+      "daemons": [
+        "lead_watcher.cjs (Autonomous wait watchdog and project recovery daemon)",
+        "lead_watcher_session.cjs (Project-agnostic session-level autonomous Lead daemon)"
+      ]
+    }
+  },
+  "collaborationBridgeProtocol": {
+    "messageSchema": "docs/contracts/bridge-message.schema.json",
+    "auth": "shared secret/HMAC (BRIDGE_HMAC_SECRET)",
+    "replayProtection": "nonce + monotonic sequence + durable inbox",
+    "timeouts": {
+      "heartbeatSeconds": 480,
+      "ackSeconds": 30
+    },
+    "roles": [
+      "LEAD_SUPERVISOR",
+      "STAFF_DEVELOPER"
+    ],
+    "evidenceBundle": [
+      "git diff",
+      "test log",
+      "playwright DOM crawl hash",
+      "timestamp",
+      "HMAC signature"
+    ],
+    "messageTypes": [
+      "DIRECTIVE",
+      "PLAN_REVIEW",
+      "PLAN_APPROVED",
+      "PLAN_REJECTED",
+      "HEARTBEAT",
+      "EVIDENCE_SUBMITTED",
+      "EVIDENCE_ACCEPTED",
+      "EVIDENCE_REJECTED",
+      "BLOCKED",
+      "ABORT"
+    ],
+    "failureModes": {
+      "missedHeartbeat": "mark dev degraded, escalate after 2 misses",
+      "invalidSignature": "reject and log security event",
+      "duplicateNonce": "reject and log"
+    }
+  }
+}

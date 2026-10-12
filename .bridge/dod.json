@@ -1,0 +1,7 @@
+[
+  { "id": "tests-green", "kind": "command_exit_zero", "command": "npm test" },
+  { "id": "build-green", "kind": "command_exit_zero", "command": "npm run build" },
+  { "id": "no-p0p1-open", "kind": "no_active_directives_at_or_above", "priority": "P1" },
+  { "id": "app-up", "kind": "http_probe", "url": "http://localhost/", "expectStatus": 200 },
+  { "id": "dist-built", "kind": "file_exists", "path": "dist/index.html" }
+]
