@@ -1,25 +1,25 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-12T03:55:39.745Z",
-  "eventCount": 2953,
+  "updatedAt": "2026-10-12T04:04:04.399Z",
+  "eventCount": 2960,
   "activeDirectiveId": "DIR-093",
   "activeDirectiveTitle": "DIR-093: Comprehensive End-to-End UI/UX Forensic Audit & Enhancement Planning",
-  "activeDirectiveStatus": "ISSUED",
+  "activeDirectiveStatus": "CHANGES_REQUESTED",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-12T03:16:24.764Z",
-  "unreadForLead": 210,
-  "unreadForDev": 348,
+  "stallDeadline": "2026-10-12T04:02:02.810Z",
+  "unreadForLead": 213,
+  "unreadForDev": 352,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-12T03:16:24.764Z",
-    "status": "S1-S5 landed: greeting truncation removed (min-w-15rem flex-1 basis-full xl:basis-auto), quote stacked above CTAs, bold ATS value beside the real donut, Cuba glass elevation on both surfaces. dir092-hero 5/0, dir091 11/0, dir093 7/0, dir085 6/0, design-system 142/0, SSR DOM 11/11, build 3.15s, lint 0 errors, cv-templates diff 0. Preparing evidence.",
-    "percent": 90
+    "timestamp": "2026-10-12T04:02:02.810Z",
+    "status": "Wave 1 started. Recon corrected: the 2 native-dialog hits are DIR-048 replacement COMMENTS, not live calls, so zero native dialogs remain (F-02 retracted). Fixed the one verified failing defect F-06: candidate copilot action label restored from Improve ATS score to the DIR-021 AC-2 wording Audit resume for ATS keywords. copilot-command-surface now 28/0 (was 27/1).",
+    "percent": 15
   },
   "integrity": {
     "ok": true,
-    "checked": 2953,
+    "checked": 2960,
     "legacy": 0,
     "bad": 0
   }
