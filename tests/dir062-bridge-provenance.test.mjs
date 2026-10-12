@@ -146,7 +146,11 @@ function scratchProject() {
   return dir;
 }
 function seedDirective(dir, title) {
-  const d = bridge.createDirective({ title, spec: 'prove the provenance gate', projectDir: dir });
+  // priority: 'P2' — these suites verify PROVENANCE GATING, not directive-spec
+  // quality. The bridge's AEDS-001 linter only runs against P0 specs (see
+  // validateDirective in bridge.cjs), so a deliberately minimal spec is used
+  // here to keep the fixture independent of the template-quality gate.
+  const d = bridge.createDirective({ title, spec: 'prove the provenance gate', priority: 'P2', projectDir: dir });
   bridge.submitPlan({ directiveId: d.id, summary: 'plan', steps: ['step 1'], projectDir: dir, role: 'dev' });
   return d.id;
 }

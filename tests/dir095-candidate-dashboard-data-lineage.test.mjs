@@ -93,42 +93,71 @@ test('DIR-095 AC2: the progress series carry the reference legend colours, and S
 
 /* ── AC3/AC4: the toolbar controls are real, not painted ──────────────────── */
 
-test('DIR-095 AC3: the toolbar Sort control is bound to real state, not a painted shell', async () => {
+/**
+ * DIR-095 AC1 REMOVED the redundant resume workspace from the Candidate Overview: the
+ * category tabs, search box, sort dropdown, grid/list toggle and pagination. The removal is
+ * a CUBA-MODE SUPPRESSION (`{!isCuba && (…`), so the legacy chrome — the zero-downtime
+ * rollback target (§49) — keeps the identical workspace. This helper locates that guarded
+ * region so the assertions below prove the controls can NEVER render on the Cuba Overview,
+ * rather than only that their source text still exists somewhere in the file.
+ */
+const GUARD_MARKER = 'DIR-095 — CANDIDATE DASHBOARD STREAMLINING';
+const suppressionGuard = (home) => {
+    const marker = home.indexOf(GUARD_MARKER);
+    assert.ok(marker > -1, 'the DIR-095 removal must be documented in place (forensic deliverable)');
+    const guard = home.indexOf('{!isCuba && (', marker);
+    assert.ok(guard > marker, 'the workspace must be wrapped in a Cuba-mode suppression guard');
+    return guard;
+};
+
+test('DIR-095 AC1/AC3: the resume workspace (incl. the Sort control) is suppressed in Cuba mode, and its lineage stays real', async () => {
     const home = await read(HOMEPAGE);
     const code = stripComments(home);
+    const guard = suppressionGuard(home);
 
-    assert.match(home, /data-testid="cuba-resume-sort"/);
-    assert.match(home, /value=\{this\.state\.sortBy\}/);
-    assert.match(home, /onChange=\{\(e\) => this\.setState\(\{ sortBy: e\.target\.value \}\)\}/);
-    for (const [value, label] of [['updated', 'Last Updated'], ['ats', 'ATS Score'], ['title', 'Title']]) {
-        assert.ok(home.includes(`<option value="${value}">${label}</option>`), `the Sort control must offer ${label}`);
+    // AC1 — every control of the removed workspace sits INSIDE the Cuba suppression guard,
+    // so it can never render on the streamlined Overview.
+    for (const id of ['cuba-resume-sort', 'cuba-resume-view-toggle']) {
+        const at = home.indexOf(`data-testid="${id}"`);
+        assert.ok(at > guard, `${id} must sit inside the DIR-095 Cuba-mode suppression guard`);
     }
+    assert.ok(home.indexOf('All Resumes ({totalResumeCount})') > guard,
+        'the category filter tabs must be suppressed with the workspace');
+    assert.ok(home.indexOf('"Page"') > guard,
+        'the pagination control must be suppressed with the workspace');
 
-    // The comparator reads stored fields only — no key fabricates a value to sort by.
+    // AC2 — the surfaces the mandate RETAINS are NOT suppressed.
+    assert.ok(home.indexOf('Next Best Action') < guard,
+        'the Next Best Action hub must stay on the Overview (outside the guard)');
+    assert.ok(home.indexOf('data-testid="cuba-candidate-analytics"') > guard,
+        'the analytics band must stay on the Overview');
+
+    // The sort comparator is still real (it serves the legacy rollback chrome) — no key
+    // fabricates a value to sort by.
     assert.match(home, /sortResumeDocuments\(documents\) \{/);
     assert.match(home, /resumeSortTimestamp\(document\) \{/);
     assert.match(home, /document\?\.item\?\.updated_at \|\| document\?\.item\?\.created_at/);
-    // ...and it is actually wired into the rendered list.
+    // ...and it is still wired into the rendered list.
     assert.match(home, /this\.sortResumeDocuments\(this\.state\.displayDocuments/);
 
-    // The painted button it replaced is gone.
+    // The painted button the real control replaced is still gone.
     assert.doesNotMatch(code, /<span>Sort<\/span>/);
     assert.doesNotMatch(home, /aria-label="Sort resumes"/);
 });
 
-test('DIR-095 AC4: the Grid/List toggle is real state and really reflows the card container', async () => {
+test('DIR-095 AC1/AC4: the Grid/List toggle is suppressed with the workspace and its state stays real for legacy', async () => {
     const home = await read(HOMEPAGE);
+    const guard = suppressionGuard(home);
 
-    assert.match(home, /data-testid="cuba-resume-view-toggle"/);
+    // AC1 — the toggle is inside the guard, so the Cuba Overview never renders it.
+    const toggle = home.indexOf('data-testid="cuba-resume-view-toggle"');
+    assert.ok(toggle > guard, 'the view toggle must sit inside the DIR-095 Cuba-mode suppression guard');
+
+    // Its real state binding and real reflow remain in source for the legacy chrome, so the
+    // rollback target is not silently broken.
     assert.match(home, /aria-pressed=\{this\.state\.viewMode === 'grid'\}/);
     assert.match(home, /aria-pressed=\{this\.state\.viewMode === 'list'\}/);
-    assert.match(home, /onClick=\{\(\) => this\.setState\(\{ viewMode: 'grid' \}\)\}/);
-    assert.match(home, /onClick=\{\(\) => this\.setState\(\{ viewMode: 'list' \}\)\}/);
-
-    // The choice reaches the layout, not just the button chrome.
     assert.match(home, /this\.state\.viewMode === 'list'[\s\S]{0,140}grid grid-cols-1 gap-3\.5/);
-
-    // The reference defaults.
     assert.match(home, /sortBy: "updated",\s+viewMode: "grid",/);
 });
 

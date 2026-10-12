@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-12T04:51:59.217Z",
-  "seq": 2974,
-  "id": "evt_mv4rz77z_71f4c333ed65",
+  "timestamp": "2026-10-12T05:30:32.018Z",
+  "seq": 2984,
+  "id": "evt_mv4tcrsk_d083cbf368da",
   "type": "HEARTBEAT",
-  "title": "[Heartbeat] Wave 6 complete: closed the stale-ratchet finding (DashboardSettings 1330 -> 39, DashboardPortfolios 51 -> 0). DashboardHomepage deliberately left un-swept because it still carries a live legacy fallb",
+  "title": "[Heartbeat] All acceptance criteria verified. Submitting evidence package",
   "sender": "STAFF_DEVELOPER",
-  "directiveId": "DIR-094",
-  "summary": "Wave 6 complete: closed the stale-ratchet finding (DashboardSettings 1330 -> 39, DashboardPortfolios 51 -> 0). DashboardHomepage deliberately left un-swept because it still carries a live legacy fallback branch. Submitting evidence."
+  "directiveId": "DIR-095",
+  "summary": "All acceptance criteria verified. Submitting evidence package"
 }

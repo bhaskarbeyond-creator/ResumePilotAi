@@ -1251,6 +1251,19 @@ class DashboardHomepage extends Component {
             );
           })()}
 
+          {/* DIR-095 — CANDIDATE DASHBOARD STREAMLINING (resume workspace suppression).
+              The reference-required horizontal Resume Carousel, the category folder
+              filter tabs (All Resumes / Tailored / Master / Drafts), the search box,
+              the sort dropdown (`cuba-resume-sort`), the grid/list view-mode toggle
+              (`cuba-resume-view-toggle`) and the "Page X of Y" pagination are NOT
+              required on the Candidate Overview. Resume authoring, editing, cloning
+              and management live in the dedicated Resume Builder workspace
+              (/build-resume), so this block was duplicating that surface and adding
+              cognitive clutter here. It is suppressed in Cuba mode; the legacy chrome
+              (the zero-downtime rollback target, section 49) keeps the workspace
+              byte-identical. DIR-095 AC1. */}
+          {!isCuba && (
+            <>
           {/* Real-Time Search & Category Folder Filter Tabs */}
           <div className={isCuba ? "flex flex-col md:flex-row md:items-center md:justify-between mb-6 pb-3 border-b border-cuba-line gap-3" : "flex flex-col md:flex-row md:items-center md:justify-between mb-6 pb-2 border-b border-cuba-line gap-3"}>
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -2142,6 +2155,8 @@ class DashboardHomepage extends Component {
                 </div>
               </div>
             )}
+            </>
+          )}
 
           {/* DIR-094 S5: the reference's bottom three-column analytics band.
               Mounted here — after the resume grid and its pagination — so it reads as

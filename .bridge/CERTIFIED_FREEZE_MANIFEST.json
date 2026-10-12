@@ -43,8 +43,8 @@
   "certifiedFiles": [
     {
       "file": "bridge.cjs",
-      "sha256": "d0435931276358e4d1b60bac667ec07cdfa5ca03aeb91c3444c6de1262e43ddc",
-      "bytes": 271303,
+      "sha256": "6bade444d34b387fe536abf2aef0b4aa5fbd2e6212564533477724a1b888e155",
+      "bytes": 278989,
       "certifiedBackup": "bridge.cjs.certified.bak"
     },
     {
@@ -58,6 +58,13 @@
       "sha256": "44bb1f008870757cd170ed87877c75ea7c33bf2cb0d6efcd176c74bd721fc542",
       "bytes": 53083,
       "certifiedBackup": "autowake.cjs.certified.bak"
+    },
+    {
+      "file": "lead_watcher_session.cjs",
+      "sha256": "41b78c94b2e1c0b6bbdccd666608612f71319ad27f6b1de42022e8474d6859f7",
+      "bytes": 24023,
+      "certifiedBackup": null,
+      "addedBy": "DIR-062"
     }
   ],
   "releaseSeal": {
