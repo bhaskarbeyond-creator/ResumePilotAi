@@ -1,5 +1,5 @@
 {
-  "certifiedAt": "2026-10-12T06:12:54.390Z",
+  "certifiedAt": "2026-10-12T06:41:50.439Z",
   "version": "3.0.0",
   "architecture": "BIDIRECTIONAL_INSTANT_WAKE_V1",
   "status": "FROZEN_AND_CERTIFIED",
@@ -43,8 +43,8 @@
   "certifiedFiles": [
     {
       "file": "bridge.cjs",
-      "sha256": "9c2ec5780542bdb45a02bb64d2045a5de34ab115ca0a896d89029d6c0aa8e3fa",
-      "bytes": 265198,
+      "sha256": "901e1934c2e3d3e37da1c3a040ed8cb9a5e879a5e639402072b412b7f8e715ef",
+      "bytes": 264495,
       "certifiedBackup": "bridge.cjs.certified.bak"
     },
     {
