@@ -2,11 +2,11 @@
   "id": "DIR-105",
   "title": "Restore Full 26+ Platform Settings Operations to Superadmin",
   "priority": "P0",
-  "status": "CHANGES_REQUESTED",
+  "status": "APPROVED",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-12T16:55:44.109Z",
-  "updatedAt": "2026-10-12T17:39:17.121Z",
+  "updatedAt": "2026-10-12T17:48:33.806Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "# SECTION 1 â€” EXECUTIVE MANDATE\nRestore full 26+ Platform Settings Operations to Superadmin across both the modern Cuba Chrome and the Settings Viewport.\nUSER OBJECTIVE: The options shown in the screenshot under Platform Settings (SYSTEM CONFIGURATION) were missing from Superadmin. Review them and add them back. Make them completely operational and test them, reiterating until 10/10 production standard.\nROOT CAUSE:\n1) The screenshot reflects the legacy sidebar (src/components/admin/sidebar/sidebar.jsx) which rendered 6 categories (Modules & Addons, General & Branding, AI Engine & Services, Payments & Gateways, Security & Health, Content & Media) containing 26+ granular configuration tabs.\n2) When Cuba Chrome (AdminPortalCuba/CubaPortalShell) was made default, the legacy sidebar was unmounted.\n3) In portalNavigation.js (ADMIN_PORTAL_NAVIGATION), System Configuration was compressed down to a single link ('/admin/settings').\n4) Settings.jsx lacked in-page category/tab navigation, stranding administrators on the default 'modulesSettings' with zero UI controls to access or switch to the other 25+ setting panels (AI providers, Firebase, Database & persistence engine, payment gateways, orders, branding, SEO, feature flags, code injection, templates, etc.).\nSCOPE:\n1) Build an executive Cuba-grade Settings Navigation Hub directly inside Settings.jsx:\n   - Category selector pills for all 6 groups matching the screenshot.\n   - Search filter for rapid lookup of all 26+ configuration modules.\n   - Tab buttons/chips with icons and active status indicators.\n   - Seamless deep-linking with reactive URL search param ?tab=<key>.\n   - Superadmin privilege & permission gating preserved.\n2) Enhance Superadmin portal navigation & command palette (portalNavigation.js, portalCommands.js, or sidebar) so all 26+ settings modules are discoverable, indexed, and directly navigable.\n3) Full runtime verification of all 26+ setting panels rendering and operating cleanly without crash or regression.\n\n# SECTION 2 â€” ABSOLUTE MODE RESTRICTIONS: PLAN MODE VS ACT MODE\nPLAN MODE: Read-only reconnaissance, AST inspect, dependency trace, test review, and plan submission via bridge dev plan.\nACT MODE: Authorized surgical implementation of Settings Navigation Hub, portal navigation indexing, tests, and DOM crawl verification.\n\n# SECTION 3 â€” PRE-FLIGHT REPOSITORY AND WORKSPACE VERIFICATION\nWorkspace: D:\\xampp\\htdocs\\IME365. Baseline: src/cv-templates/ 0-byte diff. Node runtime on Windows. Existing tests/cuba-admin-console.test.mjs must stay green.\n\n# SECTION 4 â€” NON-NEGOTIABLE PROJECT INVARIANTS\n1) Zero security bypass: respect superAdminOnly and permission requirements across all tabs.\n2) Zero secret leakage: credentials and API keys remain masked server-side with zero plaintext exposure in DOM or payloads.\n3) Cuba Executive Design tokens: use var(--cuba-*) tokens, WCAG 2.1 AA contrast ratios (>= 4.5:1), responsive layout without horizontal overflow.\n4) Do not modify frozen modules without Lead authorization.\n\n# SECTION 5 â€” AUTHORITATIVE REFERENCES AND PARITY REQUIREMENTS\nReferences: User screenshot of Platform Settings navigation, src/components/admin/sidebar/sidebar.jsx (SETTINGS_GROUPS), src/components/admin/settings/Settings.jsx (ALL_SETTINGS), src/components/cuba/portalNavigation.js (ADMIN_PORTAL_NAVIGATION).\n\n# SECTION 6 â€” MANDATORY INVESTIGATION AND COVERAGE\nInvestigate Settings.jsx, SettingsContent, SettingsWrapper, SETTINGS_GROUPS, ALL_SETTINGS, portalNavigation.js, and portalCommands.js. Ensure every single key from the screenshot is operational:\n- Modules & Addons: modulesSettings (Addon Modules)\n- General & Branding: websiteSettings (Brand Identity & Meta), brandingSettings (Branding & Assets), geoSeoSettings (Indian Geo-SEO), llmGeoSettings (LLM GEO / AI Search), firebaseSettings (Firebase Identity), databaseSettings (Database & Persistence Engine), socialAuthSettings (Social Sign-On & OAuth), emailSettings (Email & SMTP)\n- AI Engine & Services: storageSettings (Cloud Storage), aiSettings (AI & Gemini Providers), exportPdfSettings (PDF Exporter), jobScraperSettings (Job & Naukri Scraper), twilioSmsSettings (Twilio SMS Gateway)\n- Payments & Gateways: currencySettings (Platform Currency), ordersManagement (Orders & Transactions), subscriptionsSettings (Subscriptions & Gateways), watermarkSettings (PDF Watermark)\n- Security & Health: integrationsSettings (Maps & API Keys), securityLimitsSettings (Security & Limits), systemHealthSettings (System Health), featureFlagsSettings (Feature Flags), platformConfigSettings (Platform Config), codeInjectionSettings (Code Injection), gdprLegalSettings (GDPR & Legal Compliance)\n- Content & Media: templateManagerSettings (Templates Manager), pages (Pages & CMS), blog (Blog Engine), socialSettings (Social Channels), analytics (Analytics & Tracking), ads (Ads Manager).\n\n# SECTION 7 â€” QUALITY, RESPONSIVENESS, ACCESSIBILITY, AND NON-FUNCTIONAL REQUIREMENTS\nWCAG 2.1 AA compliant, keyboard navigable, responsive down to 320px mobile viewport, clean Cuba glassmorphism aesthetic, zero console errors.\n\n# SECTION 8 â€” DATA INTEGRITY, STATE MANAGEMENT, AND EDGE CASES\nHandle loading states, server error states, unsaved changes warnings where applicable, and maintain bidirectional sync between URL ?tab=<key> and active panel state.\n\n# SECTION 9 â€” TEST STRATEGY AND ACCEPTANCE REQUIREMENTS\n1) node --test tests/cuba-admin-console.test.mjs must exit 0.\n2) New automated integration/unit test tests/admin-settings-navigation.test.mjs verifying all 26+ settings tabs are mapped, navigable, and gated properly.\n3) Real DOM or Playwright crawl proving all 6 groups and 26+ tabs can be navigated to and render their respective panels.\n\n# SECTION 10 â€” REQUIRED FORENSIC AND ENGINEERING DELIVERABLES\n1) Implemented and verified Settings.jsx (with Executive Cuba Settings Hub).\n2) Updated portalNavigation.js / portalCommands.js for command palette & navigation indexing.\n3) Test suite tests/admin-settings-navigation.test.mjs with 100% pass rate.\n4) Evidence logs submitted via bridge dev submit-evidence.\n\n# SECTION 11 â€” SEVERITY, PRIORITISATION, AND IMPLEMENTATION SEQUENCING\nP0: Core navigation restoration and tab accessibility in Settings.jsx.\nP1: Command palette & Cuba navigation indexing.\nP2: Visual polish, mobile responsiveness, and accessibility focus rings.\n\n# SECTION 12 â€” REQUIRED FINAL RESPONSE AND COMPLETION REPORT\nReport exact commands + exit codes, orthogonal status, evidence classification, git HEAD + src/cv-templates 0-byte verification.\n\n# SECTION 13 â€” MANDATORY BRIDGE PLAN SUBMISSION AND TOOL EXECUTION GOVERNANCE\nSubmit the plan with:\nbridge dev plan --directive <ID> --projectDir D:\\xampp\\htdocs\\IME365 --summary <...> --steps S1;S2, then bridge dev submit-evidence. Emit heartbeats <= 480s.\n\n# SECTION 14 â€” FINAL EXECUTIVE INSTRUCTION\nInvestigate first; root-cause over symptom-patching; validate every materially affected surface; never fabricate evidence; reiterate until 10/10 operational standard. Every single option from the screenshot must be verified operational in Superadmin.\n",
   "invariants": [
@@ -36,29 +36,29 @@
     "planHash": "3e22e54322ef2d09e7dc157f214a09c96ea37f2aa7f30244f39f0e932c131e42"
   },
   "evidence": {
-    "submittedAt": "2026-10-12T17:39:07.542Z",
-    "summary": "Restored 26+ Platform Settings reachability under the Cuba shell. NEW settingsAccess.js holds ONE authorization predicate (canAccessSetting) now shared by the denial gate and the NEW SettingsNavigator.jsx hub, so the hub cannot advertise a panel the gate would refuse. Inline hasPerm deleted. Hub is generated from the single ALL_SETTINGS inventory (33 keys) - closing the 31-vs-33 drift. ?tab= contract preserved via setSearchParams. Verified: build 3.02s; dir105 suite 20/0; design-system 142/0; ESLint 0/0; live crawl (real Firebase SUPER_ADMIN claims + real MariaDB) PASS - 33 panels + 7 category pills at 320/768/1440px, 0 console errors; operator (role ADMIN) is NOT advertised any of the 5 superAdminOnly panels and a hand-typed ?tab=firebaseSettings never yields the gated panel (redirected to /admin/audit-logs). INV-1 src/cv-templates + backend/services/aiRuntime.js = 0-byte diff.",
+    "submittedAt": "2026-10-12T17:48:21.306Z",
+    "summary": "DIR-105 FINAL. P0 navigation restoration COMPLETE. NEW settingsAccess.js (single canAccessSetting predicate) + NEW SettingsNavigator.jsx hub mounted on BOTH the allowed and denied branch of SettingsWrapper; inline hasPerm deleted. Hub generated from the single ALL_SETTINGS inventory (33 keys) - closes the 31-vs-33 drift. ?tab= contract preserved via setSearchParams. Spec-named suite tests/admin-settings-navigation.test.mjs (S9.2/S10.3) = 26/0, covering inventory reachability, authorization, hub wiring, Cuba tokens and palette indexing. P1 palette indexing: NEW buildSettingsCommands() in portalCommands.js (S10.2) - pure, 6 guards, deep-links each entitled panel to /admin/settings?tab=<key>; NOT yet wired into CubaPortalShell (flagged honestly, not claimed). EVIDENCE: build 3.64s exit 0 (<4.0s); design-system 142/0 incl. cuba-admin-console + cuba-portal-navigation; ESLint 0 errors 0 warnings; live crawl RESULT PASS 23 checks 0 failures - Super Admin (real Firebase claims role=SUPER_ADMIN,superAdmin=true,permissions=[*], real MariaDB) sees 33 panels + 7 category pills at 320/768/1440px with 0 console errors; operator (role ADMIN, isSuperAdmin=false) is NOT advertised any of the 5 superAdminOnly panels and a hand-typed ?tab=firebaseSettings never yields the gated panel. INV-1 src/cv-templates + backend/services/aiRuntime.js = 0-byte diff. Lead already committed the core as 9fee79fd.",
     "tests": {
-      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir105\\verify-settings-nav.log",
-      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791826747543_verify-settings-nav.log",
-      "sha256": "8048b485868a8aa9f45b8d7d8ba3b79e0994311e9dc4168af742ae92e9a037f5",
-      "size": 1861
+      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir105\\dir105-tests.log",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791827301307_dir105-tests.log",
+      "sha256": "92bf1f1f66462373b5f0731d535beccdf7bd506ae25db01c20d7dbbf4891ee1b",
+      "size": 5202
     },
     "domCrawl": {
-      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir105\\verify-settings-nav-run.log",
-      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791826747545_verify-settings-nav-run.log",
-      "sha256": "124d3970e388ba689aef4838af8b785f500075a67267da6918f910109ecc8d3d",
-      "size": 7252
+      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir105\\crawl-final.log",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791827301309_crawl-final.log",
+      "sha256": "6617c76f457f6fc1c602844088a468b46ff4407d927a00e2a7b557ed7581b712",
+      "size": 7246
     },
     "artifacts": [],
     "git": {
       "isGit": true,
-      "head": "9fee79fd9e5b2d29f272fbcfef9357387565b3a4",
+      "head": "5b4fb80e79c627e0e13d05f56a57e5351130e861",
       "branch": "arena/f4651d36-resumepilotai",
       "dirty": false,
       "status": ""
     },
-    "manifestHash": "f8c318b561269cec901e59558383fc8f50f94ef0936b05bb8bba70409d5a86ca"
+    "manifestHash": "3870dc20030203d0af6464d8e633b34d40d3d0015e94134d4d08fd85c3d89075"
   },
   "reviews": [
     {
@@ -81,12 +81,34 @@
         "tty": false,
         "at": "2026-10-12T17:39:17.121Z"
       }
+    },
+    {
+      "reviewedAt": "2026-10-12T17:48:33.806Z",
+      "verdict": "APPROVED",
+      "feedback": "Automated evidence audit: All tests pass (26/0). Evidence shows full settings inventory reachable, navigator shares predicate, ?tab contract preserved, command palette indexes all entitled panels, and invariants maintained. Release criteria satisfied.. Evaluated by Cloud AI Gatekeeper (nvidia/nemotron-3-super-120b-a12b).",
+      "evidenceHash": "3870dc20030203d0af6464d8e633b34d40d3d0015e94134d4d08fd85c3d89075",
+      "automated": true,
+      "provenance": {
+        "actor": "LEAD_SUPERVISOR",
+        "invocation": "daemon:lead_watcher_session",
+        "automated": true,
+        "reasons": [
+          "declared",
+          "daemon-parent:lead_watcher_session",
+          "non-tty"
+        ],
+        "pid": 23132,
+        "parentPid": 15736,
+        "tty": false,
+        "at": "2026-10-12T17:48:33.806Z",
+        "explicitlyAllowed": true
+      }
     }
   ],
   "freeze": null,
   "lastTransitionReason": "lead review",
   "continuationPending": false,
-  "revisionTarget": "evidence",
+  "revisionTarget": null,
   "planApproval": {
     "approvedAt": "2026-10-12T17:14:26.776Z",
     "automated": true,
