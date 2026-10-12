@@ -187,9 +187,9 @@ const JobDetailsModal = ({
                                         {companyMonogram}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <h1 id="job-detail-title" className="text-xl sm:text-2xl font-extrabold text-slate-900 leading-tight mb-1">
+                                        <h2 id="job-detail-title" className="text-xl sm:text-2xl font-extrabold text-slate-900 leading-tight mb-1">
                                             {enhancedJob.title}
-                                        </h1>
+                                        </h2>
                                         <div className="flex items-center gap-3 text-sm text-slate-600 flex-wrap font-medium">
                                             <span className="flex items-center gap-1.5 font-bold text-slate-800">
                                                 <FaBuilding aria-hidden="true" className="w-3.5 h-3.5 text-slate-400" />

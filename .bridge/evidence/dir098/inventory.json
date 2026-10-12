@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-12T09:35:22.413Z",
+  "generatedAt": "2026-10-12T09:46:14.591Z",
   "directive": "DIR-098",
   "phase": "one-discovery",
   "source": "src/main.jsx + component tree (derived, no fabrication)",
@@ -384,8 +384,8 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 1007,
-      "auditedAt": "2026-10-12T09:36:13.287Z"
+      "loadMs": 1061,
+      "auditedAt": "2026-10-12T09:46:16.667Z"
     },
     {
       "reviewId": "RU-003",
@@ -436,8 +436,8 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 597,
-      "auditedAt": "2026-10-12T09:36:14.196Z"
+      "loadMs": 611,
+      "auditedAt": "2026-10-12T09:46:17.589Z"
     },
     {
       "reviewId": "RU-004",
@@ -488,8 +488,8 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 581,
-      "auditedAt": "2026-10-12T09:36:15.092Z"
+      "loadMs": 595,
+      "auditedAt": "2026-10-12T09:46:18.499Z"
     },
     {
       "reviewId": "RU-005",
@@ -545,8 +545,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 592,
-      "auditedAt": "2026-10-12T09:36:16.157Z"
+      "loadMs": 578,
+      "auditedAt": "2026-10-12T09:46:19.561Z"
     },
     {
       "reviewId": "RU-006",
@@ -602,8 +602,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 580,
-      "auditedAt": "2026-10-12T09:36:17.173Z"
+      "loadMs": 592,
+      "auditedAt": "2026-10-12T09:46:20.601Z"
     },
     {
       "reviewId": "RU-007",
@@ -659,8 +659,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 608,
-      "auditedAt": "2026-10-12T09:36:18.106Z"
+      "loadMs": 578,
+      "auditedAt": "2026-10-12T09:46:21.514Z"
     },
     {
       "reviewId": "RU-008",
@@ -696,7 +696,7 @@
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "11 interactive targets < 44px"
+          "detail": "13 interactive targets < 44px"
         }
       ],
       "tests": [],
@@ -711,8 +711,8 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 578,
-      "auditedAt": "2026-10-12T09:36:19.005Z"
+      "loadMs": 593,
+      "auditedAt": "2026-10-12T09:46:22.440Z"
     },
     {
       "reviewId": "RU-009",
@@ -768,8 +768,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 596,
-      "auditedAt": "2026-10-12T09:36:20.029Z"
+      "loadMs": 577,
+      "auditedAt": "2026-10-12T09:46:23.460Z"
     },
     {
       "reviewId": "RU-010",
@@ -842,7 +842,7 @@
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "6 interactive targets < 44px"
+          "detail": "7 interactive targets < 44px"
         }
       ],
       "tests": [],
@@ -858,8 +858,8 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 581,
-      "auditedAt": "2026-10-12T09:36:20.920Z"
+      "loadMs": 598,
+      "auditedAt": "2026-10-12T09:46:24.374Z"
     },
     {
       "reviewId": "RU-012",
@@ -915,8 +915,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 580,
-      "auditedAt": "2026-10-12T09:36:21.949Z"
+      "loadMs": 587,
+      "auditedAt": "2026-10-12T09:46:25.405Z"
     },
     {
       "reviewId": "RU-013",
@@ -952,7 +952,7 @@
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "11 interactive targets < 44px"
+          "detail": "13 interactive targets < 44px"
         }
       ],
       "tests": [],
@@ -967,8 +967,8 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 584,
-      "auditedAt": "2026-10-12T09:36:22.843Z"
+      "loadMs": 597,
+      "auditedAt": "2026-10-12T09:46:26.325Z"
     },
     {
       "reviewId": "RU-014",
@@ -1019,8 +1019,8 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 578,
-      "auditedAt": "2026-10-12T09:36:23.748Z"
+      "loadMs": 594,
+      "auditedAt": "2026-10-12T09:46:27.250Z"
     },
     {
       "reviewId": "RU-015",
@@ -1071,8 +1071,8 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 579,
-      "auditedAt": "2026-10-12T09:36:24.635Z"
+      "loadMs": 580,
+      "auditedAt": "2026-10-12T09:46:28.137Z"
     },
     {
       "reviewId": "RU-016",
@@ -1128,8 +1128,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 576,
-      "auditedAt": "2026-10-12T09:36:25.644Z"
+      "loadMs": 596,
+      "auditedAt": "2026-10-12T09:46:29.168Z"
     },
     {
       "reviewId": "RU-017",
@@ -1185,8 +1185,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 610,
-      "auditedAt": "2026-10-12T09:36:26.680Z"
+      "loadMs": 565,
+      "auditedAt": "2026-10-12T09:46:30.160Z"
     },
     {
       "reviewId": "RU-018",
@@ -1242,8 +1242,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 592,
-      "auditedAt": "2026-10-12T09:36:27.704Z"
+      "loadMs": 590,
+      "auditedAt": "2026-10-12T09:46:31.197Z"
     },
     {
       "reviewId": "RU-019",
@@ -1299,8 +1299,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 565,
-      "auditedAt": "2026-10-12T09:36:28.707Z"
+      "loadMs": 592,
+      "auditedAt": "2026-10-12T09:46:32.226Z"
     },
     {
       "reviewId": "RU-020",
@@ -1356,8 +1356,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 594,
-      "auditedAt": "2026-10-12T09:36:29.739Z"
+      "loadMs": 591,
+      "auditedAt": "2026-10-12T09:46:33.255Z"
     },
     {
       "reviewId": "RU-021",
@@ -1413,8 +1413,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 592,
-      "auditedAt": "2026-10-12T09:36:30.759Z"
+      "loadMs": 579,
+      "auditedAt": "2026-10-12T09:46:34.274Z"
     },
     {
       "reviewId": "RU-022",
@@ -1470,8 +1470,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 590,
-      "auditedAt": "2026-10-12T09:36:31.773Z"
+      "loadMs": 593,
+      "auditedAt": "2026-10-12T09:46:35.305Z"
     },
     {
       "reviewId": "RU-023",
@@ -1527,8 +1527,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 564,
-      "auditedAt": "2026-10-12T09:36:32.833Z"
+      "loadMs": 591,
+      "auditedAt": "2026-10-12T09:46:36.342Z"
     },
     {
       "reviewId": "RU-024",
@@ -1584,8 +1584,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 580,
-      "auditedAt": "2026-10-12T09:36:33.841Z"
+      "loadMs": 608,
+      "auditedAt": "2026-10-12T09:46:37.374Z"
     },
     {
       "reviewId": "RU-025",
@@ -1641,8 +1641,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 593,
-      "auditedAt": "2026-10-12T09:36:34.870Z"
+      "loadMs": 605,
+      "auditedAt": "2026-10-12T09:46:38.425Z"
     },
     {
       "reviewId": "RU-026",
@@ -1698,8 +1698,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 576,
-      "auditedAt": "2026-10-12T09:36:35.880Z"
+      "loadMs": 593,
+      "auditedAt": "2026-10-12T09:46:39.442Z"
     },
     {
       "reviewId": "RU-027",
@@ -1751,7 +1751,7 @@
         "perf": 5
       },
       "loadMs": 581,
-      "auditedAt": "2026-10-12T09:36:36.854Z"
+      "auditedAt": "2026-10-12T09:46:40.414Z"
     },
     {
       "reviewId": "RU-028",
@@ -1802,8 +1802,8 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 612,
-      "auditedAt": "2026-10-12T09:36:37.868Z"
+      "loadMs": 578,
+      "auditedAt": "2026-10-12T09:46:41.395Z"
     },
     {
       "reviewId": "RU-029",
@@ -1854,8 +1854,8 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 596,
-      "auditedAt": "2026-10-12T09:36:38.884Z"
+      "loadMs": 609,
+      "auditedAt": "2026-10-12T09:46:42.409Z"
     },
     {
       "reviewId": "RU-030",
@@ -1906,8 +1906,8 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 599,
-      "auditedAt": "2026-10-12T09:36:39.889Z"
+      "loadMs": 579,
+      "auditedAt": "2026-10-12T09:46:43.394Z"
     },
     {
       "reviewId": "RU-031",
@@ -1964,7 +1964,7 @@
         "perf": 5
       },
       "loadMs": 578,
-      "auditedAt": "2026-10-12T09:36:40.871Z"
+      "auditedAt": "2026-10-12T09:46:44.377Z"
     },
     {
       "reviewId": "RU-032",
@@ -2000,7 +2000,7 @@
         {
           "severity": "P2",
           "kind": "form-label",
-          "detail": "16 unlabeled form controls"
+          "detail": "15 unlabeled form controls"
         },
         {
           "severity": "P2",
@@ -2020,8 +2020,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 580,
-      "auditedAt": "2026-10-12T09:36:41.950Z"
+      "loadMs": 577,
+      "auditedAt": "2026-10-12T09:46:45.468Z"
     },
     {
       "reviewId": "RU-033",
@@ -2077,8 +2077,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 579,
-      "auditedAt": "2026-10-12T09:36:42.927Z"
+      "loadMs": 594,
+      "auditedAt": "2026-10-12T09:46:46.461Z"
     },
     {
       "reviewId": "RU-034",
@@ -2225,7 +2225,7 @@
         {
           "severity": "P2",
           "kind": "form-label",
-          "detail": "16 unlabeled form controls"
+          "detail": "15 unlabeled form controls"
         },
         {
           "severity": "P2",
@@ -2245,8 +2245,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 578,
-      "auditedAt": "2026-10-12T09:36:43.979Z"
+      "loadMs": 577,
+      "auditedAt": "2026-10-12T09:46:47.516Z"
     },
     {
       "reviewId": "RU-038",
@@ -2280,14 +2280,9 @@
       "baselineScreenshot": null,
       "defects": [
         {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "h1 count is not exactly 1"
-        },
-        {
           "severity": "P2",
           "kind": "form-label",
-          "detail": "16 unlabeled form controls"
+          "detail": "15 unlabeled form controls"
         },
         {
           "severity": "P2",
@@ -2296,20 +2291,20 @@
         }
       ],
       "tests": [],
-      "score": 97,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 98,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "auditNote": "parameterised route: requires real record data to audit",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 7,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 577,
-      "auditedAt": "2026-10-12T09:36:45.092Z"
+      "loadMs": 625,
+      "auditedAt": "2026-10-12T09:46:48.628Z"
     },
     {
       "reviewId": "RU-039",
@@ -2366,7 +2361,7 @@
         "perf": 5
       },
       "loadMs": 591,
-      "auditedAt": "2026-10-12T09:36:46.111Z"
+      "auditedAt": "2026-10-12T09:46:49.660Z"
     },
     {
       "reviewId": "RU-040",
@@ -2422,8 +2417,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 592,
-      "auditedAt": "2026-10-12T09:36:47.123Z"
+      "loadMs": 590,
+      "auditedAt": "2026-10-12T09:46:50.681Z"
     },
     {
       "reviewId": "RU-041",
@@ -2553,8 +2548,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 567,
-      "auditedAt": "2026-10-12T09:36:48.020Z"
+      "loadMs": 581,
+      "auditedAt": "2026-10-12T09:46:51.583Z"
     },
     {
       "reviewId": "RU-044",
@@ -2610,8 +2605,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 572,
-      "auditedAt": "2026-10-12T09:36:49.040Z"
+      "loadMs": 578,
+      "auditedAt": "2026-10-12T09:46:52.599Z"
     },
     {
       "reviewId": "RU-045",
@@ -2704,8 +2699,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 595,
-      "auditedAt": "2026-10-12T09:36:50.057Z"
+      "loadMs": 577,
+      "auditedAt": "2026-10-12T09:46:53.618Z"
     },
     {
       "reviewId": "RU-047",
@@ -2761,8 +2756,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 594,
-      "auditedAt": "2026-10-12T09:36:50.944Z"
+      "loadMs": 582,
+      "auditedAt": "2026-10-12T09:46:54.502Z"
     },
     {
       "reviewId": "RU-048",
@@ -2818,8 +2813,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 571,
-      "auditedAt": "2026-10-12T09:36:51.837Z"
+      "loadMs": 596,
+      "auditedAt": "2026-10-12T09:46:55.426Z"
     },
     {
       "reviewId": "RU-049",
@@ -2870,8 +2865,8 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 581,
-      "auditedAt": "2026-10-12T09:36:52.726Z"
+      "loadMs": 578,
+      "auditedAt": "2026-10-12T09:46:56.316Z"
     },
     {
       "reviewId": "RU-050",
@@ -2928,7 +2923,7 @@
         "perf": 5
       },
       "loadMs": 606,
-      "auditedAt": "2026-10-12T09:36:53.760Z"
+      "auditedAt": "2026-10-12T09:46:57.351Z"
     },
     {
       "reviewId": "RU-051",
@@ -2984,8 +2979,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 576,
-      "auditedAt": "2026-10-12T09:36:54.770Z"
+      "loadMs": 563,
+      "auditedAt": "2026-10-12T09:46:58.339Z"
     },
     {
       "reviewId": "RU-052",
@@ -3078,8 +3073,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 580,
-      "auditedAt": "2026-10-12T09:36:55.776Z"
+      "loadMs": 590,
+      "auditedAt": "2026-10-12T09:46:59.371Z"
     },
     {
       "reviewId": "RU-054",
@@ -3135,8 +3130,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 578,
-      "auditedAt": "2026-10-12T09:36:56.793Z"
+      "loadMs": 592,
+      "auditedAt": "2026-10-12T09:47:00.400Z"
     },
     {
       "reviewId": "RU-055",
@@ -3229,8 +3224,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 592,
-      "auditedAt": "2026-10-12T09:36:57.822Z"
+      "loadMs": 590,
+      "auditedAt": "2026-10-12T09:47:01.434Z"
     },
     {
       "reviewId": "RU-057",
@@ -3281,8 +3276,8 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 580,
-      "auditedAt": "2026-10-12T09:36:58.865Z"
+      "loadMs": 597,
+      "auditedAt": "2026-10-12T09:47:02.496Z"
     },
     {
       "reviewId": "RU-058",
@@ -3333,9 +3328,9 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 580,
-      "auditedAt": "2026-10-12T09:36:59.744Z"
+      "loadMs": 568,
+      "auditedAt": "2026-10-12T09:47:03.370Z"
     }
   ],
-  "auditedAt": "2026-10-12T09:37:00.048Z"
+  "auditedAt": "2026-10-12T09:47:03.682Z"
 }

@@ -144,6 +144,7 @@ const JobSearchBar = ({
                         <FaSearch className="absolute left-3.5 text-slate-400 w-4 h-4 pointer-events-none transition-colors group-focus-within:text-blue-500" />
                         <input
                             type="text"
+                            aria-label={t('JobsUpdate.JobSearchBar.searchLabel', 'Search jobs by title, keywords, tech stack, or company')}
                             placeholder={t('JobsUpdate.JobSearchBar.searchPlaceholder', 'Job title, keywords, tech stack, or company...')}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
