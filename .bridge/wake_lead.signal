@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-12T07:43:31.281Z",
-  "seq": 3035,
-  "id": "evt_mv4y3smv_e1539cadf9d1",
-  "type": "EVIDENCE_SUBMITTED",
-  "title": "[Evidence] DIR-097: Fix failing unit tests for CopilotHeroHud component",
+  "timestamp": "2026-10-12T08:05:04.143Z",
+  "seq": 3040,
+  "id": "evt_mv4yvi7l_dfab279748b1",
+  "type": "PLAN_SUBMITTED",
+  "title": "[Plan] DIR-098: DIR-098: Master UI/UX Transformation Programme - Phase One Discovery, Baseline Evidence & Acceptance-Gate Scaffolding",
   "sender": "STAFF_DEVELOPER",
-  "directiveId": "DIR-097",
-  "summary": "DIR-097 COMPLETE. CopilotHeroHud now has dedicated unit coverage (tests/copilot-hero-hud.test.mjs, 4 ACs: certified testid/aria contract, pure clock-derived greeting with real displayName, cuba-focusable CTAs resolving to mounted routes, truthful insight fallback) registered in npm run test:product. The underlying npm-test failure the directive was derived from was ALSO root-caused and fixed: the security-static credential sentinel flagged a hardcoded Firebase web API key in two .bridge capture harnesses; both now resolve it from VITE_FIREBASE_KEY (env/.env) and throw if absent - no plaintext credential is committed (INV-5). EVIDENCE: node --test tests/copilot-hero-hud.test.mjs 4/4 pass, tests/security-static.test.mjs 14/14 pass, npm test exits 0, no tracked file contains the key. DoD after this directive: tests-green ok, build-green ok, app-up ok, dist-built ok."
+  "directiveId": "DIR-098",
+  "summary": "DIR-098 Phase One plan (Master UI/UX Transformation - discovery, baseline, gates). S1: finalise the review-unit inventory via scripts/ux-inventory.mjs -> .bridge/evidence/dir098/inventory.json (58 routes -> 58 review units, 7 viewports 320-1920, 13 interaction-state categories, 195 test suites). S2: scaffold npm run test:ux-gates - a machine-checkable harness asserting (a) inventory completeness: every route in src/main.jsx has exactly one review unit, (b) the responsive-overflow contract (7 viewports, zero horizontal overflow) is wired, (c) the WCAG 2.1 AA contrast/touch/landmark gate is wired. S3: seed the prioritised defect register and the task register from the inventory (P0-P3). S4: capture the baseline screenshot set per review unit via the XAMPP-served Playwright harness (Apache 80/443, no rogue servers). S5: run npm run test:ux-gates and npm test (must exit 0) and submit evidence. Acceptance: inventory covers 100%% of routes; ux-gates harness runs and is green; registers seeded; baseline captured; npm test green; src/cv-templates 0-byte diff."
 }

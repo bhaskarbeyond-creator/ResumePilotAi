@@ -2,11 +2,11 @@
   "id": "DIR-097",
   "title": "Fix failing unit tests for CopilotHeroHud component",
   "priority": "P1",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-12T07:12:04.764Z",
-  "updatedAt": "2026-10-12T07:43:42.431Z",
+  "updatedAt": "2026-10-12T07:43:43.306Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "[DIRECTOR v1 — autonomous roadmap step 1 of project goal]\n\nGOAL: Ship IME365 v1.0 to production-ready\n\nOpen src/components/Candidate/CopilotHeroHud.test.jsx, examine the failing test(s) caused by recent changes to CopilotHeroHud.jsx (DIR-092). Update the test file to match the current component props and behavior, ensuring all assertions pass. After editing, run npm test to confirm the test suite passes.",
   "invariants": [
@@ -74,8 +74,31 @@
       }
     }
   ],
-  "freeze": null,
-  "lastTransitionReason": "lead review",
+  "freeze": {
+    "freezeHash": "c87e18a821d15266200777b737186deaf8654dcb",
+    "certifiedAt": "2026-10-12T07:43:43.306Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "Autonomous Lead (Antigravity): evidence audit passed, all criteria verified.",
+    "evidenceHash": "dd1a3d1b1caddda636f1210f242e7cdc92c3034ae97852eabb061e95280ab28f",
+    "automated": true,
+    "certificationKind": "automated",
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "daemon:lead_watcher_session",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "daemon-parent:lead_watcher_session",
+        "non-tty"
+      ],
+      "pid": 26448,
+      "parentPid": 24464,
+      "tty": false,
+      "at": "2026-10-12T07:43:42.638Z",
+      "explicitlyAllowed": true
+    }
+  },
+  "lastTransitionReason": "gatekeeper certification",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {

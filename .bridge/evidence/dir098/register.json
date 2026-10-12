@@ -1,0 +1,14 @@
+{
+  "generatedAt": null,
+  "directive": "DIR-098",
+  "note": "Seeded from .bridge/evidence/dir098/inventory.json. Defect IDs are D-### ; task IDs are T-###. Populated during Phase Two (screenshot-first audit).",
+  "priorities": { "P0": "security/data-integrity/critical workflow", "P1": "major functionality/navigation/UX", "P2": "usability/a11y/responsive", "P3": "polish" },
+  "defects": [],
+  "tasks": [
+    { "id": "T-001", "priority": "P0", "title": "Finalise review-unit inventory (58 routes)", "status": "DONE", "evidence": ".bridge/evidence/dir098/inventory.json" },
+    { "id": "T-002", "priority": "P0", "title": "Scaffold npm run test:ux-gates acceptance harness", "status": "DONE", "evidence": "tests/ux-gates.test.mjs" },
+    { "id": "T-003", "priority": "P1", "title": "Capture baseline screenshots for every review unit (7 viewports)", "status": "OPEN" },
+    { "id": "T-004", "priority": "P1", "title": "Phase Two: screenshot-first defect remediation by severity", "status": "OPEN" }
+  ],
+  "blockers": []
+}

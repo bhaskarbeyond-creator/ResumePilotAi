@@ -14,6 +14,7 @@
     "test:security:static": "node scripts/generate-security-headers.mjs --check && node scripts/generate-public-discovery.mjs --check && node --test tests/security-static.test.mjs tests/secret-scanner-efficacy.test.mjs tests/production-delivery-security.test.mjs tests/production-delivery-integration.test.mjs tests/dir023-contrast-tokens.test.mjs tests/xss.test.mjs tests/mfa-static.test.mjs tests/auth-error-messages.test.mjs tests/unlayered-css-guard.test.mjs",
     "test:xampp-policy": "node --test tests/xampp-policy-guard.test.mjs",
     "manifest:generate": "node scripts/generate-manifest-artifacts.mjs",
+    "test:ux-gates": "node scripts/ux-inventory.mjs && node --test tests/ux-gates.test.mjs",
     "test:manifest-consistency": "node scripts/generate-manifest-artifacts.mjs && node scripts/manifest-drift-report.mjs && node --test tests/manifest-consistency.test.mjs",
     "test:openapi": "node scripts/openapi-snapshot.mjs --check && node --test tests/openapi-contract.test.mjs",
     "test:openapi-diff": "node scripts/openapi-snapshot.mjs --check",

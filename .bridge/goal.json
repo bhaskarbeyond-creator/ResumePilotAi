@@ -28,13 +28,14 @@
       "path": "dist/index.html"
     }
   ],
-  "status": "IN_PROGRESS",
+  "status": "COMPLETE",
   "createdAt": "2026-10-12T06:43:10.427Z",
-  "updatedAt": "2026-10-12T07:12:04.844Z",
-  "lastDirectorDecisionAt": "2026-10-12T07:12:04.613Z",
+  "updatedAt": "2026-10-12T07:46:24.756Z",
+  "lastDirectorDecisionAt": "2026-10-12T07:46:24.756Z",
   "lastDirectorDirectiveTitles": [
     "Fix failing unit tests for CopilotHeroHud component"
   ],
   "consecutiveDirectorFailures": 0,
-  "directorSeq": 1
+  "directorSeq": 1,
+  "completedAt": "2026-10-12T07:46:24.756Z"
 }
