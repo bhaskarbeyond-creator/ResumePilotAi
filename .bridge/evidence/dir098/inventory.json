@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-12T08:32:26.887Z",
+  "generatedAt": "2026-10-12T08:54:23.058Z",
   "directive": "DIR-098",
   "phase": "one-discovery",
   "source": "src/main.jsx + component tree (derived, no fabrication)",
@@ -331,19 +331,8 @@
       "defects": [],
       "tests": [],
       "score": null,
-      "status": "NOT_EXECUTED",
-      "acceptance": "PENDING",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 15,
-        "usability": 15,
-        "functional": 10,
-        "a11y": 7,
-        "perf": 5
-      },
-      "loadMs": 10,
-      "auditedAt": "2026-10-12T08:49:04.073Z",
-      "auditNote": "parameterised route: requires real record data to audit"
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-002",
@@ -375,37 +364,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "h1 count is not exactly 1"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark-nav",
-          "detail": "no nav landmark region"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "34 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 97,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 7,
-        "perf": 5
-      },
-      "loadMs": 884,
-      "auditedAt": "2026-10-12T08:51:52.836Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-003",
@@ -437,27 +400,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 99,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 9,
-        "perf": 5
-      },
-      "loadMs": 409,
-      "auditedAt": "2026-10-12T08:51:53.293Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-004",
@@ -489,27 +436,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 99,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 9,
-        "perf": 5
-      },
-      "loadMs": 362,
-      "auditedAt": "2026-10-12T08:51:53.705Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-005",
@@ -541,32 +472,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled form controls"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 98,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 370,
-      "auditedAt": "2026-10-12T08:51:54.299Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-006",
@@ -598,32 +508,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled form controls"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 98,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 381,
-      "auditedAt": "2026-10-12T08:51:54.868Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-007",
@@ -655,32 +544,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "h1 count is not exactly 1"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "7 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 98,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 377,
-      "auditedAt": "2026-10-12T08:51:55.331Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-008",
@@ -712,27 +580,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "13 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 99,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 9,
-        "perf": 5
-      },
-      "loadMs": 368,
-      "auditedAt": "2026-10-12T08:51:55.789Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-009",
@@ -764,32 +616,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled form controls"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 98,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 363,
-      "auditedAt": "2026-10-12T08:51:56.334Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-010",
@@ -824,19 +655,8 @@
       "defects": [],
       "tests": [],
       "score": null,
-      "status": "NOT_EXECUTED",
-      "acceptance": "PENDING",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 407,
-      "auditedAt": "2026-10-12T08:45:31.605Z",
-      "auditNote": "parameterised route: requires real record data to audit"
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-011",
@@ -871,19 +691,8 @@
       "defects": [],
       "tests": [],
       "score": null,
-      "status": "NOT_EXECUTED",
-      "acceptance": "PENDING",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 17,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 401,
-      "auditedAt": "2026-10-12T08:45:32.069Z",
-      "auditNote": "parameterised route: requires real record data to audit"
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-012",
@@ -915,32 +724,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled form controls"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 98,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 378,
-      "auditedAt": "2026-10-12T08:51:56.897Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-013",
@@ -972,27 +760,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "13 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 99,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 9,
-        "perf": 5
-      },
-      "loadMs": 375,
-      "auditedAt": "2026-10-12T08:51:57.357Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-014",
@@ -1024,37 +796,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "h1 count is not exactly 1"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark-nav",
-          "detail": "no nav landmark region"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 97,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 7,
-        "perf": 5
-      },
-      "loadMs": 372,
-      "auditedAt": "2026-10-12T08:51:57.810Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-015",
@@ -1086,27 +832,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 99,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 9,
-        "perf": 5
-      },
-      "loadMs": 372,
-      "auditedAt": "2026-10-12T08:51:58.231Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-016",
@@ -1138,32 +868,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled form controls"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 98,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 386,
-      "auditedAt": "2026-10-12T08:51:58.797Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-017",
@@ -1195,32 +904,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled form controls"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 98,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 368,
-      "auditedAt": "2026-10-12T08:51:59.340Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-018",
@@ -1252,32 +940,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled form controls"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 98,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 370,
-      "auditedAt": "2026-10-12T08:51:59.892Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-019",
@@ -1309,32 +976,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled form controls"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 98,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 393,
-      "auditedAt": "2026-10-12T08:52:00.460Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-020",
@@ -1366,32 +1012,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled form controls"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 98,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 386,
-      "auditedAt": "2026-10-12T08:52:01.026Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-021",
@@ -1423,32 +1048,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled form controls"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 98,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 364,
-      "auditedAt": "2026-10-12T08:52:01.589Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-022",
@@ -1480,32 +1084,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled form controls"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 98,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 377,
-      "auditedAt": "2026-10-12T08:52:02.151Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-023",
@@ -1537,32 +1120,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled form controls"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 98,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 362,
-      "auditedAt": "2026-10-12T08:52:02.729Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-024",
@@ -1594,32 +1156,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled form controls"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 98,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 393,
-      "auditedAt": "2026-10-12T08:52:03.306Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-025",
@@ -1651,32 +1192,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled form controls"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 98,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 361,
-      "auditedAt": "2026-10-12T08:52:03.842Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-026",
@@ -1708,32 +1228,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled form controls"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 98,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 372,
-      "auditedAt": "2026-10-12T08:52:04.396Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-027",
@@ -1765,27 +1264,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "34 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 99,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 9,
-        "perf": 5
-      },
-      "loadMs": 363,
-      "auditedAt": "2026-10-12T08:52:04.914Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-028",
@@ -1817,27 +1300,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "34 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 99,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 9,
-        "perf": 5
-      },
-      "loadMs": 391,
-      "auditedAt": "2026-10-12T08:52:05.450Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-029",
@@ -1869,37 +1336,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "h1 count is not exactly 1"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark-nav",
-          "detail": "no nav landmark region"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "7 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 97,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 7,
-        "perf": 5
-      },
-      "loadMs": 358,
-      "auditedAt": "2026-10-12T08:52:05.963Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-030",
@@ -1931,27 +1372,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "34 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 99,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 9,
-        "perf": 5
-      },
-      "loadMs": 378,
-      "auditedAt": "2026-10-12T08:52:06.486Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-031",
@@ -1983,32 +1408,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled form controls"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "7 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 98,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 370,
-      "auditedAt": "2026-10-12T08:52:07.030Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-032",
@@ -2040,32 +1444,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "16 unlabeled form controls"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "72 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 98,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 405,
-      "auditedAt": "2026-10-12T08:52:07.689Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-033",
@@ -2097,32 +1480,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled form controls"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "7 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 98,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 367,
-      "auditedAt": "2026-10-12T08:52:08.212Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-034",
@@ -2157,19 +1519,8 @@
       "defects": [],
       "tests": [],
       "score": null,
-      "status": "NOT_EXECUTED",
-      "acceptance": "PENDING",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 386,
-      "auditedAt": "2026-10-12T08:45:45.006Z",
-      "auditNote": "parameterised route: requires real record data to audit"
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-035",
@@ -2204,19 +1555,8 @@
       "defects": [],
       "tests": [],
       "score": null,
-      "status": "NOT_EXECUTED",
-      "acceptance": "PENDING",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 417,
-      "auditedAt": "2026-10-12T08:45:45.462Z",
-      "auditNote": "parameterised route: requires real record data to audit"
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-036",
@@ -2251,19 +1591,8 @@
       "defects": [],
       "tests": [],
       "score": null,
-      "status": "NOT_EXECUTED",
-      "acceptance": "PENDING",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 368,
-      "auditedAt": "2026-10-12T08:45:45.867Z",
-      "auditNote": "parameterised route: requires real record data to audit"
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-037",
@@ -2295,32 +1624,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "16 unlabeled form controls"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "72 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 98,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 375,
-      "auditedAt": "2026-10-12T08:52:08.810Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-038",
@@ -2355,19 +1663,8 @@
       "defects": [],
       "tests": [],
       "score": null,
-      "status": "NOT_EXECUTED",
-      "acceptance": "PENDING",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 16,
-        "a11y": 6,
-        "perf": 5
-      },
-      "loadMs": 400,
-      "auditedAt": "2026-10-12T08:45:47.061Z",
-      "auditNote": "parameterised route: requires real record data to audit"
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-039",
@@ -2399,42 +1696,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "h1 count is not exactly 1"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark-nav",
-          "detail": "no nav landmark region"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled form controls"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "39 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 96,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 6,
-        "perf": 5
-      },
-      "loadMs": 368,
-      "auditedAt": "2026-10-12T08:52:09.372Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-040",
@@ -2466,32 +1732,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled form controls"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 98,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 369,
-      "auditedAt": "2026-10-12T08:52:09.919Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-041",
@@ -2526,19 +1771,8 @@
       "defects": [],
       "tests": [],
       "score": null,
-      "status": "NOT_EXECUTED",
-      "acceptance": "PENDING",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 397,
-      "auditedAt": "2026-10-12T08:45:48.829Z",
-      "auditNote": "parameterised route: requires real record data to audit"
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-042",
@@ -2573,19 +1807,8 @@
       "defects": [],
       "tests": [],
       "score": null,
-      "status": "NOT_EXECUTED",
-      "acceptance": "PENDING",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 17,
-        "a11y": 7,
-        "perf": 5
-      },
-      "loadMs": 399,
-      "auditedAt": "2026-10-12T08:45:49.268Z",
-      "auditNote": "parameterised route: requires real record data to audit"
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-043",
@@ -2617,32 +1840,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "h1 count is not exactly 1"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "7 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 98,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 370,
-      "auditedAt": "2026-10-12T08:52:10.352Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-044",
@@ -2674,32 +1876,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled form controls"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 98,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 376,
-      "auditedAt": "2026-10-12T08:52:10.901Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-045",
@@ -2734,19 +1915,8 @@
       "defects": [],
       "tests": [],
       "score": null,
-      "status": "NOT_EXECUTED",
-      "acceptance": "PENDING",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 17,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 390,
-      "auditedAt": "2026-10-12T08:45:50.685Z",
-      "auditNote": "parameterised route: requires real record data to audit"
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-046",
@@ -2778,32 +1948,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled form controls"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 98,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 372,
-      "auditedAt": "2026-10-12T08:52:11.450Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-047",
@@ -2835,32 +1984,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P3",
-          "kind": "landmark-nav",
-          "detail": "no nav landmark region"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 98,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 371,
-      "auditedAt": "2026-10-12T08:52:11.867Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-048",
@@ -2892,37 +2020,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "h1 count is not exactly 1"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark-nav",
-          "detail": "no nav landmark region"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "7 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 97,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 7,
-        "perf": 5
-      },
-      "loadMs": 375,
-      "auditedAt": "2026-10-12T08:52:12.309Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-049",
@@ -2954,27 +2056,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 99,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 9,
-        "perf": 5
-      },
-      "loadMs": 371,
-      "auditedAt": "2026-10-12T08:52:12.729Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-050",
@@ -3006,32 +2092,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled form controls"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 98,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 357,
-      "auditedAt": "2026-10-12T08:52:13.259Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-051",
@@ -3063,32 +2128,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled form controls"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 98,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 369,
-      "auditedAt": "2026-10-12T08:52:13.804Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-052",
@@ -3123,19 +2167,8 @@
       "defects": [],
       "tests": [],
       "score": null,
-      "status": "NOT_EXECUTED",
-      "acceptance": "PENDING",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 418,
-      "auditedAt": "2026-10-12T08:45:54.503Z",
-      "auditNote": "parameterised route: requires real record data to audit"
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-053",
@@ -3167,32 +2200,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled form controls"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 98,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 402,
-      "auditedAt": "2026-10-12T08:52:14.383Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-054",
@@ -3224,32 +2236,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled form controls"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 98,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 366,
-      "auditedAt": "2026-10-12T08:52:14.915Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-055",
@@ -3284,19 +2275,8 @@
       "defects": [],
       "tests": [],
       "score": null,
-      "status": "NOT_EXECUTED",
-      "acceptance": "PENDING",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 15,
-        "a11y": 7,
-        "perf": 5
-      },
-      "loadMs": 401,
-      "auditedAt": "2026-10-12T08:45:56.156Z",
-      "auditNote": "parameterised route: requires real record data to audit"
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-056",
@@ -3328,32 +2308,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled form controls"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 98,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 364,
-      "auditedAt": "2026-10-12T08:52:15.453Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-057",
@@ -3385,27 +2344,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "34 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 99,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 9,
-        "perf": 5
-      },
-      "loadMs": 372,
-      "auditedAt": "2026-10-12T08:52:15.980Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     },
     {
       "reviewId": "RU-058",
@@ -3437,28 +2380,11 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 interactive targets < 44px"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 99,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 9,
-        "perf": 5
-      },
-      "loadMs": 361,
-      "auditedAt": "2026-10-12T08:52:16.386Z"
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
     }
-  ],
-  "auditedAt": "2026-10-12T08:52:16.425Z"
+  ]
 }
