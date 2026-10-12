@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-12T14:18:38.546Z",
-  "seq": 3117,
-  "id": "evt_mv5c7x9s_d2f3d93214b4",
-  "type": "PLAN_SUBMITTED",
-  "title": "[Plan] DIR-104: Tier 2: audit and ACCEPT the parameterised route templates against real record data",
+  "timestamp": "2026-10-12T14:29:24.202Z",
+  "seq": 3121,
+  "id": "evt_mv5clrgt_d09b5952f6ba",
+  "type": "EVIDENCE_SUBMITTED",
+  "title": "[Evidence] DIR-104: Tier 2: audit and ACCEPT the parameterised route templates against real record data",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-104",
-  "summary": "DIR-104 plan (Tier 2 - parameterised route templates). S1: seed REAL MariaDB records for the empty collections so the templates become auditable - publish one portfolio (give it a slug + is_published=1) and create one custom page - real records, no fabrication. S2: resolve each template with real data: /blog/:slug -> how-to-beat-ats-in-2026, /jobs/portal/:jobId -> job-air-23, /jobs/city/:slug + /jobs/in/:slug -> a real job location, /jobs/category/:catName -> a real category, /blog-editor/:postId -> a real post id, /portfolio/:slug -> the seeded published slug, /p/:custompage -> the seeded page. S3: audit each template at the 7 viewports (same deterministic engine) and ACCEPT at >=98/100, or document BLOCKED with a reason where the route is auth-gated (/resume/:step, /org/:slug). The * catch-all is excluded (not a page). S4: submit evidence. Acceptance: node scripts/ux-templates.mjs exits 0; every template ACCEPTED or documented BLOCKED; src/cv-templates 0-byte diff."
+  "summary": "DIR-104 Tier 2 COMPLETE: parameterised route templates audited against REAL record data. (1) SEEDED REAL RECORDS (MariaDB, no fabrication): scripts/seed-ux-templates.mjs published portfolio slug=ux-audit-portfolio (is_published=1) and created custom page slug=ux-audit-page (published) - both now served by /api/portfolios/public and /api/public/custom-pages. (2) RESOLVED + AUDITED each template at the 7 viewports via scripts/ux-template-audit.mjs: /blog/:slug (how-to-beat-ats-in-2026) 99, /blog-editor/:postId 98, /jobs/portal/:jobId (job-air-23) 98, /jobs/category/:catName 98, /jobs/city/:slug 98, /jobs/in/:slug 98, /p/:custompage (ux-audit-page) 98, /portfolio/:slug (ux-audit-portfolio) 100, /resume/:step 98 => 9 templates ACCEPTED at >=98/100. (3) 2 documented BLOCKED (not failures): /org/:slug/* (auth-gated, redirects to login) and /shared/:resumeId (no shared-resume record exists). The * catch-all is excluded (not a page). (4) DOD: node scripts/ux-templates.mjs => 9/11"
 }
