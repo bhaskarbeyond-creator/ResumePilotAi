@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-12T07:42:15.335Z",
-  "seq": 3032,
-  "id": "evt_mv4y2614_001f1b97c818",
-  "type": "PLAN_SUBMITTED",
-  "title": "[Plan] DIR-097: Fix failing unit tests for CopilotHeroHud component",
+  "timestamp": "2026-10-12T07:43:31.281Z",
+  "seq": 3035,
+  "id": "evt_mv4y3smv_e1539cadf9d1",
+  "type": "EVIDENCE_SUBMITTED",
+  "title": "[Evidence] DIR-097: Fix failing unit tests for CopilotHeroHud component",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-097",
-  "summary": "DIR-097 plan. S1: open the existing CopilotHeroHud test file at src/components/Candidate/CopilotHeroHud.test.jsx together with src/components/Candidate/CopilotHeroHud.jsx, and compare each assertion against the component current props (insight, onNavigate, displayName, className) and rendered output. S2: update the CopilotHeroHud test assertions so they match the component exactly - data-testid cuba-copilot-hud, aria-label AI Copilot, data-testid cuba-copilot-insight, the cuba-copilot-cta-<id> buttons, the clock-derived greeting and the real displayName - correcting only the assertions that no longer match. S3: run npm test and confirm the CopilotHeroHud test passes and no new failures appear elsewhere. Scope: only the CopilotHeroHud test file is touched; no production code is altered."
+  "summary": "DIR-097 COMPLETE. CopilotHeroHud now has dedicated unit coverage (tests/copilot-hero-hud.test.mjs, 4 ACs: certified testid/aria contract, pure clock-derived greeting with real displayName, cuba-focusable CTAs resolving to mounted routes, truthful insight fallback) registered in npm run test:product. The underlying npm-test failure the directive was derived from was ALSO root-caused and fixed: the security-static credential sentinel flagged a hardcoded Firebase web API key in two .bridge capture harnesses; both now resolve it from VITE_FIREBASE_KEY (env/.env) and throw if absent - no plaintext credential is committed (INV-5). EVIDENCE: node --test tests/copilot-hero-hud.test.mjs 4/4 pass, tests/security-static.test.mjs 14/14 pass, npm test exits 0, no tracked file contains the key. DoD after this directive: tests-green ok, build-green ok, app-up ok, dist-built ok."
 }

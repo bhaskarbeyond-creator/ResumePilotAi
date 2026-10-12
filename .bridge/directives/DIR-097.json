@@ -2,11 +2,11 @@
   "id": "DIR-097",
   "title": "Fix failing unit tests for CopilotHeroHud component",
   "priority": "P1",
-  "status": "IN_PROGRESS",
+  "status": "APPROVED",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-12T07:12:04.764Z",
-  "updatedAt": "2026-10-12T07:42:19.728Z",
+  "updatedAt": "2026-10-12T07:43:42.431Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "[DIRECTOR v1 — autonomous roadmap step 1 of project goal]\n\nGOAL: Ship IME365 v1.0 to production-ready\n\nOpen src/components/Candidate/CopilotHeroHud.test.jsx, examine the failing test(s) caused by recent changes to CopilotHeroHud.jsx (DIR-092). Update the test file to match the current component props and behavior, ensuring all assertions pass. After editing, run npm test to confirm the test suite passes.",
   "invariants": [
@@ -30,10 +30,52 @@
     ],
     "planHash": "b2c900aa009cac8b0219be9e3205dc3e4f5cc44ceca7d0efd58cfd518b47baec"
   },
-  "evidence": null,
-  "reviews": [],
+  "evidence": {
+    "submittedAt": "2026-10-12T07:43:30.444Z",
+    "summary": "DIR-097 COMPLETE. CopilotHeroHud now has dedicated unit coverage (tests/copilot-hero-hud.test.mjs, 4 ACs: certified testid/aria contract, pure clock-derived greeting with real displayName, cuba-focusable CTAs resolving to mounted routes, truthful insight fallback) registered in npm run test:product. The underlying npm-test failure the directive was derived from was ALSO root-caused and fixed: the security-static credential sentinel flagged a hardcoded Firebase web API key in two .bridge capture harnesses; both now resolve it from VITE_FIREBASE_KEY (env/.env) and throw if absent - no plaintext credential is committed (INV-5). EVIDENCE: node --test tests/copilot-hero-hud.test.mjs 4/4 pass, tests/security-static.test.mjs 14/14 pass, npm test exits 0, no tracked file contains the key. DoD after this directive: tests-green ok, build-green ok, app-up ok, dist-built ok.",
+    "tests": {
+      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir097-npm-test3.log",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791791010446_dir097-npm-test3.log",
+      "sha256": "3046412fb615d27e9643b5fe75bef8915b678be18bcbdc9ba499556c22aa986f",
+      "size": 423638
+    },
+    "domCrawl": null,
+    "artifacts": [],
+    "git": {
+      "isGit": true,
+      "head": "8c773ec11a3faf30e222dc1f7b885117a4f38c6b",
+      "branch": "arena/f4651d36-resumepilotai",
+      "dirty": false,
+      "status": ""
+    },
+    "manifestHash": "dd1a3d1b1caddda636f1210f242e7cdc92c3034ae97852eabb061e95280ab28f"
+  },
+  "reviews": [
+    {
+      "reviewedAt": "2026-10-12T07:43:42.431Z",
+      "verdict": "APPROVED",
+      "feedback": "Automated evidence audit: test artifact scanned, no failure markers, clean tree. Evaluated by machine check.",
+      "evidenceHash": "dd1a3d1b1caddda636f1210f242e7cdc92c3034ae97852eabb061e95280ab28f",
+      "automated": true,
+      "provenance": {
+        "actor": "LEAD_SUPERVISOR",
+        "invocation": "daemon:lead_watcher_session",
+        "automated": true,
+        "reasons": [
+          "declared",
+          "daemon-parent:lead_watcher_session",
+          "non-tty"
+        ],
+        "pid": 19560,
+        "parentPid": 24464,
+        "tty": false,
+        "at": "2026-10-12T07:43:42.430Z",
+        "explicitlyAllowed": true
+      }
+    }
+  ],
   "freeze": null,
-  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "lastTransitionReason": "lead review",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {
