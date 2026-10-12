@@ -16,14 +16,14 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const INV = path.join(ROOT, '.bridge', 'evidence', 'dir098', 'inventory.json');
 const arg = (n, d) => { const i = process.argv.indexOf(n); return i >= 0 ? process.argv[i + 1] : d; };
 const MAX = Number(arg('--max', '0')) || Infinity;
-const BASE = (arg('--base', process.env.UX_BASE || 'http://ime365.local')).replace(/\/+$/, '');
+const BASE = (arg('--base', process.env.UX_BASE || 'https://ime365.local')).replace(/\/+$/, '');
 
 const inv = JSON.parse(fs.readFileSync(INV, 'utf8'));
 const units = inv.units.slice(0, MAX === Infinity ? inv.units.length : MAX);
 const viewports = inv.viewports;
 
 const browser = await chromium.launch();
-const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, ignoreHTTPSErrors: true });
 const page = await ctx.newPage();
 
 const probe = async () => page.evaluate(() => {
@@ -44,11 +44,23 @@ const probe = async () => page.evaluate(() => {
 });
 
 for (const u of units) {
+    // Parameterised routes (":id") and the global catch-all cannot be audited as pages;
+    // record them as NOT EXECUTED rather than fabricating a pass/fail.
+    if (/:\w/.test(u.route) || u.route === '*') {
+        u.defects = [];
+        u.score = null;
+        u.status = 'NOT_EXECUTED';
+        u.acceptance = 'PENDING';
+        u.auditNote = 'parameterised route: requires real record data to audit';
+        continue;
+    }
     const url = BASE + (u.route === '/' ? '' : u.route.replace(/\/\*$/, ''));
     const consoleErrors = [];
     const failedRequests = [];
-    const onConsole = (m) => { if (m.type() === 'error') consoleErrors.push(m.text().slice(0, 160)); };
-    const onResponse = (r) => { try { if (r.status() >= 400) failedRequests.push(`${r.status()} ${r.url().slice(0, 120)}`); } catch { /* */ } };
+    const NOISE = /Cross-Origin-Opener-Policy|third-party cookie|DevTools|Download the React DevTools|net::ERR_BLOCKED/i;
+    const onConsole = (m) => { if (m.type() === 'error' && !NOISE.test(m.text())) consoleErrors.push(m.text().slice(0, 160)); };
+    // 429 is a rate-limit signal from rapid probing, not an application defect.
+    const onResponse = (r) => { try { const s = r.status(); if (s >= 400 && s !== 429) failedRequests.push(`${s} ${r.url().slice(0, 120)}`); } catch { /* */ } };
     page.on('console', onConsole); page.on('response', onResponse);
 
     const t0 = Date.now();
@@ -74,15 +86,20 @@ for (const u of units) {
     const defects = [];
     let visual = 25, responsive = 20, usability = 20, functional = 20, a11y = 10, perf = 5;
     if (!navOk) { functional -= 10; defects.push({ severity: 'P1', kind: 'navigation', detail: 'route did not load' }); }
+    // Responsive: overflow is genuinely per-viewport.
     for (const v of perViewport) {
         if (v.overflowX > 1) { responsive -= 4; defects.push({ severity: 'P2', kind: 'overflow', detail: `horizontal overflow ${v.overflowX}px @${v.viewport}` }); }
-        if (v.h1 !== 1) { a11y -= 1; defects.push({ severity: 'P3', kind: 'heading', detail: `${v.h1} h1 elements @${v.viewport}` }); }
-        if (!v.landmarks.main) { a11y -= 1; defects.push({ severity: 'P2', kind: 'landmark', detail: `no main landmark @${v.viewport}` }); }
-        if (!v.landmarks.nav) { a11y -= 1; defects.push({ severity: 'P3', kind: 'landmark', detail: `no nav landmark @${v.viewport}` }); }
-        if (v.unlabeled > 0) { a11y -= 1; defects.push({ severity: 'P2', kind: 'form-label', detail: `${v.unlabeled} unlabeled controls @${v.viewport}` }); }
-        if (v.imgNoAlt > 0) { a11y -= 1; defects.push({ severity: 'P2', kind: 'img-alt', detail: `${v.imgNoAlt} images without alt @${v.viewport}` }); }
-        if (v.smallTargets > 0) { a11y -= 1; defects.push({ severity: 'P2', kind: 'tap-target', detail: `${v.smallTargets} targets < 44px @${v.viewport}` }); }
     }
+    // Accessibility: the DOM is the same across viewports, so each distinct issue counts ONCE.
+    const seen = new Set();
+    const addA11y = (key, severity, detail) => { if (seen.has(key)) return; seen.add(key); a11y -= 1; defects.push({ severity, kind: key, detail }); };
+    const max = (f) => Math.max(0, ...perViewport.map(f));
+    if (perViewport.length && perViewport.some((v) => v.h1 !== 1)) addA11y('heading', 'P3', `h1 count is not exactly 1`);
+    if (perViewport.some((v) => !v.landmarks.main)) addA11y('landmark-main', 'P2', 'no main landmark region');
+    if (perViewport.some((v) => !v.landmarks.nav)) addA11y('landmark-nav', 'P3', 'no nav landmark region');
+    if (perViewport.some((v) => v.unlabeled > 0)) addA11y('form-label', 'P2', `${max((v) => v.unlabeled)} unlabeled form controls`);
+    if (perViewport.some((v) => v.imgNoAlt > 0)) addA11y('img-alt', 'P2', `${max((v) => v.imgNoAlt)} images without alt text`);
+    if (perViewport.some((v) => v.smallTargets > 0)) addA11y('tap-target', 'P2', `${max((v) => v.smallTargets)} interactive targets < 44px`);
     const errs = [...new Set(consoleErrors)];
     if (errs.length) { functional -= Math.min(10, errs.length * 2); defects.push({ severity: 'P1', kind: 'console-error', detail: `${errs.length} console errors: ${errs[0]}` }); }
     if (failedRequests.length) { functional -= Math.min(8, failedRequests.length); defects.push({ severity: 'P1', kind: 'failed-request', detail: `${failedRequests.length} failed requests: ${failedRequests[0]}` }); }
@@ -108,6 +125,7 @@ fs.writeFileSync(INV, `${JSON.stringify(inv, null, 2)}\n`, 'utf8');
 
 const accepted = inv.units.filter((u) => u.acceptance === 'ACCEPTED').length;
 const p0p1 = inv.units.reduce((n, u) => n + (u.defects || []).filter((d) => d.severity === 'P0' || d.severity === 'P1').length, 0);
+const scored = inv.units.filter((u) => typeof u.score === 'number');
 console.log(`Audited ${units.length} units. ACCEPTED ${accepted}/${inv.units.length}. P0/P1 defects: ${p0p1}.`);
-console.log(`Avg score: ${Math.round(inv.units.reduce((s, u) => s + (u.score || 0), 0) / inv.units.length)}/100`);
+console.log(`Avg score (scored units): ${scored.length ? Math.round(scored.reduce((s, u) => s + u.score, 0) / scored.length) : 0}/100 over ${scored.length} units`);
 

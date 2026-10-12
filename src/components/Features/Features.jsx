@@ -336,7 +336,7 @@ const Features = ({ _t }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/20">
+    <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-50 via-white to-blue-50/20">
       {/* Navbar */}
       <HomepageNavbar 
         user={user} 

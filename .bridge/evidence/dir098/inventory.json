@@ -328,132 +328,22 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P1",
-          "kind": "navigation",
-          "detail": "route did not load"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "landmark",
-          "detail": "no main landmark @320"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @320"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "landmark",
-          "detail": "no main landmark @375"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @375"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "landmark",
-          "detail": "no main landmark @768"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @768"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "landmark",
-          "detail": "no main landmark @1024"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1024"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "landmark",
-          "detail": "no main landmark @1280"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1280"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "landmark",
-          "detail": "no main landmark @1440"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1440"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "landmark",
-          "detail": "no main landmark @1920"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1920"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 70,
-      "status": "IN_REVIEW",
+      "score": null,
+      "status": "NOT_EXECUTED",
       "acceptance": "PENDING",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 15,
         "usability": 15,
         "functional": 10,
-        "a11y": 0,
+        "a11y": 7,
         "perf": 5
       },
       "loadMs": 10,
-      "auditedAt": "2026-10-12T08:41:49.902Z"
+      "auditedAt": "2026-10-12T08:49:04.073Z",
+      "auditNote": "parameterised route: requires real record data to audit"
     },
     {
       "reviewId": "RU-002",
@@ -489,133 +379,33 @@
         {
           "severity": "P3",
           "kind": "heading",
-          "detail": "0 h1 elements @320"
+          "detail": "h1 count is not exactly 1"
+        },
+        {
+          "severity": "P3",
+          "kind": "landmark-nav",
+          "detail": "no nav landmark region"
         },
         {
           "severity": "P2",
-          "kind": "landmark",
-          "detail": "no main landmark @320"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @320"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "landmark",
-          "detail": "no main landmark @375"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @375"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "landmark",
-          "detail": "no main landmark @768"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @768"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "landmark",
-          "detail": "no main landmark @1024"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1024"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "landmark",
-          "detail": "no main landmark @1280"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1280"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "landmark",
-          "detail": "no main landmark @1440"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1440"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "landmark",
-          "detail": "no main landmark @1920"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1920"
-        },
-        {
-          "severity": "P1",
-          "kind": "console-error",
-          "detail": "30 console errors: The Cross-Origin-Opener-Policy header has been ignored, because the URL's origin was untrustworthy. It was defined either in the final response or a redirect. P"
-        },
-        {
-          "severity": "P3",
-          "kind": "perf",
-          "detail": "load 30613ms"
+          "kind": "tap-target",
+          "detail": "34 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 77,
+      "score": 97,
       "status": "IN_REVIEW",
       "acceptance": "PENDING",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
-        "functional": 10,
-        "a11y": 0,
-        "perf": 2
+        "functional": 20,
+        "a11y": 7,
+        "perf": 5
       },
-      "loadMs": 30613,
-      "auditedAt": "2026-10-12T08:42:20.528Z"
+      "loadMs": 884,
+      "auditedAt": "2026-10-12T08:51:52.836Z"
     },
     {
       "reviewId": "RU-003",
@@ -651,53 +441,23 @@
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "2 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "5 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "5 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 targets < 44px @1920"
+          "detail": "6 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 93,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 99,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 3,
+        "a11y": 9,
         "perf": 5
       },
-      "loadMs": 599,
-      "auditedAt": "2026-10-12T08:42:21.176Z"
+      "loadMs": 409,
+      "auditedAt": "2026-10-12T08:51:53.293Z"
     },
     {
       "reviewId": "RU-004",
@@ -733,53 +493,23 @@
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "2 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "5 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "5 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 targets < 44px @1920"
+          "detail": "6 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 93,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 99,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 3,
+        "a11y": 9,
         "perf": 5
       },
-      "loadMs": 389,
-      "auditedAt": "2026-10-12T08:42:21.612Z"
+      "loadMs": 362,
+      "auditedAt": "2026-10-12T08:51:53.705Z"
     },
     {
       "reviewId": "RU-005",
@@ -815,88 +545,28 @@
         {
           "severity": "P2",
           "kind": "form-label",
-          "detail": "2 unlabeled controls @320"
+          "detail": "2 unlabeled form controls"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "21 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "27 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "35 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "35 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1920"
+          "detail": "37 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 98,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 366,
-      "auditedAt": "2026-10-12T08:42:22.279Z"
+      "loadMs": 370,
+      "auditedAt": "2026-10-12T08:51:54.299Z"
     },
     {
       "reviewId": "RU-006",
@@ -932,88 +602,28 @@
         {
           "severity": "P2",
           "kind": "form-label",
-          "detail": "2 unlabeled controls @320"
+          "detail": "2 unlabeled form controls"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "21 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "25 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1920"
+          "detail": "37 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 98,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 401,
-      "auditedAt": "2026-10-12T08:42:22.877Z"
+      "loadMs": 381,
+      "auditedAt": "2026-10-12T08:51:54.868Z"
     },
     {
       "reviewId": "RU-007",
@@ -1049,88 +659,28 @@
         {
           "severity": "P3",
           "kind": "heading",
-          "detail": "0 h1 elements @320"
+          "detail": "h1 count is not exactly 1"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "3 targets < 44px @320"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @375"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 targets < 44px @768"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 targets < 44px @1024"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "7 targets < 44px @1280"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "7 targets < 44px @1440"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "7 targets < 44px @1920"
+          "detail": "7 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 98,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 398,
-      "auditedAt": "2026-10-12T08:42:23.362Z"
+      "loadMs": 377,
+      "auditedAt": "2026-10-12T08:51:55.331Z"
     },
     {
       "reviewId": "RU-008",
@@ -1166,53 +716,23 @@
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "6 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "9 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "12 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "13 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "13 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "13 targets < 44px @1920"
+          "detail": "13 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 93,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 99,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 3,
+        "a11y": 9,
         "perf": 5
       },
-      "loadMs": 382,
-      "auditedAt": "2026-10-12T08:42:23.832Z"
+      "loadMs": 368,
+      "auditedAt": "2026-10-12T08:51:55.789Z"
     },
     {
       "reviewId": "RU-009",
@@ -1248,88 +768,28 @@
         {
           "severity": "P2",
           "kind": "form-label",
-          "detail": "2 unlabeled controls @320"
+          "detail": "2 unlabeled form controls"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "19 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "25 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1920"
+          "detail": "37 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 98,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 379,
-      "auditedAt": "2026-10-12T08:42:24.399Z"
+      "loadMs": 363,
+      "auditedAt": "2026-10-12T08:51:56.334Z"
     },
     {
       "reviewId": "RU-010",
@@ -1361,92 +821,22 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "19 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "25 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1920"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
+      "score": null,
+      "status": "NOT_EXECUTED",
       "acceptance": "PENDING",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 434,
-      "auditedAt": "2026-10-12T08:42:25.024Z"
+      "loadMs": 407,
+      "auditedAt": "2026-10-12T08:45:31.605Z",
+      "auditNote": "parameterised route: requires real record data to audit"
     },
     {
       "reviewId": "RU-011",
@@ -1478,72 +868,22 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "5 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "5 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 targets < 44px @1920"
-        },
-        {
-          "severity": "P1",
-          "kind": "console-error",
-          "detail": "1 console errors: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
-        },
-        {
-          "severity": "P1",
-          "kind": "failed-request",
-          "detail": "1 failed requests: 401 https://ime365.local/api/blog-data/slug/%3Aslug"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 89,
-      "status": "IN_REVIEW",
+      "score": null,
+      "status": "NOT_EXECUTED",
       "acceptance": "PENDING",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 17,
-        "a11y": 2,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 404,
-      "auditedAt": "2026-10-12T08:42:25.484Z"
+      "loadMs": 401,
+      "auditedAt": "2026-10-12T08:45:32.069Z",
+      "auditNote": "parameterised route: requires real record data to audit"
     },
     {
       "reviewId": "RU-012",
@@ -1579,88 +919,28 @@
         {
           "severity": "P2",
           "kind": "form-label",
-          "detail": "2 unlabeled controls @320"
+          "detail": "2 unlabeled form controls"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "19 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "25 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1920"
+          "detail": "37 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 98,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 366,
-      "auditedAt": "2026-10-12T08:42:26.029Z"
+      "loadMs": 378,
+      "auditedAt": "2026-10-12T08:51:56.897Z"
     },
     {
       "reviewId": "RU-013",
@@ -1696,53 +976,23 @@
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "9 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "9 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "12 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "12 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "13 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "13 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "13 targets < 44px @1920"
+          "detail": "13 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 93,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 99,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 3,
+        "a11y": 9,
         "perf": 5
       },
-      "loadMs": 402,
-      "auditedAt": "2026-10-12T08:42:26.506Z"
+      "loadMs": 375,
+      "auditedAt": "2026-10-12T08:51:57.357Z"
     },
     {
       "reviewId": "RU-014",
@@ -1778,51 +1028,21 @@
         {
           "severity": "P3",
           "kind": "heading",
-          "detail": "0 h1 elements @320"
+          "detail": "h1 count is not exactly 1"
         },
         {
           "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @320"
+          "kind": "landmark-nav",
+          "detail": "no nav landmark region"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "1 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "5 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "5 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 targets < 44px @1920"
+          "detail": "6 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 91,
+      "score": 97,
       "status": "IN_REVIEW",
       "acceptance": "PENDING",
       "scoreBreakdown": {
@@ -1830,11 +1050,11 @@
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 1,
+        "a11y": 7,
         "perf": 5
       },
-      "loadMs": 379,
-      "auditedAt": "2026-10-12T08:42:26.966Z"
+      "loadMs": 372,
+      "auditedAt": "2026-10-12T08:51:57.810Z"
     },
     {
       "reviewId": "RU-015",
@@ -1870,53 +1090,23 @@
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "2 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "5 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "5 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 targets < 44px @1920"
+          "detail": "6 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 93,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 99,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 3,
+        "a11y": 9,
         "perf": 5
       },
-      "loadMs": 373,
-      "auditedAt": "2026-10-12T08:42:27.390Z"
+      "loadMs": 372,
+      "auditedAt": "2026-10-12T08:51:58.231Z"
     },
     {
       "reviewId": "RU-016",
@@ -1952,88 +1142,28 @@
         {
           "severity": "P2",
           "kind": "form-label",
-          "detail": "2 unlabeled controls @320"
+          "detail": "2 unlabeled form controls"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "19 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "25 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1920"
+          "detail": "37 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 98,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 371,
-      "auditedAt": "2026-10-12T08:42:27.940Z"
+      "loadMs": 386,
+      "auditedAt": "2026-10-12T08:51:58.797Z"
     },
     {
       "reviewId": "RU-017",
@@ -2069,88 +1199,28 @@
         {
           "severity": "P2",
           "kind": "form-label",
-          "detail": "2 unlabeled controls @320"
+          "detail": "2 unlabeled form controls"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "19 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "25 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1920"
+          "detail": "37 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 98,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 397,
-      "auditedAt": "2026-10-12T08:42:28.524Z"
+      "loadMs": 368,
+      "auditedAt": "2026-10-12T08:51:59.340Z"
     },
     {
       "reviewId": "RU-018",
@@ -2186,88 +1256,28 @@
         {
           "severity": "P2",
           "kind": "form-label",
-          "detail": "2 unlabeled controls @320"
+          "detail": "2 unlabeled form controls"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "19 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "25 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1920"
+          "detail": "37 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 98,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 403,
-      "auditedAt": "2026-10-12T08:42:29.107Z"
+      "loadMs": 370,
+      "auditedAt": "2026-10-12T08:51:59.892Z"
     },
     {
       "reviewId": "RU-019",
@@ -2303,88 +1313,28 @@
         {
           "severity": "P2",
           "kind": "form-label",
-          "detail": "2 unlabeled controls @320"
+          "detail": "2 unlabeled form controls"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "21 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "25 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1920"
+          "detail": "37 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 98,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 394,
-      "auditedAt": "2026-10-12T08:42:29.682Z"
+      "loadMs": 393,
+      "auditedAt": "2026-10-12T08:52:00.460Z"
     },
     {
       "reviewId": "RU-020",
@@ -2420,88 +1370,28 @@
         {
           "severity": "P2",
           "kind": "form-label",
-          "detail": "2 unlabeled controls @320"
+          "detail": "2 unlabeled form controls"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "19 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "25 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1920"
+          "detail": "37 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 98,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 395,
-      "auditedAt": "2026-10-12T08:42:30.258Z"
+      "loadMs": 386,
+      "auditedAt": "2026-10-12T08:52:01.026Z"
     },
     {
       "reviewId": "RU-021",
@@ -2537,88 +1427,28 @@
         {
           "severity": "P2",
           "kind": "form-label",
-          "detail": "2 unlabeled controls @320"
+          "detail": "2 unlabeled form controls"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "19 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "25 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1920"
+          "detail": "37 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 98,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 394,
-      "auditedAt": "2026-10-12T08:42:30.899Z"
+      "loadMs": 364,
+      "auditedAt": "2026-10-12T08:52:01.589Z"
     },
     {
       "reviewId": "RU-022",
@@ -2654,88 +1484,28 @@
         {
           "severity": "P2",
           "kind": "form-label",
-          "detail": "2 unlabeled controls @320"
+          "detail": "2 unlabeled form controls"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "19 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "25 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1920"
+          "detail": "37 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 98,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 408,
-      "auditedAt": "2026-10-12T08:42:31.478Z"
+      "loadMs": 377,
+      "auditedAt": "2026-10-12T08:52:02.151Z"
     },
     {
       "reviewId": "RU-023",
@@ -2771,88 +1541,28 @@
         {
           "severity": "P2",
           "kind": "form-label",
-          "detail": "2 unlabeled controls @320"
+          "detail": "2 unlabeled form controls"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "19 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "25 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1920"
+          "detail": "37 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 98,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 403,
-      "auditedAt": "2026-10-12T08:42:32.059Z"
+      "loadMs": 362,
+      "auditedAt": "2026-10-12T08:52:02.729Z"
     },
     {
       "reviewId": "RU-024",
@@ -2888,88 +1598,28 @@
         {
           "severity": "P2",
           "kind": "form-label",
-          "detail": "2 unlabeled controls @320"
+          "detail": "2 unlabeled form controls"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "19 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "25 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1920"
+          "detail": "37 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 98,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 384,
-      "auditedAt": "2026-10-12T08:42:32.620Z"
+      "loadMs": 393,
+      "auditedAt": "2026-10-12T08:52:03.306Z"
     },
     {
       "reviewId": "RU-025",
@@ -3005,88 +1655,28 @@
         {
           "severity": "P2",
           "kind": "form-label",
-          "detail": "2 unlabeled controls @320"
+          "detail": "2 unlabeled form controls"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "19 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "25 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1920"
+          "detail": "37 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 98,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 399,
-      "auditedAt": "2026-10-12T08:42:33.189Z"
+      "loadMs": 361,
+      "auditedAt": "2026-10-12T08:52:03.842Z"
     },
     {
       "reviewId": "RU-026",
@@ -3122,88 +1712,28 @@
         {
           "severity": "P2",
           "kind": "form-label",
-          "detail": "2 unlabeled controls @320"
+          "detail": "2 unlabeled form controls"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "19 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "25 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1920"
+          "detail": "37 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 98,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 390,
-      "auditedAt": "2026-10-12T08:42:33.755Z"
+      "loadMs": 372,
+      "auditedAt": "2026-10-12T08:52:04.396Z"
     },
     {
       "reviewId": "RU-027",
@@ -3239,53 +1769,23 @@
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "16 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "22 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "30 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "30 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "34 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "34 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "34 targets < 44px @1920"
+          "detail": "34 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 93,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 99,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 3,
+        "a11y": 9,
         "perf": 5
       },
-      "loadMs": 402,
-      "auditedAt": "2026-10-12T08:42:34.303Z"
+      "loadMs": 363,
+      "auditedAt": "2026-10-12T08:52:04.914Z"
     },
     {
       "reviewId": "RU-028",
@@ -3321,53 +1821,23 @@
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "16 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "22 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "30 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "30 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "34 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "34 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "34 targets < 44px @1920"
+          "detail": "34 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 93,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 99,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 3,
+        "a11y": 9,
         "perf": 5
       },
-      "loadMs": 398,
-      "auditedAt": "2026-10-12T08:42:34.846Z"
+      "loadMs": 391,
+      "auditedAt": "2026-10-12T08:52:05.450Z"
     },
     {
       "reviewId": "RU-029",
@@ -3403,51 +1873,21 @@
         {
           "severity": "P3",
           "kind": "heading",
-          "detail": "0 h1 elements @320"
+          "detail": "h1 count is not exactly 1"
         },
         {
           "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @320"
+          "kind": "landmark-nav",
+          "detail": "no nav landmark region"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "1 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "7 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "7 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "7 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "7 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "7 targets < 44px @1920"
+          "detail": "7 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 91,
+      "score": 97,
       "status": "IN_REVIEW",
       "acceptance": "PENDING",
       "scoreBreakdown": {
@@ -3455,11 +1895,11 @@
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 1,
+        "a11y": 7,
         "perf": 5
       },
-      "loadMs": 414,
-      "auditedAt": "2026-10-12T08:42:35.446Z"
+      "loadMs": 358,
+      "auditedAt": "2026-10-12T08:52:05.963Z"
     },
     {
       "reviewId": "RU-030",
@@ -3495,53 +1935,23 @@
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "16 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "22 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "30 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "30 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "34 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "34 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "34 targets < 44px @1920"
+          "detail": "34 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 93,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 99,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 3,
+        "a11y": 9,
         "perf": 5
       },
-      "loadMs": 392,
-      "auditedAt": "2026-10-12T08:42:35.987Z"
+      "loadMs": 378,
+      "auditedAt": "2026-10-12T08:52:06.486Z"
     },
     {
       "reviewId": "RU-031",
@@ -3577,88 +1987,28 @@
         {
           "severity": "P2",
           "kind": "form-label",
-          "detail": "2 unlabeled controls @320"
+          "detail": "2 unlabeled form controls"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "6 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "7 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "7 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "7 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "7 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "7 targets < 44px @1920"
+          "detail": "7 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 98,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 399,
-      "auditedAt": "2026-10-12T08:42:36.567Z"
+      "loadMs": 370,
+      "auditedAt": "2026-10-12T08:52:07.030Z"
     },
     {
       "reviewId": "RU-032",
@@ -3692,95 +2042,30 @@
       "baselineScreenshot": null,
       "defects": [
         {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @320"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "1 targets < 44px @320"
-        },
-        {
           "severity": "P2",
           "kind": "form-label",
-          "detail": "3 unlabeled controls @375"
+          "detail": "16 unlabeled form controls"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "9 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "3 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "12 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "16 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "71 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "16 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "72 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "16 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "72 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "16 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "72 targets < 44px @1920"
+          "detail": "72 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 98,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 394,
-      "auditedAt": "2026-10-12T08:42:37.160Z"
+      "loadMs": 405,
+      "auditedAt": "2026-10-12T08:52:07.689Z"
     },
     {
       "reviewId": "RU-033",
@@ -3814,110 +2099,30 @@
       "baselineScreenshot": null,
       "defects": [
         {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @320"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "1 targets < 44px @320"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @375"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "1 targets < 44px @375"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @768"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @768"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @1024"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @1024"
-        },
-        {
           "severity": "P2",
           "kind": "form-label",
-          "detail": "2 unlabeled controls @1280"
+          "detail": "2 unlabeled form controls"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "7 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "7 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "7 targets < 44px @1920"
+          "detail": "7 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 98,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 399,
-      "auditedAt": "2026-10-12T08:42:37.641Z"
+      "loadMs": 367,
+      "auditedAt": "2026-10-12T08:52:08.212Z"
     },
     {
       "reviewId": "RU-034",
@@ -3949,92 +2154,22 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "3 unlabeled controls @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "9 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "3 unlabeled controls @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "55 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "3 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "58 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "16 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "71 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "16 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "72 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "16 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "72 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "16 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "72 targets < 44px @1920"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
+      "score": null,
+      "status": "NOT_EXECUTED",
       "acceptance": "PENDING",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 402,
-      "auditedAt": "2026-10-12T08:42:38.363Z"
+      "loadMs": 386,
+      "auditedAt": "2026-10-12T08:45:45.006Z",
+      "auditNote": "parameterised route: requires real record data to audit"
     },
     {
       "reviewId": "RU-035",
@@ -4066,102 +2201,22 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @320"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "1 targets < 44px @320"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @375"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "1 targets < 44px @375"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @768"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @1024"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @1280"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @1440"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @1920"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
+      "score": null,
+      "status": "NOT_EXECUTED",
       "acceptance": "PENDING",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 433,
-      "auditedAt": "2026-10-12T08:42:38.834Z"
+      "loadMs": 417,
+      "auditedAt": "2026-10-12T08:45:45.462Z",
+      "auditNote": "parameterised route: requires real record data to audit"
     },
     {
       "reviewId": "RU-036",
@@ -4193,92 +2248,22 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "1 targets < 44px @320"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "1 targets < 44px @375"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @768"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @1024"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @1280"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @1440"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @1920"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
+      "score": null,
+      "status": "NOT_EXECUTED",
       "acceptance": "PENDING",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 383,
-      "auditedAt": "2026-10-12T08:42:39.256Z"
+      "loadMs": 368,
+      "auditedAt": "2026-10-12T08:45:45.867Z",
+      "auditNote": "parameterised route: requires real record data to audit"
     },
     {
       "reviewId": "RU-037",
@@ -4314,88 +2299,28 @@
         {
           "severity": "P2",
           "kind": "form-label",
-          "detail": "3 unlabeled controls @320"
+          "detail": "16 unlabeled form controls"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "9 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "3 unlabeled controls @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "55 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "3 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "58 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "16 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "71 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "16 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "72 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "16 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "72 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "16 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "72 targets < 44px @1920"
+          "detail": "72 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 98,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 370,
-      "auditedAt": "2026-10-12T08:42:39.869Z"
+      "loadMs": 375,
+      "auditedAt": "2026-10-12T08:52:08.810Z"
     },
     {
       "reviewId": "RU-038",
@@ -4427,102 +2352,22 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "3 unlabeled controls @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "9 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "3 unlabeled controls @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "55 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "3 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "58 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "16 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "71 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "16 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "72 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "16 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "72 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "16 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "72 targets < 44px @1920"
-        },
-        {
-          "severity": "P1",
-          "kind": "console-error",
-          "detail": "1 console errors: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
-        },
-        {
-          "severity": "P1",
-          "kind": "failed-request",
-          "detail": "2 failed requests: 401 https://ime365.local/api/jobs-data/%3AjobId"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 86,
-      "status": "IN_REVIEW",
+      "score": null,
+      "status": "NOT_EXECUTED",
       "acceptance": "PENDING",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 16,
-        "a11y": 0,
+        "a11y": 6,
         "perf": 5
       },
-      "loadMs": 413,
-      "auditedAt": "2026-10-12T08:42:40.521Z"
+      "loadMs": 400,
+      "auditedAt": "2026-10-12T08:45:47.061Z",
+      "auditNote": "parameterised route: requires real record data to audit"
     },
     {
       "reviewId": "RU-039",
@@ -4558,81 +2403,26 @@
         {
           "severity": "P3",
           "kind": "heading",
-          "detail": "0 h1 elements @320"
+          "detail": "h1 count is not exactly 1"
         },
         {
           "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "1 targets < 44px @320"
+          "kind": "landmark-nav",
+          "detail": "no nav landmark region"
         },
         {
           "severity": "P2",
           "kind": "form-label",
-          "detail": "2 unlabeled controls @375"
+          "detail": "2 unlabeled form controls"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "28 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "35 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "35 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "39 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "39 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "39 targets < 44px @1920"
+          "detail": "39 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 90,
+      "score": 96,
       "status": "IN_REVIEW",
       "acceptance": "PENDING",
       "scoreBreakdown": {
@@ -4640,11 +2430,11 @@
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 6,
         "perf": 5
       },
-      "loadMs": 418,
-      "auditedAt": "2026-10-12T08:42:41.128Z"
+      "loadMs": 368,
+      "auditedAt": "2026-10-12T08:52:09.372Z"
     },
     {
       "reviewId": "RU-040",
@@ -4680,88 +2470,28 @@
         {
           "severity": "P2",
           "kind": "form-label",
-          "detail": "2 unlabeled controls @320"
+          "detail": "2 unlabeled form controls"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "19 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "25 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1920"
+          "detail": "37 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 98,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 402,
-      "auditedAt": "2026-10-12T08:42:41.703Z"
+      "loadMs": 369,
+      "auditedAt": "2026-10-12T08:52:09.919Z"
     },
     {
       "reviewId": "RU-041",
@@ -4793,92 +2523,22 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "19 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "25 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1920"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
+      "score": null,
+      "status": "NOT_EXECUTED",
       "acceptance": "PENDING",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 401,
-      "auditedAt": "2026-10-12T08:42:42.268Z"
+      "loadMs": 397,
+      "auditedAt": "2026-10-12T08:45:48.829Z",
+      "auditNote": "parameterised route: requires real record data to audit"
     },
     {
       "reviewId": "RU-042",
@@ -4910,107 +2570,22 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @320"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "1 targets < 44px @320"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "1 targets < 44px @375"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @768"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @1024"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @1280"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @1440"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @1920"
-        },
-        {
-          "severity": "P1",
-          "kind": "console-error",
-          "detail": "1 console errors: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
-        },
-        {
-          "severity": "P1",
-          "kind": "failed-request",
-          "detail": "1 failed requests: 401 https://ime365.local/api/public/custom-pages/%3Acustompage"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 87,
-      "status": "IN_REVIEW",
+      "score": null,
+      "status": "NOT_EXECUTED",
       "acceptance": "PENDING",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 17,
-        "a11y": 0,
+        "a11y": 7,
         "perf": 5
       },
-      "loadMs": 395,
-      "auditedAt": "2026-10-12T08:42:42.704Z"
+      "loadMs": 399,
+      "auditedAt": "2026-10-12T08:45:49.268Z",
+      "auditNote": "parameterised route: requires real record data to audit"
     },
     {
       "reviewId": "RU-043",
@@ -5046,88 +2621,28 @@
         {
           "severity": "P3",
           "kind": "heading",
-          "detail": "0 h1 elements @320"
+          "detail": "h1 count is not exactly 1"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "2 targets < 44px @320"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @375"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 targets < 44px @768"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 targets < 44px @1024"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "7 targets < 44px @1280"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "7 targets < 44px @1440"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "7 targets < 44px @1920"
+          "detail": "7 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 98,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 368,
-      "auditedAt": "2026-10-12T08:42:43.138Z"
+      "loadMs": 370,
+      "auditedAt": "2026-10-12T08:52:10.352Z"
     },
     {
       "reviewId": "RU-044",
@@ -5163,88 +2678,28 @@
         {
           "severity": "P2",
           "kind": "form-label",
-          "detail": "2 unlabeled controls @320"
+          "detail": "2 unlabeled form controls"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "19 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "25 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1920"
+          "detail": "37 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 98,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 372,
-      "auditedAt": "2026-10-12T08:42:43.688Z"
+      "loadMs": 376,
+      "auditedAt": "2026-10-12T08:52:10.901Z"
     },
     {
       "reviewId": "RU-045",
@@ -5276,72 +2731,22 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @320"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @320"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @375"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @768"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1024"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1280"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1440"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1920"
-        },
-        {
-          "severity": "P1",
-          "kind": "console-error",
-          "detail": "1 console errors: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
-        },
-        {
-          "severity": "P1",
-          "kind": "failed-request",
-          "detail": "1 failed requests: 401 https://ime365.local/api/portfolios/public/%3Aslug"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 89,
-      "status": "IN_REVIEW",
+      "score": null,
+      "status": "NOT_EXECUTED",
       "acceptance": "PENDING",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 17,
-        "a11y": 2,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 396,
-      "auditedAt": "2026-10-12T08:42:44.135Z"
+      "loadMs": 390,
+      "auditedAt": "2026-10-12T08:45:50.685Z",
+      "auditNote": "parameterised route: requires real record data to audit"
     },
     {
       "reviewId": "RU-046",
@@ -5377,88 +2782,28 @@
         {
           "severity": "P2",
           "kind": "form-label",
-          "detail": "2 unlabeled controls @320"
+          "detail": "2 unlabeled form controls"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "19 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "25 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1920"
+          "detail": "37 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 98,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
       "loadMs": 372,
-      "auditedAt": "2026-10-12T08:42:44.692Z"
+      "auditedAt": "2026-10-12T08:52:11.450Z"
     },
     {
       "reviewId": "RU-047",
@@ -5493,89 +2838,29 @@
       "defects": [
         {
           "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @320"
+          "kind": "landmark-nav",
+          "detail": "no nav landmark region"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "2 targets < 44px @320"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @375"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @768"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @1024"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @1280"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @1440"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @1920"
+          "detail": "2 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 98,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 403,
-      "auditedAt": "2026-10-12T08:42:45.145Z"
+      "loadMs": 371,
+      "auditedAt": "2026-10-12T08:52:11.867Z"
     },
     {
       "reviewId": "RU-048",
@@ -5611,76 +2896,21 @@
         {
           "severity": "P3",
           "kind": "heading",
-          "detail": "0 h1 elements @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @320"
+          "detail": "h1 count is not exactly 1"
         },
         {
           "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @375"
+          "kind": "landmark-nav",
+          "detail": "no nav landmark region"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "2 targets < 44px @375"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 targets < 44px @768"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 targets < 44px @1024"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "7 targets < 44px @1280"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "7 targets < 44px @1440"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "7 targets < 44px @1920"
+          "detail": "7 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 90,
+      "score": 97,
       "status": "IN_REVIEW",
       "acceptance": "PENDING",
       "scoreBreakdown": {
@@ -5688,11 +2918,11 @@
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 7,
         "perf": 5
       },
-      "loadMs": 374,
-      "auditedAt": "2026-10-12T08:42:45.604Z"
+      "loadMs": 375,
+      "auditedAt": "2026-10-12T08:52:12.309Z"
     },
     {
       "reviewId": "RU-049",
@@ -5728,53 +2958,23 @@
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "2 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "5 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "5 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 targets < 44px @1920"
+          "detail": "6 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 93,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 99,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 3,
+        "a11y": 9,
         "perf": 5
       },
-      "loadMs": 384,
-      "auditedAt": "2026-10-12T08:42:46.039Z"
+      "loadMs": 371,
+      "auditedAt": "2026-10-12T08:52:12.729Z"
     },
     {
       "reviewId": "RU-050",
@@ -5810,88 +3010,28 @@
         {
           "severity": "P2",
           "kind": "form-label",
-          "detail": "2 unlabeled controls @320"
+          "detail": "2 unlabeled form controls"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "19 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "25 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1920"
+          "detail": "37 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 98,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 373,
-      "auditedAt": "2026-10-12T08:42:46.593Z"
+      "loadMs": 357,
+      "auditedAt": "2026-10-12T08:52:13.259Z"
     },
     {
       "reviewId": "RU-051",
@@ -5927,88 +3067,28 @@
         {
           "severity": "P2",
           "kind": "form-label",
-          "detail": "2 unlabeled controls @320"
+          "detail": "2 unlabeled form controls"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "21 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "25 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1920"
+          "detail": "37 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 98,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 489,
-      "auditedAt": "2026-10-12T08:42:47.255Z"
+      "loadMs": 369,
+      "auditedAt": "2026-10-12T08:52:13.804Z"
     },
     {
       "reviewId": "RU-052",
@@ -6040,92 +3120,22 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "19 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "25 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1920"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
+      "score": null,
+      "status": "NOT_EXECUTED",
       "acceptance": "PENDING",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 391,
-      "auditedAt": "2026-10-12T08:42:47.820Z"
+      "loadMs": 418,
+      "auditedAt": "2026-10-12T08:45:54.503Z",
+      "auditNote": "parameterised route: requires real record data to audit"
     },
     {
       "reviewId": "RU-053",
@@ -6161,88 +3171,28 @@
         {
           "severity": "P2",
           "kind": "form-label",
-          "detail": "2 unlabeled controls @320"
+          "detail": "2 unlabeled form controls"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "19 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "25 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1920"
+          "detail": "37 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 98,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
       "loadMs": 402,
-      "auditedAt": "2026-10-12T08:42:48.396Z"
+      "auditedAt": "2026-10-12T08:52:14.383Z"
     },
     {
       "reviewId": "RU-054",
@@ -6278,88 +3228,28 @@
         {
           "severity": "P2",
           "kind": "form-label",
-          "detail": "2 unlabeled controls @320"
+          "detail": "2 unlabeled form controls"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "19 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "25 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1920"
+          "detail": "37 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 90,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 98,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 20,
-        "a11y": 0,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 403,
-      "auditedAt": "2026-10-12T08:42:48.977Z"
+      "loadMs": 366,
+      "auditedAt": "2026-10-12T08:52:14.915Z"
     },
     {
       "reviewId": "RU-055",
@@ -6391,137 +3281,22 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @320"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "3 targets < 44px @320"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @375"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "3 targets < 44px @375"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @768"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "3 targets < 44px @768"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @1024"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "3 targets < 44px @1024"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @1280"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "3 targets < 44px @1280"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @1440"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "3 targets < 44px @1440"
-        },
-        {
-          "severity": "P3",
-          "kind": "heading",
-          "detail": "0 h1 elements @1920"
-        },
-        {
-          "severity": "P3",
-          "kind": "landmark",
-          "detail": "no nav landmark @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "3 targets < 44px @1920"
-        },
-        {
-          "severity": "P1",
-          "kind": "console-error",
-          "detail": "1 console errors: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
-        },
-        {
-          "severity": "P1",
-          "kind": "failed-request",
-          "detail": "3 failed requests: 401 https://ime365.local/api/resumes/public/:resumeId"
-        }
-      ],
+      "defects": [],
       "tests": [],
-      "score": 85,
-      "status": "IN_REVIEW",
+      "score": null,
+      "status": "NOT_EXECUTED",
       "acceptance": "PENDING",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
         "functional": 15,
-        "a11y": 0,
+        "a11y": 7,
         "perf": 5
       },
-      "loadMs": 392,
-      "auditedAt": "2026-10-12T08:42:49.438Z"
+      "loadMs": 401,
+      "auditedAt": "2026-10-12T08:45:56.156Z",
+      "auditNote": "parameterised route: requires real record data to audit"
     },
     {
       "reviewId": "RU-056",
@@ -6557,98 +3332,28 @@
         {
           "severity": "P2",
           "kind": "form-label",
-          "detail": "2 unlabeled controls @320"
+          "detail": "2 unlabeled form controls"
         },
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "19 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "25 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "33 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "2 unlabeled controls @1920"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "37 targets < 44px @1920"
-        },
-        {
-          "severity": "P1",
-          "kind": "console-error",
-          "detail": "2 console errors: Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
-        },
-        {
-          "severity": "P1",
-          "kind": "failed-request",
-          "detail": "1 failed requests: 429 https://ime365.local/api/public/custom-pages"
+          "detail": "37 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 85,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 98,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
-        "functional": 15,
-        "a11y": 0,
+        "functional": 20,
+        "a11y": 8,
         "perf": 5
       },
-      "loadMs": 381,
-      "auditedAt": "2026-10-12T08:42:49.990Z"
+      "loadMs": 364,
+      "auditedAt": "2026-10-12T08:52:15.453Z"
     },
     {
       "reviewId": "RU-057",
@@ -6684,63 +3389,23 @@
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "16 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "22 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "30 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "30 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "34 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "34 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "34 targets < 44px @1920"
-        },
-        {
-          "severity": "P1",
-          "kind": "console-error",
-          "detail": "2 console errors: Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
-        },
-        {
-          "severity": "P1",
-          "kind": "failed-request",
-          "detail": "1 failed requests: 429 https://ime365.local/api/public/custom-pages"
+          "detail": "34 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 88,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 99,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
-        "functional": 15,
-        "a11y": 3,
+        "functional": 20,
+        "a11y": 9,
         "perf": 5
       },
-      "loadMs": 400,
-      "auditedAt": "2026-10-12T08:42:50.549Z"
+      "loadMs": 372,
+      "auditedAt": "2026-10-12T08:52:15.980Z"
     },
     {
       "reviewId": "RU-058",
@@ -6776,64 +3441,24 @@
         {
           "severity": "P2",
           "kind": "tap-target",
-          "detail": "2 targets < 44px @320"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "2 targets < 44px @375"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "5 targets < 44px @768"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "5 targets < 44px @1024"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 targets < 44px @1280"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 targets < 44px @1440"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "6 targets < 44px @1920"
-        },
-        {
-          "severity": "P1",
-          "kind": "console-error",
-          "detail": "1 console errors: Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
-        },
-        {
-          "severity": "P1",
-          "kind": "failed-request",
-          "detail": "2 failed requests: 429 https://ime365.local/api/public/custom-pages"
+          "detail": "6 interactive targets < 44px"
         }
       ],
       "tests": [],
-      "score": 89,
-      "status": "IN_REVIEW",
-      "acceptance": "PENDING",
+      "score": 99,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
-        "functional": 16,
-        "a11y": 3,
+        "functional": 20,
+        "a11y": 9,
         "perf": 5
       },
-      "loadMs": 391,
-      "auditedAt": "2026-10-12T08:42:50.987Z"
+      "loadMs": 361,
+      "auditedAt": "2026-10-12T08:52:16.386Z"
     }
   ],
-  "auditedAt": "2026-10-12T08:42:51.090Z"
+  "auditedAt": "2026-10-12T08:52:16.425Z"
 }

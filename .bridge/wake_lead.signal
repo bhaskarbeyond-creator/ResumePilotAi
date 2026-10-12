@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-12T08:34:28.498Z",
-  "seq": 3052,
-  "id": "evt_mv4zxblb_b4e49865027d",
-  "type": "PLAN_SUBMITTED",
-  "title": "[Plan] DIR-099: Master UI/UX Transformation: review and ACCEPT the next outstanding review units at >=98/100",
+  "timestamp": "2026-10-12T08:43:41.053Z",
+  "seq": 3055,
+  "id": "evt_mv5095y7_34bf1a2dd67b",
+  "type": "EVIDENCE_SUBMITTED",
+  "title": "[Evidence] DIR-099: Master UI/UX Transformation: review and ACCEPT the next outstanding review units at >=98/100",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-099",
-  "summary": "DIR-099 Phase Two plan (Master UI/UX Transformation - screenshot-first audit + remediation + objective scoring). S1: build scripts/ux-audit.mjs - a Playwright audit engine that, for every review unit at all 7 viewports, measures real defects: horizontal overflow, console errors, failed network requests, and accessibility basics (landmark regions, exactly-one-h1, image alt text, form control labels, focus-visible affordance, touch-target >= 44x44px). S2: run the audit across all 58 units and record findings + an objective score per unit using the mandated 6-dimension rubric (Visual consistency 25 / Responsive 20 / Usability+navigation 20 / Functional correctness 20 / Accessibility+feedback 10 / Performance 5); write results into inventory.json (defects[], score, status). S3: remediate the highest-severity real defects at root cause (fix the source component, never a CSS override that hides the symptom), highest user impact first. S4: re-run the audit and npm run test:ux-gates and npm test; mark a unit ACCEPTED only when its evidence-backed score is >= 98/100 and it has no unresolved P0/P1 defect. S5: submit evidence; units not yet at >=98 remain INVENTORIED/IN_REVIEW and the director issues the next batch. Acceptance: audit engine runs, scores recorded for every unit, at least the top-priority units remediated and ACCEPTED at >=98, npm test + ux-gates green, src/cv-templates 0-byte diff."
+  "summary": "DIR-099 Phase Two progress. DELIVERED: (S1) scripts/ux-audit.mjs - a Playwright audit engine (XAMPP-served, base http://ime365.local) that probes every review unit at all 7 viewports for horizontal overflow, console errors, failed responses, and accessibility basics (landmarks, exactly-one-h1, image alt, form-control labels, >=44px tap targets), then scores each unit on the mandated 6-dimension rubric. (S2) full audit of 58 units x 7 viewports: avg 90/100, 0 units ACCEPTED, 18 P0/P1 defects. (S3) defect register .bridge/evidence/dir099/defect-register.json with the real measured profile: tap-target 385, form-label 225, landmark 78, heading 55, console-error 9, failed-request 8, navigation 1. HONEST STATUS: this is the audit/measurement wave - remediation has NOT yet been performed, so no unit is claimed ACCEPTED. Also fixed the audit base URL (localhost/IME365 served a 404; the canonical base is http://ime365.local). NEXT BATCH (not claimed done): remediate the P0/P1 defects (console errors, failed requests, the one navigation failure) then the P2 a11y classes (tap targets, form labels, landmarks) at root cause, re-audit, and ACCEPT units at >=98. EVIDENCE: ux-audit.log, defect-register.json, inventory.json (scored)."
 }
