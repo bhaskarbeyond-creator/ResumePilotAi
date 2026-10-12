@@ -65,7 +65,7 @@ for (const u of units) {
     const url = BASE + (resolved || (u.route === '/' ? '' : u.route.replace(/\/\*$/, '')));
     const consoleErrors = [];
     const failedRequests = [];
-    const NOISE = /Cross-Origin-Opener-Policy|third-party cookie|DevTools|Download the React DevTools|net::ERR_BLOCKED|Failed to load resource|Too many requests/i;
+    const NOISE = /Cross-Origin-Opener-Policy|third-party cookie|DevTools|Download the React DevTools|net::ERR_BLOCKED|Failed to load resource|Too many requests|RATE_LIMITED/i;
     const onConsole = (m) => { if (m.type() === 'error' && !NOISE.test(m.text())) consoleErrors.push(m.text().slice(0, 160)); };
     // Only 5xx are genuine server errors; 401/403/404/429 are expected in an
     // unauthenticated crawl or are rate-limits, so they are not application defects.

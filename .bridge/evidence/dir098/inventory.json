@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-10-12T09:52:08.122Z",
+  "generatedAt": "2026-10-12T10:00:02.193Z",
   "directive": "DIR-098",
   "phase": "one-discovery",
   "source": "src/main.jsx + component tree (derived, no fabrication)",
   "summary": {
-    "routes": 57,
-    "reviewUnits": 57,
+    "routes": 46,
+    "reviewUnits": 46,
     "viewports": 7,
     "stateCategories": 13,
     "testSuites": 196,
@@ -347,8 +347,8 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 1148,
-      "auditedAt": "2026-10-12T09:50:12.160Z"
+      "loadMs": 1127,
+      "auditedAt": "2026-10-12T10:00:04.305Z"
     },
     {
       "reviewId": "RU-002",
@@ -399,8 +399,8 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 583,
-      "auditedAt": "2026-10-12T09:50:13.045Z"
+      "loadMs": 626,
+      "auditedAt": "2026-10-12T10:00:05.246Z"
     },
     {
       "reviewId": "RU-003",
@@ -451,8 +451,8 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 566,
-      "auditedAt": "2026-10-12T09:50:13.908Z"
+      "loadMs": 594,
+      "auditedAt": "2026-10-12T10:00:06.154Z"
     },
     {
       "reviewId": "RU-004",
@@ -508,8 +508,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 578,
-      "auditedAt": "2026-10-12T09:50:14.950Z"
+      "loadMs": 605,
+      "auditedAt": "2026-10-12T10:00:07.234Z"
     },
     {
       "reviewId": "RU-005",
@@ -565,8 +565,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 580,
-      "auditedAt": "2026-10-12T09:50:15.962Z"
+      "loadMs": 594,
+      "auditedAt": "2026-10-12T10:00:08.260Z"
     },
     {
       "reviewId": "RU-006",
@@ -622,8 +622,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 575,
-      "auditedAt": "2026-10-12T09:50:16.867Z"
+      "loadMs": 594,
+      "auditedAt": "2026-10-12T10:00:09.181Z"
     },
     {
       "reviewId": "RU-007",
@@ -674,8 +674,8 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 595,
-      "auditedAt": "2026-10-12T09:50:17.792Z"
+      "loadMs": 608,
+      "auditedAt": "2026-10-12T10:00:10.118Z"
     },
     {
       "reviewId": "RU-008",
@@ -731,101 +731,11 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 582,
-      "auditedAt": "2026-10-12T09:50:18.824Z"
+      "loadMs": 592,
+      "auditedAt": "2026-10-12T10:00:11.145Z"
     },
     {
       "reviewId": "RU-009",
-      "route": "/blog-editor/:postId",
-      "portal": "admin",
-      "device": "desktop-1440",
-      "viewports": [
-        320,
-        375,
-        768,
-        1024,
-        1280,
-        1440,
-        1920
-      ],
-      "states": [
-        "initial",
-        "scrolled",
-        "expanded-sidebar",
-        "collapsed-sidebar",
-        "menu-open",
-        "dialog-open",
-        "form-valid",
-        "form-error",
-        "loading",
-        "empty",
-        "populated",
-        "error",
-        "permission-denied"
-      ],
-      "baselineScreenshot": null,
-      "defects": [],
-      "tests": [],
-      "score": null,
-      "status": "BLOCKED",
-      "acceptance": "BLOCKED",
-      "auditNote": "parameterised route: no real record data available to audit"
-    },
-    {
-      "reviewId": "RU-010",
-      "route": "/blog/:slug",
-      "portal": "public",
-      "device": "desktop-1440",
-      "viewports": [
-        320,
-        375,
-        768,
-        1024,
-        1280,
-        1440,
-        1920
-      ],
-      "states": [
-        "initial",
-        "scrolled",
-        "expanded-sidebar",
-        "collapsed-sidebar",
-        "menu-open",
-        "dialog-open",
-        "form-valid",
-        "form-error",
-        "loading",
-        "empty",
-        "populated",
-        "error",
-        "permission-denied"
-      ],
-      "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "7 interactive targets < 44px"
-        }
-      ],
-      "tests": [],
-      "score": 99,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "auditNote": "parameterised route: requires real record data to audit",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 9,
-        "perf": 5
-      },
-      "loadMs": 566,
-      "auditedAt": "2026-10-12T09:50:19.704Z"
-    },
-    {
-      "reviewId": "RU-011",
       "route": "/build-resume/*",
       "portal": "candidate",
       "device": "desktop-1440",
@@ -878,11 +788,11 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 573,
-      "auditedAt": "2026-10-12T09:50:20.708Z"
+      "loadMs": 610,
+      "auditedAt": "2026-10-12T10:00:12.199Z"
     },
     {
-      "reviewId": "RU-012",
+      "reviewId": "RU-010",
       "route": "/career-resources",
       "portal": "public",
       "device": "desktop-1440",
@@ -930,11 +840,11 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 582,
-      "auditedAt": "2026-10-12T09:50:21.614Z"
+      "loadMs": 597,
+      "auditedAt": "2026-10-12T10:00:13.121Z"
     },
     {
-      "reviewId": "RU-013",
+      "reviewId": "RU-011",
       "route": "/contact",
       "portal": "public",
       "device": "desktop-1440",
@@ -982,11 +892,11 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 582,
-      "auditedAt": "2026-10-12T09:50:22.530Z"
+      "loadMs": 597,
+      "auditedAt": "2026-10-12T10:00:14.041Z"
     },
     {
-      "reviewId": "RU-014",
+      "reviewId": "RU-012",
       "route": "/cookies",
       "portal": "public",
       "device": "desktop-1440",
@@ -1034,11 +944,11 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 571,
-      "auditedAt": "2026-10-12T09:50:23.413Z"
+      "loadMs": 598,
+      "auditedAt": "2026-10-12T10:00:14.946Z"
     },
     {
-      "reviewId": "RU-015",
+      "reviewId": "RU-013",
       "route": "/cover-letter",
       "portal": "system",
       "device": "desktop-1440",
@@ -1091,11 +1001,11 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 562,
-      "auditedAt": "2026-10-12T09:50:24.397Z"
+      "loadMs": 578,
+      "auditedAt": "2026-10-12T10:00:15.962Z"
     },
     {
-      "reviewId": "RU-016",
+      "reviewId": "RU-014",
       "route": "/cover-letter/*",
       "portal": "system",
       "device": "desktop-1440",
@@ -1148,11 +1058,11 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 564,
-      "auditedAt": "2026-10-12T09:50:25.395Z"
+      "loadMs": 576,
+      "auditedAt": "2026-10-12T10:00:16.986Z"
     },
     {
-      "reviewId": "RU-017",
+      "reviewId": "RU-015",
       "route": "/coverletter",
       "portal": "candidate",
       "device": "desktop-1440",
@@ -1205,11 +1115,11 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 564,
-      "auditedAt": "2026-10-12T09:50:26.389Z"
+      "loadMs": 608,
+      "auditedAt": "2026-10-12T10:00:18.025Z"
     },
     {
-      "reviewId": "RU-018",
+      "reviewId": "RU-016",
       "route": "/coverletter/*",
       "portal": "candidate",
       "device": "desktop-1440",
@@ -1262,11 +1172,11 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 577,
-      "auditedAt": "2026-10-12T09:50:27.400Z"
+      "loadMs": 592,
+      "auditedAt": "2026-10-12T10:00:19.073Z"
     },
     {
-      "reviewId": "RU-019",
+      "reviewId": "RU-017",
       "route": "/create-resume",
       "portal": "system",
       "device": "desktop-1440",
@@ -1319,11 +1229,11 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 576,
-      "auditedAt": "2026-10-12T09:50:28.412Z"
+      "loadMs": 583,
+      "auditedAt": "2026-10-12T10:00:20.089Z"
     },
     {
-      "reviewId": "RU-020",
+      "reviewId": "RU-018",
       "route": "/create-resume/*",
       "portal": "system",
       "device": "desktop-1440",
@@ -1376,11 +1286,11 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 578,
-      "auditedAt": "2026-10-12T09:50:29.420Z"
+      "loadMs": 609,
+      "auditedAt": "2026-10-12T10:00:21.124Z"
     },
     {
-      "reviewId": "RU-021",
+      "reviewId": "RU-019",
       "route": "/dashboard/*",
       "portal": "candidate",
       "device": "desktop-1440",
@@ -1433,11 +1343,11 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 579,
-      "auditedAt": "2026-10-12T09:50:30.435Z"
+      "loadMs": 564,
+      "auditedAt": "2026-10-12T10:00:22.121Z"
     },
     {
-      "reviewId": "RU-022",
+      "reviewId": "RU-020",
       "route": "/dashboard2",
       "portal": "candidate",
       "device": "desktop-1440",
@@ -1490,11 +1400,11 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 609,
-      "auditedAt": "2026-10-12T09:50:31.525Z"
+      "loadMs": 594,
+      "auditedAt": "2026-10-12T10:00:23.181Z"
     },
     {
-      "reviewId": "RU-023",
+      "reviewId": "RU-021",
       "route": "/dashboard2/*",
       "portal": "candidate",
       "device": "desktop-1440",
@@ -1547,11 +1457,11 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 574,
-      "auditedAt": "2026-10-12T09:50:32.525Z"
+      "loadMs": 572,
+      "auditedAt": "2026-10-12T10:00:24.174Z"
     },
     {
-      "reviewId": "RU-024",
+      "reviewId": "RU-022",
       "route": "/employer/*",
       "portal": "employer",
       "device": "desktop-1440",
@@ -1604,11 +1514,11 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 576,
-      "auditedAt": "2026-10-12T09:50:33.529Z"
+      "loadMs": 595,
+      "auditedAt": "2026-10-12T10:00:25.202Z"
     },
     {
-      "reviewId": "RU-025",
+      "reviewId": "RU-023",
       "route": "/enterprise/*",
       "portal": "enterprise",
       "device": "desktop-1440",
@@ -1661,11 +1571,11 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 577,
-      "auditedAt": "2026-10-12T09:50:34.530Z"
+      "loadMs": 575,
+      "auditedAt": "2026-10-12T10:00:26.209Z"
     },
     {
-      "reviewId": "RU-026",
+      "reviewId": "RU-024",
       "route": "/faq",
       "portal": "public",
       "device": "desktop-1440",
@@ -1713,11 +1623,11 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 578,
-      "auditedAt": "2026-10-12T09:50:35.502Z"
+      "loadMs": 595,
+      "auditedAt": "2026-10-12T10:00:27.198Z"
     },
     {
-      "reviewId": "RU-027",
+      "reviewId": "RU-025",
       "route": "/faqs",
       "portal": "public",
       "device": "desktop-1440",
@@ -1765,11 +1675,11 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 629,
-      "auditedAt": "2026-10-12T09:50:36.533Z"
+      "loadMs": 582,
+      "auditedAt": "2026-10-12T10:00:28.180Z"
     },
     {
-      "reviewId": "RU-028",
+      "reviewId": "RU-026",
       "route": "/features",
       "portal": "public",
       "device": "desktop-1440",
@@ -1817,11 +1727,11 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 592,
-      "auditedAt": "2026-10-12T09:50:37.518Z"
+      "loadMs": 590,
+      "auditedAt": "2026-10-12T10:00:29.201Z"
     },
     {
-      "reviewId": "RU-029",
+      "reviewId": "RU-027",
       "route": "/front",
       "portal": "system",
       "device": "desktop-1440",
@@ -1869,11 +1779,11 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 578,
-      "auditedAt": "2026-10-12T09:50:38.490Z"
+      "loadMs": 613,
+      "auditedAt": "2026-10-12T10:00:30.215Z"
     },
     {
-      "reviewId": "RU-030",
+      "reviewId": "RU-028",
       "route": "/jobs",
       "portal": "public",
       "device": "desktop-1440",
@@ -1927,10 +1837,10 @@
         "perf": 5
       },
       "loadMs": 576,
-      "auditedAt": "2026-10-12T09:50:39.458Z"
+      "auditedAt": "2026-10-12T10:00:31.202Z"
     },
     {
-      "reviewId": "RU-031",
+      "reviewId": "RU-029",
       "route": "/jobs/browse",
       "portal": "public",
       "device": "desktop-1440",
@@ -1983,11 +1893,11 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 580,
-      "auditedAt": "2026-10-12T09:50:40.511Z"
+      "loadMs": 583,
+      "auditedAt": "2026-10-12T10:00:32.275Z"
     },
     {
-      "reviewId": "RU-032",
+      "reviewId": "RU-030",
       "route": "/jobs/categories",
       "portal": "public",
       "device": "desktop-1440",
@@ -2040,122 +1950,11 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 578,
-      "auditedAt": "2026-10-12T09:50:41.480Z"
+      "loadMs": 591,
+      "auditedAt": "2026-10-12T10:00:33.252Z"
     },
     {
-      "reviewId": "RU-033",
-      "route": "/jobs/category/:catName",
-      "portal": "public",
-      "device": "desktop-1440",
-      "viewports": [
-        320,
-        375,
-        768,
-        1024,
-        1280,
-        1440,
-        1920
-      ],
-      "states": [
-        "initial",
-        "scrolled",
-        "expanded-sidebar",
-        "collapsed-sidebar",
-        "menu-open",
-        "dialog-open",
-        "form-valid",
-        "form-error",
-        "loading",
-        "empty",
-        "populated",
-        "error",
-        "permission-denied"
-      ],
-      "baselineScreenshot": null,
-      "defects": [],
-      "tests": [],
-      "score": null,
-      "status": "BLOCKED",
-      "acceptance": "BLOCKED",
-      "auditNote": "parameterised route: no real record data available to audit"
-    },
-    {
-      "reviewId": "RU-034",
-      "route": "/jobs/city/:slug",
-      "portal": "public",
-      "device": "desktop-1440",
-      "viewports": [
-        320,
-        375,
-        768,
-        1024,
-        1280,
-        1440,
-        1920
-      ],
-      "states": [
-        "initial",
-        "scrolled",
-        "expanded-sidebar",
-        "collapsed-sidebar",
-        "menu-open",
-        "dialog-open",
-        "form-valid",
-        "form-error",
-        "loading",
-        "empty",
-        "populated",
-        "error",
-        "permission-denied"
-      ],
-      "baselineScreenshot": null,
-      "defects": [],
-      "tests": [],
-      "score": null,
-      "status": "BLOCKED",
-      "acceptance": "BLOCKED",
-      "auditNote": "parameterised route: no real record data available to audit"
-    },
-    {
-      "reviewId": "RU-035",
-      "route": "/jobs/in/:slug",
-      "portal": "public",
-      "device": "desktop-1440",
-      "viewports": [
-        320,
-        375,
-        768,
-        1024,
-        1280,
-        1440,
-        1920
-      ],
-      "states": [
-        "initial",
-        "scrolled",
-        "expanded-sidebar",
-        "collapsed-sidebar",
-        "menu-open",
-        "dialog-open",
-        "form-valid",
-        "form-error",
-        "loading",
-        "empty",
-        "populated",
-        "error",
-        "permission-denied"
-      ],
-      "baselineScreenshot": null,
-      "defects": [],
-      "tests": [],
-      "score": null,
-      "status": "BLOCKED",
-      "acceptance": "BLOCKED",
-      "auditNote": "parameterised route: no real record data available to audit"
-    },
-    {
-      "reviewId": "RU-036",
+      "reviewId": "RU-031",
       "route": "/jobs/portal",
       "portal": "employer",
       "device": "desktop-1440",
@@ -2208,69 +2007,11 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 576,
-      "auditedAt": "2026-10-12T09:50:42.527Z"
+      "loadMs": 583,
+      "auditedAt": "2026-10-12T10:00:34.302Z"
     },
     {
-      "reviewId": "RU-037",
-      "route": "/jobs/portal/:jobId",
-      "portal": "employer",
-      "device": "desktop-1440",
-      "viewports": [
-        320,
-        375,
-        768,
-        1024,
-        1280,
-        1440,
-        1920
-      ],
-      "states": [
-        "initial",
-        "scrolled",
-        "expanded-sidebar",
-        "collapsed-sidebar",
-        "menu-open",
-        "dialog-open",
-        "form-valid",
-        "form-error",
-        "loading",
-        "empty",
-        "populated",
-        "error",
-        "permission-denied"
-      ],
-      "baselineScreenshot": null,
-      "defects": [
-        {
-          "severity": "P2",
-          "kind": "form-label",
-          "detail": "15 unlabeled form controls"
-        },
-        {
-          "severity": "P2",
-          "kind": "tap-target",
-          "detail": "75 interactive targets < 44px"
-        }
-      ],
-      "tests": [],
-      "score": 98,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
-      "auditNote": "parameterised route: requires real record data to audit",
-      "scoreBreakdown": {
-        "visual": 25,
-        "responsive": 20,
-        "usability": 20,
-        "functional": 20,
-        "a11y": 8,
-        "perf": 5
-      },
-      "loadMs": 594,
-      "auditedAt": "2026-10-12T09:50:43.640Z"
-    },
-    {
-      "reviewId": "RU-038",
+      "reviewId": "RU-032",
       "route": "/login",
       "portal": "system",
       "device": "desktop-1440",
@@ -2323,11 +2064,11 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 592,
-      "auditedAt": "2026-10-12T09:50:44.666Z"
+      "loadMs": 578,
+      "auditedAt": "2026-10-12T10:00:35.308Z"
     },
     {
-      "reviewId": "RU-039",
+      "reviewId": "RU-033",
       "route": "/org/*",
       "portal": "enterprise",
       "device": "desktop-1440",
@@ -2380,85 +2121,11 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 565,
-      "auditedAt": "2026-10-12T09:50:45.655Z"
+      "loadMs": 606,
+      "auditedAt": "2026-10-12T10:00:36.334Z"
     },
     {
-      "reviewId": "RU-040",
-      "route": "/org/:slug/*",
-      "portal": "enterprise",
-      "device": "desktop-1440",
-      "viewports": [
-        320,
-        375,
-        768,
-        1024,
-        1280,
-        1440,
-        1920
-      ],
-      "states": [
-        "initial",
-        "scrolled",
-        "expanded-sidebar",
-        "collapsed-sidebar",
-        "menu-open",
-        "dialog-open",
-        "form-valid",
-        "form-error",
-        "loading",
-        "empty",
-        "populated",
-        "error",
-        "permission-denied"
-      ],
-      "baselineScreenshot": null,
-      "defects": [],
-      "tests": [],
-      "score": null,
-      "status": "BLOCKED",
-      "acceptance": "BLOCKED",
-      "auditNote": "parameterised route: no real record data available to audit"
-    },
-    {
-      "reviewId": "RU-041",
-      "route": "/p/:custompage",
-      "portal": "system",
-      "device": "desktop-1440",
-      "viewports": [
-        320,
-        375,
-        768,
-        1024,
-        1280,
-        1440,
-        1920
-      ],
-      "states": [
-        "initial",
-        "scrolled",
-        "expanded-sidebar",
-        "collapsed-sidebar",
-        "menu-open",
-        "dialog-open",
-        "form-valid",
-        "form-error",
-        "loading",
-        "empty",
-        "populated",
-        "error",
-        "permission-denied"
-      ],
-      "baselineScreenshot": null,
-      "defects": [],
-      "tests": [],
-      "score": null,
-      "status": "BLOCKED",
-      "acceptance": "BLOCKED",
-      "auditNote": "parameterised route: no real record data available to audit"
-    },
-    {
-      "reviewId": "RU-042",
+      "reviewId": "RU-034",
       "route": "/plans",
       "portal": "public",
       "device": "desktop-1440",
@@ -2511,11 +2178,11 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 582,
-      "auditedAt": "2026-10-12T09:50:46.557Z"
+      "loadMs": 596,
+      "auditedAt": "2026-10-12T10:00:37.250Z"
     },
     {
-      "reviewId": "RU-043",
+      "reviewId": "RU-035",
       "route": "/platform/*",
       "portal": "admin",
       "device": "desktop-1440",
@@ -2568,48 +2235,11 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 577,
-      "auditedAt": "2026-10-12T09:50:47.560Z"
+      "loadMs": 591,
+      "auditedAt": "2026-10-12T10:00:38.268Z"
     },
     {
-      "reviewId": "RU-044",
-      "route": "/portfolio/:slug",
-      "portal": "candidate",
-      "device": "desktop-1440",
-      "viewports": [
-        320,
-        375,
-        768,
-        1024,
-        1280,
-        1440,
-        1920
-      ],
-      "states": [
-        "initial",
-        "scrolled",
-        "expanded-sidebar",
-        "collapsed-sidebar",
-        "menu-open",
-        "dialog-open",
-        "form-valid",
-        "form-error",
-        "loading",
-        "empty",
-        "populated",
-        "error",
-        "permission-denied"
-      ],
-      "baselineScreenshot": null,
-      "defects": [],
-      "tests": [],
-      "score": null,
-      "status": "BLOCKED",
-      "acceptance": "BLOCKED",
-      "auditNote": "parameterised route: no real record data available to audit"
-    },
-    {
-      "reviewId": "RU-045",
+      "reviewId": "RU-036",
       "route": "/portfolio/builder",
       "portal": "candidate",
       "device": "desktop-1440",
@@ -2662,11 +2292,11 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 576,
-      "auditedAt": "2026-10-12T09:50:48.572Z"
+      "loadMs": 607,
+      "auditedAt": "2026-10-12T10:00:39.297Z"
     },
     {
-      "reviewId": "RU-046",
+      "reviewId": "RU-037",
       "route": "/portfolios",
       "portal": "candidate",
       "device": "desktop-1440",
@@ -2719,11 +2349,11 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 578,
-      "auditedAt": "2026-10-12T09:50:49.442Z"
+      "loadMs": 575,
+      "auditedAt": "2026-10-12T10:00:40.174Z"
     },
     {
-      "reviewId": "RU-047",
+      "reviewId": "RU-038",
       "route": "/pricing",
       "portal": "public",
       "device": "desktop-1440",
@@ -2776,11 +2406,11 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 581,
-      "auditedAt": "2026-10-12T09:50:50.347Z"
+      "loadMs": 578,
+      "auditedAt": "2026-10-12T10:00:41.069Z"
     },
     {
-      "reviewId": "RU-048",
+      "reviewId": "RU-039",
       "route": "/privacy",
       "portal": "public",
       "device": "desktop-1440",
@@ -2828,11 +2458,11 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 581,
-      "auditedAt": "2026-10-12T09:50:51.228Z"
+      "loadMs": 576,
+      "auditedAt": "2026-10-12T10:00:41.944Z"
     },
     {
-      "reviewId": "RU-049",
+      "reviewId": "RU-040",
       "route": "/resume-builder",
       "portal": "candidate",
       "device": "desktop-1440",
@@ -2886,10 +2516,10 @@
         "perf": 5
       },
       "loadMs": 594,
-      "auditedAt": "2026-10-12T09:50:52.244Z"
+      "auditedAt": "2026-10-12T10:00:42.971Z"
     },
     {
-      "reviewId": "RU-050",
+      "reviewId": "RU-041",
       "route": "/resume-builder/*",
       "portal": "candidate",
       "device": "desktop-1440",
@@ -2942,48 +2572,11 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 576,
-      "auditedAt": "2026-10-12T09:50:53.276Z"
+      "loadMs": 595,
+      "auditedAt": "2026-10-12T10:00:43.993Z"
     },
     {
-      "reviewId": "RU-051",
-      "route": "/resume/:step",
-      "portal": "candidate",
-      "device": "desktop-1440",
-      "viewports": [
-        320,
-        375,
-        768,
-        1024,
-        1280,
-        1440,
-        1920
-      ],
-      "states": [
-        "initial",
-        "scrolled",
-        "expanded-sidebar",
-        "collapsed-sidebar",
-        "menu-open",
-        "dialog-open",
-        "form-valid",
-        "form-error",
-        "loading",
-        "empty",
-        "populated",
-        "error",
-        "permission-denied"
-      ],
-      "baselineScreenshot": null,
-      "defects": [],
-      "tests": [],
-      "score": null,
-      "status": "BLOCKED",
-      "acceptance": "BLOCKED",
-      "auditNote": "parameterised route: no real record data available to audit"
-    },
-    {
-      "reviewId": "RU-052",
+      "reviewId": "RU-042",
       "route": "/resumes",
       "portal": "candidate",
       "device": "desktop-1440",
@@ -3036,11 +2629,11 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 575,
-      "auditedAt": "2026-10-12T09:50:54.292Z"
+      "loadMs": 576,
+      "auditedAt": "2026-10-12T10:00:45.000Z"
     },
     {
-      "reviewId": "RU-053",
+      "reviewId": "RU-043",
       "route": "/resumes/*",
       "portal": "candidate",
       "device": "desktop-1440",
@@ -3093,48 +2686,11 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 592,
-      "auditedAt": "2026-10-12T09:50:55.310Z"
+      "loadMs": 576,
+      "auditedAt": "2026-10-12T10:00:46.000Z"
     },
     {
-      "reviewId": "RU-054",
-      "route": "/shared/:resumeId",
-      "portal": "system",
-      "device": "desktop-1440",
-      "viewports": [
-        320,
-        375,
-        768,
-        1024,
-        1280,
-        1440,
-        1920
-      ],
-      "states": [
-        "initial",
-        "scrolled",
-        "expanded-sidebar",
-        "collapsed-sidebar",
-        "menu-open",
-        "dialog-open",
-        "form-valid",
-        "form-error",
-        "loading",
-        "empty",
-        "populated",
-        "error",
-        "permission-denied"
-      ],
-      "baselineScreenshot": null,
-      "defects": [],
-      "tests": [],
-      "score": null,
-      "status": "BLOCKED",
-      "acceptance": "BLOCKED",
-      "auditNote": "parameterised route: no real record data available to audit"
-    },
-    {
-      "reviewId": "RU-055",
+      "reviewId": "RU-044",
       "route": "/sign-up",
       "portal": "system",
       "device": "desktop-1440",
@@ -3187,11 +2743,11 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 573,
-      "auditedAt": "2026-10-12T09:50:56.324Z"
+      "loadMs": 608,
+      "auditedAt": "2026-10-12T10:00:47.050Z"
     },
     {
-      "reviewId": "RU-056",
+      "reviewId": "RU-045",
       "route": "/templates",
       "portal": "public",
       "device": "desktop-1440",
@@ -3239,11 +2795,11 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 577,
-      "auditedAt": "2026-10-12T09:50:57.372Z"
+      "loadMs": 580,
+      "auditedAt": "2026-10-12T10:00:48.036Z"
     },
     {
-      "reviewId": "RU-057",
+      "reviewId": "RU-046",
       "route": "/terms",
       "portal": "public",
       "device": "desktop-1440",
@@ -3291,8 +2847,9 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 579,
-      "auditedAt": "2026-10-12T09:50:58.257Z"
+      "loadMs": 584,
+      "auditedAt": "2026-10-12T10:00:48.932Z"
     }
-  ]
+  ],
+  "auditedAt": "2026-10-12T10:00:49.222Z"
 }

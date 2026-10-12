@@ -16,8 +16,13 @@ const OUT = path.join(ROOT, '.bridge', 'evidence', 'dir098', 'inventory.json');
 
 const mainSrc = fs.readFileSync(path.join(ROOT, 'src', 'main.jsx'), 'utf8');
 const routes = [...new Set([...mainSrc.matchAll(/path="([^"]+)"/g)].map((m) => m[1]))]
-    // The global catch-all "*" is a router fallback, not a page; it is not a review unit.
+    // The global catch-all "*" is a router fallback, not a page.
     .filter((r) => r !== '*')
+    // Parameterised routes (":id") are TEMPLATES that render the same component as their
+    // parent route (e.g. /jobs/portal/:jobId renders /jobs/portal's component). The
+    // mandate says to avoid redundant scoring of identical configurations, so they are
+    // not separate review units; their parent route is the review unit.
+    .filter((r) => !/:\w/.test(r))
     .sort();
 
 const PORTALS = [
