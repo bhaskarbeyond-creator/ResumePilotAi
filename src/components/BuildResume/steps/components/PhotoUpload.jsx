@@ -213,7 +213,13 @@ const PhotoUpload = ({ label, value, onChange, showPhoto = true, onToggleShowPho
             )}
 
             {/* Help text */}
-            {!compact && <p className="text-xs text-[var(--cuba-ink-subtle)]">{t('PhotoUpload.hints.recommended')}</p>}
+            {compact ? (
+                <p className="max-w-[6rem] text-center text-[9px] leading-tight text-[var(--cuba-ink-subtle)]">
+                    {hint || 'JPG, PNG or WebP (max 5MB)'}
+                </p>
+            ) : (
+                <p className="text-xs text-[var(--cuba-ink-subtle)]">{t('PhotoUpload.hints.recommended')}</p>
+            )}
 
             {/* Image Crop Modal Popup */}
             {cropModalSrc && (

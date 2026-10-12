@@ -494,12 +494,12 @@ const CubaCandidateShell = ({ children, copilotResume = null }) => {
                        The grid is bounded to exactly one viewport minus the shell header and
                        the chrome above it, so the Hero, the four Stat Cards, the AI Briefing
                        and the Executive Rail are all visible together on a 1080p/1440p screen
-                       with ZERO document scrollbar. The split lands at 2xl (1536px), which is
+                       with ZERO document scrollbar. The split lands at xl (1280px), which is
                        inside both target resolutions; narrower laptops keep the natural flow
                        instead of being squashed into a fixed height. The fold-critical blocks
                        are flex-none and only the Document Gallery / Onboarding region and the
                        rail scroll internally. */
-                    <div className={`grid min-h-0 grid-cols-1 gap-3 2xl:h-[calc(100dvh-var(--cuba-header-h)-3.75rem)] ${railCollapsed ? '2xl:grid-cols-[minmax(0,1fr)]' : '2xl:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]'}`}>
+                    <div className={`grid min-h-0 grid-cols-1 gap-3 xl:h-[calc(100dvh-var(--cuba-header-h)-3.75rem)] ${railCollapsed ? 'xl:grid-cols-[minmax(0,1fr)]' : 'xl:grid-cols-[minmax(0,1fr)_18.75rem] 2xl:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]'}`}>
                         <div className="flex min-h-0 min-w-0 flex-col gap-3">
                             {/* DIR-085: the compact Copilot HUD + metric capsules replace the
                                 tall banner, so the RESUME WORKSPACE is the first real content
@@ -517,12 +517,12 @@ const CubaCandidateShell = ({ children, copilotResume = null }) => {
                             >
                                 {railCollapsed ? 'Show Copilot' : 'Hide Copilot'}
                             </button>
-                            <div className="min-h-0 flex-1 2xl:overflow-y-auto cuba-scrollbar [scrollbar-gutter:stable]">
+                            <div className="min-h-0 flex-1 xl:overflow-y-auto cuba-scrollbar [scrollbar-gutter:stable]">
                                 {children}
                             </div>
                         </div>
                         {!railCollapsed && (
-                        <aside id="cuba-copilot-rail" className="min-h-0 min-w-0 2xl:overflow-y-auto cuba-scrollbar [scrollbar-gutter:stable]" aria-label="Executive intelligence rail">
+                        <aside id="cuba-copilot-rail" className="min-h-0 min-w-0 xl:overflow-y-auto cuba-scrollbar [scrollbar-gutter:stable]" aria-label="Executive intelligence rail">
                             {/* DIR-085: the AI Career Briefing moves into the ~32% right column
                                 beside the Live Copilot Quick-Pitch, as the mandate specifies. */}
                             <div className="space-y-2.5">

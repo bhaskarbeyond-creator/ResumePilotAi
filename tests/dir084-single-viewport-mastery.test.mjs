@@ -59,9 +59,9 @@ test('AC2: the Overview geometry is compacted for one viewport', async () => {
     // layout, so the class is now a template literal. The assertion keeps the intent — the
     // single-viewport lock is intact AND the workspace/rail share the viewport in a defined
     // ratio — and additionally pins the new collapsed full-width variant.
-    assert.match(cand, /grid min-h-0 grid-cols-1 gap-3 2xl:h-\[calc\(100dvh-var\(--cuba-header-h\)-3\.75rem\)\]/);
+    assert.match(cand, /grid min-h-0 grid-cols-1 gap-3 xl:h-\[calc\(100dvh-var\(--cuba-header-h\)-3\.75rem\)\]/);
     assert.match(cand, /2xl:grid-cols-\[minmax\(0,7fr\)_minmax\(0,3fr\)\]/);
-    assert.match(cand, /2xl:grid-cols-\[minmax\(0,1fr\)\]/);
+    assert.match(cand, /xl:grid-cols-\[minmax\(0,1fr\)\]/);
     assert.match(cand, /const \[railCollapsed, setRailCollapsed\] = useState/);
     assert.match(cand, /flex min-h-0 min-w-0 flex-col gap-3/);
     // DIR-085 supersedes the DIR-084 hero-banner compaction: the tall gradient banner and its
@@ -78,6 +78,7 @@ test('AC2: the Overview geometry is compacted for one viewport', async () => {
     // Rail and briefing are tightened too.
     assert.match(rail, /space-y-2\.5" data-testid="cuba-executive-rail"/);
     assert.match(briefing, /<div className="space-y-2">/);
+});
 
 test('AC3: the Hero, the four Stat Cards, the Briefing and the Rail share ONE bounded region', async () => {
     const cand = await read(CAND_SHELL);
@@ -85,8 +86,8 @@ test('AC3: the Hero, the four Stat Cards, the Briefing and the Rail share ONE bo
     // region and the rail scroll internally.
     assert.match(cand, /<CubaCandidateHero displayName=\{displayName\} onNavigate=\{navigate\} \/>/);
     assert.match(cand, /<AiCareerBriefing \/>/);
-    assert.match(cand, /min-h-0 flex-1 2xl:overflow-y-auto cuba-scrollbar \[scrollbar-gutter:stable\]/);
-    assert.match(cand, /2xl:overflow-y-auto cuba-scrollbar \[scrollbar-gutter:stable\]" aria-label="Executive intelligence rail"/);
+    assert.match(cand, /min-h-0 flex-1 xl:overflow-y-auto cuba-scrollbar \[scrollbar-gutter:stable\]/);
+    assert.match(cand, /xl:overflow-y-auto cuba-scrollbar \[scrollbar-gutter:stable\]" aria-label="Executive intelligence rail"/);
     // DIR-085 supersedes the DIR-084 four-card assertion: the Hero now renders the compact
     // Copilot HUD plus a real metric surface instead of four full-height stat cards. DIR-091 moved
     // that surface from the capsule strip to the metric card row; this guard follows it there.
@@ -186,4 +187,3 @@ test('AC8: no layout-shift hazard on the scroll owners', async () => {
     assert.doesNotMatch(shell, /className="w-full flex min-h-screen flex-col/);
 });
 
-});

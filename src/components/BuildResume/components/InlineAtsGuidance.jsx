@@ -93,6 +93,31 @@ const InlineAtsGuidance = ({ resumeData = {}, targetJd = '', stepPath = 'heading
                             Add a target job description to unlock keyword matching.
                         </p>
                     )}
+
+                    <div className="border-t border-[var(--cuba-line)] pt-2">
+                        <div className="flex items-center justify-between text-[10px] font-bold text-[var(--cuba-ink-subtle)]">
+                            <span className="uppercase tracking-wider">Bullet Strength</span>
+                            <span className="text-[var(--cuba-ink)]">
+                                {bulletCount === 0
+                                    ? 'Pending experience bullets'
+                                    : weakBullets.length === 0
+                                    ? 'Strong'
+                                    : `${ Math.max(0, bulletCount - weakBullets.length) }/${bulletCount} strong`}
+                            </span>
+                        </div>
+                        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-[var(--cuba-surface)]">
+                            <div
+                                className="h-full rounded-full bg-[var(--cuba-primary)] transition-all"
+                                style={{
+                                    width: `${
+                                        bulletCount === 0
+                                            ? Math.min(100, Math.max(20, met.length * 35))
+                                            : Math.round(((bulletCount - weakBullets.length) / Math.max(1, bulletCount)) * 100)
+                                    }%`,
+                                }}
+                            />
+                        </div>
+                    </div>
                 </div>
             )}
         </section>

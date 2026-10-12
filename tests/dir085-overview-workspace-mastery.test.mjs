@@ -71,6 +71,8 @@ test('AC2: the workspace leads the main column and the briefing lives in the rai
     // The briefing no longer sits in the main column ahead of the workspace.
     const mainColumnEnd = shell.indexOf('</div>', childrenIdx);
     assert.ok(mainColumnEnd > -1, 'the main column must close after the workspace region');
+    assert.ok(!(briefingIdx < childrenIdx), 'the briefing must not precede the workspace in the main column');
+});
 
 test('AC3: the de-duplication rule holds — no headline metric is printed twice', async () => {
     const [hero, rail] = await Promise.all([read(HERO), read(RAIL)]);
@@ -95,10 +97,10 @@ test('AC3: the de-duplication rule holds — no headline metric is printed twice
 
 test('AC4: zero whole-window scroll — the DIR-084 lock and the bounded Overview survive', async () => {
     const shell = await read(SHELL);
-    // The Overview grid is still bounded to one viewport at 2xl.
-    assert.match(shell, /2xl:h-\[calc\(100dvh-var\(--cuba-header-h\)-3\.75rem\)\]/);
+    // The Overview grid is still bounded to one viewport at xl+.
+    assert.match(shell, /xl:h-\[calc\(100dvh-var\(--cuba-header-h\)-3\.75rem\)\]/);
     // The workspace region still owns its own scroll with a stable gutter.
-    assert.match(shell, /min-h-0 flex-1 2xl:overflow-y-auto cuba-scrollbar \[scrollbar-gutter:stable\]/);
+    assert.match(shell, /min-h-0 flex-1 xl:overflow-y-auto cuba-scrollbar \[scrollbar-gutter:stable\]/);
     // The shell-level lock from DIR-084 is untouched.
     const appShell = await read('src/components/cuba/CubaAppShell.jsx');
     assert.match(appShell, /viewportLock \? 'h-\[100dvh\] min-h-0 overflow-hidden' : 'min-h-screen'/);
@@ -156,5 +158,3 @@ test('AC6: no new dependency, no new binary asset and no fabricated telemetry', 
     assert.doesNotMatch(hero, /mockTelemetry|fakeMetric|sampleData/i);
 });
 
-    assert.ok(!(briefingIdx < childrenIdx), 'the briefing must not precede the workspace in the main column');
-});

@@ -73,6 +73,9 @@ test('AC3: Portfolios has a real empty state and can no longer fake one on failu
     // The error branch renders the frame's error state, the empty branch the real empty state.
     assert.match(source, /state="error"/);
     assert.match(source, /<CubaEmptyState/);
+    // The raw emoji placeholder is gone.
+    assert.doesNotMatch(source, /\uD83C\uDFA8/);
+});
 
 test('AC4: Cover Letters and Messages are responsive and legacy-free', async () => {
     const [covers, messages] = await Promise.all([read(COVERS), read(MESSAGES)]);
@@ -155,6 +158,3 @@ test('AC7: the token-parity ratchet — remediated surfaces are legacy-free and 
     }
 });
 
-    // The raw emoji placeholder is gone.
-    assert.doesNotMatch(source, /\uD83C\uDFA8/);
-});

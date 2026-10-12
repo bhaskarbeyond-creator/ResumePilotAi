@@ -102,7 +102,7 @@ const CopilotHeroHud = ({ insight = '', onNavigate, displayName = 'Candidate', c
                 <p className="hidden text-xs italic text-cuba-ink-subtle lg:block">
                     &ldquo;Better resumes. Brighter opportunities.&rdquo;
                 </p>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                 {QUICK_ACTIONS.map(({ id, label, to, icon: Icon, variant }) => (variant === 'primary' ? (
                     <span key={id} ref={menuRef} className="relative inline-flex overflow-hidden rounded-cuba-sm shadow-xs">
                         <a

@@ -1,0 +1,218 @@
+{
+  "capturedAt": "2026-10-12T02:24:48.680Z",
+  "responsiveReport": {
+    "dashboard": {
+      "320": {
+        "url": "http://localhost:3000/dashboard",
+        "scrollWidth": 320,
+        "innerWidth": 320,
+        "horizontalOverflowPx": 0,
+        "hasMetricCards": true,
+        "hasExecutiveRail": true,
+        "hasAnalyticsBand": true,
+        "hasUpgradeCard": true
+      },
+      "375": {
+        "url": "http://localhost:3000/dashboard",
+        "scrollWidth": 375,
+        "innerWidth": 375,
+        "horizontalOverflowPx": 0,
+        "hasMetricCards": true,
+        "hasExecutiveRail": true,
+        "hasAnalyticsBand": true,
+        "hasUpgradeCard": true
+      },
+      "390": {
+        "url": "http://localhost:3000/dashboard",
+        "scrollWidth": 390,
+        "innerWidth": 390,
+        "horizontalOverflowPx": 0,
+        "hasMetricCards": true,
+        "hasExecutiveRail": true,
+        "hasAnalyticsBand": true,
+        "hasUpgradeCard": true
+      },
+      "430": {
+        "url": "http://localhost:3000/dashboard",
+        "scrollWidth": 430,
+        "innerWidth": 430,
+        "horizontalOverflowPx": 0,
+        "hasMetricCards": true,
+        "hasExecutiveRail": true,
+        "hasAnalyticsBand": true,
+        "hasUpgradeCard": true
+      },
+      "768": {
+        "url": "http://localhost:3000/dashboard",
+        "scrollWidth": 768,
+        "innerWidth": 768,
+        "horizontalOverflowPx": 0,
+        "hasMetricCards": true,
+        "hasExecutiveRail": true,
+        "hasAnalyticsBand": true,
+        "hasUpgradeCard": false
+      },
+      "1024": {
+        "url": "http://localhost:3000/dashboard",
+        "scrollWidth": 1024,
+        "innerWidth": 1024,
+        "horizontalOverflowPx": 0,
+        "hasMetricCards": true,
+        "hasExecutiveRail": true,
+        "hasAnalyticsBand": true,
+        "hasUpgradeCard": false
+      },
+      "1280": {
+        "url": "http://localhost:3000/dashboard",
+        "scrollWidth": 1280,
+        "innerWidth": 1280,
+        "horizontalOverflowPx": 0,
+        "hasMetricCards": true,
+        "hasExecutiveRail": true,
+        "hasAnalyticsBand": true,
+        "hasUpgradeCard": true
+      },
+      "1440": {
+        "url": "http://localhost:3000/dashboard",
+        "scrollWidth": 1440,
+        "innerWidth": 1440,
+        "horizontalOverflowPx": 0,
+        "hasMetricCards": true,
+        "hasExecutiveRail": true,
+        "hasAnalyticsBand": true,
+        "hasUpgradeCard": true
+      },
+      "1920": {
+        "url": "http://localhost:3000/dashboard",
+        "scrollWidth": 1920,
+        "innerWidth": 1920,
+        "horizontalOverflowPx": 0,
+        "hasMetricCards": true,
+        "hasExecutiveRail": true,
+        "hasAnalyticsBand": true,
+        "hasUpgradeCard": true
+      }
+    },
+    "buildResume": {
+      "320": {
+        "url": "http://localhost:3000/build-resume/heading",
+        "scrollWidth": 320,
+        "innerWidth": 320,
+        "horizontalOverflowPx": 0,
+        "hasBreadcrumb": true,
+        "hasStepRibbon": true,
+        "hasCareerAssistant": true,
+        "hasInlineAts": true,
+        "hasMoreActionsBtn": true
+      },
+      "375": {
+        "url": "http://localhost:3000/build-resume/heading",
+        "scrollWidth": 375,
+        "innerWidth": 375,
+        "horizontalOverflowPx": 0,
+        "hasBreadcrumb": true,
+        "hasStepRibbon": true,
+        "hasCareerAssistant": true,
+        "hasInlineAts": true,
+        "hasMoreActionsBtn": true
+      },
+      "390": {
+        "url": "http://localhost:3000/build-resume/heading",
+        "scrollWidth": 390,
+        "innerWidth": 390,
+        "horizontalOverflowPx": 0,
+        "hasBreadcrumb": true,
+        "hasStepRibbon": true,
+        "hasCareerAssistant": true,
+        "hasInlineAts": true,
+        "hasMoreActionsBtn": true
+      },
+      "430": {
+        "url": "http://localhost:3000/build-resume/heading",
+        "scrollWidth": 430,
+        "innerWidth": 430,
+        "horizontalOverflowPx": 0,
+        "hasBreadcrumb": true,
+        "hasStepRibbon": true,
+        "hasCareerAssistant": true,
+        "hasInlineAts": true,
+        "hasMoreActionsBtn": true
+      },
+      "768": {
+        "url": "http://localhost:3000/build-resume/heading",
+        "scrollWidth": 768,
+        "innerWidth": 768,
+        "horizontalOverflowPx": 0,
+        "hasBreadcrumb": true,
+        "hasStepRibbon": true,
+        "hasCareerAssistant": true,
+        "hasInlineAts": true,
+        "hasMoreActionsBtn": true
+      },
+      "1024": {
+        "url": "http://localhost:3000/build-resume/heading",
+        "scrollWidth": 1024,
+        "innerWidth": 1024,
+        "horizontalOverflowPx": 0,
+        "hasBreadcrumb": true,
+        "hasStepRibbon": true,
+        "hasCareerAssistant": true,
+        "hasInlineAts": true,
+        "hasMoreActionsBtn": true
+      },
+      "1280": {
+        "url": "http://localhost:3000/build-resume/heading",
+        "scrollWidth": 1280,
+        "innerWidth": 1280,
+        "horizontalOverflowPx": 0,
+        "hasBreadcrumb": true,
+        "hasStepRibbon": true,
+        "hasCareerAssistant": true,
+        "hasInlineAts": true,
+        "hasMoreActionsBtn": true
+      },
+      "1440": {
+        "url": "http://localhost:3000/build-resume/heading",
+        "scrollWidth": 1440,
+        "innerWidth": 1440,
+        "horizontalOverflowPx": 0,
+        "hasBreadcrumb": true,
+        "hasStepRibbon": true,
+        "hasCareerAssistant": true,
+        "hasInlineAts": true,
+        "hasMoreActionsBtn": true
+      },
+      "1920": {
+        "url": "http://localhost:3000/build-resume/heading",
+        "scrollWidth": 1920,
+        "innerWidth": 1920,
+        "horizontalOverflowPx": 0,
+        "hasBreadcrumb": true,
+        "hasStepRibbon": true,
+        "hasCareerAssistant": true,
+        "hasInlineAts": true,
+        "hasMoreActionsBtn": true
+      }
+    }
+  },
+  "comparisons": {
+    "dashboardBeforeVsAfter1920": {
+      "dimensionsA": "1920x1080",
+      "dimensionsB": "1920x1080",
+      "comparedRegion": "1920x1080",
+      "mae": 5.05,
+      "rmse": 22.01,
+      "pixelSimilarityWithinThresholdPct": 93.99,
+      "normalizedChannelSimilarityPct": 98.02
+    },
+    "buildResumeBeforeVsAfter1920": {
+      "dimensionsA": "1920x1080",
+      "dimensionsB": "1920x1080",
+      "comparedRegion": "1920x1080",
+      "mae": 6.35,
+      "rmse": 25.21,
+      "pixelSimilarityWithinThresholdPct": 93.47,
+      "normalizedChannelSimilarityPct": 97.51
+    }
+  }
+}

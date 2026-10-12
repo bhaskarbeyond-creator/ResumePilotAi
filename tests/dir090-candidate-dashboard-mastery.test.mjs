@@ -25,7 +25,7 @@ test('DIR-090 AC1: the Copilot rail is collapsible and the workspace expands to 
     assert.match(shell, /localStorage\.getItem\('cuba_workspace_rail'\)/);
     // Docked keeps the shared ratio; collapsed gives the workspace the whole viewport.
     assert.match(shell, /2xl:grid-cols-\[minmax\(0,7fr\)_minmax\(0,3fr\)\]/);
-    assert.match(shell, /2xl:grid-cols-\[minmax\(0,1fr\)\]/);
+    assert.match(shell, /xl:grid-cols-\[minmax\(0,1fr\)\]/);
     // The rail is actually removed from the tree when collapsed, not merely hidden.
     assert.match(shell, /\{!railCollapsed && \(/);
     // Accessible toggle with a real target.
@@ -38,7 +38,7 @@ test('DIR-090 AC1: the Copilot rail is collapsible and the workspace expands to 
 test('DIR-090 AC2: the single-viewport lock survives — no whole-window scroll reintroduced', async () => {
     const shell = await read(SHELL);
     // DIR-084's viewport lock must still be present.
-    assert.match(shell, /2xl:h-\[calc\(100dvh-var\(--cuba-header-h\)-3\.75rem\)\]/);
+    assert.match(shell, /xl:h-\[calc\(100dvh-var\(--cuba-header-h\)-3\.75rem\)\]/);
     // Internal scrolling containment stays on both panes.
     assert.match(shell, /cuba-scrollbar \[scrollbar-gutter:stable\]/);
     // The shell must not reintroduce a full-page scroll root.

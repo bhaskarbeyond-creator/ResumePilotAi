@@ -126,7 +126,7 @@ const CubaMetricCardRow = ({ loading = false, count = null, bestScore = null, ap
     const go = (href) => { if (typeof onNavigate === 'function') onNavigate(href); };
 
     return (
-        <section data-testid="cuba-metric-cards" aria-label="Overview metrics" className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 2xl:grid-cols-4">
+        <section data-testid="cuba-metric-cards" aria-label="Overview metrics" className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
             <MetricCard
                 testId="cuba-metric-resumes"
                 label="Total Resumes"

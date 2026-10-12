@@ -68,6 +68,8 @@ test('AC2: all five pages mount the certified DIR-082 primitives', async () => {
     // Messages: the dual-pane chat is LOCKED to the viewport.
     assert.match(messages, /data-testid="messages-viewport-lock"/);
     assert.match(messages, /h-\[calc\(100vh-var\(--cuba-header-h\)\)\] max-h-\[calc\(100vh-var\(--cuba-header-h\)\)\] overflow-hidden/);
+    assert.match(messages, /min-h-0 flex-1 flex-col overflow-hidden/);
+});
 
 test('AC3: all five migrated pages are free of legacy colour utilities', async () => {
     for (const file of [COVERS, TRACKER, APPLIED, PORTFOLIOS, MESSAGES]) {
@@ -133,5 +135,3 @@ test('AC6: every HUD figure binds to real data — no fabricated telemetry', asy
     }
 });
 
-    assert.match(messages, /min-h-0 flex-1 flex-col overflow-hidden/);
-});

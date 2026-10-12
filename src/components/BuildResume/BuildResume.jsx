@@ -90,6 +90,7 @@ const BuildResume = () => {
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [titleInput, setTitleInput] = useState('');
     const [showQuickActions, setShowQuickActions] = useState(false);
+    const quickActionsRef = useRef(null);
 
     // Mobile responsiveness and studio drawer states
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -2026,6 +2027,64 @@ const BuildResume = () => {
                         )}
                     </button>
 
+                    {/* Overflow Quick Actions (...) matching Reference B */}
+                    <div ref={quickActionsRef} className="relative">
+                        <button
+                            type="button"
+                            onClick={() => setShowQuickActions((prev) => !prev)}
+                            aria-label="More builder actions"
+                            aria-expanded={showQuickActions}
+                            className="cuba-focusable flex h-8 w-8 items-center justify-center rounded-xl border border-[var(--cuba-line)] bg-white text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-canvas)] hover:text-[var(--cuba-ink)] transition-colors cursor-pointer"
+                            title="More actions"
+                        >
+                            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                        </button>
+                        {showQuickActions && (
+                            <div
+                                role="menu"
+                                aria-label="Builder actions"
+                                className="absolute right-0 mt-1.5 w-48 rounded-xl border border-[var(--cuba-line)] bg-white py-1.5 shadow-cuba-xl z-50"
+                            >
+                                <button
+                                    type="button"
+                                    role="menuitem"
+                                    onClick={() => { setShowTemplateSelection(true); setShowQuickActions(false); }}
+                                    className="flex w-full items-center gap-2 px-3.5 py-2 text-left text-xs font-semibold text-[var(--cuba-ink)] hover:bg-[var(--cuba-canvas)]"
+                                >
+                                    <span>Change Template</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    role="menuitem"
+                                    onClick={() => { setShowAllStepsModal(true); setShowQuickActions(false); }}
+                                    className="flex w-full items-center gap-2 px-3.5 py-2 text-left text-xs font-semibold text-[var(--cuba-ink)] hover:bg-[var(--cuba-canvas)]"
+                                >
+                                    <span>View All Sections</span>
+                                </button>
+                                {userData.user && (
+                                    <button
+                                        type="button"
+                                        role="menuitem"
+                                        onClick={() => { setShowSyncProfileModal(true); setShowQuickActions(false); }}
+                                        className="flex w-full items-center gap-2 px-3.5 py-2 text-left text-xs font-semibold text-[var(--cuba-ink)] hover:bg-[var(--cuba-canvas)]"
+                                    >
+                                        <span>Sync with Master Profile</span>
+                                    </button>
+                                )}
+                                <button
+                                    type="button"
+                                    role="menuitem"
+                                    onClick={() => { handleManualSave(); setShowQuickActions(false); }}
+                                    className="flex w-full items-center gap-2 px-3.5 py-2 text-left text-xs font-semibold text-[var(--cuba-ink)] hover:bg-[var(--cuba-canvas)]"
+                                >
+                                    <span>Save Now</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
                     {/* DIR-055 S7: the shell's notification centre and identity
                         menu live in the builder's OWN header, so the builder keeps
                         exactly ONE header while still gaining real notifications
@@ -2071,7 +2130,7 @@ const BuildResume = () => {
                 </button>
 
                 {/* Horizontal Steps Container */}
-                <div ref={stepRibbonRef} className="flex items-center gap-1.5 overflow-x-auto scroll-smooth no-scrollbar py-0.5 min-w-0 flex-1">
+                <div ref={stepRibbonRef} className="flex items-center gap-1.5 overflow-x-auto scroll-smooth no-scrollbar [scrollbar-width:none] [&::-webkit-scrollbar]:hidden py-0.5 min-w-0 flex-1">
                     {orderedSteps.map((step, index) => {
                         const isActive = currentStep.id === step.id;
                         const isCompleted = isStepCompleted(step.id, step.path);
@@ -2215,7 +2274,7 @@ const BuildResume = () => {
                                 {currentStepIndex < orderedSteps.length - 1 ? (
                                     <button
                                         onClick={handleNext}
-                                        className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 active:scale-[0.98] text-white rounded-xl font-bold transition-all text-xs shadow-sm hover:shadow-md cursor-pointer"
+                                        className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 active:scale-[0.98] text-white rounded-xl font-bold transition-all text-xs shadow-sm hover:shadow-md cursor-pointer whitespace-nowrap"
                                     >
                                         <span>{t('BuildResume.navigation.nextStep', { stepName: orderedSteps[currentStepIndex + 1]?.name })}</span>
                                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

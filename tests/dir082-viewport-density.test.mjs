@@ -82,6 +82,9 @@ test('AC3: the primitives bound themselves to the shell header height', async ()
     assert.match(split, /lg:flex-row/);
     assert.match(split, /hidden lg:block/);
     assert.match(split, /lg:hidden/);
+    // The HUD renders nothing when it has nothing real to show.
+    assert.match(hud, /if \(!items\.length\) return null;/);
+});
 
 test('AC4: the primitives are accessible by construction', async () => {
     const [rail, split, toolbar, viewport] = await Promise.all([
@@ -147,6 +150,3 @@ test('AC6: the DIR-081 legacy ceiling is carried forward unchanged (sweep still 
     }
 });
 
-    // The HUD renders nothing when it has nothing real to show.
-    assert.match(hud, /if \(!items\.length\) return null;/);
-});
