@@ -1,0 +1,114 @@
+{
+  "generatedAt": "2026-10-12T13:55:31.733Z",
+  "tier": 2,
+  "units": [
+    {
+      "reviewId": "T-01",
+      "route": "*",
+      "needs": "router catch-all (not a page)",
+      "defects": [],
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
+    },
+    {
+      "reviewId": "T-02",
+      "route": "/blog-editor/:postId",
+      "needs": "a real blog post id",
+      "defects": [],
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
+    },
+    {
+      "reviewId": "T-03",
+      "route": "/blog/:slug",
+      "needs": "a published blog post slug",
+      "defects": [],
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
+    },
+    {
+      "reviewId": "T-04",
+      "route": "/jobs/category/:catName",
+      "needs": "a real job category",
+      "defects": [],
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
+    },
+    {
+      "reviewId": "T-05",
+      "route": "/jobs/city/:slug",
+      "needs": "a real job city",
+      "defects": [],
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
+    },
+    {
+      "reviewId": "T-06",
+      "route": "/jobs/in/:slug",
+      "needs": "a real job location",
+      "defects": [],
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
+    },
+    {
+      "reviewId": "T-07",
+      "route": "/jobs/portal/:jobId",
+      "needs": "a real job id",
+      "defects": [],
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
+    },
+    {
+      "reviewId": "T-08",
+      "route": "/org/:slug/*",
+      "needs": "a real organization slug",
+      "defects": [],
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
+    },
+    {
+      "reviewId": "T-09",
+      "route": "/p/:custompage",
+      "needs": "a custom page (collection empty)",
+      "defects": [],
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
+    },
+    {
+      "reviewId": "T-10",
+      "route": "/portfolio/:slug",
+      "needs": "a portfolio (collection empty)",
+      "defects": [],
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
+    },
+    {
+      "reviewId": "T-11",
+      "route": "/resume/:step",
+      "needs": "an authenticated resume (auth-gated)",
+      "defects": [],
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
+    },
+    {
+      "reviewId": "T-12",
+      "route": "/shared/:resumeId",
+      "needs": "a shared resume record",
+      "defects": [],
+      "score": null,
+      "status": "INVENTORIED",
+      "acceptance": "PENDING"
+    }
+  ]
+}
