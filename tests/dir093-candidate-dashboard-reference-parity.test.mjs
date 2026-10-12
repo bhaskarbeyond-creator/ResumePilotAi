@@ -40,11 +40,13 @@ test('DIR-093 AC1: the welcome header renders the real greeting, subtext, quote 
     assert.match(hud, /label: 'Explore Jobs'/);
     assert.match(hud, /label: 'Mock Interview'/);
 
-    // The primary CTA's chevron menu, and every destination is a real mounted route.
-    assert.match(hud, /data-testid="cuba-copilot-create-toggle"/);
-    assert.match(hud, /const CREATE_MENU = \[/);
+    // DIR-092b supersedes the DIR-093 chevron-menu pin: on user request the primary Create Resume
+    // CTA is now a SINGLE button, so the toggle + CREATE_MENU were removed. Its real route stays,
+    // and no dropdown affordance may survive.
     assert.match(hud, /to: '\/build-resume\/heading\?new=1'/);
-    assert.match(hud, /to: '\/build-resume'/);
+    assert.doesNotMatch(hud, /cuba-copilot-create-toggle/);
+    assert.doesNotMatch(hud, /CREATE_MENU/);
+    assert.doesNotMatch(hud, /aria-haspopup="menu"/);
 });
 
 test('DIR-093 AC1b: the DIR-085/086/091 HUD contract is PRESERVED, not replaced', async () => {

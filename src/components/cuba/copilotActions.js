@@ -43,7 +43,10 @@ const ACTIONS = [
         portal: COPILOT_PORTALS.CANDIDATE,
         // Both /build-resume and /dashboard can access this action, routing to /build-resume
         routes: ['/build-resume', '/dashboard'],
-        label: 'Improve ATS score',
+        // DIR-093 F-06: the DIR-021 AC-2 spec (and copilot-command-surface.test.mjs) name this
+        // intent "Audit resume for ATS keywords"; the label previously read "Improve ATS score",
+        // which no test or doc asked for. Restored to the authoritative wording.
+        label: 'Audit resume for ATS keywords',
         keywords: 'ats audit keywords resume score optimize',
         operation: 'generate-skills',
         promptKey: 'atsAudit',

@@ -1,25 +1,25 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-12T03:06:06.190Z",
-  "eventCount": 2946,
-  "activeDirectiveId": "DIR-092",
-  "activeDirectiveTitle": "DIR-092: Candidate Hero and Metric Cards Executive Enhancement",
-  "activeDirectiveStatus": "IN_PROGRESS",
+  "updatedAt": "2026-10-12T03:55:39.745Z",
+  "eventCount": 2953,
+  "activeDirectiveId": "DIR-093",
+  "activeDirectiveTitle": "DIR-093: Comprehensive End-to-End UI/UX Forensic Audit & Enhancement Planning",
+  "activeDirectiveStatus": "ISSUED",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-11T19:13:32.601Z",
-  "unreadForLead": 208,
-  "unreadForDev": 343,
+  "stallDeadline": "2026-10-12T03:16:24.764Z",
+  "unreadForLead": 210,
+  "unreadForDev": 348,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-11T19:13:32.601Z",
-    "status": "REFINED BREADCRUMB SPEC EXECUTED. All three ancestor segments are now real Link to /dashboard elements (were buttons; Build Resume was a plain span), with handleBreadcrumbNavigate flushing pending edits first. Final segment = real resume title/name with aria-current=page. Visible from xl. AC9 strengthened to pin exactly 3 ancestor links, no button, bounded to the nav element. test:dir091 11/11, full pinned suite 78 pass / 2 fail (pre-existing F-GAP-7 dir082 DashboardHomepage ratchet), ESLint exit 0, build 2.95s. Remaining: S8 live authenticated capture + submit-evidence.",
-    "percent": 92
+    "timestamp": "2026-10-12T03:16:24.764Z",
+    "status": "S1-S5 landed: greeting truncation removed (min-w-15rem flex-1 basis-full xl:basis-auto), quote stacked above CTAs, bold ATS value beside the real donut, Cuba glass elevation on both surfaces. dir092-hero 5/0, dir091 11/0, dir093 7/0, dir085 6/0, design-system 142/0, SSR DOM 11/11, build 3.15s, lint 0 errors, cv-templates diff 0. Preparing evidence.",
+    "percent": 90
   },
   "integrity": {
     "ok": true,
-    "checked": 2946,
+    "checked": 2953,
     "legacy": 0,
     "bad": 0
   }

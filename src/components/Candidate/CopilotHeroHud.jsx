@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { FiPlus, FiSearch, FiZap, FiChevronDown } from 'react-icons/fi';
+import React, { useCallback } from 'react';
+import { FiPlus, FiSearch, FiZap } from 'react-icons/fi';
 import CubaCopilotMascot from '../cuba/CubaCopilotMascot';
 
 const cx = (...parts) => parts.filter(Boolean).join(' ');
@@ -20,19 +20,14 @@ const cx = (...parts) => parts.filter(Boolean).join(' ');
  * TRUTHFULNESS: the greeting name is the REAL authenticated first name passed in by the shell, and
  * the time of day is read from the local clock. The insight line is the caller's real briefing
  * output; when there is nothing truthful to say it is omitted rather than invented. The primary
- * CTA's chevron opens a menu whose every destination is a genuinely mounted route.
+ * Create Resume CTA is a SINGLE button (the chevron dropdown was removed on user request); every
+ * CTA destination is a genuinely mounted route.
  */
 
 const QUICK_ACTIONS = [
     { id: 'new-resume', label: 'Create Resume', to: '/build-resume/heading?new=1', icon: FiPlus, variant: 'primary' },
     { id: 'explore-jobs', label: 'Explore Jobs', to: '/dashboard/jobs', icon: FiSearch, variant: 'outline' },
     { id: 'mock-drill', label: 'Mock Interview', to: '/dashboard/interview', icon: FiZap, variant: 'outline' },
-];
-
-/** The primary CTA's chevron menu. Both destinations are real mounted routes. */
-const CREATE_MENU = [
-    { id: 'blank', label: 'Blank resume', to: '/build-resume/heading?new=1' },
-    { id: 'template', label: 'Choose a template', to: '/build-resume' },
 ];
 
 /** Local-clock greeting. Pure and testable; never derived from anything but the real time. */
@@ -45,28 +40,12 @@ const greetingFor = (date = new Date()) => {
 
 
 const CopilotHeroHud = ({ insight = '', onNavigate, displayName = 'Candidate', className = '' }) => {
-    const [menuOpen, setMenuOpen] = useState(false);
-    const menuRef = useRef(null);
-
     const go = useCallback((event, to) => {
         if (!onNavigate) return;
         if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
         event.preventDefault();
         onNavigate(to);
     }, [onNavigate]);
-
-    // Escape closes the menu and a click outside dismisses it. Nothing here mutates candidate data.
-    useEffect(() => {
-        if (!menuOpen) return undefined;
-        const onKey = (event) => { if (event.key === 'Escape') setMenuOpen(false); };
-        const onDown = (event) => { if (menuRef.current && !menuRef.current.contains(event.target)) setMenuOpen(false); };
-        document.addEventListener('keydown', onKey);
-        document.addEventListener('mousedown', onDown);
-        return () => {
-            document.removeEventListener('keydown', onKey);
-            document.removeEventListener('mousedown', onDown);
-        };
-    }, [menuOpen]);
 
     // The REAL authenticated first name, never a placeholder persona.
     const firstName = String(displayName || 'Candidate').trim().split(/\s+/)[0] || 'Candidate';
@@ -104,57 +83,40 @@ const CopilotHeroHud = ({ insight = '', onNavigate, displayName = 'Candidate', c
                     &ldquo;Better resumes. Brighter opportunities.&rdquo;
                 </p>
                 <div className="flex flex-wrap items-center justify-end gap-2">
-                {QUICK_ACTIONS.map(({ id, label, to, icon: Icon, variant }) => (variant === 'primary' ? (
-                    <span key={id} ref={menuRef} className="relative inline-flex overflow-hidden rounded-cuba-sm shadow-xs">
-                        <a
-                            href={to}
-                            data-testid={`cuba-copilot-cta-${id}`}
-                            onClick={(event) => go(event, to)}
-                            className="cuba-focusable inline-flex items-center gap-1.5 cuba-btn-primary px-3.5 py-1.5 text-xs font-bold"
-                        >
-                            <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-                            {label}
-                        </a>
-                        <button
-                            type="button"
-                            aria-haspopup="menu"
-                            aria-expanded={menuOpen}
-                            aria-label="More resume creation options"
-                            data-testid="cuba-copilot-create-toggle"
-                            onClick={() => setMenuOpen((open) => !open)}
-                            className="cuba-focusable inline-flex items-center border-l border-white/30 cuba-btn-primary px-1.5 py-1.5"
-                        >
-                            <FiChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
-                        </button>
-                        {menuOpen && (
-                            <div role="menu" className="absolute right-0 top-full z-40 mt-1 w-48 overflow-hidden rounded-cuba-md border border-cuba-line bg-cuba-card py-1 shadow-lg">
-                                {CREATE_MENU.map((item) => (
-                                    <a
-                                        key={item.id}
-                                        role="menuitem"
-                                        href={item.to}
-                                        data-testid={`cuba-copilot-create-${item.id}`}
-                                        onClick={(event) => { setMenuOpen(false); go(event, item.to); }}
-                                        className="cuba-focusable block px-3 py-2 text-xs font-semibold text-cuba-ink hover:bg-cuba-primary-soft"
-                                    >
-                                        {item.label}
-                                    </a>
-                                ))}
-                            </div>
-                        )}
-                    </span>
-                ) : (
+                {/* DIR-092b: the primary Create Resume CTA is a SINGLE button on user request —
+                    the chevron dropdown was removed. It still routes to the real builder entry
+                    point and keeps its cuba-copilot-cta-<id> testid. */}
+                {QUICK_ACTIONS.map(({ id, label, to, icon: Icon, variant }) => (
                     <a
                         key={id}
                         href={to}
                         data-testid={`cuba-copilot-cta-${id}`}
                         onClick={(event) => go(event, to)}
-                        className="cuba-focusable inline-flex items-center gap-1.5 rounded-cuba-sm border border-cuba-line bg-cuba-card px-3 py-1.5 text-xs font-bold text-cuba-ink transition-colors hover:bg-cuba-primary-soft"
+                        className={variant === 'primary'
+                            ? 'cuba-focusable relative inline-flex items-center gap-2 rounded-full cuba-btn-primary px-4 py-2 text-xs font-bold tracking-tight'
+                            : 'cuba-focusable inline-flex items-center gap-1.5 rounded-full border border-cuba-line bg-cuba-card px-3.5 py-2 text-xs font-bold text-cuba-ink transition-colors hover:bg-cuba-primary-soft'}
                     >
-                        <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-                        {label}
+                        {variant === 'primary' ? (
+                            <>
+                                {/* DIR-092b: premium CTA treatment — a soft inner gloss edge and a
+                                    solid icon badge, both from Cuba tokens, layered over the
+                                    untouched cuba-btn-primary gradient + glow (so the white label
+                                    stays AA-safe against the gradient's dark endpoint and the
+                                    keyboard focus ring is preserved). */}
+                                <span aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-full border border-[var(--cuba-badge-inverted-fill)]" />
+                                <span className="relative flex h-4 w-4 flex-none items-center justify-center rounded-full bg-[var(--cuba-primary-ink-strong)]">
+                                    <Icon className="h-2.5 w-2.5" aria-hidden="true" />
+                                </span>
+                                <span className="relative">{label}</span>
+                            </>
+                        ) : (
+                            <>
+                                <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                                {label}
+                            </>
+                        )}
                     </a>
-                )))}
+                ))}
                 </div>
             </div>
         </section>

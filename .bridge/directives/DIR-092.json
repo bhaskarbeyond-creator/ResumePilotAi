@@ -2,11 +2,11 @@
   "id": "DIR-092",
   "title": "DIR-092: Candidate Hero and Metric Cards Executive Enhancement",
   "priority": "P1",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-12T02:40:55.898Z",
-  "updatedAt": "2026-10-12T03:18:59.380Z",
+  "updatedAt": "2026-10-12T03:19:01.318Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "Developer must enhance the Candidate Welcome Hero (src/components/Candidate/CopilotHeroHud.jsx) and the 4-card metric row (src/components/Candidate/CubaMetricCardRow.jsx) to achieve 100% executive polish:\n1. Fix greeting name truncation: Remove premature truncation (truncate) from the h1 heading and adjust the layout so that 'Good morning, <FirstName>! 👋' is completely visible without clipping across desktop and laptop viewports (e.g. at 1280px-1440px with sidebar and executive rail open).\n2. Relieve layout crowding: Relieve crowding between the greeting, the quote ('Better resumes. Brighter opportunities.'), and the action buttons (+ Create Resume, Explore Jobs, Mock Interview). On viewports where space is tight, ensure the quote wraps or gives precedence to the greeting without squishing action buttons.\n3. Elevate the Avg. ATS Score metric card: Display a bold, prominent score number (e.g. '32%') alongside the SVG donut ring, creating consistent typographic weight with the other three metric cards (5, 2, Ready).\n4. Apply authentic Cuba executive glassmorphism polish: Refine card backgrounds, border lines, subtle shadows, and hover transitions using approved Cuba tokens.\n5. Invariants: Keep src/cv-templates/ untouched (diff = 0), use real platform data, preserve all test IDs (cuba-copilot-hud, cuba-welcome-greeting, cuba-copilot-insight, cuba-copilot-cta-*, cuba-metric-cards, cuba-metric-*), preserve accessibility labels, and ensure all existing regression tests pass.",
   "invariants": [
@@ -79,8 +79,30 @@
       }
     }
   ],
-  "freeze": null,
-  "lastTransitionReason": "lead review",
+  "freeze": {
+    "freezeHash": "edb1f192711f87824f3f6979da95a9882de563fc",
+    "certifiedAt": "2026-10-12T03:19:01.318Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "Autonomous Lead (Antigravity): evidence audit passed, no human review.",
+    "evidenceHash": "645befac4e313fb6d8d016487388c10ef38dd79f61b41676855a9dc023ae015f",
+    "automated": true,
+    "certificationKind": "automated",
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "declared-automation",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "non-tty"
+      ],
+      "pid": 21700,
+      "parentPid": 26604,
+      "tty": false,
+      "at": "2026-10-12T03:19:00.430Z",
+      "explicitlyAllowed": true
+    }
+  },
+  "lastTransitionReason": "gatekeeper certification",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {

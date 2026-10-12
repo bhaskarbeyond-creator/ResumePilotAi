@@ -46,6 +46,9 @@ test('DIR-092 AC2: the quote never squeezes the greeting and the CTAs stay unsqu
     assert.match(hud, /label: 'Explore Jobs'/);
     assert.match(hud, /label: 'Mock Interview'/);
     assert.match(hud, /data-testid=\{`cuba-copilot-cta-\$\{id\}`\}/);
+
+    // DIR-092b: the primary CTA is a SINGLE button — no chevron dropdown may survive.
+    assert.doesNotMatch(hud, /cuba-copilot-create-toggle|CREATE_MENU|FiChevronDown|aria-haspopup="menu"/);
 });
 
 test('DIR-092 AC3: the Avg. ATS Score card carries a bold value beside the real donut', async () => {
@@ -106,4 +109,25 @@ test('DIR-092 AC5: the invariants hold — testids preserved, honesty kept, froz
     // No directive in this session may touch the frozen template set.
     const changed = execSync('git status --porcelain src/cv-templates', { cwd: root, encoding: 'utf8' }).trim();
     assert.equal(changed, '', 'src/cv-templates must have a zero diff');
+});
+
+test('DIR-092c: the resume workspace is a 4-column shell — a 3-column horizontal slider + an always-on Create column', async () => {
+    const home = await read('src/components/Dashboard/DashboardHomepage/DashboardHomepage.jsx');
+
+    // The workspace shell is a fixed 4-column grid in Cuba grid mode (no multi-row wrapping).
+    assert.match(home, /"grid grid-cols-1 lg:grid-cols-4 gap-3\.5"/);
+
+    // The resumes live in a SINGLE-ROW horizontal slider that spans 3 of the 4 columns.
+    assert.match(home, /lg:col-span-3 min-w-0/);
+    assert.match(home, /grid grid-flow-col auto-cols-\[85%\] sm:auto-cols-\[48%\] lg:auto-cols-\[32%\] gap-3\.5 overflow-x-auto snap-x snap-mandatory cuba-scrollbar pb-2/);
+
+    // The 4th column is ALWAYS the Create a New Resume card.
+    assert.match(home, /lg:col-span-1 min-w-0/);
+    assert.match(home, /Create a New Resume/);
+
+    // Resume cards snap to the slider and never wrap into multiple grid rows.
+    assert.match(home, /group snap-start bg-white/);
+
+    // list/legacy modes stay byte-identical via `display: contents` wrappers.
+    assert.match(home, /: "contents"\}/);
 });

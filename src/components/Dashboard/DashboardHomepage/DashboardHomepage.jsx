@@ -1438,7 +1438,7 @@ class DashboardHomepage extends Component {
           <div className={isCuba
             ? (this.state.viewMode === 'list'
               ? "grid grid-cols-1 gap-3.5"
-              : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-5 gap-3.5")
+              : "grid grid-cols-1 lg:grid-cols-4 gap-3.5")
             : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6"}>
             {/* Loading State (Pagination, Delete, or Initial Load) */}
             {(this.state.isPaginating || this.state.isfetcing) && (
@@ -1501,8 +1501,14 @@ class DashboardHomepage extends Component {
               !this.state.isPaginating &&
               !this.state.isfetcing &&
               this.state.displayDocuments !== null &&
-              this.state.displayDocuments.length > 0 &&
-              this.sortResumeDocuments(this.state.displayDocuments
+              this.state.displayDocuments.length > 0 && (
+              /* DIR-092c: the resume workspace is a 3-column HORIZONTAL SLIDER (a single row
+                 that scrolls sideways, never wrapping into multiple grid rows). It sits beside
+                 the always-visible "Create a New Resume" column, so the whole workspace is a
+                 fixed 4-column layout. `contents` keeps list/legacy modes byte-identical. */
+              <div className={isCuba && this.state.viewMode !== 'list' ? "lg:col-span-3 min-w-0" : "contents"}>
+              <div className={isCuba && this.state.viewMode !== 'list' ? "grid grid-flow-col auto-cols-[85%] sm:auto-cols-[48%] lg:auto-cols-[32%] gap-3.5 overflow-x-auto snap-x snap-mandatory cuba-scrollbar pb-2" : "contents"}>
+              {this.sortResumeDocuments(this.state.displayDocuments
                 .filter((document, docIdx) => {
                   const query = (this.state.searchQuery || '').trim().toLowerCase();
                   if (query) {
@@ -1530,7 +1536,7 @@ class DashboardHomepage extends Component {
                   const atsScore = calculateAtsScore(document.item)?.qualityScore || 0;
                   return (
                     <div key={document.id} className={isCuba
-                      ? `group bg-white dark:bg-[#1e222d] rounded-2xl shadow-sm border border-cuba-line hover:border-[#7366ff]/40 hover:shadow-[0_8px_24px_rgba(115,102,255,0.12)] transition-all duration-300 p-3.5 flex flex-col justify-between relative ${this.state.openDropdownId === document.id ? 'z-30' : 'z-0'}`
+                      ? `group snap-start bg-white dark:bg-[#1e222d] rounded-2xl shadow-sm border border-cuba-line hover:border-[#7366ff]/40 hover:shadow-[0_8px_24px_rgba(115,102,255,0.12)] transition-all duration-300 p-3.5 flex flex-col justify-between relative ${this.state.openDropdownId === document.id ? 'z-30' : 'z-0'}`
                       : `group bg-white rounded-xl shadow-sm border border-cuba-line hover:shadow-md transition-all duration-300 p-5 flex flex-col justify-between relative ${this.state.openDropdownId === document.id ? 'z-30' : 'z-0'}`
                     }>
                       {/* Top Bar / Header */}
@@ -1994,12 +2000,15 @@ class DashboardHomepage extends Component {
                 }
                 return null;
               })}
+              </div>
+              </div>)}
 
-            {/* Create new resume card - only show when not loading */}
+            {/* Create new resume card — ALWAYS the 4th column of the workspace (DIR-092c). */}
             {!this.state.isPaginating && !this.state.isfetcing && (
+              <div className={isCuba && this.state.viewMode !== 'list' ? "lg:col-span-1 min-w-0" : "contents"}>
               <div 
                 className={isCuba
-                  ? "bg-white dark:bg-[#1e222d] rounded-2xl shadow-sm border-2 border-dashed border-[#7366ff]/35 hover:border-[#7366ff] hover:bg-[#7366ff]/[0.03] hover:shadow-[0_8px_25px_rgba(115,102,255,0.14)] transition-all duration-300 min-h-[300px] flex flex-col items-center justify-center p-4 text-center group"
+                  ? "bg-white dark:bg-[#1e222d] rounded-2xl shadow-sm border-2 border-dashed border-[#7366ff]/35 hover:border-[#7366ff] hover:bg-[#7366ff]/[0.03] hover:shadow-[0_8px_25px_rgba(115,102,255,0.14)] transition-all duration-300 min-h-[300px] h-full flex flex-col items-center justify-center p-4 text-center group"
                   : "bg-white rounded-lg shadow-sm border-2 border-dashed border-slate-300 hover:border-slate-400 hover:bg-slate-50 transition-all duration-200 cursor-pointer group min-h-[220px]"
                 } 
                 onClick={!isCuba ? () => {
@@ -2010,10 +2019,10 @@ class DashboardHomepage extends Component {
               >
                 <div className="p-3 text-center h-full flex flex-col items-center justify-center">
                   <div className={isCuba
-                    ? "w-12 h-12 rounded-full bg-[#7366ff]/10 text-[#7366ff] group-hover:bg-[#7366ff] group-hover:text-white flex items-center justify-center mb-2.5 transition-all duration-200 shadow-xs"
+                    ? "w-14 h-14 rounded-full bg-[#7366ff]/10 text-[#7366ff] group-hover:bg-[#7366ff] group-hover:text-white flex items-center justify-center mb-3 transition-all duration-200 shadow-xs"
                     : "w-16 h-16 bg-slate-100 group-hover:bg-slate-200 rounded-full flex items-center justify-center mb-6 transition-colors"
                   }>
-                    <FaPlus className={isCuba ? "w-4 h-4" : "w-6 h-6 text-slate-600"} />
+                    <FaPlus className={isCuba ? "w-5 h-5" : "w-6 h-6 text-slate-600"} />
                   </div>
                   <h3 className={isCuba ? "text-sm font-bold text-cuba-ink mb-1" : "text-base font-medium text-slate-900 mb-2"}>
                     {isCuba ? "Create a New Resume" : t(
@@ -2028,7 +2037,7 @@ class DashboardHomepage extends Component {
                     )}
                   </p>
                   {isCuba && (
-                    <div className="flex flex-col gap-1.5 w-full max-w-[170px]">
+                    <div className="flex flex-col gap-2 w-full max-w-[200px]">
                       <button
                         type="button"
                         onClick={(e) => {
@@ -2056,6 +2065,7 @@ class DashboardHomepage extends Component {
                     </div>
                   )}
                 </div>
+              </div>
               </div>
             )}
 
