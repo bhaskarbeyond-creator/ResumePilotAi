@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-12T04:33:37.822Z",
-  "seq": 2969,
-  "id": "evt_mv4rblds_a9d531d2c70e",
+  "timestamp": "2026-10-12T04:46:15.487Z",
+  "seq": 2973,
+  "id": "evt_mv4rrtzf_1ffb5af32de2",
   "type": "HEARTBEAT",
-  "title": "[Heartbeat] Wave 1 started (baseline lock + surface inventory). Recon locked: 28-route authoritative table, 14 nav destinations, 2542 legacy palette utilities, AC5 token-name gap identified. Now probing route int",
+  "title": "[Heartbeat] Wave 4 complete: DashboardSupport swept 182 -> 14 legacy utilities onto Cuba tokens (169 removed) and the certified ratchet tightened 183 -> 14. Stale ceilings for DashboardSettings (1330 vs 39) and D",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-094",
-  "summary": "Wave 1 started (baseline lock + surface inventory). Recon locked: 28-route authoritative table, 14 nav destinations, 2542 legacy palette utilities, AC5 token-name gap identified. Now probing route integrity and fabricated-metric risk before any styling change."
+  "summary": "Wave 4 complete: DashboardSupport swept 182 -> 14 legacy utilities onto Cuba tokens (169 removed) and the certified ratchet tightened 183 -> 14. Stale ceilings for DashboardSettings (1330 vs 39) and DashboardPortfolios (51 vs 0) reported. Submitting evidence."
 }

@@ -276,14 +276,14 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
         const s = String(status || '').toUpperCase();
         switch (s) {
             case 'OPEN':
-                return 'bg-amber-50 text-amber-700 border-amber-200';
+                return 'bg-[var(--cuba-warning-soft)] text-[var(--cuba-warning)] border-[var(--cuba-warning-soft)]';
             case 'PENDING':
-                return 'bg-blue-50 text-blue-700 border-blue-200';
+                return 'bg-[var(--cuba-info-soft)] text-[var(--cuba-info)] border-[var(--cuba-info-soft)]';
             case 'RESOLVED':
-                return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                return 'bg-[var(--cuba-success-soft)] text-[var(--cuba-success)] border-[var(--cuba-success-soft)]';
             case 'CLOSED':
             default:
-                return 'bg-slate-100 text-slate-700 border-slate-200';
+                return 'bg-slate-100 text-[var(--cuba-ink-muted)] border-[var(--cuba-line)]';
         }
     };
 
@@ -291,14 +291,14 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
         const p = String(priority || '').toUpperCase();
         switch (p) {
             case 'URGENT':
-                return 'bg-rose-50 text-rose-700 border-rose-200 font-black';
+                return 'bg-[var(--cuba-danger-soft)] text-[var(--cuba-danger)] border-[var(--cuba-danger-line-base)] font-black';
             case 'HIGH':
-                return 'bg-orange-50 text-orange-700 border-orange-200 font-bold';
+                return 'bg-[var(--cuba-warning-soft)] text-[var(--cuba-warning)] border-[var(--cuba-warning-soft)] font-bold';
             case 'NORMAL':
-                return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+                return 'bg-[var(--cuba-primary-soft)] text-[var(--cuba-primary-ink)] border-[var(--cuba-primary-line)]';
             case 'LOW':
             default:
-                return 'bg-slate-100 text-slate-600 border-slate-200';
+                return 'bg-slate-100 text-[var(--cuba-ink-muted)] border-[var(--cuba-line)]';
         }
     };
 
@@ -323,16 +323,16 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
             <div className="max-w-7xl mx-auto space-y-6">
 
                 {/* ── HEADER & ACTIONS ────────────────────────────────────────── */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-2xl border border-[var(--cuba-line)] shadow-2xs">
                     <div className="flex items-center gap-3.5">
-                        <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center shrink-0 shadow-2xs">
+                        <div className="w-12 h-12 rounded-2xl bg-[var(--cuba-primary-soft)] border border-[var(--cuba-primary-line)] text-[var(--cuba-primary-ink)] flex items-center justify-center shrink-0 shadow-2xs">
                             <FiLifeBuoy className="w-6 h-6" />
                         </div>
                         <div>
-                            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+                            <h1 className="text-xl sm:text-2xl font-bold text-[var(--cuba-ink)] tracking-tight">
                                 Help Desk &amp; Support Tickets
                             </h1>
-                            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                            <p className="text-xs sm:text-sm text-[var(--cuba-ink-muted)] mt-0.5">
                                 Connect directly with our support engineering team for account, billing, or export assistance.
                             </p>
                         </div>
@@ -343,7 +343,7 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                             type="button"
                             onClick={loadTickets}
                             disabled={isLoadingList}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition shadow-2xs cursor-pointer disabled:opacity-50"
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-[var(--cuba-line)] bg-white text-xs font-bold text-[var(--cuba-ink-muted)] hover:bg-slate-50 hover:text-[var(--cuba-ink)] transition shadow-2xs cursor-pointer disabled:opacity-50"
                             aria-label="Refresh tickets"
                             data-testid="refresh-tickets-button"
                         >
@@ -357,7 +357,7 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                                 setCreateError('');
                                 setIsCreateModalOpen(true);
                             }}
-                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 active:bg-indigo-800 transition shadow-sm hover:shadow shadow-indigo-500/20 cursor-pointer"
+                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--cuba-primary)] text-white text-xs font-bold hover:bg-[var(--cuba-primary-strong)] active:bg-[var(--cuba-primary-strong)] transition shadow-sm hover:shadow shadow-indigo-500/20 cursor-pointer"
                             data-testid="create-ticket-button"
                         >
                             <FiPlus className="w-4 h-4" />
@@ -368,14 +368,14 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
 
                 {/* ── LIST ERROR NOTIFICATION ──────────────────────────────────── */}
                 {listError && (
-                    <div role="alert" className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-800 flex items-center justify-between gap-3">
+                    <div role="alert" className="p-4 bg-[var(--cuba-danger-soft)] border border-[var(--cuba-danger-line-base)] rounded-2xl text-xs text-[var(--cuba-danger)] flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
-                            <FiAlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                            <FiAlertCircle className="w-4 h-4 text-[var(--cuba-danger)] shrink-0" />
                             <span>{listError}</span>
                         </div>
                         <button
                             onClick={loadTickets}
-                            className="px-3 py-1 bg-rose-100 hover:bg-rose-200 text-rose-900 font-bold rounded-lg transition cursor-pointer"
+                            className="px-3 py-1 bg-[var(--cuba-danger-soft)] hover:bg-[var(--cuba-danger-soft)] text-[var(--cuba-danger)] font-bold rounded-lg transition cursor-pointer"
                         >
                             Retry
                         </button>
@@ -383,20 +383,20 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                 )}
 
                 {/* ── SUB-NAVIGATION TABS ────────────────────────────────────────── */}
-                <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+                <div className="flex items-center gap-2 border-b border-[var(--cuba-line)] pb-2">
                     <button
                         onClick={() => setActiveSupportTab('tickets')}
                         className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                             activeSupportTab === 'tickets'
-                                ? 'bg-indigo-600 text-white shadow-sm'
-                                : 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/80'
+                                ? 'bg-[var(--cuba-primary)] text-white shadow-sm'
+                                : 'bg-white text-[var(--cuba-ink-muted)] hover:bg-slate-100 hover:text-[var(--cuba-ink)] border border-[var(--cuba-line)]'
                         }`}
                         data-testid="tab-support-tickets"
                     >
                         <FiInbox className="w-3.5 h-3.5" />
                         <span>My Support Tickets</span>
                         <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
-                            activeSupportTab === 'tickets' ? 'bg-indigo-800 text-indigo-100' : 'bg-slate-100 text-slate-600'
+                            activeSupportTab === 'tickets' ? 'bg-[var(--cuba-primary-strong)] text-[var(--cuba-on-primary)]' : 'bg-slate-100 text-[var(--cuba-ink-muted)]'
                         }`}>
                             {tickets.length}
                         </span>
@@ -406,8 +406,8 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                         onClick={() => setActiveSupportTab('faq')}
                         className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                             activeSupportTab === 'faq'
-                                ? 'bg-indigo-600 text-white shadow-sm'
-                                : 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/80'
+                                ? 'bg-[var(--cuba-primary)] text-white shadow-sm'
+                                : 'bg-white text-[var(--cuba-ink-muted)] hover:bg-slate-100 hover:text-[var(--cuba-ink)] border border-[var(--cuba-line)]'
                         }`}
                         data-testid="tab-knowledge-base"
                     >
@@ -418,18 +418,18 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
 
                 {/* ── KNOWLEDGE BASE & FAQ VIEW ───────────────────────────────── */}
                 {activeSupportTab === 'faq' && (
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs space-y-6" data-testid="support-knowledge-base">
+                    <div className="bg-white p-6 rounded-2xl border border-[var(--cuba-line)] shadow-2xs space-y-6" data-testid="support-knowledge-base">
                         <div className="max-w-2xl mx-auto text-center space-y-2">
-                            <h2 className="text-lg sm:text-xl font-bold text-slate-900">Frequently Asked Questions &amp; Knowledge Base</h2>
-                            <p className="text-xs sm:text-sm text-slate-500">Instant answers to common candidate questions about resume building, AI tools, exports, and accounts.</p>
+                            <h2 className="text-lg sm:text-xl font-bold text-[var(--cuba-ink)]">Frequently Asked Questions &amp; Knowledge Base</h2>
+                            <p className="text-xs sm:text-sm text-[var(--cuba-ink-muted)]">Instant answers to common candidate questions about resume building, AI tools, exports, and accounts.</p>
                             <div className="relative mt-4">
-                                <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
+                                <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--cuba-ink-subtle)] w-4 h-4 pointer-events-none" />
                                 <input
                                     type="text"
                                     placeholder="Search knowledge base articles..."
                                     value={faqSearch}
                                     onChange={(e) => setFaqSearch(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-indigo-500 transition-all"
+                                    className="w-full pl-10 pr-4 py-2.5 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-xl text-xs text-[var(--cuba-ink)] placeholder:text-[var(--cuba-ink-subtle)] focus:outline-none focus:bg-white focus:border-[var(--cuba-primary)] transition-all"
                                     aria-label="Search FAQs"
                                 />
                             </div>
@@ -445,9 +445,9 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                                 if (filteredItems.length === 0) return null;
 
                                 return (
-                                    <div key={cat.category} className="bg-slate-50/80 rounded-2xl p-5 border border-slate-200/60 space-y-3">
-                                        <div className="flex items-center gap-2 text-indigo-700 font-bold text-sm">
-                                            <FiBook className="w-4 h-4 text-indigo-600" />
+                                    <div key={cat.category} className="bg-[var(--cuba-canvas)] rounded-2xl p-5 border border-[var(--cuba-line)] space-y-3">
+                                        <div className="flex items-center gap-2 text-[var(--cuba-primary-ink)] font-bold text-sm">
+                                            <FiBook className="w-4 h-4 text-[var(--cuba-primary-ink)]" />
                                             <span>{cat.category}</span>
                                         </div>
                                         <div className="space-y-2">
@@ -455,16 +455,16 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                                                 const globalIdx = `${catIdx}_${itemIdx}`;
                                                 const isExpanded = expandedFaqIndex === globalIdx;
                                                 return (
-                                                    <div key={item.q} className="bg-white rounded-xl border border-slate-200/80 overflow-hidden shadow-2xs">
+                                                    <div key={item.q} className="bg-white rounded-xl border border-[var(--cuba-line)] overflow-hidden shadow-2xs">
                                                         <button
                                                             onClick={() => setExpandedFaqIndex(isExpanded ? null : globalIdx)}
-                                                            className="w-full px-4 py-3 text-left text-xs font-bold text-slate-800 flex items-center justify-between gap-3 hover:text-indigo-600 transition-colors cursor-pointer"
+                                                            className="w-full px-4 py-3 text-left text-xs font-bold text-[var(--cuba-ink)] flex items-center justify-between gap-3 hover:text-[var(--cuba-primary-ink)] transition-colors cursor-pointer"
                                                         >
                                                             <span>{item.q}</span>
-                                                            {isExpanded ? <FiChevronUp className="w-4 h-4 text-slate-400 shrink-0" /> : <FiChevronDown className="w-4 h-4 text-slate-400 shrink-0" />}
+                                                            {isExpanded ? <FiChevronUp className="w-4 h-4 text-[var(--cuba-ink-subtle)] shrink-0" /> : <FiChevronDown className="w-4 h-4 text-[var(--cuba-ink-subtle)] shrink-0" />}
                                                         </button>
                                                         {isExpanded && (
-                                                            <div className="px-4 pb-3.5 pt-1 text-xs text-slate-600 border-t border-slate-100 leading-relaxed bg-slate-50/50">
+                                                            <div className="px-4 pb-3.5 pt-1 text-xs text-[var(--cuba-ink-muted)] border-t border-[var(--cuba-line)] leading-relaxed bg-[var(--cuba-canvas)]">
                                                                 {item.a}
                                                             </div>
                                                         )}
@@ -486,21 +486,21 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                     {/* LEFT PANEL: Tickets Queue & Search */}
                     <div className={`${selectedTicketId ? 'hidden lg:block' : 'block'} lg:col-span-5 space-y-4`}>
                         {/* Search & Status Filters */}
-                        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
+                        <div className="bg-white p-4 rounded-2xl border border-[var(--cuba-line)] shadow-2xs space-y-3">
                             <div className="relative">
-                                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--cuba-ink-subtle)]" />
                                 <input
                                     type="text"
                                     placeholder="Search by subject or ticket ID..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:bg-white focus:border-indigo-500 transition"
+                                    className="w-full pl-9 pr-3 py-2 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-xl text-xs text-[var(--cuba-ink)] placeholder:text-[var(--cuba-ink-subtle)] focus:outline-hidden focus:bg-white focus:border-[var(--cuba-primary)] transition"
                                     data-testid="support-search-input"
                                 />
                                 {searchTerm && (
                                     <button
                                         onClick={() => setSearchTerm('')}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] cursor-pointer"
                                     >
                                         <FiX className="w-3.5 h-3.5" />
                                     </button>
@@ -516,8 +516,8 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                                         onClick={() => setStatusFilter(st)}
                                         className={`px-2.5 py-1 text-[11px] font-bold rounded-lg border transition cursor-pointer ${
                                             statusFilter === st
-                                                ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
-                                                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                                ? 'bg-[var(--cuba-primary)] text-white border-[var(--cuba-primary)] shadow-2xs'
+                                                : 'bg-white text-[var(--cuba-ink-muted)] border-[var(--cuba-line)] hover:bg-slate-50'
                                         }`}
                                         data-testid={`filter-status-${st.toLowerCase()}`}
                                     >
@@ -528,25 +528,25 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                         </div>
 
                         {/* Ticket Queue List */}
-                        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
-                            <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/70 flex items-center justify-between">
-                                <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        <div className="bg-white rounded-2xl border border-[var(--cuba-line)] shadow-2xs overflow-hidden">
+                            <div className="px-4 py-3 border-b border-[var(--cuba-line)] bg-[var(--cuba-canvas)] flex items-center justify-between">
+                                <span className="text-xs font-bold text-[var(--cuba-ink-muted)] uppercase tracking-wider">
                                     Your Tickets ({filteredTickets.length})
                                 </span>
                             </div>
 
                             {isLoadingList ? (
                                 <div className="p-8 text-center space-y-3">
-                                    <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                                    <p className="text-xs text-slate-500 font-medium">Loading your support tickets...</p>
+                                    <div className="w-8 h-8 border-2 border-[var(--cuba-primary)] border-t-transparent rounded-full animate-spin mx-auto"></div>
+                                    <p className="text-xs text-[var(--cuba-ink-muted)] font-medium">Loading your support tickets...</p>
                                 </div>
                             ) : filteredTickets.length === 0 ? (
                                 <div className="p-8 text-center space-y-3" data-testid="empty-tickets-state">
-                                    <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+                                    <div className="w-12 h-12 rounded-2xl bg-slate-100 text-[var(--cuba-ink-subtle)] flex items-center justify-center mx-auto">
                                         <FiInbox className="w-6 h-6" />
                                     </div>
-                                    <h3 className="text-sm font-bold text-slate-800">No support tickets found</h3>
-                                    <p className="text-xs text-slate-500 max-w-xs mx-auto">
+                                    <h3 className="text-sm font-bold text-[var(--cuba-ink)]">No support tickets found</h3>
+                                    <p className="text-xs text-[var(--cuba-ink-muted)] max-w-xs mx-auto">
                                         {searchTerm || statusFilter !== 'ALL'
                                             ? 'No tickets match your filter criteria.'
                                             : 'Need help? Click "Raise New Ticket" above to reach our support team.'}
@@ -555,7 +555,7 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                                         <button
                                             type="button"
                                             onClick={() => setIsCreateModalOpen(true)}
-                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition cursor-pointer"
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[var(--cuba-primary-ink)] bg-[var(--cuba-primary-soft)] hover:bg-[var(--cuba-primary-soft-hover)] rounded-lg transition cursor-pointer"
                                         >
                                             <FiPlus className="w-3.5 h-3.5" />
                                             <span>Create Ticket</span>
@@ -563,7 +563,7 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                                     )}
                                 </div>
                             ) : (
-                                <div className="divide-y divide-slate-100 max-h-[600px] overflow-y-auto custom-scrollbar">
+                                <div className="divide-y divide-[var(--cuba-line)] max-h-[600px] overflow-y-auto custom-scrollbar">
                                     {filteredTickets.map((t) => {
                                         const isSelected = selectedTicketId === t.id;
                                         return (
@@ -571,12 +571,12 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                                                 key={t.id}
                                                 onClick={() => setSelectedTicketId(t.id)}
                                                 className={`p-4 transition cursor-pointer hover:bg-slate-50/80 ${
-                                                    isSelected ? 'bg-indigo-50/60 border-l-4 border-indigo-600' : ''
+                                                    isSelected ? 'bg-indigo-50/60 border-l-4 border-[var(--cuba-primary)]' : ''
                                                 }`}
                                                 data-testid={`ticket-item-${t.id}`}
                                             >
                                                 <div className="flex items-start justify-between gap-2 mb-1.5">
-                                                    <h4 className="text-xs sm:text-sm font-bold text-slate-900 line-clamp-1">
+                                                    <h4 className="text-xs sm:text-sm font-bold text-[var(--cuba-ink)] line-clamp-1">
                                                         {t.subject}
                                                     </h4>
                                                     <span className={`px-2 py-0.5 text-[10px] font-extrabold rounded-full border shrink-0 ${getStatusPill(t.status)}`}>
@@ -584,12 +584,12 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                                                     </span>
                                                 </div>
 
-                                                <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+                                                <div className="flex flex-wrap items-center gap-2 text-[11px] text-[var(--cuba-ink-muted)]">
                                                     <span className={`px-1.5 py-0.5 text-[9px] font-extrabold rounded-md border ${getPriorityPill(t.priority)}`}>
                                                         {t.priority}
                                                     </span>
                                                     <span className="flex items-center gap-1">
-                                                        <FiClock className="w-3 h-3 text-slate-400" />
+                                                        <FiClock className="w-3 h-3 text-[var(--cuba-ink-subtle)]" />
                                                         {formatDate(t.updatedAt || t.createdAt)}
                                                     </span>
                                                 </div>
@@ -604,14 +604,14 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                     {/* RIGHT PANEL: Ticket Detail & Message Conversation */}
                     <div className={`${!selectedTicketId ? 'hidden lg:block' : 'block'} lg:col-span-7`}>
                         {selectedTicketId && ticketDetail ? (
-                            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden flex flex-col min-h-[600px]" data-testid="ticket-detail-view">
+                            <div className="bg-white rounded-2xl border border-[var(--cuba-line)] shadow-2xs overflow-hidden flex flex-col min-h-[600px]" data-testid="ticket-detail-view">
                                 {/* Detail Header */}
-                                <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-3">
+                                <div className="p-5 border-b border-[var(--cuba-line)] bg-[var(--cuba-canvas)] flex flex-col gap-3">
                                     <div className="flex items-center justify-between gap-2">
                                         <button
                                             type="button"
                                             onClick={() => setSelectedTicketId(null)}
-                                            className="lg:hidden inline-flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer"
+                                            className="lg:hidden inline-flex items-center gap-1 text-xs font-bold text-[var(--cuba-ink-muted)] hover:text-[var(--cuba-ink)] cursor-pointer"
                                         >
                                             <FiArrowLeft className="w-4 h-4" /> Back to list
                                         </button>
@@ -626,29 +626,29 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                                     </div>
 
                                     <div>
-                                        <h2 className="text-lg font-bold text-slate-900" data-testid="ticket-detail-subject">
+                                        <h2 className="text-lg font-bold text-[var(--cuba-ink)]" data-testid="ticket-detail-subject">
                                             {ticketDetail.subject}
                                         </h2>
-                                        <p className="text-[11px] text-slate-400 mt-0.5">
-                                            Ticket ID: <span className="font-mono text-slate-600">{ticketDetail.id}</span> • Opened: {formatDate(ticketDetail.createdAt)}
+                                        <p className="text-[11px] text-[var(--cuba-ink-subtle)] mt-0.5">
+                                            Ticket ID: <span className="font-mono text-[var(--cuba-ink-muted)]">{ticketDetail.id}</span> • Opened: {formatDate(ticketDetail.createdAt)}
                                         </p>
                                     </div>
                                 </div>
 
                                 {/* Detail Error alert */}
                                 {detailError && (
-                                    <div role="alert" className="m-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 flex items-center gap-2">
-                                        <FiAlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                                    <div role="alert" className="m-4 p-3 bg-[var(--cuba-danger-soft)] border border-[var(--cuba-danger-line-base)] rounded-xl text-xs text-[var(--cuba-danger)] flex items-center gap-2">
+                                        <FiAlertCircle className="w-4 h-4 text-[var(--cuba-danger)] shrink-0" />
                                         <span>{detailError}</span>
                                     </div>
                                 )}
 
                                 {/* Message Stream */}
-                                <div className="flex-1 p-5 space-y-4 overflow-y-auto max-h-[440px] custom-scrollbar bg-slate-50/30" data-testid="ticket-messages-stream">
+                                <div className="flex-1 p-5 space-y-4 overflow-y-auto max-h-[440px] custom-scrollbar bg-[var(--cuba-canvas)]" data-testid="ticket-messages-stream">
                                     {isLoadingDetail ? (
                                         <div className="p-8 text-center">
-                                            <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                                            <p className="text-xs text-slate-400 mt-2">Loading conversation thread...</p>
+                                            <div className="w-6 h-6 border-2 border-[var(--cuba-primary)] border-t-transparent rounded-full animate-spin mx-auto"></div>
+                                            <p className="text-xs text-[var(--cuba-ink-subtle)] mt-2">Loading conversation thread...</p>
                                         </div>
                                     ) : (ticketDetail.messages || []).map((msg, idx) => {
                                         const isStaff = msg.authorRole !== 'USER';
@@ -658,13 +658,13 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                                                 className={`flex flex-col ${isStaff ? 'items-start' : 'items-end'}`}
                                                 data-testid={`ticket-message-${msg.id || idx}`}
                                             >
-                                                <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mb-1 px-1">
+                                                <div className="flex items-center gap-1.5 text-[10px] text-[var(--cuba-ink-subtle)] mb-1 px-1">
                                                     {isStaff ? (
-                                                        <span className="font-bold text-indigo-600 flex items-center gap-1">
+                                                        <span className="font-bold text-[var(--cuba-primary-ink)] flex items-center gap-1">
                                                             <FiShield className="w-3 h-3" /> Support Specialist
                                                         </span>
                                                     ) : (
-                                                        <span className="font-bold text-slate-700 flex items-center gap-1">
+                                                        <span className="font-bold text-[var(--cuba-ink-muted)] flex items-center gap-1">
                                                             <FiUser className="w-3 h-3" /> You
                                                         </span>
                                                     )}
@@ -674,8 +674,8 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                                                 <div
                                                     className={`max-w-[85%] rounded-2xl px-4 py-3 text-xs leading-relaxed ${
                                                         isStaff
-                                                            ? 'bg-white border border-slate-200 text-slate-800 shadow-2xs rounded-tl-xs'
-                                                            : 'bg-indigo-600 text-white shadow-2xs rounded-tr-xs'
+                                                            ? 'bg-white border border-[var(--cuba-line)] text-[var(--cuba-ink)] shadow-2xs rounded-tl-xs'
+                                                            : 'bg-[var(--cuba-primary)] text-white shadow-2xs rounded-tr-xs'
                                                     }`}
                                                 >
                                                     <p className="whitespace-pre-wrap">{msg.body}</p>
@@ -686,10 +686,10 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                                 </div>
 
                                 {/* Reply Section */}
-                                <div className="p-4 border-t border-slate-200 bg-white">
+                                <div className="p-4 border-t border-[var(--cuba-line)] bg-white">
                                     {ticketDetail.status === 'CLOSED' ? (
-                                        <div className="p-3 bg-slate-100 border border-slate-200 rounded-xl text-center text-xs text-slate-600">
-                                            <FiCheckCircle className="w-4 h-4 text-emerald-600 inline-block mr-1.5" />
+                                        <div className="p-3 bg-slate-100 border border-[var(--cuba-line)] rounded-xl text-center text-xs text-[var(--cuba-ink-muted)]">
+                                            <FiCheckCircle className="w-4 h-4 text-[var(--cuba-success)] inline-block mr-1.5" />
                                             This support ticket has been resolved and closed. If you require further assistance, please raise a new ticket.
                                         </div>
                                     ) : (
@@ -699,14 +699,14 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                                                 placeholder="Write a reply or provide further details..."
                                                 value={replyText}
                                                 onChange={(e) => setReplyText(e.target.value)}
-                                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:bg-white focus:border-indigo-500 transition resize-none"
+                                                className="w-full p-3 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-xl text-xs text-[var(--cuba-ink)] placeholder:text-[var(--cuba-ink-subtle)] focus:outline-hidden focus:bg-white focus:border-[var(--cuba-primary)] transition resize-none"
                                                 data-testid="ticket-reply-input"
                                             />
                                             <div className="flex justify-end">
                                                 <button
                                                     type="submit"
                                                     disabled={!replyText.trim() || isSubmittingReply}
-                                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition shadow-xs cursor-pointer disabled:opacity-50"
+                                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--cuba-primary)] text-white text-xs font-bold hover:bg-[var(--cuba-primary-strong)] transition shadow-xs cursor-pointer disabled:opacity-50"
                                                     data-testid="ticket-reply-button"
                                                 >
                                                     {isSubmittingReply ? (
@@ -727,12 +727,12 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                                 </div>
                             </div>
                         ) : (
-                            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-12 text-center min-h-[400px] flex flex-col items-center justify-center space-y-3">
-                                <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                            <div className="bg-white rounded-2xl border border-[var(--cuba-line)] shadow-2xs p-12 text-center min-h-[400px] flex flex-col items-center justify-center space-y-3">
+                                <div className="w-14 h-14 rounded-2xl bg-[var(--cuba-primary-soft)] text-[var(--cuba-primary-ink)] flex items-center justify-center">
                                     <FiMessageSquare className="w-7 h-7" />
                                 </div>
-                                <h3 className="text-base font-bold text-slate-800">Select a Ticket</h3>
-                                <p className="text-xs text-slate-500 max-w-sm">
+                                <h3 className="text-base font-bold text-[var(--cuba-ink)]">Select a Ticket</h3>
+                                <p className="text-xs text-[var(--cuba-ink-muted)] max-w-sm">
                                     Choose a support ticket from the list to view the full message thread or send a reply.
                                 </p>
                             </div>
@@ -744,20 +744,20 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                 {/* ── CREATE TICKET MODAL ──────────────────────────────────────── */}
                 {isCreateModalOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs" data-testid="create-ticket-modal">
-                        <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-                            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
+                        <div className="bg-white rounded-2xl border border-[var(--cuba-line)] shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                            <div className="px-6 py-4 border-b border-[var(--cuba-line)] flex items-center justify-between bg-[var(--cuba-canvas)]">
                                 <div className="flex items-center gap-2.5">
-                                    <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
+                                    <div className="w-8 h-8 rounded-xl bg-[var(--cuba-primary-soft)] text-[var(--cuba-primary-ink)] flex items-center justify-center font-bold">
                                         <FiPlus className="w-4 h-4" />
                                     </div>
-                                    <h3 className="text-sm sm:text-base font-bold text-slate-900">
+                                    <h3 className="text-sm sm:text-base font-bold text-[var(--cuba-ink)]">
                                         Raise Support Ticket
                                     </h3>
                                 </div>
                                 <button
                                     type="button"
                                     onClick={() => !isCreatingTicket && setIsCreateModalOpen(false)}
-                                    className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+                                    className="text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"
                                     aria-label="Close modal"
                                 >
                                     <FiX className="w-5 h-5" />
@@ -766,15 +766,15 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
 
                             <form onSubmit={handleCreateTicket} className="p-6 space-y-4">
                                 {createError && (
-                                    <div role="alert" className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 flex items-center gap-2">
-                                        <FiAlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                                    <div role="alert" className="p-3 bg-[var(--cuba-danger-soft)] border border-[var(--cuba-danger-line-base)] rounded-xl text-xs text-[var(--cuba-danger)] flex items-center gap-2">
+                                        <FiAlertCircle className="w-4 h-4 text-[var(--cuba-danger)] shrink-0" />
                                         <span>{createError}</span>
                                     </div>
                                 )}
 
                                 <div className="space-y-1.5">
-                                    <label htmlFor="ticket-subject" className="block text-xs font-bold text-slate-700">
-                                        Subject <span className="text-rose-500">*</span>
+                                    <label htmlFor="ticket-subject" className="block text-xs font-bold text-[var(--cuba-ink-muted)]">
+                                        Subject <span className="text-[var(--cuba-danger)]">*</span>
                                     </label>
                                     <input
                                         id="ticket-subject"
@@ -782,21 +782,21 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                                         placeholder="Brief summary of your question or issue"
                                         value={newSubject}
                                         onChange={(e) => setNewSubject(e.target.value)}
-                                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-hidden focus:bg-white focus:border-indigo-500 transition"
+                                        className="w-full px-3.5 py-2.5 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-xl text-xs text-[var(--cuba-ink)] focus:outline-hidden focus:bg-white focus:border-[var(--cuba-primary)] transition"
                                         data-testid="ticket-subject-input"
                                         required
                                     />
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label htmlFor="ticket-priority" className="block text-xs font-bold text-slate-700">
+                                    <label htmlFor="ticket-priority" className="block text-xs font-bold text-[var(--cuba-ink-muted)]">
                                         Priority / Category
                                     </label>
                                     <select
                                         id="ticket-priority"
                                         value={newPriority}
                                         onChange={(e) => setNewPriority(e.target.value)}
-                                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-hidden focus:bg-white focus:border-indigo-500 transition cursor-pointer"
+                                        className="w-full px-3.5 py-2.5 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-xl text-xs text-[var(--cuba-ink)] focus:outline-hidden focus:bg-white focus:border-[var(--cuba-primary)] transition cursor-pointer"
                                         data-testid="ticket-priority-select"
                                     >
                                         {PRIORITIES.map((p) => (
@@ -808,8 +808,8 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label htmlFor="ticket-body" className="block text-xs font-bold text-slate-700">
-                                        Description / Details <span className="text-rose-500">*</span>
+                                    <label htmlFor="ticket-body" className="block text-xs font-bold text-[var(--cuba-ink-muted)]">
+                                        Description / Details <span className="text-[var(--cuba-danger)]">*</span>
                                     </label>
                                     <textarea
                                         id="ticket-body"
@@ -817,25 +817,25 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                                         placeholder="Please provide complete context, steps taken, or specific error messages so we can assist you quickly..."
                                         value={newBody}
                                         onChange={(e) => setNewBody(e.target.value)}
-                                        className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-hidden focus:bg-white focus:border-indigo-500 transition resize-none"
+                                        className="w-full p-3.5 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-xl text-xs text-[var(--cuba-ink)] focus:outline-hidden focus:bg-white focus:border-[var(--cuba-primary)] transition resize-none"
                                         data-testid="ticket-body-input"
                                         required
                                     />
                                 </div>
 
-                                <div className="pt-3 flex items-center justify-end gap-2.5 border-t border-slate-100">
+                                <div className="pt-3 flex items-center justify-end gap-2.5 border-t border-[var(--cuba-line)]">
                                     <button
                                         type="button"
                                         onClick={() => setIsCreateModalOpen(false)}
                                         disabled={isCreatingTicket}
-                                        className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
+                                        className="px-4 py-2 rounded-xl border border-[var(--cuba-line)] text-xs font-bold text-[var(--cuba-ink-muted)] hover:bg-slate-50 transition cursor-pointer"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={isCreatingTicket || !newSubject.trim() || !newBody.trim()}
-                                        className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition shadow-sm cursor-pointer disabled:opacity-50"
+                                        className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-[var(--cuba-primary)] text-white text-xs font-bold hover:bg-[var(--cuba-primary-strong)] transition shadow-sm cursor-pointer disabled:opacity-50"
                                         data-testid="ticket-submit-button"
                                     >
                                         {isCreatingTicket ? (

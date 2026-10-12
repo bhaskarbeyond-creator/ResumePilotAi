@@ -136,7 +136,11 @@ test('AC6: the DIR-081 legacy ceiling is carried forward unchanged (sweep still 
         'src/components/Dashboard/DashboardSettings/DashboardSettings.jsx': 1330,
         'src/components/Dashboard/DashboardInterviews/DashboardInterviews.jsx': 764,
         'src/components/Dashboard/DashboardHomepage/DashboardHomepage.jsx': 226,
-        'src/components/Dashboard/DashboardSupport/DashboardSupport.jsx': 183,
+        // DIR-094 Wave 4 swept DashboardSupport onto Cuba tokens: 183 -> 14. The ratchet is
+        // tightened to the post-sweep reality so the removed utilities cannot creep back.
+        // The 14 that remain are neutral fills (bg-slate-100, hover:bg-slate-50/100) and one
+        // shadow tint, for which the Cuba system ships no exact equivalent token.
+        'src/components/Dashboard/DashboardSupport/DashboardSupport.jsx': 14,
         'src/components/Dashboard/DashboardPortfolios/DashboardPortfolios.jsx': 51,
         'src/components/Dashboard/ResumesList/ResumesList.jsx': 12,
     };
