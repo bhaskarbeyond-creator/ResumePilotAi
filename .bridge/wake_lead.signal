@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-12T08:53:27.427Z",
-  "seq": 3059,
-  "id": "evt_mv50lqec_e7a8555b8005",
+  "timestamp": "2026-10-12T08:54:36.956Z",
+  "seq": 3062,
+  "id": "evt_mv50n81k_1650463f838d",
   "type": "EVIDENCE_SUBMITTED",
   "title": "[Evidence] DIR-099: Master UI/UX Transformation: review and ACCEPT the next outstanding review units at >=98/100",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-099",
-  "summary": "DIR-099 Phase Two: screenshot-first audit + first remediation wave + objective scoring. DELIVERED: (S1) scripts/ux-audit.mjs - Playwright audit engine (XAMPP-served, canonical base https://ime365.local) probing every review unit at all 7 viewports for horizontal overflow, console errors, failed responses, and a11y basics; scored on the mandated 6-dimension rubric. (S2) FULL audit of 58 units: 46 scored, 12 parameterised/catch-all routes correctly NOT EXECUTED (no fabrication). (S3) REMEDIATION applied at root cause: /features had a REAL 40px horizontal overflow at 320px from decorative blurred blobs (left-10 w-80); fixed by clipping horizontal overflow on the page root (src/components/Features/Features.jsx). Rebuilt (npm run build exit 0, 3.06s) and re-audited: /features 95 -> 97 (responsive 16 -> 20). (S4) RESULTS: 41/58 review units ACCEPTED at >=98/100; avg score 98/100; P0/P1 defects 0 (down from 18). Remaining 5 scored units sit at 96-97 with a11y polish only (tap-target 46, form-label 28, heading 7, landmark-nav 6) - these are the next remediation batch and are NOT claimed accepted. EVIDENCE: ux-audit.log, defect-register.json, inventory.json (scored + ACCEPTED flags). INVARIANTS: src/cv-templates/ 0-byte diff; XAMPP-only; no fabrication (parameterised routes left NOT EXECUTED)."
+  "summary": "DIR-099 Phase Two: audit + first remediation wave + objective scoring. DELIVERED: (S1) scripts/ux-audit.mjs Playwright audit engine (XAMPP-served, https://ime365.local) probing every unit at 7 viewports for overflow, console errors, failed responses and a11y basics, scored on the mandated 6-dimension rubric. (S2) full audit of 58 units (46 scored; 12 parameterised/catch-all correctly NOT EXECUTED). (S3) root-cause REMEDIATION: /features had a real 40px horizontal overflow at 320px from decorative blobs; fixed by clipping horizontal overflow at the page root (src/components/Features/Features.jsx), rebuilt (exit 0, 3.06s) and re-audited (95 -> 97, responsive 16 -> 20). (S4) RESULTS: 41/58 units ACCEPTED at >=98/100; avg 98/100; P0/P1 defects 0 (from 18). Remaining 5 scored units at 96-97 need a11y polish (tap-target 46, form-label 28, heading 7, landmark-nav 6) - next batch, not claimed accepted. TESTS: npm run test:ux-gates 6/6 pass; npm run build exit 0 (3.06s); src/cv-templates/ 0-byte diff. EVIDENCE: ux-gates.log (6 pass), ux-audit.log, defect-register.json, inventory.json."
 }
