@@ -50,7 +50,6 @@ const AtsDonut = ({ score }) => {
                     />
                 )}
             </svg>
-            <span className="absolute text-[11px] font-bold text-cuba-ink">{hasScore ? `${Math.round(clamped)}%` : '--'}</span>
         </span>
     );
 };
@@ -78,7 +77,7 @@ const MetricCard = ({ label, value, caption, icon, tone = 'primary', children, t
         <Tag
             {...(interactive ? { type: 'button', onClick: onOpen, 'aria-label': openLabel } : {})}
             data-testid={testId}
-            className="cuba-focusable flex min-w-0 items-center gap-3 rounded-cuba-lg border border-cuba-line bg-cuba-card px-3.5 py-3 text-left transition-colors hover:bg-cuba-primary-soft cursor-pointer"
+            className="cuba-focusable flex min-w-0 items-center gap-3 rounded-cuba-lg border border-cuba-line bg-cuba-card px-3.5 py-3 text-left shadow-cuba-sm transition duration-200 ease-cuba hover:-translate-y-0.5 hover:bg-cuba-primary-soft hover:shadow-cuba-md cursor-pointer"
         >
             {children ? (
                 <div className="flex-none">{children}</div>
@@ -92,25 +91,27 @@ const MetricCard = ({ label, value, caption, icon, tone = 'primary', children, t
             )}
             <span className="min-w-0 flex-1">
                 <span className="block truncate text-[11px] font-semibold text-cuba-ink-subtle">{label}</span>
+                {/* DIR-092 AC3: the bold headline value is rendered for EVERY card, including the
+                    Avg. ATS Score card, so the score carries the same typographic weight as
+                    Total Resumes / Job Applications / Interview Coach instead of living only in
+                    the tiny centred donut label. */}
+                <span className="block text-lg font-bold leading-tight text-cuba-ink">{value}</span>
                 {children ? (
                     <div className="flex items-center gap-2 mt-0.5">
                         <TrendChip delta={trend} unit={trendUnit} />
                         {caption && <span className="truncate text-[11px] font-medium text-cuba-ink-muted">{caption}</span>}
                     </div>
                 ) : (
-                    <>
-                        <span className="block text-lg font-bold leading-tight text-cuba-ink">{value}</span>
-                        {(trend !== undefined || caption) && (
-                            <span className="mt-0.5 flex items-center gap-2">
-                                <TrendChip delta={trend} unit={trendUnit} />
-                                {(!trend || !trendUnit) && caption && (
-                                    <span className={value === 'Ready' ? "truncate text-[11px] font-semibold text-cuba-primary hover:underline" : "truncate text-[11px] text-cuba-ink-muted"}>
-                                        {caption}
-                                    </span>
-                                )}
-                            </span>
-                        )}
-                    </>
+                    (trend !== undefined || caption) && (
+                        <span className="mt-0.5 flex items-center gap-2">
+                            <TrendChip delta={trend} unit={trendUnit} />
+                            {(!trend || !trendUnit) && caption && (
+                                <span className={value === 'Ready' ? "truncate text-[11px] font-semibold text-cuba-primary hover:underline" : "truncate text-[11px] text-cuba-ink-muted"}>
+                                    {caption}
+                                </span>
+                            )}
+                        </span>
+                    )
                 )}
             </span>
             {interactive && <FiChevronRight className="h-4 w-4 flex-none text-cuba-ink-subtle" aria-hidden="true" />}

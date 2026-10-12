@@ -1,25 +1,25 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-11T18:33:11.491Z",
-  "eventCount": 2913,
-  "activeDirectiveId": "DIR-091",
-  "activeDirectiveTitle": "DIR-091: 100% Pixel-Perfect Reference Parity for Candidate Dashboard and Build Resume (Two-Page Operational Parity)",
+  "updatedAt": "2026-10-12T03:06:06.190Z",
+  "eventCount": 2946,
+  "activeDirectiveId": "DIR-092",
+  "activeDirectiveTitle": "DIR-092: Candidate Hero and Metric Cards Executive Enhancement",
   "activeDirectiveStatus": "IN_PROGRESS",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-11T10:51:33.854Z",
-  "unreadForLead": 193,
-  "unreadForDev": 325,
+  "stallDeadline": "2026-10-11T19:13:32.601Z",
+  "unreadForLead": 208,
+  "unreadForDev": 343,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-11T10:51:33.854Z",
-    "status": "S1-S4 landed: rail fabrications removed (real insights memo render), PROGRESS_SERIES colours corrected (interview=success, offer=warning), Sort+Grid/List wired to real state, recency spelled out, header quote inlined. 52/52 pinned tests still green, frozen templates diff=0. Now repairing the capture harness (F-EV-1).",
-    "percent": 55
+    "timestamp": "2026-10-11T19:13:32.601Z",
+    "status": "REFINED BREADCRUMB SPEC EXECUTED. All three ancestor segments are now real Link to /dashboard elements (were buttons; Build Resume was a plain span), with handleBreadcrumbNavigate flushing pending edits first. Final segment = real resume title/name with aria-current=page. Visible from xl. AC9 strengthened to pin exactly 3 ancestor links, no button, bounded to the nav element. test:dir091 11/11, full pinned suite 78 pass / 2 fail (pre-existing F-GAP-7 dir082 DashboardHomepage ratchet), ESLint exit 0, build 2.95s. Remaining: S8 live authenticated capture + submit-evidence.",
+    "percent": 92
   },
   "integrity": {
     "ok": true,
-    "checked": 2913,
+    "checked": 2946,
     "legacy": 0,
     "bad": 0
   }

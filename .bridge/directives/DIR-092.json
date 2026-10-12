@@ -1,0 +1,75 @@
+{
+  "id": "DIR-092",
+  "title": "DIR-092: Candidate Hero and Metric Cards Executive Enhancement",
+  "priority": "P1",
+  "status": "IN_PROGRESS",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-12T02:40:55.898Z",
+  "updatedAt": "2026-10-12T02:49:25.899Z",
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "spec": "Developer must enhance the Candidate Welcome Hero (src/components/Candidate/CopilotHeroHud.jsx) and the 4-card metric row (src/components/Candidate/CubaMetricCardRow.jsx) to achieve 100% executive polish:\n1. Fix greeting name truncation: Remove premature truncation (truncate) from the h1 heading and adjust the layout so that 'Good morning, <FirstName>! 👋' is completely visible without clipping across desktop and laptop viewports (e.g. at 1280px-1440px with sidebar and executive rail open).\n2. Relieve layout crowding: Relieve crowding between the greeting, the quote ('Better resumes. Brighter opportunities.'), and the action buttons (+ Create Resume, Explore Jobs, Mock Interview). On viewports where space is tight, ensure the quote wraps or gives precedence to the greeting without squishing action buttons.\n3. Elevate the Avg. ATS Score metric card: Display a bold, prominent score number (e.g. '32%') alongside the SVG donut ring, creating consistent typographic weight with the other three metric cards (5, 2, Ready).\n4. Apply authentic Cuba executive glassmorphism polish: Refine card backgrounds, border lines, subtle shadows, and hover transitions using approved Cuba tokens.\n5. Invariants: Keep src/cv-templates/ untouched (diff = 0), use real platform data, preserve all test IDs (cuba-copilot-hud, cuba-welcome-greeting, cuba-copilot-insight, cuba-copilot-cta-*, cuba-metric-cards, cuba-metric-*), preserve accessibility labels, and ensure all existing regression tests pass.",
+  "invariants": [
+    "Zero modifications to src/cv-templates/ (diff must remain exactly 0).",
+    "Zero hardcoded mock data or fabricated metrics; all values bind to real platform reads.",
+    "Cuba design token compliance (no arbitrary uncurated colors or legacy raw utilities).",
+    "Preserve all existing data-testid and accessibility aria attributes.",
+    "Production build (npm run build) must exit 0."
+  ],
+  "acceptanceCriteria": [
+    "AC1: In CopilotHeroHud.jsx, eliminate premature greeting truncation so that 'Good morning, <FirstName>! 👋' renders in full without getting clipped into an ellipsis across all viewports (min-width >= 320px up to 1920px).",
+    "AC2: In CopilotHeroHud.jsx, relieve quote & button group crowding by adjusting layout flow and responsive breakpoint so the quote never squeezes the greeting text.",
+    "AC3: In CubaMetricCardRow.jsx, update the Avg. ATS Score card to display a bold, prominent score value alongside the SVG donut gauge, matching the visual typographic hierarchy of Total Resumes (5), Job Applications (2), and Interview Coach (Ready).",
+    "AC4: Apply polished Cuba Modern Executive glassmorphism and micro-interactions across both the hero card and the 4 metric cards (elevation, smooth transitions, authentic Cuba tokens).",
+    "AC5: Invariants hold: zero diff in src/cv-templates/, zero hardcoded mock telemetry, all regression test suites pass, and npm run build succeeds cleanly."
+  ],
+  "plan": {
+    "submittedAt": "2026-10-12T02:49:24.049Z",
+    "summary": "DIR-092 revised plan. Recon complete. Scope is locked to exactly two components: src/components/Candidate/CopilotHeroHud.jsx and src/components/Candidate/CubaMetricCardRow.jsx. ROOT CAUSE AC1: the h1 at CopilotHeroHud.jsx line 88 carries the truncate utility (overflow hidden, text-overflow ellipsis, white-space nowrap) inside a greeting column declared min-w-280px flex-1, which flexes below its content width whenever the right-hand quote plus CTA group (flex-none) occupies the row, so the greeting clips to an ellipsis. ROOT CAUSE AC3: the ATS card passes children equal to the AtsDonut, and MetricCard renders the children branch INSTEAD of the value branch, so the card value prop is dead code and the only number is the 11px label centred inside the 48px donut, with no bold headline like the other three cards. SYSTEM INVARIANTS AND INTERFACE CONTRACT: I will preserve every public interface, all data-testid hooks (cuba-copilot-hud, cuba-welcome-greeting, cuba-copilot-insight, cuba-copilot-cta-*, cuba-metric-cards, cuba-metric-*) and every aria attribute, keeping both components presentational with real reads only and no fabricated telemetry. TWO CERTIFIED PINS COLLIDE WITH THE DIRECTIVE and I will not silently break them: dir093 line 26 pins the h1 class prefix containing truncate, and dir085 line 46 pins the exact HUD section literal; both are superseded-surface pins, so I recommend retargeting them to the new surface with explicit supersession comments (newest directive wins) and I have escalated this decision to the Lead. UX STATES: both components keep their existing loading and empty state behaviour, the metric row already renders an honest placeholder when a read is unresolved and never a fake zero, and the ATS donut renders an explicit empty state when the score is unknown. RESPONSIVE: the greeting gets full-row precedence below the xl breakpoint and shares the row at xl and above, validated across 375px, 768px, 1280px and 1440px with the sidebar and executive rail open. ACCESSIBILITY: I preserve keyboard focus rings (cuba-focusable) and the aria-label contract, add no contrast regression, and keep the greeting as the single page h1. QA AND VERIFICATION: add a real Playwright DOM crawl of the live /dashboard at 1280, 1440 and 320px with zero console errors, plus a new node test suite (tests/dir092-candidate-hero-metric-executive.test.mjs) and the existing dir084, dir085, dir090, dir091, dir093 and dir095 regression suites; npm run build must stay under 4s and npm run lint must exit 0. PERFORMANCE: the change is render-only with no new dependency and no new fetch or query, so the sub-100ms render budget is preserved and no memo boundary is disturbed. SECURITY: no token, auth, credential or user input is touched and no sanitize surface changes; the diff is limited to presentational markup and the frozen cv-templates set stays at zero diff.",
+    "steps": [
+      "S1 AC1 remove the truncate utility from the h1 and rebuild the greeting column so the name can never clip - greeting block becomes min-w-0 flex-1 basis-full xl:basis-auto so it takes a full row on tight viewports and shares the row on wide ones, the h1 wraps instead of ellipsizing, keeping data-testid=cuba-welcome-greeting and the real displayName and greetingFor sources",
+      "S2 AC2 relieve crowding by restructuring the section into a left greeting block and a right quote plus CTA block with a clear responsive breakpoint that stacks below xl and inlines at xl and above, keeping the quote text and the three CTAs and the chevron menu behaviour untouched, and validating mobile 375px, tablet 768px and desktop 1280px",
+      "S3 AC3 render a bold headline value (text-lg font-bold) beside the SVG donut on the Avg. ATS Score card so it matches the typographic weight of Total Resumes, Job Applications and Interview Coach, keeping the AtsDonut signature and its geometry intact, dropping the duplicated 11px centred number and keeping the honest empty-state placeholder with no fabricated zero",
+      "S4 AC4 apply Cuba executive glass polish using approved tokens only - shadow-cuba-sm and shadow-cuba-md elevation, a subtle hover lift, transition plus ease-cuba and duration tokens and border-cuba-line - with zero raw palette utilities and zero hex, preserving aria attributes and keyboard focus",
+      "S5 AC5 add the tests/dir092-candidate-hero-metric-executive.test.mjs suite (AC1 no-truncate plus testid, AC2 greeting precedence plus quote and CTA preserved, AC3 bold ATS number plus AtsDonut preserved plus no hardcoded 69, AC4 token-only) and register the test:dir092-hero script, retargeting the two superseded pins with explicit comments",
+      "S6 verify by running the new suite plus dir084, dir085, dir090, dir091, dir093 and dir095, npm run build under 4s, npm run lint exit 0, a Playwright DOM crawl at 1280 and 320px with zero console errors, and confirming git diff for src/cv-templates is empty"
+    ],
+    "planHash": "0356a43c2a616b8c478529dada2d8e99a2556faa96497f69eb3b37e6225ed1ab"
+  },
+  "evidence": null,
+  "reviews": [],
+  "freeze": null,
+  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "continuationPending": false,
+  "revisionTarget": null,
+  "planApproval": {
+    "approvedAt": "2026-10-12T02:49:25.899Z",
+    "automated": true,
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "declared-automation",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "non-tty"
+      ],
+      "pid": 6420,
+      "parentPid": 22040,
+      "tty": false,
+      "at": "2026-10-12T02:49:25.899Z",
+      "explicitlyAllowed": true
+    },
+    "feedback": "Auto-approved by the autonomous plan-scorer (score 100/100, reviewer verdict approved). NOT a human Lead review."
+  },
+  "heartbeats": [
+    {
+      "at": "2026-10-12T03:16:24.805Z",
+      "status": "S1-S5 landed: greeting truncation removed (min-w-15rem flex-1 basis-full xl:basis-auto), quote stacked above CTAs, bold ATS value beside the real donut, Cuba glass elevation on both surfaces. dir092-hero 5/0, dir091 11/0, dir093 7/0, dir085 6/0, design-system 142/0, SSR DOM 11/11, build 3.15s, lint 0 errors, cv-templates diff 0. Preparing evidence.",
+      "percent": 90,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    }
+  ],
+  "lastHeartbeatAt": "2026-10-12T03:16:24.805Z"
+}

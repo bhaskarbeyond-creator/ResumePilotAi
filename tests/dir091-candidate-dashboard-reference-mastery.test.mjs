@@ -69,7 +69,11 @@ test('DIR-091 AC3: every metric binds to a real platform read and never fabricat
     assert.match(cards, /count === null \? '--' : String\(count\)/);
     assert.match(cards, /applications === null \? '--' : String\(applications\)/);
     assert.match(cards, /bestScore !== null \? `\$\{bestScore\}%` : 'Not scored'/);
-    assert.match(cards, /hasScore \? `\$\{Math\.round\(clamped\)\}%` : '--'/);
+    // DIR-092 supersedes the DIR-091 centred-donut-label pin: the ATS number now renders as a
+    // bold headline value BESIDE the donut (matching Total Resumes / Job Applications / Interview
+    // Coach) instead of living only inside the tiny centred donut label, so that retired
+    // expression no longer exists. The real donut + its geometry are still asserted in AC2.
+    assert.match(cards, /<span className="block text-lg font-bold leading-tight text-cuba-ink">\{value\}<\/span>/);
 });
 
 test('DIR-091 AC4: the cards use Cuba design tokens only — no raw palette utilities', async () => {

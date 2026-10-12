@@ -76,7 +76,7 @@ const CopilotHeroHud = ({ insight = '', onNavigate, displayName = 'Candidate', c
             data-testid="cuba-copilot-hud"
             aria-label="AI Copilot"
             className={cx(
-                'cuba-glass flex flex-wrap items-center gap-x-4 gap-y-2.5 rounded-cuba-lg border border-cuba-line px-3.5 py-3',
+                'cuba-glass flex flex-wrap items-center gap-x-4 gap-y-3 rounded-cuba-lg border border-cuba-line px-3.5 py-3 shadow-cuba-sm transition-shadow duration-200 ease-cuba hover:shadow-cuba-md',
                 className,
             )}
         >
@@ -84,8 +84,8 @@ const CopilotHeroHud = ({ insight = '', onNavigate, displayName = 'Candidate', c
                 <CubaCopilotMascot size={40} label="PilotAI Copilot" />
             </span>
 
-            <div className="min-w-[280px] flex-1">
-                <h1 className="truncate text-base font-bold tracking-tight text-cuba-ink sm:text-xl" data-testid="cuba-welcome-greeting">
+            <div className="min-w-[15rem] flex-1 basis-full xl:basis-auto">
+                <h1 className="text-base font-bold tracking-tight text-cuba-ink sm:text-xl" data-testid="cuba-welcome-greeting">
                     {greetingFor()}, {firstName}! <span aria-hidden="true">👋</span>
                 </h1>
                 <p className="mt-1 text-xs text-cuba-ink-muted">
@@ -96,13 +96,14 @@ const CopilotHeroHud = ({ insight = '', onNavigate, displayName = 'Candidate', c
                 </span>
             </div>
 
-            {/* DIR-090 GAP-6: the reference sets the quote INLINE to the left of the CTA group,
-                not stacked above it. The CTA group itself is unchanged. */}
-            <div className="flex flex-none flex-wrap items-center justify-end gap-2.5">
+            {/* DIR-092 AC2: the reference sets the quote on its OWN line above the CTA group,
+                right-aligned, so the quote can never squeeze the greeting. The CTA group itself
+                is unchanged and stays flex-none, so the action buttons are never squished. */}
+            <div className="ml-auto flex max-w-full flex-none flex-col items-end gap-1.5">
                 <p className="hidden text-xs italic text-cuba-ink-subtle lg:block">
                     &ldquo;Better resumes. Brighter opportunities.&rdquo;
                 </p>
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center justify-end gap-2">
                 {QUICK_ACTIONS.map(({ id, label, to, icon: Icon, variant }) => (variant === 'primary' ? (
                     <span key={id} ref={menuRef} className="relative inline-flex overflow-hidden rounded-cuba-sm shadow-xs">
                         <a

@@ -23,7 +23,10 @@ test('DIR-093 AC1: the welcome header renders the real greeting, subtext, quote 
     const hud = await read(HUD);
 
     // The greeting is the page's single h1, built from the REAL first name and the local clock.
-    assert.match(hud, /<h1 className="truncate text-base font-bold/);
+    // DIR-092 supersedes the DIR-093 truncate pin: the greeting must render in FULL, so the h1
+    // no longer clips and the `truncate` utility was deliberately removed. The assertion follows
+    // the surface instead of pinning the retired clipping class.
+    assert.match(hud, /<h1 className="text-base font-bold/);
     assert.match(hud, /data-testid="cuba-welcome-greeting"/);
     assert.match(hud, /const greetingFor = \(date = new Date\(\)\) => \{/);
     assert.match(hud, /const firstName = String\(displayName \|\| 'Candidate'\)/);

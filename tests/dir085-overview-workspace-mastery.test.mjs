@@ -43,7 +43,10 @@ test('AC1: the compact HUD and capsule strip exist and the heavy hero pieces are
     // The HUD is one horizontal row, not a tall banner. DIR-093 restyled it into the reference
     // welcome header, so the geometry guard follows the new glass row rather than the old one.
     assert.match(hud, /data-testid="cuba-copilot-hud"/);
-    assert.match(hud, /cuba-glass flex flex-wrap items-center gap-x-4 gap-y-2\.5 rounded-cuba-lg border border-cuba-line px-3\.5 py-3/);
+    // DIR-092 supersedes the DIR-085/DIR-093 HUD geometry pin: the welcome header now carries
+    // executive elevation (shadow-cuba-sm) plus a hover lift, and its greeting is no longer
+    // truncated. The assertion tracks the enhanced glass row rather than the retired literal.
+    assert.match(hud, /cuba-glass flex flex-wrap items-center gap-x-4 gap-y-3 rounded-cuba-lg border border-cuba-line px-3\.5 py-3 shadow-cuba-sm/);
     assert.match(hud, /data-testid="cuba-copilot-insight"/);
     assert.match(hud, /data-testid=\{`cuba-copilot-cta-\$\{id\}`\}/);
     for (const cta of ['new-resume', 'explore-jobs', 'mock-drill']) {
