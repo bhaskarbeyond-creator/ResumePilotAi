@@ -35,4 +35,46 @@ export function buildPortalCommands(groups, activeLabel) {
     return commands;
 }
 
+/**
+ * DIR-105 — palette indexing for the Platform Settings hub.
+ *
+ * The settings console exposes 26+ panels behind a single `/admin/settings`
+ * route, so the nav-model builder above cannot see them (one nav item, many
+ * panels). This indexes the settings inventory directly instead, producing one
+ * command per panel the caller is ENTITLED to — a palette entry can never point
+ * at a panel the denial gate would refuse.
+ *
+ * Pure and framework-free so it can be asserted in Node tests.
+ *
+ * @param {Array<{key:string,label:string,group:string,description?:string}>} settings
+ * @param {{isSuperAdmin?:boolean,permissions?:string[],canAccess?:(s:object)=>boolean}} [access]
+ * @param {string} [activeTab] currently open `?tab=` key, surfaced for context
+ */
+export function buildSettingsCommands(settings, access = {}, activeTab) {
+    const { isSuperAdmin = false, permissions = [], canAccess } = access;
+    const allowed = typeof canAccess === 'function'
+        ? canAccess
+        : (setting) => {
+            if (isSuperAdmin) return true;
+            if (setting?.superAdminOnly) return false;
+            if (!setting?.permission) return true;
+            const granted = Array.isArray(permissions) ? permissions : [];
+            if (granted.includes('*')) return true;
+            const required = Array.isArray(setting.permission) ? setting.permission : [setting.permission];
+            return required.some((p) => granted.includes(p));
+        };
+
+    return (settings || [])
+        .filter((setting) => setting && setting.key && allowed(setting))
+        .map((setting) => ({
+            id: `settings-${setting.key}`,
+            label: setting.label,
+            group: `Settings · ${setting.group}`,
+            keywords: `${setting.label} ${setting.description || ''} ${setting.key} ${setting.group} settings platform configuration`,
+            icon: NAV_ICON,
+            isActive: setting.key === activeTab,
+            to: `/admin/settings?tab=${encodeURIComponent(setting.key)}`,
+        }));
+}
+
 export default buildPortalCommands;

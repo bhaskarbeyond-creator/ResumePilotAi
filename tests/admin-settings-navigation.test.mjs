@@ -16,6 +16,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { canAccessSetting, SETTINGS_GROUP_ORDER, presentGroups } from '../src/components/admin/settings/settingsAccess.js';
+import { buildSettingsCommands } from '../src/components/cuba/portalCommands.js';
 
 const root = path.resolve(import.meta.dirname, '..');
 const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
@@ -53,6 +54,7 @@ const NAV_CODE = stripComments(NAVIGATOR);
 
 const INVENTORY = allSettings();
 const MOUNTED = mountedPanels();
+const SUPER_ADMIN_ONLY_KEYS = INVENTORY.filter((s) => s.superAdminOnly).map((s) => s.key);
 
 describe('DIR-105 settings inventory is complete and reachable', () => {
     it('declares a non-trivial inventory (26+ operations)', () => {
@@ -182,6 +184,56 @@ describe('DIR-105 preserves the ?tab= contract and Cuba design tokens', () => {
     it('stays responsive and non-overflowing', () => {
         assert.match(NAVIGATOR, /grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3/);
         assert.match(NAVIGATOR, /flex-wrap/);
+    });
+});
+
+
+describe('DIR-105 command palette indexes every entitled settings panel', () => {
+    const superAdmin = { isSuperAdmin: true, permissions: ['*'] };
+
+    it('indexes the full inventory for a super admin', () => {
+        const commands = buildSettingsCommands(INVENTORY, superAdmin);
+        assert.equal(commands.length, INVENTORY.length);
+    });
+
+    it('deep-links every command to its own ?tab= target', () => {
+        for (const command of buildSettingsCommands(INVENTORY, superAdmin)) {
+            const key = command.id.replace('settings-', '');
+            assert.equal(command.to, `/admin/settings?tab=${encodeURIComponent(key)}`);
+        }
+    });
+
+    it('never indexes a panel the denial gate would refuse', () => {
+        const commands = buildSettingsCommands(INVENTORY, { isSuperAdmin: false, permissions: ['*'] });
+        for (const key of SUPER_ADMIN_ONLY_KEYS) {
+            assert.equal(
+                commands.some((c) => c.to.includes(`tab=${key}`)),
+                false,
+                `palette leaked ${key} to a non-super-admin`,
+            );
+        }
+    });
+
+    it('marks the currently open panel as active', () => {
+        const target = INVENTORY[2].key;
+        const commands = buildSettingsCommands(INVENTORY, superAdmin, target);
+        assert.equal(commands.filter((c) => c.isActive).length, 1);
+        assert.equal(commands.find((c) => c.isActive).id, `settings-${target}`);
+    });
+
+    it('makes every panel keyword-searchable by label, key and group', () => {
+        for (const command of buildSettingsCommands(INVENTORY, superAdmin)) {
+            const key = command.id.replace('settings-', '');
+            const entry = INVENTORY.find((s) => s.key === key);
+            assert.ok(command.keywords.includes(entry.label));
+            assert.ok(command.keywords.includes(key));
+            assert.ok(command.keywords.includes(entry.group));
+        }
+    });
+
+    it('is empty (not throwing) for an absent inventory', () => {
+        assert.deepEqual(buildSettingsCommands(undefined, superAdmin), []);
+        assert.deepEqual(buildSettingsCommands([], superAdmin), []);
     });
 });
 

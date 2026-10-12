@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-12T17:38:59.626Z",
-  "seq": 3135,
-  "id": "evt_mv5jdksm_e73be9bf165a",
+  "timestamp": "2026-10-12T17:48:13.624Z",
+  "seq": 3140,
+  "id": "evt_mv5jpg9f_7047bf5957e8",
   "type": "HEARTBEAT",
-  "title": "[Heartbeat] Implemented settings navigation hub; build 3.02s; 20/0 + 142/0 tests; live crawl PASS (33 panels, 0 console errors)",
+  "title": "[Heartbeat] Final: spec-named suite tests/admin-settings-navigation.test.mjs (26/0); buildSettingsCommands palette indexing added; build 3.64s; design-system 142/0; eslint clean; crawl 23/0 PASS; INV-1 0-byte",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-105",
-  "summary": "Implemented settings navigation hub; build 3.02s; 20/0 + 142/0 tests; live crawl PASS (33 panels, 0 console errors)"
+  "summary": "Final: spec-named suite tests/admin-settings-navigation.test.mjs (26/0); buildSettingsCommands palette indexing added; build 3.64s; design-system 142/0; eslint clean; crawl 23/0 PASS; INV-1 0-byte"
 }

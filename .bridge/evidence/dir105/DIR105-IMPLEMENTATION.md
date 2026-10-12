@@ -28,7 +28,8 @@ other ~30 panels. Authorization was never bypassed — it was enforced twice
 | `src/components/admin/settings/settingsAccess.js` | **NEW.** `canAccessSetting()` + `SETTINGS_GROUP_ORDER` + `presentGroups()`. Plain `.js` so `node --test` can import the predicate directly. |
 | `src/components/admin/settings/SettingsNavigator.jsx` | **NEW.** The navigation hub: category pills, live search, entitled tab grid. Drives `?tab=` through `setSearchParams`. |
 | `src/components/admin/settings/Settings.jsx` | Inline `hasPerm` **deleted**; the denial gate now calls `canAccessSetting`. The hub mounts on **both** the allowed and the denied branch (a denied operator is no longer stranded). |
-| `tests/dir105-settings-navigator.test.mjs` | **NEW.** 20 guards. |
+| `tests/admin-settings-navigation.test.mjs` | **NEW.** 26 guards (inventory reachability, authorization, hub wiring, tokens, palette indexing). |
+| `src/components/cuba/portalCommands.js` | **NEW** `buildSettingsCommands()` — palette indexing for the 26+ panels (§10.2). Drift-free: generated from the same inventory + the same predicate. |
 | `package.json` | `test:dir105` script. |
 
 ### Why one predicate
@@ -48,11 +49,11 @@ structurally impossible.
 
 | Gate | Result |
 |------|--------|
-| `npm run build` | **3.02 s**, exit 0 (< 4.0 s budget) |
-| `node --test tests/dir105-settings-nav…` | **20 / 0** |
+| `npm run build` | **3.64 s**, exit 0 (< 4.0 s budget) |
+| `node --test tests/admin-settings-navigation.test.mjs` | **26 / 0** |
 | `npm run test:design-system` | **142 / 0** (28 suites, incl. `cuba-admin-console`, `cuba-portal-navigation`, frozen-template §8) |
-| ESLint (4 changed files) | **0 errors, 0 warnings** |
-| Live crawl (real Firebase + real MariaDB) | **RESULT: PASS** |
+| ESLint (5 changed files) | **0 errors, 0 warnings** |
+| Live crawl (real Firebase + real MariaDB) | **RESULT: PASS — 23 checks, 0 failures** |
 | **INV-1** `src/cv-templates/` + `backend/services/aiRuntime.js` | **0-byte diff** |
 
 ### Live crawl detail (`verify-settings-nav.mjs`)
@@ -81,7 +82,26 @@ Operator session (`role: ADMIN`, `isSuperAdmin === false`):
 - **Cuba design tokens** — a guard test rejects raw hex and off-token Tailwind colour ramps in the navigator.
 - **INV-1** — 0-byte diff.
 
-## 5. Artifacts
-`verify-settings-nav.mjs` · `verify-settings-nav.log` · `verify-settings-nav-run.log`
+## 6. Honest status — one item carried forward
+
+§10.2 asks that the **command palette** index all 26+ settings modules. Delivered:
+`buildSettingsCommands()` in `portalCommands.js`, pure and unit-tested (6 guards) —
+it emits one command per *entitled* panel, each deep-linked to
+`/admin/settings?tab=<key>`, reusing the same predicate so it can never leak a gated
+panel.
+
+**Not yet wired into `CubaPortalShell.jsx`.** The shell currently derives commands
+from the nav model only (`buildPortalCommands(groups, …)`). Appending the settings
+commands requires threading the settings inventory + admin session from
+`AdminPortalCuba.jsx` into the shell — a two-component prop change that I did **not**
+rush, because a half-wired palette is worse than a tested, ready-to-wire primitive.
+This is the remaining P1 item; §10.1 (the P0 navigation restoration) is complete.
+
+I am flagging this rather than claiming it, per the no-fabrication invariant.
+
+## 7. Artifacts
+`verify-settings-nav.mjs` · `verify-settings-nav.log` · `crawl-final.log` (23 checks, PASS)
 `screenshots: settings-nav-{mobile-320,tablet-768,desktop-1440,operator-denied}.png`
-`build-dir105.log` · `dir105-tests.log` · `design-system.log` · `eslint-dir105.log` (empty = clean)
+`build-dir105.log` (3.64 s) · `dir105-tests.log` (26/0) · `design-system.log` (142/0)
+`eslint-dir105.log` (empty = clean) · `DIR105-IMPLEMENTATION.md` (this file)
+
