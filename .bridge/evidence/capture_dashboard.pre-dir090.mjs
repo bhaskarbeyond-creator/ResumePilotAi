@@ -1,7 +1,19 @@
 import { chromium } from 'playwright';
 import { createServer } from 'vite';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 
-const API_KEY = 'AIzaSyDigXT7n4Pyf-8WHQtvjHa0wGvJ86nmrwc';
+// The Firebase web API key is NEVER hardcoded. It is resolved from the environment
+// (or the local .env), so no plaintext credential is ever committed (INV-5).
+const API_KEY = (() => {
+    const fromEnv = process.env.VITE_FIREBASE_KEY || process.env.FIREBASE_API_KEY;
+    if (fromEnv) return fromEnv;
+    try {
+        const m = readFileSync(path.resolve('.env'), 'utf8').match(/^\s*VITE_FIREBASE_KEY\s*=\s*(.+)\s*$/m);
+        if (m) return m[1].trim();
+    } catch { /* no .env present */ }
+    throw new Error('VITE_FIREBASE_KEY is required (set it in .env or the environment); the Firebase web API key must never be hardcoded.');
+})();
 
 const makeJwt = (payload) => {
     const b64 = (obj) => Buffer.from(JSON.stringify(obj)).toString('base64url');

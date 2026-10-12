@@ -1,6 +1,7 @@
 import { chromium } from 'playwright';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 /**
@@ -39,7 +40,17 @@ const urlArg = args.find((a) => a.startsWith('--url='));
 const BASE = (urlArg ? urlArg.slice('--url='.length) : process.env.DASHBOARD_CAPTURE_URL || 'http://localhost/IME365').replace(/\/+$/, '');
 const OUT_DIR = process.env.DASHBOARD_CAPTURE_DIR || 'C:/Users/mbhas/.gemini/antigravity-ide/brain/a97e1dfc-8786-49f1-af66-3de9b20fbc00';
 const EVIDENCE_DIR = '.bridge/evidence';
-const API_KEY = 'AIzaSyDigXT7n4Pyf-8WHQtvjHa0wGvJ86nmrwc';
+// The Firebase web API key is NEVER hardcoded. It is resolved from the environment
+// (or the local .env), so no plaintext credential is ever committed (INV-5).
+const API_KEY = (() => {
+  const fromEnv = process.env.VITE_FIREBASE_KEY || process.env.FIREBASE_API_KEY;
+  if (fromEnv) return fromEnv;
+  try {
+    const m = readFileSync(path.resolve('.env'), 'utf8').match(/^\s*VITE_FIREBASE_KEY\s*=\s*(.+)\s*$/m);
+    if (m) return m[1].trim();
+  } catch { /* no .env present */ }
+  throw new Error('VITE_FIREBASE_KEY is required (set it in .env or the environment); the Firebase web API key must never be hardcoded.');
+})();
 
 const md5 = (buffer) => createHash('md5').update(buffer).digest('hex').toUpperCase();
 

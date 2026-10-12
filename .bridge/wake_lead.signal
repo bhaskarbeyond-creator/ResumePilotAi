@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-12T06:31:30.231Z",
-  "seq": 3009,
-  "id": "evt_mv4vj6hm_f6e4e18599e1",
-  "type": "EVIDENCE_SUBMITTED",
-  "title": "[Evidence] DIR-096: DIR-096: Autonomous Production Convergence Engine — End-to-End Implementation, Refactoring, RCA, Contract Verification & Release Certification Against Master Manifest 4.2.0",
+  "timestamp": "2026-10-12T07:42:15.335Z",
+  "seq": 3032,
+  "id": "evt_mv4y2614_001f1b97c818",
+  "type": "PLAN_SUBMITTED",
+  "title": "[Plan] DIR-097: Fix failing unit tests for CopilotHeroHud component",
   "sender": "STAFF_DEVELOPER",
-  "directiveId": "DIR-096",
-  "summary": "DIR-096 WAVES 1-3 (manifest materialisation + contract gates), per the standing Lead ruling. DELIVERED: (1) scripts/generate-manifest-artifacts.mjs - idempotent, byte-stable projection of the authoritative manifest into all 12 declared generatedArtifacts: docs/contracts/{manifest.json, openapi.yaml (OpenAPI 3.1, 17 operations), schema.sql (26 canonical tables + FKs), route-inventory.json, bridge-message.schema.json} and docs/build/{tasks.json (DERIVED graph, explicitly graphKind=derived, declaredTotalTasks=118, never a fabricated 118-task list), error-codes.json, fsm/*.json (5 state machines)}. (2) tests/manifest-consistency.test.mjs extended to 9 ACs incl. AC6 (all declared artifacts materialised) and AC7 (faithful projection). (3) npm run manifest:generate wired into test:manifest-consistency. EVIDENCE: test:manifest-consistency 9/9 pass, test:openapi 6/6 pass, test:openapi-diff clean (17 ops), eslint on 5 files exit 0, idempotency proven (two runs -> 12/12 artifacts byte-identical SHA256), git diff src/cv-templates/ = 0 bytes (INV-1 intact), docs/contracts/** now materialised and held under the INV-1 lock. RCA unchanged: 4 manifest countValidation rules still drift (117-vs-26 tables rule mis-specified, 292-vs-330 suites, componentInventory path src/components/ui vs physical src/components/cuba, taskGraph length rule) and 9 of 29 router modules remain un-modularised (shrink-only ratchet)."
+  "directiveId": "DIR-097",
+  "summary": "DIR-097 plan. S1: open the existing CopilotHeroHud test file at src/components/Candidate/CopilotHeroHud.test.jsx together with src/components/Candidate/CopilotHeroHud.jsx, and compare each assertion against the component current props (insight, onNavigate, displayName, className) and rendered output. S2: update the CopilotHeroHud test assertions so they match the component exactly - data-testid cuba-copilot-hud, aria-label AI Copilot, data-testid cuba-copilot-insight, the cuba-copilot-cta-<id> buttons, the clock-derived greeting and the real displayName - correcting only the assertions that no longer match. S3: run npm test and confirm the CopilotHeroHud test passes and no new failures appear elsewhere. Scope: only the CopilotHeroHud test file is touched; no production code is altered."
 }

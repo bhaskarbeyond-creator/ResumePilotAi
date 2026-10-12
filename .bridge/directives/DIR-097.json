@@ -1,0 +1,59 @@
+{
+  "id": "DIR-097",
+  "title": "Fix failing unit tests for CopilotHeroHud component",
+  "priority": "P1",
+  "status": "IN_PROGRESS",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-12T07:12:04.764Z",
+  "updatedAt": "2026-10-12T07:42:19.728Z",
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "spec": "[DIRECTOR v1 — autonomous roadmap step 1 of project goal]\n\nGOAL: Ship IME365 v1.0 to production-ready\n\nOpen src/components/Candidate/CopilotHeroHud.test.jsx, examine the failing test(s) caused by recent changes to CopilotHeroHud.jsx (DIR-092). Update the test file to match the current component props and behavior, ensuring all assertions pass. After editing, run npm test to confirm the test suite passes.",
+  "invariants": [
+    "Do not alter production code unless required to make the test pass",
+    "Maintain or improve existing test coverage"
+  ],
+  "acceptanceCriteria": [
+    "npm test exits with code 0",
+    "All tests in src/components/Candidate/CopilotHeroHud.test.jsx pass",
+    "No regression in other test files (test output shows no new failures)"
+  ],
+  "dependsOn": [],
+  "sourceEventId": "director:6ete684:1",
+  "plan": {
+    "submittedAt": "2026-10-12T07:42:15.268Z",
+    "summary": "DIR-097 plan. S1: open the existing CopilotHeroHud test file at src/components/Candidate/CopilotHeroHud.test.jsx together with src/components/Candidate/CopilotHeroHud.jsx, and compare each assertion against the component current props (insight, onNavigate, displayName, className) and rendered output. S2: update the CopilotHeroHud test assertions so they match the component exactly - data-testid cuba-copilot-hud, aria-label AI Copilot, data-testid cuba-copilot-insight, the cuba-copilot-cta-<id> buttons, the clock-derived greeting and the real displayName - correcting only the assertions that no longer match. S3: run npm test and confirm the CopilotHeroHud test passes and no new failures appear elsewhere. Scope: only the CopilotHeroHud test file is touched; no production code is altered.",
+    "steps": [
+      "S1 Open src/components/Candidate/CopilotHeroHud.test.jsx and src/components/Candidate/CopilotHeroHud.jsx and compare assertions to the component",
+      "S2 Update the CopilotHeroHud test assertions to match the component current props and output",
+      "S3 Run npm test and verify the CopilotHeroHud test passes with no new failures"
+    ],
+    "planHash": "b2c900aa009cac8b0219be9e3205dc3e4f5cc44ceca7d0efd58cfd518b47baec"
+  },
+  "evidence": null,
+  "reviews": [],
+  "freeze": null,
+  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "continuationPending": false,
+  "revisionTarget": null,
+  "planApproval": {
+    "approvedAt": "2026-10-12T07:42:19.728Z",
+    "automated": true,
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "daemon:lead_watcher_session",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "daemon-parent:lead_watcher_session",
+        "non-tty"
+      ],
+      "pid": 14188,
+      "parentPid": 24464,
+      "tty": false,
+      "at": "2026-10-12T07:42:19.727Z",
+      "explicitlyAllowed": true
+    },
+    "feedback": "Auto-approved by the autonomous plan-scorer (score 88/100, reviewer verdict approved). NOT a human Lead review."
+  }
+}
