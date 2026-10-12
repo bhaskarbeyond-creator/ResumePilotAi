@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-12T06:22:40.018Z",
-  "seq": 3000,
-  "id": "evt_mv4v7tdf_82444980e7b4",
+  "timestamp": "2026-10-12T06:24:54.811Z",
+  "seq": 3003,
+  "id": "evt_mv4vapdp_98cc7f0d3b47",
   "type": "HEARTBEAT",
-  "title": "[Heartbeat] Waves 0-2 delivered: baseline captured (dir082 6/6, dir095 7/7, design-system 142/142), manifest RCA drift report + manifest-consistency gate authored and green (8/8), cv-templates 0-byte diff intact.",
+  "title": "[Heartbeat] Wave 3 delivered: OpenAPI contract conformance gate. test:openapi 6/6 green, test:openapi-diff clean (17 operations), eslint exit 0, manifest-consistency still 8/8.",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-096",
-  "summary": "Waves 0-2 delivered: baseline captured (dir082 6/6, dir095 7/7, design-system 142/142), manifest RCA drift report + manifest-consistency gate authored and green (8/8), cv-templates 0-byte diff intact."
+  "summary": "Wave 3 delivered: OpenAPI contract conformance gate. test:openapi 6/6 green, test:openapi-diff clean (17 operations), eslint exit 0, manifest-consistency still 8/8."
 }

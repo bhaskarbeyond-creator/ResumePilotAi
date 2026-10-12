@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-12T06:22:05.246Z",
+  "generatedAt": "2026-10-12T06:24:43.145Z",
   "directive": "DIR-096",
   "manifestPath": ".bridge/project.json",
   "manifestSchemaVersion": "4.2.0",
@@ -35,9 +35,9 @@
     "templatesPhysicalDirs": 51,
     "coversPhysicalDirs": 4,
     "testSuitesDeclared": 292,
-    "testSuitesDiscovered": 329,
+    "testSuitesDiscovered": 330,
     "testBreakdown": {
-      "frontTests": 192,
+      "frontTests": 193,
       "backendTests": 107,
       "e2eSpecs": 30
     },
@@ -82,7 +82,7 @@
     {
       "id": "qualityAssuranceAndTesting.totalTestSuites === discovered test files",
       "declared": 292,
-      "discovered": 329,
+      "discovered": 330,
       "status": "DRIFT",
       "note": "declared vs discovered (tests/*.test.mjs + backend/test/*.test.js + tests/e2e/*.spec.js)"
     },

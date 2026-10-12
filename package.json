@@ -14,6 +14,8 @@
     "test:security:static": "node scripts/generate-security-headers.mjs --check && node scripts/generate-public-discovery.mjs --check && node --test tests/security-static.test.mjs tests/secret-scanner-efficacy.test.mjs tests/production-delivery-security.test.mjs tests/production-delivery-integration.test.mjs tests/dir023-contrast-tokens.test.mjs tests/xss.test.mjs tests/mfa-static.test.mjs tests/auth-error-messages.test.mjs tests/unlayered-css-guard.test.mjs",
     "test:xampp-policy": "node --test tests/xampp-policy-guard.test.mjs",
     "test:manifest-consistency": "node scripts/manifest-drift-report.mjs && node --test tests/manifest-consistency.test.mjs",
+    "test:openapi": "node scripts/openapi-snapshot.mjs --check && node --test tests/openapi-contract.test.mjs",
+    "test:openapi-diff": "node scripts/openapi-snapshot.mjs --check",
     "test:bridge-integrity": "node --test tests/dir062-bridge-provenance.test.mjs",
     "test:dir063": "node --test tests/dir063-docx-parity-and-print.test.mjs",
     "test:dir063:docx": "node --test backend/test/docx-parity.test.js backend/test/docx-export.test.js backend/test/export-pipeline.test.js",

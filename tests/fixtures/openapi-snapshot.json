@@ -1,0 +1,218 @@
+{
+  "versioning": "URI /api/v1 with deprecation headers (Sunset, Deprecation)",
+  "responseEnvelopeKeys": [
+    "data",
+    "error",
+    "requestId",
+    "success"
+  ],
+  "operations": {
+    "AdminDatabaseSwitch": {
+      "method": "POST",
+      "path": "/api/v1/admin/database-settings/switch",
+      "auth": "super_admin",
+      "requestKeys": [
+        "reason",
+        "target"
+      ],
+      "responseCodes": [
+        "202",
+        "409"
+      ]
+    },
+    "AiGenerateBio": {
+      "method": "POST",
+      "path": "/api/v1/ai/bio",
+      "auth": "bearer",
+      "requestKeys": [
+        "maxWords",
+        "resumeId",
+        "tone"
+      ],
+      "responseCodes": [
+        "200",
+        "402",
+        "502"
+      ]
+    },
+    "AuthLogin": {
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "auth": "public",
+      "requestKeys": [
+        "email",
+        "password",
+        "totp"
+      ],
+      "responseCodes": [
+        "200",
+        "401",
+        "423"
+      ]
+    },
+    "AuthLogout": {
+      "method": "POST",
+      "path": "/api/v1/auth/logout",
+      "auth": "bearer",
+      "requestKeys": [],
+      "responseCodes": [
+        "204"
+      ]
+    },
+    "AuthMfaEnroll": {
+      "method": "POST",
+      "path": "/api/v1/auth/mfa/enroll",
+      "auth": "bearer",
+      "requestKeys": [],
+      "responseCodes": [
+        "200"
+      ]
+    },
+    "AuthRefresh": {
+      "method": "POST",
+      "path": "/api/v1/auth/refresh",
+      "auth": "refresh-cookie",
+      "requestKeys": [],
+      "responseCodes": [
+        "200",
+        "401"
+      ]
+    },
+    "AuthSignup": {
+      "method": "POST",
+      "path": "/api/v1/auth/signup",
+      "auth": "public",
+      "requestKeys": [
+        "email",
+        "fullName",
+        "password",
+        "role"
+      ],
+      "responseCodes": [
+        "201",
+        "400",
+        "409",
+        "429"
+      ]
+    },
+    "BillingCheckout": {
+      "method": "POST",
+      "path": "/api/v1/billing/checkout",
+      "auth": "bearer",
+      "requestKeys": [
+        "couponCode",
+        "planId",
+        "provider"
+      ],
+      "responseCodes": [
+        "201",
+        "402"
+      ]
+    },
+    "BillingPlans": {
+      "method": "GET",
+      "path": "/api/v1/billing/plans",
+      "auth": "public",
+      "requestKeys": [],
+      "responseCodes": [
+        "200"
+      ]
+    },
+    "BillingWebhook": {
+      "method": "POST",
+      "path": "/api/v1/webhooks/billing/:provider",
+      "auth": "hmac-signature",
+      "requestKeys": [],
+      "responseCodes": [
+        "200",
+        "400",
+        "409"
+      ]
+    },
+    "InterviewsAnswer": {
+      "method": "POST",
+      "path": "/api/v1/interviews/:id/answer",
+      "auth": "bearer",
+      "requestKeys": [
+        "audioUrl",
+        "transcript"
+      ],
+      "responseCodes": [
+        "200"
+      ]
+    },
+    "InterviewsStart": {
+      "method": "POST",
+      "path": "/api/v1/interviews",
+      "auth": "bearer",
+      "requestKeys": [
+        "mode",
+        "role",
+        "seniority"
+      ],
+      "responseCodes": [
+        "201"
+      ]
+    },
+    "MessagesSend": {
+      "method": "POST",
+      "path": "/api/v1/messages",
+      "auth": "bearer",
+      "requestKeys": [
+        "attachments",
+        "body",
+        "conversationId"
+      ],
+      "responseCodes": [
+        "201"
+      ]
+    },
+    "ResumesCreate": {
+      "method": "POST",
+      "path": "/api/v1/resumes",
+      "auth": "bearer",
+      "requestKeys": [
+        "templateId",
+        "title"
+      ],
+      "responseCodes": [
+        "201"
+      ]
+    },
+    "ResumesExport": {
+      "method": "POST",
+      "path": "/api/v1/resumes/:id/export",
+      "auth": "bearer",
+      "requestKeys": [
+        "format",
+        "includePhoto",
+        "themeId"
+      ],
+      "responseCodes": [
+        "200",
+        "429"
+      ]
+    },
+    "ResumesList": {
+      "method": "GET",
+      "path": "/api/v1/resumes",
+      "auth": "bearer",
+      "requestKeys": [],
+      "responseCodes": [
+        "200"
+      ]
+    },
+    "TrackerMove": {
+      "method": "PATCH",
+      "path": "/api/v1/tracker/:id",
+      "auth": "bearer",
+      "requestKeys": [
+        "note",
+        "stage"
+      ],
+      "responseCodes": [
+        "200"
+      ]
+    }
+  }
+}
