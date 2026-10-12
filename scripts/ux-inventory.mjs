@@ -44,20 +44,29 @@ const testSuites = fs.readdirSync(path.join(ROOT, 'tests')).filter((f) => f.ends
 const VIEWPORTS = [320, 375, 768, 1024, 1280, 1440, 1920];
 const STATES = ['initial', 'scrolled', 'expanded-sidebar', 'collapsed-sidebar', 'menu-open', 'dialog-open', 'form-valid', 'form-error', 'loading', 'empty', 'populated', 'error', 'permission-denied'];
 
-const units = routes.map((route, i) => ({
-    reviewId: `RU-${String(i + 1).padStart(3, '0')}`,
-    route,
-    portal: portalOf(route),
-    device: 'desktop-1440',
-    viewports: VIEWPORTS,
-    states: STATES,
-    baselineScreenshot: null,
-    defects: [],
-    tests: [],
-    score: null,
-    status: 'INVENTORIED',
-    acceptance: 'PENDING',
-}));
+const prev = fs.existsSync(OUT) ? JSON.parse(fs.readFileSync(OUT, 'utf8')) : null;
+const prevByRoute = new Map(((prev && prev.units) || []).map((u) => [u.route, u]));
+
+const units = routes.map((route, i) => {
+    const base = {
+        reviewId: `RU-${String(i + 1).padStart(3, '0')}`,
+        route,
+        portal: portalOf(route),
+        device: 'desktop-1440',
+        viewports: VIEWPORTS,
+        states: STATES,
+        baselineScreenshot: null,
+        defects: [],
+        tests: [],
+        score: null,
+        status: 'INVENTORIED',
+        acceptance: 'PENDING',
+    };
+    // Preserve prior audit results (score/defects/acceptance) so regenerating the
+    // inventory never destroys measured evidence.
+    const p = prevByRoute.get(route);
+    return p ? { ...base, ...p, reviewId: base.reviewId, route, portal: base.portal, viewports: base.viewports, states: base.states } : base;
+});
 
 const inventory = {
     generatedAt: new Date().toISOString(),

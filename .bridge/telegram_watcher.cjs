@@ -502,10 +502,175 @@ async function pollIncomingMessages() {
   });
 }
 
+let lastIdleAlertKey = null;
+let lastIdleAlertTime = 0;
+let lastProcessedLedgerLine = 0;
+
+/**
+ * Continuous Developer Idle Monitor
+ * Detects both event-driven transitions (e.g. plan/evidence submitted, frozen)
+ * and inactivity stalls (e.g. no activity in PLAN/ACT mode for >= 90s)
+ * and reports IMMEDIATELY to Telegram.
+ */
+async function monitorDeveloperIdleState() {
+  try {
+    const now = Date.now();
+    let currentIdleState = null;
+
+    // 1. Check ledger events for new status transitions
+    if (fs.existsSync(LEDGER_PATH)) {
+      try {
+        const lines = fs.readFileSync(LEDGER_PATH, 'utf8').trim().split(/\r?\n/).filter(Boolean);
+        if (lastProcessedLedgerLine === 0) {
+          lastProcessedLedgerLine = lines.length;
+        } else if (lines.length > lastProcessedLedgerLine) {
+          for (let i = lastProcessedLedgerLine; i < lines.length; i++) {
+            const ev = JSON.parse(lines[i]);
+            const dId = ev.payload?.directiveId || 'current';
+
+            if (ev.type === 'GATEKEEPER_CERTIFIED') {
+              currentIdleState = {
+                key: `FROZEN:${dId}`,
+                emoji: '⏸️',
+                title: 'Developer is IDLE (Directive Completed)',
+                desc: `Directive <code>${dId}</code> has been certified & frozen. Developer has completed all assigned tasks and is standing by for the next directive.`
+              };
+            } else if (ev.type === 'PLAN_SUBMITTED') {
+              currentIdleState = {
+                key: `WAIT_PLAN:${dId}`,
+                emoji: '📋',
+                title: 'Developer is IDLE (Awaiting Plan Approval)',
+                desc: `Developer submitted plan for <code>${dId}</code>. Paused and waiting for Lead review.`
+              };
+            } else if (ev.type === 'EVIDENCE_SUBMITTED') {
+              currentIdleState = {
+                key: `WAIT_EVIDENCE:${dId}`,
+                emoji: '🧪',
+                title: 'Developer is IDLE (Awaiting Certification)',
+                desc: `Developer submitted evidence for <code>${dId}</code>. Implementation done; awaiting Gatekeeper certification.`
+              };
+            } else if (ev.type === 'QUESTION_ASKED' && ev.status === 'OPEN') {
+              currentIdleState = {
+                key: `BLOCKED:${ev.id}`,
+                emoji: '❓',
+                title: 'Developer is IDLE (Blocked on Question)',
+                desc: `Developer is blocked waiting for Lead response: <i>${escapeHtml(ev.title || ev.body || '')}</i>`
+              };
+            }
+          }
+          lastProcessedLedgerLine = lines.length;
+        }
+      } catch {}
+    }
+
+    // 2. Check for active directive inactivity / stall
+    if (!currentIdleState && fs.existsSync(DIRECTIVES_DIR)) {
+      try {
+        const dirFiles = fs.readdirSync(DIRECTIVES_DIR).filter(f => /^DIR-\d+\.json$/.test(f));
+        dirFiles.sort((a, b) => {
+          const numA = parseInt(a.replace(/\D/g, ''), 10);
+          const numB = parseInt(b.replace(/\D/g, ''), 10);
+          return numB - numA;
+        });
+
+        // Find primary active directive
+        const activeFile = dirFiles.find(f => {
+          try {
+            const d = JSON.parse(fs.readFileSync(path.join(DIRECTIVES_DIR, f), 'utf8'));
+            return d.status !== 'APPROVED_FROZEN' && d.status !== 'CANCELLED';
+          } catch { return false; }
+        });
+
+        if (activeFile) {
+          const d = JSON.parse(fs.readFileSync(path.join(DIRECTIVES_DIR, activeFile), 'utf8'));
+
+          // Check last developer activity time
+          let lastDevTime = new Date(d.updatedAt || d.createdAt).getTime();
+          if (Array.isArray(d.heartbeats) && d.heartbeats.length > 0) {
+            const lastHb = d.heartbeats[d.heartbeats.length - 1];
+            if (lastHb.timestamp) lastDevTime = Math.max(lastDevTime, new Date(lastHb.timestamp).getTime());
+          }
+
+          const silentSec = Math.round((now - lastDevTime) / 1000);
+          const silentMin = Math.round(silentSec / 60);
+
+          // If developer has been silent for >= 90 seconds in ISSUED, CHANGES_REQUESTED, or IN_PROGRESS
+          if (silentSec >= 90) {
+            if (d.status === 'ISSUED') {
+              currentIdleState = {
+                key: `IDLE_ISSUED:${d.id}:${Math.floor(silentMin / 5)}`,
+                emoji: '⚠️',
+                title: `Developer is IDLE in PLAN Mode (${silentMin}m)`,
+                desc: `Directive <code>${d.id}</code> was issued, but developer has not started or submitted a plan for <b>${silentMin} minutes</b>.\n\n<i>Reply <b>wake</b> to trigger PLAN mode.</i>`
+              };
+            } else if (d.status === 'CHANGES_REQUESTED') {
+              currentIdleState = {
+                key: `IDLE_REVISION:${d.id}:${Math.floor(silentMin / 5)}`,
+                emoji: '⚠️',
+                title: `Developer is IDLE awaiting Revision (${silentMin}m)`,
+                desc: `Changes requested on <code>${d.id}</code>, but developer has been inactive for <b>${silentMin} minutes</b>.\n\n<i>Reply <b>wake</b> to wake developer.</i>`
+              };
+            } else if (d.status === 'IN_PROGRESS') {
+              currentIdleState = {
+                key: `IDLE_ACT:${d.id}:${Math.floor(silentMin / 5)}`,
+                emoji: '⚠️',
+                title: `Developer is IDLE / Inactive in ACT Mode (${silentMin}m)`,
+                desc: `Directive <code>${d.id}</code> is in progress, but no heartbeat or developer activity detected for <b>${silentMin} minutes</b>.\n\n<i>Reply <b>wake</b> to wake developer in ACT mode.</i>`
+              };
+            } else if (d.status === 'PLAN_SUBMITTED') {
+              currentIdleState = {
+                key: `IDLE_PLAN_SUBMITTED:${d.id}`,
+                emoji: '📋',
+                title: 'Developer is IDLE (Awaiting Plan Approval)',
+                desc: `Plan submitted for <code>${d.id}</code>. Developer is paused awaiting Lead plan review.`
+              };
+            } else if (d.status === 'EVIDENCE_SUBMITTED') {
+              currentIdleState = {
+                key: `IDLE_EVIDENCE_SUBMITTED:${d.id}`,
+                emoji: '🧪',
+                title: 'Developer is IDLE (Awaiting Certification)',
+                desc: `Evidence submitted for <code>${d.id}</code>. Developer is paused awaiting Gatekeeper certification.`
+              };
+            }
+          }
+        } else {
+          // No active directive at all (all frozen)
+          const lastRaw = JSON.parse(fs.readFileSync(path.join(DIRECTIVES_DIR, dirFiles[0]), 'utf8'));
+          currentIdleState = {
+            key: `IDLE_STANDING_BY:${lastRaw.id}`,
+            emoji: '⏸️',
+            title: 'Developer is IDLE (Standing By)',
+            desc: `All assigned directives are completed (latest: <code>${lastRaw.id}</code>). Developer is standing by for Director to issue the next directive.`
+          };
+        }
+      } catch {}
+    }
+
+    // 3. Dispatch alert immediately if new idle state detected
+    if (currentIdleState && currentIdleState.key !== lastIdleAlertKey) {
+      lastIdleAlertKey = currentIdleState.key;
+      lastIdleAlertTime = now;
+
+      const alertMsg = `${currentIdleState.emoji} <b>[IME365] ${currentIdleState.title}</b>\n\n` +
+        `🕒 <b>Time (IST):</b> ${new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' })}\n` +
+        `${currentIdleState.desc}`;
+
+      console.log(`[Telegram Watcher] Dispatching immediate Developer Idle Alert: ${currentIdleState.key}`);
+      await sendTelegramAlert(alertMsg);
+    } else if (!currentIdleState) {
+      // Developer is actively making progress; clear idle key
+      lastIdleAlertKey = null;
+    }
+  } catch (err) {
+    console.error('[Telegram Watcher] Error in idle monitor:', err);
+  }
+}
+
 module.exports = {
   getLiveProjectContext,
   queryRealAiLead,
-  captureScreenshot
+  captureScreenshot,
+  monitorDeveloperIdleState
 };
 
 if (require.main === module) {
@@ -539,5 +704,9 @@ if (require.main === module) {
 
   // Start polling for user commands & questions with Real AI responses
   pollIncomingMessages();
-  console.log('[Telegram Watcher] Real AI Autonomous Responder ACTIVE on port 48200.');
+
+  // Start continuous developer idle monitor (runs every 5s for immediate alerting)
+  setInterval(monitorDeveloperIdleState, 5000);
+  monitorDeveloperIdleState();
+  console.log('[Telegram Watcher] Real AI Autonomous Responder & Developer Idle Monitor ACTIVE.');
 }

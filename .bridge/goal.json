@@ -29,11 +29,12 @@
   ],
   "status": "IN_PROGRESS",
   "createdAt": "2026-10-12T06:43:10.427Z",
-  "updatedAt": "2026-10-12T08:32:47.158Z",
-  "lastDirectorDecisionAt": "2026-10-12T08:32:46.916Z",
+  "updatedAt": "2026-10-12T08:58:06.503Z",
+  "lastDirectorDecisionAt": "2026-10-12T08:58:06.258Z",
   "lastDirectorDirectiveTitles": [
-    "Master UI/UX Transformation: review and ACCEPT the next outstanding review units at >=98/100"
+    "Master UI/UX Transformation: review and ACCEPT the next outstanding review units at >=98/100",
+    "Remediate review unit RU-001 to achieve >=98/100 acceptance"
   ],
   "consecutiveDirectorFailures": 0,
-  "directorSeq": 2
+  "directorSeq": 3
 }

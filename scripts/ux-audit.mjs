@@ -67,9 +67,12 @@ for (const u of units) {
     let navOk = false;
     try {
         await page.goto(url, { waitUntil: 'load', timeout: 20000 });
-        // The SPA mounts into #root; wait for it to render before probing.
+        // The SPA mounts into #root; wait for it AND for primary content to render
+        // before probing, otherwise the first viewport races the render and produces
+        // false "no heading / no nav landmark" findings.
         await page.waitForFunction(() => { const r = document.getElementById('root'); return r && r.children.length > 0; }, { timeout: 10000 }).catch(() => {});
-        await page.waitForTimeout(300);
+        await page.waitForFunction(() => document.querySelector('h1, main, [role="main"], nav'), { timeout: 8000 }).catch(() => {});
+        await page.waitForTimeout(500);
         navOk = true;
     } catch { /* nav fail */ }
     const loadMs = Date.now() - t0;
