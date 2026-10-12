@@ -134,7 +134,10 @@ test('AC6: the DIR-081 legacy ceiling is carried forward unchanged (sweep still 
     // shrinks), but it can never grow.
     const backlog = {
         'src/components/Dashboard/DashboardSettings/DashboardSettings.jsx': 1330,
-        'src/components/Dashboard/DashboardInterviews/DashboardInterviews.jsx': 764,
+        // DIR-094 Wave 5 swept DashboardInterviews onto Cuba tokens: 764 -> 196. Tightened to
+        // the post-sweep reality. The residue is neutral fills (bg-slate-50/100/200/900),
+        // purple accents (no Cuba equivalent token), shadow tints and a few prefixed shades.
+        'src/components/Dashboard/DashboardInterviews/DashboardInterviews.jsx': 196,
         'src/components/Dashboard/DashboardHomepage/DashboardHomepage.jsx': 226,
         // DIR-094 Wave 4 swept DashboardSupport onto Cuba tokens: 183 -> 14. The ratchet is
         // tightened to the post-sweep reality so the removed utilities cannot creep back.
