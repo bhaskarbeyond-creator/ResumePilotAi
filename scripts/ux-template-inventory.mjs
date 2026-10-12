@@ -11,7 +11,7 @@ const OUT = path.join(ROOT, '.bridge', 'evidence', 'dir098', 'templates.json');
 const mainSrc = fs.readFileSync(path.join(ROOT, 'src', 'main.jsx'), 'utf8');
 
 const all = [...new Set([...mainSrc.matchAll(/path="([^"]+)"/g)].map((m) => m[1]))].sort();
-const templates = all.filter((r) => /:\w/.test(r) || r === '*');
+const templates = all.filter((r) => /:\w/.test(r));
 
 // The real data each template needs to be auditable.
 const DATA_NEED = {
