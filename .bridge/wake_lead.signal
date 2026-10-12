@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-12T05:30:44.487Z",
-  "seq": 2985,
-  "id": "evt_mv4td1eu_4c7fcb9d036d",
-  "type": "EVIDENCE_SUBMITTED",
-  "title": "[Evidence] DIR-095: DIR-095: Candidate Dashboard Streamlining (Resume Slider Removal), 100% Operational Sidebar Navigation, and Native Multi-Device Responsiveness",
+  "timestamp": "2026-10-12T06:22:40.018Z",
+  "seq": 3000,
+  "id": "evt_mv4v7tdf_82444980e7b4",
+  "type": "HEARTBEAT",
+  "title": "[Heartbeat] Waves 0-2 delivered: baseline captured (dir082 6/6, dir095 7/7, design-system 142/142), manifest RCA drift report + manifest-consistency gate authored and green (8/8), cv-templates 0-byte diff intact.",
   "sender": "STAFF_DEVELOPER",
-  "directiveId": "DIR-095",
-  "summary": "DIR-095 COMPLETE. AC1: the redundant resume workspace (category tabs, search box, sort dropdown cuba-resume-sort, grid/list toggle cuba-resume-view-toggle, horizontal carousel incl. cuba-resume-updated cards, the + Create a New Resume card and the Page X of Y pagination) is suppressed in Cuba mode via a single {!isCuba && (<>...</>)} guard in DashboardHomepage.jsx (+15/-0), verified ABSENT from the authenticated live /dashboard DOM. AC2: retained surfaces verified PRESENT (cuba-candidate-hero, cuba-copilot-hud + cuba-copilot-insight next-best-action line, cuba-executive-rail, cuba-candidate-analytics). AC3/AC4: 15/15 sidebar routes clean with aria-current=page. AC5: zero horizontal overflow at 320/375/768/1024/1280/1440/1920. AC6: WCAG contracts covered by test:design-system 142/142 plus the live route sweep. AC7: 178 tests pass 0 fail (dir095 7/7, dir094 8/8, dir094-tokens 3/3, dir082 6/6, design-system 142/142, dir090 5/5, dir093 7/7). AC8: build exit 0 in 3.41s, lint 0 errors, src/cv-templates diff = 0 bytes. Evidence: dir095-dashboard-crawl-manifest.json (PASS, 0 console errors, 0 failed api), dir095-sidebar-route-matrix.json (PASS 15/15), dir095-evidence.md, dir095-tests.log, dir095-build.log, dir095-lint.log. NOTES: the literal Next Best Action card is legacy-only by design (isCubaShellEnabled -> return null, DIR-090) and the Cuba equivalent is the Hero HUD insight line; the platform-wide contrast audit reports PRE-EXISTING failures on other surfaces (public/enterprise), none on the candidate Overview and none introduced here."
+  "directiveId": "DIR-096",
+  "summary": "Waves 0-2 delivered: baseline captured (dir082 6/6, dir095 7/7, design-system 142/142), manifest RCA drift report + manifest-consistency gate authored and green (8/8), cv-templates 0-byte diff intact."
 }

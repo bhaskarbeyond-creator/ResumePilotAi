@@ -1,0 +1,104 @@
+{
+  "generatedAt": "2026-10-12T06:22:05.246Z",
+  "directive": "DIR-096",
+  "manifestPath": ".bridge/project.json",
+  "manifestSchemaVersion": "4.2.0",
+  "summary": {
+    "rulesEvaluated": 7,
+    "pass": 3,
+    "drift": 4,
+    "undefinedField": 0
+  },
+  "discovered": {
+    "routesInMainJsx": 60,
+    "routeInventoryTotal": 68,
+    "routeInventoryPartsSum": 68,
+    "routersDeclared": 29,
+    "routersArrayLength": 29,
+    "routersPhysicalFiles": 20,
+    "routersMissingFiles": [
+      "backend/routes/health.js",
+      "backend/routes/auth.js",
+      "backend/routes/billing.js",
+      "backend/routes/messages.js",
+      "backend/routes/interviews.js",
+      "backend/routes/favorites.js",
+      "backend/routes/tracker.js",
+      "backend/routes/uploads.js",
+      "backend/routes/webhooks.js"
+    ],
+    "tablesDeclared": 117,
+    "ddlInlineDefined": 26,
+    "functionalDomains": 117,
+    "templatesDeclared": 51,
+    "templatesCatalogLength": 51,
+    "templatesPhysicalDirs": 51,
+    "coversPhysicalDirs": 4,
+    "testSuitesDeclared": 292,
+    "testSuitesDiscovered": 329,
+    "testBreakdown": {
+      "frontTests": 192,
+      "backendTests": 107,
+      "e2eSpecs": 30
+    },
+    "componentInventoryLength": 12,
+    "componentUiDirExists": false,
+    "componentCubaDirCount": 36,
+    "taskGraphDeclared": 118,
+    "tasksJsonExists": false,
+    "contractsManifestExists": false,
+    "contractsOpenapiExists": false,
+    "contractsSchemaSqlExists": false
+  },
+  "rules": [
+    {
+      "id": "routeInventory.parts === routeInventory.total",
+      "declared": 68,
+      "discovered": 68,
+      "status": "PASS",
+      "note": "manifest is internally consistent for the route inventory"
+    },
+    {
+      "id": "backendApiTopology.totalRouters === routers.length",
+      "declared": 29,
+      "discovered": 29,
+      "status": "PASS",
+      "note": "manifest is internally consistent for the router topology"
+    },
+    {
+      "id": "resumeStudioAndTemplates.totalCount === templatesCatalog.length",
+      "declared": 51,
+      "discovered": 51,
+      "status": "PASS",
+      "note": "manifest is internally consistent for the template catalog"
+    },
+    {
+      "id": "databaseSchema.totalTables === ddlInline count",
+      "declared": 117,
+      "discovered": 26,
+      "status": "DRIFT",
+      "note": "governance rule compares total tables against the 26 canonical inline DDL definitions; the rule is mis-specified"
+    },
+    {
+      "id": "qualityAssuranceAndTesting.totalTestSuites === discovered test files",
+      "declared": 292,
+      "discovered": 329,
+      "status": "DRIFT",
+      "note": "declared vs discovered (tests/*.test.mjs + backend/test/*.test.js + tests/e2e/*.spec.js)"
+    },
+    {
+      "id": "uiuxSystem.componentInventory length === src/components/ui/*.jsx count",
+      "declared": 12,
+      "discovered": 36,
+      "status": "DRIFT",
+      "note": "manifest references src/components/ui/*.jsx which does not exist; physical components live in src/components/cuba/*.jsx"
+    },
+    {
+      "id": "buildSpecification.taskGraph.length === docs/build/tasks.json length",
+      "declared": 118,
+      "discovered": null,
+      "status": "DRIFT",
+      "note": "docs/build/tasks.json is absent; the task graph is declared but not materialised"
+    }
+  ]
+}
