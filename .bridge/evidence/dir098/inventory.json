@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-12T09:04:34.374Z",
+  "generatedAt": "2026-10-12T09:17:57.278Z",
   "directive": "DIR-098",
   "phase": "one-discovery",
   "source": "src/main.jsx + component tree (derived, no fabrication)",
@@ -331,9 +331,9 @@
       "defects": [],
       "tests": [],
       "score": null,
-      "status": "NOT_EXECUTED",
-      "acceptance": "PENDING",
-      "auditNote": "parameterised route: requires real record data to audit"
+      "status": "BLOCKED",
+      "acceptance": "BLOCKED",
+      "auditNote": "parameterised route: no real record data available to audit"
     },
     {
       "reviewId": "RU-002",
@@ -384,8 +384,8 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 1066,
-      "auditedAt": "2026-10-12T09:04:36.355Z"
+      "loadMs": 992,
+      "auditedAt": "2026-10-12T09:17:59.121Z"
     },
     {
       "reviewId": "RU-003",
@@ -436,8 +436,8 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 598,
-      "auditedAt": "2026-10-12T09:04:37.007Z"
+      "loadMs": 602,
+      "auditedAt": "2026-10-12T09:17:59.775Z"
     },
     {
       "reviewId": "RU-004",
@@ -488,8 +488,8 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 588,
-      "auditedAt": "2026-10-12T09:04:37.645Z"
+      "loadMs": 575,
+      "auditedAt": "2026-10-12T09:18:00.402Z"
     },
     {
       "reviewId": "RU-005",
@@ -545,8 +545,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 564,
-      "auditedAt": "2026-10-12T09:04:38.454Z"
+      "loadMs": 585,
+      "auditedAt": "2026-10-12T09:18:01.191Z"
     },
     {
       "reviewId": "RU-006",
@@ -602,8 +602,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 601,
-      "auditedAt": "2026-10-12T09:04:39.243Z"
+      "loadMs": 579,
+      "auditedAt": "2026-10-12T09:18:01.964Z"
     },
     {
       "reviewId": "RU-007",
@@ -659,8 +659,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 594,
-      "auditedAt": "2026-10-12T09:04:39.911Z"
+      "loadMs": 576,
+      "auditedAt": "2026-10-12T09:18:02.610Z"
     },
     {
       "reviewId": "RU-008",
@@ -711,8 +711,8 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 583,
-      "auditedAt": "2026-10-12T09:04:40.566Z"
+      "loadMs": 571,
+      "auditedAt": "2026-10-12T09:18:03.250Z"
     },
     {
       "reviewId": "RU-009",
@@ -768,8 +768,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 583,
-      "auditedAt": "2026-10-12T09:04:41.367Z"
+      "loadMs": 598,
+      "auditedAt": "2026-10-12T09:18:04.028Z"
     },
     {
       "reviewId": "RU-010",
@@ -804,9 +804,9 @@
       "defects": [],
       "tests": [],
       "score": null,
-      "status": "NOT_EXECUTED",
-      "acceptance": "PENDING",
-      "auditNote": "parameterised route: requires real record data to audit"
+      "status": "BLOCKED",
+      "acceptance": "BLOCKED",
+      "auditNote": "parameterised route: no real record data available to audit"
     },
     {
       "reviewId": "RU-011",
@@ -838,12 +838,28 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [],
+      "defects": [
+        {
+          "severity": "P2",
+          "kind": "tap-target",
+          "detail": "7 interactive targets < 44px"
+        }
+      ],
       "tests": [],
-      "score": null,
-      "status": "NOT_EXECUTED",
-      "acceptance": "PENDING",
-      "auditNote": "parameterised route: requires real record data to audit"
+      "score": 99,
+      "status": "ACCEPTED",
+      "acceptance": "ACCEPTED",
+      "auditNote": "parameterised route: requires real record data to audit",
+      "scoreBreakdown": {
+        "visual": 25,
+        "responsive": 20,
+        "usability": 20,
+        "functional": 20,
+        "a11y": 9,
+        "perf": 5
+      },
+      "loadMs": 585,
+      "auditedAt": "2026-10-12T09:18:04.678Z"
     },
     {
       "reviewId": "RU-012",
@@ -899,8 +915,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 599,
-      "auditedAt": "2026-10-12T09:04:42.161Z"
+      "loadMs": 590,
+      "auditedAt": "2026-10-12T09:18:05.478Z"
     },
     {
       "reviewId": "RU-013",
@@ -951,8 +967,8 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 597,
-      "auditedAt": "2026-10-12T09:04:42.826Z"
+      "loadMs": 588,
+      "auditedAt": "2026-10-12T09:18:06.134Z"
     },
     {
       "reviewId": "RU-014",
@@ -1003,8 +1019,8 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 570,
-      "auditedAt": "2026-10-12T09:04:43.480Z"
+      "loadMs": 590,
+      "auditedAt": "2026-10-12T09:18:06.802Z"
     },
     {
       "reviewId": "RU-015",
@@ -1055,8 +1071,8 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 587,
-      "auditedAt": "2026-10-12T09:04:44.119Z"
+      "loadMs": 595,
+      "auditedAt": "2026-10-12T09:18:07.446Z"
     },
     {
       "reviewId": "RU-016",
@@ -1112,8 +1128,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 574,
-      "auditedAt": "2026-10-12T09:04:44.878Z"
+      "loadMs": 572,
+      "auditedAt": "2026-10-12T09:18:08.201Z"
     },
     {
       "reviewId": "RU-017",
@@ -1169,8 +1185,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 593,
-      "auditedAt": "2026-10-12T09:04:45.694Z"
+      "loadMs": 600,
+      "auditedAt": "2026-10-12T09:18:08.979Z"
     },
     {
       "reviewId": "RU-018",
@@ -1226,8 +1242,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 603,
-      "auditedAt": "2026-10-12T09:04:46.475Z"
+      "loadMs": 598,
+      "auditedAt": "2026-10-12T09:18:09.747Z"
     },
     {
       "reviewId": "RU-019",
@@ -1283,8 +1299,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 618,
-      "auditedAt": "2026-10-12T09:04:47.273Z"
+      "loadMs": 596,
+      "auditedAt": "2026-10-12T09:18:10.533Z"
     },
     {
       "reviewId": "RU-020",
@@ -1340,8 +1356,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 569,
-      "auditedAt": "2026-10-12T09:04:48.022Z"
+      "loadMs": 590,
+      "auditedAt": "2026-10-12T09:18:11.307Z"
     },
     {
       "reviewId": "RU-021",
@@ -1397,8 +1413,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 602,
-      "auditedAt": "2026-10-12T09:04:48.801Z"
+      "loadMs": 598,
+      "auditedAt": "2026-10-12T09:18:12.082Z"
     },
     {
       "reviewId": "RU-022",
@@ -1454,8 +1470,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 588,
-      "auditedAt": "2026-10-12T09:04:49.575Z"
+      "loadMs": 587,
+      "auditedAt": "2026-10-12T09:18:12.848Z"
     },
     {
       "reviewId": "RU-023",
@@ -1511,8 +1527,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 597,
-      "auditedAt": "2026-10-12T09:04:50.352Z"
+      "loadMs": 601,
+      "auditedAt": "2026-10-12T09:18:13.617Z"
     },
     {
       "reviewId": "RU-024",
@@ -1568,8 +1584,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 597,
-      "auditedAt": "2026-10-12T09:04:51.124Z"
+      "loadMs": 611,
+      "auditedAt": "2026-10-12T09:18:14.398Z"
     },
     {
       "reviewId": "RU-025",
@@ -1625,8 +1641,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 574,
-      "auditedAt": "2026-10-12T09:04:51.874Z"
+      "loadMs": 613,
+      "auditedAt": "2026-10-12T09:18:15.187Z"
     },
     {
       "reviewId": "RU-026",
@@ -1682,8 +1698,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 588,
-      "auditedAt": "2026-10-12T09:04:52.635Z"
+      "loadMs": 592,
+      "auditedAt": "2026-10-12T09:18:15.944Z"
     },
     {
       "reviewId": "RU-027",
@@ -1734,8 +1750,8 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 579,
-      "auditedAt": "2026-10-12T09:04:53.359Z"
+      "loadMs": 588,
+      "auditedAt": "2026-10-12T09:18:16.675Z"
     },
     {
       "reviewId": "RU-028",
@@ -1786,8 +1802,8 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 571,
-      "auditedAt": "2026-10-12T09:04:54.084Z"
+      "loadMs": 597,
+      "auditedAt": "2026-10-12T09:18:17.418Z"
     },
     {
       "reviewId": "RU-029",
@@ -1838,8 +1854,8 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 581,
-      "auditedAt": "2026-10-12T09:04:54.817Z"
+      "loadMs": 589,
+      "auditedAt": "2026-10-12T09:18:18.148Z"
     },
     {
       "reviewId": "RU-030",
@@ -1890,8 +1906,8 @@
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 585,
-      "auditedAt": "2026-10-12T09:04:55.582Z"
+      "loadMs": 624,
+      "auditedAt": "2026-10-12T09:18:18.918Z"
     },
     {
       "reviewId": "RU-031",
@@ -1947,8 +1963,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 601,
-      "auditedAt": "2026-10-12T09:04:56.333Z"
+      "loadMs": 587,
+      "auditedAt": "2026-10-12T09:18:19.658Z"
     },
     {
       "reviewId": "RU-032",
@@ -2004,8 +2020,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 594,
-      "auditedAt": "2026-10-12T09:04:57.183Z"
+      "loadMs": 597,
+      "auditedAt": "2026-10-12T09:18:20.486Z"
     },
     {
       "reviewId": "RU-033",
@@ -2061,8 +2077,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 575,
-      "auditedAt": "2026-10-12T09:04:57.903Z"
+      "loadMs": 580,
+      "auditedAt": "2026-10-12T09:18:21.222Z"
     },
     {
       "reviewId": "RU-034",
@@ -2097,9 +2113,9 @@
       "defects": [],
       "tests": [],
       "score": null,
-      "status": "NOT_EXECUTED",
-      "acceptance": "PENDING",
-      "auditNote": "parameterised route: requires real record data to audit"
+      "status": "BLOCKED",
+      "acceptance": "BLOCKED",
+      "auditNote": "parameterised route: no real record data available to audit"
     },
     {
       "reviewId": "RU-035",
@@ -2134,9 +2150,9 @@
       "defects": [],
       "tests": [],
       "score": null,
-      "status": "NOT_EXECUTED",
-      "acceptance": "PENDING",
-      "auditNote": "parameterised route: requires real record data to audit"
+      "status": "BLOCKED",
+      "acceptance": "BLOCKED",
+      "auditNote": "parameterised route: no real record data available to audit"
     },
     {
       "reviewId": "RU-036",
@@ -2171,9 +2187,9 @@
       "defects": [],
       "tests": [],
       "score": null,
-      "status": "NOT_EXECUTED",
-      "acceptance": "PENDING",
-      "auditNote": "parameterised route: requires real record data to audit"
+      "status": "BLOCKED",
+      "acceptance": "BLOCKED",
+      "auditNote": "parameterised route: no real record data available to audit"
     },
     {
       "reviewId": "RU-037",
@@ -2229,8 +2245,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 605,
-      "auditedAt": "2026-10-12T09:04:58.728Z"
+      "loadMs": 593,
+      "auditedAt": "2026-10-12T09:18:22.048Z"
     },
     {
       "reviewId": "RU-038",
@@ -2262,12 +2278,38 @@
         "permission-denied"
       ],
       "baselineScreenshot": null,
-      "defects": [],
+      "defects": [
+        {
+          "severity": "P3",
+          "kind": "heading",
+          "detail": "h1 count is not exactly 1"
+        },
+        {
+          "severity": "P2",
+          "kind": "form-label",
+          "detail": "16 unlabeled form controls"
+        },
+        {
+          "severity": "P2",
+          "kind": "tap-target",
+          "detail": "75 interactive targets < 44px"
+        }
+      ],
       "tests": [],
-      "score": null,
-      "status": "NOT_EXECUTED",
+      "score": 97,
+      "status": "IN_REVIEW",
       "acceptance": "PENDING",
-      "auditNote": "parameterised route: requires real record data to audit"
+      "auditNote": "parameterised route: requires real record data to audit",
+      "scoreBreakdown": {
+        "visual": 25,
+        "responsive": 20,
+        "usability": 20,
+        "functional": 20,
+        "a11y": 7,
+        "perf": 5
+      },
+      "loadMs": 580,
+      "auditedAt": "2026-10-12T09:18:22.885Z"
     },
     {
       "reviewId": "RU-039",
@@ -2323,8 +2365,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 593,
-      "auditedAt": "2026-10-12T09:04:59.532Z"
+      "loadMs": 598,
+      "auditedAt": "2026-10-12T09:18:23.662Z"
     },
     {
       "reviewId": "RU-040",
@@ -2380,8 +2422,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 598,
-      "auditedAt": "2026-10-12T09:05:00.326Z"
+      "loadMs": 601,
+      "auditedAt": "2026-10-12T09:18:24.433Z"
     },
     {
       "reviewId": "RU-041",
@@ -2416,9 +2458,9 @@
       "defects": [],
       "tests": [],
       "score": null,
-      "status": "NOT_EXECUTED",
-      "acceptance": "PENDING",
-      "auditNote": "parameterised route: requires real record data to audit"
+      "status": "BLOCKED",
+      "acceptance": "BLOCKED",
+      "auditNote": "parameterised route: no real record data available to audit"
     },
     {
       "reviewId": "RU-042",
@@ -2453,9 +2495,9 @@
       "defects": [],
       "tests": [],
       "score": null,
-      "status": "NOT_EXECUTED",
-      "acceptance": "PENDING",
-      "auditNote": "parameterised route: requires real record data to audit"
+      "status": "BLOCKED",
+      "acceptance": "BLOCKED",
+      "auditNote": "parameterised route: no real record data available to audit"
     },
     {
       "reviewId": "RU-043",
@@ -2511,8 +2553,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 583,
-      "auditedAt": "2026-10-12T09:05:00.980Z"
+      "loadMs": 586,
+      "auditedAt": "2026-10-12T09:18:25.090Z"
     },
     {
       "reviewId": "RU-044",
@@ -2568,8 +2610,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 587,
-      "auditedAt": "2026-10-12T09:05:01.742Z"
+      "loadMs": 600,
+      "auditedAt": "2026-10-12T09:18:25.858Z"
     },
     {
       "reviewId": "RU-045",
@@ -2604,9 +2646,9 @@
       "defects": [],
       "tests": [],
       "score": null,
-      "status": "NOT_EXECUTED",
-      "acceptance": "PENDING",
-      "auditNote": "parameterised route: requires real record data to audit"
+      "status": "BLOCKED",
+      "acceptance": "BLOCKED",
+      "auditNote": "parameterised route: no real record data available to audit"
     },
     {
       "reviewId": "RU-046",
@@ -2662,8 +2704,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 594,
-      "auditedAt": "2026-10-12T09:05:02.508Z"
+      "loadMs": 584,
+      "auditedAt": "2026-10-12T09:18:26.612Z"
     },
     {
       "reviewId": "RU-047",
@@ -2719,8 +2761,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 592,
-      "auditedAt": "2026-10-12T09:05:03.143Z"
+      "loadMs": 583,
+      "auditedAt": "2026-10-12T09:18:27.235Z"
     },
     {
       "reviewId": "RU-048",
@@ -2776,8 +2818,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 581,
-      "auditedAt": "2026-10-12T09:05:03.794Z"
+      "loadMs": 585,
+      "auditedAt": "2026-10-12T09:18:27.885Z"
     },
     {
       "reviewId": "RU-049",
@@ -2829,7 +2871,7 @@
         "perf": 5
       },
       "loadMs": 582,
-      "auditedAt": "2026-10-12T09:05:04.427Z"
+      "auditedAt": "2026-10-12T09:18:28.515Z"
     },
     {
       "reviewId": "RU-050",
@@ -2885,8 +2927,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 590,
-      "auditedAt": "2026-10-12T09:05:05.208Z"
+      "loadMs": 608,
+      "auditedAt": "2026-10-12T09:18:29.294Z"
     },
     {
       "reviewId": "RU-051",
@@ -2942,8 +2984,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 591,
-      "auditedAt": "2026-10-12T09:05:05.978Z"
+      "loadMs": 578,
+      "auditedAt": "2026-10-12T09:18:30.046Z"
     },
     {
       "reviewId": "RU-052",
@@ -2978,9 +3020,9 @@
       "defects": [],
       "tests": [],
       "score": null,
-      "status": "NOT_EXECUTED",
-      "acceptance": "PENDING",
-      "auditNote": "parameterised route: requires real record data to audit"
+      "status": "BLOCKED",
+      "acceptance": "BLOCKED",
+      "auditNote": "parameterised route: no real record data available to audit"
     },
     {
       "reviewId": "RU-053",
@@ -3036,8 +3078,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 616,
-      "auditedAt": "2026-10-12T09:05:06.778Z"
+      "loadMs": 588,
+      "auditedAt": "2026-10-12T09:18:30.832Z"
     },
     {
       "reviewId": "RU-054",
@@ -3093,8 +3135,8 @@
         "a11y": 8,
         "perf": 5
       },
-      "loadMs": 595,
-      "auditedAt": "2026-10-12T09:05:07.544Z"
+      "loadMs": 583,
+      "auditedAt": "2026-10-12T09:18:31.584Z"
     },
     {
       "reviewId": "RU-055",
@@ -3129,9 +3171,9 @@
       "defects": [],
       "tests": [],
       "score": null,
-      "status": "NOT_EXECUTED",
-      "acceptance": "PENDING",
-      "auditNote": "parameterised route: requires real record data to audit"
+      "status": "BLOCKED",
+      "acceptance": "BLOCKED",
+      "auditNote": "parameterised route: no real record data available to audit"
     },
     {
       "reviewId": "RU-056",
@@ -3188,7 +3230,7 @@
         "perf": 5
       },
       "loadMs": 593,
-      "auditedAt": "2026-10-12T09:05:08.349Z"
+      "auditedAt": "2026-10-12T09:18:32.349Z"
     },
     {
       "reviewId": "RU-057",
@@ -3225,22 +3267,27 @@
           "severity": "P2",
           "kind": "tap-target",
           "detail": "34 interactive targets < 44px"
+        },
+        {
+          "severity": "P1",
+          "kind": "console-error",
+          "detail": "2 console errors: Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
         }
       ],
       "tests": [],
-      "score": 99,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
+      "score": 95,
+      "status": "IN_REVIEW",
+      "acceptance": "PENDING",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
-        "functional": 20,
+        "functional": 16,
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 611,
-      "auditedAt": "2026-10-12T09:05:09.160Z"
+      "loadMs": 596,
+      "auditedAt": "2026-10-12T09:18:33.106Z"
     },
     {
       "reviewId": "RU-058",
@@ -3277,23 +3324,28 @@
           "severity": "P2",
           "kind": "tap-target",
           "detail": "6 interactive targets < 44px"
+        },
+        {
+          "severity": "P1",
+          "kind": "console-error",
+          "detail": "1 console errors: Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
         }
       ],
       "tests": [],
-      "score": 99,
-      "status": "ACCEPTED",
-      "acceptance": "ACCEPTED",
+      "score": 97,
+      "status": "IN_REVIEW",
+      "acceptance": "PENDING",
       "scoreBreakdown": {
         "visual": 25,
         "responsive": 20,
         "usability": 20,
-        "functional": 20,
+        "functional": 18,
         "a11y": 9,
         "perf": 5
       },
-      "loadMs": 678,
-      "auditedAt": "2026-10-12T09:05:09.887Z"
+      "loadMs": 590,
+      "auditedAt": "2026-10-12T09:18:33.744Z"
     }
   ],
-  "auditedAt": "2026-10-12T09:05:09.937Z"
+  "auditedAt": "2026-10-12T09:18:33.793Z"
 }

@@ -29,12 +29,13 @@
   ],
   "status": "IN_PROGRESS",
   "createdAt": "2026-10-12T06:43:10.427Z",
-  "updatedAt": "2026-10-12T08:58:06.503Z",
-  "lastDirectorDecisionAt": "2026-10-12T08:58:06.258Z",
+  "updatedAt": "2026-10-12T09:09:17.877Z",
+  "lastDirectorDecisionAt": "2026-10-12T09:09:17.610Z",
   "lastDirectorDirectiveTitles": [
     "Master UI/UX Transformation: review and ACCEPT the next outstanding review units at >=98/100",
-    "Remediate review unit RU-001 to achieve >=98/100 acceptance"
+    "Remediate review unit RU-001 to achieve >=98/100 acceptance",
+    "Restore the full test pyramid to green (npm test exits 0)"
   ],
   "consecutiveDirectorFailures": 0,
-  "directorSeq": 3
+  "directorSeq": 4
 }

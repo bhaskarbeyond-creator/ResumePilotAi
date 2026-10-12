@@ -22,6 +22,13 @@ const inv = JSON.parse(fs.readFileSync(INV, 'utf8'));
 const units = inv.units.slice(0, MAX === Infinity ? inv.units.length : MAX);
 const viewports = inv.viewports;
 
+// DIR-101: parameterised routes resolved against REAL record data (from the live API).
+// Anything not resolvable here is recorded BLOCKED - never fabricated.
+const PARAM_RESOLVE = {
+    '/blog/:slug': '/blog/how-to-beat-ats-in-2026',
+    '/jobs/portal/:jobId': '/jobs/portal/job-air-23',
+};
+
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, ignoreHTTPSErrors: true });
 const page = await ctx.newPage();
@@ -44,17 +51,18 @@ const probe = async () => page.evaluate(() => {
 });
 
 for (const u of units) {
-    // Parameterised routes (":id") and the global catch-all cannot be audited as pages;
-    // record them as NOT EXECUTED rather than fabricating a pass/fail.
-    if (/:\w/.test(u.route) || u.route === '*') {
+    // Parameterised/catch-all routes: audit against REAL record data where resolvable,
+    // otherwise record BLOCKED (never fabricated).
+    const resolved = PARAM_RESOLVE[u.route];
+    if ((/:\w/.test(u.route) || u.route === '*') && !resolved) {
         u.defects = [];
         u.score = null;
-        u.status = 'NOT_EXECUTED';
-        u.acceptance = 'PENDING';
-        u.auditNote = 'parameterised route: requires real record data to audit';
+        u.status = 'BLOCKED';
+        u.acceptance = 'BLOCKED';
+        u.auditNote = 'parameterised route: no real record data available to audit';
         continue;
     }
-    const url = BASE + (u.route === '/' ? '' : u.route.replace(/\/\*$/, ''));
+    const url = BASE + (resolved || (u.route === '/' ? '' : u.route.replace(/\/\*$/, '')));
     const consoleErrors = [];
     const failedRequests = [];
     const NOISE = /Cross-Origin-Opener-Policy|third-party cookie|DevTools|Download the React DevTools|net::ERR_BLOCKED/i;
