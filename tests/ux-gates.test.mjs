@@ -49,3 +49,15 @@ test('UX-AC5: every review unit records a route, portal and status', () => {
         assert.ok(u.reviewId && u.route && u.portal && u.status, `unit ${u.reviewId} must be fully described`);
     }
 });
+
+test('UX-AC6: the baseline screenshot set covers every unit x viewport', () => {
+    const mPath = path.join(ROOT, '.bridge', 'evidence', 'dir098', 'baseline-manifest.json');
+    assert.ok(fs.existsSync(mPath), 'baseline-manifest.json must exist (run scripts/ux-baseline-capture.mjs)');
+    const m = JSON.parse(fs.readFileSync(mPath, 'utf8'));
+    const inv = inventory();
+    assert.equal(m.unitsCaptured, inv.units.length, 'every review unit must be baselined');
+    assert.deepEqual(m.viewports, inv.viewports);
+    assert.equal(m.screenshots, inv.units.length * inv.viewports.length, 'screenshots = units x viewports');
+    for (const r of m.results) assert.ok(fs.existsSync(path.join(ROOT, r.screenshot)), `missing screenshot ${r.screenshot}`);
+});
+

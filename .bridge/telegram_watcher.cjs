@@ -50,21 +50,8 @@ async function getLiveStatusReport() {
   let lastProgress = 100;
   let lastHeartbeat = 'Standing by for directives';
 
-  try {
-    if (fs.existsSync(STATE_PATH)) {
-      const state = JSON.parse(fs.readFileSync(STATE_PATH, 'utf8'));
-      if (state.activeDirectiveId) activeDirectiveId = state.activeDirectiveId;
-      if (state.activeDirectiveTitle) activeDirectiveTitle = state.activeDirectiveTitle;
-      if (state.activeDirectiveStatus) activeDirectiveStatus = state.activeDirectiveStatus;
-      if (state.latestHeartbeat) {
-        if (state.latestHeartbeat.percent !== undefined) lastProgress = state.latestHeartbeat.percent;
-        if (state.latestHeartbeat.status) lastHeartbeat = state.latestHeartbeat.status;
-      }
-    }
-  } catch {}
-
-  // If no active directive in state, find the latest certified/frozen directive in .bridge/directives
-  if (!activeDirectiveId && fs.existsSync(DIRECTIVES_DIR)) {
+  // Read directives directory first to find the TRUE latest or active directive
+  if (fs.existsSync(DIRECTIVES_DIR)) {
     try {
       const dirFiles = fs.readdirSync(DIRECTIVES_DIR).filter(f => /^DIR-\d+\.json$/.test(f));
       if (dirFiles.length > 0) {
@@ -73,8 +60,27 @@ async function getLiveStatusReport() {
           const numB = parseInt(b.replace(/\D/g, ''), 10);
           return numB - numA;
         });
-        const latestFile = dirFiles[0];
-        activeDirectiveId = latestFile.replace('.json', '');
+        const activeFile = dirFiles.find(f => {
+          try {
+            const d = JSON.parse(fs.readFileSync(path.join(DIRECTIVES_DIR, f), 'utf8'));
+            return d.status !== 'APPROVED_FROZEN' && d.status !== 'CANCELLED';
+          } catch { return false; }
+        }) || dirFiles[0];
+
+        activeDirectiveId = activeFile.replace('.json', '');
+      }
+    } catch {}
+  }
+
+  if (!activeDirectiveId && fs.existsSync(STATE_PATH)) {
+    try {
+      const state = JSON.parse(fs.readFileSync(STATE_PATH, 'utf8'));
+      if (state.activeDirectiveId) activeDirectiveId = state.activeDirectiveId;
+      if (state.activeDirectiveTitle) activeDirectiveTitle = state.activeDirectiveTitle;
+      if (state.activeDirectiveStatus) activeDirectiveStatus = state.activeDirectiveStatus;
+      if (state.latestHeartbeat) {
+        if (state.latestHeartbeat.percent !== undefined) lastProgress = state.latestHeartbeat.percent;
+        if (state.latestHeartbeat.status) lastHeartbeat = state.latestHeartbeat.status;
       }
     } catch {}
   }

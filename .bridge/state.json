@@ -1,25 +1,25 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-12T06:10:42.957Z",
-  "eventCount": 2990,
-  "activeDirectiveId": "DIR-094",
-  "activeDirectiveTitle": "DIR-094: Comprehensive End-to-End UI/UX Forensic Enhancement, Visual Layout Blueprinting, and Iterative Parity Convergence Engine",
-  "activeDirectiveStatus": "APPROVED",
-  "awaitingHuman": true,
-  "awaitingHumanReason": "Awaiting Gatekeeper freeze certification (human gate)",
-  "awaitingHumanSince": "2026-10-12T04:38:50.010Z",
-  "stallDeadline": null,
-  "unreadForLead": 3,
-  "unreadForDev": 5,
+  "updatedAt": "2026-10-12T08:08:11.322Z",
+  "eventCount": 3045,
+  "activeDirectiveId": "DIR-098",
+  "activeDirectiveTitle": "DIR-098: Master UI/UX Transformation Programme - Phase One Discovery, Baseline Evidence & Acceptance-Gate Scaffolding",
+  "activeDirectiveStatus": "CHANGES_REQUESTED",
+  "awaitingHuman": false,
+  "awaitingHumanReason": null,
+  "awaitingHumanSince": null,
+  "stallDeadline": "2026-10-12T06:30:09.630Z",
+  "unreadForLead": 22,
+  "unreadForDev": 41,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-12T05:30:31.988Z",
-    "status": "All acceptance criteria verified. Submitting evidence package",
-    "percent": 100
+    "timestamp": "2026-10-12T06:30:09.630Z",
+    "status": "Waves 1-3 complete: docs/contracts/** + docs/build/** materialised (12 artifacts, byte-stable idempotent), manifest-consistency gate 9/9, openapi gate 6/6, diff clean, cv-templates 0-byte diff.",
+    "percent": 55
   },
   "integrity": {
     "ok": true,
-    "checked": 2990,
+    "checked": 3045,
     "legacy": 0,
     "bad": 0
   }

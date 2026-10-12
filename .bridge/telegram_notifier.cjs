@@ -56,6 +56,7 @@ async function sendTelegramAlert(text) {
 
     const req = https.request(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: 'POST',
+      timeout: 20000,
       headers: {
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(payload)
@@ -73,6 +74,7 @@ async function sendTelegramAlert(text) {
       });
     });
 
+    req.on('timeout', () => { req.destroy(); resolve(false); });
     req.on('error', () => resolve(false));
     req.write(payload);
     req.end();
@@ -114,6 +116,7 @@ async function sendTelegramPhoto(filePath, caption = '') {
 
     const req = https.request(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
       method: 'POST',
+      timeout: 30000,
       headers: {
         'Content-Type': `multipart/form-data; boundary=${boundary}`,
         'Content-Length': payload.length
@@ -131,6 +134,7 @@ async function sendTelegramPhoto(filePath, caption = '') {
       });
     });
 
+    req.on('timeout', () => { req.destroy(); resolve(false); });
     req.on('error', () => resolve(false));
     req.write(payload);
     req.end();
