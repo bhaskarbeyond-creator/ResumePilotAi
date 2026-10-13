@@ -2,11 +2,11 @@
   "id": "DIR-001",
   "title": "DIR-110: Performance & Code Hygiene - BuildResume Code-Splitting and Utility Lint Normalization",
   "priority": "P1",
-  "status": "IN_PROGRESS",
+  "status": "APPROVED",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-13T20:04:13.752Z",
-  "updatedAt": "2026-10-13T20:07:00.617Z",
+  "updatedAt": "2026-10-13T20:26:20.558Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "### 1. OBJECTIVE\nResolve AUD-001 and AUD-003:\n1. Performance Bundle Splitting: Split heavyweight components in `src/components/Resume/BuildResume/` (e.g. Preview, Achievements, Extras) via React.lazy/dynamic imports to reduce the 1.27 MB bundle chunk.\n2. Utility Lint Normalization: Surgically fix the 38 benign ESLint warnings in `src/utils/autocompleteDirectories.js`, `src/utils/bulletQuality.js`, and `src/utils/candidateContext.js` (unused parameters prefixed with _, unnecessary regex escape slashes removed).\n\n### 2. INVARIANTS\n- Preserve all 51 template renderers (Cv1 to Cv51).\n- Preserve aiRuntime.js verbatim.\n- Zero functional regression in resume creation/editing journey.\n\n### 3. MANDATORY QUALITY GATES\n- `npm run build`: exits 0 with reduced bundle size.\n- `npm run lint`: exits 0 with zero warnings in src/utils.\n- `npm run test:templates`: 72/72 PASS.\n- `npm run test:security:static`: 67/67 PASS.",
   "invariants": [],
@@ -27,10 +27,52 @@
     ],
     "planHash": "60a9987a50426524b715fffac0ba8b2e83b31c4652db5e7d89b9d56d9dc7c029"
   },
-  "evidence": null,
-  "reviews": [],
+  "evidence": {
+    "submittedAt": "2026-10-13T20:26:07.330Z",
+    "summary": "AUD-001+AUD-003 complete. BuildResume chunk 1,274,628B->81.01kB via React.lazy (12 steps + 4 modals + AtsScoreMeter, Suspense+conditional mount); dead TemplateRenderer import removed. 14 src/utils lint warnings fixed (eslint src/utils = 0/0). Gates: vite build exit 0, test:templates 72/72, test:security:static 67/67, test:dir088 6/6. Frozen surfaces diff=0 (cv-templates, aiRuntime.js, TemplateRenderer.jsx, template registry). Evidence: .bridge/evidence/dir001-build.log, dir001-templates.log, dir001-security.log, DIR-001-final-evidence.md",
+    "tests": {
+      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir001-templates.log",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791923167332_dir001-templates.log",
+      "sha256": "cffd569982493db995e7d7122f62dd9a86ac664f6464e803ef17020d4ec8a5cb",
+      "size": 7897
+    },
+    "domCrawl": null,
+    "artifacts": [],
+    "git": {
+      "isGit": true,
+      "head": "c75288598ef4c84b91db803640d09563834bc2c3",
+      "branch": "arena/f4651d36-resumepilotai",
+      "dirty": false,
+      "status": ""
+    },
+    "manifestHash": "652fe227572bf90587707947d1ca043fad6e733222ea9de432863ead541eb7ec"
+  },
+  "reviews": [
+    {
+      "reviewedAt": "2026-10-13T20:26:20.558Z",
+      "verdict": "APPROVED",
+      "feedback": "Automated evidence audit: test artifact scanned, no failure markers, clean tree. Evaluated by machine check.",
+      "evidenceHash": "652fe227572bf90587707947d1ca043fad6e733222ea9de432863ead541eb7ec",
+      "automated": true,
+      "provenance": {
+        "actor": "LEAD_SUPERVISOR",
+        "invocation": "daemon:lead_watcher_session",
+        "automated": true,
+        "reasons": [
+          "declared",
+          "daemon-parent:lead_watcher_session",
+          "non-tty"
+        ],
+        "pid": 41312,
+        "parentPid": 26852,
+        "tty": false,
+        "at": "2026-10-13T20:26:20.558Z",
+        "explicitlyAllowed": true
+      }
+    }
+  ],
   "freeze": null,
-  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "lastTransitionReason": "lead review",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {

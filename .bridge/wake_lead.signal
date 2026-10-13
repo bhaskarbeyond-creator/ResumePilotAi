@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-13T20:26:07.278Z",
-  "seq": 3182,
-  "id": "evt_mv74scum_5401c32ee43e",
-  "type": "HEARTBEAT",
-  "title": "[Heartbeat] All gates green: build split 1.27MB->81kB, eslint src/utils 0 warnings, templates 72/72, security 67/67. Submitting evidence.",
+  "timestamp": "2026-10-13T20:26:09.959Z",
+  "seq": 3183,
+  "id": "evt_mv74sex7_bc0ff75a9582",
+  "type": "EVIDENCE_SUBMITTED",
+  "title": "[Evidence] DIR-001: DIR-110: Performance & Code Hygiene - BuildResume Code-Splitting and Utility Lint Normalization",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-001",
-  "summary": "All gates green: build split 1.27MB->81kB, eslint src/utils 0 warnings, templates 72/72, security 67/67. Submitting evidence."
+  "summary": "AUD-001+AUD-003 complete. BuildResume chunk 1,274,628B->81.01kB via React.lazy (12 steps + 4 modals + AtsScoreMeter, Suspense+conditional mount); dead TemplateRenderer import removed. 14 src/utils lint warnings fixed (eslint src/utils = 0/0). Gates: vite build exit 0, test:templates 72/72, test:security:static 67/67, test:dir088 6/6. Frozen surfaces diff=0 (cv-templates, aiRuntime.js, TemplateRenderer.jsx, template registry). Evidence: .bridge/evidence/dir001-build.log, dir001-templates.log, dir001-security.log, DIR-001-final-evidence.md"
 }
