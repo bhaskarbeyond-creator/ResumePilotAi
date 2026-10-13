@@ -25,7 +25,12 @@ const AiEngineStatus = ({ status = AI_STATUS.UNKNOWN, className = '' }) => {
     return (
         <span
             className={cx(
-                'inline-flex select-none items-center gap-2 rounded-full border border-cuba-line bg-cuba-card px-3 py-1.5 text-xs font-semibold',
+                // DIR-106: NO display utility here, deliberately. The shell
+                // renders this beacon with `className="hidden"`, and a hardcoded
+                // `inline-flex` out-ranked `hidden` in the compiled CSS, leaving
+                // the beacon visible in place of the allowance chip. Display is
+                // the caller's to own — the same contract AiTokenMeter follows.
+                'select-none items-center gap-2 rounded-full border border-cuba-line bg-cuba-card px-3 py-1.5 text-xs font-semibold',
                 TONE_CLASS[descriptor.tone] || TONE_CLASS.muted,
                 className,
             )}

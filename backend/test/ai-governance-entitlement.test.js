@@ -51,8 +51,8 @@ class GovernancePool {
     this.configs.set(tenantId, { tenantId, revision: 1, aiPolicy, quotaPolicy });
   }
 
-  addMembership(principalId, tenantId, { status = 'ACTIVE', personalTenant = false } = {}) {
-    this.memberships.push({ principalId, tenantId, status, personalTenant, workspaceId: null });
+  addMembership(principalId, tenantId, { status = 'ACTIVE', personalTenant = false, updatedAt = null } = {}) {
+    this.memberships.push({ principalId, tenantId, status, personalTenant, workspaceId: null, updatedAt });
   }
 
   async query(sql, params = []) {
@@ -83,6 +83,8 @@ class GovernancePool {
             aiPolicy: JSON.stringify(config.aiPolicy || {}),
             quotaPolicy: JSON.stringify(config.quotaPolicy || {}),
             configRevision: config.revision ?? null,
+            // DIR-106: the primary-tenant tiebreak reads this column.
+            membershipUpdatedAt: m.updatedAt ?? null,
           };
         });
       return [rows, []];
@@ -290,6 +292,51 @@ test('P0-2: two active memberships are AMBIGUOUS and are never resolved arbitrar
     'the resolver must refuse rather than pick a tenant at random');
   assert.equal(governance.error?.code, 'TENANT_CONTEXT_REQUIRED');
   assert.equal(governance.error?.status, 400);
+});
+
+// ── DIR-106 — TELEMETRY opt-in: the menubar meter must not 400 on ambiguity ───
+
+test('DIR-106: allowAmbiguousSelection resolves a multi-tenant caller to its PRIMARY organization', async () => {
+  pool.addTenant({ tenantId: 'acme', quotaPolicy: { aiRequestsPerDay: 100 } });
+  pool.addTenant({ tenantId: 'globex', quotaPolicy: { aiRequestsPerDay: 100 } });
+  pool.addMembership('member-1', 'acme', { updatedAt: '2026-01-01T00:00:00.000Z' });
+  pool.addMembership('member-1', 'globex', { updatedAt: '2026-06-01T00:00:00.000Z' });
+
+  const req = { user: { uid: 'member-1' }, get: () => undefined, body: {}, query: {} };
+  const governance = await resolveAiGovernance(req, { allowAmbiguousSelection: true });
+
+  assert.equal(governance.source, QUOTA_SOURCE.ORGANIZATION,
+    'a telemetry read must resolve rather than refuse');
+  assert.equal(governance.ambiguousTenant, true);
+  assert.equal(governance.error, undefined);
+  assert.equal(governance.tenant.tenantId, 'globex',
+    'the most recently updated active membership is the primary');
+  assert.equal(governance.quota.sharedLimit, 100);
+});
+
+test('DIR-106: the strict default is unchanged by the telemetry opt-in', async () => {
+  pool.addTenant({ tenantId: 'acme', quotaPolicy: { aiRequestsPerDay: 100 } });
+  pool.addTenant({ tenantId: 'globex', quotaPolicy: { aiRequestsPerDay: 100 } });
+  pool.addMembership('member-1', 'acme', { updatedAt: '2026-01-01T00:00:00.000Z' });
+  pool.addMembership('member-1', 'globex', { updatedAt: '2026-06-01T00:00:00.000Z' });
+
+  const req = { user: { uid: 'member-1' }, get: () => undefined, body: {}, query: {} };
+  const governance = await resolveAiGovernance(req);
+  assert.equal(governance.source, QUOTA_SOURCE.NONE);
+  assert.equal(governance.reason, 'AMBIGUOUS_ACTIVE_TENANT');
+  assert.equal(governance.error?.code, 'TENANT_CONTEXT_REQUIRED');
+});
+
+test('DIR-106: enforceDailyAiQuota still fails closed on ambiguity (execution stays strict)', async () => {
+  pool.addTenant({ tenantId: 'acme', quotaPolicy: { aiRequestsPerDay: 100 } });
+  pool.addTenant({ tenantId: 'globex', quotaPolicy: { aiRequestsPerDay: 100 } });
+  pool.addMembership('member-1', 'acme', { updatedAt: '2026-01-01T00:00:00.000Z' });
+  pool.addMembership('member-1', 'globex', { updatedAt: '2026-06-01T00:00:00.000Z' });
+
+  const result = await callQuota('member-1');
+  assert.equal(result.continued, false);
+  assert.equal(result.res.statusCode, 400);
+  assert.equal(result.res.body.error.code, 'TENANT_CONTEXT_REQUIRED');
 });
 
 test('P0-2: enforceDailyAiQuota refuses ambiguous active tenant with 400 TENANT_CONTEXT_REQUIRED', async () => {

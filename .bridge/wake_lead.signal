@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-12T18:05:21.710Z",
-  "seq": 3147,
-  "id": "evt_mv5kbhjd_f112f497843a",
+  "timestamp": "2026-10-13T17:30:33.914Z",
+  "seq": 3166,
+  "id": "evt_mv6yil96_e8f707391b31",
   "type": "HEARTBEAT",
-  "title": "[Heartbeat] CHANGES_REQUESTED closed: Ctrl+K palette now indexes settings tabs (live-proven at 320/768/1440). 35/0 tests, build 2.68s, design 142/0, eslint clean, crawl 32/0 PASS, INV-1 0-byte",
+  "title": "[Heartbeat] All 12 steps executed. 95 tests pass, build 3.24s, live probe + authenticated crawl PASS. Submitting evidence.",
   "sender": "STAFF_DEVELOPER",
-  "directiveId": "DIR-105",
-  "summary": "CHANGES_REQUESTED closed: Ctrl+K palette now indexes settings tabs (live-proven at 320/768/1440). 35/0 tests, build 2.68s, design 142/0, eslint clean, crawl 32/0 PASS, INV-1 0-byte"
+  "directiveId": "DIR-106",
+  "summary": "All 12 steps executed. 95 tests pass, build 3.24s, live probe + authenticated crawl PASS. Submitting evidence."
 }

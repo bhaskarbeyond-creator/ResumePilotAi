@@ -54,6 +54,15 @@ describe('AI allowance meter — backend contract', () => {
         assert.match(handler, /error\.status \|\| 503/);
         assert.match(handler, /AI_USAGE_UNAVAILABLE/);
     });
+
+    it('opts into graceful multi-tenant resolution for the telemetry readout', () => {
+        // DIR-106: the menubar meter is a TELEMETRY read, not an execution. It
+        // asks the resolver to select the caller's primary organization instead
+        // of failing closed with 400 when no X-Tenant-Id is sent. Execution paths
+        // never pass this flag, so the quota gate stays strict.
+        const handler = ROUTES.slice(ROUTES.indexOf("router.get('/ai-usage'"));
+        assert.match(handler, /allowAmbiguousSelection: true/);
+    });
 });
 
 describe('AI allowance meter — client contract', () => {

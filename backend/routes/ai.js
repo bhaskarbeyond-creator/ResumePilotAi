@@ -54,11 +54,23 @@ router.get('/ai-usage', requireAuthLazy, async (req, res) => {
                 error: { code: 'AUTH_REQUIRED', message: 'Authentication required' },
             });
         }
-        let governance = null;
-        try {
-            const { resolveAiGovernance } = require('../security/aiGovernance');
-            governance = await resolveAiGovernance(req);
-        } catch (_err) { governance = null; }
+
+        const { resolveAiGovernance } = require('../security/aiGovernance');
+        const { getUserAiEntitlement } = require('../services/adminAiEntitlement');
+
+        // DIR-106 / S5 — governance resolution and the personal ledger read are
+        // INDEPENDENT and read-only, so they run CONCURRENTLY. The former serial
+        // awaits cost one extra MariaDB round trip on the menubar's only request.
+        // DIR-106 / S3 — this is a TELEMETRY readout, not an execution, so an
+        // ambiguous multi-tenant caller resolves to its PRIMARY organization
+        // instead of being refused with 400. Execution paths stay strict.
+        const [governance, entitlementResult] = await Promise.all([
+            resolveAiGovernance(req, { allowAmbiguousSelection: true }).catch(() => null),
+            getUserAiEntitlement(null, uid).then(
+                (value) => ({ value }),
+                (error) => ({ error }),
+            ),
+        ]);
 
         if (governance?.error) {
             return res.status(governance.error.status || 400).json({
@@ -70,11 +82,9 @@ router.get('/ai-usage', requireAuthLazy, async (req, res) => {
             });
         }
 
-        const { getUserAiEntitlement } = require('../services/adminAiEntitlement');
-        let entitlement = null;
-        try {
-            entitlement = await getUserAiEntitlement(null, uid);
-        } catch (err) {
+        let entitlement = entitlementResult.value || null;
+        if (!entitlement) {
+            const err = entitlementResult.error;
             if (err?.code === 'USER_NOT_FOUND' && governance?.entitlement) {
                 const effLimit = governance.quota?.userLimit ?? governance.entitlement.dailyLimit ?? 10;
                 entitlement = {
@@ -91,20 +101,33 @@ router.get('/ai-usage', requireAuthLazy, async (req, res) => {
             }
         }
 
+        // DIR-106 / S4 — the per-user counter is what the quota gate actually
+        // charges, so the used/limit/remaining triple is derived from ONE
+        // effective limit. The old code paired the PERSONAL remaining with the
+        // ORGANIZATION limit, which could advertise headroom the gate refuses.
+        const usedToday = Number(entitlement.usedToday || 0);
+        const effectiveLimit = Number(governance?.quota?.userLimit ?? entitlement.effectiveLimit ?? 0);
+        const remainingToday = Math.max(0, effectiveLimit - usedToday);
+        const isExhausted = usedToday >= effectiveLimit;
+
         return res.json({
             success: true,
             usage: {
                 plan: entitlement.plan,
-                usedToday: entitlement.usedToday,
-                effectiveLimit: governance?.quota?.userLimit ?? entitlement.effectiveLimit,
-                remainingToday: entitlement.remainingToday,
-                isExhausted: entitlement.isExhausted,
+                usedToday,
+                effectiveLimit,
+                remainingToday,
+                isExhausted,
                 lastResetAt: entitlement.lastResetAt,
                 source: entitlement.source,
                 // Server-calculated only; the client never supplies these.
                 quotaScope: governance?.source || 'UNKNOWN',
                 tenantId: governance?.tenant?.tenantId || null,
                 orgDailyLimit: governance?.quota?.sharedLimit ?? null,
+                // DIR-106: true only when the primary organization was selected
+                // because the caller belongs to more than one. Reported, never
+                // guessed, so the client can label the budget honestly.
+                ambiguousTenant: governance?.ambiguousTenant === true,
             },
         });
     } catch (error) {

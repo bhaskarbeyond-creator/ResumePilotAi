@@ -63,18 +63,19 @@ const parseJson = (value, fallback = {}) => {
  *     `x-tenant-id` selects one, otherwise the request is ambiguous and is
  *     refused rather than guessed. (P0-2)
  *
- * @returns {{ membership: object|null, reason: string|null }}
+ * @returns {{ membership: object|null, reason: string|null, ambiguous?: boolean }}
  */
-async function loadApplicableTenantMembership(uid, requestedTenantId) {
+async function loadApplicableTenantMembership(uid, requestedTenantId, { allowAmbiguousSelection = false } = {}) {
     const [rows] = await pool().query(
         `SELECT m.tenantId, m.workspaceId, m.status AS membershipStatus, m.personalTenant,
+                m.updated_at AS membershipUpdatedAt,
                 t.lifecycleState, t.decommissionedAt, t.policyVersion,
                 c.aiPolicy, c.quotaPolicy, c.revision AS configRevision
            FROM enterprise_memberships m
            JOIN enterprise_tenants t ON t.id = m.tenantId
       LEFT JOIN enterprise_tenant_configurations c ON c.tenantId = m.tenantId
           WHERE m.principalId = ?
-          ORDER BY m.updated_at DESC`,
+          ORDER BY m.updated_at DESC, m.tenantId ASC`,
         [uid],
     );
 
@@ -94,7 +95,26 @@ async function loadApplicableTenantMembership(uid, requestedTenantId) {
             ? { membership: requested, reason: null }
             : { membership: null, reason: 'REQUESTED_TENANT_NOT_ELIGIBLE' };
     }
-    if (eligible.length > 1) return { membership: null, reason: 'AMBIGUOUS_ACTIVE_TENANT' };
+    if (eligible.length > 1) {
+        // DIR-106: a GENERAL TELEMETRY readout (the menubar allowance meter) must
+        // not hard-fail merely because the caller belongs to more than one
+        // organization and the global shell sends no X-Tenant-Id. When — and only
+        // when — the caller explicitly opts in, the PRIMARY membership is chosen
+        // deterministically: newest `updated_at` first, `tenantId` ascending as
+        // the tiebreak, so repeated reads can never disagree. EXECUTION paths (the
+        // quota gate and the governance middleware) never opt in and still fail
+        // closed with AMBIGUOUS_ACTIVE_TENANT.
+        if (allowAmbiguousSelection) {
+            const primary = eligible.slice().sort((a, b) => {
+                const ta = a.membershipUpdatedAt ? new Date(a.membershipUpdatedAt).getTime() : 0;
+                const tb = b.membershipUpdatedAt ? new Date(b.membershipUpdatedAt).getTime() : 0;
+                if (tb !== ta) return tb - ta;
+                return String(a.tenantId).localeCompare(String(b.tenantId));
+            })[0];
+            return { membership: primary, reason: 'AMBIGUOUS_PRIMARY_SELECTED', ambiguous: true };
+        }
+        return { membership: null, reason: 'AMBIGUOUS_ACTIVE_TENANT' };
+    }
     return { membership: eligible[0], reason: null };
 }
 
@@ -102,7 +122,7 @@ async function loadApplicableTenantMembership(uid, requestedTenantId) {
  * Resolves the effective AI governance for one request. Read-only: it takes no
  * locks and consumes no quota — the reservation is a separate, later step.
  */
-async function resolveAiGovernance(req) {
+async function resolveAiGovernance(req, { allowAmbiguousSelection = false } = {}) {
     const uid = req?.user?.uid;
     if (!uid) {
         return { source: QUOTA_SOURCE.NONE, reason: 'AUTH_REQUIRED', entitlement: null, quota: null, tenant: null };
@@ -116,7 +136,7 @@ async function resolveAiGovernance(req) {
     const quotaConfig = parseJson(quotaRows[0]?.data, {});
 
     const requestedTenantId = req.get?.('x-tenant-id') || req.body?.tenantId || req.query?.tenantId || null;
-    const lookup = await loadApplicableTenantMembership(uid, requestedTenantId);
+    const lookup = await loadApplicableTenantMembership(uid, requestedTenantId, { allowAmbiguousSelection });
 
     const membership = lookup.membership;
     const aiPolicy = parseJson(membership?.aiPolicy, {});
@@ -196,6 +216,9 @@ async function resolveAiGovernance(req) {
     return {
         source: QUOTA_SOURCE.ORGANIZATION,
         reason: null,
+        // DIR-106: true only when the primary organization was auto-selected
+        // because the caller belongs to several. Reported, never guessed.
+        ambiguousTenant: lookup.ambiguous === true,
         entitlement,
         tenant: {
             tenantId: membership.tenantId,

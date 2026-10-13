@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-12T15:37:03.405Z",
+  "generatedAt": "2026-10-13T17:12:50.204Z",
   "directive": "DIR-098",
   "phase": "one-discovery",
   "source": "src/main.jsx + component tree (derived, no fabrication)",
@@ -8,7 +8,7 @@
     "reviewUnits": 46,
     "viewports": 7,
     "stateCategories": 13,
-    "testSuites": 197,
+    "testSuites": 198,
     "surfaces": {
       "candidate": 27,
       "employer": 0,
@@ -104,6 +104,7 @@
     "account-lifecycle-regression.test.mjs",
     "achievements-step-cards-ux.test.mjs",
     "admin-ai-settings.test.mjs",
+    "admin-settings-navigation.test.mjs",
     "admin-settings-regression.test.mjs",
     "admin-ux-consistency.test.mjs",
     "admin-workflow.test.mjs",
