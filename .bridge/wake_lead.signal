@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-13T17:30:33.914Z",
-  "seq": 3166,
-  "id": "evt_mv6yil96_e8f707391b31",
-  "type": "HEARTBEAT",
-  "title": "[Heartbeat] All 12 steps executed. 95 tests pass, build 3.24s, live probe + authenticated crawl PASS. Submitting evidence.",
+  "timestamp": "2026-10-13T17:30:34.927Z",
+  "seq": 3167,
+  "id": "evt_mv6yim1e_a01fd88d236c",
+  "type": "EVIDENCE_SUBMITTED",
+  "title": "[Evidence] DIR-106: Fix Menu Bar AI Allowance Meter Display and Resolve Ambiguous Multi-Tenant Governance on /api/ai-usage",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-106",
-  "summary": "All 12 steps executed. 95 tests pass, build 3.24s, live probe + authenticated crawl PASS. Submitting evidence."
+  "summary": "DIR-106 fixed and verified live. RC-1 removed the hardcoded inline-flex from AiEngineStatus so the shell className=hidden now suppresses the AI Engine Ready beacon (verified hidden at 320/768/1440). RC-2 added an opt-in allowAmbiguousSelection to the governance resolver so GET /api/ai-usage resolves a multi-tenant caller to its primary ORGANIZATION instead of 400 TENANT_CONTEXT_REQUIRED, while the quota gate and middleware still fail closed. RC-3 made the used/limit/remaining triple internally consistent. RC-4 runs governance and entitlement reads concurrently. Evidence: 95 unit tests pass (governance 25/25, meter 18/18, abuse 4/4, design-system 29/29, shell 7/7, header 6/6, ux-gates 6/6), vite build 3.24s, frozen 0-byte, live MariaDB probe PASS (STRICT 400, GRACEFUL ORGANIZATION tenant 9406f186 userLimit 10000), authenticated Playwright crawl PASS (HTTP 200, chip visible showing Org Usage 0/10000, beacon suppressed, 0 console errors)."
 }

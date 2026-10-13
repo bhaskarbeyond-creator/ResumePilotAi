@@ -2,11 +2,11 @@
   "id": "DIR-106",
   "title": "Fix Menu Bar AI Allowance Meter Display and Resolve Ambiguous Multi-Tenant Governance on /api/ai-usage",
   "priority": "P0",
-  "status": "IN_PROGRESS",
+  "status": "APPROVED",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-13T16:59:44.506Z",
-  "updatedAt": "2026-10-13T17:09:57.108Z",
+  "updatedAt": "2026-10-13T17:30:49.584Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "# SECTION 1 — EXECUTIVE MANDATE\nRestore the authoritative AI Allowance menubar readout (✦ Usage: X/Y via AiTokenMeter.jsx) on the universal header (CubaAppShell.jsx) and suppress the unintended ● ✦ AI Engine Ready beacon.\n\nUSER OBJECTIVE:\nThe user reported that their available AI requests are missing from the menu bar, providing a screenshot showing ● ✦ AI Engine Ready instead of ✦ Usage: X/Y. Review and fix the issues causing this regression so that users see their actual available requests on the menu bar.\n\nROOT CAUSE:\n1. CSS display conflict: In src/components/cuba/AiEngineStatus.jsx, 'inline-flex' is hardcoded in the root <span> base class list. In src/components/cuba/CubaAppShell.jsx:545, <AiEngineStatus status={aiStatus} className=\"hidden\" /> attempts to hide it. In the compiled CSS, .inline-flex takes precedence over .hidden, so the beacon remains visible instead of hidden.\n2. Multi-tenant quota resolution 400 failure: For signed-in users with multiple active enterprise tenant memberships (such as Super Admin bhaskar.beyond@gmail.com), backend/security/aiGovernance.js flags loadApplicableTenantMembership with AMBIGUOUS_ACTIVE_TENANT. On the universal menu bar, useAiTokenUsage.js queries GET /api/ai-usage without an X-Tenant-Id header. The governance resolver fails closed with HTTP 400 TENANT_CONTEXT_REQUIRED. Consequently, useAiTokenUsage sets status to UNAVAILABLE, and AiTokenMeter.jsx fails closed (returns null), completely hiding the allowance chip from the menu bar.\n\nSCOPE:\n1. Fix src/components/cuba/AiEngineStatus.jsx: Remove the hardcoded inline-flex from base classes so className=\"hidden\" cleanly suppresses the beacon.\n2. Fix backend/security/aiGovernance.js (and/or backend/routes/ai.js): When resolving AI quota for general telemetry/readout at /api/ai-usage (or when no X-Tenant-Id is sent by the global shell for multi-tenant users), do not hard-fail with 400. Instead, gracefully resolve to the user's primary/active tenant membership (e.g. latest active membership sorted by updated_at) or individual fallback with appropriate quotaScope, allowing the user's daily usage and limit to be returned truthfully.\n3. Verify src/components/cuba/AiTokenMeter.jsx: Confirm the chip renders cleanly with Usage: <used>/<limit>, appropriate tooltip, accessible label, and correct tone.\n4. Run automated tests (tests/ai-token-meter.test.mjs, backend/test/ai-governance-entitlement.test.js).\n5. Rebuild production bundle (npm run build) so Apache serves the updated assets from dist/.\n6. Perform live Playwright verification confirming AiTokenMeter is visible and AiEngineStatus is suppressed.\n\n# SECTION 2 — ABSOLUTE MODE RESTRICTIONS: PLAN MODE VS ACT MODE\nPLAN MODE: Read-only inspection of AiEngineStatus.jsx, CubaAppShell.jsx, aiGovernance.js, routes/ai.js, useAiTokenUsage.js, and test suites. Submit plan via bridge dev plan.\nACT MODE: Authorized surgical implementation of CSS display fix, backend multi-tenant usage resolution, test updates, and production build.\n\n# SECTION 3 — PRE-FLIGHT REPOSITORY AND WORKSPACE VERIFICATION\nWorkspace: D:\\xampp\\htdocs\\IME365. Baseline: src/cv-templates/ and backend/services/aiRuntime.js must remain 0-byte diff. Node runtime on Windows with XAMPP Apache + MariaDB.\n\n# SECTION 4 — NON-NEGOTIABLE PROJECT INVARIANTS\n1. Zero fake telemetry: Never invent an allowance, limit, or percentage the server did not measure (§46).\n2. Fail closed on execution: While telemetry readouts should fall back gracefully to primary tenant or personal allowance, actual generative AI execution (/api/ai/*) preserves strict tenant boundaries.\n3. Cuba Executive Glassmorphism tokens: Use var(--cuba-*) tokens, WCAG 2.1 AA contrast ratios (>= 4.5:1), and no raw hex colors.\n4. Single surface for AI allowance: Preserve the invariant that the menubar chip is the single home for the user's daily AI allowance.\n\n# SECTION 5 — AUTHORITATIVE REFERENCES AND PARITY REQUIREMENTS\nUser screenshot showing ● ✦ AI Engine Ready between Help (?) and Notification (🔔) icon, src/components/cuba/CubaAppShell.jsx, src/components/cuba/AiEngineStatus.jsx, src/components/cuba/AiTokenMeter.jsx, src/hooks/useAiTokenUsage.js, backend/security/aiGovernance.js, backend/routes/ai.js.\n\n# SECTION 6 — MANDATORY INVESTIGATION AND COVERAGE\nInvestigate:\n- src/components/cuba/AiEngineStatus.jsx lines 21-46.\n- src/components/cuba/CubaAppShell.jsx lines 545-558.\n- src/components/cuba/AiTokenMeter.jsx lines 36-96.\n- src/hooks/useAiTokenUsage.js lines 48-100.\n- backend/security/aiGovernance.js lines 68-155.\n- backend/routes/ai.js lines 48-119.\n- tests/ai-token-meter.test.mjs.\n\n# SECTION 7 — QUALITY, RESPONSIVENESS, ACCESSIBILITY, AND NON-FUNCTIONAL REQUIREMENTS\nWCAG 2.1 AA compliant, responsive at 320px, 768px, and 1440px (hidden below sm, visible sm and above). Tooltip and sr-only description intact.\n\n# SECTION 8 — DATA INTEGRITY, STATE MANAGEMENT, AND EDGE CASES\nHandle users with 0 tenant memberships (individual plan), 1 tenant membership (org plan), and multiple tenant memberships (primary org or individual resolution without 400 rejection).\n\n# SECTION 9 — TEST STRATEGY AND ACCEPTANCE REQUIREMENTS\n1. node --test tests/ai-token-meter.test.mjs must pass 100%.\n2. node --test backend/test/ai-governance-entitlement.test.js must pass 100%.\n3. Production build npm run build must exit 0 under 4.0s budget.\n4. Playwright verification proving:\n   - AiEngineStatus beacon is suppressed (hidden).\n   - AiTokenMeter ([data-testid=\"ai-token-meter\"]) is visible and displays Usage: <used>/<limit> for authenticated users.\n\n# SECTION 10 — REQUIRED FORENSIC AND ENGINEERING DELIVERABLES\n1. Surgical update to src/components/cuba/AiEngineStatus.jsx.\n2. Surgical update to backend/security/aiGovernance.js and/or backend/routes/ai.js.\n3. Passing test suite and build output.\n4. Playwright crawl evidence log submitted via bridge dev submit-evidence.\n\n# SECTION 11 — SEVERITY, PRIORITISATION, AND IMPLEMENTATION SEQUENCING\nP0: Fix CSS suppression in AiEngineStatus.jsx and multi-tenant resolution in aiGovernance.js / routes/ai.js.\nP1: Test updates and production build.\nP2: Playwright crawl and evidence submission.\n\n# SECTION 12 — REQUIRED FINAL RESPONSE AND COMPLETION REPORT\nReport exact test commands + exit codes, Playwright crawl proof, git diff, and 0-byte verification on protected files.\n\n# SECTION 13 — MANDATORY BRIDGE PLAN SUBMISSION AND TOOL EXECUTION GOVERNANCE\nSubmit plan via:\nbridge dev plan --directive DIR-106 --summary \"...\" --steps \"S1;S2...\"\nSubmit heartbeats <= 480s.\nSubmit evidence via:\nbridge dev submit-evidence --directive DIR-106 --summary \"...\" --tests \"...\"\n\n# SECTION 14 — FINAL EXECUTIVE INSTRUCTION\nRoot-cause over symptom patching; do not break single-tenant isolation; ensure the menubar correctly displays the user's available requests.\n",
   "invariants": [
@@ -43,10 +43,52 @@
     ],
     "planHash": "55f7f718c3ac9406bfdccc61fef956c29c12f122e2499c4483ed486083077bd4"
   },
-  "evidence": null,
-  "reviews": [],
+  "evidence": {
+    "submittedAt": "2026-10-13T17:30:34.112Z",
+    "summary": "DIR-106 fixed and verified live. RC-1 removed the hardcoded inline-flex from AiEngineStatus so the shell className=hidden now suppresses the AI Engine Ready beacon (verified hidden at 320/768/1440). RC-2 added an opt-in allowAmbiguousSelection to the governance resolver so GET /api/ai-usage resolves a multi-tenant caller to its primary ORGANIZATION instead of 400 TENANT_CONTEXT_REQUIRED, while the quota gate and middleware still fail closed. RC-3 made the used/limit/remaining triple internally consistent. RC-4 runs governance and entitlement reads concurrently. Evidence: 95 unit tests pass (governance 25/25, meter 18/18, abuse 4/4, design-system 29/29, shell 7/7, header 6/6, ux-gates 6/6), vite build 3.24s, frozen 0-byte, live MariaDB probe PASS (STRICT 400, GRACEFUL ORGANIZATION tenant 9406f186 userLimit 10000), authenticated Playwright crawl PASS (HTTP 200, chip visible showing Org Usage 0/10000, beacon suppressed, 0 console errors).",
+    "tests": {
+      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir106\\dir106-tests.log",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791912634112_dir106-tests.log",
+      "sha256": "7e34f580d9ee6e84a48278dd538eb9a2a8368ae04d77970ecf82dcebd0dcae88",
+      "size": 1732
+    },
+    "domCrawl": null,
+    "artifacts": [],
+    "git": {
+      "isGit": true,
+      "head": "95d6fe4521f84c650641af3ddd197b1ba59c23df",
+      "branch": "arena/f4651d36-resumepilotai",
+      "dirty": false,
+      "status": ""
+    },
+    "manifestHash": "e403e3febb7564bfae2941462a5db5919db1febc4136ced498d1b31243bb4db5"
+  },
+  "reviews": [
+    {
+      "reviewedAt": "2026-10-13T17:30:49.584Z",
+      "verdict": "APPROVED",
+      "feedback": "Automated evidence audit: test artifact scanned, no failure markers, clean tree. Evaluated by machine check.",
+      "evidenceHash": "e403e3febb7564bfae2941462a5db5919db1febc4136ced498d1b31243bb4db5",
+      "automated": true,
+      "provenance": {
+        "actor": "LEAD_SUPERVISOR",
+        "invocation": "daemon:lead_watcher_session",
+        "automated": true,
+        "reasons": [
+          "declared",
+          "daemon-parent:lead_watcher_session",
+          "non-tty"
+        ],
+        "pid": 6504,
+        "parentPid": 26852,
+        "tty": false,
+        "at": "2026-10-13T17:30:49.584Z",
+        "explicitlyAllowed": true
+      }
+    }
+  ],
   "freeze": null,
-  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "lastTransitionReason": "lead review",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {
