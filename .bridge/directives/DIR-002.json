@@ -2,11 +2,11 @@
   "id": "DIR-002",
   "title": "AUD-002: Interview Coach act() Warning Elimination - Zero Console Noise in Test Pyramid",
   "priority": "P1",
-  "status": "IN_PROGRESS",
+  "status": "APPROVED",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-13T20:33:58.326Z",
-  "updatedAt": "2026-10-13T20:38:26.339Z",
+  "updatedAt": "2026-10-13T20:50:11.953Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "Objective: Reproduce and eliminate the React act(...) warnings in tests/interview-coach-lifecycle.test.mjs (timer ticks + CBT palette updates in DashboardInterviews.jsx). Root cause expected: async event-loop dispatches outside act(). Fix: wrap timer advancements in act() and ensure mock audio cleanup on unmount. Gates: npm run test:interview exits 0 with ZERO act() warnings in output; npm run build exit 0; no changes to backend/services/aiRuntime.js or cv templates. Evidence: test log + warning-grep = 0 matches.",
   "invariants": [],
@@ -28,8 +28,50 @@
     ],
     "planHash": "3f4bcecea18b34ef007dbab767f6dbaf9c2e3070a142222ef32bf710e289d170"
   },
-  "evidence": null,
-  "reviews": [],
+  "evidence": {
+    "submittedAt": "2026-10-13T20:50:03.222Z",
+    "summary": "Eliminated all 21 act() warnings in the Interview Coach lifecycle test (test-side only, zero production changes). Root cause: the keydown() helper fired window KeyboardEvents OUTSIDE act(), and DashboardInterviews' onKeyDown handler dispatches reducer actions + state setters SYNCHRONOUSLY - React 18.3+ emits the act warning at SCHEDULE time, so post-event flushing could never suppress it. Fixes: (1) act-wrapped the keydown dispatch (mirroring the proven click() helper); (2) act-wrapped remaining bare beforeunload/typing dispatches; (3) added platform getResumes stub so the real multi-await fetch chain cannot resolve outside act; (4) added advanceTimers() helper - all 18 bare microtask flushes upgraded to macrotask act windows; (5) absorbed the per-second exam TICK deterministically via advanceTimers(1050) at exam entry; (6) final reactRoot.unmount() moved inside act(). Gates verified: npm run test:interview = 31/31 pass, exit 0, ZERO act() warnings (3 consecutive deterministic runs); npm run build exit 0 in 2.36s; git diff confirms zero changes to backend/services/aiRuntime.js and cv templates.",
+    "tests": {
+      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir002-final-suite.log",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791924603223_dir002-final-suite.log",
+      "sha256": "4486aaafb96eb2fda2b4e34add046a5b64972331d8e6924fe0eb354fc57840f5",
+      "size": 6568
+    },
+    "domCrawl": null,
+    "artifacts": [],
+    "git": {
+      "isGit": true,
+      "head": "7f52022adb5c92c0377115164da977be9e337e0f",
+      "branch": "arena/f4651d36-resumepilotai",
+      "dirty": false,
+      "status": ""
+    },
+    "manifestHash": "18df6b8ee6f59b64485771c378d4dbdf6420d303f7210bf830375b08bc40a5e6"
+  },
+  "reviews": [
+    {
+      "reviewedAt": "2026-10-13T20:50:11.953Z",
+      "verdict": "APPROVED",
+      "feedback": "Automated evidence audit: All 31 interview coach tests pass with zero act warnings; npm run test:interview exits zero; acceptance criteria satisfied.. Evaluated by Cloud AI Gatekeeper (nvidia/nemotron-3-super-120b-a12b:free).",
+      "evidenceHash": "18df6b8ee6f59b64485771c378d4dbdf6420d303f7210bf830375b08bc40a5e6",
+      "automated": true,
+      "provenance": {
+        "actor": "LEAD_SUPERVISOR",
+        "invocation": "daemon:lead_watcher_session",
+        "automated": true,
+        "reasons": [
+          "declared",
+          "daemon-parent:lead_watcher_session",
+          "non-tty"
+        ],
+        "pid": 54680,
+        "parentPid": 26852,
+        "tty": false,
+        "at": "2026-10-13T20:50:11.953Z",
+        "explicitlyAllowed": true
+      }
+    }
+  ],
   "freeze": null,
   "heartbeats": [
     {
@@ -67,7 +109,7 @@
   ],
   "lastHeartbeatAt": "2026-10-13T20:49:56.442Z",
   "continuationPending": false,
-  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "lastTransitionReason": "lead review",
   "revisionTarget": null,
   "planApproval": {
     "approvedAt": "2026-10-13T20:38:26.339Z",
