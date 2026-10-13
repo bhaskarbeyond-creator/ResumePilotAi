@@ -6,7 +6,7 @@ You are the senior frontend architect, UI/UX engineer, AI-experience engineer, a
 
 The target experience is:
 
-# **Cuba Modern Executive Glassmorphism + AI-Native Career Intelligence Platform**
+### **Cuba Modern Executive Glassmorphism + AI-Native Career Intelligence Platform**
 
 The final platform must feel:
 
@@ -71,7 +71,7 @@ It is a:
 
 ---
 
-# 1. ABSOLUTE RULE — REPOSITORY REALITY WINS
+## 1. ABSOLUTE RULE — REPOSITORY REALITY WINS
 
 Before modifying code, inspect the actual repository.
 
@@ -116,11 +116,11 @@ Never invent repository facts.
 
 ---
 
-# 2. DEFINITION OF READY — REQUIRED BEFORE IMPLEMENTATION
+## 2. DEFINITION OF READY — REQUIRED BEFORE IMPLEMENTATION
 
 Do NOT begin the major UI migration until the following pre-flight information has been established.
 
-## Repository
+### Repository
 
 - [ ] Git branch identified.
 - [ ] Starting commit recorded.
@@ -135,7 +135,7 @@ Do NOT begin the major UI migration until the following pre-flight information h
 - [ ] E2E capability verified.
 - [ ] Browser automation capability verified.
 
-## Product
+### Product
 
 - [ ] Existing routes inventoried.
 - [ ] Existing navigation inventoried.
@@ -149,7 +149,7 @@ Do NOT begin the major UI migration until the following pre-flight information h
 - [ ] Live AI Interview inventoried.
 - [ ] Existing dialogs/modals/drawers inventoried.
 
-## Safety
+### Safety
 
 - [ ] Restore point created.
 - [ ] Existing tests baseline captured.
@@ -160,13 +160,13 @@ Do NOT begin the major UI migration until the following pre-flight information h
 
 If these are not complete, report:
 
-**NOT READY — PRE-FLIGHT INCOMPLETE**
+### **NOT READY — PRE-FLIGHT INCOMPLETE**
 
 Do not begin destructive migration.
 
 ---
 
-# 3. PRE-FLIGHT SAFETY
+## 3. PRE-FLIGHT SAFETY
 
 Before changing code:
 
@@ -193,7 +193,7 @@ Do NOT:
 
 ---
 
-# 4. REFERENCE CODEBASE — REQUIRED SOURCE OF DESIGN REFERENCE
+## 4. REFERENCE CODEBASE — REQUIRED SOURCE OF DESIGN REFERENCE
 
 Where available, inspect the Cuba reference implementation before building equivalent components.
 
@@ -236,7 +236,7 @@ Do not blindly copy incompatible dependencies or framework configuration.
 
 ---
 
-# 5. REQUIRED REPOSITORY DISCOVERY
+## 5. REQUIRED REPOSITORY DISCOVERY
 
 Create an internal inventory covering:
 
@@ -282,17 +282,17 @@ Feature flags
 Build a migration matrix:
 
 | Area | Current Route | Current Component | Business Logic | API | Target UI | Risk | Test |
-|---|---|---|---|---|---|---|---|
+| ---- | ------------- | ----------------- | -------------- | --- | --------- | ---- | ---- |
 
 This matrix must be based on the actual repository.
 
 ---
 
-# 6. LEGACY → CURRENT → TARGET ANALYSIS
+## 6. LEGACY → CURRENT → TARGET ANALYSIS
 
 Where a legacy/reference implementation exists:
 
-## LEGACY
+### LEGACY
 
 Determine:
 
@@ -303,7 +303,7 @@ Determine:
 - user workflows;
 - important interaction semantics.
 
-## CURRENT
+### CURRENT
 
 Determine:
 
@@ -313,7 +313,7 @@ Determine:
 - known regressions;
 - existing design patterns.
 
-## TARGET
+### TARGET
 
 Apply:
 
@@ -321,7 +321,7 @@ Apply:
 
 Do NOT regress functionality merely to make the design resemble the reference.
 
-### CORE RULE
+#### CORE RULE
 
 **Visual modernization must never mean functional downgrade.**
 
@@ -331,7 +331,7 @@ If IME365's current implementation is more advanced than the reference:
 
 ---
 
-# 7. BUSINESS LOGIC PRESERVATION — NON-NEGOTIABLE
+## 7. BUSINESS LOGIC PRESERVATION — NON-NEGOTIABLE
 
 Do not unnecessarily alter:
 
@@ -367,7 +367,7 @@ Business behavior must remain compatible.
 
 ---
 
-# 8. RESUME TEMPLATE FIDELITY — ABSOLUTE
+## 8. RESUME TEMPLATE FIDELITY — ABSOLUTE
 
 IME365 contains 51 resume templates.
 
@@ -413,7 +413,7 @@ Any discovered export/template regression is a release blocker until resolved.
 
 ---
 
-# 9. TECHNOLOGY BASELINE
+## 9. TECHNOLOGY BASELINE
 
 Respect the actual repository configuration.
 
@@ -466,11 +466,11 @@ Do not introduce duplicate token systems.
 
 ---
 
-# 10. CUBA MODERN EXECUTIVE GLASSMORPHISM
+## 10. CUBA MODERN EXECUTIVE GLASSMORPHISM
 
 The visual language is explicitly:
 
-# **Cuba Modern Executive Glassmorphism**
+### **Cuba Modern Executive Glassmorphism**
 
 It should use:
 
@@ -503,7 +503,7 @@ The design must feel like a premium executive platform, not a neon gaming interf
 
 ---
 
-# 11. DESIGN TOKENS
+## 11. DESIGN TOKENS
 
 Establish centralized tokens such as:
 
@@ -535,7 +535,7 @@ Do not duplicate token values.
 
 ---
 
-# 12. UNIVERSAL COMPONENT SYSTEM
+## 12. UNIVERSAL COMPONENT SYSTEM
 
 Create/reuse reusable primitives as appropriate:
 
@@ -577,7 +577,7 @@ Every primitive must be:
 
 ---
 
-# 13. COMPONENT DOCUMENTATION
+## 13. COMPONENT DOCUMENTATION
 
 Where the repository already uses Storybook:
 
@@ -607,7 +607,7 @@ The requirement is:
 
 ---
 
-# 14. MODAL / DRAWER ACCESSIBILITY CONTRACT
+## 14. MODAL / DRAWER ACCESSIBILITY CONTRACT
 
 Every modal/drawer must support:
 
@@ -625,7 +625,7 @@ Every modal/drawer must support:
 
 ---
 
-# 15. MASTER APP SHELL
+## 15. MASTER APP SHELL
 
 Implement a universal shell where appropriate:
 
@@ -637,7 +637,7 @@ CubaAppShell
  └── Content
 ```
 
-## Sidebar
+### Sidebar
 
 Desktop:
 
@@ -660,7 +660,7 @@ Include:
 - user summary;
 - sign-out.
 
-## Header
+### Header
 
 Where functionality actually exists:
 
@@ -678,7 +678,7 @@ Never display a fake system status.
 
 ---
 
-# 16. NAVIGATION CONTRACT
+## 16. NAVIGATION CONTRACT
 
 Centralize navigation only after discovering the actual route tree.
 
@@ -728,7 +728,7 @@ Before finalizing:
 
 ---
 
-# 17. AI-NATIVE EXPERIENCE LAYER
+## 17. AI-NATIVE EXPERIENCE LAYER
 
 IME365 must have a recognizable AI identity.
 
@@ -736,7 +736,7 @@ The AI experience should feel inspired by the clarity and responsiveness of mode
 
 The visual language should communicate:
 
-**Intelligence + activity + responsiveness + trust**
+### **Intelligence + activity + responsiveness + trust**
 
 Do NOT turn every screen into a glowing neon interface.
 
@@ -744,7 +744,7 @@ AI visual treatment must be strongest where actual AI functionality exists.
 
 ---
 
-# 18. AI SIGNATURE — AMBIENT AI AURORA
+## 18. AI SIGNATURE — AMBIENT AI AURORA
 
 AI-enabled surfaces may use subtle:
 
@@ -773,13 +773,9 @@ Do not:
 
 ---
 
-# 19. AI SIGNATURE — ✦ AI COPILOT BRAND MARK
+## 19. AI SIGNATURE — ✦ AI COPILOT BRAND MARK
 
-Use:
-
-**✦**
-
-as the consistent AI identity marker where appropriate.
+Use **✦** as the consistent AI identity marker where appropriate.
 
 Examples:
 
@@ -796,7 +792,7 @@ AI branding must indicate actual AI capability.
 
 ---
 
-# 20. AI ENGINE STATUS — NO FAKE TELEMETRY
+## 20. AI ENGINE STATUS — NO FAKE TELEMETRY
 
 The header may display an AI engine status indicator.
 
@@ -843,7 +839,7 @@ Provider healthy
 
 ---
 
-# 21. REAL STREAMING SYNTHESIS
+## 21. REAL STREAMING SYNTHESIS
 
 When the backend/provider actually streams AI output:
 
@@ -884,7 +880,7 @@ use an honest generation state.
 
 ---
 
-# 22. LIVE VOICE AI ORB
+## 22. LIVE VOICE AI ORB
 
 For Live AI Interview, modernize the existing interview visualization into a premium Voice AI Orb where technically appropriate.
 
@@ -923,11 +919,11 @@ Preserve:
 
 ---
 
-# 23. PERSONALIZED AI CAREER BRIEFING
+## 23. PERSONALIZED AI CAREER BRIEFING
 
 The Candidate Dashboard may contain:
 
-**✦ AI Career Briefing**
+### ✦ AI Career Briefing
 
 All information must come from real application data.
 
@@ -962,7 +958,7 @@ Do not fabricate personalization.
 
 ---
 
-# 24. AI AUTO-TAILOR
+## 24. AI AUTO-TAILOR
 
 If real AI resume tailoring exists:
 
@@ -984,7 +980,7 @@ Never silently overwrite the master resume.
 
 ---
 
-# 25. GLOBAL AI COMMAND PALETTE
+## 25. GLOBAL AI COMMAND PALETTE
 
 `Cmd+K` / `Ctrl+K` may open a global command palette.
 
@@ -1012,7 +1008,7 @@ No fake success.
 
 ---
 
-# 26. AI PROVIDER DEGRADATION
+## 26. AI PROVIDER DEGRADATION
 
 Handle:
 
@@ -1038,7 +1034,7 @@ AI failure must not break the rest of IME365.
 
 ---
 
-# 27. AI PERFORMANCE & MOTION
+## 27. AI PERFORMANCE & MOTION
 
 AI visual effects must not:
 
@@ -1063,7 +1059,7 @@ They do not exist merely for decoration.
 
 ---
 
-# 28. PUBLIC MARKETING FRONTEND
+## 28. PUBLIC MARKETING FRONTEND
 
 Modernize:
 
@@ -1088,9 +1084,9 @@ Do not introduce fake product claims.
 
 ---
 
-# 29. CREATION WORKSPACES
+## 29. CREATION WORKSPACES
 
-## Resume Builder
+### Resume Builder
 
 Modernize the shell while protecting the template engine.
 
@@ -1106,7 +1102,7 @@ Provide:
 - responsive editing;
 - recovery.
 
-## Cover Letter Builder
+### Cover Letter Builder
 
 Provide:
 
@@ -1116,7 +1112,7 @@ Provide:
 - generation state;
 - responsive split layout.
 
-## Portfolio / Web CV
+### Portfolio / Web CV
 
 Provide:
 
@@ -1125,7 +1121,7 @@ Provide:
 - live preview;
 - responsive behavior.
 
-## Job Explorer
+### Job Explorer
 
 Provide:
 
@@ -1138,7 +1134,7 @@ Provide:
 
 ---
 
-# 30. CANDIDATE PORTAL
+## 30. CANDIDATE PORTAL
 
 Modernize:
 
@@ -1155,7 +1151,7 @@ Use AI-native treatment where actual AI functionality exists.
 
 ---
 
-# 31. LIVE AI INTERVIEW
+## 31. LIVE AI INTERVIEW
 
 Live AI Interview must have dedicated discoverability.
 
@@ -1177,7 +1173,7 @@ Do not merge Live AI Interview into unrelated areas merely to simplify navigatio
 
 ---
 
-# 32. EMPLOYER PORTAL
+## 32. EMPLOYER PORTAL
 
 Modernize:
 
@@ -1193,7 +1189,7 @@ All operations must remain connected to actual backend behavior.
 
 ---
 
-# 33. ENTERPRISE CONSOLE
+## 33. ENTERPRISE CONSOLE
 
 Modernize:
 
@@ -1209,7 +1205,7 @@ Preserve tenant isolation.
 
 ---
 
-# 34. SUPERADMIN CONTROL PLANE
+## 34. SUPERADMIN CONTROL PLANE
 
 Modernize:
 
@@ -1226,7 +1222,7 @@ Never display credentials in plain text.
 
 ---
 
-# 35. POPUP / MODAL / DRAWER FORENSIC AUDIT
+## 35. POPUP / MODAL / DRAWER FORENSIC AUDIT
 
 Discover EVERY:
 
@@ -1262,7 +1258,7 @@ For each verify:
 
 ---
 
-# 36. RESPONSIVE QA
+## 36. RESPONSIVE QA
 
 Test at:
 
@@ -1290,7 +1286,7 @@ Verify:
 
 ---
 
-# 37. ACCESSIBILITY QA
+## 37. ACCESSIBILITY QA
 
 Verify:
 
@@ -1311,7 +1307,7 @@ No keyboard traps.
 
 ---
 
-# 38. VISUAL REGRESSION
+## 38. VISUAL REGRESSION
 
 Where browser/screenshot tooling exists:
 
@@ -1349,7 +1345,7 @@ Identify:
 
 ---
 
-# 39. PERFORMANCE — BASELINE + HARD BUDGETS
+## 39. PERFORMANCE — BASELINE + HARD BUDGETS
 
 Performance must be measured against a captured baseline.
 
@@ -1394,7 +1390,7 @@ Do NOT degrade performance merely for visual effects.
 
 ---
 
-# 40. MANDATORY ITERATIVE EXECUTION LOOP
+## 40. MANDATORY ITERATIVE EXECUTION LOOP
 
 For EVERY phase:
 
@@ -1442,7 +1438,7 @@ Never stop because the page "looks good".
 
 ---
 
-# 41. TEST COMMAND DISCOVERY
+## 41. TEST COMMAND DISCOVERY
 
 Inspect `package.json` and actual configuration.
 
@@ -1451,13 +1447,14 @@ Do not blindly assume commands.
 Identify actual:
 
 - build;
-- lint;
-- unit;
-- security;
+- lint & type check (`eslint`, `tsc`);
+- AST security & code scan (`semgrep`, `audit`);
+- unit & logic tests with branch coverage;
 - product;
-- E2E;
+- E2E & browser DOM traces (`playwright`);
 - accessibility;
-- visual regression.
+- visual regression;
+- live database state verification.
 
 If both security commands exist, run both where applicable.
 
@@ -1465,7 +1462,7 @@ Never weaken tests to achieve green results.
 
 ---
 
-# 42. PHASE PROGRESS REPORTING
+## 42. PHASE PROGRESS REPORTING
 
 After each phase, provide a concise status update in exactly this structure:
 
@@ -1509,47 +1506,84 @@ Do not report PASS if a mandatory gate actually failed.
 
 ---
 
-# 43. QUALITY GATES
+## 43. QUALITY GATES
 
 Required wherever applicable:
 
-## BUILD
+### BUILD
 
-PASS.
+`npm run build` must exit 0 with zero bundle/chunk build errors.
 
-## LINT
+### LINT & STATIC DIAGNOSTICS
 
-PASS.
+PASS:
 
-## SECURITY
+- `npx eslint <touched_files> --max-warnings 0`
+- `npx tsc --noEmit` (where TypeScript is present)
+- Zero unresolved errors, warnings, or dead imports.
+- Enforce strict promise handling (`no-floating-promises`).
 
-PASS.
+### SECURITY & AST SCANNING
 
-## PRODUCT TESTS
+PASS:
 
-PASS.
+- Run project security scans: `npm run test:security` where configured.
+- Run AST pattern checks (e.g., Semgrep / SonarJS rules).
+- Zero plaintext credential leakage in client code or state.
+- Zero raw unescaped HTML injections or unsanitized payloads.
 
-## E2E
+### LOGIC ERRORS & BRANCH COVERAGE
 
-PASS.
+PASS:
 
-## ACCESSIBILITY
+- `npm test -- <test_spec> --coverage`
+- Every non-trivial condition, catch block, and null fallback
+  must have test branch coverage.
+- No untested edge cases or incomplete stubs (`TODO`/`FIXME`).
 
-PASS.
+### E2E & RUNTIME DOM
 
-## RESPONSIVE
+PASS:
 
-PASS.
+- `npx playwright test <spec> --trace on`
+- Capture real interactive DOM census: verify buttons, inputs,
+  modals, drawers, and keyboard traps work in actual browser.
+- Inspect network requests: zero 500s or unexpected 401s.
 
-## VISUAL
+### DATA INTEGRITY & API CONTRACTS
 
-PASS.
+PASS:
 
-## PERFORMANCE
+- Direct database query verification for mutations (row updates,
+  tenant isolation, foreign keys).
+- API endpoints tested with both valid payloads and malformed
+  inputs to prove error responses are well-structured.
 
-PASS or baseline exception documented.
+### ACCESSIBILITY
 
-## FUNCTIONAL
+PASS:
+
+- WCAG 2.1 AA/AAA contrast ratios and keyboard Tab/Escape loops.
+- Unique landmark `aria-label` tags on all navigation surfaces.
+
+### RESPONSIVE
+
+PASS across 375px (mobile), 768px (tablet), 1280px (desktop),
+and 1920px (ultrawide). Zero horizontal scrollbar regressions.
+
+### VISUAL
+
+PASS Cuba Modern Executive Glassmorphism standards without FOUC
+or broken asset links.
+
+### PERFORMANCE
+
+PASS or baseline exception documented:
+
+- Sub-100ms render budgets.
+- Zero simulated latency or unnecessary re-renders.
+
+### FUNCTIONAL
 
 Verify:
 
@@ -1573,7 +1607,7 @@ Verify:
 
 ---
 
-# 44. NO-GO CONDITIONS
+## 44. NO-GO CONDITIONS
 
 Automatically NO-GO if there is:
 
@@ -1597,35 +1631,29 @@ Automatically NO-GO if there is:
 
 ---
 
-# 45. DEFECT CLASSIFICATION
+## 45. DEFECT CLASSIFICATION
 
-## P0
+### P0
 
 Security/data loss/core application failure.
 
-## P1
+### P1
 
 Major feature/workflow/accessibility/responsive failure.
 
-## P2
+### P2
 
 Important but non-blocking issue.
 
-## P3
+### P3
 
 Polish/minor refinement.
 
-Completion requires:
-
-**P0 = 0**
-
-**P1 = 0**
-
-P2/P3 must be documented.
+Completion requires **P0 = 0** and **P1 = 0**. P2/P3 must be documented.
 
 ---
 
-# 46. EVIDENCE & INTEGRITY — SINGLE SOURCE OF TRUTH
+## 46. EVIDENCE & INTEGRITY — SINGLE SOURCE OF TRUTH
 
 Do not fabricate or overstate results.
 
@@ -1670,7 +1698,7 @@ Production UI must reflect real state.
 
 ---
 
-# 47. FEATURE PRESERVATION
+## 47. FEATURE PRESERVATION
 
 Before removing any feature ask:
 
@@ -1683,13 +1711,13 @@ Before removing any feature ask:
 
 When uncertain:
 
-# PRESERVE IT.
+### PRESERVE IT
 
 Do not remove advanced features merely because they are not represented in the new design.
 
 ---
 
-# 48. COMMIT DISCIPLINE
+## 48. COMMIT DISCIPLINE
 
 Do not make one giant commit.
 
@@ -1711,7 +1739,7 @@ Each phase must remain recoverable.
 
 ---
 
-# 49. ROLLOUT SAFETY / FEATURE FLAG
+## 49. ROLLOUT SAFETY / FEATURE FLAG
 
 Where the existing application architecture supports runtime feature flags, introduce a controlled rollout mechanism such as:
 
@@ -1758,11 +1786,11 @@ Never pretend a feature flag provides rollback if it does not.
 
 ---
 
-# 50. FINAL INDEPENDENT AUDIT
+## 50. FINAL INDEPENDENT AUDIT
 
 After implementation, perform a separate audit as if you did NOT write the code.
 
-## Architecture
+### Architecture
 
 Check:
 
@@ -1771,7 +1799,7 @@ Check:
 - dead routes;
 - inconsistent patterns.
 
-## UI/UX
+### UI/UX
 
 Check:
 
@@ -1785,7 +1813,7 @@ Check:
 - responsiveness;
 - glassmorphism consistency.
 
-## AI
+### AI
 
 Check:
 
@@ -1797,7 +1825,7 @@ Check:
 - provider degradation;
 - Voice AI state integrity.
 
-## Functionality
+### Functionality
 
 Check:
 
@@ -1808,7 +1836,7 @@ Check:
 - AI;
 - authentication.
 
-## Accessibility
+### Accessibility
 
 Check:
 
@@ -1817,7 +1845,7 @@ Check:
 - semantics;
 - contrast.
 
-## Security
+### Security
 
 Check:
 
@@ -1827,7 +1855,7 @@ Check:
 - RBAC;
 - tenant isolation.
 
-## Performance
+### Performance
 
 Check:
 
@@ -1839,17 +1867,17 @@ Check:
 
 ---
 
-# 51. FINAL REPORT
+## 51. FINAL REPORT
 
 Provide:
 
-## Executive Summary
+### Executive Summary
 
 - completed phases;
 - overall status;
 - blockers.
 
-## Git
+### Git
 
 ```text
 Branch:
@@ -1859,19 +1887,19 @@ Restore point:
 Working tree:
 ```
 
-## Changed Files
+### Changed Files
 
 List significant files.
 
-## New Components
+### New Components
 
 List reusable components.
 
-## Routes
+### Routes
 
 List migrated routes.
 
-## Preserved Functionality
+### Preserved Functionality
 
 Explicitly verify:
 
@@ -1890,7 +1918,7 @@ Explicitly verify:
 - Enterprise;
 - Admin.
 
-## AI Verification
+### AI Verification
 
 Report:
 
@@ -1901,7 +1929,7 @@ Report:
 - AI briefing data source;
 - AI error handling.
 
-## Performance
+### Performance Report
 
 Report baseline vs final:
 
@@ -1916,7 +1944,7 @@ New dependencies:
 
 Explain any baseline exception.
 
-## Test Evidence
+### Test Evidence
 
 Use actual results only:
 
@@ -1932,7 +1960,7 @@ VISUAL:
 PERFORMANCE:
 ```
 
-## Browser Verification
+### Browser Verification
 
 Report:
 
@@ -1942,7 +1970,7 @@ Report:
 - workflow;
 - result.
 
-## Remaining Issues
+### Remaining Issues
 
 For each:
 
@@ -1956,7 +1984,7 @@ Next Action:
 
 ---
 
-# 52. FINAL DECISION
+## 52. FINAL DECISION
 
 Use exactly one:
 
@@ -1980,7 +2008,7 @@ Do not use ambiguous phrases such as:
 
 ---
 
-# 53. DEFINITION OF DONE
+## 53. DEFINITION OF DONE
 
 The transformation is complete only when:
 
@@ -2026,7 +2054,7 @@ The transformation is complete only when:
 
 ---
 
-# 54. FINAL COMMAND
+## 54. FINAL COMMAND
 
 Do not rush.
 
@@ -2050,36 +2078,36 @@ Do not stop because the UI looks impressive.
 
 The correct operating cycle is:
 
-# DISCOVER → PLAN → IMPLEMENT → BUILD → TEST → RUN → OBSERVE → FIX → RETEST → VERIFY
+### DISCOVER → PLAN → IMPLEMENT → BUILD → TEST → RUN → OBSERVE → FIX → RETEST → VERIFY
 
 Repeat until the platform satisfies every applicable acceptance criterion.
 
 If something is broken:
 
-# FIX IT.
+### FIX IT
 
 If a fix causes a regression:
 
-# FIX THE REGRESSION.
+### FIX THE REGRESSION
 
 If external infrastructure prevents verification:
 
-# REPORT THE EXACT BLOCKER.
+### REPORT THE EXACT BLOCKER
 
 If mandatory gates remain blocked:
 
-# NO-GO.
+### NO-GO
 
 The objective is not a beautiful frontend mockup.
 
 The objective is a:
 
-# **production-grade IME365 platform combining Cuba Modern Executive Glassmorphism with a genuinely AI-native experience while preserving existing business logic, advanced capabilities, security, resume/template fidelity, accessibility, responsiveness, performance, and verified real-world functionality.**
+### **production-grade IME365 platform combining Cuba Modern Executive Glassmorphism with a genuinely AI-native experience while preserving existing business logic, advanced capabilities, security, resume/template fidelity, accessibility, responsiveness, performance, and verified real-world functionality.**
 
-# NO CLAIM WITHOUT EVIDENCE.
+### NO CLAIM WITHOUT EVIDENCE
 
-# NO FAKE SUCCESS.
+### NO FAKE SUCCESS
 
-# NO FUNCTIONAL REGRESSION.
+### NO FUNCTIONAL REGRESSION
 
-# NO-GO UNTIL THE REQUIRED GATES PASS.
+### NO-GO UNTIL THE REQUIRED GATES PASS

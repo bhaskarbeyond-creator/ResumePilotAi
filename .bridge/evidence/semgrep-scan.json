@@ -1,0 +1,22 @@
+{
+  "ok": true,
+  "engine": "C:\\Users\\mbhas\\.antigravity-ide\\extensions\\semgrep.semgrep-1.17.0-win32-x64\\dist\\osemgrep-pro.exe",
+  "mode": "lsp",
+  "root": "d:\\xampp\\htdocs\\IME365\\.bridge\\scan-fixture",
+  "rulesCount": 1074,
+  "findings": [
+    {
+      "file": "d:/xampp/htdocs/IME365/.bridge/scan-fixture/app.js",
+      "severity": 2,
+      "severityLabel": "warning",
+      "message": "Detected the use of eval(). eval() can be dangerous if used to evaluate dynamic content. If this content can be input from outside the program, this may be a code injection vulnerability. Ensure evaluated content is not definable by external sources.",
+      "line": 1
+    }
+  ],
+  "scannedFiles": 1,
+  "refreshed": true,
+  "durationMs": 11972,
+  "at": "2026-10-13T20:01:51.191Z",
+  "engineSource": "semgrep-vscode-extension",
+  "evidenceFile": "d:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\semgrep-scan.json"
+}

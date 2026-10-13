@@ -8,7 +8,7 @@ const script = document.createElement('script');
 script.textContent = `
   const companionInfo = {
     installed: true,
-    version: '2.0.0',
+    version: '1.0.0',
     capabilities: ['auto-permissions', 'stream-continuity']
   };
   window.__IME365_COMPANION__ = companionInfo;

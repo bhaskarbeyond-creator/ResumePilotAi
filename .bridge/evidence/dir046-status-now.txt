@@ -1,7 +1,0 @@
-﻿ M .bridge/evidence/dir046-visual-audit.json
-UU src/components/EmployerPortal/EmployerPortal.jsx
-M  src/components/cuba/CubaAppShell.jsx
-?? .bridge/evidence/dir046-currdiff.txt
-?? .bridge/evidence/dir046-failctx.txt
-?? .bridge/evidence/dir046-status-now.txt
-?? .bridge/evidence/dir046-token-identity.json

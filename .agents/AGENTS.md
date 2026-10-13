@@ -305,6 +305,30 @@ Antigravity challenges:
 
 Only after the acceptance criteria and required verification are satisfied.
 
+## 2.1 DIRECTIVE TOOLING & VERIFICATION CONTRACT
+
+Whenever Antigravity creates an engineering directive (`bridge directive create`), the directive's acceptance criteria and specification must explicitly define the executable toolchain gates that Cline must run and prove before evidence submission:
+
+1. **Static Analysis & Diagnostics Gate**:
+   - `npx eslint <touched_files> --max-warnings 0`
+   - `npx tsc --noEmit` (where TypeScript is present)
+   - Zero unresolved errors, warnings, or dead imports.
+
+2. **AST & Security Audit Gate**:
+   - Security audit / Semgrep scan on touched surfaces.
+   - Zero plaintext credential leakage or unsanitized DOM injections.
+
+3. **Logic & Branch Coverage Gate**:
+   - `npm test -- <spec> --coverage`
+   - Explicit branch coverage over conditional logic, catch blocks, and null guards.
+
+4. **Runtime DOM & Interactive Census Gate**:
+   - `npx playwright test <spec> --trace on`
+   - Interactive census of buttons, modals, forms, and keyboard navigation.
+
+5. **Data & State Integrity Gate**:
+   - Verify database row states and API error envelopes under edge inputs.
+
 ---
 
 # 3. EVIDENCE INTEGRITY

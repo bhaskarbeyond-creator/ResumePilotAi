@@ -1072,8 +1072,8 @@ export function isTypoMatch(candidateStr, queryStr) {
     const cleanQStripped = cleanQ.replace(/[^a-z0-9]/g, '');
     if (cleanQStripped.length >= 2 && itemStripped.includes(cleanQStripped)) return true;
 
-    const itemTokens = itemLower.split(/[\s,./()\-]+/).filter(Boolean);
-    const qTokens = cleanQ.split(/[\s,./()\-]+/).filter(Boolean);
+    const itemTokens = itemLower.split(/[\s,./()-]+/).filter(Boolean);
+    const qTokens = cleanQ.split(/[\s,./()-]+/).filter(Boolean);
     if (!qTokens.length) return false;
 
     return qTokens.every(qTok => {
@@ -1270,7 +1270,7 @@ function findMatches(dataset, rawQuery, maxResults) {
     if (!q) return [];
 
     const qStripped = q.replace(NON_ALNUM, '');
-    const qTokens = q.split(/[\s,./()\-]+/).filter(Boolean);
+    const qTokens = q.split(/[\s,./()-]+/).filter(Boolean);
     const { lower, tokens, stripped } = getIndex(dataset);
     const n = dataset.length;
 

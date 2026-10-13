@@ -1,0 +1,816 @@
+{
+  "archivedAt": "2026-10-13T18:32:28.139Z",
+  "archivedBy": "USER_REQUEST",
+  "reason": "User requested reset/archive of all directives to issue fresh directives going forward.",
+  "totalCount": 101,
+  "directives": [
+    {
+      "id": "DIR-001",
+      "title": "Cuba Executive UI/UX Master Transformation across 4 Portals",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-02T07:09:57.434Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-002",
+      "title": "Candidate Sub-Surfaces, ContextSwitcher & Command Palette Deep Polish",
+      "status": "APPROVED_FROZEN",
+      "priority": "P1",
+      "createdAt": "2026-10-02T07:23:23.972Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-003",
+      "title": "Public Secondary Pages & Marketing Header Harmonization",
+      "status": "APPROVED_FROZEN",
+      "priority": "P1",
+      "createdAt": "2026-10-02T07:47:42.956Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-004",
+      "title": "Zero-FOUC Architecture & Instant Theme/Font Hydration Pipeline",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-02T12:37:25.156Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-005",
+      "title": "Semantic Marketing Consolidation & Dashboard2 Legacy Residue Purge",
+      "status": "APPROVED_FROZEN",
+      "priority": "P2",
+      "createdAt": "2026-10-02T16:33:06.184Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-006",
+      "title": "Unified End-to-End User Funnel & Cross-Portal Conversion Verification",
+      "status": "APPROVED_FROZEN",
+      "priority": "P1",
+      "createdAt": "2026-10-02T23:32:54.536Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-007",
+      "title": "Recruiter ATS Pipeline Overhaul & In-Modal Candidate Resume Review System",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-03T01:35:45.922Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-008",
+      "title": "Enterprise Organization Dashboard & 12 Console Modules Deep Overhaul (Google M3 / Cuba Executive 10/10)",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-03T02:30:00.000Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-009",
+      "title": "Candidate Dashboard 10/10 Overhaul, Duplicate Banner Purge & Cuba Design Token Harmonization",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-03T03:26:00.000Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-010",
+      "title": "Recruiter Portal & ATS Candidate Pipeline 10/10 Overhaul (Google M3 / Cuba Executive Token Harmonization & In-Modal Review)",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-03T04:50:47.315Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-011",
+      "title": "Google M3 Universal AppHeader & Command Surface across All Dashboards (Candidate, Recruiter, Enterprise, Admin)",
+      "status": "APPROVED_FROZEN",
+      "priority": "P1",
+      "createdAt": "2026-10-03T07:27:17.925Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-012",
+      "title": "Platform Admin System Console, Super Admin Role Simulator & Security Audit 10/10 Overhaul",
+      "status": "APPROVED_FROZEN",
+      "priority": "P1",
+      "createdAt": "2026-10-03T09:08:12.972Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-013",
+      "title": "AI Interview Coach & Audio/Voice CBT Simulator 10/10 Overhaul (Google M3 / Cuba Executive Token Harmonization & STAR Behavioral Matrix)",
+      "status": "APPROVED_FROZEN",
+      "priority": "P1",
+      "createdAt": "2026-10-03T10:25:55.500Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-014",
+      "title": "AI Cover Letter Builder & Multi-Format Generator 10/10 Overhaul (Google M3 / Cuba Executive Token Harmonization & ATS Keyword Matching)",
+      "status": "APPROVED_FROZEN",
+      "priority": "P1",
+      "createdAt": "2026-10-03T14:27:42.944Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-015",
+      "title": "SuperAdmin Platform Settings 10/10 Overhaul & Google Cloud-Inspired Control Center (SWOT Optimization, Dual-Tier Multi-Tenant Fallback & Cuba M3 Navigation Tree)",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-03T14:43:16.945Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-016",
+      "title": "Omitted Cross-Portal Surfaces & Navigation Completeness Freeze (Enterprise Platform Provisioner Tab, Candidate Favorites Restoration & Bi-Directional Parity Tests)",
+      "status": "APPROVED_FROZEN",
+      "priority": "P1",
+      "createdAt": "2026-10-03T14:54:09.486Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-017",
+      "title": "Candidate Account & Security Command Center 10/10 Overhaul (Google Account-Inspired Profile, TOTP MFA, Session Governance & Cuba M3 Tokenization)",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-03T15:43:05.274Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-018",
+      "title": "Global Billing, Pricing & Checkout Experience 10/10 Overhaul (INR ₹ Harmonization, Dual-Gateway Resilience, GST Invoice Ledger & Cuba Executive Glassmorphism)",
+      "status": "APPROVED_FROZEN",
+      "priority": "P1",
+      "createdAt": "2026-10-03T15:43:15.767Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-019",
+      "title": "Digital Portfolio & Web CV Studio 10/10 Overhaul (Live Customizer, Vanity Slugs, Responsive Themes & OpenGraph Social Sharing)",
+      "status": "APPROVED_FROZEN",
+      "priority": "P1",
+      "createdAt": "2026-10-03T15:43:26.881Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-020",
+      "title": "Interactive Job Application Kanban Tracker & Career Intelligence Suite 10/10 Overhaul (Drag-and-Drop Pipeline, Interview Scheduler & 1-Click Sync)",
+      "status": "APPROVED_FROZEN",
+      "priority": "P1",
+      "createdAt": "2026-10-03T15:43:34.739Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-021",
+      "title": "Omnipresent ⌘K AI Career Copilot & Universal Command Surface 10/10 Overhaul (Context-Aware Prompts, Quick Actions & Multi-Model Execution)",
+      "status": "APPROVED_FROZEN",
+      "priority": "P1",
+      "createdAt": "2026-10-03T15:46:50.069Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-022",
+      "title": "Payment Webhook Reconciler, Multi-Gateway Ledger & Entitlement Sentinel 10/10 Overhaul (Idempotent Webhooks, Signature Tamper Defense & Subscription Drift Protection)",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-03T15:47:02.319Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-023",
+      "title": "Universal Dark Mode Contrast Auditor & Real-DOM WCAG 2.1 AA Anti-Inversion Scanner (Full 68-Route Real-DOM Audit, Automated Color Matrix & Zero-Bleed Token Enforcement)",
+      "status": "APPROVED_FROZEN",
+      "priority": "P1",
+      "createdAt": "2026-10-03T15:47:13.315Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-024",
+      "title": "Autonomous Geo-SEO Engine & Schema.org JSON-LD Career Landing System (Dynamic Regional Hubs, llms.txt Crawler Indexation & Rich Search Snippets)",
+      "status": "APPROVED_FROZEN",
+      "priority": "P1",
+      "createdAt": "2026-10-03T15:47:23.194Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-025",
+      "title": "Universal Link Crawler, Route Completeness & Zero-404 Navigation Freeze (Deep Link Crawl, Sub-Route Mounting & Header Dropdown Fixes)",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-03T15:53:20.310Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-026",
+      "title": "Real-Time In-App Candidate & Recruiter Messaging 10/10 Overhaul (enableMessagesModule Gating, Candidate Surface Mounting & Live Unread Badging)",
+      "status": "APPROVED_FROZEN",
+      "priority": "P1",
+      "createdAt": "2026-10-03T21:43:55.805Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-027",
+      "title": "Job Portal Clean Architecture & External Scraper Deprecation (Naukri Scraper Purge, Admin Module Rebranding & Pure Direct-Hiring Board Freeze)",
+      "status": "CANCELLED",
+      "priority": "P1",
+      "createdAt": "2026-10-03T21:44:04.604Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-028",
+      "title": "Platform-Wide Orphaned Code, Dead Tests, Stale Docs & Transient File Hygiene 10/10 Overhaul (Zero-Breakage Safety Protocol, Dry-Run Quarantine & Full Real-DOM Operational Verification)",
+      "status": "CANCELLED",
+      "priority": "P2",
+      "createdAt": "2026-10-03T21:54:25.752Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-029",
+      "title": "Phase 2 Second Review & v10.0 Protocol Re-Audit — Enterprise & Recruiter Portals (Re-evaluating DIR-001, DIR-007, DIR-008, DIR-010)",
+      "status": "CANCELLED",
+      "priority": "P1",
+      "createdAt": "2026-10-04T01:49:17.233Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-030",
+      "title": "Phase 2 Second Review & v10.0 Protocol Re-Audit — Candidate Workspace & Navigation (Re-evaluating DIR-002, DIR-004, DIR-009, DIR-011)",
+      "status": "CANCELLED",
+      "priority": "P1",
+      "createdAt": "2026-10-04T01:49:21.785Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-031",
+      "title": "Phase 2 Second Review & v10.0 Protocol Re-Audit — Public Marketing, Secondary Pages & Funnels (Re-evaluating DIR-003, DIR-005, DIR-006)",
+      "status": "CANCELLED",
+      "priority": "P1",
+      "createdAt": "2026-10-04T01:49:26.373Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-032",
+      "title": "Phase 2 Second Review & v10.0 Protocol Re-Audit — Admin Console, Settings & Security (Re-evaluating DIR-012, DIR-015, DIR-016, DIR-017)",
+      "status": "CANCELLED",
+      "priority": "P1",
+      "createdAt": "2026-10-04T01:49:30.703Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-033",
+      "title": "Phase 2 Second Review & v10.0 Protocol Re-Audit — AI Engines, Billing & Career Intelligence (Re-evaluating DIR-013, DIR-014, DIR-018, DIR-019, DIR-020)",
+      "status": "CANCELLED",
+      "priority": "P0",
+      "createdAt": "2026-10-04T01:49:34.919Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-034",
+      "title": "Universal 10/10 Master Production Certification & Release Freeze (Platform-Wide 68-Route Real-DOM Audit & Cryptographic Seal)",
+      "status": "CANCELLED",
+      "priority": "P0",
+      "createdAt": "2026-10-04T01:49:39.428Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-035",
+      "title": "Automated Email & Webhook Notification Engine with Multi-Provider Failover (Transactional Resend/SendGrid/SMTP, Template Renderer & Recruiter Alert Matrix)",
+      "status": "CANCELLED",
+      "priority": "P1",
+      "createdAt": "2026-10-04T06:52:56.884Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-036",
+      "title": "Real-Time Collaborative Resume Editing & Live Recruiter Feedback Loop (Presence Indicators, WebSocket/SSE Delta Sync, In-Line Annotations)",
+      "status": "CANCELLED",
+      "priority": "P1",
+      "createdAt": "2026-10-04T06:52:56.885Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-037",
+      "title": "Autonomous System Observability, OpenTelemetry Tracing & Client-Side Real-User Monitoring (RUM) (Web Vitals, Distributed Tracing, Error Boundary Reporting)",
+      "status": "CANCELLED",
+      "priority": "P1",
+      "createdAt": "2026-10-04T06:52:56.885Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-038",
+      "title": "Offline-First PWA Support & ServiceWorker Resume Cache Engine (IndexedDB Draft Persistence, Background Sync, Fast Mobile Resume Viewer)",
+      "status": "CANCELLED",
+      "priority": "P2",
+      "createdAt": "2026-10-04T06:52:56.885Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-039",
+      "title": "Recruiter AI Candidate Sourcing, Smart Boolean Search & Semantic Profile Matcher (Vector Embeddings, Skill Gap Radar, 1-Click Candidate Shortlisting)",
+      "status": "CANCELLED",
+      "priority": "P1",
+      "createdAt": "2026-10-04T06:52:56.885Z",
+      "certifiedAt": null
+    },
+    {
+      "id": "DIR-040",
+      "title": "Zero-Trust Security Hardening, Dynamic Rate Limiting & OWASP Top 10 Enterprise Shield (Strict CSP Nonces, API Key Vaulting, Request Sanitization)",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-04T06:52:56.885Z",
+      "certifiedAt": "2026-10-05T04:25:07.188Z"
+    },
+    {
+      "id": "DIR-046",
+      "title": "DIR-001 Certification Gap Closure (Playwright Test Suite, Multi-Viewport Audit & Shell Token Hygiene)",
+      "status": "APPROVED_FROZEN",
+      "priority": "P1",
+      "createdAt": "2026-10-04T15:00:12.267Z",
+      "certifiedAt": "2026-10-05T00:11:59.481Z"
+    },
+    {
+      "id": "DIR-047",
+      "title": "Master Full-Platform Testing & Universal UAT 10/10 Certification (Deep UI/UX & SWOT-Backed Audit across 4 Portals, 68 Routes, Security, WCAG, Visual Diff & Release Seal)",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-05T05:06:42.926Z",
+      "certifiedAt": "2026-10-05T18:51:30.628Z"
+    },
+    {
+      "id": "DIR-048",
+      "title": "Universal Platform UI/UX Polish, Google M3 Layouts, Native Mobile/Tablet App UX & Missing Options Census (Strict 99+/100 Elite Gate)",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-05T06:57:37.313Z",
+      "certifiedAt": "2026-10-06T17:05:45.067Z"
+    },
+    {
+      "id": "DIR-049",
+      "title": "Master Universal Platform Re-Verification & Second Certification (2nd Review across all Directives DIR-001 through DIR-048)",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-06T18:32:39.903Z",
+      "certifiedAt": "2026-10-06T19:02:00.429Z"
+    },
+    {
+      "id": "DIR-050",
+      "title": "DIR-050: Production Release — Push Arena Branch, Merge with Main, and Master Verification",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-06T19:41:41.259Z",
+      "certifiedAt": "2026-10-06T20:03:11.113Z"
+    },
+    {
+      "id": "DIR-051",
+      "title": "DIR-051: Strict XAMPP Server Initiation & Prohibition of Background Server Spawns",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-08T06:14:56.836Z",
+      "certifiedAt": "2026-10-08T06:33:38.461Z"
+    },
+    {
+      "id": "DIR-052",
+      "title": "DIR-052: Autonomous Self-Healing AI API Server & Zero-Drop Gateway Resilience",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-08T06:19:07.941Z",
+      "certifiedAt": "2026-10-08T07:04:08.740Z"
+    },
+    {
+      "id": "DIR-053",
+      "title": "Self-Healing Backend API Server, XAMPP Orchestration & Zero-Downtime Data Population Pipeline",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-08T06:59:32.352Z",
+      "certifiedAt": "2026-10-08T07:32:09.311Z"
+    },
+    {
+      "id": "DIR-054",
+      "title": "Eliminate 429 Storm on /api/messages/conversations, Shared Poller Architecture & Rate-Limit Alignment",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-08T16:06:40.063Z",
+      "certifiedAt": "2026-10-08T17:26:12.380Z"
+    },
+    {
+      "id": "DIR-055",
+      "title": "Unified Executive Builder Header (\"Best of Both Worlds\") & Real Interactive Notifications Pipeline",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-08T17:32:55.872Z",
+      "certifiedAt": "2026-10-09T03:24:30.666Z"
+    },
+    {
+      "id": "DIR-056",
+      "title": "Master Directive: Autonomous System-Wide Forensic Audit, Remediation Backlog & Production 10/10 Certification",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-09T03:30:42.381Z",
+      "certifiedAt": "2026-10-09T04:33:52.852Z"
+    },
+    {
+      "id": "DIR-057",
+      "title": "Authoritative MariaDB Settings Hydration in ModulesSettings.jsx, Admin Settings & Coupon System in Plans.jsx",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-09T03:08:08.195Z",
+      "certifiedAt": "2026-10-09T05:01:25.039Z"
+    },
+    {
+      "id": "DIR-058",
+      "title": "Candidate Dashboard Real MariaDB Metrics Aggregation & Multi-Step Onboarding",
+      "status": "APPROVED_FROZEN",
+      "priority": "P1",
+      "createdAt": "2026-10-09T03:08:15.294Z",
+      "certifiedAt": "2026-10-09T05:29:54.095Z"
+    },
+    {
+      "id": "DIR-059",
+      "title": "Job Applications (/dashboard/applied-jobs) Real Data Pipeline, Kanban Synchronization & Candidate Withdrawal",
+      "status": "APPROVED_FROZEN",
+      "priority": "P1",
+      "createdAt": "2026-10-09T03:08:21.373Z",
+      "certifiedAt": "2026-10-09T05:40:24.310Z"
+    },
+    {
+      "id": "DIR-060",
+      "title": "DIR-060: Deep Audit of 51 Resume & 4 CV Templates (A4 Layout, 100% PDF/DOCX Parity, Watermarks & Master Profile Sync)",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-09T05:04:10.406Z",
+      "certifiedAt": "2026-10-09T05:18:24.036Z"
+    },
+    {
+      "id": "DIR-061",
+      "title": "DIR-061: Exhaustive A4 Formatting & Text Repair of 51 Resume & 4 CV Templates (100% PDF/DOCX Parity, Master Profile Heading Sync & DOM Crawl Evidence)",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-09T05:43:17.531Z",
+      "certifiedAt": "2026-10-09T05:59:54.630Z"
+    },
+    {
+      "id": "DIR-062",
+      "title": "Bridge Privileged-Action Provenance & Auto-Certification Guard",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-09T06:26:45.196Z",
+      "certifiedAt": "2026-10-09T06:57:26.963Z"
+    },
+    {
+      "id": "DIR-063",
+      "title": "DIR-063: Complete Unfulfilled Deliverables of DIR-060/061 (100% PDF vs DOCX Parity, 55 Template A4 Print Probes & Visual Proof)",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-09T06:58:24.919Z",
+      "certifiedAt": "2026-10-09T07:52:51.428Z"
+    },
+    {
+      "id": "DIR-064",
+      "title": "DIR-064: Eliminate PDF Blank Page & Skip-Link Bleed, Fix Footer Overlap (Certification Card Geometry), and Centralized Cross-Platform Export Pipeline",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-09T08:37:14.518Z",
+      "certifiedAt": "2026-10-09T09:17:33.523Z"
+    },
+    {
+      "id": "DIR-065",
+      "title": "DIR-065: 10/10 Adaptive Smart Partitioner (Fix PDF Footer Overlap) & High-Fidelity DOCX<->PDF Card Parity",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-09T09:38:46.432Z",
+      "certifiedAt": "2026-10-09T09:56:55.046Z"
+    },
+    {
+      "id": "DIR-066",
+      "title": "DIR-066: Automated Headless Playwright Template Thumbnail Refresh (51 Catalog Images) & Cross-Portal Print/Download 10/10 Verification",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-09T10:06:13.538Z",
+      "certifiedAt": "2026-10-09T10:28:01.756Z"
+    },
+    {
+      "id": "DIR-067",
+      "title": "DIR-067: Fix Recruiter HTML Download to Real PDF/DOCX, 10/10 Adaptive Partitioner Orphan Prevention, and Recruiter Drawer Layout Polish",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-09T10:31:03.596Z",
+      "certifiedAt": "2026-10-09T10:55:24.284Z"
+    },
+    {
+      "id": "DIR-068",
+      "title": "DIR-068: Master Platform-Wide UAT 10/10 Multi-Portal E2E Verification and Production Release Seal",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-09T11:01:44.511Z",
+      "certifiedAt": "2026-10-09T11:24:07.440Z"
+    },
+    {
+      "id": "DIR-069",
+      "title": "DIR-069: True 10/10 Parity — DOCX Multi-Page Full-Width Reflow, Photo Embedding, Archetype 2-Col Certs, Recruiter Application Export Gate, and Free-Tier Watermark",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-09T13:38:01.910Z",
+      "certifiedAt": "2026-10-09T14:01:04.705Z"
+    },
+    {
+      "id": "DIR-070",
+      "title": "DIR-070: 10/10 Smart Gap Filling & Partitioner Polish — Zero Page 1 Void Invariant & Multi-Tier Micro-Compaction",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-09T15:07:55.184Z",
+      "certifiedAt": "2026-10-09T15:28:09.696Z"
+    },
+    {
+      "id": "DIR-071",
+      "title": "DIR-071: Recruiter Applicant ATS Pipeline Word/PDF Export Fix & Global Candidate Photo Visibility Toggle Enforcement",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-09T15:28:40.043Z",
+      "certifiedAt": "2026-10-09T16:17:05.425Z"
+    },
+    {
+      "id": "DIR-072",
+      "title": "DIR-072: Decouple Notification vs Message Pipelines & Establish Dedicated Routing",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-11T02:11:20.237Z",
+      "certifiedAt": "2026-10-11T02:26:26.302Z"
+    },
+    {
+      "id": "DIR-073",
+      "title": "DIR-073: Executive Command Palette & Search Pipeline UI/UX Overhaul",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-11T02:32:29.509Z",
+      "certifiedAt": "2026-10-11T02:47:55.319Z"
+    },
+    {
+      "id": "DIR-074",
+      "title": "DIR-074: Executive User Identity & M3 Account Dropdown Pipeline Overhaul",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-11T02:48:25.152Z",
+      "certifiedAt": "2026-10-11T02:55:29.485Z"
+    },
+    {
+      "id": "DIR-075",
+      "title": "DIR-075: Decouple Master Profile Data from Account & Security Switcher",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-11T03:04:09.643Z",
+      "certifiedAt": "2026-10-11T03:11:19.624Z"
+    },
+    {
+      "id": "DIR-076",
+      "title": "DIR-076: Remediate Command Palette Search Bar Focus Outline Visual Defect",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-11T03:16:27.201Z",
+      "certifiedAt": "2026-10-11T03:23:54.478Z"
+    },
+    {
+      "id": "DIR-077",
+      "title": "DIR-077: Candidate Dashboard UI/UX 10/10 Overhaul — Zero-Waste Fluid Grid & Native Visual Intelligence",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-11T03:30:01.192Z",
+      "certifiedAt": "2026-10-11T03:39:10.831Z"
+    },
+    {
+      "id": "DIR-078",
+      "title": "DIR-078: Ingest Super Admin Branding Logo & Eliminate Top Whitespace in Cuba App Chrome",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-11T03:50:10.517Z",
+      "certifiedAt": "2026-10-11T03:59:29.945Z"
+    },
+    {
+      "id": "DIR-079",
+      "title": "DIR-079: Align Top-Left Header Brand Block with Logo, GoSidebarCollapse Button & Vertical Divider",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-11T04:03:21.044Z",
+      "certifiedAt": "2026-10-11T04:09:32.563Z"
+    },
+    {
+      "id": "DIR-080",
+      "title": "DIR-080: Enlarge Brand Logo in Header and Chrome Surfaces for High-Impact Visual Presence",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-11T04:13:20.234Z",
+      "certifiedAt": "2026-10-11T04:18:55.046Z"
+    },
+    {
+      "id": "DIR-081",
+      "title": "Candidate Suite UI/UX True Rating, Forensic SWOT & 10/10 Native Experience Architecture",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-11T04:46:24.416Z",
+      "certifiedAt": "2026-10-11T05:05:31.417Z"
+    },
+    {
+      "id": "DIR-082",
+      "title": "Candidate Suite Market-Leader SWOT Benchmark, Missing Feature Gap Analysis & Golden 10/10 Viewport-Dense Native Refactor Architecture",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-11T05:15:28.549Z",
+      "certifiedAt": "2026-10-11T05:23:03.747Z"
+    },
+    {
+      "id": "DIR-083",
+      "title": "Candidate Suite Viewport-Dense Page Migration & Golden 10/10 Native Experience Implementation",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-11T05:26:27.379Z",
+      "certifiedAt": "2026-10-11T05:39:11.889Z"
+    },
+    {
+      "id": "DIR-084",
+      "title": "Candidate Suite Single-Viewport Golden 10/10 Master Layout Refactor & Zero-Gap Functional Verification",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-11T05:49:35.293Z",
+      "certifiedAt": "2026-10-11T06:05:49.195Z"
+    },
+    {
+      "id": "DIR-085",
+      "title": "Candidate Overview Unified Command Center — Above-The-Fold Resume Workspace, Compact AI Copilot HUD & Friendly Native Mascot",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-11T06:10:53.502Z",
+      "certifiedAt": "2026-10-11T06:23:55.293Z"
+    },
+    {
+      "id": "DIR-086",
+      "title": "Candidate Overview 10/10 Polish — Zero Horizontal Scrollbars, Working Copilot Quick-Pitch Routing, Compact Action Cards & Streamlined Rail",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-11T06:37:59.305Z",
+      "certifiedAt": "2026-10-11T06:51:10.013Z"
+    },
+    {
+      "id": "DIR-087",
+      "title": "MASTER CANDIDATE_PAGES Phase 1 — Comprehensive Inventory, Industry Benchmarks, Baseline Scoring & JobSearchBar Scrollbar Guard",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-11T06:54:07.101Z",
+      "certifiedAt": "2026-10-11T07:04:15.226Z"
+    },
+    {
+      "id": "DIR-088",
+      "title": "CANDIDATE_PAGES Wave 1 — Resume Builder 10/10 UX Overhaul, Rezi-Grade Inline ATS Helpers & Step Tokenization",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-11T07:08:10.677Z",
+      "certifiedAt": "2026-10-11T07:27:04.612Z"
+    },
+    {
+      "id": "DIR-089",
+      "title": "CANDIDATE_PAGES Wave 2 — Settings & 2FA Hub 10/10 Modernization, Token Harmonization & P0 Debt Eradication",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-11T07:29:36.573Z",
+      "certifiedAt": "2026-10-11T07:39:15.898Z"
+    },
+    {
+      "id": "DIR-090",
+      "title": "Lead Delivery Forensic Review & Gap Audit — Candidate Dashboard 100% Reference Parity",
+      "status": "APPROVED_FROZEN",
+      "priority": "P1",
+      "createdAt": "2026-10-11T10:35:30.401Z",
+      "certifiedAt": "2026-10-11T11:00:48.916Z"
+    },
+    {
+      "id": "DIR-091",
+      "title": "DIR-091: 100% Pixel-Perfect Reference Parity for Candidate Dashboard and Build Resume (Two-Page Operational Parity)",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-11T18:28:17.395Z",
+      "certifiedAt": "2026-10-11T19:31:37.585Z"
+    },
+    {
+      "id": "DIR-092",
+      "title": "DIR-092: Candidate Hero and Metric Cards Executive Enhancement",
+      "status": "APPROVED_FROZEN",
+      "priority": "P1",
+      "createdAt": "2026-10-12T02:40:55.898Z",
+      "certifiedAt": "2026-10-12T03:19:01.318Z"
+    },
+    {
+      "id": "DIR-093",
+      "title": "DIR-093: Comprehensive End-to-End UI/UX Forensic Audit & Enhancement Planning",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-12T03:50:19.627Z",
+      "certifiedAt": "2026-10-12T04:06:04.243Z"
+    },
+    {
+      "id": "DIR-094",
+      "title": "DIR-094: Comprehensive End-to-End UI/UX Forensic Enhancement, Visual Layout Blueprinting, and Iterative Parity Convergence Engine",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-12T04:28:45.995Z",
+      "certifiedAt": "2026-10-12T06:44:45.287Z"
+    },
+    {
+      "id": "DIR-095",
+      "title": "DIR-095: Candidate Dashboard Streamlining (Resume Slider Removal), 100% Operational Sidebar Navigation, and Native Multi-Device Responsiveness",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-12T05:03:43.848Z",
+      "certifiedAt": "2026-10-12T06:09:50.022Z"
+    },
+    {
+      "id": "DIR-096",
+      "title": "DIR-096: Autonomous Production Convergence Engine — End-to-End Implementation, Refactoring, RCA, Contract Verification & Release Certification Against Master Manifest 4.2.0",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-12T06:10:27.575Z",
+      "certifiedAt": "2026-10-12T06:31:41.538Z"
+    },
+    {
+      "id": "DIR-097",
+      "title": "Fix failing unit tests for CopilotHeroHud component",
+      "status": "APPROVED_FROZEN",
+      "priority": "P1",
+      "createdAt": "2026-10-12T07:12:04.764Z",
+      "certifiedAt": "2026-10-12T07:43:43.306Z"
+    },
+    {
+      "id": "DIR-098",
+      "title": "DIR-098: Master UI/UX Transformation Programme - Phase One Discovery, Baseline Evidence & Acceptance-Gate Scaffolding",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-12T08:04:45.768Z",
+      "certifiedAt": "2026-10-12T08:10:34.125Z"
+    },
+    {
+      "id": "DIR-099",
+      "title": "Master UI/UX Transformation: review and ACCEPT the next outstanding review units at >=98/100",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-12T08:32:47.077Z",
+      "certifiedAt": "2026-10-12T08:54:46.217Z"
+    },
+    {
+      "id": "DIR-100",
+      "title": "Remediate review unit RU-001 to achieve >=98/100 acceptance",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-12T08:58:06.419Z",
+      "certifiedAt": "2026-10-12T09:05:43.028Z"
+    },
+    {
+      "id": "DIR-101",
+      "title": "Restore the full test pyramid to green (npm test exits 0)",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-12T09:09:17.773Z",
+      "certifiedAt": "2026-10-12T09:19:05.422Z"
+    },
+    {
+      "id": "DIR-102",
+      "title": "Master UI/UX Transformation: review and ACCEPT the next outstanding review units at >=98/100",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-12T09:22:27.739Z",
+      "certifiedAt": "2026-10-12T10:01:22.575Z"
+    },
+    {
+      "id": "DIR-103",
+      "title": "Restore the full test pyramid to green (npm test exits 0)",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-12T13:58:15.555Z",
+      "certifiedAt": "2026-10-12T14:14:25.038Z"
+    },
+    {
+      "id": "DIR-104",
+      "title": "Tier 2: audit and ACCEPT the parameterised route templates against real record data",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-12T14:17:46.040Z",
+      "certifiedAt": "2026-10-12T14:29:36.505Z"
+    },
+    {
+      "id": "DIR-105",
+      "title": "Restore Full 26+ Platform Settings Operations to Superadmin",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-12T16:55:44.109Z",
+      "certifiedAt": "2026-10-12T17:48:35.614Z"
+    },
+    {
+      "id": "DIR-106",
+      "title": "Fix Menu Bar AI Allowance Meter Display and Resolve Ambiguous Multi-Tenant Governance on /api/ai-usage",
+      "status": "APPROVED_FROZEN",
+      "priority": "P0",
+      "createdAt": "2026-10-13T16:59:44.506Z",
+      "certifiedAt": "2026-10-13T17:30:50.766Z"
+    }
+  ]
+}

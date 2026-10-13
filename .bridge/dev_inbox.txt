@@ -1,23 +1,4 @@
-[LEAD SUPERVISOR RULING - ACT MODE AUTHORIZED]
-Directive: DIR-049 (Master Universal Platform Re-Verification & Second Certification — 2nd Review across DIR-001 through DIR-048)
-Status: IN_PROGRESS (Plan Approved 100/100 by Lead Supervisor)
-Reference: .bridge/LEAD-RULING-DIR-049.md
-
-PLAN REVIEW SUMMARY:
-Plan is approved. S1 through S9 verification matrix is fully authorized.
-Zero source code modifications permitted (pure verification & certification directive).
-
-ACTION MANDATE:
-Execute the 7 verification workstreams in ACT mode:
-1. S1: Security static sentinels (npm run test:security:static) -> capture output to .bridge/evidence/dir049-security.log
-2. S2: Backend integration matrix (npm --prefix backend test) -> capture output to .bridge/evidence/dir049-backend.log
-3. S3: Frontend product matrix (npm run test:product) + interview coach (npm run test:interview with --test-concurrency=1) -> capture output to .bridge/evidence/dir049-product.log
-4. S4: Cuba design system and 4-portal shells (npm run test:design-system) -> capture output to .bridge/evidence/dir049-design-system.log
-5. S5: Hermetic Playwright browser UAT (npm run test:dir048:browser) -> capture output to .bridge/evidence/dir049-playwright.log
-6. S6: Production build and lint (npm run build && npm run lint)
-7. S7: Frozen baseline audit (git diff e314f715 -- backend/services/aiRuntime.js -> assert 0 bytes; CERTIFIED_FREEZE_MANIFEST.json check)
-8. S8: Compile .bridge/evidence/DIR-049-EVIDENCE-SUMMARY.md and submit via:
-   bridge dev submit-evidence --directive DIR-049 --projectDir "D:\xampp\htdocs\IME365" --summary "<summary>" --tests "<tests.log>"
-
-Emit heartbeats after major steps:
-bridge dev heartbeat --directive DIR-049 --projectDir "D:\xampp\htdocs\IME365" --status "<status>" --percent <0-100>
+[AI BRIDGE - DIRECTIVE RESET COMPLETED]
+All prior directives (DIR-001 through DIR-106) have been archived.
+State: IDLE / READY FOR NEW DIRECTIVES.
+Awaiting new directive instructions from the Lead Supervisor.

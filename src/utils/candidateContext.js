@@ -101,7 +101,7 @@ export function extractTargetRoleFromJd(jdText) {
     const clean = jdText.slice(0, 600);
     const patterns = [
         /(?:seeking|hiring|looking for|needs?|recruiting|appointing)\s+(?:an?|our next)\s+([^,.\n]{3,60}?)(?=\s+(?:to\b|who\b|responsible\b|reporting\b|with\b|in\b|at\b|[.\n,;]))/i,
-        /(?:position|role|job title|title)\s*[:\-]\s*([^,.\n]{3,50})/i,
+        /(?:position|role|job title|title)\s*[:-]\s*([^,.\n]{3,50})/i,
         /^#\s*([A-Za-z0-9&/\-\s]{3,50}?)(?:\s+position|\s+opening|\s+role)/im
     ];
     for (const pat of patterns) {
@@ -337,7 +337,7 @@ export function mineCandidateVocabulary(resumeData = {}) {
     return out;
 }
 
-function entryHasField(entry, ...fields) {
+function _entryHasField(entry, ...fields) {
     if (!entry) return false;
     return fields.some(field => String(entry[field] || '').trim().length > 0);
 }

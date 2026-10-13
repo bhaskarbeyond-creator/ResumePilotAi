@@ -1,0 +1,149 @@
+{
+  "tool": "better-todo-tree",
+  "extension": {
+    "installed": true,
+    "dir": "C:\\Users\\mbhas\\.antigravity-ide\\extensions\\fanaticpythoner.better-todo-tree-1.3.4-win32-x64",
+    "host": "C:\\Users\\mbhas\\.antigravity-ide\\extensions",
+    "version": "1.3.4",
+    "source": "installed-extension"
+  },
+  "tags": [
+    "BUG",
+    "HACK",
+    "FIXME",
+    "TODO",
+    "XXX",
+    "[ ]",
+    "[x]"
+  ],
+  "regexTemplate": "(^|//|#|<!--|;|/\\*|^[ \\t]*(-|\\d+.))\\s*(?=\\[x\\]|\\[ \\]|[A-Za-z0-9_])($TAGS)(?![A-Za-z0-9_])",
+  "excludeGlobs": [
+    "**/node_modules/*/**"
+  ],
+  "root": "D:\\xampp\\htdocs\\IME365",
+  "scannedFiles": 200,
+  "totalMatches": 16,
+  "counts": {
+    "[x]": 9,
+    "[ ]": 3,
+    "TODO": 2,
+    "HACK": 1,
+    "FIXME": 1
+  },
+  "matches": [
+    {
+      "file": "CERTIFICATION_REPORT_20261007.md",
+      "line": 240,
+      "col": 1,
+      "tag": "[x]",
+      "text": "- [x] **Stream 1 (Static Security):** `67 / 67 PASS` — after 1-line PATH fix"
+    },
+    {
+      "file": "CERTIFICATION_REPORT_20261007.md",
+      "line": 241,
+      "col": 1,
+      "tag": "[x]",
+      "text": "- [x] **Stream 2 (Backend Core Matrix):** `892 / 892 PASS` on live MariaDB `aime365` — after 3 patches, live 24 migrations"
+    },
+    {
+      "file": "CERTIFICATION_REPORT_20261007.md",
+      "line": 242,
+      "col": 1,
+      "tag": "[x]",
+      "text": "- [x] **Stream 4 (Interview Coach):** `31 / 31 PASS` with `--test-concurrency=1`"
+    },
+    {
+      "file": "CERTIFICATION_REPORT_20261007.md",
+      "line": 243,
+      "col": 1,
+      "tag": "[x]",
+      "text": "- [x] **Stream 7 (Production Build & Lint):** Build EXIT 0, ESLint 0 fatal errors"
+    },
+    {
+      "file": "CERTIFICATION_REPORT_20261007.md",
+      "line": 244,
+      "col": 1,
+      "tag": "[x]",
+      "text": "- [x] **Stream 8 (Frozen Invariants):** `aiRuntime.js` 0-byte diff, 51+4 templates, 0 latency offenders"
+    },
+    {
+      "file": "CERTIFICATION_REPORT_20261007.md",
+      "line": 247,
+      "col": 1,
+      "tag": "[ ]",
+      "text": "- [ ] **Stream 3 (Frontend Product):** `702 / 718 (3 fail, 13 cancelled)` vs **expected 729 / 729** — 16 delta (11 missing tests + 3 fail +"
+    },
+    {
+      "file": "CERTIFICATION_REPORT_20261007.md",
+      "line": 248,
+      "col": 1,
+      "tag": "[ ]",
+      "text": "- [ ] **Stream 5 (Cuba Design System):** `122 / 130 (1 fail, 7 cancelled)` vs **expected 141 / 141** — same Cuba aurora issue (1 fail + 7 ca"
+    },
+    {
+      "file": "CERTIFICATION_REPORT_20261007.md",
+      "line": 249,
+      "col": 1,
+      "tag": "[ ]",
+      "text": "- [ ] **Stream 6 (Playwright Browser UAT):** `4 / 8 observed` in 600s (expected 8/8) — 4 passed (AC-1, AC-3, AC-2, AC-5) with zero dialogs,"
+    },
+    {
+      "file": "CERTIFICATION_REPORT_20261007.md",
+      "line": 310,
+      "col": 1,
+      "tag": "[x]",
+      "text": "- [x] All 8 streams executed independently from first principles, no prior log trusted."
+    },
+    {
+      "file": "CERTIFICATION_REPORT_20261007.md",
+      "line": 311,
+      "col": 1,
+      "tag": "[x]",
+      "text": "- [x] Zero synthetic data, zero mock DB, zero secret leakage."
+    },
+    {
+      "file": "CERTIFICATION_REPORT_20261007.md",
+      "line": 312,
+      "col": 1,
+      "tag": "[x]",
+      "text": "- [x] `aiRuntime.js` 0-byte diff vs `e314f715` — frozen."
+    },
+    {
+      "file": "CERTIFICATION_REPORT_20261007.md",
+      "line": 313,
+      "col": 1,
+      "tag": "[x]",
+      "text": "- [x] 51 CV + 4 cover templates intact."
+    },
+    {
+      "file": "tests/dir109-bridge-ext-tooling.test.mjs",
+      "line": 58,
+      "col": 18,
+      "tag": "TODO",
+      "text": "// TODO: fix this thing\\nconst x = 1; // HACK fast path\\n',"
+    },
+    {
+      "file": "tests/dir109-bridge-ext-tooling.test.mjs",
+      "line": 58,
+      "col": 56,
+      "tag": "HACK",
+      "text": "// HACK fast path\\n',"
+    },
+    {
+      "file": "tests/dir109-bridge-ext-tooling.test.mjs",
+      "line": 59,
+      "col": 18,
+      "tag": "FIXME",
+      "text": "# FIXME broken\\n',"
+    },
+    {
+      "file": "tests/dir109-bridge-ext-tooling.test.mjs",
+      "line": 61,
+      "col": 35,
+      "tag": "TODO",
+      "text": "// TODO: must be ignored\\n'"
+    }
+  ],
+  "at": "2026-10-13T19:55:44.511Z",
+  "evidenceFile": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\todos-scan.json"
+}

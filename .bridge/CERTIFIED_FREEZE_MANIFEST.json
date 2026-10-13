@@ -1,5 +1,5 @@
 {
-  "certifiedAt": "2026-10-12T07:15:45.228Z",
+  "certifiedAt": "2026-10-13T20:01:59.822Z",
   "version": "3.0.0",
   "architecture": "BIDIRECTIONAL_INSTANT_WAKE_V1",
   "status": "FROZEN_AND_CERTIFIED",
@@ -20,7 +20,7 @@
       },
       {
         "id": "saoudrizwan.claude-dev",
-        "dir": "saoudrizwan.claude-dev-4.1.23-universal",
+        "dir": "saoudrizwan.claude-dev-4.1.24-universal",
         "taskSupported": true,
         "promptFileSupported": true,
         "sidebarAutoFocus": true,
@@ -34,7 +34,7 @@
     "udpPort": 48222,
     "leadWatcher": {
       "running": true,
-      "pid": 16000,
+      "pid": 27100,
       "udpPort": 48222,
       "scriptExists": true,
       "certifiedBackupExists": true
@@ -43,8 +43,8 @@
   "certifiedFiles": [
     {
       "file": "bridge.cjs",
-      "sha256": "490ea6a2a126225f81f24e8745cfe8ecbf563153e65d5fd9fa2b701c6ed07679",
-      "bytes": 262860,
+      "sha256": "0e22884beca732dd37d71f88d59e0c0d7cacf6be0d07d4dfb0b60457b2819636",
+      "bytes": 291258,
       "certifiedBackup": "bridge.cjs.certified.bak"
     },
     {

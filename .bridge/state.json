@@ -1,25 +1,25 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-13T16:59:59.732Z",
-  "eventCount": 3149,
-  "activeDirectiveId": "DIR-106",
-  "activeDirectiveTitle": "Fix Menu Bar AI Allowance Meter Display and Resolve Ambiguous Multi-Tenant Governance on /api/ai-usage",
-  "activeDirectiveStatus": "ISSUED",
+  "updatedAt": "2026-10-13T20:21:35.339Z",
+  "eventCount": 3180,
+  "activeDirectiveId": "DIR-001",
+  "activeDirectiveTitle": "DIR-110: Performance & Code Hygiene - BuildResume Code-Splitting and Utility Lint Normalization",
+  "activeDirectiveStatus": "IN_PROGRESS",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-12T18:05:21.673Z",
-  "unreadForLead": 7,
-  "unreadForDev": 15,
+  "stallDeadline": "2026-10-13T20:11:30.611Z",
+  "unreadForLead": 3,
+  "unreadForDev": 5,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-12T18:05:21.673Z",
-    "status": "CHANGES_REQUESTED closed: Ctrl+K palette now indexes settings tabs (live-proven at 320/768/1440). 35/0 tests, build 2.68s, design 142/0, eslint clean, crawl 32/0 PASS, INV-1 0-byte",
-    "percent": 100
+    "timestamp": "2026-10-13T20:11:30.611Z",
+    "status": "Edits complete: 12 steps + 4 modals + AtsScoreMeter lazy, dead TemplateRenderer import removed, 14 lint warnings fixed. Running quality gates.",
+    "percent": 60
   },
   "integrity": {
     "ok": true,
-    "checked": 3149,
+    "checked": 3180,
     "legacy": 0,
     "bad": 0
   }

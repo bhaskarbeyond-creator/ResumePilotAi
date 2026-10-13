@@ -29,5 +29,5 @@ This is an optional Google Chrome / Microsoft Edge extension (Manifest V3) desig
 2. In the top right corner, toggle **"Developer mode"** to **ON**.
 3. Click the **"Load unpacked"** button in the top left.
 4. Select the `extension` folder inside this repository:
-   `d:\xampp\htdocs\ai-resume-builder\extension`
+   `d:\xampp\htdocs\IME365\extension`
 5. Done! The extension icon will appear in your browser toolbar, and permissions will be automatically managed for IME365.

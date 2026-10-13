@@ -1,31 +1,34 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { lazy, Suspense, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
-// Step Components
-import HeadingStep from './steps/HeadingStep';
-import WorkHistoryStep from './steps/WorkHistoryStep';
-import EducationStep from './steps/EducationStep';
-import SkillsStep from './steps/SkillsStep';
-import LanguagesStep from './steps/LanguagesStep';
-import SummaryStep from './steps/SummaryStep';
-import ProjectsStep from './steps/ProjectsStep';
-import CertificationsStep from './steps/CertificationsStep';
-import AchievementsStep from './steps/AchievementsStep';
-import ReferencesStep from './steps/ReferencesStep';
-import CustomSectionsStep from './steps/CustomSectionsStep';
-import ReviewStep from './steps/ReviewStep';
+// Step Components — code-split via React.lazy (DIR-001 / AUD-001): each step
+// loads its own chunk on first navigation instead of shipping in the main bundle.
+const HeadingStep = lazy(() => import('./steps/HeadingStep'));
+const WorkHistoryStep = lazy(() => import('./steps/WorkHistoryStep'));
+const EducationStep = lazy(() => import('./steps/EducationStep'));
+const SkillsStep = lazy(() => import('./steps/SkillsStep'));
+const LanguagesStep = lazy(() => import('./steps/LanguagesStep'));
+const SummaryStep = lazy(() => import('./steps/SummaryStep'));
+const ProjectsStep = lazy(() => import('./steps/ProjectsStep'));
+const CertificationsStep = lazy(() => import('./steps/CertificationsStep'));
+const AchievementsStep = lazy(() => import('./steps/AchievementsStep'));
+const ReferencesStep = lazy(() => import('./steps/ReferencesStep'));
+const CustomSectionsStep = lazy(() => import('./steps/CustomSectionsStep'));
+const ReviewStep = lazy(() => import('./steps/ReviewStep'));
 
-import TemplateRenderer from '../TemplateRenderer';
+// DIR-001 / AUD-001: the dead TemplateRenderer import was removed — it dragged
+// SmartResumeComposer, templateRegistry and Cv1 into this chunk. PreviewModal
+// still imports TemplateRenderer, so previews load that chain lazily.
 import { getTemplateMeta } from '../../utils/templateCatalog';
 
-// Modal Components
-import PreviewModal from './PreviewModal';
-import TemplateSelectionModal from './TemplateSelectionModal';
-import AtsScoreMeter from './AtsScoreMeter';
-import ResumeImportModal from './ResumeImportModal';
-import SyncProfileModal from './SyncProfileModal';
+// Modal Components — code-split and mounted only while their open flag is true.
+const PreviewModal = lazy(() => import('./PreviewModal'));
+const TemplateSelectionModal = lazy(() => import('./TemplateSelectionModal'));
+const AtsScoreMeter = lazy(() => import('./AtsScoreMeter'));
+const ResumeImportModal = lazy(() => import('./ResumeImportModal'));
+const SyncProfileModal = lazy(() => import('./SyncProfileModal'));
 import { calculateAtsScore } from '../../utils/atsScore';
 
 // Import necessary modules for PDF export
@@ -66,6 +69,13 @@ import fire from '../../conf/fire';
 import PremiumUpgradeModal from '../common/PremiumUpgradeModal';
 import SubscriptionModal from '../Dashboard/DashboardSettings/SubscriptionModal';
 import ShareModal from '../Dashboard/ShareModal/ShareModal';
+
+// Minimal Cuba-style loading fallback for code-split Suspense boundaries (DIR-001).
+const LazySectionFallback = () => (
+    <div className="py-12 flex items-center justify-center" role="status" aria-label="Loading section">
+        <div aria-hidden="true" className="w-8 h-8 border-3 border-[var(--cuba-line-strong)] border-t-indigo-600 rounded-full animate-spin"></div>
+    </div>
+);
 
 const BuildResume = () => {
     const navigate = useNavigate();
@@ -2211,22 +2221,24 @@ const BuildResume = () => {
                 {/* Scrollable Form Content */}
                 <div className={`flex-1 overflow-y-auto bg-[var(--cuba-canvas)]/80 ${showDesktopSplitPreview ? 'xl:max-w-[58%]' : ''} transition-all duration-300`}>
                     <div className="min-h-[calc(100vh-180px)] w-full max-w-[1440px] mx-auto px-3 sm:px-5 lg:px-6 pt-2 pb-24 space-y-3">
-                        {/* Step Form Routes */}
-                        <Routes>
-                            <Route path="heading" element={<HeadingStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
-                            <Route path="work-history" element={<WorkHistoryStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
-                            <Route path="education" element={<EducationStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
-                            <Route path="skills" element={<SkillsStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
-                            <Route path="languages" element={<LanguagesStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
-                            <Route path="summary" element={<SummaryStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
-                            <Route path="projects" element={<ProjectsStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
-                            <Route path="certifications" element={<CertificationsStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
-                            <Route path="achievements" element={<AchievementsStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
-                            <Route path="references" element={<ReferencesStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
-                            <Route path="custom" element={<CustomSectionsStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
-                            <Route path="review" element={<ReviewStep resumeData={resumeData} updateResumeData={updateResumeData} templateName={getTemplateName(currentTemplate)} saveState={saveState} onNavigate={handleStepClick} onChooseTemplate={() => setShowTemplateSelection(true)} onPreview={() => setShowPreview(true)} onDownload={handleDownload} isDownloading={isDownloading} />} />
-                            <Route path="" element={<HeadingStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
-                        </Routes>
+                        {/* Step Form Routes — wrapped in Suspense for lazy step chunks (DIR-001) */}
+                        <Suspense fallback={<LazySectionFallback />}>
+                            <Routes>
+                                <Route path="heading" element={<HeadingStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
+                                <Route path="work-history" element={<WorkHistoryStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
+                                <Route path="education" element={<EducationStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
+                                <Route path="skills" element={<SkillsStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
+                                <Route path="languages" element={<LanguagesStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
+                                <Route path="summary" element={<SummaryStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
+                                <Route path="projects" element={<ProjectsStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
+                                <Route path="certifications" element={<CertificationsStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
+                                <Route path="achievements" element={<AchievementsStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
+                                <Route path="references" element={<ReferencesStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
+                                <Route path="custom" element={<CustomSectionsStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
+                                <Route path="review" element={<ReviewStep resumeData={resumeData} updateResumeData={updateResumeData} templateName={getTemplateName(currentTemplate)} saveState={saveState} onNavigate={handleStepClick} onChooseTemplate={() => setShowTemplateSelection(true)} onPreview={() => setShowPreview(true)} onDownload={handleDownload} isDownloading={isDownloading} />} />
+                                <Route path="" element={<HeadingStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
+                            </Routes>
+                        </Suspense>
                     </div>
 
                     {/* Fixed Bottom Action Footer (Never covers form content, sticky to viewport bottom) */}
@@ -2351,13 +2363,15 @@ const BuildResume = () => {
                                 the resume document so a JD pasted in Review shows
                                 up here (and vice versa). */}
                             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                                <AtsScoreMeter
-                                    resumeData={resumeData}
-                                    onNavigate={handleStepClick}
-                                    jobDescription={resumeData.targetJobDescription}
-                                    onJobDescriptionChange={(jd) => updateResumeData({ targetJobDescription: jd })}
-                                    defaultExpanded
-                                />
+                                <Suspense fallback={<LazySectionFallback />}>
+                                    <AtsScoreMeter
+                                        resumeData={resumeData}
+                                        onNavigate={handleStepClick}
+                                        jobDescription={resumeData.targetJobDescription}
+                                        onJobDescriptionChange={(jd) => updateResumeData({ targetJobDescription: jd })}
+                                        defaultExpanded
+                                    />
+                                </Suspense>
                             </div>
                         </motion.div>
                     </motion.div>
@@ -2469,12 +2483,14 @@ const BuildResume = () => {
                                 {/* Mobile ATS Section */}
                                 {isAtsEnabled === true && (
                                     <div className="mt-4">
-                                        <AtsScoreMeter
-                                            resumeData={resumeData}
-                                            onNavigate={(path) => { handleStepClick(path); setIsMobileMenuOpen(false); }}
-                                            jobDescription={resumeData.targetJobDescription}
-                                            onJobDescriptionChange={(jd) => updateResumeData({ targetJobDescription: jd })}
-                                        />
+                                        <Suspense fallback={<LazySectionFallback />}>
+                                            <AtsScoreMeter
+                                                resumeData={resumeData}
+                                                onNavigate={(path) => { handleStepClick(path); setIsMobileMenuOpen(false); }}
+                                                jobDescription={resumeData.targetJobDescription}
+                                                onJobDescriptionChange={(jd) => updateResumeData({ targetJobDescription: jd })}
+                                            />
+                                        </Suspense>
                                     </div>
                                 )}
                             </div>
@@ -2632,46 +2648,63 @@ const BuildResume = () => {
                 document.body
             )}
 
-            {/* Modal Components */}
-            <PreviewModal
-                showPreview={showPreview}
-                setShowPreview={setShowPreview}
-                resumeData={previewData}
-                onShare={handlePublishForReview}
-                isSharing={publicationState.status === 'saving'}
-                onDownload={handleDownload}
-                isDownloading={isDownloading}
-                onDownloadDocx={handleDocxDownload}
-                isDownloadingDocx={isDownloadingDocx}
-                currentTemplate={currentTemplate}
-                getTemplateName={getTemplateName}
-            />
+            {/* Modal Components — code-split (DIR-001): each modal mounts only
+                while its open flag is true, so its chunk loads on demand. */}
+            {showPreview && (
+                <Suspense fallback={null}>
+                    <PreviewModal
+                        showPreview={showPreview}
+                        setShowPreview={setShowPreview}
+                        resumeData={previewData}
+                        onShare={handlePublishForReview}
+                        isSharing={publicationState.status === 'saving'}
+                        onDownload={handleDownload}
+                        isDownloading={isDownloading}
+                        onDownloadDocx={handleDocxDownload}
+                        isDownloadingDocx={isDownloadingDocx}
+                        currentTemplate={currentTemplate}
+                        getTemplateName={getTemplateName}
+                    />
+                </Suspense>
+            )}
 
-            <TemplateSelectionModal
-                showModal={showTemplateSelection}
-                setShowModal={setShowTemplateSelection}
-                currentTemplate={currentTemplate}
-                onTemplateSelect={handleTemplateSelect}
-                resumeData={previewData}
-            />
+            {showTemplateSelection && (
+                <Suspense fallback={null}>
+                    <TemplateSelectionModal
+                        showModal={showTemplateSelection}
+                        setShowModal={setShowTemplateSelection}
+                        currentTemplate={currentTemplate}
+                        onTemplateSelect={handleTemplateSelect}
+                        resumeData={previewData}
+                    />
+                </Suspense>
+            )}
 
-            <ResumeImportModal
-                isOpen={showImportModal}
-                onClose={() => setShowImportModal(false)}
-                onImportData={(data) => {
-                    updateResumeData(data);
-                    showToast('Success');
-                }}
-            />
+            {showImportModal && (
+                <Suspense fallback={null}>
+                    <ResumeImportModal
+                        isOpen={showImportModal}
+                        onClose={() => setShowImportModal(false)}
+                        onImportData={(data) => {
+                            updateResumeData(data);
+                            showToast('Success');
+                        }}
+                    />
+                </Suspense>
+            )}
 
             {/* Master Profile Sync Modal */}
-            <SyncProfileModal
-                isOpen={showSyncProfileModal}
-                onClose={() => setShowSyncProfileModal(false)}
-                userId={userData.user}
-                resumeData={resumeData}
-                updateResumeData={updateResumeData}
-            />
+            {showSyncProfileModal && (
+                <Suspense fallback={null}>
+                    <SyncProfileModal
+                        isOpen={showSyncProfileModal}
+                        onClose={() => setShowSyncProfileModal(false)}
+                        userId={userData.user}
+                        resumeData={resumeData}
+                        updateResumeData={updateResumeData}
+                    />
+                </Suspense>
+            )}
 
             {/* Premium Upgrade Modal for Free candidate upsell flow */}
             <PremiumUpgradeModal

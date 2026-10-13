@@ -29,7 +29,7 @@ export function topicChipsOnly(chips = []) {
     return (Array.isArray(chips) ? chips : []).filter(chip => typeof chip === 'string' && !CLAIM_LIKE_CHIP.test(chip));
 }
 
-export function generateRoleInterviewQuestions(role = '', employer = '', targetJd = '') {
+export function generateRoleInterviewQuestions(role = '', employer = '', _targetJd = '') {
     const r = String(role || '').trim();
     const org = String(employer || '').trim();
     const orgSuffix = org ? ` at ${org}` : '';
@@ -146,7 +146,7 @@ export function generateRoleInterviewQuestions(role = '', employer = '', targetJ
  * Dynamic, Open-Ended Education Interview Question & Starter Chips Generator
  * Contextually detects academic domain and synthesizes targeted questions for coursework, capstone, and honors.
  */
-export function generateEducationInterviewQuestions(degree = '', school = '', fieldOfStudy = '', targetJd = '') {
+export function generateEducationInterviewQuestions(degree = '', school = '', fieldOfStudy = '', _targetJd = '') {
     const d = String(degree || '').trim();
     const s = String(school || '').trim();
     const f = String(fieldOfStudy || '').trim();

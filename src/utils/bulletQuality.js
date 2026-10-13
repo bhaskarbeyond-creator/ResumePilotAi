@@ -92,7 +92,7 @@ export function detectLegitimateMetric(text) {
     return nonYearNumbers.length > 0;
 }
 
-export const BULLET_PREFIX_REGEX = /^[ \t]*(?:[•*–—\-][•*–—\-\s]*|(?:\(?\d+\)?[\.\)]|\d+[-–—])[ \t]+)/;
+export const BULLET_PREFIX_REGEX = /^[ \t]*(?:[•*–—-][•*–—\-\s]*|(?:\(?\d+\)?[.)]|\d+[-–—])[ \t]+)/;
 
 /**
  * Checks if a bullet starts with a strong active verb.
@@ -212,7 +212,7 @@ export function extractBulletList(rawText) {
     return rawText
         .replace(/<[^>]*>/g, '')
         .split(/\r?\n/)
-        .map((line) => line.replace(/^[ \t]*(?:[•*–—\-][•*–—\-\s]*|(?:\(?\d+\)?[\.\)]|\d+[-–—])[ \t]+)/, '').trim())
+        .map((line) => line.replace(/^[ \t]*(?:[•*–—-][•*–—\-\s]*|(?:\(?\d+\)?[.)]|\d+[-–—])[ \t]+)/, '').trim())
         .filter(Boolean);
 }
 
@@ -443,7 +443,7 @@ export function getEducationHealth(education = {}, targetJd = '') {
     };
 }
 
-export function ensureAtsOptimizedBullet(rawText, originalDraft = '') {
+export function ensureAtsOptimizedBullet(rawText, _originalDraft = '') {
     let text = String(rawText || '')
         .replace(BULLET_PREFIX_REGEX, '')
         .replace(/["'\s]+$/g, '')
