@@ -2,11 +2,11 @@
   "id": "DIR-001",
   "title": "DIR-110: Performance & Code Hygiene - BuildResume Code-Splitting and Utility Lint Normalization",
   "priority": "P1",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-13T20:04:13.752Z",
-  "updatedAt": "2026-10-13T20:26:20.558Z",
+  "updatedAt": "2026-10-13T20:26:22.338Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "### 1. OBJECTIVE\nResolve AUD-001 and AUD-003:\n1. Performance Bundle Splitting: Split heavyweight components in `src/components/Resume/BuildResume/` (e.g. Preview, Achievements, Extras) via React.lazy/dynamic imports to reduce the 1.27 MB bundle chunk.\n2. Utility Lint Normalization: Surgically fix the 38 benign ESLint warnings in `src/utils/autocompleteDirectories.js`, `src/utils/bulletQuality.js`, and `src/utils/candidateContext.js` (unused parameters prefixed with _, unnecessary regex escape slashes removed).\n\n### 2. INVARIANTS\n- Preserve all 51 template renderers (Cv1 to Cv51).\n- Preserve aiRuntime.js verbatim.\n- Zero functional regression in resume creation/editing journey.\n\n### 3. MANDATORY QUALITY GATES\n- `npm run build`: exits 0 with reduced bundle size.\n- `npm run lint`: exits 0 with zero warnings in src/utils.\n- `npm run test:templates`: 72/72 PASS.\n- `npm run test:security:static`: 67/67 PASS.",
   "invariants": [],
@@ -71,8 +71,31 @@
       }
     }
   ],
-  "freeze": null,
-  "lastTransitionReason": "lead review",
+  "freeze": {
+    "freezeHash": "0e88b448f9a60a10e5429e76ee135e31c2937708",
+    "certifiedAt": "2026-10-13T20:26:22.338Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "Autonomous Lead (Antigravity): evidence audit passed, all criteria verified.",
+    "evidenceHash": "652fe227572bf90587707947d1ca043fad6e733222ea9de432863ead541eb7ec",
+    "automated": true,
+    "certificationKind": "automated",
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "daemon:lead_watcher_session",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "daemon-parent:lead_watcher_session",
+        "non-tty"
+      ],
+      "pid": 44744,
+      "parentPid": 26852,
+      "tty": false,
+      "at": "2026-10-13T20:26:21.107Z",
+      "explicitlyAllowed": true
+    }
+  },
+  "lastTransitionReason": "gatekeeper certification",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {

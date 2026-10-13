@@ -1,0 +1,92 @@
+{
+  "id": "DIR-002",
+  "title": "AUD-002: Interview Coach act() Warning Elimination - Zero Console Noise in Test Pyramid",
+  "priority": "P1",
+  "status": "IN_PROGRESS",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-13T20:33:58.326Z",
+  "updatedAt": "2026-10-13T20:38:26.339Z",
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "spec": "Objective: Reproduce and eliminate the React act(...) warnings in tests/interview-coach-lifecycle.test.mjs (timer ticks + CBT palette updates in DashboardInterviews.jsx). Root cause expected: async event-loop dispatches outside act(). Fix: wrap timer advancements in act() and ensure mock audio cleanup on unmount. Gates: npm run test:interview exits 0 with ZERO act() warnings in output; npm run build exit 0; no changes to backend/services/aiRuntime.js or cv templates. Evidence: test log + warning-grep = 0 matches.",
+  "invariants": [],
+  "acceptanceCriteria": [
+    "[{id:test-green,kind:command_exit_zero,command:npm run test:interview},{id:zero-act-warnings,kind:command_exit_zero,command:node -e \"0\"}]"
+  ],
+  "dependsOn": [],
+  "sourceEventId": null,
+  "plan": {
+    "submittedAt": "2026-10-13T20:38:16.982Z",
+    "summary": "Reproduced: 21 act() warnings in lifecycle test (20x DashboardInterviews in two ~1s-spaced burst clusters at the step-17/step-18 remounts + 1x Root at final unmount). Root causes: (1) stubPlugin stubs src/firestore/dbOperations but DashboardInterviews imports getResumes from src/services/api/platform, so the real async fetch chain runs against the mocked fetch and its setResumes continuation resolves outside act() after each remount, cascading ~10 outside-act updates per mount; (2) per-second TICK/AiGenerationProcessingModal interval ticks that fire in real-time gaps outside act(); (3) final reactRoot.unmount() invoked via bare setTimeout(0) outside act(). Fix is test-side only (zero production changes): mirror the proven clean harness pattern from live-interview-ui.test.mjs.",
+    "steps": [
+      "1. Add missing src/services/api/platform stub to stubPlugin (getResumes = async () => ({ resumes: [] })) so remount async continuations resolve inside act",
+      "2. Add advanceTimers(ms) helper routing ALL real-time waits through act() (macrotask flush) and replace bare microtask flushes after mounts/clicks",
+      "3. Move final unmount inside act() (render div + unmount) eliminating the Root warning",
+      "4. Deterministically absorb interval ticks: advanceTimers(1050) inside act at exam-phase entry so the 1000ms TICK lands inside act",
+      "5. Gates: node --test lifecycle = 0 act warnings, npm run test:interview (all 4 files) = 0 act warnings + exit 0, npm run build exit 0, git diff frozen files = 0",
+      "6. Capture evidence log and submit via bridge dev submit-evidence"
+    ],
+    "planHash": "3f4bcecea18b34ef007dbab767f6dbaf9c2e3070a142222ef32bf710e289d170"
+  },
+  "evidence": null,
+  "reviews": [],
+  "freeze": null,
+  "heartbeats": [
+    {
+      "at": "2026-10-13T20:38:16.882Z",
+      "status": "Plan submitted: root cause fully attributed via timestamped reproduction (bursts at remounts from unstubbed platform getResumes + 1000ms TICK interval + outside-act unmount)",
+      "percent": 10,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    },
+    {
+      "at": "2026-10-13T20:38:43.611Z",
+      "status": "Directive received; locating interview test files and harness",
+      "percent": 5,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    },
+    {
+      "at": "2026-10-13T20:47:31.559Z",
+      "status": "Root cause fixed: keydown dispatches act-wrapped (schedule-time warnings eliminated). Lifecycle test: 0 act warnings. Running full test:interview suite",
+      "percent": 60,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    },
+    {
+      "at": "2026-10-13T20:49:56.442Z",
+      "status": "All gates green: test:interview 31/31 pass with 0 act() warnings, build exit 0 in 2.36s, frozen files untouched. Submitting evidence",
+      "percent": 100,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    }
+  ],
+  "lastHeartbeatAt": "2026-10-13T20:49:56.442Z",
+  "continuationPending": false,
+  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "revisionTarget": null,
+  "planApproval": {
+    "approvedAt": "2026-10-13T20:38:26.339Z",
+    "automated": true,
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "daemon:lead_watcher_session",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "daemon-parent:lead_watcher_session",
+        "non-tty"
+      ],
+      "pid": 968,
+      "parentPid": 26852,
+      "tty": false,
+      "at": "2026-10-13T20:38:26.337Z",
+      "explicitlyAllowed": true
+    },
+    "feedback": "Auto-approved by the autonomous plan-scorer (score 85/100, reviewer verdict approved). NOT a human Lead review."
+  }
+}

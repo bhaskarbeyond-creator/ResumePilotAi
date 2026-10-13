@@ -41,6 +41,13 @@ const stubPlugin = {
         if (/\/src\/firestore\/dbOperations(\.js)?(\?.*)?$/.test(id)) {
             return 'export const getResumes = async () => ({ resumes: [] });';
         }
+        // DashboardInterviews reads its resume facts through the platform API, not
+        // dbOperations. Without this stub the real multi-await fetch chain in
+        // platform.getResumes runs against the mocked fetch and its setResumes
+        // continuation resolves outside act() after every mount/remount.
+        if (/\/src\/services\/api\/platform(\.js)?(\?.*)?$/.test(id)) {
+            return 'export const getResumes = async () => ({ resumes: [] });';
+        }
         return null;
     },
 };
@@ -65,7 +72,15 @@ function keydown(window, key, opts = {}) {
     const event = new window.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...opts });
     Object.defineProperty(event, 'target', { value: opts.target || document.body });
     Object.defineProperty(event, 'path', { value: [] });
-    window.dispatchEvent(event);
+    // Dispatch inside act(): the window-level keydown handler in
+    // DashboardInterviews dispatches reducer actions and state setters
+    // SYNCHRONOUSLY during the event, and React 18.3+ emits the act() warning
+    // at SCHEDULE time — so any amount of post-event flushing can never
+    // suppress it. The event must be fired with an active act window, exactly
+    // like the click() helper below.
+    act(() => {
+        window.dispatchEvent(event);
+    });
     return event;
 }
 
@@ -77,6 +92,19 @@ function click(element) {
 
 function textOf(root) {
     return root.textContent || '';
+}
+
+/**
+ * Advances real wall-clock time inside act() so every timer-driven dispatch
+ * (the per-second exam TICK interval, debounced persistence, heartbeats,
+ * generation-modal seconds/tips) lands inside the React act window instead of
+ * firing in a real-time gap between act() calls — the gap that produced the
+ * "An update to DashboardInterviews inside a test was not wrapped in act(...)"
+ * console noise. Macrotask (setTimeout) flushing also lets chained async
+ * continuations resolve while act() is still active.
+ */
+async function advanceTimers(ms) {
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, ms)); });
 }
 
 /**
@@ -144,8 +172,14 @@ async function startExam(root) {
     assert.ok(startButton, 'start button rendered');
     assert.equal(startButton.disabled, false, 'start button enabled');
     click(startButton);
-    await act(async () => { await new Promise(resolve => setTimeout(resolve, 30)); });
-    await act(async () => { await new Promise(resolve => setTimeout(resolve, 30)); });
+    await advanceTimers(30);
+    await advanceTimers(30);
+    // Absorb the first per-second exam TICK deterministically: the tick interval
+    // fires 1000ms after the exam phase mounts, so advancing 1050ms inside act()
+    // guarantees that dispatch is flushed within the act window rather than in a
+    // real-time gap. (Subsequent ticks land inside the act-wrapped waits that
+    // every later step routes through advanceTimers.)
+    await advanceTimers(1050);
 }
 
 test('interview coach lifecycle: keyboard CBT, exit protection, multi-tab, submission, history', { timeout: 120_000 }, async () => {
@@ -173,7 +207,9 @@ test('interview coach lifecycle: keyboard CBT, exit protection, multi-tab, submi
     try {
 // 1. Setup phase: no beforeunload protection before the exam starts.
         let unloadEvent = new dom.window.Event('beforeunload', { cancelable: true });
-        dom.window.dispatchEvent(unloadEvent);
+        act(() => {
+            dom.window.dispatchEvent(unloadEvent);
+        });
         assert.equal(unloadEvent.defaultPrevented, false, 'no exit protection during setup');
 
 // 2. Start the exam.
@@ -183,16 +219,18 @@ test('interview coach lifecycle: keyboard CBT, exit protection, multi-tab, submi
 
         // 3. beforeunload is now active and cancels accidental navigation.
         unloadEvent = new dom.window.Event('beforeunload', { cancelable: true });
-        dom.window.dispatchEvent(unloadEvent);
+        act(() => {
+            dom.window.dispatchEvent(unloadEvent);
+        });
         assert.equal(unloadEvent.defaultPrevented, true, 'exit protection active during exam');
 
         // 4. Answer shortcuts: letters and digits select options safely.
         keydown(dom.window, 'b');
-        await act(async () => { await Promise.resolve(); });
+        await advanceTimers(20);
         let radios = root().querySelectorAll('input[type="radio"]');
         assert.equal(radios[1].checked, true, 'B key selects option 2');
         keydown(dom.window, '3');
-        await act(async () => { await Promise.resolve(); });
+        await advanceTimers(20);
         radios = root().querySelectorAll('input[type="radio"]');
         assert.equal(radios[2].checked, true, '3 key selects option 3');
         assert.equal(radios[1].checked, false, 'previous selection replaced');
@@ -206,30 +244,32 @@ test('interview coach lifecycle: keyboard CBT, exit protection, multi-tab, submi
         fakeInput.type = 'text';
         const typingEvent = new dom.window.KeyboardEvent('keydown', { key: 'a', bubbles: true, cancelable: true });
         Object.defineProperty(typingEvent, 'target', { value: fakeInput });
-        dom.window.dispatchEvent(typingEvent);
-        await act(async () => { await Promise.resolve(); });
+        act(() => {
+            dom.window.dispatchEvent(typingEvent);
+        });
+        await advanceTimers(20);
         radios = root().querySelectorAll('input[type="radio"]');
         assert.equal(radios[0].checked, false, 'typing "a" in a text field does not answer the question');
 
         // 6. Arrow navigation + focus movement between questions.
         const navEvent = keydown(dom.window, 'ArrowRight');
-        await act(async () => { await Promise.resolve(); });
+        await advanceTimers(20);
         assert.equal(navEvent.defaultPrevented, true, 'arrow consumed');
         assert.ok(textOf(root()).includes('Question 2 of 3'), 'arrow right navigated');
         assert.equal(document.activeElement?.tagName, 'H2', 'focus moved to the question heading');
         keydown(dom.window, 'ArrowLeft');
-        await act(async () => { await Promise.resolve(); });
+        await advanceTimers(20);
         assert.ok(textOf(root()).includes('Question 1 of 3'), 'arrow left navigated back');
 
         // 7. Enter → Save & next; on the last question → submit review.
         keydown(dom.window, 'Enter');
-        await act(async () => { await Promise.resolve(); });
+        await advanceTimers(20);
         assert.ok(textOf(root()).includes('Question 2 of 3'), 'enter advanced');
         keydown(dom.window, 'ArrowRight');
-        await act(async () => { await Promise.resolve(); });
+        await advanceTimers(20);
         assert.ok(textOf(root()).includes('Question 3 of 3'), 'on last question');
         keydown(dom.window, 'Enter');
-        await act(async () => { await Promise.resolve(); });
+        await advanceTimers(20);
         assert.ok(root().querySelector('#submit-title'), 'enter on last question opens submit review');
         assert.ok(textOf(root()).includes('1 of 3'), 'review shows answered count');
         assert.ok(textOf(root()).includes('2 unanswered'), 'review warns about unanswered questions');
@@ -238,12 +278,12 @@ test('interview coach lifecycle: keyboard CBT, exit protection, multi-tab, submi
         const dialog = root().querySelector('[role="dialog"][aria-modal="true"]');
         const escapeEvent = new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
         act(() => { dialog.dispatchEvent(escapeEvent); });
-        await act(async () => { await Promise.resolve(); });
+        await advanceTimers(20);
         assert.equal(root().querySelector('#submit-title'), null, 'escape closed the submit review');
 
         // 9. Focus trap inside the keyboard help dialog ("?").
         keydown(dom.window, '?');
-        await act(async () => { await Promise.resolve(); });
+        await advanceTimers(20);
         assert.ok(root().querySelector('#kbd-help-title'), '? opens the shortcut guide');
         const helpDialog = root().querySelector('[role="dialog"][aria-modal="true"]');
         const helpButtons = () => Array.from(helpDialog.querySelectorAll('button'));
@@ -253,7 +293,7 @@ test('interview coach lifecycle: keyboard CBT, exit protection, multi-tab, submi
         });
         assert.ok(helpDialog.contains(document.activeElement), 'Tab stays trapped in the dialog');
         act(() => { helpDialog.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })); });
-        await act(async () => { await Promise.resolve(); });
+        await advanceTimers(20);
         assert.equal(root().querySelector('#kbd-help-title'), null, 'escape closes help');
 
         // 10. Persistence: answers are written to UID-scoped storage.
@@ -311,19 +351,19 @@ test('interview coach lifecycle: keyboard CBT, exit protection, multi-tab, submi
         assert.ok(textOf(root()).includes('Question 1 of 3'), 'third attempt started');
         keydown(dom.window, 'a'); // Q1 correct
         keydown(dom.window, 'ArrowRight');
-        await act(async () => { await Promise.resolve(); });
+        await advanceTimers(20);
         keydown(dom.window, '2'); // Q2 wrong (correct is 1)
         keydown(dom.window, 'ArrowRight');
-        await act(async () => { await Promise.resolve(); });
+        await advanceTimers(20);
         keydown(dom.window, 'a'); // Q3 correct
         const submitButtons = Array.from(root().querySelectorAll('button')).filter(b => textOf(b).includes('Submit'));
         assert.ok(submitButtons.length >= 1, 'submit controls available');
         click(submitButtons[0]);
-        await act(async () => { await Promise.resolve(); });
+        await advanceTimers(20);
         const submitNow = Array.from(root().querySelectorAll('button')).find(b => textOf(b).includes('Submit now'));
         assert.ok(submitNow, 'submit review visible');
         click(submitNow);
-        await act(async () => { await Promise.resolve(); });
+        await advanceTimers(20);
 
         assert.ok(textOf(root()).includes('Assessment report'), 'report rendered');
         assert.ok(textOf(root()).includes('Question-Level STAR Analysis'), 'STAR analysis rendered');
@@ -341,7 +381,7 @@ test('interview coach lifecycle: keyboard CBT, exit protection, multi-tab, submi
 // 15. Back to setup → history card → delete with confirmation.
         const back = Array.from(root().querySelectorAll('button')).find(b => textOf(b).includes('Back to Interviews'));
         click(back);
-        await act(async () => { await Promise.resolve(); });
+        await advanceTimers(20);
         assert.ok(textOf(root()).includes('Frontend Developer'), 'history card visible');
         assert.ok(textOf(root()).includes('3 questions'), 'question count surfaced in history');
         assert.ok(textOf(root()).includes('3 answered'), 'answered count surfaced in history');
@@ -349,18 +389,20 @@ test('interview coach lifecycle: keyboard CBT, exit protection, multi-tab, submi
         const deleteButton = root().querySelector('button[aria-label^="Delete assessment"]');
         assert.ok(deleteButton, 'per-item delete affordance present');
         click(deleteButton);
-        await act(async () => { await Promise.resolve(); });
+        await advanceTimers(20);
         assert.ok(root().querySelector('#delete-title'), 'delete confirmation shown');
         const confirmDelete = Array.from(root().querySelector('[role="dialog"]').querySelectorAll('button')).find(b => textOf(b).trim() === 'Delete');
         assert.ok(confirmDelete, 'confirm-delete button inside dialog');
         click(confirmDelete);
-        await act(async () => { await Promise.resolve(); });
+        await advanceTimers(20);
         assert.ok(textOf(root()).includes('No previous sessions yet'), 'empty history state after delete');
         assert.equal(JSON.parse(localStorage.getItem(`interviewHistory:${TEST_UID}`) || '[]').length, 0, 'storage emptied');
 
         // 16. Exit protection is gone once the exam is over.
         unloadEvent = new dom.window.Event('beforeunload', { cancelable: true });
-        dom.window.dispatchEvent(unloadEvent);
+        act(() => {
+            dom.window.dispatchEvent(unloadEvent);
+        });
         assert.equal(unloadEvent.defaultPrevented, false, 'no exit protection after submit');
 
 // 17. Expired session on load: finalized as auto-submitted instead of resumed.
@@ -392,7 +434,11 @@ test('interview coach lifecycle: keyboard CBT, exit protection, multi-tab, submi
         await act(async () => {
             reactRoot.render(React.createElement(AuthContext2.Provider, { value: mockUser() }, React.createElement(Component2)));
         });
-        await act(async () => { await Promise.resolve(); });
+        // Macrotask flush: the mount's async continuations (resume reads, finalize
+        // dispatches) must resolve while act() is still active. A bare microtask
+        // flush only drained one tick and let later chained continuations leak
+        // outside act().
+        await advanceTimers(20);
         assert.ok(textOf(root()).includes('Assessment report'), 'expired session finalized into a report');
         assert.ok(textOf(root()).includes('Auto-submitted at time expiry'), 'auto-submission labelled');
         assert.equal(localStorage.getItem(`interviewSession:${TEST_UID}`), null, 'expired session purged');
@@ -412,10 +458,13 @@ test('interview coach lifecycle: keyboard CBT, exit protection, multi-tab, submi
         assert.ok(fetchCalls >= 3, 'generation endpoint exercised');
     } finally {
         globalThis.fetch = originalFetch;
+        // Unmount inside act(): a bare setTimeout(0) unmount fires after the test
+        // scope ends, outside the act window, and produced the final
+        // "An update to Root inside a test was not wrapped in act(...)" warning.
         await act(async () => {
             reactRoot.render(React.createElement('div'));
+            reactRoot.unmount();
         });
-        setTimeout(() => { reactRoot.unmount(); }, 0);
         await vite.close();
     }
 });
@@ -429,6 +478,6 @@ async function renderFresh(vite, reactRoot) {
     await act(async () => {
         reactRoot.render(React.createElement(AuthContext.Provider, { value: mockUser() }, React.createElement(module.default)));
     });
-    await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); });
+    await advanceTimers(20);
     return { container: document.getElementById('test-root') };
 }
