@@ -551,7 +551,7 @@ class DashboardMain extends Component {
                     <Suspense fallback={<div className="min-h-screen bg-cuba-canvas" aria-busy="true" />}>
                         <CubaCandidateShell>
                             <div className="dashboardMainContent w-full">
-                                <Suspense fallback={<Spinner />}>
+                                <Suspense fallback={<Spinner inline />}>
                                     {this.renderRoutes()}
                                 </Suspense>
                             </div>
@@ -582,7 +582,7 @@ class DashboardMain extends Component {
 
                         <div className={`dashboardContentWrapper ${this.state.sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
                             <div className="dashboardMainContent">
-                                <Suspense fallback={<Spinner />}>
+                                <Suspense fallback={<Spinner inline />}>
                                     {this.renderRoutes()}
                                 </Suspense>
                             </div>

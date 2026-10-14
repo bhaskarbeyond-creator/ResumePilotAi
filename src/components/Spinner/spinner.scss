@@ -18,6 +18,24 @@
     }
 }
 
+/* MED-001: in-page mode for Suspense fallbacks inside portal/content columns.
+   The full-screen .loading forces width:100% + min-height:100vh, which made
+   the lazy-route fallback stretch its flex/grid parent past the viewport and
+   produced a transient 130px horizontal overflow (observed on
+   /employer/messages at 1440px). Inline mode sizes to the 180px animation and
+   never widens its containing block. */
+.loading--inline {
+    min-height: 0;
+    width: auto;
+    max-width: 100%;
+    background-color: transparent;
+
+    .spinner {
+        width: 90px;
+        height: 90px;
+    }
+}
+
 :root[data-theme='dark'] .loading,
 .dark .loading {
     background-color: var(--cuba-canvas, #0d0f16);

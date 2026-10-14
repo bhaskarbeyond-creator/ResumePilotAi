@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useRef, useMemo } from 'react';
+﻿import React, { useState, useEffect, useContext, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -363,8 +363,8 @@ export default function BlogEditor({ user: propUser }) {
         setIsEditing(true);
         showNotification(
           isPublishing 
-            ? '🎉 Post published and live on the public blog!' 
-            : '✓ Draft saved successfully.', 
+            ? 'ðŸŽ‰ Post published and live on the public blog!' 
+            : 'âœ“ Draft saved successfully.', 
           'success'
         );
 
@@ -452,7 +452,7 @@ export default function BlogEditor({ user: propUser }) {
       <div className="rp-public-site">
         <HomepageNavbar />
         <div style={{ minHeight: '70vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <Spinner />
+          <Spinner inline />
           <p style={{ marginTop: '16px', color: '#64748b', fontWeight: '500' }}>Loading Blog Studio...</p>
         </div>
         <HomepageFooter />
@@ -523,7 +523,7 @@ export default function BlogEditor({ user: propUser }) {
                   color: post.published ? '#137333' : '#b45309' 
                 }}
               >
-                ● {post.published ? 'Published' : 'Private Draft'}
+                â— {post.published ? 'Published' : 'Private Draft'}
               </span>
               {hasUnsavedChanges && (
                 <span style={{ fontSize: '12px', color: '#f59e0b', fontWeight: '500' }}>
@@ -956,7 +956,7 @@ export default function BlogEditor({ user: propUser }) {
                     style={toolbarBtnStyle(editor.isActive('blockquote'))}
                     title="Blockquote"
                   >
-                    “
+                    â€œ
                   </button>
                   <button
                     type="button"
@@ -1281,10 +1281,10 @@ export default function BlogEditor({ user: propUser }) {
               {/* SERP Preview Box */}
               <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '14px' }}>
                 <div style={{ fontSize: '11px', color: '#475569' }}>
-                  {typeof window !== 'undefined' ? window.location.host : 'ime365.com'} › blog › {post.slug || 'article'}
+                  {typeof window !== 'undefined' ? window.location.host : 'ime365.com'} â€º blog â€º {post.slug || 'article'}
                 </div>
                 <div style={{ fontSize: '15px', color: '#1a0dab', fontWeight: '600', marginTop: '2px', lineHeight: 1.3 }}>
-                  {post.seoTitle || post.title || 'Untitled Post — IME365'}
+                  {post.seoTitle || post.title || 'Untitled Post â€” IME365'}
                 </div>
                 <div style={{ fontSize: '12px', color: '#4d5156', marginTop: '4px', lineHeight: 1.4 }}>
                   {post.seoDescription || post.excerpt || 'Read this in-depth guide on IME365.'}
@@ -1379,7 +1379,7 @@ export default function BlogEditor({ user: propUser }) {
                         {item.title || 'Untitled Post'}
                       </div>
                       <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>
-                        {item.category || 'General'} · #{item.id}
+                        {item.category || 'General'} Â· #{item.id}
                       </div>
                     </button>
                   ))}
@@ -1423,7 +1423,7 @@ export default function BlogEditor({ user: propUser }) {
             {/* Modal Header */}
             <div style={{ padding: '16px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, background: '#ffffff', zIndex: 10 }}>
               <span style={{ fontSize: '14px', fontWeight: '700', color: '#64748b' }}>
-                Preview Mode · Public Article Reader Experience
+                Preview Mode Â· Public Article Reader Experience
               </span>
               <button
                 type="button"
@@ -1447,9 +1447,9 @@ export default function BlogEditor({ user: propUser }) {
               {/* Author and Date Meta */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', paddingBottom: '24px', borderBottom: '1px solid #f1f5f9', marginBottom: '24px', color: '#64748b', fontSize: '14px' }}>
                 <div>By <strong>{post.author || 'Editorial Team'}</strong></div>
-                <span>•</span>
+                <span>â€¢</span>
                 <div>{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
-                <span>•</span>
+                <span>â€¢</span>
                 <div>~{stats.readTimeMinutes} min read</div>
               </div>
 

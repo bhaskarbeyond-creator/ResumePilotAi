@@ -110,6 +110,7 @@ class CoverLetter extends Component {
             viewMode: 'visual', // 'visual' | 'text'
             isAiGenerating: false,
             savedLetters: [],
+            lettersLoadFailed: false,
             isSaving: false,
             notificationMessage: null,
             letterToDelete: null,
@@ -295,8 +296,16 @@ class CoverLetter extends Component {
     };
 
     loadSavedLetters = async () => {
-        const letters = await getUserCoverLetters();
-        this.setState({ savedLetters: letters });
+        try {
+            const letters = await getUserCoverLetters();
+            this.setState({ savedLetters: letters, lettersLoadFailed: false });
+        } catch (err) {
+            // MED-001: an API outage (429 / 5xx / network) must never surface as
+            // an unhandled rejection. Show an honest retry state instead of
+            // crashing the page error handler.
+            console.warn('[CoverLetter] loadSavedLetters failed:', err);
+            this.setState({ lettersLoadFailed: true });
+        }
     };
 
     handleResetForm = () => {
@@ -1629,6 +1638,32 @@ class CoverLetter extends Component {
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* MED-001: honest letters-gallery failure state with retry */}
+                    {this.state.lettersLoadFailed && (
+                        <div className="cl-card" role="alert" aria-live="polite">
+                            <div className="cl-card__head" style={{ justifyContent: 'flex-start', gap: '0.75rem', alignItems: 'center' }}>
+                                <FaExclamationCircle className="cl-btn__glyph" style={{ color: 'var(--cuba-warning, #b45309)' }} aria-hidden="true" />
+                                <div style={{ minWidth: 0, flex: 1 }}>
+                                    <h3 className="cl-section-title" style={{ marginBottom: '0.25rem' }}>
+                                        {this.props.t('coverLetter.savedLettersUnavailable', { defaultValue: 'Saved letters are temporarily unavailable' })}
+                                    </h3>
+                                    <p className="cl-hint" style={{ margin: 0 }}>
+                                        {this.props.t('coverLetter.savedLettersUnavailableHint', { defaultValue: 'We could not load your saved cover letters. Your drafts are safe — please try again.' })}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => this.loadSavedLetters()}
+                                    className="cl-btn cl-btn--soft cl-btn--sm cuba-focus-ring"
+                                    style={{ flex: 'none' }}
+                                >
+                                    <FaSyncAlt className="cl-btn__glyph" aria-hidden="true" />
+                                    <span>{this.props.t('common.tryAgain', { defaultValue: 'Try again' })}</span>
+                                </button>
                             </div>
                         </div>
                     )}

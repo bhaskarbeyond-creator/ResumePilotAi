@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { listBlogPosts, listBlogCategories, getBlogSettings } from '../../../services/api/platform';
@@ -72,7 +72,7 @@ export default function BlogList() {
   }, [selectedCategory, currentPage]);
 
   useEffect(() => {
-    document.title = blogSettings?.seoTitle || 'Career Resources & Guides — IME365';
+    document.title = blogSettings?.seoTitle || 'Career Resources & Guides â€” IME365';
   }, [blogSettings]);
 
   const fetchPosts = async () => {
@@ -284,7 +284,7 @@ export default function BlogList() {
         {/* Loading Spinner */}
         {loading && (
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '64px 0' }}>
-            <Spinner />
+            <Spinner inline />
           </div>
         )}
 
@@ -351,12 +351,12 @@ export default function BlogList() {
                     <div className="rp-blog-card-body">
                       <div className="rp-blog-card-meta">
                         <span className="rp-blog-badge">{categoryName}</span>
-                        <span>•</span>
+                        <span>â€¢</span>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                           <FaClock style={{ fontSize: '11px' }} />
                           {readTime}
                         </span>
-                        <span>•</span>
+                        <span>â€¢</span>
                         <span>{formatDate(post.publishedAt || post.createdAt)}</span>
                       </div>
 

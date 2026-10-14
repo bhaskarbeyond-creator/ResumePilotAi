@@ -84,7 +84,7 @@ const EmployerPortalCuba = () => {
                 title={toast.title}
                 text={toast.text}
             />
-            <Suspense fallback={<div className="flex min-h-[40vh] items-center justify-center"><Spinner /></div>}>
+            <Suspense fallback={<div className="flex min-h-[40vh] items-center justify-center"><Spinner inline /></div>}>
                 <Routes>
                     <Route index element={<EmployerOverview showToast={showToast} />} />
                     <Route path="jobs" element={<EmployerJobPostings showToast={showToast} />} />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+﻿import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { sanitizeBlogHtml, sanitizeImageUrl } from '../../../utils/sanitizeHtml';
@@ -45,7 +45,7 @@ function canonicalOriginFor(config, currentOrigin) {
 }
 
 function clearArticleMetadata() {
-  document.title = 'Article unavailable — IME365';
+  document.title = 'Article unavailable â€” IME365';
   setHeadMeta('meta[name="robots"]', { name: 'robots', content: 'noindex,nofollow' });
   setHeadMeta('meta[name="description"]', { name: 'description', content: 'This article is currently unavailable.' });
   document.head.querySelector('link[rel="canonical"]')?.remove();
@@ -92,7 +92,7 @@ export default function BlogPost() {
     setPost(null);
 
     clearArticleMetadata();
-    document.title = 'Loading article — IME365';
+    document.title = 'Loading article â€” IME365';
 
     getBlogPostBySlug(slug)
       .then(async (postData) => {
@@ -124,7 +124,7 @@ export default function BlogPost() {
         const description = schemaText(postData.seoDescription || postData.metaDescription || postData.excerpt || title, 300);
 
         setPost(postData);
-        document.title = `${title} — IME365`;
+        document.title = `${title} â€” IME365`;
         setHeadMeta('meta[name="robots"]', {
           name: 'robots', content: isPublished ? 'index,follow' : 'noindex,nofollow',
         });
@@ -135,7 +135,7 @@ export default function BlogPost() {
           canonical.setAttribute('rel', 'canonical');
           canonical.setAttribute('href', canonicalUrl);
           canonical.removeAttribute('data-route-seo-owner');
-          setHeadMeta('meta[property="og:title"]', { property: 'og:title', content: `${title} — IME365` });
+          setHeadMeta('meta[property="og:title"]', { property: 'og:title', content: `${title} â€” IME365` });
           setHeadMeta('meta[property="og:description"]', { property: 'og:description', content: description });
           setHeadMeta('meta[property="og:type"]', { property: 'og:type', content: 'article' });
           setHeadMeta('meta[property="og:url"]', { property: 'og:url', content: canonicalUrl });
@@ -145,12 +145,12 @@ export default function BlogPost() {
           if (safeCover) document.head.querySelector('meta[property="og:image:type"]')?.remove();
           else setHeadMeta('meta[property="og:image:type"]', { property: 'og:image:type', content: 'image/png' });
           setHeadMeta('meta[name="twitter:card"]', { name: 'twitter:card', content: 'summary_large_image' });
-          setHeadMeta('meta[name="twitter:title"]', { name: 'twitter:title', content: `${title} — IME365` });
+          setHeadMeta('meta[name="twitter:title"]', { name: 'twitter:title', content: `${title} â€” IME365` });
           setHeadMeta('meta[name="twitter:description"]', { name: 'twitter:description', content: description });
           setHeadMeta('meta[name="twitter:image"]', { name: 'twitter:image', content: socialImage });
         } else {
           clearArticleMetadata();
-          document.title = `${title} — IME365`;
+          document.title = `${title} â€” IME365`;
           setHeadMeta('meta[name="robots"]', { name: 'robots', content: 'noindex,nofollow' });
           setHeadMeta('meta[name="description"]', { name: 'description', content: description });
         }
@@ -222,7 +222,7 @@ export default function BlogPost() {
       <div className="rp-public-site">
         <HomepageNavbar authBtnHandler={authBtnHandler} user={user} logout={logout} />
         <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: '120px' }}>
-          <Spinner />
+          <Spinner inline />
         </div>
         <HomepageFooter />
       </div>
@@ -357,12 +357,12 @@ export default function BlogPost() {
                     {authorName}
                   </span>
                 )}
-                {authorName && <span aria-hidden="true">•</span>}
+                {authorName && <span aria-hidden="true">â€¢</span>}
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                   <FaCalendarAlt aria-hidden="true" style={{ fontSize: '12px' }} />
                   {formatDate(post.publishedAt || post.published_at || post.createdAt || post.created_at)}
                 </span>
-                {calculateReadingTime(post.content) && <span aria-hidden="true">•</span>}
+                {calculateReadingTime(post.content) && <span aria-hidden="true">â€¢</span>}
                 {calculateReadingTime(post.content) && (
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     <FaClock aria-hidden="true" style={{ fontSize: '12px' }} />
@@ -461,7 +461,7 @@ export default function BlogPost() {
                         {(relCat || relReadingTime) && (
                           <div className="rp-blog-card-meta">
                             {relCat && <span className="rp-blog-badge">{relCat}</span>}
-                            {relCat && relReadingTime && <span aria-hidden="true">•</span>}
+                            {relCat && relReadingTime && <span aria-hidden="true">â€¢</span>}
                             {relReadingTime && <span>{relReadingTime}</span>}
                           </div>
                         )}

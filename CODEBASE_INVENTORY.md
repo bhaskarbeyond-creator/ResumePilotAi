@@ -2,6 +2,7 @@
 ## Phase A — Repository Discovery and Preservation
 **Master Engineering Directive:** MED-001-FINAL  
 **Generated At:** 2026-10-14T01:33:00+05:30  
+**Refreshed At:** 2026-10-14T03:10:00+05:30 (MED cycle re-verification)  
 **Authority:** Technical Lead / Executive Engineering Lead (Antigravity)
 
 ---
@@ -13,7 +14,8 @@
 - **Remote Origin URL:** `git@github.com:bhaskarbeyond-creator/ResumePilotAi.git`
 - **Active Branch:** `arena/f4651d36-resumepilotai`
 - **Upstream Tracking:** `origin/arena/f4651d36-resumepilotai`
-- **Head Commit SHA:** `9beb7a3e` (`[CERTIFIED] DIR-106: Fix Menu Bar AI Allowance Meter Display and Resolve Ambiguous Multi-Tenant Governance on /api/ai-usage`)
+- **Head Commit SHA:** `72db1a19` (`[CERTIFIED] DIR-002: AUD-002: Interview Coach act() Warning Elimination`)
+- **Canonical live URL:** `https://ime365.local/` (XAMPP Apache 80/443 → dist/, `/api/*` → Node backend on 8080; MariaDB on 3306)
 - **Key Recovery Points & Baselines:**
   - `backup/2026-10-07-master-release` (Certified baseline commit: `9c479ff`)
   - `restore-point/2026-10-02-stable` (Stable rollback anchor)
@@ -25,15 +27,11 @@
 ### 2. WORKING TREE STATE & USER CHANGES PRESERVATION
 
 - **Staged Changes:** None
-- **Unstaged Modified Files:**
-  - `docs/CUBA_10_OUT_OF_10_DEVELOPER_PROMPT.md`: Enhanced with Section 41 & Section 43 Automated Quality Gates (LSP, ESLint, Semgrep AST, Branch Coverage, Playwright DOM traces).
-  - `.agents/AGENTS.md`: Enhanced with Section 2.1 Directive Tooling Contract.
-  - `package.json`: Registered `"test:dir109"` extension tooling integration test.
-  - `extension/README.md`, `extension/contentScript.js`, `extension/popup.html`: Chrome extension updates.
-- **Untracked Additions:**
-  - `tests/dir109-bridge-ext-tooling.test.mjs`: Bridge extension tooling verification test (Better Todo Tree + Semgrep LSP).
-  - `.bridge/evidence/todos-scan.json`: Automated marker scan report.
-  - `.bridge/evidence/ext-probe-*.json`: IDE extension diagnostic probes.
+- **Unstaged Modified Files (MED-001 cycle):**
+  - `src/components/CoverLetter/CoverLetter.jsx`: 429/5xx resilience for the saved-letters gallery (honest error card + retry; was an unhandled-rejection crash).
+  - `tests/med001-cover-letter-429-regression.test.mjs` (new): live-browser regression guard (2 tests).
+  - `scripts/med001-multiportal-viewport-audit.mjs` (new): 8-viewport × 4-portal audit engine (pacing + viewport filter support).
+  - Bridge-managed bookkeeping: `.bridge/directives/`, `.bridge/ledger.jsonl`, `.bridge/state.json`.
 - **Preservation Status:** All active user changes preserved verbatim. Zero destructive resets or uncommitted code discards.
 
 ---

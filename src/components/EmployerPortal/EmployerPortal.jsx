@@ -130,7 +130,7 @@ const EmployerPortal = () => {
 
             <div className="employerContent">
                 <main id="employer-content" className="employerMain" tabIndex={-1}>
-                    <Suspense fallback={<div className="flex min-h-[40vh] items-center justify-center"><Spinner /></div>}>
+                    <Suspense fallback={<div className="flex min-h-[40vh] items-center justify-center"><Spinner inline /></div>}>
                         <Routes>
                             <Route index element={<EmployerOverview showToast={showToast} />} />
                             <Route path="jobs" element={<EmployerJobPostings showToast={showToast} />} />

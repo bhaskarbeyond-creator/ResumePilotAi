@@ -15,10 +15,10 @@ const SpinnerView = () => {
     return View;
 };
 
-const Spinner = () => {
+const Spinner = ({ inline = false }) => {
 
     return (
-        <div className="loading">
+        <div className={inline ? 'loading loading--inline' : 'loading'}>
             {/* <Lottie options={loaderOptions}
           height={190}
           width={400} /> */}
