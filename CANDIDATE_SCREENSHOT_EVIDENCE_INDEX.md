@@ -106,6 +106,44 @@ Each trace contains synthetic inputs/network fixtures and real DOM snapshots. Op
 - [responsive-1920x1080](artifacts/candidate-audit-20261014/after/responsive-1920x1080.zip) — PASS
 - [automated-accessibility-and-keyboard](artifacts/candidate-audit-20261014/after/automated-accessibility-and-keyboard.zip) — PASS
 
+## Support ticket dialog component evidence
+
+These are real Chromium captures from the isolated Support Center component harness. Data/API behavior is **SIMULATED**; the authenticated candidate route and ticket persistence were not exercised. The companion `results.json` records the viewport measurements and interaction checks.
+
+| Viewport | Capture | State |
+|---|---|---|
+| 320x568 | [PNG](artifacts/ui-ux-audit/support/after/support-modal-320x568.png) | Ticket dialog open; internal scroll available |
+| 375x812 | [PNG](artifacts/ui-ux-audit/support/after/support-modal-375x812.png) | Ticket dialog open |
+| 430x932 | [PNG](artifacts/ui-ux-audit/support/after/support-modal-430x932.png) | Ticket dialog open |
+| 768x1024 | [PNG](artifacts/ui-ux-audit/support/after/support-modal-768x1024.png) | Ticket dialog open |
+| 1024x768 | [PNG](artifacts/ui-ux-audit/support/after/support-modal-1024x768.png) | Ticket dialog open |
+| 1366x768 | [PNG](artifacts/ui-ux-audit/support/after/support-modal-1366x768.png) | Ticket dialog open |
+| 1440x900 | [PNG](artifacts/ui-ux-audit/support/after/support-modal-1440x900.png) | Ticket dialog open |
+| 1920x1080 | [PNG](artifacts/ui-ux-audit/support/after/support-modal-1920x1080.png) | Ticket dialog open |
+
+Results: `artifacts/ui-ux-audit/support/after/results.json`; axe output: `artifacts/ui-ux-audit/support/after/axe-modal.json`. Browser run: six named scenarios passed, all eight viewport assertions passed, no uncaught page errors. Static dialog/FAQ tests: 3/3. These do not establish authenticated route or backend behavior.
+
+## Dashboard overview after removing the default assistant rail
+
+The previous overview redesign mounted `CandidateExecutiveRail` in the right column by default; the “Live” badge was static text. The current overview omits that rail and uses the full-width dashboard workspace. XAMPP captures use illustrative/mock API data and a synthetic identity, so they are not authenticated user evidence. The manifest records assistant text/rail absent, axe 0, no uncaught page errors, and eight unmatched API requests returning 401.
+
+| Viewport | Capture |
+|---|---|
+| 320x568 | [PNG](artifacts/ui-ux-audit/dashboard-no-assistant/dashboard-320x568.png) |
+| 375x812 | [PNG](artifacts/ui-ux-audit/dashboard-no-assistant/dashboard-375x812.png) |
+| 430x932 | [PNG](artifacts/ui-ux-audit/dashboard-no-assistant/dashboard-430x932.png) |
+| 768x1024 | [PNG](artifacts/ui-ux-audit/dashboard-no-assistant/dashboard-768x1024.png) |
+| 1024x768 | [PNG](artifacts/ui-ux-audit/dashboard-no-assistant/dashboard-1024x768.png) |
+| 1366x768 | [PNG](artifacts/ui-ux-audit/dashboard-no-assistant/dashboard-1366x768.png) |
+| 1440x900 | [PNG](artifacts/ui-ux-audit/dashboard-no-assistant/dashboard-1440x900.png) |
+| 1920x1080 | [PNG](artifacts/ui-ux-audit/dashboard-no-assistant/dashboard-1920x1080.png) |
+
+Manifest: `artifacts/ui-ux-audit/dashboard-no-assistant/dir090-capture-manifest.json`.
+
+## Resumes hub and preview journey
+
+`tests/resumes-hub-browser.mjs` produces eight gallery captures and `results.json`; `tests/resume-preview-journey-browser.mjs` produces the selected-resume preview and heading-step journey captures. These use simulated APIs/data in local Chromium. The gallery run passed 10/10 scenarios, including zero axe violations and all eight responsive layouts; the journey run passed 24/24 checks, including bounded outer scrolling in both shell variants. They do not establish live save/export/share behavior.
+
 ## Evidence limitations and review
 
 - All remaining historical pages and their material states lack required before/after browser evidence in this execution. They remain unverified.

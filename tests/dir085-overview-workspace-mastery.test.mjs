@@ -61,20 +61,18 @@ test('AC1: the compact HUD and capsule strip exist and the heavy hero pieces are
     assert.match(capsule, /aria-label=\{label\}/);
 });
 
-test('AC2: the workspace leads the main column and the briefing lives in the rail', async () => {
+test('AC2: the workspace spans the overview with no assistant rail', async () => {
     const shell = await read(SHELL);
     const heroIdx = shell.indexOf('<CubaCandidateHero displayName={displayName} onNavigate={navigate} />');
     const childrenIdx = shell.indexOf('{children}');
-    const asideIdx = shell.indexOf('aria-label="Executive intelligence rail"');
-    const briefingIdx = shell.indexOf('<AiCareerBriefing />');
 
     assert.ok(heroIdx > -1, 'the compact hero must render');
-    assert.ok(childrenIdx > heroIdx, 'the resume workspace must follow the compact hero in the main column');
-    assert.ok(asideIdx > -1 && briefingIdx > asideIdx, 'the AI Career Briefing must live inside the right rail aside');
-    // The briefing no longer sits in the main column ahead of the workspace.
+    assert.ok(childrenIdx > heroIdx, 'the dashboard workspace must follow the compact hero');
+    assert.match(shell, /grid min-h-0 grid-cols-1 gap-3 xl:h-\[calc\(100dvh-var\(--cuba-header-h\)-3\.75rem\)\]/);
+    assert.doesNotMatch(shell, /CandidateExecutiveRail|AiCareerBriefing|Executive intelligence rail|cuba-copilot-rail/);
+    // The full-width workspace container follows the hero and owns the inner scroll region.
     const mainColumnEnd = shell.indexOf('</div>', childrenIdx);
-    assert.ok(mainColumnEnd > -1, 'the main column must close after the workspace region');
-    assert.ok(!(briefingIdx < childrenIdx), 'the briefing must not precede the workspace in the main column');
+    assert.ok(mainColumnEnd > -1, 'the workspace container must close after its content');
 });
 
 test('AC3: the de-duplication rule holds — no headline metric is printed twice', async () => {

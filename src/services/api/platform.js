@@ -1805,6 +1805,26 @@ export async function getJobFavourites(_userId) {
     }
 }
 
+// Strict readers for the Saved Favorites workspace. The older convenience
+// readers above intentionally preserve their empty-array fallback for legacy
+// callers; this page needs failures and malformed envelopes to stay distinct
+// from a genuinely empty account so it can show its retry state honestly.
+export async function getFavouritesForWorkspace(_userId) {
+    const data = await apiJson('/api/favourites');
+    if (!Array.isArray(data?.favourites)) {
+        throw new Error('The saved documents response is invalid.');
+    }
+    return data.favourites;
+}
+
+export async function getJobFavouritesForWorkspace(_userId) {
+    const data = await apiJson('/api/favourites?type=job');
+    if (!Array.isArray(data?.favourites)) {
+        throw new Error('The saved jobs response is invalid.');
+    }
+    return data.favourites;
+}
+
 export async function toggleJobFavourite(userId, jobId) {
     const inFavourites = await checkIfInFavourites(userId, jobId);
     if (inFavourites) {

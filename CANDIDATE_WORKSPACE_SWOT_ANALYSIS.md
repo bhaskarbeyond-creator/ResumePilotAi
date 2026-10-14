@@ -16,13 +16,13 @@
 | T1 Dependency advisories | root 57 production-graph findings, backend 10 including critical proxy-addr | Potential reachable vulnerabilities; P1 | Reachability analysis, compatible updates and security regression; no blind audit downgrades |
 | T2 Infrastructure/provider gaps | No MariaDB/Docker/real identity/provider access, restricted outbound hosts | Cannot prove durable end-to-end correctness; P1 | Authorised integration environment; mark blocked rather than passing mocks |
 | T3 No independent reviewer | bridge command unavailable | Cannot meet Lead–Developer certification; P1 | Submit evidence to actual reviewer; no self-issued approval |
-| T4 Unsupported trust promises | Support zero-retention/no-training/zero-drift text | Privacy/customer trust risk; P1/P2 | Compare provider contracts and narrow copy to supported guarantees |
+| T4 Unverified provider/data-handling details | Earlier Support Center FAQ made zero-retention/no-training/zero-drift claims; current FAQ is qualified, but privacy policy and provider contracts were not reviewed | Privacy/customer trust risk if broader claims reappear; P2 | Keep current qualified wording; require product/legal/provider evidence before adding specific guarantees |
 
 ## Action strategies
 
 - **SO:** Use the shared route/navigation model (S1) and repeatable census (O2) to maintain a route→scenario manifest. Preserve revision/publication boundaries (S3) while adding journey recovery (O1).
 - **WO:** Replace stale lexical sentinels (W2) with actual binding/mount assertions (O2); apply the notification recovery pattern (W1) to individually reproduced flows, not a blanket redesign. Resolve font delivery (W4/O3) before calling Unicode exports verified.
 - **ST:** Use existing security/ownership tests (S2/S3) to gate dependency and quota changes (T1/T2). Exercise durable outbox state transitions (S4) under controlled crashes, not live failure injection.
-- **WT:** Block release while AI/ownership defects, dependency findings and independent approval remain unresolved (W3/T1/T3). Do not counter missing infrastructure with synthetic production results (W2/T2). Review support claims before further marketing (T4).
+- **WT:** Block release while AI/ownership defects, dependency findings and independent approval remain unresolved (W3/T1/T3). Do not counter missing infrastructure with synthetic production results (W2/T2). Preserve qualified support wording until policy/provider claims are reviewed (T4).
 
 Success metrics: zero unresolved critical acceptance failures, authenticated critical journeys with read-back, all 55 template output checks plus glyph/parity inspection, viewport/state matrix coverage, and signed independent decisions. No aggregate percentage overrides these gates.

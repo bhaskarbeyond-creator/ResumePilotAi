@@ -32,7 +32,7 @@ function getOrganicRoleProgressions(baseRole) {
  * Optional links/extra fields live behind a quiet "Add more details"
  * disclosure. No AI in this step. Gap list lives in the Guide rail.
  */
-const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
+const HeadingStep = ({ resumeData, updateResumeData, onNavigate, onPreview }) => {
     const { t } = useTranslation('common');
     const [formData, setFormData] = useState({
         firstname: resumeData?.firstname || '',
@@ -52,6 +52,7 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
     });
     const [targetJd, setTargetJd] = useState(resumeData?.targetJobDescription || '');
     const [targetRole, setTargetRole] = useState(resumeData?.targetRole || '');
+    const [tailoringOpen, setTailoringOpen] = useState(Boolean(resumeData?.targetRole || resumeData?.targetJobDescription));
     const [errors, setErrors] = useState({});
     const [touched, setTouched] = useState({});
     const [moreOpen, setMoreOpen] = useState(
@@ -96,6 +97,9 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
         }
         if (resumeData.targetRole !== undefined) {
             setTargetRole(resumeData.targetRole || '');
+        }
+        if (resumeData.targetRole || resumeData.targetJobDescription) {
+            setTailoringOpen(true);
         }
     }, [resumeData]);
 
@@ -528,6 +532,20 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
             statusBadge={`${completedRequiredFields} of ${requiredFields.length} required fields`}
             resumeData={resumeData}
             targetJd={targetJd}
+            headerActions={onPreview ? (
+                <button
+                    type="button"
+                    onClick={onPreview}
+                    aria-label="Preview resume"
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 text-xs font-bold text-indigo-700 transition-colors hover:bg-indigo-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7Z" />
+                        <circle cx="12" cy="12" r="3" strokeWidth="2" />
+                    </svg>
+                    Preview
+                </button>
+            ) : null}
             guideChildren={(
                 <div
                     data-testid="builder-career-assistant"
@@ -880,17 +898,28 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
 
                 {/* Optional Target Job Description Tailoring */}
                 <div className="border-t border-[var(--cuba-line)] pt-3">
-                    <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3.5 space-y-3">
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
-                                <span>🎯 Target Role & Job Description (Optional)</span>
-                            </span>
+                    <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3.5">
+                        <button
+                            type="button"
+                            onClick={() => setTailoringOpen((open) => !open)}
+                            aria-expanded={tailoringOpen}
+                            aria-controls="heading-tailoring-fields"
+                            className="flex min-h-11 w-full flex-wrap items-center justify-between gap-2 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                        >
+                            <span className="text-xs font-bold text-indigo-950">Tailor for a specific job <span className="font-medium text-indigo-700">(optional)</span></span>
                             {(targetJd && targetJd.trim().length > 0) || (targetRole && targetRole.trim().length > 0) ? (
                                 <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
-                                    Tailored ✓
+                                    Tailoring added
                                 </span>
                             ) : null}
-                        </div>
+                            <MdExpandMore aria-hidden="true" className={`ml-auto h-5 w-5 text-indigo-700 transition-transform ${tailoringOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                        {!tailoringOpen && (
+                            <p className="mt-1 text-[11px] leading-relaxed text-[var(--cuba-ink-subtle)]">
+                                Add a target role or job description for tailored ATS and AI suggestions.
+                            </p>
+                        )}
+                        <div id="heading-tailoring-fields" hidden={!tailoringOpen} className="mt-3 space-y-3">
                         <p className="text-[11px] leading-relaxed text-[var(--cuba-ink-subtle)]">
                             Specifying your target role and pasting the job description allows the AI copilot and ATS engine to highlight missing keywords, tailor summaries, and suggest relevant skills across all subsequent steps.
                         </p>
@@ -1114,6 +1143,7 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                 </div>
                             );
                         })()}
+                        </div>
                     </div>
                 </div>
             </form>

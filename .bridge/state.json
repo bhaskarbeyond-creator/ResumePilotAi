@@ -1,25 +1,25 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-14T04:24:13.691Z",
-  "eventCount": 3207,
-  "activeDirectiveId": null,
-  "activeDirectiveTitle": null,
-  "activeDirectiveStatus": null,
+  "updatedAt": "2026-10-14T17:27:40.862Z",
+  "eventCount": 3249,
+  "activeDirectiveId": "DIR-004",
+  "activeDirectiveTitle": "TEST-001: Developer Agent Connectivity Handshake",
+  "activeDirectiveStatus": "IN_PROGRESS",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-14T04:06:26.629Z",
-  "unreadForLead": 17,
-  "unreadForDev": 18,
+  "stallDeadline": "2026-10-14T17:27:18.653Z",
+  "unreadForLead": 42,
+  "unreadForDev": 35,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-14T04:06:26.629Z",
-    "status": "Implementation complete: 187/187 unit tests pass, ESLint 0 errors, build 2.73s, live DOM crawl 22/22 on real XAMPP + Firebase session (62 real resumes rendered = API truth)",
-    "percent": 100
+    "timestamp": "2026-10-14T17:27:18.653Z",
+    "status": "Waiting for lint to complete",
+    "percent": 98
   },
   "integrity": {
     "ok": true,
-    "checked": 3207,
+    "checked": 3249,
     "legacy": 0,
     "bad": 0
   }

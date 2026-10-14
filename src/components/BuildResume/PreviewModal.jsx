@@ -87,7 +87,17 @@ const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isD
                 }}>
                 {/* Enhanced Header with gradient background - Mobile responsive */}
                 <div className="relative bg-gradient-to-r from-[var(--cuba-canvas)] to-blue-50/50 border-b border-[var(--cuba-line)]/50 px-3 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-6 rounded-t-lg sm:rounded-t-2xl">
-                    <div className="flex items-center justify-between">
+                    <button
+                        type="button"
+                        onClick={handleClose}
+                        className="absolute right-2 top-2 inline-flex h-11 w-11 items-center justify-center rounded-lg text-[var(--cuba-ink-subtle)] hover:bg-[var(--cuba-canvas)] hover:text-[var(--cuba-ink-muted)] sm:hidden"
+                        aria-label={t('PreviewModal.actions.close')}
+                    >
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                    <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-1">
                             <div className="hidden sm:block p-2 lg:p-3 bg-blue-100 rounded-lg lg:rounded-xl">
                                 <svg className="w-4 h-4 lg:w-6 lg:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -99,7 +109,7 @@ const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isD
                                     />
                                 </svg>
                             </div>
-                            <div className="min-w-0 flex-1">
+                            <div className="min-w-0 flex-1 pr-10 sm:pr-0">
                                 <h2 id="resume-preview-title" className="text-lg sm:text-xl lg:text-2xl font-bold text-[var(--cuba-ink)] tracking-tight truncate">{t('PreviewModal.title')}</h2>
                                 <p className="text-xs sm:text-sm text-[var(--cuba-ink-muted)] mt-0.5 sm:mt-1 font-medium truncate">
                                     {t('PreviewModal.subtitle', { templateName: getTemplateName ? getTemplateName(currentTemplate) : currentTemplate })}
@@ -107,7 +117,7 @@ const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isD
                             </div>
                         </div>
 
-                        <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
+                        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap sm:justify-end sm:gap-3 sm:flex-shrink-0">
                             {/* Enhanced Share Resume Button */}
                             {onShare && (
                                 <button
@@ -203,7 +213,7 @@ const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isD
                             {/* Enhanced Close Button - Mobile responsive */}
                             <button
                                 onClick={handleClose}
-                                className="p-2 sm:p-3 text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-canvas)] rounded-lg sm:rounded-xl transition-all duration-200 group"
+                                className="hidden h-11 min-w-11 items-center justify-center rounded-lg text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] hover:bg-[var(--cuba-canvas)] sm:inline-flex sm:rounded-xl transition-all duration-200 group"
                                 aria-label={t('PreviewModal.actions.close')}>
                                 <svg className="w-4 h-4 sm:w-5 sm:h-5 group-hover:rotate-90 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

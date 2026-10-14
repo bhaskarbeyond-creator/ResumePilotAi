@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-14T04:06:37.380Z",
-  "seq": 3205,
-  "id": "evt_mv7l8kdh_8ea7bb625958",
-  "type": "EVIDENCE_SUBMITTED",
-  "title": "[Evidence] DIR-003: CAND-001: Dedicated Resumes & Master CV Workspace Hub (/dashboard/resumes)",
+  "timestamp": "2026-10-14T17:28:06.497Z",
+  "seq": 3250,
+  "id": "evt_mv8dva6d_1bfc72b0de85",
+  "type": "HEARTBEAT",
+  "title": "[Heartbeat] Waiting for lint to complete",
   "sender": "STAFF_DEVELOPER",
-  "directiveId": "DIR-003",
-  "summary": "DIR-003 / CAND-001 COMPLETE. Dedicated Resumes & Master CV workspace hub shipped at /dashboard/resumes (new src/components/Dashboard/DashboardResumes/DashboardResumes.jsx, Cuba-tokenised, zero hardcoded data). Wiring: DashboardMain mounts the route + lazy import; candidateNavigation.js nav entry now targets the hub with /build-resume alias so the builder keeps 'Resumes & Master CV' active; navigationState.js resolveActiveItem honours aliases; main.jsx /resumes redirects land on the hub; my-resumes redirect updated. VERIFIED: 187/187 tests pass across 30 suites (cuba-candidate-portal, dir081 parity incl. /build-resume active-resolution pins, four-portal-architecture, dir091 builder breadcrumb, design-system, palette, copilot, builder shell, forensic, i18n); ESLint 0 errors on all changed files; npm run build 2.73s (<4.0s budget); LIVE DOM CRAWL 22/22 on the real XAMPP vhost (https://ai-resume-builder.local) with a real Firebase session: hub mounts at both 1440x900 and 375x812, sidebar href=/dashboard/resumes marked aria-current=page, rendered resume rows = live /api/resumes truth (62/62), zero console/page errors, zero failed requests, zero horizontal overflow, /resumes redirect verified. Frozen trees diff = 0. NOTE: tests/dir068-master-multiportal-uat.test.mjs has a PRE-EXISTING failure unrelated to this work (release-manifest version pin 4.0.0 vs .bridge/CERTIFIED_FREEZE_MANIFEST.json on disk 3.0.0; manifest file unmodified in git and owned by the lead daemon)."
+  "directiveId": "DIR-004",
+  "summary": "Waiting for lint to complete"
 }

@@ -5,7 +5,7 @@ import fs from 'node:fs/promises';
 /**
  * DIR-077 — Candidate Dashboard UI/UX overhaul (zero-waste fluid grid +
  * native visual intelligence). Pins the container cap, the breadcrumb anchor,
- * the unified sidebar pill, the 2-column executive grid + right rail, the hero
+ * the unified sidebar pill, the full-width candidate workspace, the hero
  * telemetry visual and the SVG micro-visuals.
  */
 
@@ -52,13 +52,10 @@ test('AC3: the sidebar brand tile and context switcher share ONE pill', async ()
     assert.match(shell, /<CubaNavGroups groups=\{groups\} collapsed=\{railCollapsed\}/);
 });
 
-test('AC4: the candidate overview is a 2-column grid with the executive rail', async () => {
+test('AC4: the candidate overview gives the workspace the full content width', async () => {
     const [shell, rail] = await Promise.all([read(CAND_SHELL), read(RAIL)]);
-    assert.match(shell, /xl:grid-cols-\[minmax\(0,7fr\)_minmax\(0,3fr\)\]/);
-    // DIR-093 S7 handed the rail the shell's real AI dispatcher so its prompt input can actually
-    // run an operation. The intent is unchanged - the shell renders the rail with its real props.
-    assert.match(shell, /<CandidateExecutiveRail onNavigate=\{navigate\} onAsk=\{handleAsk\} \/>/);
-    assert.match(shell, /aria-label="Executive intelligence rail"/);
+    assert.match(shell, /grid min-h-0 grid-cols-1 gap-3 xl:h-\[calc\(100dvh-var\(--cuba-header-h\)-3\.75rem\)\]/);
+    assert.doesNotMatch(shell, /CandidateExecutiveRail|cuba-copilot-rail|cuba-rail-toggle/);
     assert.match(rail, /data-testid="cuba-executive-rail"/);
     assert.match(rail, /data-testid=\{testId\}/);
     assert.match(rail, /testId="cuba-rail-copilot"/);

@@ -34,6 +34,7 @@ test('DIR-092 AC2 (area 7): the promo copy and CTA match the reference, with a r
     assert.match(card, /Upgrade to Pro/);
     assert.match(card, /Unlock advanced AI tools/);
     assert.match(card, /Upgrade Now/);
+    assert.match(card, /bg-cuba-primary-fill/);
     // The arrow affordance the reference shows next to the CTA.
     assert.match(card, /FiArrowRight/);
     // A real plan route, not a dead button.

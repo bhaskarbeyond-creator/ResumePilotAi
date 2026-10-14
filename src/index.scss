@@ -466,7 +466,7 @@ textarea:disabled,
         min-height: 100% !important;
         position: relative;
         overflow: hidden;
-        overflow-y: scroll;
+        overflow-y: auto;
 
         .public-resume {
             .head {
@@ -805,8 +805,8 @@ textarea:disabled,
             display: flex;
             justify-content: flex-start;
             flex-direction: column;
-            overflow-y: scroll;
-            overflow-x: visible !important; /* Force visibility of overflow elements */
+            overflow-y: auto;
+            overflow-x: visible !important;
             min-height: 90%;
             width: 100%;
             align-items: center;

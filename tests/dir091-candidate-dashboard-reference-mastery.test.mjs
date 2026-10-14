@@ -44,6 +44,7 @@ test('DIR-091 AC2: the ATS card draws a REAL donut from the real score — no ch
     assert.match(cards, /strokeDashoffset=\{offset\}/);
     assert.match(cards, /const clamped = hasScore \? Math\.max\(0, Math\.min\(100, score\)\) : 0;/);
     assert.match(cards, /<AtsDonut score=\{dash \? null : bestScore\} \/>/);
+    assert.match(cards, /text-cuba-primary-ink-strong hover:underline/);
 
     // The reference's 69% is illustrative and must never be baked in. Check the CODE only — the
     // file's comments legitimately cite the reference figure while explaining that contract.

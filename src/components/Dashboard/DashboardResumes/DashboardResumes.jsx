@@ -1,34 +1,42 @@
-import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { withTranslation } from 'react-i18next';
 import {
+    FiChevronLeft,
     FiChevronRight,
-    FiClock,
     FiCopy,
+    FiDownload,
     FiEdit3,
+    FiEye,
     FiFileText,
-    FiLayers,
+    FiMoreHorizontal,
     FiPlus,
+    FiSearch,
+    FiShare2,
     FiTrash2,
-    FiTrendingUp,
     FiUser,
 } from 'react-icons/fi';
 import { AuthContext } from '../../../context/AuthContext';
-import { getFullName, getResumes } from '../../../services/api/platform';
-import { createResumeDraft, deleteResumeDraft } from '../../../services/resumePersistence';
+import fire from '../../../conf/fire';
+import { getResumes, getSystemSettings } from '../../../services/api/platform';
+import { createResumeDraft, deleteResumeDraft, publishResume } from '../../../services/resumePersistence';
+import { normalizeResumeData } from '../../../utils/resumeData';
 import { calculateAtsScore } from '../../../utils/atsScore';
-import { formatSafeDate } from '../../../utils/subscriptionUtils';
+import { formatSafeDate, isPaidMembershipTier } from '../../../utils/subscriptionUtils';
+import { downloadResumeDocx, downloadResumePdf } from '../../../utils/exportDownloader';
 import {
-    CubaBadge,
     CubaButton,
-    CubaCard,
     CubaEmptyState,
     CubaErrorState,
-    CubaLoadingState,
+    CubaInput,
     CubaModal,
-    CubaPageHeader,
-    CubaStatCard,
+    CubaSelect,
 } from '../../cuba';
+import TemplateRenderer from '../../TemplateRenderer';
+import PreviewModal from '../../BuildResume/PreviewModal';
+import ShareModal from '../ShareModal/ShareModal';
+import PremiumUpgradeModal from '../../common/PremiumUpgradeModal';
+import SubscriptionModal from '../DashboardSettings/SubscriptionModal';
 
 /**
  * DashboardResumes — DIR-003 / CAND-001: the dedicated "Resumes & Master CV"
@@ -51,6 +59,7 @@ import {
 
 const cleanText = (value) => (typeof value === 'string' ? value.trim() : '');
 const firstText = (...values) => values.map(cleanText).find(Boolean) || '';
+const normalizeForCompare = (value) => cleanText(value).normalize('NFKC').toLocaleLowerCase();
 
 const readTitle = (doc) => {
     const item = doc?.item || {};
@@ -61,12 +70,33 @@ const readTitle = (doc) => {
     ) || 'Untitled resume';
 };
 
-const readRole = (doc) => firstText(doc?.item?.occupation, doc?.item?.title);
+const readRole = (doc) => {
+    const role = firstText(doc?.item?.occupation, doc?.item?.title);
+    return normalizeForCompare(role) === normalizeForCompare(readTitle(doc)) ? '' : role;
+};
+
+const readTimestamp = (doc) => {
+    const item = doc?.item || {};
+    const value = item.updated_at || item.updatedAt || item.created_at || item.createdAt;
+    const parsed = value ? Date.parse(value) : NaN;
+    return Number.isFinite(parsed) ? parsed : null;
+};
 
 const readUpdated = (doc) => {
     const item = doc?.item || {};
     return formatSafeDate(
         item.updated_at || item.updatedAt || item.created_at || item.createdAt || '',
+        'en-US',
+        { day: 'numeric', month: 'short', year: 'numeric' },
+    ) || '';
+};
+
+const readCreated = (doc) => {
+    const item = doc?.item || {};
+    return formatSafeDate(
+        item.created_at || item.createdAt || '',
+        'en-US',
+        { day: 'numeric', month: 'short', year: 'numeric' },
     ) || '';
 };
 
@@ -82,33 +112,91 @@ const qualityScoreFor = (doc) => {
     }
 };
 
-const atsTone = (score) => {
-    if (score === null) return 'neutral';
-    if (score >= 70) return 'success';
-    if (score >= 40) return 'warning';
-    return 'danger';
-};
-
 /**
- * Reads the COMPLETE resume workspace for the authenticated user. The platform
- * reader paginates client-side (default 5 per page), so a workspace hub that
- * called it directly would silently show only the first page of a candidate's
- * resumes. The first call's real `pagination.totalItems` is used to fetch the
- * whole list in one follow-up read — no invented numbers, no arbitrary cap.
+ * Reads the complete resume workspace. `getResumes` currently downloads the
+ * authenticated user's collection and then paginates that array client-side;
+ * requesting the complete first page avoids downloading it twice. Keep the
+ * error marker authoritative so an outage can never look like an empty account.
  */
 const loadAllResumes = async (uid) => {
-    const first = await getResumes(uid, 1, 5);
-    const list = Array.isArray(first?.resumes)
-        ? first.resumes
-        : (Array.isArray(first) ? first : []);
-    const total = Number(first?.pagination?.totalItems) || list.length;
-    if (total > list.length) {
-        const all = await getResumes(uid, 1, total);
-        return Array.isArray(all?.resumes) ? all.resumes : list;
+    const result = await getResumes(uid, 1, Number.MAX_SAFE_INTEGER);
+    if (result?.apiError) {
+        const error = new Error('Your resumes could not be loaded. Check your connection and try again.');
+        error.status = result.errorStatus || null;
+        throw error;
     }
-    return list;
+    return Array.isArray(result?.resumes)
+        ? result.resumes
+        : (Array.isArray(result) ? result : []);
 };
-const DashboardResumes = ({ showToast, t }) => {
+
+const RESUME_PAGE_SIZE = 8;
+const ResumeThumbnail = React.memo(({ doc, title, onPreview, t }) => {
+    const viewportRef = useRef(null);
+    const [scale, setScale] = useState(0.34);
+    const template = readTemplate(doc) || 'Cv1';
+    const values = useMemo(() => {
+        try {
+            return normalizeResumeData(doc?.item || doc, { template });
+        } catch {
+            return doc?.item || doc || {};
+        }
+    }, [doc, template]);
+
+    useEffect(() => {
+        const viewport = viewportRef.current;
+        if (!viewport) return undefined;
+        const updateScale = () => {
+            const availableWidth = Math.max(220, viewport.clientWidth - 16);
+            setScale(Math.min(0.42, availableWidth / 794));
+        };
+        updateScale();
+        if (typeof ResizeObserver === 'undefined') {
+            window.addEventListener('resize', updateScale);
+            return () => window.removeEventListener('resize', updateScale);
+        }
+        const observer = new ResizeObserver(updateScale);
+        observer.observe(viewport);
+        return () => observer.disconnect();
+    }, []);
+
+    return (
+        <div
+            ref={viewportRef}
+            className="group/resume-preview relative h-[288px] w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-50"
+            data-testid="resume-thumbnail"
+        >
+            <div aria-hidden="true" inert className="pointer-events-none absolute inset-0 overflow-hidden">
+                <div
+                    className="absolute left-1/2 top-0 origin-top-left bg-white shadow-sm"
+                    style={{
+                        width: '794px',
+                        height: '1123px',
+                        marginLeft: `${-397 * scale}px`,
+                        transform: `scale(${scale})`,
+                        transformOrigin: 'top left',
+                    }}
+                >
+                    <TemplateRenderer templateId={template} values={values} language={values?.language || 'en'} />
+                </div>
+            </div>
+            <button
+                type="button"
+                onClick={onPreview}
+                aria-label={t('DashboardResumes.previewNamed', 'Preview {{title}}', { title })}
+                className="absolute inset-0 z-10 flex items-center justify-center bg-transparent transition-colors hover:bg-transparent focus-visible:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-500"
+                style={{ backgroundColor: 'transparent', border: 0 }}
+            >
+                <span className="translate-y-2 rounded-full bg-white/95 px-3 py-2 text-xs font-semibold text-slate-900 opacity-0 shadow-lg transition-all group-hover/resume-preview:translate-y-0 group-hover/resume-preview:opacity-100 group-focus-within/resume-preview:translate-y-0 group-focus-within/resume-preview:opacity-100">
+                    <FiEye className="mr-1.5 inline h-3.5 w-3.5 text-indigo-600" aria-hidden="true" />
+                    {t('DashboardResumes.preview', 'Preview')}
+                </span>
+            </button>
+        </div>
+    );
+});
+
+const DashboardResumes = ({ showToast, t, membership }) => {
     const user = useContext(AuthContext);
     const navigate = useNavigate();
     const userId = user?.uid || user?.uuid || null;
@@ -116,82 +204,275 @@ const DashboardResumes = ({ showToast, t }) => {
     const [resumes, setResumes] = useState(null);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState('');
-    const [profile, setProfile] = useState(null);
     const [pendingKey, setPendingKey] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [deleting, setDeleting] = useState(false);
+    const [showControls, setShowControls] = useState(false);
+    const [openMenuId, setOpenMenuId] = useState(null);
+    const [previewTarget, setPreviewTarget] = useState(null);
+    const [shareModal, setShareModal] = useState(null);
+    const [sharingId, setSharingId] = useState(null);
+    const [downloadingPdfId, setDownloadingPdfId] = useState(null);
+    const [downloadingDocxId, setDownloadingDocxId] = useState(null);
+    const [freeTierAccess, setFreeTierAccess] = useState(null);
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+    const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+    const [pendingEntitlement, setPendingEntitlement] = useState(null);
+    const [query, setQuery] = useState('');
+    const [atsFilter, setAtsFilter] = useState('all');
+    const [templateFilter, setTemplateFilter] = useState('all');
+    const [sortBy, setSortBy] = useState('updated-desc');
+    const [page, setPage] = useState(1);
+    const requestSequence = useRef(0);
+    const mounted = useRef(false);
 
-    const load = useCallback(async (active) => {
+    useEffect(() => {
+        mounted.current = true;
+        return () => {
+            mounted.current = false;
+            requestSequence.current += 1;
+        };
+    }, []);
+
+    const load = useCallback(async () => {
+        const requestId = ++requestSequence.current;
+        const isCurrent = () => mounted.current && requestSequence.current === requestId;
         if (!userId) {
+            if (!isCurrent()) return;
             setResumes([]);
+            setLoadError('');
             setLoading(false);
             return;
         }
         setLoading(true);
         setLoadError('');
         try {
-            const [result, profileValue] = await Promise.all([
-                loadAllResumes(userId),
-                getFullName(userId).catch(() => null),
-            ]);
-            if (!active()) return;
+            const result = await loadAllResumes(userId);
+            if (!isCurrent()) return;
             setResumes(Array.isArray(result) ? result : []);
-            setProfile(profileValue);
         } catch (loadFailure) {
-            if (!active()) return;
+            if (!isCurrent()) return;
             setResumes([]);
             setLoadError(loadFailure?.message || 'Your resumes are unavailable right now.');
         } finally {
-            if (active()) setLoading(false);
+            if (isCurrent()) setLoading(false);
         }
     }, [userId]);
 
     useEffect(() => {
-        let active = true;
-        const isActive = () => active;
-        load(isActive);
-        return () => { active = false; };
+        load();
     }, [load]);
 
-    const reload = useCallback(() => load(() => true), [load]);
-
-    const stats = useMemo(() => {
-        const list = Array.isArray(resumes) ? resumes : [];
-        const scores = list.map(qualityScoreFor).filter((score) => score !== null);
-        const avgAts = scores.length
-            ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length)
-            : null;
-        const timestamps = list
-            .map((doc) => {
-                const item = doc?.item || {};
-                const value = item.updated_at || item.updatedAt || item.created_at || item.createdAt;
-                const parsed = value ? Date.parse(value) : NaN;
-                return Number.isFinite(parsed) ? parsed : null;
+    useEffect(() => {
+        let active = true;
+        const readEntitlements = () => getSystemSettings()
+            .then((settings) => {
+                if (active) setFreeTierAccess(settings?.watermark || {});
             })
-            .filter((parsed) => parsed !== null);
-        const newest = timestamps.length ? Math.max(...timestamps) : null;
-        const templateCount = new Set(
-            list.map((doc) => readTemplate(doc) || 'Cv1'),
-        ).size;
-        return {
-            count: list.length,
-            avgAts,
-            newest,
-            templateCount: list.length ? templateCount : 0,
+            .catch(() => {
+                if (active) setFreeTierAccess(null);
+            });
+        readEntitlements();
+        const handleSettingsUpdated = (event) => {
+            if (event?.detail?.category === 'watermark' && event.detail.settings) {
+                setFreeTierAccess(event.detail.settings);
+                return;
+            }
+            readEntitlements();
         };
-    }, [resumes]);
+        window.addEventListener('systemSettingsUpdated', handleSettingsUpdated);
+        return () => {
+            active = false;
+            window.removeEventListener('systemSettingsUpdated', handleSettingsUpdated);
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!openMenuId) return undefined;
+        const dismiss = (event) => {
+            if (event.key === 'Escape') setOpenMenuId(null);
+            else if (event.type === 'pointerdown' && !event.target.closest('[data-resume-menu]')) setOpenMenuId(null);
+        };
+        document.addEventListener('keydown', dismiss);
+        document.addEventListener('pointerdown', dismiss);
+        return () => {
+            document.removeEventListener('keydown', dismiss);
+            document.removeEventListener('pointerdown', dismiss);
+        };
+    }, [openMenuId]);
+
+    const reload = load;
+
+    const templateOptions = useMemo(() => [...new Set(
+        (Array.isArray(resumes) ? resumes : []).map((doc) => readTemplate(doc)).filter(Boolean),
+    )].sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })), [resumes]);
+
+    const filteredResumes = useMemo(() => {
+        const normalizedQuery = normalizeForCompare(query);
+        const list = (Array.isArray(resumes) ? resumes : []).filter((doc) => {
+            const score = qualityScoreFor(doc);
+            const template = readTemplate(doc);
+            const searchMatch = !normalizedQuery || [readTitle(doc), readRole(doc), template]
+                .some((value) => normalizeForCompare(value).includes(normalizedQuery));
+            const templateMatch = templateFilter === 'all' || template === templateFilter;
+            const atsMatch = atsFilter === 'all'
+                || (atsFilter === 'ready' && score !== null && score >= 70)
+                || (atsFilter === 'developing' && score !== null && score >= 40 && score < 70)
+                || (atsFilter === 'starting' && score !== null && score < 40)
+                || (atsFilter === 'unscored' && score === null);
+            return searchMatch && templateMatch && atsMatch;
+        });
+
+        const compareText = (a, b) => readTitle(a).localeCompare(readTitle(b), undefined, { numeric: true, sensitivity: 'base' });
+        list.sort((a, b) => {
+            if (sortBy === 'title-asc') return compareText(a, b);
+            if (sortBy === 'title-desc') return compareText(b, a);
+            if (sortBy === 'ats-desc' || sortBy === 'ats-asc') {
+                const left = qualityScoreFor(a);
+                const right = qualityScoreFor(b);
+                if (left === null && right !== null) return 1;
+                if (right === null && left !== null) return -1;
+                return sortBy === 'ats-desc' ? (right - left || compareText(a, b)) : (left - right || compareText(a, b));
+            }
+            const left = readTimestamp(a);
+            const right = readTimestamp(b);
+            if (left === null && right !== null) return 1;
+            if (right === null && left !== null) return -1;
+            if (left === right) return compareText(a, b);
+            return sortBy === 'updated-asc' ? left - right : right - left;
+        });
+        return list;
+    }, [resumes, query, atsFilter, templateFilter, sortBy]);
+
+    const pageCount = Math.max(1, Math.ceil(filteredResumes.length / RESUME_PAGE_SIZE));
+    const currentPage = Math.min(page, pageCount);
+    const pageResumes = filteredResumes.slice(
+        (currentPage - 1) * RESUME_PAGE_SIZE,
+        currentPage * RESUME_PAGE_SIZE,
+    );
+    const resultStart = filteredResumes.length ? (currentPage - 1) * RESUME_PAGE_SIZE + 1 : 0;
+    const resultEnd = Math.min(currentPage * RESUME_PAGE_SIZE, filteredResumes.length);
+
+    const clearFilters = () => {
+        setQuery('');
+        setAtsFilter('all');
+        setTemplateFilter('all');
+        setSortBy('updated-desc');
+        setPage(1);
+    };
 
     const beginCreate = () => {
-        localStorage.removeItem('currentResumeId');
-        localStorage.removeItem('currentResumeItem');
-        navigate('/build-resume/heading');
+        try {
+            localStorage.removeItem('currentResumeId');
+            localStorage.removeItem('currentResumeItem');
+        } catch {
+            showToast?.('error', 'Resume builder unavailable', 'Your browser could not access local storage. Allow site storage and try again.');
+            return;
+        }
+        navigate('/build-resume/heading?new=1');
     };
 
     const openEditor = (doc) => {
         if (!doc?.id) return;
-        localStorage.setItem('currentResumeId', String(doc.id));
-        localStorage.removeItem('currentResumeItem');
+        try {
+            localStorage.removeItem('currentResumeItem');
+        } catch {
+            showToast?.('error', 'Resume could not be opened', 'Your browser could not access local storage. Allow site storage and try again.');
+            return;
+        }
+        try {
+            localStorage.setItem('currentResumeId', String(doc.id));
+        } catch {
+            showToast?.('error', 'Resume could not be opened', 'Your browser could not access local storage. Allow site storage and try again.');
+            return;
+        }
         navigate('/build-resume/heading');
+    };
+
+    const hasPaidAccess = isPaidMembershipTier(membership);
+    const canExport = (kind) => hasPaidAccess || freeTierAccess === null || freeTierAccess?.[
+        kind === 'pdf' ? 'allowFreePdfDownload' : kind === 'docx' ? 'allowFreeDocxDownload' : 'allowFreeShareLink'
+    ] === true;
+
+    const requestUpgrade = (doc, kind) => {
+        setPendingEntitlement({ doc, kind });
+        setShowUpgradeModal(true);
+        setPreviewTarget(null);
+    };
+
+    const runDownload = async (doc, kind, { afterUpgrade = false } = {}) => {
+        const docId = doc?.id || doc?._id;
+        if (!docId) return;
+        if (!afterUpgrade && !canExport(kind)) {
+            requestUpgrade(doc, kind);
+            return;
+        }
+        const setBusy = kind === 'pdf' ? setDownloadingPdfId : setDownloadingDocxId;
+        setBusy(docId);
+        try {
+            const item = doc.item || doc;
+            const options = {
+                resumeId: String(docId),
+                resumeName: readTemplate(doc) || 'Cv1',
+                language: item.language || 'en',
+                firstname: item.firstname || doc.firstname || '',
+                lastname: item.lastname || doc.lastname || '',
+                userId,
+                incrementCounts: Boolean(userId),
+            };
+            if (kind === 'docx') options.colors = item.colors || null;
+            if (kind === 'docx') await downloadResumeDocx(options);
+            else await downloadResumePdf(options);
+            showToast?.('success', kind === 'pdf' ? 'PDF downloaded' : 'Word document downloaded',
+                kind === 'pdf' ? 'Your resume PDF is ready.' : 'Your resume DOCX is ready.');
+        } catch (error) {
+            if (!afterUpgrade && (error?.response?.status === 402
+                || error?.code === 'ACTIVE_SUBSCRIPTION_REQUIRED'
+                || error?.message?.toLowerCase().includes('subscription'))) {
+                requestUpgrade(doc, kind);
+                return;
+            }
+            showToast?.('error', 'Download failed', error?.message || 'The resume could not be downloaded. Please try again.');
+        } finally {
+            setBusy(null);
+        }
+    };
+
+    const shareResume = async (doc, { afterUpgrade = false } = {}) => {
+        const docId = doc?.id || doc?._id;
+        if (!docId || sharingId) return;
+        if (!afterUpgrade && !canExport('share')) {
+            requestUpgrade(doc, 'share');
+            return;
+        }
+        if (!userId) {
+            showToast?.('error', 'Resume could not be shared', 'Please sign in and try again.');
+            return;
+        }
+        setSharingId(docId);
+        try {
+            await publishResume(
+                userId,
+                docId,
+                normalizeResumeData(doc.item || doc),
+                { expectedRevision: doc.revision ?? doc.item?.revision ?? null },
+            );
+            setPreviewTarget(null);
+            setShareModal({
+                documentId: String(docId),
+                documentTitle: readTitle(doc),
+            });
+        } catch (error) {
+            if (!afterUpgrade && (error?.response?.status === 402
+                || error?.code === 'ACTIVE_SUBSCRIPTION_REQUIRED'
+                || error?.message?.toLowerCase().includes('subscription'))) {
+                requestUpgrade(doc, 'share');
+                return;
+            }
+            showToast?.('error', 'Resume could not be shared', error?.message || 'Please try again.');
+        } finally {
+            setSharingId(null);
+        }
     };
 
     const duplicateResume = async (doc) => {
@@ -211,6 +492,7 @@ const DashboardResumes = ({ showToast, t }) => {
                 },
                 ...(Array.isArray(prev) ? prev : []),
             ]);
+            setPage(1);
             showToast?.('success', 'Resume duplicated', `"${readTitle(doc)} (Copy)" is ready to edit.`);
         } catch (duplicateFailure) {
             showToast?.('error', 'Duplicate failed', duplicateFailure?.message || 'The resume could not be duplicated.');
@@ -224,337 +506,307 @@ const DashboardResumes = ({ showToast, t }) => {
         setDeleting(true);
         try {
             await deleteResumeDraft(userId, target.id);
+        } catch (deleteFailure) {
+            showToast?.('error', 'Delete failed', deleteFailure?.message || 'The resume could not be deleted.');
+            setDeleting(false);
+            return;
+        }
+        try {
             if (localStorage.getItem('currentResumeId') === String(target.id)) {
                 localStorage.removeItem('currentResumeId');
                 localStorage.removeItem('currentResumeItem');
             }
-            setResumes((prev) => (Array.isArray(prev) ? prev.filter((doc) => doc.id !== target.id) : []));
-            showToast?.('success', 'Resume deleted', `"${readTitle(target)}" was removed from your workspace.`);
-            setDeleteTarget(null);
-        } catch (deleteFailure) {
-            showToast?.('error', 'Delete failed', deleteFailure?.message || 'The resume could not be deleted.');
-        } finally {
-            setDeleting(false);
+        } catch {
+            // The server deletion is authoritative; local editor pointers are
+            // best-effort browser state and must not turn success into error.
         }
+        setResumes((prev) => (Array.isArray(prev) ? prev.filter((doc) => doc.id !== target.id) : []));
+        showToast?.('success', 'Resume deleted', `"${readTitle(target)}" was removed from your workspace.`);
+        setDeleteTarget(null);
+        setDeleting(false);
     };
 
-    const profileName = firstText(
-        profile?.firstname && profile?.lastname
-            ? `${profile.firstname} ${profile.lastname}`
-            : '',
-    );
+    const countLabel = loading
+        ? t('DashboardResumes.loadingCount', 'Loading…')
+        : loadError
+            ? t('DashboardResumes.countUnavailable', 'Count unavailable')
+            : (Array.isArray(resumes) ? resumes.length : 0) + ' ' + (resumes?.length === 1 ? 'resume' : 'resumes');
+    const previewValues = useMemo(() => {
+        if (!previewTarget) return null;
+        try {
+            return normalizeResumeData(previewTarget.item || previewTarget, {
+                template: readTemplate(previewTarget) || 'Cv1',
+            });
+        } catch {
+            return previewTarget.item || previewTarget;
+        }
+    }, [previewTarget]);
+    const previewId = previewTarget?.id || previewTarget?._id;
 
-    const breadcrumb = (
-        <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs font-medium text-cuba-ink-subtle">
-            <a
-                href="/dashboard"
-                className="cuba-focusable rounded transition-colors hover:text-cuba-primary-strong"
-            >
-                Dashboard
-            </a>
-            <FiChevronRight className="h-3 w-3 shrink-0" aria-hidden="true" />
-            <span aria-current="page" className="text-cuba-ink-muted">
-                Resumes &amp; Master CV
-            </span>
-        </nav>
-    );
-
-    const countLabel = Array.isArray(resumes)
-        ? `${resumes.length} ${resumes.length === 1 ? 'resume' : 'resumes'}`
-        : '';
     return (
-        <section className="space-y-6" data-testid="dashboard-resumes-hub">
-            <CubaPageHeader
-                eyebrow={t('DashboardResumes.eyebrow', 'Workspace')}
-                title={t('DashboardResumes.title', 'Resumes & Master CV')}
-                subtitle={
-                    countLabel
-                        ? t(
-                            'DashboardResumes.subtitleWithCount',
-                            '{{count}} in your workspace — build, edit and track every version from one hub.',
-                            { count: countLabel },
-                        )
-                        : t(
-                            'DashboardResumes.subtitle',
-                            'Build, edit and track every resume version from one hub.',
-                        )
-                }
-                breadcrumb={breadcrumb}
-                actions={
-                    <>
-                        <CubaButton
-                            variant="primary"
-                            icon={<FiPlus className="h-4 w-4" aria-hidden="true" />}
-                            onClick={beginCreate}
-                        >
-                            {t('DashboardResumes.create', 'Create New Resume')}
-                        </CubaButton>
-                        <CubaButton
-                            variant="outline"
-                            icon={<FiUser className="h-4 w-4" aria-hidden="true" />}
-                            onClick={() => navigate('/dashboard/settings?tab=Profile')}
-                        >
-                            {t('DashboardResumes.masterProfile', 'Master Profile Data')}
-                        </CubaButton>
-                    </>
-                }
-            />
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <CubaStatCard
-                    label={t('DashboardResumes.stats.total', 'Total Resumes')}
-                    value={loading ? '' : String(stats.count)}
-                    hint={t('DashboardResumes.stats.totalHint', 'Saved in your workspace')}
-                    icon={<FiFileText className="h-5 w-5" aria-hidden="true" />}
-                    accent="primary"
-                    loading={loading}
-                />
-                <CubaStatCard
-                    label={t('DashboardResumes.stats.avgAts', 'Average ATS Readiness')}
-                    value={loading ? '' : (stats.avgAts !== null ? `${stats.avgAts}/100` : '—')}
-                    hint={t('DashboardResumes.stats.avgAtsHint', 'Deterministic engine score')}
-                    icon={<FiTrendingUp className="h-5 w-5" aria-hidden="true" />}
-                    accent={stats.avgAts !== null && stats.avgAts >= 70 ? 'success' : 'info'}
-                    loading={loading}
-                />
-                <CubaStatCard
-                    label={t('DashboardResumes.stats.lastUpdated', 'Last Updated')}
-                    value={loading ? '' : (stats.newest ? formatSafeDate(stats.newest) || '—' : '—')}
-                    hint={t('DashboardResumes.stats.lastUpdatedHint', 'Newest resume change')}
-                    icon={<FiClock className="h-5 w-5" aria-hidden="true" />}
-                    accent="info"
-                    loading={loading}
-                />
-                <CubaStatCard
-                    label={t('DashboardResumes.stats.templates', 'Template Styles')}
-                    value={loading ? '' : String(stats.templateCount)}
-                    hint={t('DashboardResumes.stats.templatesHint', 'Distinct designs in use')}
-                    icon={<FiLayers className="h-5 w-5" aria-hidden="true" />}
-                    accent="warning"
-                    loading={loading}
-                />
-            </div>
-            <CubaCard ai className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div className="flex min-w-0 items-start gap-3">
-                    <div
-                        className="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-cuba-primary-soft text-cuba-primary-ink-strong"
-                        aria-hidden="true"
+        <section className="space-y-4" data-testid="dashboard-resumes-hub">
+            <header className="flex min-h-10 items-center justify-between gap-3">
+                <h1 className="text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
+                    {t('DashboardResumes.title', 'My Resumes')}
+                </h1>
+                <div className="flex flex-none items-center gap-2 sm:gap-3">
+                    <button
+                        type="button"
+                        onClick={() => setShowControls((value) => !value)}
+                        aria-label={showControls ? t('DashboardResumes.hideTools', 'Hide search and filters') : t('DashboardResumes.showTools', 'Search and filters')}
+                        aria-expanded={showControls}
+                        aria-controls="resume-hub-tools"
+                        title={t('DashboardResumes.showTools', 'Search and filters')}
+                        className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                     >
-                        <FiUser className="h-5 w-5" />
+                        <FiSearch className="h-4 w-4" aria-hidden="true" />
+                    </button>
+                    <button
+                        type="button"
+                        onClick={beginCreate}
+                        aria-label={t('DashboardResumes.create', 'Create New Resume')}
+                        title={t('DashboardResumes.create', 'Create New Resume')}
+                        className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-950 text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                    >
+                        <FiPlus className="h-5 w-5" aria-hidden="true" />
+                    </button>
+                    <span className="whitespace-nowrap text-xs font-medium text-slate-600 sm:text-sm" aria-live="polite" data-testid="resume-count">
+                        {countLabel}
+                    </span>
+                </div>
+            </header>
+
+            {showControls && Array.isArray(resumes) && resumes.length > 0 && (
+                <div id="resume-hub-tools" className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4" data-testid="resume-list-controls">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                        <CubaInput
+                            type="search"
+                            label={t('DashboardResumes.searchLabel', 'Search resumes')}
+                            placeholder={t('DashboardResumes.searchPlaceholder', 'Title, role, or template')}
+                            value={query}
+                            onChange={(event) => { setQuery(event.target.value); setPage(1); }}
+                            data-testid="resume-search"
+                            className="xl:col-span-2"
+                        />
+                        <CubaSelect label={t('DashboardResumes.sortLabel', 'Sort by')} value={sortBy} onChange={(event) => { setSortBy(event.target.value); setPage(1); }} data-testid="resume-sort">
+                            <option value="updated-desc">{t('DashboardResumes.sort.updatedDesc', 'Recently updated')}</option>
+                            <option value="updated-asc">{t('DashboardResumes.sort.updatedAsc', 'Oldest updated')}</option>
+                            <option value="title-asc">{t('DashboardResumes.sort.titleAsc', 'Title A–Z')}</option>
+                            <option value="title-desc">{t('DashboardResumes.sort.titleDesc', 'Title Z–A')}</option>
+                            <option value="ats-desc">{t('DashboardResumes.sort.atsDesc', 'Highest ATS readiness')}</option>
+                            <option value="ats-asc">{t('DashboardResumes.sort.atsAsc', 'Lowest ATS readiness')}</option>
+                        </CubaSelect>
+                        <CubaSelect label={t('DashboardResumes.atsFilterLabel', 'ATS readiness')} value={atsFilter} onChange={(event) => { setAtsFilter(event.target.value); setPage(1); }} data-testid="resume-ats-filter">
+                            <option value="all">{t('DashboardResumes.atsFilter.all', 'All scores')}</option>
+                            <option value="ready">{t('DashboardResumes.atsFilter.ready', 'High · 70–100')}</option>
+                            <option value="developing">{t('DashboardResumes.atsFilter.developing', 'Building · 40–69')}</option>
+                            <option value="starting">{t('DashboardResumes.atsFilter.starting', 'Starting · 0–39')}</option>
+                            <option value="unscored">{t('DashboardResumes.atsFilter.unscored', 'Unscored')}</option>
+                        </CubaSelect>
+                        <CubaSelect label={t('DashboardResumes.templateFilterLabel', 'Template')} value={templateFilter} onChange={(event) => { setTemplateFilter(event.target.value); setPage(1); }} data-testid="resume-template-filter">
+                            <option value="all">{t('DashboardResumes.templateFilter.all', 'All templates')}</option>
+                            {templateOptions.map((template) => <option key={template} value={template}>{template}</option>)}
+                        </CubaSelect>
                     </div>
-                    <div className="min-w-0">
-                        <h2 className="text-sm font-semibold tracking-tight text-cuba-ink">
-                            {t('DashboardResumes.masterCvTitle', 'Master CV — Master Profile Data')}
-                        </h2>
-                        <p className="mt-1 max-w-2xl text-xs leading-relaxed text-cuba-ink-muted">
-                            {profileName
-                                ? t(
-                                    'DashboardResumes.masterCvWithName',
-                                    'Your resumes are built on the Master Profile Data of {{name}}. Keep it current and every new resume starts complete.',
-                                    { name: profileName },
-                                )
-                                : t(
-                                    'DashboardResumes.masterCvWithoutName',
-                                    'Your Master Profile Data feeds every resume you build. Keep it current and every new resume starts complete.',
-                                )}
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
+                        <p className="text-xs text-slate-500" aria-live="polite" data-testid="resume-result-summary">
+                            {filteredResumes.length
+                                ? t('DashboardResumes.results.range', 'Showing {{start}}–{{end}} of {{total}} resumes', { start: resultStart, end: resultEnd, total: filteredResumes.length })
+                                : t('DashboardResumes.results.none', 'No resumes match these filters.')}
                         </p>
-                    </div>
-                </div>
-                <CubaButton
-                    variant="outline"
-                    size="sm"
-                    className="flex-none"
-                    iconRight={<FiChevronRight className="h-4 w-4" aria-hidden="true" />}
-                    onClick={() => navigate('/dashboard/settings?tab=Profile')}
-                >
-                    {t('DashboardResumes.openMasterProfile', 'Open Master Profile')}
-                </CubaButton>
-            </CubaCard>
-
-            <CubaCard as="div" padded className="space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h2 className="text-base font-semibold tracking-tight text-cuba-ink">
-                        {t('DashboardResumes.yourResumes', 'Your Resumes')}
-                    </h2>
-                    {!loading && Array.isArray(resumes) && resumes.length > 0 && (
-                        <CubaBadge tone="neutral" srLabel={t('DashboardResumes.badgeCount', 'Resume count')}>
-                            {resumes.length}
-                        </CubaBadge>
-                    )}
-                </div>
-
-                {loading ? (
-                    <CubaLoadingState
-                        rows={3}
-                        label={t('DashboardResumes.loading', 'Loading your resumes')}
-                    />
-                ) : loadError ? (
-                    <CubaErrorState
-                        title={t('DashboardResumes.errorTitle', 'Resumes unavailable')}
-                        message={loadError}
-                        onRetry={reload}
-                        retrying={loading}
-                    />
-                ) : !Array.isArray(resumes) || resumes.length === 0 ? (
-                    <CubaEmptyState
-                        icon={<FiFileText className="h-6 w-6" aria-hidden="true" />}
-                        title={t('DashboardResumes.emptyTitle', 'No resumes yet')}
-                        description={t(
-                            'DashboardResumes.emptyDescription',
-                            'Build your first resume with the guided ATS builder. Your Master Profile Data gives it a head start.',
-                        )}
-                        action={
-                            <CubaButton
-                                variant="primary"
-                                size="sm"
-                                icon={<FiPlus className="h-4 w-4" aria-hidden="true" />}
-                                onClick={beginCreate}
-                            >
-                                {t('DashboardResumes.create', 'Create New Resume')}
-                            </CubaButton>
-                        }
-                        secondaryAction={
-                            <CubaButton
-                                variant="outline"
-                                size="sm"
-                                icon={<FiUser className="h-4 w-4" aria-hidden="true" />}
-                                onClick={() => navigate('/dashboard/settings?tab=Profile')}
-                            >
+                        <div className="flex items-center gap-2">
+                            {(query || atsFilter !== 'all' || templateFilter !== 'all' || sortBy !== 'updated-desc') && (
+                                <CubaButton variant="ghost" size="sm" onClick={clearFilters} data-testid="resume-clear-filters" className="min-h-10">
+                                    {t('DashboardResumes.resetView', 'Reset view')}
+                                </CubaButton>
+                            )}
+                            <CubaButton variant="outline" size="sm" icon={<FiUser className="h-3.5 w-3.5" aria-hidden="true" />} onClick={() => navigate('/dashboard/settings?tab=Profile')} className="min-h-10">
                                 {t('DashboardResumes.masterProfile', 'Master Profile Data')}
                             </CubaButton>
-                        }
-                    />
-                ) : (
-                    <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2" aria-label={t('DashboardResumes.listLabel', 'Saved resumes')}>
-                        {resumes.map((doc) => {
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {loading ? (
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4" aria-label={t('DashboardResumes.loading', 'Loading your resumes')}>
+                    {Array.from({ length: 4 }, (_, index) => (
+                        <div key={index} className="animate-pulse rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" aria-hidden="true">
+                            <div className="mb-2 h-4 w-3/5 rounded bg-slate-200" />
+                            <div className="mb-4 h-3 w-2/5 rounded bg-slate-100" />
+                            <div className="mb-4 h-[288px] rounded-xl bg-slate-100" />
+                            <div className="space-y-2"><div className="h-11 rounded-lg bg-slate-100" /><div className="h-11 rounded-lg bg-slate-100" /></div>
+                        </div>
+                    ))}
+                    <span className="sr-only">{t('DashboardResumes.loading', 'Loading your resumes')}</span>
+                </div>
+            ) : loadError ? (
+                <CubaErrorState
+                    title={t('DashboardResumes.errorTitle', 'Resumes unavailable')}
+                    message={loadError}
+                    onRetry={reload}
+                    retrying={loading}
+                />
+            ) : !Array.isArray(resumes) || resumes.length === 0 ? (
+                <CubaEmptyState
+                    icon={<FiFileText className="h-6 w-6" aria-hidden="true" />}
+                    title={t('DashboardResumes.emptyTitle', 'No resumes yet')}
+                    description={t('DashboardResumes.emptyDescription', 'Build your first resume with the guided ATS builder. Your Master Profile Data gives it a head start.')}
+                    action={<CubaButton variant="primary" size="sm" icon={<FiPlus className="h-4 w-4" aria-hidden="true" />} onClick={beginCreate}>{t('DashboardResumes.create', 'Create New Resume')}</CubaButton>}
+                    secondaryAction={<CubaButton variant="outline" size="sm" icon={<FiUser className="h-4 w-4" aria-hidden="true" />} onClick={() => navigate('/dashboard/settings?tab=Profile')}>{t('DashboardResumes.masterProfile', 'Master Profile Data')}</CubaButton>}
+                />
+            ) : filteredResumes.length === 0 ? (
+                <CubaEmptyState
+                    icon={<FiSearch className="h-6 w-6" aria-hidden="true" />}
+                    title={t('DashboardResumes.noMatchesTitle', 'No matching resumes')}
+                    description={t('DashboardResumes.noMatchesDescription', 'Try a different search or clear your filters to see your full workspace.')}
+                    action={<CubaButton variant="outline" size="sm" onClick={clearFilters} data-testid="resume-reset-empty">{t('DashboardResumes.resetView', 'Reset view')}</CubaButton>}
+                />
+            ) : (
+                <>
+                    <ul className="grid grid-cols-1 items-stretch gap-5 md:grid-cols-2 xl:grid-cols-4" aria-label={t('DashboardResumes.listLabel', 'Saved resumes')} data-testid="resume-list">
+                        {pageResumes.map((doc) => {
                             const score = qualityScoreFor(doc);
-                            const updated = readUpdated(doc);
-                            const role = readRole(doc);
-                            const template = readTemplate(doc);
+                            const created = readCreated(doc);
+                            const date = created || readUpdated(doc);
+                            const title = readTitle(doc);
+                            const docId = doc.id || doc._id;
+                            const scoreClass = score === null
+                                ? 'border-slate-200 bg-slate-50 text-slate-600'
+                                : score >= 70
+                                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                    : score >= 40
+                                        ? 'border-amber-200 bg-amber-50 text-amber-700'
+                                        : 'border-orange-200 bg-orange-50 text-orange-700';
                             return (
-                                <li key={doc.id}>
-                                    <CubaCard hover className="flex h-full flex-col gap-4">
-                                        <div className="flex min-w-0 items-start gap-3">
-                                            <div
-                                                className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-cuba-primary-soft text-cuba-primary-ink-strong"
-                                                aria-hidden="true"
-                                            >
-                                                <FiFileText className="h-4 w-4" />
-                                            </div>
-                                            <div className="min-w-0 flex-1">
-                                                <div className="flex flex-wrap items-center gap-2">
-                                                    <h3 className="truncate text-sm font-semibold tracking-tight text-cuba-ink">
-                                                        {readTitle(doc)}
-                                                    </h3>
-                                                    <CubaBadge tone={atsTone(score)}>
-                                                        {score !== null ? `${score}/100 ATS` : '—'}
-                                                    </CubaBadge>
-                                                </div>
-                                                {role && (
-                                                    <p className="mt-0.5 truncate text-xs text-cuba-ink-muted">
-                                                        {role}
-                                                    </p>
+                                <li key={docId} className="min-w-0" data-testid="resume-card">
+                                    <article className="relative flex h-full flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md sm:p-5">
+                                        <header className="flex min-w-0 items-center justify-between gap-2">
+                                            <h2 className="min-w-0 flex-1 truncate text-[15px] font-semibold text-slate-900" title={title}>{title}</h2>
+                                            <div className="relative flex-none" data-resume-menu>
+                                                <button
+                                                    type="button"
+                                                    aria-label={t('DashboardResumes.moreActionsNamed', 'More actions for {{title}}', { title })}
+                                                    aria-haspopup="menu"
+                                                    aria-expanded={openMenuId === docId}
+                                                    onClick={() => setOpenMenuId((current) => current === docId ? null : docId)}
+                                                    className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                                                >
+                                                    <FiMoreHorizontal className="h-5 w-5" aria-hidden="true" />
+                                                </button>
+                                                {openMenuId === docId && (
+                                                    <div role="menu" aria-label={t('DashboardResumes.moreActionsNamed', 'More actions for {{title}}', { title })} className="absolute right-0 top-10 z-30 min-w-44 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
+                                                        <button type="button" role="menuitem" onClick={() => { setOpenMenuId(null); duplicateResume(doc); }} disabled={Boolean(pendingKey)} className="flex min-h-10 w-full items-center gap-2 rounded-lg px-3 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+                                                            <FiCopy className="h-4 w-4" aria-hidden="true" />{t('DashboardResumes.duplicate', 'Duplicate')}
+                                                        </button>
+                                                        <button type="button" role="menuitem" onClick={() => { setOpenMenuId(null); setDeleteTarget(doc); }} disabled={Boolean(pendingKey)} className="flex min-h-10 w-full items-center gap-2 rounded-lg px-3 text-left text-sm text-rose-700 hover:bg-rose-50 disabled:opacity-50">
+                                                            <FiTrash2 className="h-4 w-4" aria-hidden="true" />{t('DashboardResumes.delete', 'Delete')}
+                                                        </button>
+                                                    </div>
                                                 )}
-                                                <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-cuba-ink-subtle">
-                                                    {updated && (
-                                                        <span className="inline-flex items-center gap-1">
-                                                            <FiClock className="h-3 w-3" aria-hidden="true" />
-                                                            {updated}
-                                                        </span>
-                                                    )}
-                                                    {template && (
-                                                        <span>
-                                                            {t('DashboardResumes.templateLabel', 'Template')} {template}
-                                                        </span>
-                                                    )}
-                                                </p>
                                             </div>
+                                        </header>
+                                        <div className="flex min-h-6 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
+                                            <span>{date ? (created ? 'Created ' : 'Updated ') + date : t('DashboardResumes.dateUnavailable', 'Date unavailable')}</span>
+                                            <span className={'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold leading-none ' + scoreClass} title={t('DashboardResumes.atsScoreTitle', 'ATS readiness score')}>
+                                                {t('DashboardResumes.atsScore', 'ATS: {{score}}/100', { score: score === null ? '—' : score })}
+                                            </span>
                                         </div>
-                                        <div className="flex flex-none flex-wrap items-center gap-2">
-                                            <CubaButton
-                                                variant="outline"
-                                                size="sm"
-                                                icon={<FiEdit3 className="h-3.5 w-3.5" aria-hidden="true" />}
-                                                onClick={() => openEditor(doc)}
-                                            >
-                                                {t('DashboardResumes.edit', 'Edit')}
-                                            </CubaButton>
-                                            <CubaButton
-                                                variant="ghost"
-                                                size="sm"
-                                                icon={<FiCopy className="h-3.5 w-3.5" aria-hidden="true" />}
-                                                loading={pendingKey === doc.id}
-                                                onClick={() => duplicateResume(doc)}
-                                            >
-                                                {t('DashboardResumes.duplicate', 'Duplicate')}
-                                            </CubaButton>
-                                            <CubaButton
-                                                variant="ghost"
-                                                size="sm"
-                                                icon={<FiTrash2 className="h-3.5 w-3.5" aria-hidden="true" />}
-                                                onClick={() => setDeleteTarget(doc)}
-                                            >
-                                                {t('DashboardResumes.delete', 'Delete')}
-                                            </CubaButton>
+                                        <ResumeThumbnail doc={doc} title={title} onPreview={() => setPreviewTarget(doc)} t={t} />
+                                        <div className="mt-auto flex flex-col gap-2.5 pt-1">
+                                            <button type="button" onClick={() => openEditor(doc)} disabled={Boolean(pendingKey)} aria-label={t('DashboardResumes.editNamed', 'Edit {{title}}', { title })} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-slate-950 px-4 text-base font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:opacity-50">
+                                                <FiEdit3 className="h-4 w-4" aria-hidden="true" />{t('DashboardResumes.editResume', 'Edit Resume')}
+                                            </button>
+                                            <button type="button" onClick={() => shareResume(doc)} disabled={sharingId === docId} aria-label={t('DashboardResumes.shareNamed', 'Share {{title}}', { title })} data-testid="resume-action-share" className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-base font-medium text-slate-800 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:opacity-60">
+                                                <FiShare2 className="h-4 w-4 text-indigo-600" aria-hidden="true" />{sharingId === docId ? t('DashboardResumes.sharing', 'Sharing…') : t('DashboardResumes.shareResume', 'Share Resume')}
+                                            </button>
+                                            <button type="button" onClick={() => runDownload(doc, 'pdf')} disabled={downloadingPdfId === docId} aria-label={t('DashboardResumes.downloadPdfNamed', 'Download PDF for {{title}}', { title })} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-green-700 px-4 text-base font-semibold text-white shadow-sm transition hover:bg-green-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-700 focus-visible:ring-offset-2 disabled:opacity-60">
+                                                <FiDownload className="h-4 w-4" aria-hidden="true" />{downloadingPdfId === docId ? t('DashboardResumes.downloadingPdf', 'Preparing PDF…') : t('DashboardResumes.downloadPdf', 'Download PDF')}
+                                            </button>
+                                            <button type="button" onClick={() => runDownload(doc, 'docx')} disabled={downloadingDocxId === docId} aria-label={t('DashboardResumes.downloadDocxNamed', 'Download Word (DOCX) for {{title}}', { title })} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 text-base font-semibold text-white shadow-sm transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:opacity-60">
+                                                <FiDownload className="h-4 w-4" aria-hidden="true" />{downloadingDocxId === docId ? t('DashboardResumes.downloadingDocx', 'Preparing Word document…') : t('DashboardResumes.downloadDocx', 'Download Word (DOCX)')}
+                                            </button>
                                         </div>
-                                    </CubaCard>
+                                    </article>
                                 </li>
                             );
                         })}
                     </ul>
-                )}
-            </CubaCard>
+
+                    {filteredResumes.length > RESUME_PAGE_SIZE && (
+                        <nav aria-label={t('DashboardResumes.paginationLabel', 'Resume list pages')} className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4" data-testid="resume-pagination">
+                            <p className="text-xs text-slate-500">{t('DashboardResumes.pageLabel', 'Page {{page}} of {{pages}}', { page: currentPage, pages: pageCount })}</p>
+                            <div className="flex items-center gap-2">
+                                <CubaButton variant="outline" size="sm" icon={<FiChevronLeft className="h-4 w-4" aria-hidden="true" />} disabled={currentPage <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))} aria-label={t('DashboardResumes.previousPage', 'Previous page')} data-testid="resume-previous-page" className="min-h-11 min-w-11">{t('common.previous', 'Previous')}</CubaButton>
+                                <CubaButton variant="outline" size="sm" iconRight={<FiChevronRight className="h-4 w-4" aria-hidden="true" />} disabled={currentPage >= pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))} aria-label={t('DashboardResumes.nextPage', 'Next page')} data-testid="resume-next-page" className="min-h-11 min-w-11">{t('common.next', 'Next')}</CubaButton>
+                            </div>
+                        </nav>
+                    )}
+                </>
+            )}
+
             <CubaModal
                 open={Boolean(deleteTarget)}
-                onClose={() => {
-                    if (!deleting) setDeleteTarget(null);
-                }}
+                onClose={() => { if (!deleting) setDeleteTarget(null); }}
                 title={t('DashboardResumes.deleteTitle', 'Delete resume?')}
-                description={
-                    deleteTarget
-                        ? t(
-                            'DashboardResumes.deleteDescription',
-                            '"{{title}}" will be permanently removed from your workspace. This action cannot be undone.',
-                            { title: readTitle(deleteTarget) },
-                        )
-                        : undefined
-                }
+                description={deleteTarget
+                    ? t('DashboardResumes.deleteDescription', '"{{title}}" will be permanently removed from your workspace. This action cannot be undone.', { title: readTitle(deleteTarget) })
+                    : undefined}
                 testId="dashboard-resumes-delete-modal"
                 footer={
                     <>
-                        <CubaButton
-                            variant="ghost"
-                            size="sm"
-                            disabled={deleting}
-                            onClick={() => setDeleteTarget(null)}
-                        >
-                            {t('common.cancel', 'Cancel')}
-                        </CubaButton>
-                        <CubaButton
-                            variant="danger"
-                            size="sm"
-                            icon={<FiTrash2 className="h-3.5 w-3.5" aria-hidden="true" />}
-                            loading={deleting}
-                            onClick={confirmDelete}
-                        >
-                            {t('DashboardResumes.confirmDelete', 'Delete resume')}
-                        </CubaButton>
+                        <CubaButton variant="ghost" size="sm" disabled={deleting} onClick={() => setDeleteTarget(null)}>{t('common.cancel', 'Cancel')}</CubaButton>
+                        <CubaButton variant="danger" size="sm" icon={<FiTrash2 className="h-3.5 w-3.5" aria-hidden="true" />} loading={deleting} onClick={confirmDelete}>{t('DashboardResumes.confirmDelete', 'Delete resume')}</CubaButton>
                     </>
                 }
             >
-                <p className="sr-only">
-                    {t('DashboardResumes.deleteSrHint', 'Confirmation required before the resume is deleted.')}
-                </p>
+                <p className="sr-only">{t('DashboardResumes.deleteSrHint', 'Confirmation required before the resume is deleted.')}</p>
             </CubaModal>
+
+            {previewTarget && (
+                <PreviewModal
+                    showPreview={Boolean(previewTarget)}
+                    setShowPreview={(value) => { if (!value) setPreviewTarget(null); }}
+                    resumeData={previewValues}
+                    currentTemplate={readTemplate(previewTarget) || 'Cv1'}
+                    getTemplateName={(template) => template}
+                    onShare={() => shareResume(previewTarget)}
+                    isSharing={sharingId === previewId}
+                    onDownload={() => runDownload(previewTarget, 'pdf')}
+                    isDownloading={downloadingPdfId === previewId}
+                    onDownloadDocx={() => runDownload(previewTarget, 'docx')}
+                    isDownloadingDocx={downloadingDocxId === previewId}
+                />
+            )}
+            <ShareModal
+                isOpen={Boolean(shareModal)}
+                onClose={() => setShareModal(null)}
+                documentId={shareModal?.documentId}
+                documentTitle={shareModal?.documentTitle}
+            />
+            <PremiumUpgradeModal
+                isOpen={showUpgradeModal}
+                onClose={() => { setShowUpgradeModal(false); setPendingEntitlement(null); }}
+                onUpgrade={() => { setShowUpgradeModal(false); setShowSubscriptionModal(true); }}
+                downloadType={pendingEntitlement?.kind || 'pdf'}
+                resumeTitle={pendingEntitlement ? readTitle(pendingEntitlement.doc) : 'Resume'}
+            />
+            <SubscriptionModal
+                isOpen={showSubscriptionModal}
+                onClose={() => { setShowSubscriptionModal(false); setPendingEntitlement(null); }}
+                user={fire.auth().currentUser}
+                onSuccess={async () => {
+                    const pending = pendingEntitlement;
+                    setShowSubscriptionModal(false);
+                    setPendingEntitlement(null);
+                    if (!pending) return;
+                    if (pending.kind === 'share') await shareResume(pending.doc, { afterUpgrade: true });
+                    else await runDownload(pending.doc, pending.kind, { afterUpgrade: true });
+                }}
+            />
         </section>
     );
 };
 
 const MyComponent = withTranslation('common')(DashboardResumes);
 export default MyComponent;
-
-
-
-
-
-

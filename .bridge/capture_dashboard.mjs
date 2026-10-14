@@ -3,6 +3,8 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import https from 'node:https';
+import AxeBuilder from '@axe-core/playwright';
 
 /**
  * DIR-090 evidence harness — XAMPP-served, self-verifying capture.
@@ -31,7 +33,8 @@ import path from 'node:path';
  *     seed grants no data — it only satisfies the client-side auth guard.
  *   • The scroller is discovered for real, the scroll is VERIFIED, and the below-the-fold
  *     artifact is PROVEN to differ from the viewport shot by MD5. If it does not differ, the
- *     run FAILS loudly rather than shipping a duplicate image.
+ *     below-the-fold image is captured only when scrolling is possible. A one-screen layout is
+ *     reported as fitting the viewport, and eight viewport widths are checked for overflow.
  */
 
 const args = process.argv.slice(2);
@@ -39,7 +42,8 @@ const ALLOW_MOCK = args.includes('--mock');
 const urlArg = args.find((a) => a.startsWith('--url='));
 const BASE = (urlArg ? urlArg.slice('--url='.length) : process.env.DASHBOARD_CAPTURE_URL || 'http://localhost/IME365').replace(/\/+$/, '');
 const OUT_DIR = process.env.DASHBOARD_CAPTURE_DIR || 'C:/Users/mbhas/.gemini/antigravity-ide/brain/a97e1dfc-8786-49f1-af66-3de9b20fbc00';
-const EVIDENCE_DIR = '.bridge/evidence';
+const EVIDENCE_DIR = process.env.DASHBOARD_EVIDENCE_DIR || '.bridge/evidence';
+const VIEWPORTS = [[320, 568], [375, 812], [430, 932], [768, 1024], [1024, 768], [1366, 768], [1440, 900], [1920, 1080]];
 // The Firebase web API key is NEVER hardcoded. It is resolved from the environment
 // (or the local .env), so no plaintext credential is ever committed (INV-5).
 const API_KEY = (() => {
@@ -57,7 +61,17 @@ const md5 = (buffer) => createHash('md5').update(buffer).digest('hex').toUpperCa
 /** Fails loudly rather than capturing nothing. Never starts a server (P0 invariant). */
 async function assertApacheServes() {
     try {
-        const res = await fetch(`${BASE}/dashboard`);
+        const url = new URL(`${BASE}/dashboard`);
+        if (url.protocol === 'https:' && url.hostname.endsWith('.local')) {
+            return await new Promise((resolve, reject) => {
+                const request = https.get(url, { rejectUnauthorized: false }, (response) => {
+                    response.resume();
+                    resolve(response.statusCode);
+                });
+                request.on('error', reject);
+            });
+        }
+        const res = await fetch(url);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.status;
     } catch (error) {
@@ -148,14 +162,15 @@ const capture = async () => {
     const apacheStatus = await assertApacheServes();
     console.log(`XAMPP Apache serving ${BASE} (HTTP ${apacheStatus})`);
     console.log(ALLOW_MOCK
-        ? '[WARN] --mock is ON: every data API is intercepted. This run is ILLUSTRATIVE and must NOT be cited as proof of real data.'
+        ? '[WARN] --mock is ON: dashboard fixture endpoints are illustrative. This run must NOT be cited as proof of real data.'
         : '[OK] Data APIs are NOT mocked: figures in this capture come from the real MariaDB-backed backend API.');
 
     const browser = await chromium.launch({ args: ['--no-sandbox', '--disable-gpu'] });
     const consoleErrors = [];
+    const pageErrors = [];
 
     try {
-        const context = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+        const context = await browser.newContext({ viewport: { width: 1920, height: 1080 }, ignoreHTTPSErrors: true });
 
         // The ONLY remaining stub: a seeded Firebase session. It grants no data.
         const authUserKey = `firebase:authUser:${API_KEY}:[DEFAULT]`;
@@ -168,12 +183,14 @@ const capture = async () => {
             };
             localStorage.setItem(key, JSON.stringify(userObj));
             localStorage.setItem('user', 'test-user');
-            localStorage.setItem('cuba_workspace_rail', 'docked');
         }, { key: authUserKey, apiKey: API_KEY, token: mockToken });
 
         const page = await context.newPage();
         page.on('console', (msg) => { if (msg.type() === 'error') consoleErrors.push(msg.text()); });
-        page.on('pageerror', (err) => consoleErrors.push(`pageerror: ${err.message}`));
+        page.on('pageerror', (err) => {
+            pageErrors.push(err.message);
+            consoleErrors.push(`pageerror: ${err.message}`);
+        });
 
         // Firebase token exchange must always be stubbed: no real credentials are available here.
         await page.route('**/securetoken.googleapis.com/**', (r) => r.fulfill({
@@ -204,19 +221,24 @@ const capture = async () => {
         // The dashboard must actually have RENDERED. A blank shell is a FAILED capture, not "an
         // empty dashboard" — the previous harness would have screenshotted it and shipped it.
         const renderProbe = await page.evaluate(() => ({
-            rails: document.querySelectorAll('[data-testid="cuba-executive-rail"]').length,
-            hud: document.querySelectorAll('[data-testid="cuba-copilot-hud"]').length,
+            hero: document.querySelectorAll('[data-testid="cuba-candidate-hero"]').length,
+            assistantTextPresent: (document.body?.innerText || '').includes('AI Career Assistant'),
+            executiveRailPresent: document.querySelectorAll('[data-testid="cuba-executive-rail"]').length > 0,
             bodyText: (document.body?.innerText || '').trim().length,
         }));
         console.log(`render probe: ${JSON.stringify(renderProbe)}`);
-        if (renderProbe.rails === 0 && renderProbe.hud === 0) {
-            console.error('\n[FATAL] /dashboard rendered no Candidate workspace (no cuba-executive-rail, no cuba-copilot-hud).');
+        if (renderProbe.hero === 0) {
+            console.error('\n[FATAL] /dashboard rendered no Candidate workspace hero.');
             console.error('Diagnosis: the page booted but the shell stayed empty. Apache DOES reverse-proxy /api to the');
             console.error('managed backend API, and that API answers 401 Unauthorized for this harness session (the seeded');
             console.error('JWT is a stub), so no data-backed surface renders. A REAL-data capture therefore requires a');
             console.error('genuinely authenticated session. The previous harness sidestepped this by mocking EVERY API,');
             console.error('which is exactly why its figures were fixtures and not MariaDB values.');
             console.error('Mocked runs (--mock) are for design review only and are labelled ILLUSTRATIVE.');
+            process.exitCode = 1;
+        }
+        if (renderProbe.assistantTextPresent || renderProbe.executiveRailPresent) {
+            console.error('\n[FATAL] the retired AI Career Assistant rail is still present on /dashboard.');
             process.exitCode = 1;
         }
 
@@ -233,23 +255,34 @@ const capture = async () => {
 
         const viewport = await shoot('current_dashboard_live_1920.png');
 
-        // ---- below the fold: scrolled for real, and PROVEN different ----
+        const accessibility = await new AxeBuilder({ page })
+            .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+            .analyze();
+        await fs.writeFile(path.join(EVIDENCE_DIR, 'dashboard-axe.json'), `${JSON.stringify(accessibility, null, 2)}\n`);
+        console.log(`axe WCAG 2.1 AA: ${accessibility.violations.length} violations`);
+        if (accessibility.violations.length > 0) process.exitCode = 1;
+        if (pageErrors.length > 0) process.exitCode = 1;
+
+        // ---- below the fold: capture only when the dashboard has a real scroll range ----
         const scroll = await scrollToBottom(page);
         console.log(`scroll: ${JSON.stringify(scroll)}`);
-        await page.waitForTimeout(1200);
-        const bottom = await shoot('current_dashboard_bottom_analytics.png');
-
-        if (!scroll.found || scroll.after <= scroll.before) {
-            console.error(`\n[FATAL] the dashboard did not scroll (${JSON.stringify(scroll)}).`);
-            console.error('A capture taken from an unscrolled page is not below-the-fold evidence.');
-            process.exitCode = 1;
-        }
-        if (bottom.md5 === viewport.md5) {
-            console.error('\n[FATAL] current_dashboard_bottom_analytics.png is BYTE-IDENTICAL to the viewport shot');
-            console.error(`(both md5 ${bottom.md5}). That artifact proves nothing and must not be cited.`);
-            process.exitCode = 1;
+        let bottom = null;
+        const scrollable = scroll.found && scroll.after > scroll.before;
+        const fitsViewport = scroll.found && scroll.scrollHeight <= scroll.clientHeight + 8;
+        if (scrollable) {
+            await page.waitForTimeout(500);
+            bottom = await shoot('current_dashboard_bottom_analytics.png');
+            if (bottom.md5 === viewport.md5) {
+                console.error('\n[FATAL] the scrolled dashboard capture is byte-identical to the initial viewport.');
+                process.exitCode = 1;
+            } else {
+                console.log(`[OK] the bottom artifact is genuinely different (${viewport.md5} != ${bottom.md5}).`);
+            }
+        } else if (fitsViewport) {
+            console.log('[OK] dashboard content fits in one viewport; no below-the-fold capture is needed.');
         } else {
-            console.log(`[OK] the bottom artifact is genuinely different (${viewport.md5} != ${bottom.md5}).`);
+            console.error(`[FATAL] dashboard has an unresolved scroll state: ${JSON.stringify(scroll)}.`);
+            process.exitCode = 1;
         }
 
         // ---- full-page artifact, guaranteed to contain the whole document ----
@@ -262,6 +295,42 @@ const capture = async () => {
         await page.waitForTimeout(1000);
         const tall = await shoot('current_dashboard_tall_1300.png');
 
+        const viewportAudit = [];
+        for (const [width, height] of VIEWPORTS) {
+            await page.setViewportSize({ width, height });
+            await page.waitForTimeout(250);
+            const measurement = await page.evaluate(() => ({
+                viewport: `${innerWidth}x${innerHeight}`,
+                documentWidth: document.documentElement.scrollWidth,
+                documentHeight: document.documentElement.scrollHeight,
+                heroVisible: Boolean(document.querySelector('[data-testid="cuba-candidate-hero"]')),
+                assistantTextPresent: (document.body?.innerText || '').includes('AI Career Assistant'),
+                executiveRailPresent: Boolean(document.querySelector('[data-testid="cuba-executive-rail"]')),
+                primaryActionVisible: Boolean(document.querySelector('[data-testid="cuba-copilot-cta-new-resume"]')),
+                shellViewportLock: document.querySelector('main[data-viewport-lock="true"]') !== null,
+                mainScrollEnabled: Boolean(document.querySelector('#cuba-main-content')
+                    && ['auto', 'scroll'].includes(getComputedStyle(document.querySelector('#cuba-main-content')).overflowY)),
+                mainHasOverflow: Boolean(document.querySelector('#cuba-main-content')
+                    && document.querySelector('#cuba-main-content').scrollHeight > document.querySelector('#cuba-main-content').clientHeight + 8),
+                workspaceScrollEnabled: Boolean(document.querySelector('[data-testid="cuba-overview-workspace"]')
+                    && ['auto', 'scroll'].includes(getComputedStyle(document.querySelector('[data-testid="cuba-overview-workspace"]')).overflowY)),
+                workspaceHasOverflow: Boolean(document.querySelector('[data-testid="cuba-overview-workspace"]')
+                    && document.querySelector('[data-testid="cuba-overview-workspace"]').scrollHeight > document.querySelector('[data-testid="cuba-overview-workspace"]').clientHeight + 8),
+            }));
+            viewportAudit.push(measurement);
+            const desktopWorkspaceScrollRequired = width >= 1280 && !measurement.workspaceScrollEnabled;
+            if (measurement.documentWidth > width || measurement.documentHeight > height + 8 || !measurement.heroVisible || !measurement.primaryActionVisible || !measurement.shellViewportLock || !measurement.mainScrollEnabled || desktopWorkspaceScrollRequired || measurement.assistantTextPresent || measurement.executiveRailPresent) {
+                console.error(`[FATAL] dashboard viewport check failed: ${JSON.stringify(measurement)}`);
+                process.exitCode = 1;
+            }
+            await page.evaluate(() => {
+                document.querySelectorAll('*').forEach((element) => {
+                    if (element.scrollTop) element.scrollTop = 0;
+                });
+            });
+            await shoot(`dashboard-${width}x${height}.png`);
+        }
+
         const manifest = {
             directive: 'DIR-090',
             servedBy: 'XAMPP Apache',
@@ -272,13 +341,19 @@ const capture = async () => {
                 : 'REAL (MariaDB via the managed backend API)',
             capturedAt: new Date().toISOString(),
             scroll,
-            artifacts: [viewport, bottom, full, tall],
-            belowFoldIsDistinct: bottom.md5 !== viewport.md5,
+            fitsViewport,
+            artifacts: [viewport, ...(bottom ? [bottom] : []), full, tall],
+            viewportAudit,
+            assistantPanelAbsent: !renderProbe.assistantTextPresent && !renderProbe.executiveRailPresent,
+            axeViolationCount: accessibility.violations.length,
+            axeViolations: accessibility.violations.map(({ id, impact, help }) => ({ id, impact, help })),
+            pageErrors,
+            belowFoldIsDistinct: bottom ? bottom.md5 !== viewport.md5 : null,
             consoleErrorCount: consoleErrors.length,
             consoleErrors: consoleErrors.slice(0, 20),
         };
         await fs.writeFile(path.join(EVIDENCE_DIR, 'dir090-capture-manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
-        console.log('\nmanifest: .bridge/evidence/dir090-capture-manifest.json');
+        console.log(`\nmanifest: ${path.join(EVIDENCE_DIR, 'dir090-capture-manifest.json')}`);
         console.log(`console errors: ${consoleErrors.length}`);
     } catch (error) {
         console.error('[FATAL] capture failed:', error);

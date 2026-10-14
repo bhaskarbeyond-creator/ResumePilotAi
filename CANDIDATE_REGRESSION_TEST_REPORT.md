@@ -15,6 +15,10 @@ Evidence files are relative to `artifacts/candidate-audit-20261014/`. Initial ro
 | Adjacent notification/navigation/account tests | Existing suites | **27/27 pass**, 0 skipped | `adjacent-regression.log`; static/unit, not authenticated page navigation |
 | New notification HTTP router contract | New | **8/8 pass**, 0 skipped | `notification-api-contract.log`; real router, simulated identity/SQL; includes parent test |
 | `npm run test:candidate:notifications` | Browser before 15/20 | Node **10/10** (8 router + 2 helper), browser **20/20**, 0 skipped | `final-notifications.log`, `after/results.json`; real Chromium/component/client, simulated HTTP |
+| Dashboard overview capture | New recheck | **8/8 viewports**, assistant rail/text absent, axe 0, no page errors | `artifacts/ui-ux-audit/dashboard-no-assistant/dir090-capture-manifest.json`; illustrative APIs/synthetic identity; 8 unmatched API requests return 401 |
+| Resumes hub interaction suite | New recheck | **10/10 scenarios**, 8/8 viewport layouts, axe 0, no browser errors | `tests/resumes-hub-browser.mjs`, `artifacts/ui-ux-audit/resumes/after/results.json`; real Chromium, simulated APIs |
+| Resume preview/edit journey | New recheck | **24/24 checks**, preview read-only/no save writes; heading/preview overflow at 8 viewports; outer shell bounded in Cuba and legacy variants | `tests/resume-preview-journey-browser.mjs`; real Chromium, simulated API/data |
+| Support Center component follow-up | New recheck | **6/6 named browser scenarios + 8/8 viewport assertions**, axe 0 violations; structural tests **3/3**; targeted ESLint zero warnings | `artifacts/ui-ux-audit/support/after/results.json`, `axe-modal.json`; real Chromium with a **SIMULATED unauthenticated component**. Not authenticated route or live ticket persistence. |
 | Template browser/output audit | Initial 165/220 due test cleanup bug | **220/220 final isolated**, 0 skipped | `template-isolated-retest.log`, `templates/manifest.json`; intermediate 216/220 concurrent run retained. Four fixtures × 55 variants. |
 | Targeted ESLint `--max-warnings 0` | Added gate | PASS, zero warnings | `targeted-lint.log`; all changed application/test/JSX harness/inventory files; final rerun required after any edit |
 | `npm run lint` whole repository | exit 0; 243 warnings | exit 0; **243 warnings**, 0 errors | `final-lint.log`; warning-free mandate remains unmet |
@@ -31,6 +35,7 @@ Evidence files are relative to `artifacts/candidate-audit-20261014/`. Initial ro
 | No duplicate/conflicting read mutations | notification page/router / P21 | held row/bulk, same-tick clicks, 401/403/429/500, API owner scope | browser/API logs and traces | CAND-002 ref locks + exclusive bulk | BLOCKED real DB + reviewer |
 | Correct, non-stale success feedback | DashboardMain callback / P21 | bulk toast contract, unmount | browser traces | CAND-003 positional signature + lifecycle guard | BLOCKED reviewer |
 | Responsive readable messages | notification row / P21 | 8 widths, span/document clipping, filter/read | 16 before/after viewport screenshots | CAND-005 wrapping + target sizes | BLOCKED full-shell/zoom review |
+| Safe Support Center guidance and keyboard dialog | Support FAQ/create-ticket dialog / P20 | qualified copy; dialog semantics, initial focus, Tab wrap, validation retention, Escape/focus return; eight viewport checks | `artifacts/ui-ux-audit/support/after/results.json`, `axe-modal.json`; `dir096-support-dialog-ux.test.mjs` 3/3 | CAND-012 copy/dialog issue fixed in current source; authenticated route/ticket API and provider contract remain unverified | BLOCKED independent review |
 | All template variants accounted | renderer / P10–11 | 55×4 fixtures, PDF parse/name, CV DOCX XML/name/employment | manifest + outputs/screenshots | No protected template edit; glyph gap remains | BLOCKED full downloads/glyph/parity |
 | Valid builder binding regression | BuildResume→Preview→TemplateRenderer; step routes / P04/10 | AST binding/mount, negative mutation examples | 50/50 targeted log | CAND-006 test architecture correction | BLOCKED reviewer |
 | Data ownership and tenant admission | database/AI / P09/36 | ownership and AI suites | 58 failures log | CAND-008/009; protected changes not approved | BLOCKED approval/infrastructure |
@@ -39,6 +44,7 @@ Evidence files are relative to `artifacts/candidate-audit-20261014/`. Initial ro
 
 - Complete live critical cross-pipeline journeys: **0 accepted**; 12 journey groups listed in E2E report are partial/unverified. Those groups are not the final exhaustive requirement denominator.
 - Required historical surface viewport accounting: notifications 8/8 component cases; remaining 92×8 = **736 unverified combinations**, plus unenumerated modal/query states. No skip is counted as a pass.
+- Support Center create-ticket dialog: **8/8 component viewport cases** and six named browser scenarios passed; the full authenticated Support Center page is still included among the 736 unverified page/viewport combinations.
 - Full independent Lead decisions: **0 approvals** across 8 roadmap workstreams.
 - Type checking: no root/backend TypeScript project/typecheck script established for touched JS/JSX surfaces; no `tsc` pass claimed. Dedicated Semgrep/coverage percentage was not run; existing security suite is not a substitute for a complete security audit.
 - Live MariaDB migration/transaction/isolation, real identity/OAuth/MFA, provider/payment/export end-to-end, WCAG manual/screen-reader/zoom, Web Vitals and complete visual parity: blocked/unexecuted; no denominator-normalized pass percentage assigned.
@@ -50,3 +56,7 @@ Run locked root/backend installs, then `npm run audit:candidate:inventory`, `npm
 ## Latest harness recheck
 
 The final two browser suites were run simultaneously with separate Vite caches: notifications **20/20** and templates **220/220** passed (`notification-cache-isolated-final.log`, `template-cache-isolated-final.log`). This adds one successful concurrent recheck, not a conclusive reconstruction of the earlier Cover4 exception. Failed manifests/logs remain retained.
+
+### Support Center continuation recheck — 2026-10-14
+
+`node tests/candidate-support-browser.mjs` passed six named browser scenarios, all eight dialog viewport assertions, and reported no uncaught page errors; its axe WCAG 2.1 A/AA + 2.1AA scan reported zero violations. `node --test tests/dir096-support-dialog-ux.test.mjs` passed 3/3. Targeted ESLint on the Support Center source and these two tests passed with `--max-warnings 0`. The FAQ no longer makes the previously unsupported retention/training/export-parity guarantees. This is component-level simulated evidence only; it does not clear authenticated route, ticket API, privacy-contract or independent-review blockers.

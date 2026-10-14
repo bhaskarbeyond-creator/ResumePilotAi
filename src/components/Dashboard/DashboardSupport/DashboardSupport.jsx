@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
     FiLifeBuoy,
     FiPlus,
@@ -42,68 +41,67 @@ const PRIORITIES = [
 const KNOWLEDGE_BASE_ITEMS = [
     {
         category: 'Resume Building & Export',
-        icon: 'FiFileText',
+        icon: FiFileText,
         items: [
             {
-                q: 'How do I download my resume in high-fidelity PDF or Word DOCX format?',
-                a: 'On your dashboard or in the Resume Builder finalize step, click the "Download PDF" or "Download Word" button. The system runs our certified high-fidelity render engine to generate pixel-perfect documents with 0 layout drift across all 51 templates.'
+                q: 'How do I download my resume as a PDF or Word document?',
+                a: 'Open the Resume Builder review step, choose an export format that is available, and inspect the preview before downloading. Layouts can vary by template and content. If an export has a problem, include the template name and format in a support ticket.'
             },
             {
                 q: 'Can I switch between the 51 resume templates without losing my content?',
-                a: 'Yes! All 51 templates share a unified master resume data schema. You can switch templates at any time and all your work experiences, skills, education, and summaries are automatically adapted to the chosen layout archetype.'
+                a: 'Use the template chooser in the review step to preview another layout. Before exporting, check that the sections you want are present and readable in the selected template.'
             },
             {
                 q: 'How does the ATS Keyword Optimization Engine work?',
-                a: 'Our ATS score analyzer evaluates your resume against industry-standard categories (contact info, action verbs, measurable metrics, technical skills, and section completeness). Paste a target job description to get instant keyword match percentage.'
+                a: 'The resume review uses your content and, when provided, a job description to produce an estimate. Treat the score as editing guidance rather than a guarantee; employers and screening systems can use different criteria.'
             }
         ]
     },
     {
         category: 'AI Tools & Interview Preparation',
-        icon: 'FiCpu',
+        icon: FiCpu,
         items: [
             {
                 q: 'How does the AI Mock Interview Coach & CBT Simulator work?',
-                a: 'Navigate to "AI Interview Coach" from the sidebar. Choose your target role, difficulty, and question count. The simulator generates authentic multiple-choice CBT questions with timed duration, flag for review, and comprehensive diagnostic reports upon completion.'
+                a: 'Open AI Interview Coach from your dashboard and follow the setup options shown there. If setup or a session does not work as expected, include the step you reached and any error message in a support ticket.'
             },
             {
                 q: 'Is my personal career information used to train AI models?',
-                a: 'No. IME365 strictly enforces a zero-retention pledge. All data processed by enterprise AI generation services is ephemeral and never used to train public foundation models.'
+                a: 'Review the current Privacy Policy and any provider or feature notices before sending personal information to an AI feature. Data handling can vary by provider and service. If you need specific retention details, ask support before submitting sensitive content.'
             }
         ]
     },
     {
         category: 'Account & Security',
-        icon: 'FiShield',
+        icon: FiShield,
         items: [
             {
                 q: 'How do I set up two-factor authentication (TOTP 2FA)?',
-                a: 'Go to Settings > "Security & 2FA Hub". Click "Enable 2FA", scan the QR code with Google Authenticator, Authy, or 1Password, and enter the 6-digit code to activate. Make sure to securely save your emergency backup codes.'
+                a: 'Open Settings and choose Security. Follow the instructions shown there, and store any recovery codes in a secure place. Never share your password, one-time code, or recovery codes in a support ticket.'
             },
             {
-                q: 'How can I export a complete copy of my account data (GDPR)?',
-                a: 'Under Settings > "Security & 2FA Hub", scroll to Card 5 "GDPR Data Portability & Export" and click "Download JSON Export" to receive all your profile, resumes, cover letters, and transaction data in a single file.'
+                q: 'How can I request a copy of my account data?',
+                a: 'Check Settings for an account data export option. If you cannot find one, open a support ticket and ask about the available request process. Do not include passwords, verification codes, or full payment details.'
             }
         ]
     },
     {
         category: 'Billing & Subscriptions',
-        icon: 'FiCreditCard',
+        icon: FiCreditCard,
         items: [
             {
                 q: 'Which payment methods are supported on IME365?',
-                a: 'We support Stripe (Credit/Debit cards), PayPal, Razorpay (UPI, Netbanking, Cards), PhonePe, and Paytm. All transactions are securely processed with 256-bit SSL encryption.'
+                a: 'The checkout page lists the payment methods currently available for your account. Availability can vary by region and plan. Never include full card or bank details in a support ticket.'
             },
             {
-                q: 'Where can I download my payment tax invoices and credit notes?',
-                a: 'Navigate to "Subscription & Plans" from the sidebar. Click the "Invoices & Receipts" tab to view and download official GST/tax-compliant PDF receipts for all your billing orders.'
+                q: 'Where can I find payment receipts or invoices?',
+                a: 'Open Subscription & Plans and choose Billing History & PDF Invoices. If a receipt is missing or incorrect, include the order or invoice reference in a support ticket, not your full payment details.'
             }
         ]
     }
 ];
 
-export default function DashboardSupport({ showToast, sidebarCollapsed }) {
-    const { t } = useTranslation('common');
+export default function DashboardSupport({ showToast }) {
     const [tickets, setTickets] = useState([]);
     const [statusFilter, setStatusFilter] = useState('ALL');
     const [searchTerm, setSearchTerm] = useState('');
@@ -127,6 +125,11 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
     const [newBody, setNewBody] = useState('');
     const [isCreatingTicket, setIsCreatingTicket] = useState(false);
     const [createError, setCreateError] = useState('');
+    const createTicketButtonRef = useRef(null);
+    const createTicketDialogRef = useRef(null);
+    const createTicketSubjectRef = useRef(null);
+    const isCreatingTicketRef = useRef(isCreatingTicket);
+    isCreatingTicketRef.current = isCreatingTicket;
 
     // Load ticket list for the logged-in candidate
     const loadTickets = useCallback(async () => {
@@ -181,18 +184,52 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
         }
     }, [selectedTicketId, loadDetail]);
 
-    // Global escape key listener for modal
+    // Keep keyboard focus inside the modal and restore it to the opener on close.
     useEffect(() => {
+        if (!isCreateModalOpen) return undefined;
+
+        const opener = createTicketButtonRef.current;
+        const previousBodyOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        const focusFrame = window.requestAnimationFrame(() => createTicketSubjectRef.current?.focus());
         const handleKeyDown = (e) => {
             if (e.key === 'Escape') {
-                if (isCreateModalOpen && !isCreatingTicket) {
-                    setIsCreateModalOpen(false);
-                }
+                if (isCreatingTicketRef.current) return;
+                e.preventDefault();
+                setIsCreateModalOpen(false);
+                return;
+            }
+
+            if (e.key !== 'Tab') return;
+            const dialog = createTicketDialogRef.current;
+            const focusable = Array.from(dialog?.querySelectorAll(
+                'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            ) || []).filter((element) => element.getClientRects().length > 0 && element.getAttribute('aria-hidden') !== 'true');
+
+            if (!focusable.length) {
+                e.preventDefault();
+                dialog?.focus();
+                return;
+            }
+
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (e.shiftKey && (document.activeElement === first || !dialog?.contains(document.activeElement))) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && (document.activeElement === last || !dialog?.contains(document.activeElement))) {
+                e.preventDefault();
+                first.focus();
             }
         };
         window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isCreateModalOpen, isCreatingTicket]);
+        return () => {
+            window.cancelAnimationFrame(focusFrame);
+            window.removeEventListener('keydown', handleKeyDown);
+            document.body.style.overflow = previousBodyOverflow;
+            if (opener?.isConnected) opener.focus();
+        };
+    }, [isCreateModalOpen]);
 
     // Create ticket handler
     const handleCreateTicket = async (e) => {
@@ -295,7 +332,7 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
             case 'HIGH':
                 return 'bg-[var(--cuba-warning-soft)] text-[var(--cuba-warning)] border-[var(--cuba-warning-soft)] font-bold';
             case 'NORMAL':
-                return 'bg-[var(--cuba-primary-soft)] text-[var(--cuba-primary-ink)] border-[var(--cuba-primary-line)]';
+                return 'bg-[var(--cuba-primary-soft)] text-[var(--cuba-primary-ink-strong)] border-[var(--cuba-primary-line)]';
             case 'LOW':
             default:
                 return 'bg-slate-100 text-[var(--cuba-ink-muted)] border-[var(--cuba-line)]';
@@ -325,7 +362,7 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                 {/* ── HEADER & ACTIONS ────────────────────────────────────────── */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-2xl border border-[var(--cuba-line)] shadow-2xs">
                     <div className="flex items-center gap-3.5">
-                        <div className="w-12 h-12 rounded-2xl bg-[var(--cuba-primary-soft)] border border-[var(--cuba-primary-line)] text-[var(--cuba-primary-ink)] flex items-center justify-center shrink-0 shadow-2xs">
+                        <div className="w-12 h-12 rounded-2xl bg-[var(--cuba-primary-soft)] border border-[var(--cuba-primary-line)] text-[var(--cuba-primary-ink-strong)] flex items-center justify-center shrink-0 shadow-2xs">
                             <FiLifeBuoy className="w-6 h-6" />
                         </div>
                         <div>
@@ -352,12 +389,13 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                         </button>
 
                         <button
+                            ref={createTicketButtonRef}
                             type="button"
                             onClick={() => {
                                 setCreateError('');
                                 setIsCreateModalOpen(true);
                             }}
-                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--cuba-primary)] text-white text-xs font-bold hover:bg-[var(--cuba-primary-strong)] active:bg-[var(--cuba-primary-strong)] transition shadow-sm hover:shadow shadow-indigo-500/20 cursor-pointer"
+                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--cuba-primary-fill)] text-white text-xs font-bold hover:bg-[var(--cuba-primary-strong)] active:bg-[var(--cuba-primary-strong)] transition shadow-sm hover:shadow shadow-indigo-500/20 cursor-pointer"
                             data-testid="create-ticket-button"
                         >
                             <FiPlus className="w-4 h-4" />
@@ -388,7 +426,7 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                         onClick={() => setActiveSupportTab('tickets')}
                         className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                             activeSupportTab === 'tickets'
-                                ? 'bg-[var(--cuba-primary)] text-white shadow-sm'
+                                ? 'bg-[var(--cuba-primary-fill)] text-white shadow-sm'
                                 : 'bg-white text-[var(--cuba-ink-muted)] hover:bg-slate-100 hover:text-[var(--cuba-ink)] border border-[var(--cuba-line)]'
                         }`}
                         data-testid="tab-support-tickets"
@@ -396,7 +434,7 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                         <FiInbox className="w-3.5 h-3.5" />
                         <span>My Support Tickets</span>
                         <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
-                            activeSupportTab === 'tickets' ? 'bg-[var(--cuba-primary-strong)] text-[var(--cuba-on-primary)]' : 'bg-slate-100 text-[var(--cuba-ink-muted)]'
+                            activeSupportTab === 'tickets' ? 'bg-white text-[var(--cuba-primary-ink-strong)]' : 'bg-slate-100 text-[var(--cuba-ink-muted)]'
                         }`}>
                             {tickets.length}
                         </span>
@@ -406,7 +444,7 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                         onClick={() => setActiveSupportTab('faq')}
                         className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                             activeSupportTab === 'faq'
-                                ? 'bg-[var(--cuba-primary)] text-white shadow-sm'
+                                ? 'bg-[var(--cuba-primary-fill)] text-white shadow-sm'
                                 : 'bg-white text-[var(--cuba-ink-muted)] hover:bg-slate-100 hover:text-[var(--cuba-ink)] border border-[var(--cuba-line)]'
                         }`}
                         data-testid="tab-knowledge-base"
@@ -437,6 +475,7 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                             {KNOWLEDGE_BASE_ITEMS.map((cat, catIdx) => {
+                                const CategoryIcon = cat.icon || FiBook;
                                 const filteredItems = cat.items.filter(item => {
                                     if (!faqSearch) return true;
                                     const q = faqSearch.toLowerCase();
@@ -446,28 +485,30 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
 
                                 return (
                                     <div key={cat.category} className="bg-[var(--cuba-canvas)] rounded-2xl p-5 border border-[var(--cuba-line)] space-y-3">
-                                        <div className="flex items-center gap-2 text-[var(--cuba-primary-ink)] font-bold text-sm">
-                                            <FiBook className="w-4 h-4 text-[var(--cuba-primary-ink)]" />
+                                        <div className="flex items-center gap-2 text-[var(--cuba-primary-ink-strong)] font-bold text-sm">
+                                            <CategoryIcon className="w-4 h-4 text-[var(--cuba-primary-ink-strong)]" aria-hidden="true" />
                                             <span>{cat.category}</span>
                                         </div>
                                         <div className="space-y-2">
                                             {filteredItems.map((item, itemIdx) => {
                                                 const globalIdx = `${catIdx}_${itemIdx}`;
                                                 const isExpanded = expandedFaqIndex === globalIdx;
+                                                const answerId = `support-faq-answer-${catIdx}-${itemIdx}`;
                                                 return (
                                                     <div key={item.q} className="bg-white rounded-xl border border-[var(--cuba-line)] overflow-hidden shadow-2xs">
                                                         <button
+                                                            type="button"
                                                             onClick={() => setExpandedFaqIndex(isExpanded ? null : globalIdx)}
-                                                            className="w-full px-4 py-3 text-left text-xs font-bold text-[var(--cuba-ink)] flex items-center justify-between gap-3 hover:text-[var(--cuba-primary-ink)] transition-colors cursor-pointer"
+                                                            className="w-full px-4 py-3 text-left text-xs font-bold text-[var(--cuba-ink)] flex items-center justify-between gap-3 hover:text-[var(--cuba-primary-ink-strong)] transition-colors cursor-pointer"
+                                                            aria-expanded={isExpanded}
+                                                            aria-controls={answerId}
                                                         >
                                                             <span>{item.q}</span>
                                                             {isExpanded ? <FiChevronUp className="w-4 h-4 text-[var(--cuba-ink-subtle)] shrink-0" /> : <FiChevronDown className="w-4 h-4 text-[var(--cuba-ink-subtle)] shrink-0" />}
                                                         </button>
-                                                        {isExpanded && (
-                                                            <div className="px-4 pb-3.5 pt-1 text-xs text-[var(--cuba-ink-muted)] border-t border-[var(--cuba-line)] leading-relaxed bg-[var(--cuba-canvas)]">
-                                                                {item.a}
-                                                            </div>
-                                                        )}
+                                                        <div id={answerId} hidden={!isExpanded} className="px-4 pb-3.5 pt-3 text-sm text-[var(--cuba-ink-muted)] border-t border-[var(--cuba-line)] leading-relaxed bg-[var(--cuba-canvas)]">
+                                                            {item.a}
+                                                        </div>
                                                     </div>
                                                 );
                                             })}
@@ -516,7 +557,7 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                                         onClick={() => setStatusFilter(st)}
                                         className={`px-2.5 py-1 text-[11px] font-bold rounded-lg border transition cursor-pointer ${
                                             statusFilter === st
-                                                ? 'bg-[var(--cuba-primary)] text-white border-[var(--cuba-primary)] shadow-2xs'
+                                                ? 'bg-[var(--cuba-primary-fill)] text-white border-[var(--cuba-primary-fill)] shadow-2xs'
                                                 : 'bg-white text-[var(--cuba-ink-muted)] border-[var(--cuba-line)] hover:bg-slate-50'
                                         }`}
                                         data-testid={`filter-status-${st.toLowerCase()}`}
@@ -555,7 +596,7 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                                         <button
                                             type="button"
                                             onClick={() => setIsCreateModalOpen(true)}
-                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[var(--cuba-primary-ink)] bg-[var(--cuba-primary-soft)] hover:bg-[var(--cuba-primary-soft-hover)] rounded-lg transition cursor-pointer"
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[var(--cuba-primary-ink-strong)] bg-[var(--cuba-primary-soft)] hover:bg-[var(--cuba-primary-soft-hover)] rounded-lg transition cursor-pointer"
                                         >
                                             <FiPlus className="w-3.5 h-3.5" />
                                             <span>Create Ticket</span>
@@ -660,7 +701,7 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                                             >
                                                 <div className="flex items-center gap-1.5 text-[10px] text-[var(--cuba-ink-subtle)] mb-1 px-1">
                                                     {isStaff ? (
-                                                        <span className="font-bold text-[var(--cuba-primary-ink)] flex items-center gap-1">
+                                                            <span className="font-bold text-[var(--cuba-primary-ink-strong)] flex items-center gap-1">
                                                             <FiShield className="w-3 h-3" /> Support Specialist
                                                         </span>
                                                     ) : (
@@ -675,7 +716,7 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                                                     className={`max-w-[85%] rounded-2xl px-4 py-3 text-xs leading-relaxed ${
                                                         isStaff
                                                             ? 'bg-white border border-[var(--cuba-line)] text-[var(--cuba-ink)] shadow-2xs rounded-tl-xs'
-                                                            : 'bg-[var(--cuba-primary)] text-white shadow-2xs rounded-tr-xs'
+                                                            : 'bg-[var(--cuba-primary-fill)] text-white shadow-2xs rounded-tr-xs'
                                                     }`}
                                                 >
                                                     <p className="whitespace-pre-wrap">{msg.body}</p>
@@ -706,7 +747,7 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                                                 <button
                                                     type="submit"
                                                     disabled={!replyText.trim() || isSubmittingReply}
-                                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--cuba-primary)] text-white text-xs font-bold hover:bg-[var(--cuba-primary-strong)] transition shadow-xs cursor-pointer disabled:opacity-50"
+                                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--cuba-primary-fill)] text-white text-xs font-bold hover:bg-[var(--cuba-primary-strong)] transition shadow-xs cursor-pointer disabled:opacity-50"
                                                     data-testid="ticket-reply-button"
                                                 >
                                                     {isSubmittingReply ? (
@@ -728,7 +769,7 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                             </div>
                         ) : (
                             <div className="bg-white rounded-2xl border border-[var(--cuba-line)] shadow-2xs p-12 text-center min-h-[400px] flex flex-col items-center justify-center space-y-3">
-                                <div className="w-14 h-14 rounded-2xl bg-[var(--cuba-primary-soft)] text-[var(--cuba-primary-ink)] flex items-center justify-center">
+                                <div className="w-14 h-14 rounded-2xl bg-[var(--cuba-primary-soft)] text-[var(--cuba-primary-ink-strong)] flex items-center justify-center">
                                     <FiMessageSquare className="w-7 h-7" />
                                 </div>
                                 <h3 className="text-base font-bold text-[var(--cuba-ink)]">Select a Ticket</h3>
@@ -744,27 +785,39 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                 {/* ── CREATE TICKET MODAL ──────────────────────────────────────── */}
                 {isCreateModalOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs" data-testid="create-ticket-modal">
-                        <div className="bg-white rounded-2xl border border-[var(--cuba-line)] shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                        <div
+                            ref={createTicketDialogRef}
+                            role="dialog"
+                            aria-modal="true"
+                            aria-labelledby="create-ticket-modal-title"
+                            aria-describedby="create-ticket-modal-description"
+                            tabIndex={-1}
+                            className="bg-white rounded-2xl border border-[var(--cuba-line)] shadow-2xl max-w-lg w-full max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain animate-in fade-in zoom-in-95 duration-150"
+                        >
                             <div className="px-6 py-4 border-b border-[var(--cuba-line)] flex items-center justify-between bg-[var(--cuba-canvas)]">
                                 <div className="flex items-center gap-2.5">
-                                    <div className="w-8 h-8 rounded-xl bg-[var(--cuba-primary-soft)] text-[var(--cuba-primary-ink)] flex items-center justify-center font-bold">
+                                    <div className="w-8 h-8 rounded-xl bg-[var(--cuba-primary-soft)] text-[var(--cuba-primary-ink-strong)] flex items-center justify-center font-bold">
                                         <FiPlus className="w-4 h-4" />
                                     </div>
-                                    <h3 className="text-sm sm:text-base font-bold text-[var(--cuba-ink)]">
+                                    <h3 id="create-ticket-modal-title" className="text-sm sm:text-base font-bold text-[var(--cuba-ink)]">
                                         Raise Support Ticket
                                     </h3>
                                 </div>
                                 <button
                                     type="button"
                                     onClick={() => !isCreatingTicket && setIsCreateModalOpen(false)}
-                                    className="text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+                                    disabled={isCreatingTicket}
+                                    className="inline-flex min-h-11 min-w-11 items-center justify-center text-[var(--cuba-ink-subtle)] hover:text-[var(--cuba-ink-muted)] rounded-lg hover:bg-slate-100 transition cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--cuba-primary)] disabled:cursor-not-allowed disabled:opacity-50"
                                     aria-label="Close modal"
                                 >
                                     <FiX className="w-5 h-5" />
                                 </button>
                             </div>
 
-                            <form onSubmit={handleCreateTicket} className="p-6 space-y-4">
+                            <form onSubmit={handleCreateTicket} className="p-5 sm:p-6 space-y-4">
+                                <p id="create-ticket-modal-description" className="text-sm text-[var(--cuba-ink-muted)] leading-relaxed">
+                                    Tell us what happened and what you expected. Do not include passwords, verification codes, or full payment details.
+                                </p>
                                 {createError && (
                                     <div role="alert" className="p-3 bg-[var(--cuba-danger-soft)] border border-[var(--cuba-danger-line-base)] rounded-xl text-xs text-[var(--cuba-danger)] flex items-center gap-2">
                                         <FiAlertCircle className="w-4 h-4 text-[var(--cuba-danger)] shrink-0" />
@@ -778,11 +831,12 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                                     </label>
                                     <input
                                         id="ticket-subject"
+                                        ref={createTicketSubjectRef}
                                         type="text"
                                         placeholder="Brief summary of your question or issue"
                                         value={newSubject}
                                         onChange={(e) => setNewSubject(e.target.value)}
-                                        className="w-full px-3.5 py-2.5 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-xl text-xs text-[var(--cuba-ink)] focus:outline-hidden focus:bg-white focus:border-[var(--cuba-primary)] transition"
+                                        className="w-full px-3.5 py-3 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-xl text-base sm:text-sm text-[var(--cuba-ink)] focus:bg-white focus:border-[var(--cuba-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--cuba-primary)] transition"
                                         data-testid="ticket-subject-input"
                                         required
                                     />
@@ -796,7 +850,7 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                                         id="ticket-priority"
                                         value={newPriority}
                                         onChange={(e) => setNewPriority(e.target.value)}
-                                        className="w-full px-3.5 py-2.5 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-xl text-xs text-[var(--cuba-ink)] focus:outline-hidden focus:bg-white focus:border-[var(--cuba-primary)] transition cursor-pointer"
+                                        className="w-full px-3.5 py-3 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-xl text-base sm:text-sm text-[var(--cuba-ink)] focus:bg-white focus:border-[var(--cuba-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--cuba-primary)] transition cursor-pointer"
                                         data-testid="ticket-priority-select"
                                     >
                                         {PRIORITIES.map((p) => (
@@ -817,25 +871,25 @@ export default function DashboardSupport({ showToast, sidebarCollapsed }) {
                                         placeholder="Please provide complete context, steps taken, or specific error messages so we can assist you quickly..."
                                         value={newBody}
                                         onChange={(e) => setNewBody(e.target.value)}
-                                        className="w-full p-3.5 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-xl text-xs text-[var(--cuba-ink)] focus:outline-hidden focus:bg-white focus:border-[var(--cuba-primary)] transition resize-none"
+                                        className="w-full p-3.5 bg-[var(--cuba-canvas)] border border-[var(--cuba-line)] rounded-xl text-base sm:text-sm text-[var(--cuba-ink)] focus:bg-white focus:border-[var(--cuba-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--cuba-primary)] transition resize-y"
                                         data-testid="ticket-body-input"
                                         required
                                     />
                                 </div>
 
-                                <div className="pt-3 flex items-center justify-end gap-2.5 border-t border-[var(--cuba-line)]">
+                                <div className="pt-3 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 border-t border-[var(--cuba-line)]">
                                     <button
                                         type="button"
                                         onClick={() => setIsCreateModalOpen(false)}
                                         disabled={isCreatingTicket}
-                                        className="px-4 py-2 rounded-xl border border-[var(--cuba-line)] text-xs font-bold text-[var(--cuba-ink-muted)] hover:bg-slate-50 transition cursor-pointer"
+                                        className="w-full sm:w-auto min-h-11 px-4 py-2 rounded-xl border border-[var(--cuba-line)] text-sm font-bold text-[var(--cuba-ink-muted)] hover:bg-slate-50 transition cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--cuba-primary)]"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={isCreatingTicket || !newSubject.trim() || !newBody.trim()}
-                                        className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-[var(--cuba-primary)] text-white text-xs font-bold hover:bg-[var(--cuba-primary-strong)] transition shadow-sm cursor-pointer disabled:opacity-50"
+                                        className="inline-flex w-full sm:w-auto min-h-11 items-center justify-center gap-2 px-5 py-2 rounded-xl bg-[var(--cuba-primary-fill)] text-white text-sm font-bold hover:bg-[var(--cuba-primary-strong)] transition shadow-sm cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--cuba-primary)] disabled:opacity-50"
                                         data-testid="ticket-submit-button"
                                     >
                                         {isCreatingTicket ? (

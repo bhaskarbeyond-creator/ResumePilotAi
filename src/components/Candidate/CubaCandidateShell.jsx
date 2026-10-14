@@ -9,7 +9,6 @@ import { ACCOUNT_PORTALS, accountLinksFor } from '../cuba/accountLinks';
 // DIR-074: clean identity parsing (strips a parenthetical role from the name).
 import { parseUserIdentity } from '../cuba/userIdentity';
 import AiEngineStatus from '../cuba/AiEngineStatus';
-import AiCareerBriefing from './AiCareerBriefing';
 import CubaCandidateHero from './CubaCandidateHero';
 // DIR-022 / AC-4: the renewal-recovery banner. It reads the candidate's own
 // server-authoritative profile, so the deadline it shows is the same value
@@ -24,8 +23,6 @@ import { isApplicationShellRoute } from '../AppShell/applicationShell';
 import { CANDIDATE_NAVIGATION } from '../cuba/candidateNavigation';
 // DIR-073: live entity search (resumes / portfolios / cover letters) for ⌘K.
 import { searchCandidateEntities } from './command/candidateEntitySearch';
-// DIR-077: the executive right-rail intelligence column.
-import CandidateExecutiveRail from './CandidateExecutiveRail';
 import { useUnreadMessages } from '../../hooks/useUnreadMessages';
 import { resolveMessagesVisibility } from '../../utils/moduleFlags';
 import { getSystemSettings } from '../../services/api/platform';
@@ -35,7 +32,6 @@ import { generateUserAiContent } from '../../services/aiService';
 import { COPILOT_PORTALS } from '../cuba/copilotActions';
 import { buildCopilotPayload } from '../cuba/copilotPrompt';
 import fire from '../../conf/fire';
-import logo from '../../assets/logo/logo.png';
 
 /**
  * CubaCandidateShell â€” the Phase 4 candidate workspace chrome.
@@ -408,28 +404,6 @@ const CubaCandidateShell = ({ children, copilotResume = null }) => {
      * confirm that would be a fabricated claim about someone's money.
      */
     const [entitlementProfile, setEntitlementProfile] = useState(null);
-    // DIR-090: the Copilot rail is collapsible. When collapsed the resume workspace takes the
-    // FULL width instead of being permanently squeezed into the rigid 7fr/3fr split. The choice
-    // is persisted so it survives navigation.
-    const [railCollapsed, setRailCollapsed] = useState(() => {
-        try {
-            return window.localStorage.getItem('cuba_workspace_rail') === 'collapsed';
-        } catch {
-            return false;
-        }
-    });
-    const toggleRail = useCallback(() => {
-        setRailCollapsed((current) => {
-            const next = !current;
-            try {
-                window.localStorage.setItem('cuba_workspace_rail', next ? 'collapsed' : 'docked');
-            } catch {
-                // storage unavailable — the layout still works for this session
-            }
-            return next;
-        });
-    }, []);
-
     useEffect(() => {
         let mounted = true;
         getCurrentUserProfile()
@@ -442,14 +416,6 @@ const CubaCandidateShell = ({ children, copilotResume = null }) => {
             });
         return () => { mounted = false; };
     }, []);
-
-    // DIR-093 S7: the rail's prompt input runs the SAME authenticated dispatcher the command
-    // palette uses, so a prompt typed in the rail travels only in the POST body and is counted
-    // against the real server quota. No second AI path is introduced.
-    const handleAsk = useCallback(
-        ({ operation, prompt: askPrompt }) => copilotDispatch(operation, { prompt: askPrompt }),
-        [copilotDispatch],
-    );
 
     const isOverview = location.pathname === '/dashboard' || location.pathname === '/dashboard/';
 
@@ -490,47 +456,15 @@ const CubaCandidateShell = ({ children, copilotResume = null }) => {
                     server reports PAST_DUE with a live grace deadline. */}
                 <PaymentGraceBanner profile={entitlementProfile} />
                 {isOverview ? (
-                    /* DIR-084 SINGLE-VIEWPORT OVERVIEW.
-                       The grid is bounded to exactly one viewport minus the shell header and
-                       the chrome above it, so the Hero, the four Stat Cards, the AI Briefing
-                       and the Executive Rail are all visible together on a 1080p/1440p screen
-                       with ZERO document scrollbar. The split lands at xl (1280px), which is
-                       inside both target resolutions; narrower laptops keep the natural flow
-                       instead of being squashed into a fixed height. The fold-critical blocks
-                       are flex-none and only the Document Gallery / Onboarding region and the
-                       rail scroll internally. */
-                    <div className={`grid min-h-0 grid-cols-1 gap-3 xl:h-[calc(100dvh-var(--cuba-header-h)-3.75rem)] ${railCollapsed ? 'xl:grid-cols-[minmax(0,1fr)]' : 'xl:grid-cols-[minmax(0,1fr)_18.75rem] 2xl:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]'}`}>
+                    /* Full-width overview keeps the measured KPI row above the existing
+                       dashboard workspace, with one stable scroll region and no assistant rail. */
+                    <div className="grid min-h-0 grid-cols-1 gap-3 xl:h-[calc(100dvh-var(--cuba-header-h)-3.75rem)]">
                         <div className="flex min-h-0 min-w-0 flex-col gap-3">
-                            {/* DIR-085: the compact Copilot HUD + metric capsules replace the
-                                tall banner, so the RESUME WORKSPACE is the first real content
-                                and is immediately browsable above the fold. */}
                             <CubaCandidateHero displayName={displayName} onNavigate={navigate} />
-                            {/* DIR-090: dock/collapse the Copilot rail. Collapsed, the workspace
-                                takes the full viewport width instead of the fixed 7fr/3fr split. */}
-                            <button
-                                type="button"
-                                onClick={toggleRail}
-                                aria-expanded={!railCollapsed}
-                                aria-controls="cuba-copilot-rail"
-                                data-testid="cuba-rail-toggle"
-                                className="cuba-focusable hidden self-end rounded-cuba-sm border border-cuba-line px-2.5 py-1 text-[11px] font-bold text-cuba-ink-muted"
-                            >
-                                {railCollapsed ? 'Show Copilot' : 'Hide Copilot'}
-                            </button>
-                            <div className="min-h-0 flex-1 xl:overflow-y-auto cuba-scrollbar [scrollbar-gutter:stable]">
+                            <div data-testid="cuba-overview-workspace" className="min-h-0 flex-1 xl:overflow-y-auto cuba-scrollbar [scrollbar-gutter:stable]">
                                 {children}
                             </div>
                         </div>
-                        {!railCollapsed && (
-                        <aside id="cuba-copilot-rail" className="min-h-0 min-w-0 xl:overflow-y-auto cuba-scrollbar [scrollbar-gutter:stable]" aria-label="Executive intelligence rail">
-                            {/* DIR-085: the AI Career Briefing moves into the ~32% right column
-                                beside the Live Copilot Quick-Pitch, as the mandate specifies. */}
-                            <div className="space-y-2.5">
-                                <div className="hidden"><AiCareerBriefing /></div>
-                                <CandidateExecutiveRail onNavigate={navigate} onAsk={handleAsk} />
-                            </div>
-                        </aside>
-                        )}
                     </div>
                 ) : (
                     children

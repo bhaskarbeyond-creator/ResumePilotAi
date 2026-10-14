@@ -63,6 +63,7 @@ const CubaStatCard = ({
     visual = null,
     loading = false,
     accent = 'primary',
+    compact = false,
     className = '',
 }) => {
     const tokens = ACCENT_TOKENS[accent] || ACCENT_TOKENS.primary;
@@ -75,10 +76,10 @@ const CubaStatCard = ({
             )}
         >
             {/* Top row: Icon bubble on left, trend badge on right */}
-            <div className="flex items-center justify-between gap-2 mb-3">
+            <div className={cx('flex items-center justify-between gap-2', compact ? 'mb-1.5 sm:mb-2' : 'mb-3')}>
                 {icon && (
-                    <div className={cx('relative flex-none p-1 rounded-full border border-dashed transition-transform duration-300', tokens.border)}>
-                        <div className={cx('cuba-stat-icon flex h-11 w-11 items-center justify-center rounded-full shadow-xs transition-transform', tokens.bg)}>
+                    <div className={cx('relative flex-none rounded-full border border-dashed transition-transform duration-300', compact ? 'p-0.5' : 'p-1', tokens.border)}>
+                        <div className={cx('cuba-stat-icon flex items-center justify-center rounded-full shadow-xs transition-transform', compact ? 'h-8 w-8 sm:h-9 sm:w-9' : 'h-11 w-11', tokens.bg)}>
                             {icon}
                         </div>
                     </div>
@@ -105,17 +106,17 @@ const CubaStatCard = ({
                 {loading ? (
                     <CubaSkeleton className="mt-1" height="1.75rem" width="4rem" text={`Loading ${label}`} />
                 ) : (
-                    <p className="text-2xl sm:text-3xl font-black tracking-tight text-cuba-ink tabular-nums font-rubik leading-tight">
+                    <p className={cx('font-black tracking-tight text-cuba-ink tabular-nums font-rubik leading-tight', compact ? 'text-xl sm:text-2xl' : 'text-2xl sm:text-3xl')}>
                         {value}
                     </p>
                 )}
                 {label && (
-                    <p className="text-xs font-semibold uppercase tracking-wider text-cuba-ink-subtle">
+                    <p className={cx('font-semibold uppercase tracking-wider text-cuba-ink-subtle', compact ? 'text-[10px] sm:text-xs' : 'text-xs')}>
                         {label}
                     </p>
                 )}
                 {hint && !loading && (
-                    <p className="text-[11px] font-medium text-cuba-ink-muted leading-tight pt-0.5">
+                    <p className={cx('text-[11px] font-medium text-cuba-ink-muted leading-tight pt-0.5', compact && 'hidden sm:block')}>
                         {hint}
                     </p>
                 )}

@@ -101,7 +101,7 @@ test('DIR-093 AC2b: the trend delta is MEASURED from real timestamps, never esti
     assert.match(hero, /trends=\{loading \? null : trends\}/);
 });
 
-test('DIR-093 AC3: the rail is the reference AI Career Assistant, over real reads', async () => {
+test('DIR-093 AC3: the assistant stays standalone and is not mounted on the dashboard', async () => {
     const [rail, shell] = await Promise.all([read(RAIL), read(SHELL)]);
 
     // The certified wrapper/card testids survive.
@@ -124,10 +124,10 @@ test('DIR-093 AC3: the rail is the reference AI Career Assistant, over real read
     }
     assert.match(rail, /title="Today's Insights"/);
 
-    // The prompt really runs the shell's authenticated dispatcher - no second AI path.
+    // The assistant component still uses the authenticated dispatcher when hosted elsewhere.
     assert.match(rail, /await onAsk\(\{ operation: 'generate-summary', prompt: value \}\);/);
-    assert.match(shell, /const handleAsk = useCallback\(/);
-    assert.match(shell, /copilotDispatch\(operation, \{ prompt: askPrompt \}\)/);
+    assert.doesNotMatch(shell, /CandidateExecutiveRail|AI Career Assistant|cuba-copilot-rail/);
+    assert.match(shell, /copilotDispatch=\{copilotDispatch\}/);
 
     // Today's Insights is derived, and an unknown value OMITS the row instead of inventing it.
     assert.match(rail, /if \(resumeState\.resumes === null\) return rows;/);

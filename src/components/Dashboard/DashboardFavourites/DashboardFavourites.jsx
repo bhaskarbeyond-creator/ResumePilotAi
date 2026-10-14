@@ -1,13 +1,13 @@
-import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { withTranslation } from 'react-i18next';
 import { FaBriefcase, FaFileAlt, FaTrashAlt, FaExternalLinkAlt, FaStar } from 'react-icons/fa';
 import { AuthContext } from '../../../context/AuthContext';
 import {
     getCoverById,
-    getFavourites,
+    getFavouritesForWorkspace,
     getJobById,
-    getJobFavourites,
+    getJobFavouritesForWorkspace,
     getResumeById,
     removeFromFavourites,
 } from '../../../services/api/platform';
@@ -126,8 +126,11 @@ const DashboardFavourites = ({ showToast, t }) => {
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState('');
     const [tab, setTab] = useState('all');
-    const [pendingKey, setPendingKey] = useState(null);
+    const [pendingKeys, setPendingKeys] = useState(() => new Set());
     const [reloadToken, setReloadToken] = useState(0);
+    const pendingKeysRef = useRef(new Set());
+    const mountedRef = useRef(false);
+    const tabsRef = useRef(new Map());
 
     const load = useCallback(async (active) => {
         if (!userId) {
@@ -139,8 +142,8 @@ const DashboardFavourites = ({ showToast, t }) => {
         setLoadError('');
         try {
             const [documentRows, jobRows] = await Promise.all([
-                getFavourites(userId),
-                getJobFavourites(userId),
+                getFavouritesForWorkspace(userId),
+                getJobFavouritesForWorkspace(userId),
             ]);
             if (!active()) return;
 
@@ -178,8 +181,12 @@ const DashboardFavourites = ({ showToast, t }) => {
 
     useEffect(() => {
         let alive = true;
+        mountedRef.current = true;
         load(() => alive);
-        return () => { alive = false; };
+        return () => {
+            alive = false;
+            mountedRef.current = false;
+        };
     }, [load, reloadToken]);
 
     const handleRetry = useCallback(() => setReloadToken((token) => token + 1), []);
@@ -202,8 +209,9 @@ const DashboardFavourites = ({ showToast, t }) => {
     }, [navigate]);
 
     const handleRemove = useCallback(async (item) => {
-        const snapshot = items;
-        setPendingKey(item.key);
+        if (pendingKeysRef.current.has(item.key)) return;
+        pendingKeysRef.current.add(item.key);
+        setPendingKeys(new Set(pendingKeysRef.current));
         // Optimistic: drop the row immediately, roll back if the server refuses.
         setItems((current) => current.filter((row) => row.key !== item.key));
         try {
@@ -213,12 +221,18 @@ const DashboardFavourites = ({ showToast, t }) => {
             }
             showToast?.('success', 'Removed from favourites', `${item.title} was removed from your saved favourites.`);
         } catch (_error) {
-            setItems(snapshot);
-            showToast?.('error', 'Could not remove favourite', 'That favourite is still saved. Please try again.');
+            if (mountedRef.current) {
+                // Restore only this row so a concurrent successful removal stays removed.
+                setItems((current) => current.some((row) => row.key === item.key)
+                    ? current
+                    : [...current, item].sort(byNewest));
+                showToast?.('error', 'Could not remove favourite', 'That favourite is still saved. Please try again.');
+            }
         } finally {
-            setPendingKey(null);
+            pendingKeysRef.current.delete(item.key);
+            if (mountedRef.current) setPendingKeys(new Set(pendingKeysRef.current));
         }
-    }, [items, showToast, userId]);
+    }, [showToast, userId]);
 
     const counts = useMemo(() => ({
         all: items.length,
@@ -232,9 +246,17 @@ const DashboardFavourites = ({ showToast, t }) => {
         return items;
     }, [items, tab]);
 
-    const emptyAction = tab === 'documents'
-        ? { label: 'View portfolios', onClick: () => navigate('/dashboard/portfolios'), variant: 'outline' }
-        : { label: 'Browse jobs', onClick: () => navigate('/dashboard/jobs'), variant: 'primary' };
+    const emptyActions = tab === 'documents'
+        ? {
+            primary: { label: 'Create a resume', onClick: () => navigate('/build-resume/heading?new=1') },
+            secondary: { label: 'Create a cover letter', onClick: () => navigate('/dashboard/cover-letters') },
+        }
+        : tab === 'all'
+            ? {
+                primary: { label: 'Browse jobs', onClick: () => navigate('/dashboard/jobs') },
+                secondary: { label: 'Create a resume', onClick: () => navigate('/build-resume/heading?new=1') },
+            }
+            : { primary: { label: 'Browse jobs', onClick: () => navigate('/dashboard/jobs') } };
 
     const renderBody = () => {
         if (loading) return <CubaLoadingState label="Loading saved favourites" rows={4} />;
@@ -245,7 +267,10 @@ const DashboardFavourites = ({ showToast, t }) => {
                     icon={<FaStar className="h-5 w-5" aria-hidden="true" />}
                     title={EMPTY_COPY[tab].title}
                     description={EMPTY_COPY[tab].description}
-                    action={<CubaButton variant={emptyAction.variant} onClick={emptyAction.onClick}>{emptyAction.label}</CubaButton>}
+                    action={<CubaButton variant="primary" onClick={emptyActions.primary.onClick}>{emptyActions.primary.label}</CubaButton>}
+                    secondaryAction={emptyActions.secondary && (
+                        <CubaButton variant="outline" onClick={emptyActions.secondary.onClick}>{emptyActions.secondary.label}</CubaButton>
+                    )}
                 />
             );
         }
@@ -298,7 +323,7 @@ const DashboardFavourites = ({ showToast, t }) => {
                                     <CubaButton
                                         variant="ghost"
                                         size="sm"
-                                        loading={pendingKey === item.key}
+                                        loading={pendingKeys.has(item.key)}
                                         onClick={() => handleRemove(item)}
                                         icon={<FaTrashAlt className="h-3.5 w-3.5" aria-hidden="true" />}
                                         aria-label={`Remove ${item.title} from favourites`}
@@ -327,7 +352,7 @@ const DashboardFavourites = ({ showToast, t }) => {
                 )}
             />
             <div role="tablist" aria-label="Filter saved favourites" className="flex flex-wrap items-center gap-2">
-                {TABS.map((entry) => {
+                {TABS.map((entry, index) => {
                     const selected = tab === entry.id;
                     return (
                         <button
@@ -338,7 +363,23 @@ const DashboardFavourites = ({ showToast, t }) => {
                             aria-selected={selected}
                             aria-controls="favourites-panel"
                             tabIndex={selected ? 0 : -1}
+                            ref={(node) => {
+                                if (node) tabsRef.current.set(entry.id, node);
+                                else tabsRef.current.delete(entry.id);
+                            }}
                             onClick={() => setTab(entry.id)}
+                            onKeyDown={(event) => {
+                                let targetIndex = null;
+                                if (event.key === 'ArrowRight') targetIndex = (index + 1) % TABS.length;
+                                if (event.key === 'ArrowLeft') targetIndex = (index - 1 + TABS.length) % TABS.length;
+                                if (event.key === 'Home') targetIndex = 0;
+                                if (event.key === 'End') targetIndex = TABS.length - 1;
+                                if (targetIndex === null) return;
+                                event.preventDefault();
+                                const target = TABS[targetIndex];
+                                setTab(target.id);
+                                tabsRef.current.get(target.id)?.focus();
+                            }}
                             className={selected
                                 ? 'cuba-focusable inline-flex items-center gap-2 rounded-full bg-cuba-primary-fill px-4 py-1.5 text-[13px] font-semibold text-cuba-on-primary'
                                 : 'cuba-focusable inline-flex items-center gap-2 rounded-full border border-cuba-line-strong px-4 py-1.5 text-[13px] font-semibold text-cuba-ink-muted hover:bg-cuba-primary-soft hover:text-cuba-ink'}
@@ -349,7 +390,7 @@ const DashboardFavourites = ({ showToast, t }) => {
                     );
                 })}
             </div>
-            <div id="favourites-panel" role="tabpanel" aria-labelledby={`favourites-tab-${tab}`} aria-busy={loading}>
+            <div id="favourites-panel" role="tabpanel" tabIndex={0} aria-labelledby={`favourites-tab-${tab}`} aria-busy={loading}>
                 {renderBody()}
             </div>
         </section>

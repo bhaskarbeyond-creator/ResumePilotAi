@@ -193,6 +193,7 @@ const BuildResume = () => {
     const revisionRef = useRef(0);
     const userIdRef = useRef(null);
     const hasLoadedRef = useRef(false);
+    const previewRequestHandledRef = useRef(false);
     const changeVersionRef = useRef(0);
     const savedVersionRef = useRef(0);
     const saveTimerRef = useRef(null);
@@ -1638,7 +1639,17 @@ const BuildResume = () => {
             setIsLoading(false);
         });
         return () => { active = false; };
-    }, [authChecked, userData.user, scheduleSave, loadRetry]);
+    }, [authChecked, userData.user, scheduleSave, loadRetry, location.search]);
+
+    // Resume hub previews use the canonical builder and renderer. Wait until
+    // the selected draft has loaded so the modal never flashes an empty resume.
+    React.useEffect(() => {
+        if (previewRequestHandledRef.current) return;
+        if (new URLSearchParams(location.search || '').get('preview') !== '1') return;
+        if (!authChecked || isLoading || !hasLoadedRef.current || saveState.status === 'error') return;
+        previewRequestHandledRef.current = true;
+        setShowPreview(true);
+    }, [authChecked, isLoading, location.search, saveState.status]);
 
     // Redirect to first step if on base path
     React.useEffect(() => {
@@ -2006,8 +2017,11 @@ const BuildResume = () => {
 
                     {/* Full Preview Modal Button */}
                     <button
+                        type="button"
                         onClick={() => setShowPreview(true)}
-                        className="cuba-focusable flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-200 text-indigo-700 bg-indigo-50/60 hover:bg-indigo-100 text-xs font-bold shadow-2xs transition-all cursor-pointer"
+                        aria-label="Preview resume"
+                        title="Preview resume"
+                        className="cuba-focusable flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-xl border border-indigo-200 px-3 py-1.5 text-xs font-bold text-indigo-700 bg-indigo-50/60 hover:bg-indigo-100 shadow-2xs transition-all cursor-pointer"
                     >
                         <svg className="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -2224,7 +2238,7 @@ const BuildResume = () => {
                         {/* Step Form Routes — wrapped in Suspense for lazy step chunks (DIR-001) */}
                         <Suspense fallback={<LazySectionFallback />}>
                             <Routes>
-                                <Route path="heading" element={<HeadingStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
+                                <Route path="heading" element={<HeadingStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} onPreview={() => setShowPreview(true)} />} />
                                 <Route path="work-history" element={<WorkHistoryStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
                                 <Route path="education" element={<EducationStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
                                 <Route path="skills" element={<SkillsStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
@@ -2236,7 +2250,7 @@ const BuildResume = () => {
                                 <Route path="references" element={<ReferencesStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
                                 <Route path="custom" element={<CustomSectionsStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
                                 <Route path="review" element={<ReviewStep resumeData={resumeData} updateResumeData={updateResumeData} templateName={getTemplateName(currentTemplate)} saveState={saveState} onNavigate={handleStepClick} onChooseTemplate={() => setShowTemplateSelection(true)} onPreview={() => setShowPreview(true)} onDownload={handleDownload} isDownloading={isDownloading} />} />
-                                <Route path="" element={<HeadingStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
+                                <Route path="" element={<HeadingStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} onPreview={() => setShowPreview(true)} />} />
                             </Routes>
                         </Suspense>
                     </div>

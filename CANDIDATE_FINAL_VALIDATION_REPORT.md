@@ -4,7 +4,7 @@
 
 **This is a partial implementation and validation checkpoint, not completion of the full workspace transformation.** The 99.9% objective is not demonstrated. No independent Lead approval has occurred. Protected modules were not changed without the mandated approval. Remaining work is explicitly recorded rather than represented as production-ready.
 
-Branch: `arena/652ee1d3-resumepilotai`, based on `7490f087bf61b5cd3614a470bc3bf4a73ac3d066`. Initial working tree was clean. Changes remain local to this branch; no deployment, payment, migration, deletion, commit or push was performed.
+The branch and clean-worktree statement below describe the original baseline checkpoint only. The current continuation checkout is `arena/f4651d36-resumepilotai`, with user-directed, uncommitted UI and verification changes. No deployment, payment, migration, commit or push was performed.
 
 ## Delivered
 
@@ -12,6 +12,9 @@ Branch: `arena/652ee1d3-resumepilotai`, based on `7490f087bf61b5cd3614a470bc3bf4
 - Corrected 93-entry surface inventory; machine-readable **157 frontend route declarations** and **428 backend route/mount declarations** (six Express settings lookups excluded from preliminary 434). This is not 157 unique candidate screens or 428 candidate APIs.
 - Expanded source-backed pipeline register to **42 discovered families**, correcting omitted queues and non-Stripe payment callbacks; exhaustive indirect-state discovery still incomplete.
 - Notification lifecycle, mutation race/duplicate protection, positional toast contract, honest malformed-response handling, internal message wrapping and touch-target improvements. No production authentication/API/schema contract changes.
+- `/dashboard` overview now uses the full-width workspace without the default “AI Career Assistant” rail. The rail had been introduced in the prior executive-dashboard layout and was visible by default; the “Live” label was static copy. An illustrative shell capture confirms the rail/text are absent at eight viewports (axe 0; eight unmatched API calls still return 401).
+- `/dashboard/resumes` uses a preview-led resume gallery matching the supplied card layout, with search, filters, sort, pagination, and resume actions. The builder preview/edit route is exercised through a simulated hub journey. These do not certify authenticated persistence or downloads.
+- The “iframe” appearance on the builder comes from a viewport-locked candidate shell plus the builder’s own viewport-height layout, scrollable form canvas, sticky stepper/header, and bottom action bar; no iframe element is used. Forced scroll tracks in the legacy mobile shell were changed to appear only when needed.
 - Browser/component failure-recovery regressions and HTTP router contract tests with synthetic data; before/after screenshots at all eight required sizes; final notification traces and axe output.
 - All **55 template variants × four fixtures** rendered; 55 local Chromium PDFs generated/parsed, 51 CV DOCX files generated/content-inspected, and 55 template screenshots retained. These are not authenticated backend downloads or visual parity certification.
 - Four obsolete builder eager-import test assertions replaced with exact AST binding and JSX mount checks, plus negative tests. Production builder/template/AI/security/database source is unchanged.
@@ -22,6 +25,9 @@ Branch: `arena/652ee1d3-resumepilotai`, based on `7490f087bf61b5cd3614a470bc3bf4
 | Gate | Result |
 |---|---|
 | Notification browser scenarios | **20/20**, simulated HTTP + real component/client/Chromium |
+| Dashboard overview capture | **8/8 viewports**, assistant rail/text absent, axe 0, no page errors; illustrative APIs and synthetic auth; 8 unmatched requests return 401 |
+| Resumes hub browser scenarios | **10/10**, real Chromium with simulated APIs; 8/8 responsive layouts, axe 0 |
+| Resume hub → preview → edit journey | **24/24**, read-only preview/no save writes, builder heading route loaded, eight viewport checks, outer shell bounded under Cuba and legacy variants; simulated APIs |
 | New notification router tests | **8/8**, real Express router + simulated identity/SQL |
 | Combined notification command Node stage | **10/10** (8 router + 2 structural-helper tests), followed by browser 20/20 |
 | Template browser/output cases | **220/220** final isolated run; intermediate failed runs retained |
@@ -44,11 +50,11 @@ Tests overlap; these denominators must not be summed into a fabricated workspace
 | Dimension | Weight | Explicit observed checks / denominator | Whole-workspace score |
 |---|---:|---|---|
 | Functional correctness/workflows | 20% | P21 browser 20/20 scoped scenarios; full live critical journeys accepted 0; exhaustive workflow denominator unfinished | NR |
-| UI/UX/information architecture | 20% | 93/93 historical entries accounted; 1 isolated component provisionally assessed, others NR | NR |
-| Responsive/visual integrity | 15% | Notification 8/8 viewports; remaining original-entry combinations 736 unverified; 55 supplementary template screenshots | NR |
+| UI/UX/information architecture | 20% | 93/93 historical entries accounted; 2 component-level browser assessments (notifications and Support ticket dialog); remaining full pages NR | NR |
+| Responsive/visual integrity | 15% | Notification component 8/8 and Support dialog component 8/8; 736 full-page/viewport combinations remain unverified; 55 supplementary template screenshots | NR |
 | Integration/data integrity | 15% | 8/8 simulated router checks; 0 complete live DB/provider journeys | NR |
 | Security/privacy | 10% | static/security 67/67; backend 831/889; 2/2 dependency audit commands fail | NR / release gate fails |
-| Accessibility | 7% | 1 automated normal-state axe audit: 0 violations; 1 keyboard filter sample; no complete manual/zoom/screen-reader matrix | NR |
+| Accessibility | 7% | 2 sample axe audits (notification and Support dialog), both 0 violations; keyboard samples on both components; no complete manual/zoom/screen-reader matrix | NR |
 | Performance/reliability | 5% | 1 final build succeeds; performance SLA not measured in controlled conditions; template concurrent failure retained | NR |
 | Testing/regression | 5% | product 735/736; explicit downstream 27/27; fixtures/output 220/220; coverage excludes live services | NR / gate incomplete |
 | Documentation/operations | 3% | 15/15 requested report files, 0/8 independent roadmap-workstream approvals; deployment/restore unverified | NR |
@@ -67,10 +73,10 @@ Formula once all agreed checks exist: per-dimension score = passed applicable ac
 | Critical end-to-end and cross-module journeys | No live end-to-end acceptance; DB/identity/provider environment unavailable |
 | Success/failure/recovery | Verified locally only for bounded notification component/router and template output checks |
 | Critical state/data transitions | Partial trace; DB concurrency, payment and AI admission unresolved |
-| Confirmed defects resolved | Notification/test/documentation fixes delivered; ownership/AI/dependencies/fonts remain |
+| Confirmed defects resolved | Notification, test/documentation, and Support FAQ/dialog fixes rechecked; ownership/AI/dependencies/fonts remain |
 | Original/regression tests | Product/security command failures persist; not passed |
 | 51 CV + 4 cover templates fully validated | Individual local render fixtures pass; glyph/parity/download chain incomplete |
-| Responsive screenshots/matrix | Notification component eight sizes, templates extra size; rest unverified |
+| Responsive screenshots/matrix | Notification and Support dialog components each checked at eight sizes; full page/shell states remain unverified |
 | Security/privacy | Dependency findings, missing ownership and unverified live isolation block release |
 | Accessibility/performance | Partial sample only, not WCAG/SLA compliance |
 | Build/lint/type/CI | Build passes; 243 warnings; no remote CI result; JS/JSX-only touched surface, no TypeScript gate claimed |
@@ -92,3 +98,10 @@ Formula once all agreed checks exist: per-dimension score = passed applicable ac
 ## Latest harness recheck
 
 The final two browser suites were run simultaneously with separate Vite caches: notifications **20/20** and templates **220/220** passed (`notification-cache-isolated-final.log`, `template-cache-isolated-final.log`). This adds one successful concurrent recheck, not a conclusive reconstruction of the earlier Cover4 exception. Failed manifests/logs remain retained.
+
+## Continuation checkpoint — 2026-10-14
+
+- Current branch: `arena/f4651d36-resumepilotai`. The earlier branch name and clean-tree statement above are historical baseline data, not the current checkout state.
+- Current worktree contains user-directed UI changes to `BuildResume.jsx`, `PreviewModal.jsx`, `HeadingStep.jsx`, and `DashboardResumes.jsx`, plus Support Center UX work and related tests. These touch protected resume/builder surfaces identified in `.agents/AGENTS.md`; this continuation did not add to or rewrite those surfaces. Their independent Lead review remains unavailable, so they are not certified by this report.
+- Support Center CAND-012 was rechecked in an isolated simulated component browser run: six named interaction scenarios, eight responsive dialog cases, zero axe violations, 3/3 structural tests, and warning-free targeted lint. See [regression report](CANDIDATE_REGRESSION_TEST_REPORT.md), [responsive matrix](CANDIDATE_RESPONSIVE_TEST_MATRIX.md), and [screenshot evidence index](CANDIDATE_SCREENSHOT_EVIDENCE_INDEX.md). Authenticated route, ticket persistence, privacy/provider contract review, and independent Lead verification remain open.
+- Bridge CLI is not installed in this environment; no Bridge status, approval, evidence submission, or certification can be claimed. Overall workspace completion and release readiness remain unproven.

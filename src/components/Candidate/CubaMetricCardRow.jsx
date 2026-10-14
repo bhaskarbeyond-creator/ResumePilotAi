@@ -106,7 +106,7 @@ const MetricCard = ({ label, value, caption, icon, tone = 'primary', children, t
                         <span className="mt-0.5 flex items-center gap-2">
                             <TrendChip delta={trend} unit={trendUnit} />
                             {(!trend || !trendUnit) && caption && (
-                                <span className={value === 'Ready' ? "truncate text-[11px] font-semibold text-cuba-primary hover:underline" : "truncate text-[11px] text-cuba-ink-muted"}>
+                                <span className={value === 'Ready' ? "truncate text-[11px] font-semibold text-cuba-primary-ink-strong hover:underline" : "truncate text-[11px] text-cuba-ink-muted"}>
                                     {caption}
                                 </span>
                             )}

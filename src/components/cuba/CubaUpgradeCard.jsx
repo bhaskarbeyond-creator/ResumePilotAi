@@ -68,7 +68,7 @@ const CubaUpgradeCard = ({ collapsed = false, isPro = false, onNavigate, planHre
                     href={planHref}
                     onClick={go}
                     data-testid="cuba-upgrade-cta"
-                    className="cuba-focusable mt-3 flex w-full items-center justify-center gap-1.5 rounded-cuba-md bg-cuba-primary px-3 py-2 text-xs font-bold text-cuba-primary-ink transition-opacity hover:opacity-90"
+                    className="cuba-focusable mt-3 flex w-full items-center justify-center gap-1.5 rounded-cuba-md bg-cuba-primary-fill px-3 py-2 text-xs font-bold text-cuba-primary-ink transition-opacity hover:opacity-90"
                 >
                     {isPro ? 'Manage plan' : 'Upgrade Now'}
                     <FiArrowRight className="h-3.5 w-3.5" aria-hidden="true" />

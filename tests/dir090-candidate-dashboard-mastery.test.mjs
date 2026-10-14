@@ -6,7 +6,7 @@ import path from 'node:path';
 /**
  * DIR-090 — Candidate workspace mastery.
  *
- * HONEST SCOPE: this suite pins what was DELIVERED (the collapsible rail and the duplicate-CTA
+ * HONEST SCOPE: this suite pins the full-width dashboard and duplicate-CTA
  * eradication) and asserts the NOT-DELIVERED items explicitly, so a green run can never be read
  * as implying the whole directive is complete.
  */
@@ -17,29 +17,17 @@ const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 const SHELL = 'src/components/Candidate/CubaCandidateShell.jsx';
 const HOMEPAGE = 'src/components/Dashboard/DashboardHomepage/DashboardHomepage.jsx';
 
-test('DIR-090 AC1: the Copilot rail is collapsible and the workspace expands to full width', async () => {
+test('DIR-090 AC1: the dashboard workspace uses full width without a Copilot rail', async () => {
     const shell = await read(SHELL);
-    // Real state, persisted so the choice survives navigation.
-    assert.match(shell, /const \[railCollapsed, setRailCollapsed\] = useState/);
-    assert.match(shell, /localStorage\.setItem\('cuba_workspace_rail'/);
-    assert.match(shell, /localStorage\.getItem\('cuba_workspace_rail'\)/);
-    // Docked keeps the shared ratio; collapsed gives the workspace the whole viewport.
-    assert.match(shell, /2xl:grid-cols-\[minmax\(0,7fr\)_minmax\(0,3fr\)\]/);
-    assert.match(shell, /xl:grid-cols-\[minmax\(0,1fr\)\]/);
-    // The rail is actually removed from the tree when collapsed, not merely hidden.
-    assert.match(shell, /\{!railCollapsed && \(/);
-    // Accessible toggle with a real target.
-    assert.match(shell, /data-testid="cuba-rail-toggle"/);
-    assert.match(shell, /aria-expanded=\{!railCollapsed\}/);
-    assert.match(shell, /aria-controls="cuba-copilot-rail"/);
-    assert.match(shell, /id="cuba-copilot-rail"/);
+    assert.match(shell, /grid min-h-0 grid-cols-1 gap-3 xl:h-\[calc\(100dvh-var\(--cuba-header-h\)-3\.75rem\)\]/);
+    assert.doesNotMatch(shell, /CandidateExecutiveRail|AiCareerBriefing|cuba-copilot-rail|cuba-rail-toggle|cuba_workspace_rail/);
 });
 
 test('DIR-090 AC2: the single-viewport lock survives — no whole-window scroll reintroduced', async () => {
     const shell = await read(SHELL);
     // DIR-084's viewport lock must still be present.
     assert.match(shell, /xl:h-\[calc\(100dvh-var\(--cuba-header-h\)-3\.75rem\)\]/);
-    // Internal scrolling containment stays on both panes.
+    // The full-width workspace retains its internal scrolling containment.
     assert.match(shell, /cuba-scrollbar \[scrollbar-gutter:stable\]/);
     // The shell must not reintroduce a full-page scroll root.
     assert.doesNotMatch(shell, /className="min-h-screen/);

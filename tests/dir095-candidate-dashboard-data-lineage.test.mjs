@@ -193,7 +193,7 @@ test('DIR-095 AC6: the reserved DIR-090 ids stay retired and this suite is regis
 
 /* ── AC7: the evidence harness cannot fake a bottom capture again ─────────── */
 
-test('DIR-095 AC7: the capture harness is XAMPP-served, verifies its own scroll, and labels mocks', async () => {
+test('DIR-095 AC7: the capture harness is XAMPP-served, verifies viewport fit/scroll, and labels mocks', async () => {
     const harness = await read(HARNESS);
     // Comments are stripped for the NEGATIVE checks only, so the harness can still document the
     // very defects it is being pinned against (it names the old port and the old API in prose).
@@ -208,9 +208,12 @@ test('DIR-095 AC7: the capture harness is XAMPP-served, verifies its own scroll,
     // It refuses to run when Apache is down rather than silently capturing nothing.
     assert.match(harness, /bridge xampp/);
 
-    // The below-the-fold artifact must be PROVEN different, never assumed.
+    // A below-the-fold artifact must be PROVEN different when a scroll range exists;
+    // an overview that genuinely fits one viewport is accepted without a fake duplicate.
     assert.match(harnessCode, /createHash\('md5'\)/);
-    assert.match(harnessCode, /BYTE-IDENTICAL/);
+    assert.match(harnessCode, /const fitsViewport =/);
+    assert.match(harnessCode, /const scrollable =/);
+    assert.match(harnessCode, /byte-identical/);
 
     // Illustrative (mocked) data can never again be presented as real evidence.
     assert.match(harness, /ILLUSTRATIVE/);

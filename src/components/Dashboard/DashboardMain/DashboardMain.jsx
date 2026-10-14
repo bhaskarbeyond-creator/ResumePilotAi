@@ -316,7 +316,7 @@ class DashboardMain extends Component {
                                         <Route path="messages" element={<MessagesModuleGate home="/dashboard" notify={this.showToast}><DashboardMessages showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} /></MessagesModuleGate>} />     
                                         <Route path="notifications" element={<DashboardNotifications showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
                                         <Route path="favorites" element={<DashboardFavourites showToast={this.showToast} />} />
-                                        <Route path="resumes" element={<DashboardResumes showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
+                                        <Route path="resumes" element={<DashboardResumes showToast={this.showToast} membership={this.state.membership} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
                                         <Route path="interview" element={<DashboardInterviews showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
                                         <Route path="cover-letters" element={<CoverLetter />} />
                                         <Route path="portfolios" element={<DashboardPortfolios showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
