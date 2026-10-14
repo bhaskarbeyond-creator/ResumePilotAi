@@ -104,16 +104,21 @@ async function loadApplicableTenantMembership(uid, requestedTenantId, { allowAmb
         // the tiebreak, so repeated reads can never disagree. EXECUTION paths (the
         // quota gate and the governance middleware) never opt in and still fail
         // closed with AMBIGUOUS_ACTIVE_TENANT.
+        const sorted = eligible.slice().sort((a, b) => {
+            const ta = a.membershipUpdatedAt ? new Date(a.membershipUpdatedAt).getTime() : 0;
+            const tb = b.membershipUpdatedAt ? new Date(b.membershipUpdatedAt).getTime() : 0;
+            if (tb !== ta) return tb - ta;
+            return String(a.tenantId).localeCompare(String(b.tenantId));
+        });
         if (allowAmbiguousSelection) {
-            const primary = eligible.slice().sort((a, b) => {
-                const ta = a.membershipUpdatedAt ? new Date(a.membershipUpdatedAt).getTime() : 0;
-                const tb = b.membershipUpdatedAt ? new Date(b.membershipUpdatedAt).getTime() : 0;
-                if (tb !== ta) return tb - ta;
-                return String(a.tenantId).localeCompare(String(b.tenantId));
-            })[0];
-            return { membership: primary, reason: 'AMBIGUOUS_PRIMARY_SELECTED', ambiguous: true };
+            return { membership: sorted[0], reason: 'AMBIGUOUS_PRIMARY_SELECTED', ambiguous: true };
         }
-        return { membership: null, reason: 'AMBIGUOUS_ACTIVE_TENANT' };
+        return {
+            membership: null,
+            reason: 'AMBIGUOUS_ACTIVE_TENANT',
+            eligibleTenants: sorted,
+            primaryTenantId: sorted[0]?.tenantId || null,
+        };
     }
     return { membership: eligible[0], reason: null };
 }
@@ -170,6 +175,11 @@ async function resolveAiGovernance(req, { allowAmbiguousSelection = false } = {}
                     status: 400,
                     code: 'TENANT_CONTEXT_REQUIRED',
                     message: 'Multiple active tenant memberships found. Provide X-Tenant-Id header to select tenant context.',
+                    primaryTenantId: lookup.primaryTenantId,
+                    availableTenants: lookup.eligibleTenants ? lookup.eligibleTenants.map(t => ({
+                        tenantId: t.tenantId,
+                        updatedAt: t.membershipUpdatedAt,
+                    })) : undefined,
                 },
             };
         }
@@ -252,6 +262,8 @@ function aiGovernanceMiddleware() {
                         code: req.aiGovernance.error.code,
                         message: req.aiGovernance.error.message,
                         requestId: res.locals?.requestId,
+                        primaryTenantId: req.aiGovernance.error.primaryTenantId,
+                        availableTenants: req.aiGovernance.error.availableTenants,
                     },
                 });
             }

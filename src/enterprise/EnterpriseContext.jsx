@@ -89,7 +89,13 @@ const requestedTenantId = tenantId || paramTenantId || matchedBySlug || simulate
       const activeWorkspaceId = active.workspace?.id || '';
       const workspaceList = await enterpriseFetch('/api/enterprise/workspaces', { tenantId: activeTenantId, workspaceId: activeWorkspaceId }).catch(() => ({ workspaces: [] }));
       writeStorage(tenantStorageKey(user.uid), activeTenantId);
-      if (activeTenantId) writeStorage(workspaceStorageKey(user.uid, activeTenantId), activeWorkspaceId);
+      if (activeTenantId) {
+        writeStorage(workspaceStorageKey(user.uid, activeTenantId), activeWorkspaceId);
+        try {
+          sessionStorage.setItem('activeTenantId', activeTenantId);
+          localStorage.setItem('activeTenantId', activeTenantId);
+        } catch (_) {}
+      }
       const tenants = rawTenants.length > 0 ? rawTenants : (active.tenant ? [active.tenant] : []);
       const next = {
         loading: false,
@@ -126,6 +132,12 @@ const requestedTenantId = tenantId || paramTenantId || matchedBySlug || simulate
     if (!enabled || !user?.uid) return null;
     // The server verifies membership. This is only a requested UI context.
     writeStorage(tenantStorageKey(user.uid), tenantId);
+    if (tenantId) {
+      try {
+        sessionStorage.setItem('activeTenantId', tenantId);
+        localStorage.setItem('activeTenantId', tenantId);
+      } catch (_) {}
+    }
     return load({ tenantId });
   }, [enabled, load, user?.uid]);
 

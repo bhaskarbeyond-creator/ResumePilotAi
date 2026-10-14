@@ -75,14 +75,93 @@ export function buildAiRequest(endpointName, payload = {}) {
     return { url: `/api/${operation}`, body: finalPayload };
 }
 
-function resolveActiveTenantId() {
-    try {
-        return (typeof sessionStorage !== 'undefined' ? (sessionStorage.getItem('activeTenantId') || sessionStorage.getItem('selectedTenantId')) : null)
-            || (typeof localStorage !== 'undefined' ? (localStorage.getItem('activeTenantId') || localStorage.getItem('selectedTenantId')) : null)
-            || null;
-    } catch (_) {
-        return null;
+let memoryActiveTenantId = null;
+
+export function setActiveTenantId(tenantId) {
+    if (typeof tenantId === 'string' && tenantId.trim()) {
+        memoryActiveTenantId = tenantId.trim();
+        try { sessionStorage?.setItem('activeTenantId', memoryActiveTenantId); } catch (_) {}
+        try { localStorage?.setItem('activeTenantId', memoryActiveTenantId); } catch (_) {}
+    } else {
+        memoryActiveTenantId = null;
+        try { sessionStorage?.removeItem('activeTenantId'); } catch (_) {}
+        try { localStorage?.removeItem('activeTenantId'); } catch (_) {}
     }
+}
+
+export function resolveActiveTenantId() {
+    try {
+        if (memoryActiveTenantId) return memoryActiveTenantId;
+        if (typeof window !== 'undefined' && window.location?.search) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const paramTenant = urlParams.get('tenant') || urlParams.get('tenantId');
+            if (paramTenant && typeof paramTenant === 'string') {
+                setActiveTenantId(paramTenant);
+                return paramTenant;
+            }
+        }
+        if (typeof sessionStorage !== 'undefined') {
+            const explicit = sessionStorage.getItem('activeTenantId') || sessionStorage.getItem('selectedTenantId');
+            if (explicit) return explicit;
+            const simulated = sessionStorage.getItem('superadmin_enterprise_tenant');
+            if (simulated) return simulated;
+            for (let i = 0; i < sessionStorage.length; i++) {
+                const key = sessionStorage.key(i);
+                if (key && key.startsWith('enterprise_context_request:')) {
+                    const val = sessionStorage.getItem(key);
+                    if (val) return val;
+                }
+            }
+        }
+        if (typeof localStorage !== 'undefined') {
+            const explicit = localStorage.getItem('activeTenantId') || localStorage.getItem('selectedTenantId');
+            if (explicit) return explicit;
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('enterprise_context_request:')) {
+                    const val = localStorage.getItem(key);
+                    if (val) return val;
+                }
+            }
+        }
+        return null;
+    } catch (_) {
+        return memoryActiveTenantId;
+    }
+}
+
+async function autoResolveTenantFromFailure(errorPayload, controllerSignal) {
+    let candidate = errorPayload?.primaryTenantId
+        || (Array.isArray(errorPayload?.availableTenants) ? errorPayload.availableTenants[0]?.tenantId : null)
+        || null;
+
+    if (!candidate && typeof fetch !== 'undefined') {
+        try {
+            const authHeaders = await getAuthHeaders(false);
+            const res = await fetch('/api/enterprise/tenants', {
+                method: 'GET',
+                headers: authHeaders,
+                credentials: 'same-origin',
+                signal: controllerSignal,
+            });
+            if (res.ok) {
+                const data = await res.json().catch(() => ({}));
+                const list = Array.isArray(data?.tenants) ? data.tenants : [];
+                const orgTenants = list.filter(t => t && !t.personalTenant);
+                if (orgTenants.length > 0) {
+                    candidate = orgTenants[0].id || orgTenants[0].tenantId;
+                } else if (list.length > 0) {
+                    candidate = list[0].id || list[0].tenantId;
+                }
+            }
+        } catch (_) {}
+    }
+
+    if (candidate && typeof candidate === 'string') {
+        setActiveTenantId(candidate);
+        return candidate;
+    }
+    return null;
 }
 
 /**
@@ -189,6 +268,20 @@ export async function authenticatedJsonRequest(url, {
                     if (!controller.signal.aborted) ({ response, data } = await request(headers));
                 }
             } catch (_) { /* return the original auth response below */ }
+        } else if (!response.ok && response.status === 400 && (data?.error?.code === 'TENANT_CONTEXT_REQUIRED' || data?.error?.message?.includes('Multiple active tenant memberships'))) {
+            try {
+                const resolvedTenant = await autoResolveTenantFromFailure(data?.error, controller.signal);
+                if (resolvedTenant && !controller.signal.aborted) {
+                    headers = await getAuthHeaders(false, resolvedTenant);
+                    headers['X-Tenant-Id'] = resolvedTenant;
+                    const retryResult = await request(headers);
+                    if (retryResult.response.ok) {
+                        return retryResult.data;
+                    }
+                    response = retryResult.response;
+                    data = retryResult.data;
+                }
+            } catch (_) {}
         }
         if (!response.ok) {
             const error = new Error(data?.error?.message || data?.error || 'Request failed');
@@ -249,6 +342,27 @@ export async function generateUserAiContent(endpointName, payload = {}, options 
                     }
                 }
             } catch (_) {}
+        } else if (!response.ok && response.status === 400 && (data?.error?.code === 'TENANT_CONTEXT_REQUIRED' || data?.error?.message?.includes('Multiple active tenant memberships'))) {
+            try {
+                const resolvedTenant = await autoResolveTenantFromFailure(data?.error, controller.signal);
+                if (resolvedTenant && !controller.signal.aborted) {
+                    headers = await getAuthHeaders(false, resolvedTenant);
+                    headers['X-Tenant-Id'] = resolvedTenant;
+                    const retryResponse = await fetch(request.url, {
+                        method: 'POST',
+                        headers,
+                        credentials: 'same-origin',
+                        signal: controller.signal,
+                        body: JSON.stringify(request.body),
+                    });
+                    const retryData = await retryResponse.json().catch(() => ({}));
+                    if (retryResponse.ok) {
+                        return retryData;
+                    }
+                    response = retryResponse;
+                    data = retryData;
+                }
+            } catch (_) {}
         }
 
         if (!response.ok) {
@@ -304,6 +418,26 @@ export async function parseResumeTextToStructuredData(rawText, options = {}) {
                             response = retryResponse;
                             result = retryResult;
                         }
+                    }
+                }
+            } catch (_) {}
+        } else if (!response.ok && response.status === 400 && (result?.error?.code === 'TENANT_CONTEXT_REQUIRED' || result?.error?.message?.includes('Multiple active tenant memberships'))) {
+            try {
+                const resolvedTenant = await autoResolveTenantFromFailure(result?.error, controller.signal);
+                if (resolvedTenant && !controller.signal.aborted) {
+                    headers = await getAuthHeaders(false, resolvedTenant);
+                    headers['X-Tenant-Id'] = resolvedTenant;
+                    const retryResponse = await fetch('/api/parse-resume', {
+                        method: 'POST',
+                        headers,
+                        credentials: 'same-origin',
+                        signal: controller.signal,
+                        body: JSON.stringify({ rawText: text.slice(0, 40_000) })
+                    });
+                    const retryResult = await retryResponse.json().catch(() => ({}));
+                    if (retryResponse.ok && retryResult.data) {
+                        response = retryResponse;
+                        result = retryResult;
                     }
                 }
             } catch (_) {}

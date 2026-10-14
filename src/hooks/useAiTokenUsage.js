@@ -72,6 +72,16 @@ export function useAiTokenUsage({ enabled = true } = {}) {
                 quotaScope: raw.quotaScope === 'ORGANIZATION' ? 'ORGANIZATION' : 'INDIVIDUAL',
                 orgDailyLimit: raw.orgDailyLimit == null ? null : toCount(raw.orgDailyLimit),
             });
+            if (raw.tenantId) {
+                try {
+                    if (typeof sessionStorage !== 'undefined' && !sessionStorage.getItem('activeTenantId')) {
+                        sessionStorage.setItem('activeTenantId', raw.tenantId);
+                    }
+                    if (typeof localStorage !== 'undefined' && !localStorage.getItem('activeTenantId')) {
+                        localStorage.setItem('activeTenantId', raw.tenantId);
+                    }
+                } catch (_) {}
+            }
             setStatus(AI_USAGE_STATUS.READY);
         } catch (error) {
             if (error?.name === 'AbortError') return;

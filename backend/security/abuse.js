@@ -315,6 +315,8 @@ async function enforceDailyAiQuota(req, res, next) {
           code: governance.error.code,
           message: governance.error.message,
           requestId: res.locals.requestId,
+          primaryTenantId: governance.error.primaryTenantId,
+          availableTenants: governance.error.availableTenants,
         },
       });
     }

@@ -2,11 +2,11 @@
   "id": "DIR-003",
   "title": "CAND-001: Dedicated Resumes & Master CV Workspace Hub (/dashboard/resumes)",
   "priority": "P1",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-14T03:43:14.333Z",
-  "updatedAt": "2026-10-14T04:07:00.645Z",
+  "updatedAt": "2026-10-14T04:07:03.182Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "# SECTION 1 — EXECUTIVE MANDATE\n### 1.1 Directive Metadata\n- Directive ID: DIR-003\n- Title: CAND-001: Dedicated Resumes & Master CV Workspace Hub (/dashboard/resumes)\n- Target Project: IME365 (D:\\xampp\\htdocs\\IME365)\n- Priority: P1\n- Execution Mode: Plan Mode first, then Act Mode upon formal Lead approval\n- Deliverables:\n  1. Component: `src/components/Dashboard/ResumesList/ResumesManagement.jsx` (or `CandidateResumesHub.jsx`) matching Cuba design tokens and responsive grid.\n  2. Integration: Mounted in `src/components/Dashboard/DashboardMain/DashboardMain.jsx` under `<Route path=resumes ... />` with `my-resumes` redirecting to it.\n  3. Navigation: Updated in `src/components/cuba/candidateNavigation.js` to link `id: 'resumes'` to `/dashboard/resumes`.\n  4. Routing: `src/main.jsx` updated so `/resumes` redirects to `/dashboard/resumes`.\n  5. Documentation: `CANDIDATE_DASHBOARD_PAGES.md` updated.\n\n### 1.2 Problem Statement & Objective\nWhen candidates click Resumes",
   "invariants": [],
@@ -70,8 +70,31 @@
       }
     }
   ],
-  "freeze": null,
-  "lastTransitionReason": "lead review",
+  "freeze": {
+    "freezeHash": "e2be4996c60556a5ea81b9f9122c44345132a6ff",
+    "certifiedAt": "2026-10-14T04:07:03.182Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "Autonomous Lead (Antigravity): evidence audit passed, all criteria verified.",
+    "evidenceHash": "1e149d56cf7f43d25dc19489870643c2505470cecc4a461b8f2fa954ce5c4559",
+    "automated": true,
+    "certificationKind": "automated",
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "daemon:lead_watcher_session",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "daemon-parent:lead_watcher_session",
+        "non-tty"
+      ],
+      "pid": 41768,
+      "parentPid": 26852,
+      "tty": false,
+      "at": "2026-10-14T04:07:01.296Z",
+      "explicitlyAllowed": true
+    }
+  },
+  "lastTransitionReason": "gatekeeper certification",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {

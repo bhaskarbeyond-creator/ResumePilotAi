@@ -349,6 +349,8 @@ test('P0-2: enforceDailyAiQuota refuses ambiguous active tenant with 400 TENANT_
   assert.equal(result.continued, false);
   assert.equal(result.res.statusCode, 400);
   assert.equal(result.res.body.error.code, 'TENANT_CONTEXT_REQUIRED');
+  assert.ok(result.res.body.error.primaryTenantId, 'error payload exposes deterministic primaryTenantId');
+  assert.equal(result.res.body.error.availableTenants.length, 2, 'error payload exposes all available candidates');
 });
 
 test('P0-2: an explicit x-tenant-id deterministically selects one eligible tenant', async () => {
