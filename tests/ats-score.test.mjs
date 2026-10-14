@@ -1,3 +1,4 @@
+import { assertComponentBinding } from './helpers/component-binding.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -420,7 +421,9 @@ test('BuildResume still mounts the meter on desktop and mobile without touching 
   const flags = fs.readFileSync('src/utils/moduleFlags.js', 'utf8');
   assert.match(flags, /enableAtsScoreModule/);
   assert.equal((build.match(/<AtsScoreMeter[\s\n]/g) || []).length, 2);
-  assert.match(build, /import TemplateRenderer/);
+  assertComponentBinding(build, 'PreviewModal', './PreviewModal');
+  const preview = fs.readFileSync('src/components/BuildResume/PreviewModal.jsx', 'utf8');
+  assertComponentBinding(preview, 'TemplateRenderer', '../TemplateRenderer');
   const meter = fs.readFileSync('src/components/BuildResume/AtsScoreMeter.jsx', 'utf8');
   assert.match(meter, /from '\.\.\/\.\.\/utils\/atsScore'/);
   assert.match(meter, /aria-expanded/);

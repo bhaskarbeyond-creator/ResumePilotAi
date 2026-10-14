@@ -36,7 +36,7 @@ export default [
     ],
   },
   {
-    files: ['src/**/*.{js,jsx}'],
+    files: ['src/**/*.{js,jsx}', 'template-lab/candidate-notifications.jsx'],
     languageOptions: {
       ecmaVersion: 'latest',
       globals: globals.browser,
@@ -66,7 +66,7 @@ export default [
     rules: { ...js.configs.recommended.rules, ...hygieneWarnings },
   },
   {
-    files: ['backend/test/**/*.js', 'tests/**/*.{js,mjs}', 'template-lab/**/*.{js,mjs}'],
+    files: ['backend/test/**/*.js', 'tests/**/*.{js,mjs}', 'template-lab/**/*.{js,mjs}', 'scripts/candidate-workspace-inventory.mjs'],
     languageOptions: {
       ecmaVersion: 'latest',
       globals: { ...globals.node, ...globals.browser },

@@ -1,0 +1,94 @@
+{
+  "mode": "SIMULATED API, real Chromium and real component/client",
+  "phase": "after",
+  "results": [
+    {
+      "name": "strict-mode-load",
+      "status": "PASS"
+    },
+    {
+      "name": "row-write-blocks-bulk-and-deduplicates",
+      "status": "PASS"
+    },
+    {
+      "name": "bulk-write-blocks-row-and-toast-contract",
+      "status": "PASS"
+    },
+    {
+      "name": "unmounted-bulk-does-not-toast",
+      "status": "PASS"
+    },
+    {
+      "name": "row-401-rollback-retry",
+      "status": "PASS"
+    },
+    {
+      "name": "row-403-rollback-retry",
+      "status": "PASS"
+    },
+    {
+      "name": "row-429-rollback-retry",
+      "status": "PASS"
+    },
+    {
+      "name": "row-500-rollback-retry",
+      "status": "PASS"
+    },
+    {
+      "name": "bulk-rollback-retry",
+      "status": "PASS"
+    },
+    {
+      "name": "load-error-retry",
+      "status": "PASS"
+    },
+    {
+      "name": "malformed-load-is-not-empty-success",
+      "status": "PASS"
+    },
+    {
+      "name": "responsive-320x568",
+      "status": "PASS",
+      "viewport": "320x568"
+    },
+    {
+      "name": "responsive-375x812",
+      "status": "PASS",
+      "viewport": "375x812"
+    },
+    {
+      "name": "responsive-430x932",
+      "status": "PASS",
+      "viewport": "430x932"
+    },
+    {
+      "name": "responsive-768x1024",
+      "status": "PASS",
+      "viewport": "768x1024"
+    },
+    {
+      "name": "responsive-1024x768",
+      "status": "PASS",
+      "viewport": "1024x768"
+    },
+    {
+      "name": "responsive-1366x768",
+      "status": "PASS",
+      "viewport": "1366x768"
+    },
+    {
+      "name": "responsive-1440x900",
+      "status": "PASS",
+      "viewport": "1440x900"
+    },
+    {
+      "name": "responsive-1920x1080",
+      "status": "PASS",
+      "viewport": "1920x1080"
+    },
+    {
+      "name": "automated-accessibility-and-keyboard",
+      "status": "PASS"
+    }
+  ]
+}

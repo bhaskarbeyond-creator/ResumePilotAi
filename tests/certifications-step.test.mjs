@@ -1,3 +1,4 @@
+import { assertComponentBinding } from './helpers/component-binding.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -60,7 +61,7 @@ test('partitioner emits one certification flow item per meaningful certification
 
 test('the Create-Resume wizard exposes Certifications between Projects and Languages', () => {
     const source = fs.readFileSync('src/components/BuildResume/BuildResume.jsx', 'utf8');
-    assert.match(source, /import CertificationsStep/);
+    assertComponentBinding(source, 'CertificationsStep', './steps/CertificationsStep');
     assert.match(source, /path="certifications"/);
     assert.match(source, /id: 6/);
     assert.match(source, /id: 7/);

@@ -1,55 +1,62 @@
-﻿# CANDIDATE_PIPELINE_INVENTORY.md
-## Part 6 — Mandatory Full-Pipeline Discovery (Candidate Workspace)
-**Directive:** IME365 ULTIMATE MASTER ENGINEERING DIRECTIVE
-**Generated:** 2026-10-14 (Phase 2)
-**Method:** static route/service tracing + live API exercise; no pipeline silently omitted
+# Candidate pipeline inventory — 2026-10-14
 
----
+**Status: discovery in progress; NOT full-system certification.** This replaces un-reproduced historical “live verified” assertions in the baseline version. Evidence: entry files, service/router files below, [route census](docs/candidate-audit/ROUTE_CENSUS.md), and [428 backend route/mount declarations](docs/candidate-audit/endpoint-census.json). The latter includes dynamic mounts, not 428 unique candidate APIs. Enterprise subrouters and every indirect event producer are not yet exhaustively traced.
 
-### 1. REGISTER
+## Shared contract and verification rules
 
-| ID | Pipeline | Trigger | Frontend | Backend | Storage/Provider | Tests | Verification |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| P-01 | Auth & session | Page load / sign-in | main.jsx AuthWrapper, fire.auth | requireAuth + bearer validation | Firebase Auth + local session | four-portal, security-static | live custom-token session verified in all browser audits |
-| P-02 | Candidate profile load/update | /dashboard/settings | DashboardSettings | /api/users/* (usersData.js) | MariaDB aime365 | tests referenced in platform suites | live page renders with real profile |
-| P-03 | Resume list load | /dashboard, /build-resume | getResumes (platform) -> resumes.js | /api/resumes | MariaDB | template tests | live: real resumeId fetched via API in candidate audit |
-| P-04 | Resume create/edit/save + autosave | /build-resume/* steps | BuildResume saveState | POST/PUT /api/resumes | MariaDB | create-resume-extras, builder tests | live build-resume pages rendered |
-| P-05 | Resume delete | dashboard documents | deleteResume | DELETE /api/resumes | MariaDB | platform tests | pending E2E simulation |
-| P-06 | Resume publish/unpublish | /build-resume/review | publishResume/unpublishResume | POST /api/resumes/publish | MariaDB (public share record) | — | pending E2E simulation |
-| P-07 | Public resume share render | /shared/:resumeId | PublicResume | getPublicResume | MariaDB | — | live render verified (candidate audit export section) |
-| P-08 | ATS scoring + recommendations | /build-resume/review | calculateAtsScore (FROZEN) | backend AI/ats endpoints | deterministic engine | ats-score, ats-score-journey, ats-module-toggle | suites green (67+72 earlier) |
-| P-09 | AI resume content generation (quota-enforced) | step AI buttons | generateUserAiContent | /api/ai/* + quota check | MariaDB quota counters | ai-token-meter, ai-operational-probe | suites green |
-| P-10 | Template render (51 CV + 4 cover) | /export/CvN|CoverN/:resumeId/:lang | export renderers + cv-templates | server-rendered export routes | FROZEN templates | template-render, template-production-render, docx-parity | live export crawl in candidate audit (56 renders) |
-| P-11 | PDF/DOCX export download | review step download | exportService (FROZEN) | backend export endpoints | file generation | dir063 docx/print suites | pending file-output inspection |
-| P-12 | Job discovery/filter/pagination | /dashboard/jobs* | getJobs | /api/jobs (jobsData.js) | MariaDB jobs | job-module-audit | live pages rendered |
-| P-13 | Application submission | job detail apply | saveApplication | POST /api/applications | MariaDB | cross-app-audit | pending E2E simulation |
-| P-14 | Application status tracking (kanban) | /dashboard/job-tracker, /applied-jobs | JobTracker/AppliedJobs | /api/applications | MariaDB + stage transitions | job-module-audit-complete | live pages rendered |
-| P-15 | Interview setup -> CBT session -> persistence | /dashboard/interview | DashboardInterviews (reducer) | AI generation endpoint | localStorage session + history (uid-scoped) | interview-coach (31/31) + lifecycle + hardening | 31/31 green, 0 act warnings |
-| P-16 | Live face-to-face interview session | /dashboard/interview live mode | LiveInterviewSession | liveInterviewApi | backend session state | live-interview-ui tests | suite green |
-| P-17 | Interview feedback/scoring persistence | submit flow | buildInterviewReport | local history write | localStorage interviewHistory | interview-coach suite | green |
-| P-18 | Portfolio create/publish/share | /portfolio/builder, /portfolio/:slug | PortfolioBuilder, PublicPortfolio | /api/portfolios | MariaDB | portfolio-templates, portfolios suites | live gallery/builder rendered; publish pending E2E |
-| P-19 | Cover letter CRUD + AI generation | /dashboard/cover-letters | CoverLetter | /api/covers + aiService | MariaDB covers | med001-429-regression (2/2) | 429 resilience verified live |
-| P-20 | Saved favorites/bookmarks | /dashboard/favorites | DashboardFavourites | platform endpoints | MariaDB | — | live page rendered |
-| P-21 | Notifications | /dashboard/notifications | DashboardNotifications | /api/notifications | MariaDB | dir072 suite | suite green |
-| P-22 | Messaging (module-gated) | /dashboard/messages | DashboardMessages | /api/messages | MariaDB (module toggle OFF-by-default) | dir072 | live page renders module gate |
-| P-23 | Billing/plans/quotas | /dashboard/plans | Billing | Stripe + /api/billing | MariaDB + Stripe (webhook-verified) | billing suites | live page rendered; provider live verification BLOCKED (sandbox keys only) |
-| P-24 | Support tickets | /dashboard/support | DashboardSupport | /api/support | MariaDB | support suites | live page rendered |
-| P-25 | Settings/security/2FA | /dashboard/settings?tab=* | DashboardSettings | /api/users/* + TOTP | MariaDB + Firebase MFA | mfa-static | suite green |
-| P-26 | File upload (photo) | heading step photo | file upload | backend upload validation | filesystem/s3 | — | pending E2E (synthetic image) |
-| P-27 | Logout/session expiry/recovery | user menu | clearAccountScopedBrowserState | backend logout | localStorage clear | auth suites | green |
-| P-28 | Cross-feature: profile -> resume -> ATS -> update -> re-score | user journey | multiple | multiple | MariaDB | ats-score-journey | suite green |
+Authenticated app APIs pass through middleware in `backend/index.js` (body limits, CORS, security headers, sanitization, global limiter and authentication). Backend resource ownership must be checked independently of the frontend guard. Router-specific middleware, SQL transactions and error contracts cannot be assumed from that shared boundary. Main auth uses Firebase; application storage is MariaDB. `apiJson` and `apiFetch` attach identity tokens, parse error status/code and expose revision metadata where supplied. No real Firebase, MariaDB or provider credentials have been configured in this isolated run.
 
-### 2. PIPELINE CATEGORY APPLICABILITY (§6.2)
+**S** = source-traced entry only; **SIM** = controlled fixtures/test doubles, not live verification; **B** = blocked live verification. All rows require independent Lead review. `T` below refers to existing tests by basename, not an assertion that every test passed. Results are in the regression report. Source paths under `src/` and `backend/` are authoritative; shorthand below is relative to those roots.
 
-All 24 categories map to at least one pipeline above. Categories found NOT to exist in the implementation: background-job retry queues for candidate flows (no async queue for candidate actions — synchronous request/response), and provider callbacks for candidate payments beyond Stripe webhook verification (exists; live verification requires real keys).
+| ID / priority | Trigger and business flow | Frontend / request | Backend / storage / provider | State, output, failure and recovery | Existing tests / verification gap |
+|---|---|---|---|---|---|
+| P-01 P1 | Sign in, restore session, enter workspace | main.jsx AuthWrapper / RequireAuthenticated; conf/fire.js | security/auth.js; Firebase identity; users in MariaDB | unauthenticated → session → protected route; failed auth must retain intended destination | auth-mfa-ui-adversarial, safeInternalPath-related; S/B real identity |
+| P-02 P1 | Edit master profile | DashboardSettings; profilePersistence; api/users | routes/usersData.js `/api/users-data/profile`; users | revisioned profile save/read; conflict requires preserving input | profile-workflow, profile-concurrency; S/B DB |
+| P-03 P1 | Open resume library | DashboardResumes / DashboardHomepage; api/resumes | routes/resumes.js GET `/api/resumes`; resumes | loading → list/empty/error; refresh | resume-persistence; S/B DB |
+| P-04 P1 | Edit/save/autosave resume | BuildResume; resumePersistence | POST `/api/resumes/:id`; repositories; resumes | dirty → saving → saved/error/conflict; local recovery and revisions | resume-workflow, resume-persistence, build-resume-completion-state; S/B durable write/concurrency |
+| P-05 P1 | Delete resume | dashboard document actions; api/resumes | DELETE `/api/resumes/:id`; resumes/publication references | confirmation → deleted/error; stale public references must be denied | account-isolation, backend routes tests; S/B cascade/read-back |
+| P-06 P1 | Publish/revoke review link | BuildResume publication actions | routes/resumes.js publish/unpublish; public_resumes | explicit publication/source revisions; failure must not claim shared/revoked | resume-workflow; S/B public revocation |
+| P-07 P1 | Open shared resume | PublicResume `/shared/:resumeId` | `/api/resumes/public/:id`; published snapshot, owner entitlement | public snapshot or 404; owner/private draft must not leak | resume-publication/security suites; S/B public boundary |
+| P-08 P1 | ATS score and recommendations | AtsScoreMeter; utils/atsScore; optional target JD | deterministic local score; separate AI paths if invoked | data/JD → quality/match score; no score means not assessed | ats-score, ats-score-journey, ats-module-toggle; local tests, not full saved-resume journey |
+| P-09 P1 | AI authoring and quota enforcement | services/aiService; step assist controls | routes/ai; aiRuntime; enterprise/aiGovernance; quota stores/provider adapters | identity/tenant → admission → provider → result/accounting; 429/503/fail-closed | AI and interview multitenant tests have baseline failures; S/B, frozen approval needed |
+| P-10 P1 | Select/preview template | TemplateSelectionModal, TemplateRenderer | SmartResumeComposer CV path; cv-templates cover path | fixture/data mapping → rendered pages/error boundary | 55×4 browser cases; SIM renderer only; fonts/parity unresolved |
+| P-11 P1 | Download PDF/DOCX | utils/exportDownloader, exportService, docxDownload; Exporter | `/api/export`, `/api/export-docx`, public variants; render token, Chromium, docxExport | saved revision/entitlement → file; failures preserve draft | export-client, docx-client-journey; 55 local PDFs + 51 DOCX tested; actual HTTP download B |
+| P-12 P2 | Job discovery/filter/pagination/detail | JobsListings/MainJobListings; services/jobs; api/jobs | `/api/jobs-data`, jobs/public discovery routes; jobs | query → result pages; empty/filter/error; stale requests need review | job-tracker, salary-filter-currency, public-discovery; S/B actual search |
+| P-13 P1 | Submit job application | JobApplicationModal; saved resume/cover selection | index.js POST `/api/jobs/:jobId/applications`; applications; outbox | submit → persisted application/confirmation; duplicate/revision/ownership checks | routes.integration, cross-module-journeys; B real transaction |
+| P-14 P1 | Track application and personal kanban | AppliedJobs / JobTracker | job applications and tracker routes; applications vs job_tracker are distinct | employer status vs personal tracking transitions; reject invalid/replayed changes | job-tracker and job lifecycle tests; S/B cross-role read-back |
+| P-15 P1 | Configure/run CBT interview | DashboardInterviews; interview utilities | AI question generation; uid-scoped browser state | setup → active → complete/cancel; timer/refresh/recovery | interview-coach/lifecycle/hardening; SIM unit coverage, no live provider journey |
+| P-16 P1 | Live interview session | LiveInterviewSession; liveInterviewApi | `/api/live-interview/sessions`; services/liveInterview; live_interview_sessions | create/turn/complete/abandon; opaque id, revisions, idempotency keys | live-interview-ui, interview-multitenant-ai; S/B |
+| P-17 P1 | Interview feedback/history | DashboardInterviews / live report UI | browser history for CBT; server live-session report | complete → report → restored results; report must match answers | interview suites; S/B cross-session persistence |
+| P-18 P1 | Create/publish/share portfolio | PortfolioBuilder, PublicPortfolio, PortfolioGallery | routes/portfolios.js; portfolios; public slug projection | draft/edit/public/revoked; conflicts/slug collision and privacy | portfolio tests and sanitization; S/B publish-to-public journey |
+| P-19 P1 | Cover CRUD + AI generation | CoverLetter; api/covers | `/api/covers/:id`; covers; coverLetterAi | edit/save/generate/export/error; preserve user content | template/cover tests; S/B owner persistence |
+| P-20 P2 | Save/remove favorites | DashboardFavourites; platform API | favorites/misc routes; favourites | starred ↔ unstarred; owner-scoped rows; duplicate semantics | account-isolation; S/B |
+| P-21 P2 | Read notification inbox, toggle/bulk read | DashboardNotifications → platform.apiJson | `/api/notifications-data`; notificationsData router; notifications | load/empty/error; read/unread optimistic mutation → commit/rollback; manual retry | **20/20 browser SIM, 8/8 HTTP router SIM**; real auth/DB B |
+| P-22 P1 | Recruiter conversations | DashboardMessages; MessagesModuleGate | `/api/messages`; conversations, participants/messages; module config | list/thread/send/read; permissions, send failure and input retention | messaging-regression/module-gate; S/B actual multi-user delivery |
+| P-23 P1 | Plan purchase/entitlements/payment status | Billing/Plans; payment components | index.js Stripe, PayPal, Razorpay, Paytm, PhonePe; orders/subscriptions/transactions | pending → verified paid/failed/refunded; signed/reconciled callbacks, not client success | payment/billing suites; B sandbox provider/DB |
+| P-24 P2 | Create ticket/list/thread/reply | DashboardSupport; platform support helpers | `/api/support/tickets`; supportTickets service; support data | OPEN/PENDING/RESOLVED/CLOSED where service permits; errors retain input | support backend tests; S/B CRUD, modal focus unverified |
+| P-25 P1 | Settings/password/email/TOTP/account preferences | DashboardSettings; mfaService/platform | usersData, auth/TOTP routes; Firebase + users/security data | reauth → change/enroll/verify/disable; recovery codes | mfa/static/session-reauth tests; B real identity/DB |
+| P-26 P1 | Photo/file input | heading/profile upload/crop; resumeParser | client file validation plus backend-specific upload/scraper/provider paths | type/size/signature → parse/crop/store; error/cancel | parser/upload security suites; S; final storage contract needs per-call trace |
+| P-27 P1 | Logout/expiry/return to workflow | signOut utilities, main token refresh | identity sign-out/session lifecycle; local account-state clear | session → expired → sign-in; avoid A→B state leakage | account-isolation, account-lifecycle; S/B token expiry |
+| P-28 P1 | Profile → resume → score → update → rescore | Settings/BuildResume/AtsScoreMeter | profile/resume APIs plus local score | persisted profile/draft mapping; source revisions must agree | cross-module-journeys, ats-score-journey; end-to-end B |
+| P-29 P1 | Import PDF/DOCX/RTF/image resume | ResumeImportModal; resumeParser; resumeFieldMapper | local pdfjs/mammoth/signature/10MB limits, AI/OCR where invoked | extracting → mapping → confirmation; timeout/abort/no fabrication | parser/zero-fabrication tests; S/B complete import-save-export |
+| P-30 P1 | OAuth sign-in/link/exchange | main fragment handling, auth components | index.js `/api/auth/github`, `/linkedin`, callbacks and exchange; database/oauthStore | single-use state/code → token/session; expiry/replay rejection | oauth-resolver + backend OAuth tests; B provider redirect |
+| P-31 P1 | Reset password / verify email | main query/fragment handlers; ResetPasswordModal | `/api/auth/custom-password-reset`, send/verify email; authTokens/outbox | pending token → consumed/expired; safe retry/one-time use | account lifecycle tests; B email/Firebase/DB |
+| P-32 P1 | Background notification delivery | application/payment/account events | services/emailNotifier + notificationOutbox; MariaDB queue; SMTP/provider dispatch | QUEUED → DELIVERY_ATTEMPTED → DELIVERED / RETRYING / DEAD_LETTER; leases/backoff, at-least-once | notification-outbox, notification-lifecycle; unit tests execute in security suite; B real worker/DB/provider |
+| P-33 P1 | Payment callbacks/reconciliation | provider callback or scheduled status reconciliation | index.js Stripe webhook, Paytm/PhonePe callbacks, PayPal/Razorpay verification, paymentActivation | durable provider event/order → entitlement; replay/partial completion | payment/reconciliation tests; B provider signatures/DB |
+| P-34 P1 | Account data export/deletion | Settings portability/delete controls | POST `/api/account/export`, `/api/account/delete`; repositories + identity | recent auth → archive/purge or failure; child-data/queue retention | account-lifecycle, migration integration; B deletion not executed |
+| P-35 P2 | Scheduled cleanup/expiry | timer/event, no candidate page required | index.js live-interview pruning, subscription reconciler, enterprise outbox/tenant GC | expired/stale → cleanup/reconciliation; exceptions logged, retry cadence | backend suites; S/B process lifecycle |
+| P-36 P1 | Database migration/ownership/conflicts | deployment/migration trigger | database/migrationRunner, ownership, migrations; MariaDB 11.4 | migrate/rollback/constraint/preflight; unknown owners fail closed | ownership test **fails: ai_quota_counters missing**; migration integration B |
+| P-37 P2 | Operational health/error/audit evidence | errors and diagnostics, request correlation | platformHealth, aiOperationalProbe, security logging/audit routes | degraded/unavailable vs healthy; redact secrets and preserve request ids | platform-health, ai-operational-probe; local checks, no live monitoring verification |
+| P-38 P2 | Public content/discovery/contact | /contact, /blog, /p/:custompage, regional jobs | publicDiscovery/blog/misc routes; CMS scheduler/contact storage | public results/contact acceptance; publication/privacy/rate limits | public-discovery/contact/blog tests; S/B storage/delivery |
+| P-39 P2 | Browser recovery/cache/account boundaries | refresh/navigation/offline/local storage | resumePersistence, profilePersistence, signOut, interview history | recovery snapshot vs durable revision; never conflate local and saved | resume-persistence, profile-concurrency, account-isolation; S/B multi-tab durable consistency |
+| P-40 P1 | Export render-token lifecycle | server creates isolated render URL, Exporter consumes | exportAccess/RequireExportAccess + backend render-data token store | opaque hashed token, single-use/expiry; unauthenticated renderer is not unrestricted access | export-access/backend integration; B real token issuance-consumption |
+| P-41 P2 | Settings feature flags / shell variants | app load / administrator toggles | public-config API, moduleFlags/cubaShellFlag, MessagesModuleGate | config loading/error → applicable UI; disabled route gate | module/design-system tests; S/B config transition |
+| P-42 P2 | Notification bell/poller → full inbox | header notification panel/unread polling | shared poller + same notification storage | poll/unread count ↔ read mutations; avoid stale account and 429 storms | dir054-shared-poller, notification-lifecycle; adjacent unit/static checks; bell↔page runtime sync unverified |
 
-### 3. MISSING-TEST GAPS (from register)
+## Corrections and remaining discovery
 
-- P-05 resume delete: no live E2E simulation yet.
-- P-06 publish/unpublish + P-07 public access + revocation: partial (render only).
-- P-13 application submission: no live E2E simulation yet.
-- P-18 portfolio publish/privacy revocation: pending.
-- P-23 Stripe live verification: BLOCKED (sandbox credentials only — documented blocker).
-- P-26 file upload: pending synthetic-image E2E.
-- P-11 export file-output inspection (DOCX/PDF byte-level): covered by dir063 suites (backend); pending a live download capture.
+The baseline report's “no background queues” statement is contradicted by `notificationOutbox.js` and worker intervals in index.js. Payment callbacks are not limited to Stripe: Paytm and PhonePe callback routes and other provider verification routes are present. Notifications use `/api/notifications-data`, profile `/api/users-data`, jobs include `/api/jobs-data`, and applications submit to `/api/jobs/:jobId/applications`, not the generic endpoints previously listed.
 
+All 24 investigation categories now have at least a discovery anchor: 1/22→P01/25/27/30/31; 2→P02; 3/4→P03–05/29/39; 5–7→P08/10/11/19/40; 8→P06/07/18; 9/10/17→P12–14/20; 11/12→P15–17; 13→P09; 14→P21/22/32/42; 15/19→P23/33; 16→P26/29; 18→P32/35; 20→P36; 21→P37; 23→P28/39; 24→P34/38/41. This maps categories, not proof of exhaustive implementation coverage.
+
+For each unexecuted row: required scenario classes A–L remain **UNVERIFIED**, not skipped-as-pass. Payment duplicate/charge, public sharing, ownership and DB concurrency are critical. Provider details and data fields must be traced further in the authorised integration environment. No production providers or user records were exercised.

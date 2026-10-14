@@ -75,28 +75,45 @@ const formatWhen = (value) => {
 const DashboardNotifications = ({ showToast }) => {
     const navigate = useNavigate();
     const [rows, setRows] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [filter, setFilter] = useState('all');
     const [pendingIds, setPendingIds] = useState(() => new Set());
     const [markingAll, setMarkingAll] = useState(false);
     const mountedRef = useRef(true);
 
-    useEffect(() => () => { mountedRef.current = false; }, []);
+    const generationRef = useRef(0);
+    const loadRequestRef = useRef(0);
+    // Synchronous locks also cover two events before React commits disabled state.
+    const pendingIdsRef = useRef(new Set());
+    const markingAllRef = useRef(false);
+
+    useEffect(() => {
+        mountedRef.current = true;
+        generationRef.current += 1;
+        return () => {
+            mountedRef.current = false;
+            generationRef.current += 1;
+        };
+    }, []);
 
     const load = useCallback(async () => {
+        const generation = generationRef.current;
+        const request = ++loadRequestRef.current;
+        const isCurrent = () => mountedRef.current && generation === generationRef.current && request === loadRequestRef.current;
         setLoading(true);
         setError('');
         try {
             const data = await apiJson('/api/notifications-data');
-            if (!mountedRef.current) return;
-            setRows(Array.isArray(data?.notifications) ? data.notifications : []);
+            if (!isCurrent()) return;
+            if (!Array.isArray(data?.notifications)) throw new Error('Notifications could not be loaded. Please retry.');
+            setRows(data.notifications);
         } catch (loadError) {
-            if (!mountedRef.current) return;
+            if (!isCurrent()) return;
             setRows([]);
             setError(loadError?.message || 'Notifications are unavailable.');
         } finally {
-            if (mountedRef.current) setLoading(false);
+            if (isCurrent()) setLoading(false);
         }
     }, []);
 
@@ -111,7 +128,10 @@ const DashboardNotifications = ({ showToast }) => {
     /** Per-row read toggle against the owner-scoped PATCH route. */
     const toggleRead = useCallback(async (item) => {
         const id = item?.id;
-        if (!id || pendingIds.has(id)) return;
+        if (!id || loading || markingAllRef.current || pendingIdsRef.current.has(id)) return;
+        const generation = generationRef.current;
+        const isCurrent = () => mountedRef.current && generation === generationRef.current;
+        pendingIdsRef.current.add(id);
         const nextRead = item.read !== true;
         setError('');
         setPendingIds((prev) => new Set(prev).add(id));
@@ -123,34 +143,39 @@ const DashboardNotifications = ({ showToast }) => {
                 body: JSON.stringify({ read: nextRead })
             });
         } catch (patchError) {
-            if (!mountedRef.current) return;
+            if (!isCurrent()) return;
             setRows((prev) => prev.map((r) => (r.id === id ? { ...r, read: !nextRead } : r)));
             setError(patchError?.message || 'Could not update that notification.');
         } finally {
-            if (mountedRef.current) {
+            pendingIdsRef.current.delete(id);
+            if (isCurrent()) {
                 setPendingIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
             }
         }
-    }, [pendingIds]);
+    }, [loading]);
 
     /** Mark every unread row read in ONE owner-scoped statement. */
     const markAllRead = useCallback(async () => {
-        if (markingAll || unreadCount === 0) return;
+        if (loading || markingAllRef.current || pendingIdsRef.current.size > 0 || unreadCount === 0) return;
+        const generation = generationRef.current;
+        const isCurrent = () => mountedRef.current && generation === generationRef.current;
+        markingAllRef.current = true;
         const snapshot = rows;
         setError('');
         setMarkingAll(true);
         setRows((prev) => prev.map((r) => ({ ...r, read: true })));
         try {
             await apiJson('/api/notifications-data/mark-all-read', { method: 'POST' });
-            showToast?.({ isShowed: true, type: 'success', title: 'Notifications', text: 'All notifications marked as read.' });
+            if (isCurrent()) showToast?.('success', 'Notifications', 'All notifications marked as read.');
         } catch (markError) {
-            if (!mountedRef.current) return;
+            if (!isCurrent()) return;
             setRows(snapshot);
             setError(markError?.message || 'Could not mark notifications as read.');
         } finally {
-            if (mountedRef.current) setMarkingAll(false);
+            markingAllRef.current = false;
+            if (isCurrent()) setMarkingAll(false);
         }
-    }, [markingAll, rows, unreadCount, showToast]);
+    }, [loading, rows, unreadCount, showToast]);
 
     const openRow = useCallback((item) => {
         const href = resolveNotificationHref(item);
@@ -163,14 +188,14 @@ const DashboardNotifications = ({ showToast }) => {
             <CubaPageHeader
                 eyebrow="Activity"
                 title="Notifications"
-                subtitle={unreadCount > 0 ? `${unreadCount} unread` : 'You are all caught up.'}
+                subtitle={loading ? 'Loading notifications…' : error && rows.length === 0 ? 'Unable to load notifications.' : unreadCount > 0 ? `${unreadCount} unread` : 'You are all caught up.'}
                 actions={
                     <CubaButton
                         variant="outline"
                         size="sm"
                         icon={<FiCheck className="h-4 w-4" aria-hidden="true" />}
                         onClick={markAllRead}
-                        disabled={markingAll || unreadCount === 0}
+                        disabled={loading || markingAll || pendingIds.size > 0 || unreadCount === 0}
                         loading={markingAll}
                         data-testid="notifications-mark-all"
                     >
@@ -193,7 +218,7 @@ const DashboardNotifications = ({ showToast }) => {
                         aria-pressed={filter === entry.id}
                         data-testid={`notifications-filter-${entry.id}`}
                         className={cx(
-                            'cuba-focusable rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide transition-colors',
+                            'cuba-focusable min-h-11 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide transition-colors',
                             filter === entry.id
                                 ? 'bg-cuba-primary-soft text-cuba-primary-ink-strong'
                                 : 'text-cuba-ink-muted hover:bg-cuba-primary-soft'
@@ -269,7 +294,7 @@ const DashboardNotifications = ({ showToast }) => {
                                         <span className="min-w-0 flex-1">
                                             <span className="flex items-baseline justify-between gap-2">
                                                 <span className={cx(
-                                                    'truncate text-sm',
+                                                    'min-w-0 truncate text-sm',
                                                     isUnread ? 'font-semibold text-cuba-ink' : 'font-medium text-cuba-ink-muted'
                                                 )}>
                                                     {label}
@@ -277,18 +302,18 @@ const DashboardNotifications = ({ showToast }) => {
                                                 {when && <span className="flex-none text-[11px] text-cuba-ink-subtle">{when}</span>}
                                             </span>
                                             {item.message && (
-                                                <span className="mt-0.5 block text-xs text-cuba-ink-muted">{item.message}</span>
+                                                <span data-notification-message className="mt-0.5 block text-xs text-cuba-ink-muted [overflow-wrap:anywhere]">{item.message}</span>
                                             )}
                                         </span>
                                     </RowTag>
                                     <button
                                         type="button"
                                         onClick={() => toggleRead(item)}
-                                        disabled={isPending}
+                                        disabled={loading || markingAll || isPending}
                                         data-testid="notifications-toggle"
                                         aria-pressed={!isUnread}
                                         aria-label={isUnread ? `Mark "${label}" as read` : `Mark "${label}" as unread`}
-                                        className="cuba-focusable mt-3 mr-4 flex h-8 w-8 flex-none items-center justify-center rounded-full text-cuba-ink-subtle transition-colors hover:bg-cuba-primary-soft hover:text-cuba-primary-ink-strong disabled:opacity-50"
+                                        className="cuba-focusable mt-1.5 mr-2 flex h-11 w-11 flex-none items-center justify-center rounded-full text-cuba-ink-subtle transition-colors hover:bg-cuba-primary-soft hover:text-cuba-primary-ink-strong disabled:opacity-50"
                                     >
                                         {isPending
                                             ? <CubaSkeleton width="0.75rem" height="0.75rem" rounded="rounded-full" text="Saving read state" />

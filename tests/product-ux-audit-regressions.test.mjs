@@ -1,3 +1,4 @@
+import { assertComponentBinding } from './helpers/component-binding.mjs';
 /**
  * Product UX regression checks for the P0 final release pass.
  * These intentionally cover user-visible routes and semantics that backend
@@ -47,7 +48,7 @@ test('features menu is keyboard-operable and its feature cards actually navigate
 test('resume builder has a real final review route and protects authenticated navigation after failed persistence', () => {
   const builder = read('src/components/BuildResume/BuildResume.jsx');
   const review = read('src/components/BuildResume/steps/ReviewStep.jsx');
-  assert.match(builder, /import ReviewStep/);
+  assertComponentBinding(builder, 'ReviewStep', './steps/ReviewStep');
   assert.match(builder, /path: 'review'/);
   assert.match(builder, /<Route path="review" element=\{<ReviewStep/);
   assert.match(builder, /const persistBeforeNavigation = async \(\) =>/);

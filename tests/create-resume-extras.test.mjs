@@ -1,3 +1,4 @@
+import { assertComponentBinding } from './helpers/component-binding.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -86,11 +87,11 @@ test('partitioner emits achievements, references and custom items in the certifi
 
 test('the Create Resume wizard exposes Achievements, References and Custom Sections without disturbing certified steps', () => {
   const source = fs.readFileSync('src/components/BuildResume/BuildResume.jsx', 'utf8');
-  assert.match(source, /import AchievementsStep/);
-  assert.match(source, /import ReferencesStep/);
-  assert.match(source, /import CustomSectionsStep/);
-  assert.match(source, /import ProjectsStep/);
-  assert.match(source, /import CertificationsStep/);
+  assertComponentBinding(source, 'AchievementsStep', './steps/AchievementsStep');
+  assertComponentBinding(source, 'ReferencesStep', './steps/ReferencesStep');
+  assertComponentBinding(source, 'CustomSectionsStep', './steps/CustomSectionsStep');
+  assertComponentBinding(source, 'ProjectsStep', './steps/ProjectsStep');
+  assertComponentBinding(source, 'CertificationsStep', './steps/CertificationsStep');
   assert.match(source, /path="projects"/);
   assert.match(source, /path="certifications"/);
   assert.match(source, /path="achievements"/);
