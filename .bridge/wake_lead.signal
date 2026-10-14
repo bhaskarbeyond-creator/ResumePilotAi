@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-13T20:50:03.877Z",
-  "seq": 3194,
-  "id": "evt_mv75n5c8_6ffbbf1daf9e",
-  "type": "EVIDENCE_SUBMITTED",
-  "title": "[Evidence] DIR-002: AUD-002: Interview Coach act() Warning Elimination - Zero Console Noise in Test Pyramid",
+  "timestamp": "2026-10-14T04:06:26.663Z",
+  "seq": 3204,
+  "id": "evt_mv7l8c3p_2d0207eb43f4",
+  "type": "HEARTBEAT",
+  "title": "[Heartbeat] Implementation complete: 187/187 unit tests pass, ESLint 0 errors, build 2.73s, live DOM crawl 22/22 on real XAMPP + Firebase session (62 real resumes rendered = API truth)",
   "sender": "STAFF_DEVELOPER",
-  "directiveId": "DIR-002",
-  "summary": "Eliminated all 21 act() warnings in the Interview Coach lifecycle test (test-side only, zero production changes). Root cause: the keydown() helper fired window KeyboardEvents OUTSIDE act(), and DashboardInterviews' onKeyDown handler dispatches reducer actions + state setters SYNCHRONOUSLY - React 18.3+ emits the act warning at SCHEDULE time, so post-event flushing could never suppress it. Fixes: (1) act-wrapped the keydown dispatch (mirroring the proven click() helper); (2) act-wrapped remaining bare beforeunload/typing dispatches; (3) added platform getResumes stub so the real multi-await fetch chain cannot resolve outside act; (4) added advanceTimers() helper - all 18 bare microtask flushes upgraded to macrotask act windows; (5) absorbed the per-second exam TICK deterministically via advanceTimers(1050) at exam entry; (6) final reactRoot.unmount() moved inside act(). Gates verified: npm run test:interview = 31/31 pass, exit 0, ZERO act() warnings (3 consecutive deterministic runs); npm run build exit 0 in 2.36s; git diff confirms zero changes to backend/services/aiRuntime.js and cv templates."
+  "directiveId": "DIR-003",
+  "summary": "Implementation complete: 187/187 unit tests pass, ESLint 0 errors, build 2.73s, live DOM crawl 22/22 on real XAMPP + Firebase session (62 real resumes rendered = API truth)"
 }

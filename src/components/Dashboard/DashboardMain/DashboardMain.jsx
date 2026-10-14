@@ -43,6 +43,8 @@ import { isCubaShellEnabled } from '../../cuba/cubaShellFlag';
 const MainJobListings = lazy(() => import('../../JobsListings/MainJobListings'));
 // DIR-072: the dedicated full-page notifications workspace.
 const DashboardNotifications = lazy(() => import('../DashboardNotifications/DashboardNotifications'));
+// DIR-003 / CAND-001: the dedicated Resumes & Master CV workspace hub.
+const DashboardResumes = lazy(() => import('../DashboardResumes/DashboardResumes'));
 class DashboardMain extends Component {
     static contextType = AuthContext;
     constructor(props) {
@@ -314,6 +316,7 @@ class DashboardMain extends Component {
                                         <Route path="messages" element={<MessagesModuleGate home="/dashboard" notify={this.showToast}><DashboardMessages showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} /></MessagesModuleGate>} />     
                                         <Route path="notifications" element={<DashboardNotifications showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
                                         <Route path="favorites" element={<DashboardFavourites showToast={this.showToast} />} />
+                                        <Route path="resumes" element={<DashboardResumes showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
                                         <Route path="interview" element={<DashboardInterviews showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
                                         <Route path="cover-letters" element={<CoverLetter />} />
                                         <Route path="portfolios" element={<DashboardPortfolios showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
@@ -335,7 +338,7 @@ class DashboardMain extends Component {
                                         <Route path="security" element={<Navigate to="/dashboard/settings?tab=security" replace />} />
                                         <Route path="account" element={<Navigate to="/dashboard/settings" replace />} />
                                         <Route path="billing" element={<Navigate to="/dashboard/plans" replace />} />
-                                        <Route path="my-resumes" element={<Navigate to="/dashboard" replace />} />
+                                        <Route path="my-resumes" element={<Navigate to="/dashboard/resumes" replace />} />
                                         <Route path="cv" element={<Navigate to="/dashboard/cover-letters" replace />} />
                                         <Route path="design-system" element={<DesignSystemShowcase />} />
                                         <Route path="*" element={<Navigate to="/dashboard" replace />} />

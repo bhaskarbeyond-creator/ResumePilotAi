@@ -2,11 +2,11 @@
   "id": "DIR-002",
   "title": "AUD-002: Interview Coach act() Warning Elimination - Zero Console Noise in Test Pyramid",
   "priority": "P1",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-13T20:33:58.326Z",
-  "updatedAt": "2026-10-13T20:50:11.953Z",
+  "updatedAt": "2026-10-13T20:50:13.039Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "Objective: Reproduce and eliminate the React act(...) warnings in tests/interview-coach-lifecycle.test.mjs (timer ticks + CBT palette updates in DashboardInterviews.jsx). Root cause expected: async event-loop dispatches outside act(). Fix: wrap timer advancements in act() and ensure mock audio cleanup on unmount. Gates: npm run test:interview exits 0 with ZERO act() warnings in output; npm run build exit 0; no changes to backend/services/aiRuntime.js or cv templates. Evidence: test log + warning-grep = 0 matches.",
   "invariants": [],
@@ -72,7 +72,30 @@
       }
     }
   ],
-  "freeze": null,
+  "freeze": {
+    "freezeHash": "72db1a1989f441c4e936c2f97c4bc0b31178b2af",
+    "certifiedAt": "2026-10-13T20:50:13.039Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "Autonomous Lead (Antigravity): evidence audit passed, all criteria verified.",
+    "evidenceHash": "18df6b8ee6f59b64485771c378d4dbdf6420d303f7210bf830375b08bc40a5e6",
+    "automated": true,
+    "certificationKind": "automated",
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "daemon:lead_watcher_session",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "daemon-parent:lead_watcher_session",
+        "non-tty"
+      ],
+      "pid": 60536,
+      "parentPid": 26852,
+      "tty": false,
+      "at": "2026-10-13T20:50:12.382Z",
+      "explicitlyAllowed": true
+    }
+  },
   "heartbeats": [
     {
       "at": "2026-10-13T20:38:16.882Z",
@@ -109,7 +132,7 @@
   ],
   "lastHeartbeatAt": "2026-10-13T20:49:56.442Z",
   "continuationPending": false,
-  "lastTransitionReason": "lead review",
+  "lastTransitionReason": "gatekeeper certification",
   "revisionTarget": null,
   "planApproval": {
     "approvedAt": "2026-10-13T20:38:26.339Z",

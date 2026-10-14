@@ -1,0 +1,4748 @@
+{
+  "summary": {
+    "generatedAt": "2026-10-14T03:54:20.724Z",
+    "targetUrl": "https://ai-resume-builder.local",
+    "pageCombinations": 240,
+    "exportCombinations": 56,
+    "overflowPages": [],
+    "blankPages": [],
+    "pageErrorPages": [],
+    "consoleErrorPages": [],
+    "failedRequestPages": [],
+    "exportIssues": []
+  },
+  "results": [
+    {
+      "pageId": "cockpit",
+      "route": "/dashboard",
+      "viewport": "320x568",
+      "screenshot": "artifacts/ui-ux-audit/cockpit/320x568/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "cover-letters",
+      "route": "/dashboard/cover-letters",
+      "viewport": "320x568",
+      "screenshot": "artifacts/ui-ux-audit/cover-letters/320x568/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "portfolios",
+      "route": "/dashboard/portfolios",
+      "viewport": "320x568",
+      "screenshot": "artifacts/ui-ux-audit/portfolios/320x568/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "favorites",
+      "route": "/dashboard/favorites",
+      "viewport": "320x568",
+      "screenshot": "artifacts/ui-ux-audit/favorites/320x568/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "notifications",
+      "route": "/dashboard/notifications",
+      "viewport": "320x568",
+      "screenshot": "artifacts/ui-ux-audit/notifications/320x568/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "jobs",
+      "route": "/dashboard/jobs",
+      "viewport": "320x568",
+      "screenshot": "artifacts/ui-ux-audit/jobs/320x568/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "jobs-browse",
+      "route": "/dashboard/jobs/browse",
+      "viewport": "320x568",
+      "screenshot": "artifacts/ui-ux-audit/jobs-browse/320x568/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "job-tracker",
+      "route": "/dashboard/job-tracker",
+      "viewport": "320x568",
+      "screenshot": "artifacts/ui-ux-audit/job-tracker/320x568/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "applied-jobs",
+      "route": "/dashboard/applied-jobs",
+      "viewport": "320x568",
+      "screenshot": "artifacts/ui-ux-audit/applied-jobs/320x568/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "interview",
+      "route": "/dashboard/interview",
+      "viewport": "320x568",
+      "screenshot": "artifacts/ui-ux-audit/interview/320x568/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "messages",
+      "route": "/dashboard/messages",
+      "viewport": "320x568",
+      "screenshot": "artifacts/ui-ux-audit/messages/320x568/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "plans",
+      "route": "/dashboard/plans",
+      "viewport": "320x568",
+      "screenshot": "artifacts/ui-ux-audit/plans/320x568/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "settings",
+      "route": "/dashboard/settings",
+      "viewport": "320x568",
+      "screenshot": "artifacts/ui-ux-audit/settings/320x568/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "settings-security",
+      "route": "/dashboard/settings?tab=Security",
+      "viewport": "320x568",
+      "screenshot": "artifacts/ui-ux-audit/settings-security/320x568/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "support",
+      "route": "/dashboard/support",
+      "viewport": "320x568",
+      "screenshot": "artifacts/ui-ux-audit/support/320x568/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "design-system",
+      "route": "/dashboard/design-system",
+      "viewport": "320x568",
+      "screenshot": "artifacts/ui-ux-audit/design-system/320x568/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-heading",
+      "route": "/build-resume",
+      "viewport": "320x568",
+      "screenshot": "artifacts/ui-ux-audit/build-heading/320x568/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-work-history",
+      "route": "/build-resume/work-history",
+      "viewport": "320x568",
+      "screenshot": "artifacts/ui-ux-audit/build-work-history/320x568/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-education",
+      "route": "/build-resume/education",
+      "viewport": "320x568",
+      "screenshot": "artifacts/ui-ux-audit/build-education/320x568/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-skills",
+      "route": "/build-resume/skills",
+      "viewport": "320x568",
+      "screenshot": "artifacts/ui-ux-audit/build-skills/320x568/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-languages",
+      "route": "/build-resume/languages",
+      "viewport": "320x568",
+      "screenshot": "artifacts/ui-ux-audit/build-languages/320x568/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-summary",
+      "route": "/build-resume/summary",
+      "viewport": "320x568",
+      "screenshot": "artifacts/ui-ux-audit/build-summary/320x568/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-projects",
+      "route": "/build-resume/projects",
+      "viewport": "320x568",
+      "screenshot": "artifacts/ui-ux-audit/build-projects/320x568/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 3500,
+      "blank": false
+    },
+    {
+      "pageId": "build-certifications",
+      "route": "/build-resume/certifications",
+      "viewport": "320x568",
+      "screenshot": "artifacts/ui-ux-audit/build-certifications/320x568/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-achievements",
+      "route": "/build-resume/achievements",
+      "viewport": "320x568",
+      "screenshot": "artifacts/ui-ux-audit/build-achievements/320x568/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-references",
+      "route": "/build-resume/references",
+      "viewport": "320x568",
+      "screenshot": "artifacts/ui-ux-audit/build-references/320x568/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 3500,
+      "blank": false
+    },
+    {
+      "pageId": "build-custom",
+      "route": "/build-resume/custom",
+      "viewport": "320x568",
+      "screenshot": "artifacts/ui-ux-audit/build-custom/320x568/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-review",
+      "route": "/build-resume/review",
+      "viewport": "320x568",
+      "screenshot": "artifacts/ui-ux-audit/build-review/320x568/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "portfolio-builder",
+      "route": "/portfolio/builder",
+      "viewport": "320x568",
+      "screenshot": "artifacts/ui-ux-audit/portfolio-builder/320x568/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "portfolio-gallery",
+      "route": "/portfolios",
+      "viewport": "320x568",
+      "screenshot": "artifacts/ui-ux-audit/portfolio-gallery/320x568/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "cockpit",
+      "route": "/dashboard",
+      "viewport": "375x812",
+      "screenshot": "artifacts/ui-ux-audit/cockpit/375x812/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "cover-letters",
+      "route": "/dashboard/cover-letters",
+      "viewport": "375x812",
+      "screenshot": "artifacts/ui-ux-audit/cover-letters/375x812/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "portfolios",
+      "route": "/dashboard/portfolios",
+      "viewport": "375x812",
+      "screenshot": "artifacts/ui-ux-audit/portfolios/375x812/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "favorites",
+      "route": "/dashboard/favorites",
+      "viewport": "375x812",
+      "screenshot": "artifacts/ui-ux-audit/favorites/375x812/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "notifications",
+      "route": "/dashboard/notifications",
+      "viewport": "375x812",
+      "screenshot": "artifacts/ui-ux-audit/notifications/375x812/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "jobs",
+      "route": "/dashboard/jobs",
+      "viewport": "375x812",
+      "screenshot": "artifacts/ui-ux-audit/jobs/375x812/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "jobs-browse",
+      "route": "/dashboard/jobs/browse",
+      "viewport": "375x812",
+      "screenshot": "artifacts/ui-ux-audit/jobs-browse/375x812/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "job-tracker",
+      "route": "/dashboard/job-tracker",
+      "viewport": "375x812",
+      "screenshot": "artifacts/ui-ux-audit/job-tracker/375x812/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "applied-jobs",
+      "route": "/dashboard/applied-jobs",
+      "viewport": "375x812",
+      "screenshot": "artifacts/ui-ux-audit/applied-jobs/375x812/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "interview",
+      "route": "/dashboard/interview",
+      "viewport": "375x812",
+      "screenshot": "artifacts/ui-ux-audit/interview/375x812/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "messages",
+      "route": "/dashboard/messages",
+      "viewport": "375x812",
+      "screenshot": "artifacts/ui-ux-audit/messages/375x812/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "plans",
+      "route": "/dashboard/plans",
+      "viewport": "375x812",
+      "screenshot": "artifacts/ui-ux-audit/plans/375x812/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "settings",
+      "route": "/dashboard/settings",
+      "viewport": "375x812",
+      "screenshot": "artifacts/ui-ux-audit/settings/375x812/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "settings-security",
+      "route": "/dashboard/settings?tab=Security",
+      "viewport": "375x812",
+      "screenshot": "artifacts/ui-ux-audit/settings-security/375x812/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "support",
+      "route": "/dashboard/support",
+      "viewport": "375x812",
+      "screenshot": "artifacts/ui-ux-audit/support/375x812/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "design-system",
+      "route": "/dashboard/design-system",
+      "viewport": "375x812",
+      "screenshot": "artifacts/ui-ux-audit/design-system/375x812/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-heading",
+      "route": "/build-resume",
+      "viewport": "375x812",
+      "screenshot": "artifacts/ui-ux-audit/build-heading/375x812/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-work-history",
+      "route": "/build-resume/work-history",
+      "viewport": "375x812",
+      "screenshot": "artifacts/ui-ux-audit/build-work-history/375x812/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "build-education",
+      "route": "/build-resume/education",
+      "viewport": "375x812",
+      "screenshot": "artifacts/ui-ux-audit/build-education/375x812/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 3500,
+      "blank": false
+    },
+    {
+      "pageId": "build-skills",
+      "route": "/build-resume/skills",
+      "viewport": "375x812",
+      "screenshot": "artifacts/ui-ux-audit/build-skills/375x812/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-languages",
+      "route": "/build-resume/languages",
+      "viewport": "375x812",
+      "screenshot": "artifacts/ui-ux-audit/build-languages/375x812/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-summary",
+      "route": "/build-resume/summary",
+      "viewport": "375x812",
+      "screenshot": "artifacts/ui-ux-audit/build-summary/375x812/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-projects",
+      "route": "/build-resume/projects",
+      "viewport": "375x812",
+      "screenshot": "artifacts/ui-ux-audit/build-projects/375x812/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-certifications",
+      "route": "/build-resume/certifications",
+      "viewport": "375x812",
+      "screenshot": "artifacts/ui-ux-audit/build-certifications/375x812/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-achievements",
+      "route": "/build-resume/achievements",
+      "viewport": "375x812",
+      "screenshot": "artifacts/ui-ux-audit/build-achievements/375x812/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-references",
+      "route": "/build-resume/references",
+      "viewport": "375x812",
+      "screenshot": "artifacts/ui-ux-audit/build-references/375x812/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-custom",
+      "route": "/build-resume/custom",
+      "viewport": "375x812",
+      "screenshot": "artifacts/ui-ux-audit/build-custom/375x812/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 3500,
+      "blank": false
+    },
+    {
+      "pageId": "build-review",
+      "route": "/build-resume/review",
+      "viewport": "375x812",
+      "screenshot": "artifacts/ui-ux-audit/build-review/375x812/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "portfolio-builder",
+      "route": "/portfolio/builder",
+      "viewport": "375x812",
+      "screenshot": "artifacts/ui-ux-audit/portfolio-builder/375x812/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "portfolio-gallery",
+      "route": "/portfolios",
+      "viewport": "375x812",
+      "screenshot": "artifacts/ui-ux-audit/portfolio-gallery/375x812/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "cockpit",
+      "route": "/dashboard",
+      "viewport": "430x932",
+      "screenshot": "artifacts/ui-ux-audit/cockpit/430x932/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "cover-letters",
+      "route": "/dashboard/cover-letters",
+      "viewport": "430x932",
+      "screenshot": "artifacts/ui-ux-audit/cover-letters/430x932/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "portfolios",
+      "route": "/dashboard/portfolios",
+      "viewport": "430x932",
+      "screenshot": "artifacts/ui-ux-audit/portfolios/430x932/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "favorites",
+      "route": "/dashboard/favorites",
+      "viewport": "430x932",
+      "screenshot": "artifacts/ui-ux-audit/favorites/430x932/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "notifications",
+      "route": "/dashboard/notifications",
+      "viewport": "430x932",
+      "screenshot": "artifacts/ui-ux-audit/notifications/430x932/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "jobs",
+      "route": "/dashboard/jobs",
+      "viewport": "430x932",
+      "screenshot": "artifacts/ui-ux-audit/jobs/430x932/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "jobs-browse",
+      "route": "/dashboard/jobs/browse",
+      "viewport": "430x932",
+      "screenshot": "artifacts/ui-ux-audit/jobs-browse/430x932/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "job-tracker",
+      "route": "/dashboard/job-tracker",
+      "viewport": "430x932",
+      "screenshot": "artifacts/ui-ux-audit/job-tracker/430x932/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "applied-jobs",
+      "route": "/dashboard/applied-jobs",
+      "viewport": "430x932",
+      "screenshot": "artifacts/ui-ux-audit/applied-jobs/430x932/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "interview",
+      "route": "/dashboard/interview",
+      "viewport": "430x932",
+      "screenshot": "artifacts/ui-ux-audit/interview/430x932/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "messages",
+      "route": "/dashboard/messages",
+      "viewport": "430x932",
+      "screenshot": "artifacts/ui-ux-audit/messages/430x932/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "plans",
+      "route": "/dashboard/plans",
+      "viewport": "430x932",
+      "screenshot": "artifacts/ui-ux-audit/plans/430x932/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "settings",
+      "route": "/dashboard/settings",
+      "viewport": "430x932",
+      "screenshot": "artifacts/ui-ux-audit/settings/430x932/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "settings-security",
+      "route": "/dashboard/settings?tab=Security",
+      "viewport": "430x932",
+      "screenshot": "artifacts/ui-ux-audit/settings-security/430x932/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "support",
+      "route": "/dashboard/support",
+      "viewport": "430x932",
+      "screenshot": "artifacts/ui-ux-audit/support/430x932/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "design-system",
+      "route": "/dashboard/design-system",
+      "viewport": "430x932",
+      "screenshot": "artifacts/ui-ux-audit/design-system/430x932/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-heading",
+      "route": "/build-resume",
+      "viewport": "430x932",
+      "screenshot": "artifacts/ui-ux-audit/build-heading/430x932/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 3500,
+      "blank": false
+    },
+    {
+      "pageId": "build-work-history",
+      "route": "/build-resume/work-history",
+      "viewport": "430x932",
+      "screenshot": "artifacts/ui-ux-audit/build-work-history/430x932/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "build-education",
+      "route": "/build-resume/education",
+      "viewport": "430x932",
+      "screenshot": "artifacts/ui-ux-audit/build-education/430x932/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-skills",
+      "route": "/build-resume/skills",
+      "viewport": "430x932",
+      "screenshot": "artifacts/ui-ux-audit/build-skills/430x932/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 3500,
+      "blank": false
+    },
+    {
+      "pageId": "build-languages",
+      "route": "/build-resume/languages",
+      "viewport": "430x932",
+      "screenshot": "artifacts/ui-ux-audit/build-languages/430x932/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-summary",
+      "route": "/build-resume/summary",
+      "viewport": "430x932",
+      "screenshot": "artifacts/ui-ux-audit/build-summary/430x932/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-projects",
+      "route": "/build-resume/projects",
+      "viewport": "430x932",
+      "screenshot": "artifacts/ui-ux-audit/build-projects/430x932/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-certifications",
+      "route": "/build-resume/certifications",
+      "viewport": "430x932",
+      "screenshot": "artifacts/ui-ux-audit/build-certifications/430x932/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-achievements",
+      "route": "/build-resume/achievements",
+      "viewport": "430x932",
+      "screenshot": "artifacts/ui-ux-audit/build-achievements/430x932/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-references",
+      "route": "/build-resume/references",
+      "viewport": "430x932",
+      "screenshot": "artifacts/ui-ux-audit/build-references/430x932/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-custom",
+      "route": "/build-resume/custom",
+      "viewport": "430x932",
+      "screenshot": "artifacts/ui-ux-audit/build-custom/430x932/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 3500,
+      "blank": false
+    },
+    {
+      "pageId": "build-review",
+      "route": "/build-resume/review",
+      "viewport": "430x932",
+      "screenshot": "artifacts/ui-ux-audit/build-review/430x932/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "portfolio-builder",
+      "route": "/portfolio/builder",
+      "viewport": "430x932",
+      "screenshot": "artifacts/ui-ux-audit/portfolio-builder/430x932/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "portfolio-gallery",
+      "route": "/portfolios",
+      "viewport": "430x932",
+      "screenshot": "artifacts/ui-ux-audit/portfolio-gallery/430x932/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "cockpit",
+      "route": "/dashboard",
+      "viewport": "768x1024",
+      "screenshot": "artifacts/ui-ux-audit/cockpit/768x1024/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "cover-letters",
+      "route": "/dashboard/cover-letters",
+      "viewport": "768x1024",
+      "screenshot": "artifacts/ui-ux-audit/cover-letters/768x1024/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "portfolios",
+      "route": "/dashboard/portfolios",
+      "viewport": "768x1024",
+      "screenshot": "artifacts/ui-ux-audit/portfolios/768x1024/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "favorites",
+      "route": "/dashboard/favorites",
+      "viewport": "768x1024",
+      "screenshot": "artifacts/ui-ux-audit/favorites/768x1024/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "notifications",
+      "route": "/dashboard/notifications",
+      "viewport": "768x1024",
+      "screenshot": "artifacts/ui-ux-audit/notifications/768x1024/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "jobs",
+      "route": "/dashboard/jobs",
+      "viewport": "768x1024",
+      "screenshot": "artifacts/ui-ux-audit/jobs/768x1024/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "jobs-browse",
+      "route": "/dashboard/jobs/browse",
+      "viewport": "768x1024",
+      "screenshot": "artifacts/ui-ux-audit/jobs-browse/768x1024/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "job-tracker",
+      "route": "/dashboard/job-tracker",
+      "viewport": "768x1024",
+      "screenshot": "artifacts/ui-ux-audit/job-tracker/768x1024/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "applied-jobs",
+      "route": "/dashboard/applied-jobs",
+      "viewport": "768x1024",
+      "screenshot": "artifacts/ui-ux-audit/applied-jobs/768x1024/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "interview",
+      "route": "/dashboard/interview",
+      "viewport": "768x1024",
+      "screenshot": "artifacts/ui-ux-audit/interview/768x1024/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "messages",
+      "route": "/dashboard/messages",
+      "viewport": "768x1024",
+      "screenshot": "artifacts/ui-ux-audit/messages/768x1024/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "plans",
+      "route": "/dashboard/plans",
+      "viewport": "768x1024",
+      "screenshot": "artifacts/ui-ux-audit/plans/768x1024/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "settings",
+      "route": "/dashboard/settings",
+      "viewport": "768x1024",
+      "screenshot": "artifacts/ui-ux-audit/settings/768x1024/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 3500,
+      "blank": false
+    },
+    {
+      "pageId": "settings-security",
+      "route": "/dashboard/settings?tab=Security",
+      "viewport": "768x1024",
+      "screenshot": "artifacts/ui-ux-audit/settings-security/768x1024/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "support",
+      "route": "/dashboard/support",
+      "viewport": "768x1024",
+      "screenshot": "artifacts/ui-ux-audit/support/768x1024/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "design-system",
+      "route": "/dashboard/design-system",
+      "viewport": "768x1024",
+      "screenshot": "artifacts/ui-ux-audit/design-system/768x1024/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-heading",
+      "route": "/build-resume",
+      "viewport": "768x1024",
+      "screenshot": "artifacts/ui-ux-audit/build-heading/768x1024/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-work-history",
+      "route": "/build-resume/work-history",
+      "viewport": "768x1024",
+      "screenshot": "artifacts/ui-ux-audit/build-work-history/768x1024/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-education",
+      "route": "/build-resume/education",
+      "viewport": "768x1024",
+      "screenshot": "artifacts/ui-ux-audit/build-education/768x1024/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-skills",
+      "route": "/build-resume/skills",
+      "viewport": "768x1024",
+      "screenshot": "artifacts/ui-ux-audit/build-skills/768x1024/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-languages",
+      "route": "/build-resume/languages",
+      "viewport": "768x1024",
+      "screenshot": "artifacts/ui-ux-audit/build-languages/768x1024/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-summary",
+      "route": "/build-resume/summary",
+      "viewport": "768x1024",
+      "screenshot": "artifacts/ui-ux-audit/build-summary/768x1024/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-projects",
+      "route": "/build-resume/projects",
+      "viewport": "768x1024",
+      "screenshot": "artifacts/ui-ux-audit/build-projects/768x1024/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-certifications",
+      "route": "/build-resume/certifications",
+      "viewport": "768x1024",
+      "screenshot": "artifacts/ui-ux-audit/build-certifications/768x1024/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-achievements",
+      "route": "/build-resume/achievements",
+      "viewport": "768x1024",
+      "screenshot": "artifacts/ui-ux-audit/build-achievements/768x1024/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-references",
+      "route": "/build-resume/references",
+      "viewport": "768x1024",
+      "screenshot": "artifacts/ui-ux-audit/build-references/768x1024/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-custom",
+      "route": "/build-resume/custom",
+      "viewport": "768x1024",
+      "screenshot": "artifacts/ui-ux-audit/build-custom/768x1024/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-review",
+      "route": "/build-resume/review",
+      "viewport": "768x1024",
+      "screenshot": "artifacts/ui-ux-audit/build-review/768x1024/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "portfolio-builder",
+      "route": "/portfolio/builder",
+      "viewport": "768x1024",
+      "screenshot": "artifacts/ui-ux-audit/portfolio-builder/768x1024/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "portfolio-gallery",
+      "route": "/portfolios",
+      "viewport": "768x1024",
+      "screenshot": "artifacts/ui-ux-audit/portfolio-gallery/768x1024/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "cockpit",
+      "route": "/dashboard",
+      "viewport": "1024x768",
+      "screenshot": "artifacts/ui-ux-audit/cockpit/1024x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "cover-letters",
+      "route": "/dashboard/cover-letters",
+      "viewport": "1024x768",
+      "screenshot": "artifacts/ui-ux-audit/cover-letters/1024x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "portfolios",
+      "route": "/dashboard/portfolios",
+      "viewport": "1024x768",
+      "screenshot": "artifacts/ui-ux-audit/portfolios/1024x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "favorites",
+      "route": "/dashboard/favorites",
+      "viewport": "1024x768",
+      "screenshot": "artifacts/ui-ux-audit/favorites/1024x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "notifications",
+      "route": "/dashboard/notifications",
+      "viewport": "1024x768",
+      "screenshot": "artifacts/ui-ux-audit/notifications/1024x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "jobs",
+      "route": "/dashboard/jobs",
+      "viewport": "1024x768",
+      "screenshot": "artifacts/ui-ux-audit/jobs/1024x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "jobs-browse",
+      "route": "/dashboard/jobs/browse",
+      "viewport": "1024x768",
+      "screenshot": "artifacts/ui-ux-audit/jobs-browse/1024x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "job-tracker",
+      "route": "/dashboard/job-tracker",
+      "viewport": "1024x768",
+      "screenshot": "artifacts/ui-ux-audit/job-tracker/1024x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "applied-jobs",
+      "route": "/dashboard/applied-jobs",
+      "viewport": "1024x768",
+      "screenshot": "artifacts/ui-ux-audit/applied-jobs/1024x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "interview",
+      "route": "/dashboard/interview",
+      "viewport": "1024x768",
+      "screenshot": "artifacts/ui-ux-audit/interview/1024x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "messages",
+      "route": "/dashboard/messages",
+      "viewport": "1024x768",
+      "screenshot": "artifacts/ui-ux-audit/messages/1024x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "plans",
+      "route": "/dashboard/plans",
+      "viewport": "1024x768",
+      "screenshot": "artifacts/ui-ux-audit/plans/1024x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "settings",
+      "route": "/dashboard/settings",
+      "viewport": "1024x768",
+      "screenshot": "artifacts/ui-ux-audit/settings/1024x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "settings-security",
+      "route": "/dashboard/settings?tab=Security",
+      "viewport": "1024x768",
+      "screenshot": "artifacts/ui-ux-audit/settings-security/1024x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "support",
+      "route": "/dashboard/support",
+      "viewport": "1024x768",
+      "screenshot": "artifacts/ui-ux-audit/support/1024x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "design-system",
+      "route": "/dashboard/design-system",
+      "viewport": "1024x768",
+      "screenshot": "artifacts/ui-ux-audit/design-system/1024x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-heading",
+      "route": "/build-resume",
+      "viewport": "1024x768",
+      "screenshot": "artifacts/ui-ux-audit/build-heading/1024x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-work-history",
+      "route": "/build-resume/work-history",
+      "viewport": "1024x768",
+      "screenshot": "artifacts/ui-ux-audit/build-work-history/1024x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-education",
+      "route": "/build-resume/education",
+      "viewport": "1024x768",
+      "screenshot": "artifacts/ui-ux-audit/build-education/1024x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-skills",
+      "route": "/build-resume/skills",
+      "viewport": "1024x768",
+      "screenshot": "artifacts/ui-ux-audit/build-skills/1024x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-languages",
+      "route": "/build-resume/languages",
+      "viewport": "1024x768",
+      "screenshot": "artifacts/ui-ux-audit/build-languages/1024x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-summary",
+      "route": "/build-resume/summary",
+      "viewport": "1024x768",
+      "screenshot": "artifacts/ui-ux-audit/build-summary/1024x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-projects",
+      "route": "/build-resume/projects",
+      "viewport": "1024x768",
+      "screenshot": "artifacts/ui-ux-audit/build-projects/1024x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-certifications",
+      "route": "/build-resume/certifications",
+      "viewport": "1024x768",
+      "screenshot": "artifacts/ui-ux-audit/build-certifications/1024x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-achievements",
+      "route": "/build-resume/achievements",
+      "viewport": "1024x768",
+      "screenshot": "artifacts/ui-ux-audit/build-achievements/1024x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-references",
+      "route": "/build-resume/references",
+      "viewport": "1024x768",
+      "screenshot": "artifacts/ui-ux-audit/build-references/1024x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-custom",
+      "route": "/build-resume/custom",
+      "viewport": "1024x768",
+      "screenshot": "artifacts/ui-ux-audit/build-custom/1024x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-review",
+      "route": "/build-resume/review",
+      "viewport": "1024x768",
+      "screenshot": "artifacts/ui-ux-audit/build-review/1024x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "portfolio-builder",
+      "route": "/portfolio/builder",
+      "viewport": "1024x768",
+      "screenshot": "artifacts/ui-ux-audit/portfolio-builder/1024x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "portfolio-gallery",
+      "route": "/portfolios",
+      "viewport": "1024x768",
+      "screenshot": "artifacts/ui-ux-audit/portfolio-gallery/1024x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "cockpit",
+      "route": "/dashboard",
+      "viewport": "1366x768",
+      "screenshot": "artifacts/ui-ux-audit/cockpit/1366x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "cover-letters",
+      "route": "/dashboard/cover-letters",
+      "viewport": "1366x768",
+      "screenshot": "artifacts/ui-ux-audit/cover-letters/1366x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "portfolios",
+      "route": "/dashboard/portfolios",
+      "viewport": "1366x768",
+      "screenshot": "artifacts/ui-ux-audit/portfolios/1366x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "favorites",
+      "route": "/dashboard/favorites",
+      "viewport": "1366x768",
+      "screenshot": "artifacts/ui-ux-audit/favorites/1366x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "notifications",
+      "route": "/dashboard/notifications",
+      "viewport": "1366x768",
+      "screenshot": "artifacts/ui-ux-audit/notifications/1366x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "jobs",
+      "route": "/dashboard/jobs",
+      "viewport": "1366x768",
+      "screenshot": "artifacts/ui-ux-audit/jobs/1366x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "jobs-browse",
+      "route": "/dashboard/jobs/browse",
+      "viewport": "1366x768",
+      "screenshot": "artifacts/ui-ux-audit/jobs-browse/1366x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "job-tracker",
+      "route": "/dashboard/job-tracker",
+      "viewport": "1366x768",
+      "screenshot": "artifacts/ui-ux-audit/job-tracker/1366x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "applied-jobs",
+      "route": "/dashboard/applied-jobs",
+      "viewport": "1366x768",
+      "screenshot": "artifacts/ui-ux-audit/applied-jobs/1366x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "interview",
+      "route": "/dashboard/interview",
+      "viewport": "1366x768",
+      "screenshot": "artifacts/ui-ux-audit/interview/1366x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "messages",
+      "route": "/dashboard/messages",
+      "viewport": "1366x768",
+      "screenshot": "artifacts/ui-ux-audit/messages/1366x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "plans",
+      "route": "/dashboard/plans",
+      "viewport": "1366x768",
+      "screenshot": "artifacts/ui-ux-audit/plans/1366x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "settings",
+      "route": "/dashboard/settings",
+      "viewport": "1366x768",
+      "screenshot": "artifacts/ui-ux-audit/settings/1366x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "settings-security",
+      "route": "/dashboard/settings?tab=Security",
+      "viewport": "1366x768",
+      "screenshot": "artifacts/ui-ux-audit/settings-security/1366x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "support",
+      "route": "/dashboard/support",
+      "viewport": "1366x768",
+      "screenshot": "artifacts/ui-ux-audit/support/1366x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "design-system",
+      "route": "/dashboard/design-system",
+      "viewport": "1366x768",
+      "screenshot": "artifacts/ui-ux-audit/design-system/1366x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-heading",
+      "route": "/build-resume",
+      "viewport": "1366x768",
+      "screenshot": "artifacts/ui-ux-audit/build-heading/1366x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-work-history",
+      "route": "/build-resume/work-history",
+      "viewport": "1366x768",
+      "screenshot": "artifacts/ui-ux-audit/build-work-history/1366x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-education",
+      "route": "/build-resume/education",
+      "viewport": "1366x768",
+      "screenshot": "artifacts/ui-ux-audit/build-education/1366x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-skills",
+      "route": "/build-resume/skills",
+      "viewport": "1366x768",
+      "screenshot": "artifacts/ui-ux-audit/build-skills/1366x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-languages",
+      "route": "/build-resume/languages",
+      "viewport": "1366x768",
+      "screenshot": "artifacts/ui-ux-audit/build-languages/1366x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-summary",
+      "route": "/build-resume/summary",
+      "viewport": "1366x768",
+      "screenshot": "artifacts/ui-ux-audit/build-summary/1366x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-projects",
+      "route": "/build-resume/projects",
+      "viewport": "1366x768",
+      "screenshot": "artifacts/ui-ux-audit/build-projects/1366x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-certifications",
+      "route": "/build-resume/certifications",
+      "viewport": "1366x768",
+      "screenshot": "artifacts/ui-ux-audit/build-certifications/1366x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-achievements",
+      "route": "/build-resume/achievements",
+      "viewport": "1366x768",
+      "screenshot": "artifacts/ui-ux-audit/build-achievements/1366x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-references",
+      "route": "/build-resume/references",
+      "viewport": "1366x768",
+      "screenshot": "artifacts/ui-ux-audit/build-references/1366x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-custom",
+      "route": "/build-resume/custom",
+      "viewport": "1366x768",
+      "screenshot": "artifacts/ui-ux-audit/build-custom/1366x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-review",
+      "route": "/build-resume/review",
+      "viewport": "1366x768",
+      "screenshot": "artifacts/ui-ux-audit/build-review/1366x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "portfolio-builder",
+      "route": "/portfolio/builder",
+      "viewport": "1366x768",
+      "screenshot": "artifacts/ui-ux-audit/portfolio-builder/1366x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "portfolio-gallery",
+      "route": "/portfolios",
+      "viewport": "1366x768",
+      "screenshot": "artifacts/ui-ux-audit/portfolio-gallery/1366x768/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "cockpit",
+      "route": "/dashboard",
+      "viewport": "1440x900",
+      "screenshot": "artifacts/ui-ux-audit/cockpit/1440x900/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "cover-letters",
+      "route": "/dashboard/cover-letters",
+      "viewport": "1440x900",
+      "screenshot": "artifacts/ui-ux-audit/cover-letters/1440x900/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "portfolios",
+      "route": "/dashboard/portfolios",
+      "viewport": "1440x900",
+      "screenshot": "artifacts/ui-ux-audit/portfolios/1440x900/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "favorites",
+      "route": "/dashboard/favorites",
+      "viewport": "1440x900",
+      "screenshot": "artifacts/ui-ux-audit/favorites/1440x900/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "notifications",
+      "route": "/dashboard/notifications",
+      "viewport": "1440x900",
+      "screenshot": "artifacts/ui-ux-audit/notifications/1440x900/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "jobs",
+      "route": "/dashboard/jobs",
+      "viewport": "1440x900",
+      "screenshot": "artifacts/ui-ux-audit/jobs/1440x900/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "jobs-browse",
+      "route": "/dashboard/jobs/browse",
+      "viewport": "1440x900",
+      "screenshot": "artifacts/ui-ux-audit/jobs-browse/1440x900/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "job-tracker",
+      "route": "/dashboard/job-tracker",
+      "viewport": "1440x900",
+      "screenshot": "artifacts/ui-ux-audit/job-tracker/1440x900/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "applied-jobs",
+      "route": "/dashboard/applied-jobs",
+      "viewport": "1440x900",
+      "screenshot": "artifacts/ui-ux-audit/applied-jobs/1440x900/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "interview",
+      "route": "/dashboard/interview",
+      "viewport": "1440x900",
+      "screenshot": "artifacts/ui-ux-audit/interview/1440x900/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "messages",
+      "route": "/dashboard/messages",
+      "viewport": "1440x900",
+      "screenshot": "artifacts/ui-ux-audit/messages/1440x900/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "plans",
+      "route": "/dashboard/plans",
+      "viewport": "1440x900",
+      "screenshot": "artifacts/ui-ux-audit/plans/1440x900/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "settings",
+      "route": "/dashboard/settings",
+      "viewport": "1440x900",
+      "screenshot": "artifacts/ui-ux-audit/settings/1440x900/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "settings-security",
+      "route": "/dashboard/settings?tab=Security",
+      "viewport": "1440x900",
+      "screenshot": "artifacts/ui-ux-audit/settings-security/1440x900/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "support",
+      "route": "/dashboard/support",
+      "viewport": "1440x900",
+      "screenshot": "artifacts/ui-ux-audit/support/1440x900/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "design-system",
+      "route": "/dashboard/design-system",
+      "viewport": "1440x900",
+      "screenshot": "artifacts/ui-ux-audit/design-system/1440x900/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-heading",
+      "route": "/build-resume",
+      "viewport": "1440x900",
+      "screenshot": "artifacts/ui-ux-audit/build-heading/1440x900/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-work-history",
+      "route": "/build-resume/work-history",
+      "viewport": "1440x900",
+      "screenshot": "artifacts/ui-ux-audit/build-work-history/1440x900/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-education",
+      "route": "/build-resume/education",
+      "viewport": "1440x900",
+      "screenshot": "artifacts/ui-ux-audit/build-education/1440x900/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-skills",
+      "route": "/build-resume/skills",
+      "viewport": "1440x900",
+      "screenshot": "artifacts/ui-ux-audit/build-skills/1440x900/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-languages",
+      "route": "/build-resume/languages",
+      "viewport": "1440x900",
+      "screenshot": "artifacts/ui-ux-audit/build-languages/1440x900/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-summary",
+      "route": "/build-resume/summary",
+      "viewport": "1440x900",
+      "screenshot": "artifacts/ui-ux-audit/build-summary/1440x900/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-projects",
+      "route": "/build-resume/projects",
+      "viewport": "1440x900",
+      "screenshot": "artifacts/ui-ux-audit/build-projects/1440x900/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-certifications",
+      "route": "/build-resume/certifications",
+      "viewport": "1440x900",
+      "screenshot": "artifacts/ui-ux-audit/build-certifications/1440x900/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-achievements",
+      "route": "/build-resume/achievements",
+      "viewport": "1440x900",
+      "screenshot": "artifacts/ui-ux-audit/build-achievements/1440x900/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-references",
+      "route": "/build-resume/references",
+      "viewport": "1440x900",
+      "screenshot": "artifacts/ui-ux-audit/build-references/1440x900/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-custom",
+      "route": "/build-resume/custom",
+      "viewport": "1440x900",
+      "screenshot": "artifacts/ui-ux-audit/build-custom/1440x900/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-review",
+      "route": "/build-resume/review",
+      "viewport": "1440x900",
+      "screenshot": "artifacts/ui-ux-audit/build-review/1440x900/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "portfolio-builder",
+      "route": "/portfolio/builder",
+      "viewport": "1440x900",
+      "screenshot": "artifacts/ui-ux-audit/portfolio-builder/1440x900/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "portfolio-gallery",
+      "route": "/portfolios",
+      "viewport": "1440x900",
+      "screenshot": "artifacts/ui-ux-audit/portfolio-gallery/1440x900/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "cockpit",
+      "route": "/dashboard",
+      "viewport": "1920x1080",
+      "screenshot": "artifacts/ui-ux-audit/cockpit/1920x1080/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "cover-letters",
+      "route": "/dashboard/cover-letters",
+      "viewport": "1920x1080",
+      "screenshot": "artifacts/ui-ux-audit/cover-letters/1920x1080/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "portfolios",
+      "route": "/dashboard/portfolios",
+      "viewport": "1920x1080",
+      "screenshot": "artifacts/ui-ux-audit/portfolios/1920x1080/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "favorites",
+      "route": "/dashboard/favorites",
+      "viewport": "1920x1080",
+      "screenshot": "artifacts/ui-ux-audit/favorites/1920x1080/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "notifications",
+      "route": "/dashboard/notifications",
+      "viewport": "1920x1080",
+      "screenshot": "artifacts/ui-ux-audit/notifications/1920x1080/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "jobs",
+      "route": "/dashboard/jobs",
+      "viewport": "1920x1080",
+      "screenshot": "artifacts/ui-ux-audit/jobs/1920x1080/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "jobs-browse",
+      "route": "/dashboard/jobs/browse",
+      "viewport": "1920x1080",
+      "screenshot": "artifacts/ui-ux-audit/jobs-browse/1920x1080/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "job-tracker",
+      "route": "/dashboard/job-tracker",
+      "viewport": "1920x1080",
+      "screenshot": "artifacts/ui-ux-audit/job-tracker/1920x1080/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "applied-jobs",
+      "route": "/dashboard/applied-jobs",
+      "viewport": "1920x1080",
+      "screenshot": "artifacts/ui-ux-audit/applied-jobs/1920x1080/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "interview",
+      "route": "/dashboard/interview",
+      "viewport": "1920x1080",
+      "screenshot": "artifacts/ui-ux-audit/interview/1920x1080/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "messages",
+      "route": "/dashboard/messages",
+      "viewport": "1920x1080",
+      "screenshot": "artifacts/ui-ux-audit/messages/1920x1080/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 3500,
+      "blank": false
+    },
+    {
+      "pageId": "plans",
+      "route": "/dashboard/plans",
+      "viewport": "1920x1080",
+      "screenshot": "artifacts/ui-ux-audit/plans/1920x1080/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "settings",
+      "route": "/dashboard/settings",
+      "viewport": "1920x1080",
+      "screenshot": "artifacts/ui-ux-audit/settings/1920x1080/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "settings-security",
+      "route": "/dashboard/settings?tab=Security",
+      "viewport": "1920x1080",
+      "screenshot": "artifacts/ui-ux-audit/settings-security/1920x1080/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "support",
+      "route": "/dashboard/support",
+      "viewport": "1920x1080",
+      "screenshot": "artifacts/ui-ux-audit/support/1920x1080/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "design-system",
+      "route": "/dashboard/design-system",
+      "viewport": "1920x1080",
+      "screenshot": "artifacts/ui-ux-audit/design-system/1920x1080/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-heading",
+      "route": "/build-resume",
+      "viewport": "1920x1080",
+      "screenshot": "artifacts/ui-ux-audit/build-heading/1920x1080/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-work-history",
+      "route": "/build-resume/work-history",
+      "viewport": "1920x1080",
+      "screenshot": "artifacts/ui-ux-audit/build-work-history/1920x1080/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-education",
+      "route": "/build-resume/education",
+      "viewport": "1920x1080",
+      "screenshot": "artifacts/ui-ux-audit/build-education/1920x1080/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-skills",
+      "route": "/build-resume/skills",
+      "viewport": "1920x1080",
+      "screenshot": "artifacts/ui-ux-audit/build-skills/1920x1080/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-languages",
+      "route": "/build-resume/languages",
+      "viewport": "1920x1080",
+      "screenshot": "artifacts/ui-ux-audit/build-languages/1920x1080/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-summary",
+      "route": "/build-resume/summary",
+      "viewport": "1920x1080",
+      "screenshot": "artifacts/ui-ux-audit/build-summary/1920x1080/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-projects",
+      "route": "/build-resume/projects",
+      "viewport": "1920x1080",
+      "screenshot": "artifacts/ui-ux-audit/build-projects/1920x1080/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-certifications",
+      "route": "/build-resume/certifications",
+      "viewport": "1920x1080",
+      "screenshot": "artifacts/ui-ux-audit/build-certifications/1920x1080/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-achievements",
+      "route": "/build-resume/achievements",
+      "viewport": "1920x1080",
+      "screenshot": "artifacts/ui-ux-audit/build-achievements/1920x1080/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 2200,
+      "blank": false
+    },
+    {
+      "pageId": "build-references",
+      "route": "/build-resume/references",
+      "viewport": "1920x1080",
+      "screenshot": "artifacts/ui-ux-audit/build-references/1920x1080/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-custom",
+      "route": "/build-resume/custom",
+      "viewport": "1920x1080",
+      "screenshot": "artifacts/ui-ux-audit/build-custom/1920x1080/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "build-review",
+      "route": "/build-resume/review",
+      "viewport": "1920x1080",
+      "screenshot": "artifacts/ui-ux-audit/build-review/1920x1080/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "portfolio-builder",
+      "route": "/portfolio/builder",
+      "viewport": "1920x1080",
+      "screenshot": "artifacts/ui-ux-audit/portfolio-builder/1920x1080/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    },
+    {
+      "pageId": "portfolio-gallery",
+      "route": "/portfolios",
+      "viewport": "1920x1080",
+      "screenshot": "artifacts/ui-ux-audit/portfolio-gallery/1920x1080/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "settleMs": 1200,
+      "blank": false
+    }
+  ],
+  "exportResults": [
+    {
+      "pageId": "shared-resume",
+      "route": "/shared/res_1791947274145",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/shared-resume/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "failedRequests": [
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv1",
+      "route": "/export/Cv1/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv1/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "failedRequests": [
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv2",
+      "route": "/export/Cv2/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv2/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "failedRequests": [
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv3",
+      "route": "/export/Cv3/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv3/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "failedRequests": [
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv4",
+      "route": "/export/Cv4/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv4/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "failedRequests": [
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv5",
+      "route": "/export/Cv5/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv5/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "failedRequests": [
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv6",
+      "route": "/export/Cv6/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv6/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "failedRequests": [
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv7",
+      "route": "/export/Cv7/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv7/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "failedRequests": [
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv8",
+      "route": "/export/Cv8/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv8/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "failedRequests": [
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv9",
+      "route": "/export/Cv9/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv9/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "failedRequests": [
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv10",
+      "route": "/export/Cv10/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv10/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "failedRequests": [
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv11",
+      "route": "/export/Cv11/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv11/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "failedRequests": [
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv12",
+      "route": "/export/Cv12/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv12/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "failedRequests": [
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv13",
+      "route": "/export/Cv13/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv13/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "failedRequests": [
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv14",
+      "route": "/export/Cv14/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv14/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "failedRequests": [
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv15",
+      "route": "/export/Cv15/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv15/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "failedRequests": [
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv16",
+      "route": "/export/Cv16/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv16/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "failedRequests": [
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv17",
+      "route": "/export/Cv17/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv17/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "failedRequests": [
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv18",
+      "route": "/export/Cv18/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv18/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "failedRequests": [
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv19",
+      "route": "/export/Cv19/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv19/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "failedRequests": [
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv20",
+      "route": "/export/Cv20/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv20/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "failedRequests": [
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv21",
+      "route": "/export/Cv21/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv21/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "failedRequests": [
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv22",
+      "route": "/export/Cv22/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv22/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "failedRequests": [
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv23",
+      "route": "/export/Cv23/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv23/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "failedRequests": [
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv24",
+      "route": "/export/Cv24/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv24/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 502 (Proxy Error)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "failedRequests": [
+        {
+          "status": 502,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv25",
+      "route": "/export/Cv25/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv25/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "failedRequests": [
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv26",
+      "route": "/export/Cv26/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv26/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "failedRequests": [
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv27",
+      "route": "/export/Cv27/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv27/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "failedRequests": [
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv28",
+      "route": "/export/Cv28/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv28/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "failedRequests": [
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv29",
+      "route": "/export/Cv29/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv29/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "failedRequests": [
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv30",
+      "route": "/export/Cv30/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv30/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "failedRequests": [
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv31",
+      "route": "/export/Cv31/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv31/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 404,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv32",
+      "route": "/export/Cv32/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv32/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv33",
+      "route": "/export/Cv33/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv33/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv34",
+      "route": "/export/Cv34/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv34/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv35",
+      "route": "/export/Cv35/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv35/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv36",
+      "route": "/export/Cv36/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv36/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv37",
+      "route": "/export/Cv37/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv37/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv38",
+      "route": "/export/Cv38/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv38/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv39",
+      "route": "/export/Cv39/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv39/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv40",
+      "route": "/export/Cv40/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv40/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv41",
+      "route": "/export/Cv41/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv41/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv42",
+      "route": "/export/Cv42/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv42/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv43",
+      "route": "/export/Cv43/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv43/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv44",
+      "route": "/export/Cv44/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv44/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv45",
+      "route": "/export/Cv45/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv45/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv46",
+      "route": "/export/Cv46/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv46/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv47",
+      "route": "/export/Cv47/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv47/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv48",
+      "route": "/export/Cv48/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv48/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv49",
+      "route": "/export/Cv49/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv49/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv50",
+      "route": "/export/Cv50/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv50/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cv51",
+      "route": "/export/Cv51/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cv51/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cover1",
+      "route": "/export/Cover1/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cover1/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cover2",
+      "route": "/export/Cover2/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cover2/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cover3",
+      "route": "/export/Cover3/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cover3/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    },
+    {
+      "pageId": "export-cover4",
+      "route": "/export/Cover4/res_1791947274145/en",
+      "viewport": "1280x800-export",
+      "screenshot": "artifacts/ui-ux-audit/export-cover4/1280x800-export/loaded.png",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/public/res_1791947274145"
+        },
+        {
+          "status": 429,
+          "url": "https://ai-resume-builder.local/api/resumes/res_1791947274145"
+        }
+      ],
+      "pageErrors": [],
+      "settleMs": 6000,
+      "blank": false
+    }
+  ]
+}

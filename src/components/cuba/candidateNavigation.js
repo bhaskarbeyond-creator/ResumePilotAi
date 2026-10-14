@@ -20,7 +20,12 @@ export const CANDIDATE_NAVIGATION = Object.freeze([
         label: 'Workspace',
         items: [
             { id: 'overview', label: 'Overview', to: '/dashboard' },
-            { id: 'resumes', label: 'Resumes & Master CV', to: '/build-resume' },
+            // DIR-003 / CAND-001: the dedicated Resumes & Master CV workspace hub
+            // lives at /dashboard/resumes (mounted in DashboardMain.jsx). The nav
+            // entry targets the HUB, while `aliases` keeps the real builder
+            // (/build-resume/*) highlighting this same item, so a user deep in the
+            // builder still sees "Resumes & Master CV" active in the sidebar.
+            { id: 'resumes', label: 'Resumes & Master CV', to: '/dashboard/resumes', aliases: ['/build-resume'] },
             { id: 'cover-letters', label: 'Cover Letters', to: '/dashboard/cover-letters' },
             { id: 'portfolios', label: 'Portfolios & Web CV', to: '/dashboard/portfolios' },
             // DIR-016: `/dashboard/favorites` is genuinely mounted — DashboardMain.jsx

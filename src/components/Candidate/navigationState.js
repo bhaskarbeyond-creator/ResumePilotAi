@@ -43,11 +43,19 @@ export function resolveActiveItem(pathname, groups) {
     const targetQuery = queryOf(pathname);
     let firstExact = null;
     let best = null;
+    let bestAncestorLength = 0;
 
     for (const group of groups) {
         for (const item of group.items) {
             const base = pathOf(item.to);
-            if (target === base) {
+            // DIR-003 / CAND-001: a nav entry may own additional surfaces through
+            // `aliases` (e.g. Resumes & Master CV also owns /build-resume/*). Each
+            // alias participates in BOTH exact matching and longest-ancestor
+            // matching, so deep builder URLs keep the hub highlighted.
+            const aliasBases = (Array.isArray(item.aliases) ? item.aliases : []).map(pathOf);
+            const bases = [base, ...aliasBases];
+            const exactMatch = bases.includes(target);
+            if (exactMatch) {
                 if (!firstExact) firstExact = item;
                 // DIR-081: a query-scoped destination (e.g. ?tab=Security) must only
                 // claim the highlight when the live URL carries the same param. Before
@@ -61,8 +69,10 @@ export function resolveActiveItem(pathname, groups) {
                 }
                 continue;
             }
-            if (target.startsWith(`${base}/`) && (!best || base.length > pathOf(best.to).length)) {
+            const ancestorBase = bases.find((candidate) => target.startsWith(`${candidate}/`));
+            if (ancestorBase && (!best || ancestorBase.length > bestAncestorLength)) {
                 best = item;
+                bestAncestorLength = ancestorBase.length;
             }
         }
     }

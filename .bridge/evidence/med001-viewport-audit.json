@@ -1,0 +1,3817 @@
+{
+  "summary": {
+    "generatedAt": "2026-10-14T03:26:53.131Z",
+    "targetUrl": "https://ime365.local",
+    "viewports": 8,
+    "routes": 28,
+    "combinations": 224,
+    "totalOverflow": {
+      "pages": 0,
+      "details": []
+    },
+    "totalConsoleErrorPages": 30,
+    "consoleErrorSamples": [
+      {
+        "vp": "390-mobile-lg",
+        "route": "/admin/jobs-manager",
+        "first": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      },
+      {
+        "vp": "390-mobile-lg",
+        "route": "/admin/messages",
+        "first": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      },
+      {
+        "vp": "768-tablet-portrait",
+        "route": "/",
+        "first": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      },
+      {
+        "vp": "768-tablet-portrait",
+        "route": "/login",
+        "first": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      },
+      {
+        "vp": "768-tablet-portrait",
+        "route": "/jobs",
+        "first": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      },
+      {
+        "vp": "768-tablet-portrait",
+        "route": "/blog",
+        "first": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      },
+      {
+        "vp": "768-tablet-portrait",
+        "route": "/dashboard",
+        "first": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      },
+      {
+        "vp": "768-tablet-portrait",
+        "route": "/dashboard/settings",
+        "first": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      },
+      {
+        "vp": "768-tablet-portrait",
+        "route": "/dashboard/interview",
+        "first": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      },
+      {
+        "vp": "768-tablet-portrait",
+        "route": "/dashboard/job-tracker",
+        "first": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      },
+      {
+        "vp": "768-tablet-portrait",
+        "route": "/dashboard/applied-jobs",
+        "first": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      },
+      {
+        "vp": "768-tablet-portrait",
+        "route": "/dashboard/portfolios",
+        "first": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      },
+      {
+        "vp": "768-tablet-portrait",
+        "route": "/dashboard/cover-letters",
+        "first": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      },
+      {
+        "vp": "768-tablet-portrait",
+        "route": "/dashboard/messages",
+        "first": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      },
+      {
+        "vp": "768-tablet-portrait",
+        "route": "/dashboard/plans",
+        "first": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      }
+    ],
+    "totalFailedRequestPages": 30,
+    "failedRequestSamples": [
+      {
+        "vp": "390-mobile-lg",
+        "route": "/admin/jobs-manager",
+        "first": {
+          "status": 429,
+          "url": "https://ime365.local/api/enterprise/status"
+        }
+      },
+      {
+        "vp": "390-mobile-lg",
+        "route": "/admin/messages",
+        "first": {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        }
+      },
+      {
+        "vp": "768-tablet-portrait",
+        "route": "/",
+        "first": {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        }
+      },
+      {
+        "vp": "768-tablet-portrait",
+        "route": "/login",
+        "first": {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        }
+      },
+      {
+        "vp": "768-tablet-portrait",
+        "route": "/jobs",
+        "first": {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        }
+      },
+      {
+        "vp": "768-tablet-portrait",
+        "route": "/blog",
+        "first": {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        }
+      },
+      {
+        "vp": "768-tablet-portrait",
+        "route": "/dashboard",
+        "first": {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        }
+      },
+      {
+        "vp": "768-tablet-portrait",
+        "route": "/dashboard/settings",
+        "first": {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        }
+      },
+      {
+        "vp": "768-tablet-portrait",
+        "route": "/dashboard/interview",
+        "first": {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        }
+      },
+      {
+        "vp": "768-tablet-portrait",
+        "route": "/dashboard/job-tracker",
+        "first": {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        }
+      },
+      {
+        "vp": "768-tablet-portrait",
+        "route": "/dashboard/applied-jobs",
+        "first": {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        }
+      },
+      {
+        "vp": "768-tablet-portrait",
+        "route": "/dashboard/portfolios",
+        "first": {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        }
+      },
+      {
+        "vp": "768-tablet-portrait",
+        "route": "/dashboard/cover-letters",
+        "first": {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        }
+      },
+      {
+        "vp": "768-tablet-portrait",
+        "route": "/dashboard/messages",
+        "first": {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        }
+      },
+      {
+        "vp": "768-tablet-portrait",
+        "route": "/dashboard/plans",
+        "first": {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        }
+      }
+    ],
+    "totalPageErrorPages": 0,
+    "pageErrorSamples": [],
+    "blankPages": []
+  },
+  "results": [
+    {
+      "viewport": "320-mobile-min",
+      "width": 320,
+      "portal": "public",
+      "route": "/",
+      "finalUrl": "https://ime365.local/",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "320-mobile-min",
+      "width": 320,
+      "portal": "public",
+      "route": "/login",
+      "finalUrl": "https://ime365.local/dashboard",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "320-mobile-min",
+      "width": 320,
+      "portal": "public",
+      "route": "/jobs",
+      "finalUrl": "https://ime365.local/jobs",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "320-mobile-min",
+      "width": 320,
+      "portal": "public",
+      "route": "/blog",
+      "finalUrl": "https://ime365.local/blog",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "320-mobile-min",
+      "width": 320,
+      "portal": "candidate",
+      "route": "/dashboard",
+      "finalUrl": "https://ime365.local/dashboard",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "320-mobile-min",
+      "width": 320,
+      "portal": "candidate",
+      "route": "/dashboard/settings",
+      "finalUrl": "https://ime365.local/dashboard/settings",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "320-mobile-min",
+      "width": 320,
+      "portal": "candidate",
+      "route": "/dashboard/interview",
+      "finalUrl": "https://ime365.local/dashboard/interview",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "320-mobile-min",
+      "width": 320,
+      "portal": "candidate",
+      "route": "/dashboard/job-tracker",
+      "finalUrl": "https://ime365.local/dashboard/job-tracker",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 2000
+    },
+    {
+      "viewport": "320-mobile-min",
+      "width": 320,
+      "portal": "candidate",
+      "route": "/dashboard/applied-jobs",
+      "finalUrl": "https://ime365.local/dashboard/applied-jobs",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "320-mobile-min",
+      "width": 320,
+      "portal": "candidate",
+      "route": "/dashboard/portfolios",
+      "finalUrl": "https://ime365.local/dashboard/portfolios",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "320-mobile-min",
+      "width": 320,
+      "portal": "candidate",
+      "route": "/dashboard/cover-letters",
+      "finalUrl": "https://ime365.local/dashboard/cover-letters",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "320-mobile-min",
+      "width": 320,
+      "portal": "candidate",
+      "route": "/dashboard/messages",
+      "finalUrl": "https://ime365.local/dashboard/messages",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 2000
+    },
+    {
+      "viewport": "320-mobile-min",
+      "width": 320,
+      "portal": "candidate",
+      "route": "/dashboard/plans",
+      "finalUrl": "https://ime365.local/dashboard/plans",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "320-mobile-min",
+      "width": 320,
+      "portal": "candidate",
+      "route": "/build-resume",
+      "finalUrl": "https://ime365.local/build-resume/heading",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 3500
+    },
+    {
+      "viewport": "320-mobile-min",
+      "width": 320,
+      "portal": "employer",
+      "route": "/employer",
+      "finalUrl": "https://ime365.local/employer",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "320-mobile-min",
+      "width": 320,
+      "portal": "employer",
+      "route": "/employer/jobs",
+      "finalUrl": "https://ime365.local/employer/jobs",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "320-mobile-min",
+      "width": 320,
+      "portal": "employer",
+      "route": "/employer/applicants",
+      "finalUrl": "https://ime365.local/employer/applicants",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "320-mobile-min",
+      "width": 320,
+      "portal": "employer",
+      "route": "/employer/messages",
+      "finalUrl": "https://ime365.local/employer/messages",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "320-mobile-min",
+      "width": 320,
+      "portal": "employer",
+      "route": "/employer/company",
+      "finalUrl": "https://ime365.local/employer/company",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "320-mobile-min",
+      "width": 320,
+      "portal": "employer",
+      "route": "/employer/settings",
+      "finalUrl": "https://ime365.local/employer/settings",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "320-mobile-min",
+      "width": 320,
+      "portal": "admin",
+      "route": "/admin/dashboard",
+      "finalUrl": "https://ime365.local/admin/dashboard",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "320-mobile-min",
+      "width": 320,
+      "portal": "admin",
+      "route": "/admin/users",
+      "finalUrl": "https://ime365.local/admin/users",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 2000
+    },
+    {
+      "viewport": "320-mobile-min",
+      "width": 320,
+      "portal": "admin",
+      "route": "/admin/audit-logs",
+      "finalUrl": "https://ime365.local/admin/audit-logs",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "320-mobile-min",
+      "width": 320,
+      "portal": "admin",
+      "route": "/admin/security",
+      "finalUrl": "https://ime365.local/admin/security",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "320-mobile-min",
+      "width": 320,
+      "portal": "admin",
+      "route": "/admin/health",
+      "finalUrl": "https://ime365.local/admin/health",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "320-mobile-min",
+      "width": 320,
+      "portal": "admin",
+      "route": "/admin/settings",
+      "finalUrl": "https://ime365.local/admin/settings",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 2000
+    },
+    {
+      "viewport": "320-mobile-min",
+      "width": 320,
+      "portal": "admin",
+      "route": "/admin/jobs-manager",
+      "finalUrl": "https://ime365.local/admin/jobs-manager",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "320-mobile-min",
+      "width": 320,
+      "portal": "admin",
+      "route": "/admin/messages",
+      "finalUrl": "https://ime365.local/admin/messages",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "375-mobile-std",
+      "width": 375,
+      "portal": "public",
+      "route": "/",
+      "finalUrl": "https://ime365.local/",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "375-mobile-std",
+      "width": 375,
+      "portal": "public",
+      "route": "/login",
+      "finalUrl": "https://ime365.local/dashboard",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 2000
+    },
+    {
+      "viewport": "375-mobile-std",
+      "width": 375,
+      "portal": "public",
+      "route": "/jobs",
+      "finalUrl": "https://ime365.local/jobs",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "375-mobile-std",
+      "width": 375,
+      "portal": "public",
+      "route": "/blog",
+      "finalUrl": "https://ime365.local/blog",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "375-mobile-std",
+      "width": 375,
+      "portal": "candidate",
+      "route": "/dashboard",
+      "finalUrl": "https://ime365.local/dashboard",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "375-mobile-std",
+      "width": 375,
+      "portal": "candidate",
+      "route": "/dashboard/settings",
+      "finalUrl": "https://ime365.local/dashboard/settings",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "375-mobile-std",
+      "width": 375,
+      "portal": "candidate",
+      "route": "/dashboard/interview",
+      "finalUrl": "https://ime365.local/dashboard/interview",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "375-mobile-std",
+      "width": 375,
+      "portal": "candidate",
+      "route": "/dashboard/job-tracker",
+      "finalUrl": "https://ime365.local/dashboard/job-tracker",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "375-mobile-std",
+      "width": 375,
+      "portal": "candidate",
+      "route": "/dashboard/applied-jobs",
+      "finalUrl": "https://ime365.local/dashboard/applied-jobs",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "375-mobile-std",
+      "width": 375,
+      "portal": "candidate",
+      "route": "/dashboard/portfolios",
+      "finalUrl": "https://ime365.local/dashboard/portfolios",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "375-mobile-std",
+      "width": 375,
+      "portal": "candidate",
+      "route": "/dashboard/cover-letters",
+      "finalUrl": "https://ime365.local/dashboard/cover-letters",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "375-mobile-std",
+      "width": 375,
+      "portal": "candidate",
+      "route": "/dashboard/messages",
+      "finalUrl": "https://ime365.local/dashboard/messages",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 6000
+    },
+    {
+      "viewport": "375-mobile-std",
+      "width": 375,
+      "portal": "candidate",
+      "route": "/dashboard/plans",
+      "finalUrl": "https://ime365.local/dashboard/plans",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "375-mobile-std",
+      "width": 375,
+      "portal": "candidate",
+      "route": "/build-resume",
+      "finalUrl": "https://ime365.local/build-resume/heading",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 2000
+    },
+    {
+      "viewport": "375-mobile-std",
+      "width": 375,
+      "portal": "employer",
+      "route": "/employer",
+      "finalUrl": "https://ime365.local/employer",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "375-mobile-std",
+      "width": 375,
+      "portal": "employer",
+      "route": "/employer/jobs",
+      "finalUrl": "https://ime365.local/employer/jobs",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "375-mobile-std",
+      "width": 375,
+      "portal": "employer",
+      "route": "/employer/applicants",
+      "finalUrl": "https://ime365.local/employer/applicants",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "375-mobile-std",
+      "width": 375,
+      "portal": "employer",
+      "route": "/employer/messages",
+      "finalUrl": "https://ime365.local/employer/messages",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "375-mobile-std",
+      "width": 375,
+      "portal": "employer",
+      "route": "/employer/company",
+      "finalUrl": "https://ime365.local/employer/company",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 2000
+    },
+    {
+      "viewport": "375-mobile-std",
+      "width": 375,
+      "portal": "employer",
+      "route": "/employer/settings",
+      "finalUrl": "https://ime365.local/employer/settings",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "375-mobile-std",
+      "width": 375,
+      "portal": "admin",
+      "route": "/admin/dashboard",
+      "finalUrl": "https://ime365.local/admin/dashboard",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "375-mobile-std",
+      "width": 375,
+      "portal": "admin",
+      "route": "/admin/users",
+      "finalUrl": "https://ime365.local/admin/users",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "375-mobile-std",
+      "width": 375,
+      "portal": "admin",
+      "route": "/admin/audit-logs",
+      "finalUrl": "https://ime365.local/admin/audit-logs",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "375-mobile-std",
+      "width": 375,
+      "portal": "admin",
+      "route": "/admin/security",
+      "finalUrl": "https://ime365.local/admin/security",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "375-mobile-std",
+      "width": 375,
+      "portal": "admin",
+      "route": "/admin/health",
+      "finalUrl": "https://ime365.local/admin/health",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "375-mobile-std",
+      "width": 375,
+      "portal": "admin",
+      "route": "/admin/settings",
+      "finalUrl": "https://ime365.local/admin/settings",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "375-mobile-std",
+      "width": 375,
+      "portal": "admin",
+      "route": "/admin/jobs-manager",
+      "finalUrl": "https://ime365.local/admin/jobs-manager",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "375-mobile-std",
+      "width": 375,
+      "portal": "admin",
+      "route": "/admin/messages",
+      "finalUrl": "https://ime365.local/admin/messages",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "390-mobile-lg",
+      "width": 390,
+      "portal": "public",
+      "route": "/",
+      "finalUrl": "https://ime365.local/",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "390-mobile-lg",
+      "width": 390,
+      "portal": "public",
+      "route": "/login",
+      "finalUrl": "https://ime365.local/dashboard",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "390-mobile-lg",
+      "width": 390,
+      "portal": "public",
+      "route": "/jobs",
+      "finalUrl": "https://ime365.local/jobs",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "390-mobile-lg",
+      "width": 390,
+      "portal": "public",
+      "route": "/blog",
+      "finalUrl": "https://ime365.local/blog",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "390-mobile-lg",
+      "width": 390,
+      "portal": "candidate",
+      "route": "/dashboard",
+      "finalUrl": "https://ime365.local/dashboard",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 2000
+    },
+    {
+      "viewport": "390-mobile-lg",
+      "width": 390,
+      "portal": "candidate",
+      "route": "/dashboard/settings",
+      "finalUrl": "https://ime365.local/dashboard/settings",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "390-mobile-lg",
+      "width": 390,
+      "portal": "candidate",
+      "route": "/dashboard/interview",
+      "finalUrl": "https://ime365.local/dashboard/interview",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "390-mobile-lg",
+      "width": 390,
+      "portal": "candidate",
+      "route": "/dashboard/job-tracker",
+      "finalUrl": "https://ime365.local/dashboard/job-tracker",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "390-mobile-lg",
+      "width": 390,
+      "portal": "candidate",
+      "route": "/dashboard/applied-jobs",
+      "finalUrl": "https://ime365.local/dashboard/applied-jobs",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "390-mobile-lg",
+      "width": 390,
+      "portal": "candidate",
+      "route": "/dashboard/portfolios",
+      "finalUrl": "https://ime365.local/dashboard/portfolios",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "390-mobile-lg",
+      "width": 390,
+      "portal": "candidate",
+      "route": "/dashboard/cover-letters",
+      "finalUrl": "https://ime365.local/dashboard/cover-letters",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "390-mobile-lg",
+      "width": 390,
+      "portal": "candidate",
+      "route": "/dashboard/messages",
+      "finalUrl": "https://ime365.local/dashboard/messages",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 6000
+    },
+    {
+      "viewport": "390-mobile-lg",
+      "width": 390,
+      "portal": "candidate",
+      "route": "/dashboard/plans",
+      "finalUrl": "https://ime365.local/dashboard/plans",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 2000
+    },
+    {
+      "viewport": "390-mobile-lg",
+      "width": 390,
+      "portal": "candidate",
+      "route": "/build-resume",
+      "finalUrl": "https://ime365.local/build-resume/heading",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 2000
+    },
+    {
+      "viewport": "390-mobile-lg",
+      "width": 390,
+      "portal": "employer",
+      "route": "/employer",
+      "finalUrl": "https://ime365.local/employer",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "390-mobile-lg",
+      "width": 390,
+      "portal": "employer",
+      "route": "/employer/jobs",
+      "finalUrl": "https://ime365.local/employer/jobs",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 2000
+    },
+    {
+      "viewport": "390-mobile-lg",
+      "width": 390,
+      "portal": "employer",
+      "route": "/employer/applicants",
+      "finalUrl": "https://ime365.local/employer/applicants",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 2000
+    },
+    {
+      "viewport": "390-mobile-lg",
+      "width": 390,
+      "portal": "employer",
+      "route": "/employer/messages",
+      "finalUrl": "https://ime365.local/employer/messages",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "390-mobile-lg",
+      "width": 390,
+      "portal": "employer",
+      "route": "/employer/company",
+      "finalUrl": "https://ime365.local/employer/company",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 2000
+    },
+    {
+      "viewport": "390-mobile-lg",
+      "width": 390,
+      "portal": "employer",
+      "route": "/employer/settings",
+      "finalUrl": "https://ime365.local/employer/settings",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "390-mobile-lg",
+      "width": 390,
+      "portal": "admin",
+      "route": "/admin/dashboard",
+      "finalUrl": "https://ime365.local/admin/dashboard",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "390-mobile-lg",
+      "width": 390,
+      "portal": "admin",
+      "route": "/admin/users",
+      "finalUrl": "https://ime365.local/admin/users",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "390-mobile-lg",
+      "width": 390,
+      "portal": "admin",
+      "route": "/admin/audit-logs",
+      "finalUrl": "https://ime365.local/admin/audit-logs",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "390-mobile-lg",
+      "width": 390,
+      "portal": "admin",
+      "route": "/admin/security",
+      "finalUrl": "https://ime365.local/admin/security",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "390-mobile-lg",
+      "width": 390,
+      "portal": "admin",
+      "route": "/admin/health",
+      "finalUrl": "https://ime365.local/admin/health",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "390-mobile-lg",
+      "width": 390,
+      "portal": "admin",
+      "route": "/admin/settings",
+      "finalUrl": "https://ime365.local/admin/settings",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "390-mobile-lg",
+      "width": 390,
+      "portal": "admin",
+      "route": "/admin/jobs-manager",
+      "finalUrl": "https://ime365.local/admin/jobs-manager",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/enterprise/status"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/healthz"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/enterprise/tenants"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/ai-usage"
+        }
+      ],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "390-mobile-lg",
+      "width": 390,
+      "portal": "admin",
+      "route": "/admin/messages",
+      "finalUrl": "https://ime365.local/admin/messages",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/service-availability"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/notifications-data"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/enterprise/status"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/ai-usage"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/healthz"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/notifications-data/contact/list"
+        }
+      ],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "768-tablet-portrait",
+      "width": 768,
+      "portal": "public",
+      "route": "/",
+      "finalUrl": "https://ime365.local/",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        }
+      ],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 400
+    },
+    {
+      "viewport": "768-tablet-portrait",
+      "width": 768,
+      "portal": "public",
+      "route": "/login",
+      "finalUrl": "https://ime365.local/dashboard",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/users-data/OhZdiSIFL7ePA1TMkfu9bnR935D3"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/admin/ads"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/service-availability"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/notifications-data"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/jobs-data/tracker"
+        }
+      ],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "768-tablet-portrait",
+      "width": 768,
+      "portal": "public",
+      "route": "/jobs",
+      "finalUrl": "https://ime365.local/jobs",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        }
+      ],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 400
+    },
+    {
+      "viewport": "768-tablet-portrait",
+      "width": 768,
+      "portal": "public",
+      "route": "/blog",
+      "finalUrl": "https://ime365.local/blog",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        }
+      ],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 400
+    },
+    {
+      "viewport": "768-tablet-portrait",
+      "width": 768,
+      "portal": "candidate",
+      "route": "/dashboard",
+      "finalUrl": "https://ime365.local/dashboard",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/service-availability"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/notifications-data"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/jobs-data/tracker"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/user-stats"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/users-data/OhZdiSIFL7ePA1TMkfu9bnR935D3"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/enterprise/status"
+        }
+      ],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "768-tablet-portrait",
+      "width": 768,
+      "portal": "candidate",
+      "route": "/dashboard/settings",
+      "finalUrl": "https://ime365.local/dashboard/settings",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/users-data/OhZdiSIFL7ePA1TMkfu9bnR935D3"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/service-availability"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/notifications-data"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/users-data/OhZdiSIFL7ePA1TMkfu9bnR935D3"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/users-data/OhZdiSIFL7ePA1TMkfu9bnR935D3"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/enterprise/status"
+        }
+      ],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "768-tablet-portrait",
+      "width": 768,
+      "portal": "candidate",
+      "route": "/dashboard/interview",
+      "finalUrl": "https://ime365.local/dashboard/interview",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/users-data/OhZdiSIFL7ePA1TMkfu9bnR935D3"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/service-availability"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/enterprise/status"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/notifications-data"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/ai-usage"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/admin/ads"
+        }
+      ],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "768-tablet-portrait",
+      "width": 768,
+      "portal": "candidate",
+      "route": "/dashboard/job-tracker",
+      "finalUrl": "https://ime365.local/dashboard/job-tracker",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/users-data/OhZdiSIFL7ePA1TMkfu9bnR935D3"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/service-availability"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/jobs-data/tracker"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/notifications-data"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/enterprise/status"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/ai-usage"
+        }
+      ],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "768-tablet-portrait",
+      "width": 768,
+      "portal": "candidate",
+      "route": "/dashboard/applied-jobs",
+      "finalUrl": "https://ime365.local/dashboard/applied-jobs",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/users-data/OhZdiSIFL7ePA1TMkfu9bnR935D3"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/service-availability"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/notifications-data"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/jobs-data/applications/list"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/jobs-data/tracker"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/ai-usage"
+        }
+      ],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "768-tablet-portrait",
+      "width": 768,
+      "portal": "candidate",
+      "route": "/dashboard/portfolios",
+      "finalUrl": "https://ime365.local/dashboard/portfolios",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/users-data/OhZdiSIFL7ePA1TMkfu9bnR935D3"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/service-availability"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/portfolios"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/notifications-data"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/enterprise/status"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/ai-usage"
+        }
+      ],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "768-tablet-portrait",
+      "width": 768,
+      "portal": "candidate",
+      "route": "/dashboard/cover-letters",
+      "finalUrl": "https://ime365.local/dashboard/cover-letters",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/users-data/OhZdiSIFL7ePA1TMkfu9bnR935D3"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/users-data/OhZdiSIFL7ePA1TMkfu9bnR935D3"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/service-availability"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/notifications-data"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/enterprise/status"
+        }
+      ],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 2000
+    },
+    {
+      "viewport": "768-tablet-portrait",
+      "width": 768,
+      "portal": "candidate",
+      "route": "/dashboard/messages",
+      "finalUrl": "https://ime365.local/dashboard",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/users-data/OhZdiSIFL7ePA1TMkfu9bnR935D3"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/service-availability"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/notifications-data"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/enterprise/status"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/ai-usage"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/users-data/profile"
+        }
+      ],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "768-tablet-portrait",
+      "width": 768,
+      "portal": "candidate",
+      "route": "/dashboard/plans",
+      "finalUrl": "https://ime365.local/dashboard/plans",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/users-data/OhZdiSIFL7ePA1TMkfu9bnR935D3"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/service-availability"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/coupons/active"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/service-availability"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/notifications-data"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/payment-orders"
+        }
+      ],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "768-tablet-portrait",
+      "width": 768,
+      "portal": "candidate",
+      "route": "/build-resume",
+      "finalUrl": "https://ime365.local/build-resume/heading",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/service-availability"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/users-data/OhZdiSIFL7ePA1TMkfu9bnR935D3"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/enterprise/status"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/users-data/profile"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/users-data/OhZdiSIFL7ePA1TMkfu9bnR935D3"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/resumes"
+        }
+      ],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "768-tablet-portrait",
+      "width": 768,
+      "portal": "employer",
+      "route": "/employer",
+      "finalUrl": "https://ime365.local/employer",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        }
+      ],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 400
+    },
+    {
+      "viewport": "768-tablet-portrait",
+      "width": 768,
+      "portal": "employer",
+      "route": "/employer/jobs",
+      "finalUrl": "https://ime365.local/employer/jobs",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        }
+      ],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 400
+    },
+    {
+      "viewport": "768-tablet-portrait",
+      "width": 768,
+      "portal": "employer",
+      "route": "/employer/applicants",
+      "finalUrl": "https://ime365.local/employer/applicants",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        }
+      ],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 400
+    },
+    {
+      "viewport": "768-tablet-portrait",
+      "width": 768,
+      "portal": "employer",
+      "route": "/employer/messages",
+      "finalUrl": "https://ime365.local/employer/messages",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        }
+      ],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 400
+    },
+    {
+      "viewport": "768-tablet-portrait",
+      "width": 768,
+      "portal": "employer",
+      "route": "/employer/company",
+      "finalUrl": "https://ime365.local/employer/company",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "❌ Error loading companies: Error: Too many requests, please try again in a few moments.\n    at O (https://ime365.local/assets/platform-BCT9zSed.js:5:9830)\n    at async P (https://ime365.local/assets/platform-BCT9zSed.js:5:21698)\n    at async q (https://ime365.local/assets/CompaniesManagement-Bio_FHC"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/service-availability"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/notifications-data"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/employer/companies"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/enterprise/status"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/ai-usage"
+        }
+      ],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 2000
+    },
+    {
+      "viewport": "768-tablet-portrait",
+      "width": 768,
+      "portal": "employer",
+      "route": "/employer/settings",
+      "finalUrl": "https://ime365.local/employer/settings",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        }
+      ],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 400
+    },
+    {
+      "viewport": "768-tablet-portrait",
+      "width": 768,
+      "portal": "admin",
+      "route": "/admin/dashboard",
+      "finalUrl": "https://ime365.local/admin/dashboard",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/service-availability"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/notifications-data"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/enterprise/status"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/ai-usage"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/healthz"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/enterprise/tenants"
+        }
+      ],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "768-tablet-portrait",
+      "width": 768,
+      "portal": "admin",
+      "route": "/admin/users",
+      "finalUrl": "https://ime365.local/admin/users",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/service-availability"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/notifications-data"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/enterprise/status"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/ai-usage"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/healthz"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/enterprise/tenants"
+        }
+      ],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "768-tablet-portrait",
+      "width": 768,
+      "portal": "admin",
+      "route": "/admin/audit-logs",
+      "finalUrl": "https://ime365.local/admin/audit-logs",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/service-availability"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/notifications-data"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/enterprise/status"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/ai-usage"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/healthz"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/enterprise/tenants"
+        }
+      ],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "768-tablet-portrait",
+      "width": 768,
+      "portal": "admin",
+      "route": "/admin/security",
+      "finalUrl": "https://ime365.local/admin/security",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/service-availability"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/notifications-data"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/enterprise/status"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/ai-usage"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/healthz"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/enterprise/tenants"
+        }
+      ],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "768-tablet-portrait",
+      "width": 768,
+      "portal": "admin",
+      "route": "/admin/health",
+      "finalUrl": "https://ime365.local/admin/health",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/service-availability"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/notifications-data"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/enterprise/status"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/ai-usage"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/healthz"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/enterprise/tenants"
+        }
+      ],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "768-tablet-portrait",
+      "width": 768,
+      "portal": "admin",
+      "route": "/admin/settings",
+      "finalUrl": "https://ime365.local/admin/settings",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/service-availability"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/notifications-data"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/enterprise/status"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/ai-usage"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/enterprise/tenants"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/healthz"
+        }
+      ],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "768-tablet-portrait",
+      "width": 768,
+      "portal": "admin",
+      "route": "/admin/jobs-manager",
+      "finalUrl": "https://ime365.local/admin/jobs-manager",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/service-availability"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/notifications-data"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/enterprise/status"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/healthz"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/enterprise/tenants"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/ai-usage"
+        }
+      ],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "768-tablet-portrait",
+      "width": 768,
+      "portal": "admin",
+      "route": "/admin/messages",
+      "finalUrl": "https://ime365.local/admin/messages",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "failedRequests": [
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/service-availability"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/platform/public-config"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/notifications-data"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/enterprise/status"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/ai-usage"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/healthz"
+        },
+        {
+          "status": 429,
+          "url": "https://ime365.local/api/enterprise/tenants"
+        }
+      ],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1024-tablet-landscape",
+      "width": 1024,
+      "portal": "public",
+      "route": "/",
+      "finalUrl": "https://ime365.local/",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1024-tablet-landscape",
+      "width": 1024,
+      "portal": "public",
+      "route": "/login",
+      "finalUrl": "https://ime365.local/dashboard",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1024-tablet-landscape",
+      "width": 1024,
+      "portal": "public",
+      "route": "/jobs",
+      "finalUrl": "https://ime365.local/jobs",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 3500
+    },
+    {
+      "viewport": "1024-tablet-landscape",
+      "width": 1024,
+      "portal": "public",
+      "route": "/blog",
+      "finalUrl": "https://ime365.local/blog",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1024-tablet-landscape",
+      "width": 1024,
+      "portal": "candidate",
+      "route": "/dashboard",
+      "finalUrl": "https://ime365.local/dashboard",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1024-tablet-landscape",
+      "width": 1024,
+      "portal": "candidate",
+      "route": "/dashboard/settings",
+      "finalUrl": "https://ime365.local/dashboard/settings",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1024-tablet-landscape",
+      "width": 1024,
+      "portal": "candidate",
+      "route": "/dashboard/interview",
+      "finalUrl": "https://ime365.local/dashboard/interview",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1024-tablet-landscape",
+      "width": 1024,
+      "portal": "candidate",
+      "route": "/dashboard/job-tracker",
+      "finalUrl": "https://ime365.local/dashboard/job-tracker",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 2000
+    },
+    {
+      "viewport": "1024-tablet-landscape",
+      "width": 1024,
+      "portal": "candidate",
+      "route": "/dashboard/applied-jobs",
+      "finalUrl": "https://ime365.local/dashboard/applied-jobs",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1024-tablet-landscape",
+      "width": 1024,
+      "portal": "candidate",
+      "route": "/dashboard/portfolios",
+      "finalUrl": "https://ime365.local/dashboard/portfolios",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1024-tablet-landscape",
+      "width": 1024,
+      "portal": "candidate",
+      "route": "/dashboard/cover-letters",
+      "finalUrl": "https://ime365.local/dashboard/cover-letters",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1024-tablet-landscape",
+      "width": 1024,
+      "portal": "candidate",
+      "route": "/dashboard/messages",
+      "finalUrl": "https://ime365.local/dashboard/messages",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1024-tablet-landscape",
+      "width": 1024,
+      "portal": "candidate",
+      "route": "/dashboard/plans",
+      "finalUrl": "https://ime365.local/dashboard/plans",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1024-tablet-landscape",
+      "width": 1024,
+      "portal": "candidate",
+      "route": "/build-resume",
+      "finalUrl": "https://ime365.local/build-resume/heading",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1024-tablet-landscape",
+      "width": 1024,
+      "portal": "employer",
+      "route": "/employer",
+      "finalUrl": "https://ime365.local/employer",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1024-tablet-landscape",
+      "width": 1024,
+      "portal": "employer",
+      "route": "/employer/jobs",
+      "finalUrl": "https://ime365.local/employer/jobs",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1024-tablet-landscape",
+      "width": 1024,
+      "portal": "employer",
+      "route": "/employer/applicants",
+      "finalUrl": "https://ime365.local/employer/applicants",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 2000
+    },
+    {
+      "viewport": "1024-tablet-landscape",
+      "width": 1024,
+      "portal": "employer",
+      "route": "/employer/messages",
+      "finalUrl": "https://ime365.local/employer/messages",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1024-tablet-landscape",
+      "width": 1024,
+      "portal": "employer",
+      "route": "/employer/company",
+      "finalUrl": "https://ime365.local/employer/company",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1024-tablet-landscape",
+      "width": 1024,
+      "portal": "employer",
+      "route": "/employer/settings",
+      "finalUrl": "https://ime365.local/employer/settings",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1024-tablet-landscape",
+      "width": 1024,
+      "portal": "admin",
+      "route": "/admin/dashboard",
+      "finalUrl": "https://ime365.local/admin/dashboard",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1024-tablet-landscape",
+      "width": 1024,
+      "portal": "admin",
+      "route": "/admin/users",
+      "finalUrl": "https://ime365.local/admin/users",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 2000
+    },
+    {
+      "viewport": "1024-tablet-landscape",
+      "width": 1024,
+      "portal": "admin",
+      "route": "/admin/audit-logs",
+      "finalUrl": "https://ime365.local/admin/audit-logs",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1024-tablet-landscape",
+      "width": 1024,
+      "portal": "admin",
+      "route": "/admin/security",
+      "finalUrl": "https://ime365.local/admin/security",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1024-tablet-landscape",
+      "width": 1024,
+      "portal": "admin",
+      "route": "/admin/health",
+      "finalUrl": "https://ime365.local/admin/health",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1024-tablet-landscape",
+      "width": 1024,
+      "portal": "admin",
+      "route": "/admin/settings",
+      "finalUrl": "https://ime365.local/admin/settings",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1024-tablet-landscape",
+      "width": 1024,
+      "portal": "admin",
+      "route": "/admin/jobs-manager",
+      "finalUrl": "https://ime365.local/admin/jobs-manager",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1024-tablet-landscape",
+      "width": 1024,
+      "portal": "admin",
+      "route": "/admin/messages",
+      "finalUrl": "https://ime365.local/admin/messages",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1280-laptop",
+      "width": 1280,
+      "portal": "public",
+      "route": "/",
+      "finalUrl": "https://ime365.local/",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1280-laptop",
+      "width": 1280,
+      "portal": "public",
+      "route": "/login",
+      "finalUrl": "https://ime365.local/dashboard",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1280-laptop",
+      "width": 1280,
+      "portal": "public",
+      "route": "/jobs",
+      "finalUrl": "https://ime365.local/jobs",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1280-laptop",
+      "width": 1280,
+      "portal": "public",
+      "route": "/blog",
+      "finalUrl": "https://ime365.local/blog",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 2000
+    },
+    {
+      "viewport": "1280-laptop",
+      "width": 1280,
+      "portal": "candidate",
+      "route": "/dashboard",
+      "finalUrl": "https://ime365.local/dashboard",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 2000
+    },
+    {
+      "viewport": "1280-laptop",
+      "width": 1280,
+      "portal": "candidate",
+      "route": "/dashboard/settings",
+      "finalUrl": "https://ime365.local/dashboard/settings",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1280-laptop",
+      "width": 1280,
+      "portal": "candidate",
+      "route": "/dashboard/interview",
+      "finalUrl": "https://ime365.local/dashboard/interview",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1280-laptop",
+      "width": 1280,
+      "portal": "candidate",
+      "route": "/dashboard/job-tracker",
+      "finalUrl": "https://ime365.local/dashboard/job-tracker",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1280-laptop",
+      "width": 1280,
+      "portal": "candidate",
+      "route": "/dashboard/applied-jobs",
+      "finalUrl": "https://ime365.local/dashboard/applied-jobs",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1280-laptop",
+      "width": 1280,
+      "portal": "candidate",
+      "route": "/dashboard/portfolios",
+      "finalUrl": "https://ime365.local/dashboard/portfolios",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1280-laptop",
+      "width": 1280,
+      "portal": "candidate",
+      "route": "/dashboard/cover-letters",
+      "finalUrl": "https://ime365.local/dashboard/cover-letters",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1280-laptop",
+      "width": 1280,
+      "portal": "candidate",
+      "route": "/dashboard/messages",
+      "finalUrl": "https://ime365.local/dashboard/messages",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1280-laptop",
+      "width": 1280,
+      "portal": "candidate",
+      "route": "/dashboard/plans",
+      "finalUrl": "https://ime365.local/dashboard/plans",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1280-laptop",
+      "width": 1280,
+      "portal": "candidate",
+      "route": "/build-resume",
+      "finalUrl": "https://ime365.local/build-resume/heading",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1280-laptop",
+      "width": 1280,
+      "portal": "employer",
+      "route": "/employer",
+      "finalUrl": "https://ime365.local/employer",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1280-laptop",
+      "width": 1280,
+      "portal": "employer",
+      "route": "/employer/jobs",
+      "finalUrl": "https://ime365.local/employer/jobs",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1280-laptop",
+      "width": 1280,
+      "portal": "employer",
+      "route": "/employer/applicants",
+      "finalUrl": "https://ime365.local/employer/applicants",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1280-laptop",
+      "width": 1280,
+      "portal": "employer",
+      "route": "/employer/messages",
+      "finalUrl": "https://ime365.local/employer/messages",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1280-laptop",
+      "width": 1280,
+      "portal": "employer",
+      "route": "/employer/company",
+      "finalUrl": "https://ime365.local/employer/company",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 2000
+    },
+    {
+      "viewport": "1280-laptop",
+      "width": 1280,
+      "portal": "employer",
+      "route": "/employer/settings",
+      "finalUrl": "https://ime365.local/employer/settings",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1280-laptop",
+      "width": 1280,
+      "portal": "admin",
+      "route": "/admin/dashboard",
+      "finalUrl": "https://ime365.local/admin/dashboard",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 3500
+    },
+    {
+      "viewport": "1280-laptop",
+      "width": 1280,
+      "portal": "admin",
+      "route": "/admin/users",
+      "finalUrl": "https://ime365.local/admin/users",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1280-laptop",
+      "width": 1280,
+      "portal": "admin",
+      "route": "/admin/audit-logs",
+      "finalUrl": "https://ime365.local/admin/audit-logs",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1280-laptop",
+      "width": 1280,
+      "portal": "admin",
+      "route": "/admin/security",
+      "finalUrl": "https://ime365.local/admin/security",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1280-laptop",
+      "width": 1280,
+      "portal": "admin",
+      "route": "/admin/health",
+      "finalUrl": "https://ime365.local/admin/health",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1280-laptop",
+      "width": 1280,
+      "portal": "admin",
+      "route": "/admin/settings",
+      "finalUrl": "https://ime365.local/admin/settings",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1280-laptop",
+      "width": 1280,
+      "portal": "admin",
+      "route": "/admin/jobs-manager",
+      "finalUrl": "https://ime365.local/admin/jobs-manager",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    },
+    {
+      "viewport": "1280-laptop",
+      "width": 1280,
+      "portal": "admin",
+      "route": "/admin/messages",
+      "finalUrl": "https://ime365.local/admin/messages",
+      "overflowPx": 0,
+      "offenders": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "pageErrors": [],
+      "blank": false,
+      "settleMs": 1000
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "id": "DIR-003",
+  "title": "CAND-001: Dedicated Resumes & Master CV Workspace Hub (/dashboard/resumes)",
+  "priority": "P1",
+  "status": "IN_PROGRESS",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-14T03:43:14.333Z",
+  "updatedAt": "2026-10-14T03:47:45.231Z",
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "spec": "# SECTION 1 — EXECUTIVE MANDATE\n### 1.1 Directive Metadata\n- Directive ID: DIR-003\n- Title: CAND-001: Dedicated Resumes & Master CV Workspace Hub (/dashboard/resumes)\n- Target Project: IME365 (D:\\xampp\\htdocs\\IME365)\n- Priority: P1\n- Execution Mode: Plan Mode first, then Act Mode upon formal Lead approval\n- Deliverables:\n  1. Component: `src/components/Dashboard/ResumesList/ResumesManagement.jsx` (or `CandidateResumesHub.jsx`) matching Cuba design tokens and responsive grid.\n  2. Integration: Mounted in `src/components/Dashboard/DashboardMain/DashboardMain.jsx` under `<Route path=resumes ... />` with `my-resumes` redirecting to it.\n  3. Navigation: Updated in `src/components/cuba/candidateNavigation.js` to link `id: 'resumes'` to `/dashboard/resumes`.\n  4. Routing: `src/main.jsx` updated so `/resumes` redirects to `/dashboard/resumes`.\n  5. Documentation: `CANDIDATE_DASHBOARD_PAGES.md` updated.\n\n### 1.2 Problem Statement & Objective\nWhen candidates click Resumes",
+  "invariants": [],
+  "acceptanceCriteria": [],
+  "dependsOn": [],
+  "sourceEventId": null,
+  "plan": {
+    "submittedAt": "2026-10-14T03:47:11.074Z",
+    "summary": "D1: Create CandidateResumesHub.jsx (CubaPageHeader + CubaCard grid + real getResumes data + calculateAtsScore badges). D2: Add <Route path=resumes> in DashboardMain.jsx + redirect my-resumes to /dashboard/resumes. D3: Update candidateNavigation.js resumes.to to /dashboard/resumes with aliases:['/build-resume']; extend resolveActiveItem for alias ancestor matching. D4: Change main.jsx /resumes redirect to /dashboard/resumes. D5: Update CANDIDATE_DASHBOARD_PAGES.md. D6: Verify tests/cuba-candidate-portal.test.mjs still passes (nav integrity).",
+    "steps": [
+      "S1-Create CandidateResumesHub.jsx (Cuba primitives, getResumes+calculateAtsScore from real API, responsive grid, empty/loading/error states)",
+      "S2-Add resumes Route in DashboardMain.jsx + update my-resumes redirect to /dashboard/resumes",
+      "S3-Update candidateNavigation.js (resumes.to/dashboard/resumes + aliases) and navigationState.js (alias ancestor support)",
+      "S4-Update main.jsx /resumes redirect to /dashboard/resumes",
+      "S5-Update CANDIDATE_DASHBOARD_PAGES.md",
+      "S6-Run tests:cuba-candidate-portal + build verification"
+    ],
+    "planHash": "aa50c345a651f7a1475e1efeb9a2f0f9e973ce2181b8698fc810566b9291aeb8"
+  },
+  "evidence": null,
+  "reviews": [],
+  "freeze": null,
+  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "continuationPending": false,
+  "revisionTarget": null,
+  "planApproval": {
+    "approvedAt": "2026-10-14T03:47:45.231Z",
+    "automated": true,
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "daemon:lead_watcher_session",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "daemon-parent:lead_watcher_session",
+        "non-tty"
+      ],
+      "pid": 9912,
+      "parentPid": 26852,
+      "tty": false,
+      "at": "2026-10-14T03:47:45.230Z",
+      "explicitlyAllowed": true
+    },
+    "feedback": "Auto-approved by the autonomous plan-scorer (score 88/100, reviewer verdict approved). NOT a human Lead review."
+  },
+  "heartbeats": [
+    {
+      "at": "2026-10-14T03:53:53.037Z",
+      "status": "Recon complete: scope locked to /dashboard/resumes hub + nav wiring + redirects; authoring DashboardResumes page now",
+      "percent": 25,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    },
+    {
+      "at": "2026-10-14T03:58:12.328Z",
+      "status": "Hub page authored + route/nav/redirect wiring complete; running candidate portal, parity, architecture and builder breadcrumb suites",
+      "percent": 55,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    },
+    {
+      "at": "2026-10-14T04:06:26.674Z",
+      "status": "Implementation complete: 187/187 unit tests pass, ESLint 0 errors, build 2.73s, live DOM crawl 22/22 on real XAMPP + Firebase session (62 real resumes rendered = API truth)",
+      "percent": 100,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    }
+  ],
+  "lastHeartbeatAt": "2026-10-14T04:06:26.674Z"
+}

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-12T06:32:14.143Z",
+  "generatedAt": "2026-10-14T03:29:44.488Z",
   "directive": "DIR-096",
   "manifestPath": ".bridge/project.json",
   "manifestSchemaVersion": "4.2.0",
@@ -35,15 +35,15 @@
     "templatesPhysicalDirs": 51,
     "coversPhysicalDirs": 4,
     "testSuitesDeclared": 292,
-    "testSuitesDiscovered": 330,
+    "testSuitesDiscovered": 338,
     "testBreakdown": {
-      "frontTests": 193,
-      "backendTests": 107,
+      "frontTests": 200,
+      "backendTests": 108,
       "e2eSpecs": 30
     },
     "componentInventoryLength": 12,
     "componentUiDirExists": false,
-    "componentCubaDirCount": 36,
+    "componentCubaDirCount": 37,
     "taskGraphDeclared": 118,
     "tasksJsonExists": true,
     "contractsManifestExists": true,
@@ -82,14 +82,14 @@
     {
       "id": "qualityAssuranceAndTesting.totalTestSuites === discovered test files",
       "declared": 292,
-      "discovered": 330,
+      "discovered": 338,
       "status": "DRIFT",
       "note": "declared vs discovered (tests/*.test.mjs + backend/test/*.test.js + tests/e2e/*.spec.js)"
     },
     {
       "id": "uiuxSystem.componentInventory length === src/components/ui/*.jsx count",
       "declared": 12,
-      "discovered": 36,
+      "discovered": 37,
       "status": "DRIFT",
       "note": "manifest references src/components/ui/*.jsx which does not exist; physical components live in src/components/cuba/*.jsx"
     },

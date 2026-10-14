@@ -560,8 +560,8 @@ const AuthWrapper = () => {
                                 SPA fallback; the target routes keep their own session guards. */}
                             <Route path="/resume-builder" element={<Navigate to="/build-resume" replace />} />
                             <Route path="/resume-builder/*" element={<Navigate to="/build-resume" replace />} />
-                            <Route path="/resumes" element={<Navigate to="/dashboard" replace />} />
-                            <Route path="/resumes/*" element={<Navigate to="/dashboard" replace />} />
+                            <Route path="/resumes" element={<Navigate to="/dashboard/resumes" replace />} />
+                            <Route path="/resumes/*" element={<Navigate to="/dashboard/resumes" replace />} />
                             <Route path="/billing/plans" element={<Billing key={user?.uid || 'guest'} user={user} />} />
                             <Route path="/p/:custompage" element={<CustomePage user={user} />} />
                             <Route path="/shared/:resumeId" element={<PublicResume />} />

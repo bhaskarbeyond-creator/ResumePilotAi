@@ -1,25 +1,25 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-13T20:38:34.246Z",
-  "eventCount": 3190,
-  "activeDirectiveId": "DIR-002",
-  "activeDirectiveTitle": "AUD-002: Interview Coach act() Warning Elimination - Zero Console Noise in Test Pyramid",
+  "updatedAt": "2026-10-14T03:55:45.806Z",
+  "eventCount": 3202,
+  "activeDirectiveId": "DIR-003",
+  "activeDirectiveTitle": "CAND-001: Dedicated Resumes & Master CV Workspace Hub (/dashboard/resumes)",
   "activeDirectiveStatus": "IN_PROGRESS",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-13T20:38:16.835Z",
-  "unreadForLead": 8,
-  "unreadForDev": 10,
+  "stallDeadline": "2026-10-14T03:53:52.992Z",
+  "unreadForLead": 14,
+  "unreadForDev": 16,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-13T20:38:16.835Z",
-    "status": "Plan submitted: root cause fully attributed via timestamped reproduction (bursts at remounts from unstubbed platform getResumes + 1000ms TICK interval + outside-act unmount)",
-    "percent": 10
+    "timestamp": "2026-10-14T03:53:52.992Z",
+    "status": "Recon complete: scope locked to /dashboard/resumes hub + nav wiring + redirects; authoring DashboardResumes page now",
+    "percent": 25
   },
   "integrity": {
     "ok": true,
-    "checked": 3190,
+    "checked": 3202,
     "legacy": 0,
     "bad": 0
   }
