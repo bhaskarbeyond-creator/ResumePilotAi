@@ -4,7 +4,7 @@
   "graphKind": "derived",
   "note": "The manifest declares totalTasks=118 but does not enumerate them; this graph is derived strictly from real, enumerated sources (sampleTasks + acceptanceCriteria + discovered codebase gaps). It is NOT a fabricated 118-task list.",
   "declaredTotalTasks": 118,
-  "derivedTaskCount": 30,
+  "derivedTaskCount": 16,
   "taskShape": {
     "id": "TASK-001",
     "title": "Implement POST /api/v1/auth/signup",
@@ -168,230 +168,6 @@
     },
     {
       "id": "TASK-008",
-      "title": "AC1: All 68 routes (manifest.routeInventory.total) operational with zero dead links, zero stubs, and full screenStateMatrix coverage",
-      "source": "directive.acceptanceCriteria",
-      "dependsOn": [],
-      "targets": [],
-      "definitionOfDone": [
-        "All acceptance criteria met",
-        "Unit + integration + contract tests green",
-        "Lint clean",
-        "OpenAPI diff clean",
-        "Manifest-consistency CI green",
-        "Token-drift + axe + copy-lint green",
-        "Evidence bundle attached to task"
-      ]
-    },
-    {
-      "id": "TASK-009",
-      "title": "AC2: OpenAPI contracts (manifest.openapiInline, 17 endpoints) and response envelope { data, error, meta, requestId } validated with zero contract drift; 'npm run test:openapi-diff' clean",
-      "source": "directive.acceptanceCriteria",
-      "dependsOn": [],
-      "targets": [],
-      "definitionOfDone": [
-        "All acceptance criteria met",
-        "Unit + integration + contract tests green",
-        "Lint clean",
-        "OpenAPI diff clean",
-        "Manifest-consistency CI green",
-        "Token-drift + axe + copy-lint green",
-        "Evidence bundle attached to task"
-      ]
-    },
-    {
-      "id": "TASK-010",
-      "title": "AC3: All 117 tables migrated; DDL matches manifest.ddlInline exactly; FK and index policies enforced; backup RPO 15m / RTO 60m verified by restore test",
-      "source": "directive.acceptanceCriteria",
-      "dependsOn": [],
-      "targets": [],
-      "definitionOfDone": [
-        "All acceptance criteria met",
-        "Unit + integration + contract tests green",
-        "Lint clean",
-        "OpenAPI diff clean",
-        "Manifest-consistency CI green",
-        "Token-drift + axe + copy-lint green",
-        "Evidence bundle attached to task"
-      ]
-    },
-    {
-      "id": "TASK-011",
-      "title": "AC4: Multi-provider AI router resilience verified across NVIDIA NIM primary and full failover chain with circuit breaker; extractJson path tested; PII redaction test green",
-      "source": "directive.acceptanceCriteria",
-      "dependsOn": [],
-      "targets": [],
-      "definitionOfDone": [
-        "All acceptance criteria met",
-        "Unit + integration + contract tests green",
-        "Lint clean",
-        "OpenAPI diff clean",
-        "Manifest-consistency CI green",
-        "Token-drift + axe + copy-lint green",
-        "Evidence bundle attached to task"
-      ]
-    },
-    {
-      "id": "TASK-012",
-      "title": "AC5: DOCX adaptive partitioner and @media print contracts verified with zero orphaned headers; visual regression green for all 51 templates",
-      "source": "directive.acceptanceCriteria",
-      "dependsOn": [],
-      "targets": [],
-      "definitionOfDone": [
-        "All acceptance criteria met",
-        "Unit + integration + contract tests green",
-        "Lint clean",
-        "OpenAPI diff clean",
-        "Manifest-consistency CI green",
-        "Token-drift + axe + copy-lint green",
-        "Evidence bundle attached to task"
-      ]
-    },
-    {
-      "id": "TASK-013",
-      "title": "AC6: Responsive multi-viewport lock verified with zero horizontal overflow at all 7 viewports",
-      "source": "directive.acceptanceCriteria",
-      "dependsOn": [],
-      "targets": [],
-      "definitionOfDone": [
-        "All acceptance criteria met",
-        "Unit + integration + contract tests green",
-        "Lint clean",
-        "OpenAPI diff clean",
-        "Manifest-consistency CI green",
-        "Token-drift + axe + copy-lint green",
-        "Evidence bundle attached to task"
-      ]
-    },
-    {
-      "id": "TASK-014",
-      "title": "AC7: Full test pyramid green (manifest.qualityAssuranceAndTesting.totalTestSuites = 292) with coverage >= 80% statements, 0 lint errors, build < 4.0s",
-      "source": "directive.acceptanceCriteria",
-      "dependsOn": [],
-      "targets": [],
-      "definitionOfDone": [
-        "All acceptance criteria met",
-        "Unit + integration + contract tests green",
-        "Lint clean",
-        "OpenAPI diff clean",
-        "Manifest-consistency CI green",
-        "Token-drift + axe + copy-lint green",
-        "Evidence bundle attached to task"
-      ]
-    },
-    {
-      "id": "TASK-015",
-      "title": "AC8: Playwright real-DOM crawl manifest submitted with 0 console errors and 0 failed network requests across all portal shells",
-      "source": "directive.acceptanceCriteria",
-      "dependsOn": [],
-      "targets": [],
-      "definitionOfDone": [
-        "All acceptance criteria met",
-        "Unit + integration + contract tests green",
-        "Lint clean",
-        "OpenAPI diff clean",
-        "Manifest-consistency CI green",
-        "Token-drift + axe + copy-lint green",
-        "Evidence bundle attached to task"
-      ]
-    },
-    {
-      "id": "TASK-016",
-      "title": "AC9: manifest-consistency CI gate green (route/router/table/test/component/task counts all match)",
-      "source": "directive.acceptanceCriteria",
-      "dependsOn": [],
-      "targets": [],
-      "definitionOfDone": [
-        "All acceptance criteria met",
-        "Unit + integration + contract tests green",
-        "Lint clean",
-        "OpenAPI diff clean",
-        "Manifest-consistency CI green",
-        "Token-drift + axe + copy-lint green",
-        "Evidence bundle attached to task"
-      ]
-    },
-    {
-      "id": "TASK-017",
-      "title": "AC10: token-drift, axe, copy-lint, component-states gates green",
-      "source": "directive.acceptanceCriteria",
-      "dependsOn": [],
-      "targets": [],
-      "definitionOfDone": [
-        "All acceptance criteria met",
-        "Unit + integration + contract tests green",
-        "Lint clean",
-        "OpenAPI diff clean",
-        "Manifest-consistency CI green",
-        "Token-drift + axe + copy-lint green",
-        "Evidence bundle attached to task"
-      ]
-    },
-    {
-      "id": "TASK-018",
-      "title": "AC11: Idempotency + webhook HMAC + replay protection tests green",
-      "source": "directive.acceptanceCriteria",
-      "dependsOn": [],
-      "targets": [],
-      "definitionOfDone": [
-        "All acceptance criteria met",
-        "Unit + integration + contract tests green",
-        "Lint clean",
-        "OpenAPI diff clean",
-        "Manifest-consistency CI green",
-        "Token-drift + axe + copy-lint green",
-        "Evidence bundle attached to task"
-      ]
-    },
-    {
-      "id": "TASK-019",
-      "title": "AC12: Every task in docs/build/tasks.json has all evidenceRequired artifacts attached and definitionOfDone satisfied",
-      "source": "directive.acceptanceCriteria",
-      "dependsOn": [],
-      "targets": [],
-      "definitionOfDone": [
-        "All acceptance criteria met",
-        "Unit + integration + contract tests green",
-        "Lint clean",
-        "OpenAPI diff clean",
-        "Manifest-consistency CI green",
-        "Token-drift + axe + copy-lint green",
-        "Evidence bundle attached to task"
-      ]
-    },
-    {
-      "id": "TASK-020",
-      "title": "AC13: Bridge protocol HMAC, nonce, and heartbeat compliance verified; zero missed heartbeats or invalid signatures",
-      "source": "directive.acceptanceCriteria",
-      "dependsOn": [],
-      "targets": [],
-      "definitionOfDone": [
-        "All acceptance criteria met",
-        "Unit + integration + contract tests green",
-        "Lint clean",
-        "OpenAPI diff clean",
-        "Manifest-consistency CI green",
-        "Token-drift + axe + copy-lint green",
-        "Evidence bundle attached to task"
-      ]
-    },
-    {
-      "id": "TASK-021",
-      "title": "AC14: uiuxSystem component inventory implemented; every component has documented variants, states, a11y roles, and token usage",
-      "source": "directive.acceptanceCriteria",
-      "dependsOn": [],
-      "targets": [],
-      "definitionOfDone": [
-        "All acceptance criteria met",
-        "Unit + integration + contract tests green",
-        "Lint clean",
-        "OpenAPI diff clean",
-        "Manifest-consistency CI green",
-        "Token-drift + axe + copy-lint green",
-        "Evidence bundle attached to task"
-      ]
-    },
-    {
-      "id": "TASK-022",
       "title": "Modularise backend/routes/health.js from the monolithic backend/index.js",
       "source": "derived.routerModularisationBacklog",
       "dependsOn": [],
@@ -404,7 +180,7 @@
       ]
     },
     {
-      "id": "TASK-023",
+      "id": "TASK-009",
       "title": "Modularise backend/routes/auth.js from the monolithic backend/index.js",
       "source": "derived.routerModularisationBacklog",
       "dependsOn": [],
@@ -417,7 +193,7 @@
       ]
     },
     {
-      "id": "TASK-024",
+      "id": "TASK-010",
       "title": "Modularise backend/routes/billing.js from the monolithic backend/index.js",
       "source": "derived.routerModularisationBacklog",
       "dependsOn": [],
@@ -430,7 +206,7 @@
       ]
     },
     {
-      "id": "TASK-025",
+      "id": "TASK-011",
       "title": "Modularise backend/routes/messages.js from the monolithic backend/index.js",
       "source": "derived.routerModularisationBacklog",
       "dependsOn": [],
@@ -443,7 +219,7 @@
       ]
     },
     {
-      "id": "TASK-026",
+      "id": "TASK-012",
       "title": "Modularise backend/routes/interviews.js from the monolithic backend/index.js",
       "source": "derived.routerModularisationBacklog",
       "dependsOn": [],
@@ -456,7 +232,7 @@
       ]
     },
     {
-      "id": "TASK-027",
+      "id": "TASK-013",
       "title": "Modularise backend/routes/favorites.js from the monolithic backend/index.js",
       "source": "derived.routerModularisationBacklog",
       "dependsOn": [],
@@ -469,7 +245,7 @@
       ]
     },
     {
-      "id": "TASK-028",
+      "id": "TASK-014",
       "title": "Modularise backend/routes/tracker.js from the monolithic backend/index.js",
       "source": "derived.routerModularisationBacklog",
       "dependsOn": [],
@@ -482,7 +258,7 @@
       ]
     },
     {
-      "id": "TASK-029",
+      "id": "TASK-015",
       "title": "Modularise backend/routes/uploads.js from the monolithic backend/index.js",
       "source": "derived.routerModularisationBacklog",
       "dependsOn": [],
@@ -495,7 +271,7 @@
       ]
     },
     {
-      "id": "TASK-030",
+      "id": "TASK-016",
       "title": "Modularise backend/routes/webhooks.js from the monolithic backend/index.js",
       "source": "derived.routerModularisationBacklog",
       "dependsOn": [],
