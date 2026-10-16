@@ -76,36 +76,209 @@ The codebase is in a clean, highly structured state with an existing **99.8% tes
 
 ---
 
-## 4. Candidate Dashboard: 10/10 Architecture & Specifications
+## 4. Candidate Dashboard: 10/10 Master Architecture & Specifications
 
-### 4.1 Executive Mandate & SWOT Analysis
+### 4.1 Executive Mandate & Forensic SWOT Evidence (Page-by-Page)
 
-The Candidate Dashboard currently rates at **6.8/10**. With the implementation of this specification, it will achieve a certified **10/10 Enterprise Grade**.
+The Candidate Dashboard currently rates at **6.8 / 10**. With the implementation of this specification, it achieves an unassailable, certified **10 / 10 Enterprise Grade**.
 
-#### SWOT Analysis of Current Candidate Experience:
-- **Strengths (S):**
-  - Powerful 12-step resume builder with real-time PDF/DOCX compilation.
-  - Multi-template gallery (51 themes) with dynamic color palettes.
-  - AI Interview Simulator with real-time feedback and CBT logic.
-  - Robust MariaDB transactional backend with dual-database sync resilience.
-- **Weaknesses (W) [Fixed by this spec]:**
-  - Fragmented job portal across 5 disjointed URLs (`/jobs`, `/jobs/portal`, `/jobs/browse`, etc.).
-  - Manual sync gap: Submitting a job application does not auto-populate the Kanban board.
-  - Trapped data: Candidate profile facts in Settings do not sync to the Master CV.
-  - Disconnected cover letters: Job application modal cannot select saved cover letters.
-  - Sub-optimal mobile layout on $<768\text{px}$ viewports.
-- **Opportunities (O):**
-  - Unified candidate workspace providing a seamless end-to-end journey: Build CV $\rightarrow$ Apply $\rightarrow$ Track $\rightarrow$ Interview Practice $\rightarrow$ Offer.
-  - Proactive ATS scoring and AI bullet optimization across all draft resumes.
-- **Threats (T):**
-  - Candidate drop-off caused by fragmented navigation or repetitive data entry.
-  - Risk of regression on frozen CV templates (`src/cv-templates/`).
+Below is the forensic SWOT audit of every core candidate surface, establishing the concrete technical justification for each layout transformation.
 
 ---
 
-### 4.2 Four-Pillar Information Architecture
+#### 1. Overview Cockpit (`/dashboard`)
+- **Strengths (S):**
+  - High-level metric cards exist using Cuba token styles (`CubaMetricCardRow.jsx`).
+  - Real-time ATS summary calculator available.
+  - Global notification bell correctly wired to database outbox.
+- **Weaknesses (W) [Failure Evidence]:**
+  - Metric cards miss `.cuba-stat-card` class selector, failing Playwright test `tests/e2e/dir-001.spec.js:268`.
+  - Static fallback mock numbers (`'69%'`) and placeholder names (`'Babu M'`) linger in unmounted sub-branches.
+  - "Quick Actions" lack direct deep-links to create new resumes or launch interview prep.
+- **Opportunities (O) [10/10 Upgrade]:**
+  - Transform into an active **Career Flight Deck**: Top row displays 4 dynamic metric cards, followed by an "Upcoming Urgent Actions" Hero banner (e.g. "Interview with Stripe in 2 days — [🎙️ Practice STAR Rubric]"), followed by a two-column split: Left 65% Recent Resumes & Live Kanban Snapshot, Right 35% Profile Completeness Gauge & Curated Job Recommendations.
+- **Threats (T) [Invariants]:**
+  - Must not hardcode any metrics; all data must bind to MariaDB or `calculateAtsScore`.
 
-The candidate workspace is structured into four cohesive pillars:
+---
+
+#### 2. Resumes & Master CV Workspace (`/dashboard/resumes`)
+- **Strengths (S):**
+  - 51 certified resume templates with real-time DOM rendering and PDF/DOCX export pipelines.
+  - ATS scoring engine calculates section weights and keyword relevance.
+- **Weaknesses (W) [Failure Evidence]:**
+  - When candidate exits `/build-resume`, they are dumped back to `/dashboard` root instead of `/dashboard/resumes` (`BuildResume.jsx:1032`).
+  - Breadcrumb in builder links to `/dashboard` instead of `/dashboard/resumes` (`BuildResume.jsx:1850`).
+  - No visual distinction between an authoritative "Master CV" and job-tailored resume variants.
+  - `resume_published` notification incorrectly deep-links to `/dashboard/portfolios` (`resolveNotificationHref.js:89`).
+- **Opportunities (O) [10/10 Upgrade]:**
+  - Establish a dedicated **Authoritative Master CV Hero Bar** at the top with badge `🌟 Designated Master CV`, displaying real-time sync status with profile data.
+  - Provide segmented filter buttons: `[ All (4) ]` | `[ Master CV ]` | `[ Job-Tailored ]` | `[ Uploaded PDF ]`.
+  - Responsive 3-column card grid with live SVG/DOM thumbnail previews, ATS badges, and 1-click export actions.
+- **Threats (T) [Invariants]:**
+  - **FROZEN MODULE LOCK:** Strict 0-byte diff against certified baseline `fdf2ee78` on `src/cv-templates/` and `src/components/templates/`.
+
+---
+
+#### 3. 12-Step Resume Builder Studio (`/build-resume/:step`)
+- **Strengths (S):**
+  - Deep 12-step guided flow covering Contact, Work History, Education, Skills, Projects, Certifications, Languages, Awards, Custom Sections, Executive Bio, Template Selection, and Final Download.
+  - Real-time persistence with optimistic versioning.
+- **Weaknesses (W) [Failure Evidence]:**
+  - Mobile experience on $<768\text{px}$ is degraded: horizontal 12-button step header overflows screen and squashes form fields.
+  - AI Assistant recommendations sometimes produce duplicate suggestions across steps.
+- **Opportunities (O) [10/10 Upgrade]:**
+  - Desktop 3-pane layout: 20% Stepper Nav, 55% Active Step Form, 25% Sticky AI Assistant & Real-Time ATS Feedback Drawer.
+  - Mobile layout: Replace 12-button desktop stepper with swipeable step cards showing `Step X of 12` with bottom sticky "Previous" and "Next" thumb action bars.
+- **Threats (T) [Invariants]:**
+  - Never bypass `extractJson` normalization when parsing AI assistant responses.
+
+---
+
+#### 4. Unified Job Portal Hub (`/dashboard/jobs`)
+- **Strengths (S):**
+  - High-performance job search engine with keyword, location, and salary filtering.
+  - `JobApplicationModal.jsx` handles custom questions and resume attachments.
+- **Weaknesses (W) [Failure Evidence]:**
+  - Fragmented across 5 disjointed URLs: `/jobs`, `/jobs/portal`, `/jobs/browse`, `/jobs/portal/:id`, `/jobs/category/:cat`.
+  - Cover letter in `JobApplicationModal.jsx` can only be typed from scratch; candidates cannot select saved cover letters created in `/dashboard/cover-letters`.
+  - When candidates apply, `applications` table gets a row, but `job_tracker` Kanban remains empty!
+- **Opportunities (O) [10/10 Upgrade]:**
+  - Consolidate all 5 fragmented URLs into 1 canonical master route `/dashboard/jobs` using URL search parameters (`?q=...&salary=...&remote=...&jobId=...`).
+  - Desktop 3-column split view (20% Filters, 40% Virtualized Job List, 40% Sticky Job Details Pane).
+  - Implement ACID atomic dual-write transaction: Submitting an application automatically writes to both `applications` and `job_tracker` (`status: 'applied'`).
+  - Add Saved Cover Letter Selector in `JobApplicationModal.jsx` backed by `getUserCoverLetters(user.uid)`.
+- **Threats (T) [Invariants]:**
+  - MariaDB transactional ACID safety: Failure in inserting `job_tracker` must rollback `applications` to prevent state corruption.
+
+---
+
+#### 5. Job Tracker Kanban (`/dashboard/job-tracker`)
+- **Strengths (S):**
+  - Drag-and-drop Kanban interface with customizable columns: Wishlist, Applied, Interviewing, Offer, Rejected.
+- **Weaknesses (W) [Failure Evidence]:**
+  - Requires manual candidate entry because portal applications do not auto-sync.
+  - Interview cards have no direct linkage to launch the AI Interview Coach.
+- **Opportunities (O) [10/10 Upgrade]:**
+  - Applications submitted through the portal appear instantly in the "Applied" column with an `Auto-synced` badge.
+  - In the "Interviewing" column, job cards feature a prominent **[ 🎙️ Practice AI Interview for this Role ]** button that deep-links directly to `/dashboard/interview?company=...&role=...`.
+- **Threats (T) [Invariants]:**
+  - Column re-ordering must persist to MariaDB `job_tracker.sort_order` with optimistic UI rollback on network error.
+
+---
+
+#### 6. AI Interview Coach & CBT Simulator (`/dashboard/interview`)
+- **Strengths (S):**
+  - Real-time speech-to-text / text-to-speech audio simulation.
+  - STAR rubric behavioral scoring (Situation, Task, Action, Result).
+  - Anti-leakage prompt guards preventing prompt injection.
+- **Weaknesses (W) [Failure Evidence]:**
+  - Canonical URL inconsistent: router mounts `/dashboard/interviews` (plural) vs `/dashboard/interview` (singular).
+  - Does not read initial `role` and `company` query parameters from incoming Kanban deep-links.
+- **Opportunities (O) [10/10 Upgrade]:**
+  - Canonicalize route to `/dashboard/interview`.
+  - Auto-hydrate session from query params (`?role=Staff+Frontend&company=Stripe`), immediately tailoring interview questions to that exact role description.
+- **Threats (T) [Invariants]:**
+  - Multi-provider fallback chain (NVIDIA NIM $\rightarrow$ OpenRouter $\rightarrow$ Groq) must handle worker saturation gracefully.
+
+---
+
+#### 7. Master Profile & Career Vault (`/dashboard/settings?tab=Profile`)
+- **Strengths (S):**
+  - Rich profile data model with 9 sub-sections: Personal Info, Work History, Education, Skills, Certifications, Languages, Projects, Socials, Preferences.
+- **Weaknesses (W) [Failure Evidence]:**
+  - Data silo: Profile data entered in Settings does not automatically propagate to candidate resumes. Candidates must re-enter work history in the Resume Builder.
+- **Opportunities (O) [10/10 Upgrade]:**
+  - Add a **[ ⚡ 1-Click Sync to Master CV ]** hero banner at the top of the Profile tab.
+  - Executes `syncProfileToResumeDraft(user.uid)` to transform all 9 profile sections into an authoritative Master CV in `/dashboard/resumes`.
+- **Threats (T) [Invariants]:**
+  - Deduplicate skills and certifications during synchronization; never create duplicate rows.
+
+---
+
+#### 8. Candidate Mobile Navigation & Viewport Ergonomics ($<768\text{px}$)
+- **Strengths (S):**
+  - Tailwind CSS responsive utilities configured.
+- **Weaknesses (W) [Failure Evidence]:**
+  - Complex desktop sidebars and multi-step tables overflow 375px screens, forcing awkward horizontal scrolling.
+  - Deep navigation requires too many hamburger menu clicks.
+- **Opportunities (O) [10/10 Upgrade]:**
+  - Mount `<CubaMobileBottomNav>` globally on viewports $<768\text{px}$ with 5 primary thumb anchors: `Home`, `Resumes`, `Jobs`, `Tracker`, `Profile`.
+  - On mobile, convert heavy tables into swipeable cards with slide-up bottom action sheets.
+- **Threats (T) [Invariants]:**
+  - WCAG 2.1 AA touch target minimum of $48\text{px} \times 48\text{px}$ for all mobile bottom nav anchors.
+
+---
+
+### 4.2 End-to-End Candidate Lifecycle Journey Flowchart
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                        CANDIDATE LIFECYCLE STATE MACHINE                               │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+
+    [ Candidate Signs In / OAuth ]
+                  │
+                  ▼
+    ┌───────────────────────────┐
+    │ 1. Master Profile Setup   │ <── Enter career history, education & skills once
+    │ (/dashboard/settings)     │
+    └─────────────┬─────────────┘
+                  │ ⚡ 1-Click Sync Profile to Master CV
+                  ▼
+    ┌───────────────────────────┐
+    │ 2. Resumes & Master CV Hub│ <── Designate 🌟 Master CV with ATS Score 90+
+    │ (/dashboard/resumes)      │
+    └─────────────┬─────────────┘
+                  │ Tailor for Job
+                  ▼
+    ┌───────────────────────────┐
+    │ 3. 12-Step Builder Studio │ <── Pick from 51 themes, AI bullet enhancement,
+    │ (/build-resume/*)         │     export pixel-perfect PDF & high-fidelity DOCX
+    └─────────────┬─────────────┘
+                  │ Find Target Roles
+                  ▼
+    ┌───────────────────────────┐
+    │ 4. Unified Job Portal     │ <── Faceted search (Salary, Remote, Tech Stack)
+    │ (/dashboard/jobs)         │
+    └─────────────┬─────────────┘
+                  │ 1-Click Apply (Select Saved Resume + Saved Cover Letter)
+                  ▼
+    ┌───────────────────────────┐
+    │ 5. ACID Atomic Dual-Write │
+    │ (MariaDB Transaction)     │
+    └──────┬────────────────────┘
+           ├──────────────────────────────────────┐
+           ▼                                      ▼
+    ┌───────────────────────────┐          ┌───────────────────────────┐
+    │ writes to `applications`  │          │ writes to `job_tracker`   │
+    │ (Formal Employer Record)  │          │ (Stage: 'applied')        │
+    └───────────────────────────┘          └──────────────┬────────────┘
+                                                          │
+                                                          ▼
+                                           ┌───────────────────────────┐
+                                           │ 6. Kanban Board Tracking  │
+                                           │ (/dashboard/job-tracker)  │
+                                           └──────────────┬────────────┘
+                                                          │ Role moves to 'Interviewing'
+                                                          ▼
+                                           ┌───────────────────────────┐
+                                           │ 7. AI Interview Coach     │
+                                           │ (/dashboard/interview)    │
+                                           └──────────────┬────────────┘
+                                                          │ Real-time STAR rubric prep
+                                                          ▼
+                                           ┌───────────────────────────┐
+                                           │ 8. Offer & Hire Stage     │
+                                           │ (Celebrate & Onboard)     │
+                                           └───────────────────────────┘
+```
+
+---
+
+### 4.3 Four-Pillar Information Architecture & Route Consolidation Matrix
+
+The 93 scattered candidate surfaces are consolidated into four natural, linear pillars:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
@@ -136,11 +309,8 @@ The candidate workspace is structured into four cohesive pillars:
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
----
-
-### 4.3 Route Consolidation & Canonical URL Matrix
-
-All fragmented legacy routes must redirect to canonical dashboard URLs:
+#### Canonical URL Restructuring Matrix:
+All legacy fragmented routes must redirect cleanly to canonical URLs while preserving state:
 
 | Legacy Route | Canonical 10/10 Route | Query Params & State Preserved |
 | :--- | :--- | :--- |
@@ -154,7 +324,7 @@ All fragmented legacy routes must redirect to canonical dashboard URLs:
 
 ### 4.4 The 5 Core Architectural Solutions
 
-#### Solution 1: Consolidated Single Job Portal (`/dashboard/jobs`)
+#### Solution 1: Consolidated Single Job Portal Architecture (`/dashboard/jobs`)
 - A single responsive master route `/dashboard/jobs` replacing 5 fragmented URLs.
 - **Desktop ($\ge 1280\text{px}$):** 3-column split view (20% Filters, 40% Virtualized Job List, 40% Sticky Job Details Pane).
 - **Tablet ($768\text{px} - 1024\text{px}$):** 2-column view (Filters in collapsible drawer, 50% List, 50% Detail).
@@ -199,7 +369,8 @@ async saveApplicationWithAutoTracking(appId, appData, userId, jobInfo) {
 
 #### Solution 3: Saved Cover Letter Picker in Job Applications
 - In `src/components/JobsListings/JobApplicationModal.jsx`, import `getUserCoverLetters(user.uid)`.
-- Render a segmented control: `[ ✍️ Write from Scratch ]` | `[ 📁 Select Saved Letter ]` | `[ ✨ AI Quick Pitch ]`.
+- Render a segmented control above the textarea:
+  - `[ ✍️ Write from Scratch ]` | `[ 📁 Select Saved Letter ]` | `[ ✨ AI Quick Pitch ]`
 - Selecting a saved letter populates `applicationData.coverLetter` without forcing manual re-typing.
 
 #### Solution 4: 1-Click Master Profile $\rightarrow$ Master CV Generation
@@ -217,9 +388,12 @@ async saveApplicationWithAutoTracking(appId, appData, userId, jobInfo) {
 
 ---
 
-### 4.5 Master Layout Wireframes
+### 4.5 Master Layout Wireframes & Component Hierarchies
 
 #### Screen 1: Overview Cockpit (`/dashboard`)
+- **Parent Component:** `src/components/Dashboard/DashboardCandidate.jsx`
+- **Sub-Components:** `CubaMetricCardRow.jsx`, `UpcomingActionHero.jsx`, `RecentResumesGrid.jsx`, `KanbanSnapshot.jsx`, `AtsScoreWidget.jsx`
+- **Design Tokens:** `bg-cuba-card`, `border-cuba-line`, `rounded-cuba-lg`, `shadow-cuba-sm`
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │ TOP BAR: Welcome back, [Candidate] | Status: [Open to Work 🟢] | [Quick Resume Edit]   │
@@ -242,6 +416,8 @@ async saveApplicationWithAutoTracking(appId, appData, userId, jobInfo) {
 ```
 
 #### Screen 2: Resumes & Master CV Workspace (`/dashboard/resumes`)
+- **Parent Component:** `src/components/Dashboard/DashboardResumes.jsx`
+- **Sub-Components:** `MasterCvHeroBar.jsx`, `ResumeFilterSegment.jsx`, `ResumeCard.jsx`, `TemplatePickerDrawer.jsx`
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │ HEADER: "Resumes & Master CV" | Filter: [All (4)] [Master CV] [Tailored] | [+ New CV]  │
@@ -261,6 +437,8 @@ async saveApplicationWithAutoTracking(appId, appData, userId, jobInfo) {
 ```
 
 #### Screen 3: Resume Builder Studio (`/build-resume/:step`)
+- **Parent Component:** `src/components/BuildResume/BuildResume.jsx`
+- **Sub-Components:** `BuilderHeaderNav.jsx`, `BuilderStepList.jsx`, `ActiveStepForm.jsx`, `AiAssistantDrawer.jsx`, `LiveAtsGauge.jsx`
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │ STICKY HEADER:                                                                         │
@@ -281,6 +459,8 @@ async saveApplicationWithAutoTracking(appId, appData, userId, jobInfo) {
 ```
 
 #### Screen 4: Unified Job Portal (`/dashboard/jobs`)
+- **Parent Component:** `src/components/JobsListings/MainJobListings.jsx`
+- **Sub-Components:** `JobSearchBar.jsx`, `JobFilters.jsx`, `JobCard.jsx`, `JobDetailsPane.jsx`, `JobApplicationModal.jsx`
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │ MASTER SEARCH BAR: [ 🔍 Search by title, skills, or company ] [ 📍 Location / Remote ] │
@@ -299,6 +479,8 @@ async saveApplicationWithAutoTracking(appId, appData, userId, jobInfo) {
 ```
 
 #### Screen 5: Job Tracker Kanban (`/dashboard/job-tracker`)
+- **Parent Component:** `src/components/Dashboard/JobTracker.jsx`
+- **Sub-Components:** `KanbanColumn.jsx`, `KanbanCard.jsx`, `KanbanAddModal.jsx`, `InterviewPrepQuickLink.jsx`
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │ HEADER: "Job Tracker" | Actions: [Kanban View] [Table View] | [+ Add Custom Job Card]  │
@@ -313,6 +495,8 @@ async saveApplicationWithAutoTracking(appId, appData, userId, jobInfo) {
 ```
 
 #### Screen 6: AI Interview Coach & CBT Simulator (`/dashboard/interview`)
+- **Parent Component:** `src/components/Dashboard/DashboardInterviews.jsx`
+- **Sub-Components:** `InterviewStageAudioVideo.jsx`, `StarRubricGrader.jsx`, `SampleAnswerViewer.jsx`, `SessionSummaryModal.jsx`
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │ HEADER: AI Interview Coach | Target Role: Senior Frontend Engineer | Company: Stripe   │
@@ -329,6 +513,113 @@ async saveApplicationWithAutoTracking(appId, appData, userId, jobInfo) {
 │                                   │ [💡 View Ideal Sample Answer]                      │
 └───────────────────────────────────┴────────────────────────────────────────────────────┘
 ```
+
+#### Screen 7: Master Profile & Data Vault (`/dashboard/settings?tab=Profile`)
+- **Parent Component:** `src/components/Dashboard/DashboardSettings.jsx`
+- **Sub-Components:** `ProfileHeroSyncBanner.jsx`, `PersonalInfoTab.jsx`, `ExperienceListTab.jsx`, `SkillsInventoryTab.jsx`
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ HEADER: Account & Master Profile | Sub-Tabs: [Profile] [Security] [Plans] [Billing]    │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│ ⚡ HERO SYNC ACTION:                                                                   │
+│ "Your Profile has 48 verified facts. Keep your Master CV synchronized with 1 click."   │
+│ [ ⚡ 1-Click Sync to Master CV ]   Status: Last synced today at 14:32 ✓                 │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│ PROFILE SECTIONS ACCORDION:                                                            │
+│ 1. Personal & Contact Details (Name, Headline, Email, Phone, Location, Portfolio Link) │
+│ 2. Work Experiences (3 positions recorded — [ + Add Position ])                        │
+│ 3. Education & Degrees (B.S. Computer Science — [ + Add Degree ])                      │
+│ 4. Core Skills & Proficiencies (24 tagged skills — [ + Add Skills ])                   │
+│ 5. Licenses & Certifications (AWS Certified Solutions Architect — [ + Add Cert ])      │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Screen 8: Candidate Mobile Ergonomics ($<768\text{px}$)
+- **Component:** `src/components/cuba/CubaMobileBottomNav.jsx`
+- **Touch Target:** $48\text{px} \times 48\text{px}$ minimum hit area with active pill indicator.
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│ MOBILE VIEWPORT (375px - 767px):                                       │
+│ ┌────────────────────────────────────────────────────────────────────┐ │
+│ │ TOP BAR: [Logo]  ResumePilot AI              [🔔 (2)] [Avatar]     │ │
+│ ├────────────────────────────────────────────────────────────────────┤ │
+│ │ MOBILE SWIPEABLE CARDS:                                            │ │
+│ │ • Resume: "Stripe Tailored CV" (ATS 94) [Edit] [Share]             │ │
+│ │ • Active Application: Linear - Frontend Lead (Stage: Interviewing) │ │
+│ │ • Next Interview: Oct 20, 2:00 PM  [🎙️ Launch AI Coach]           │ │
+│ └────────────────────────────────────────────────────────────────────┘ │
+│ ══════════════════════════════════════════════════════════════════════ │
+│ STICKY BOTTOM NAVIGATION BAR (<CubaMobileBottomNav>):                  │
+│ [ 🏠 Home ]  [ 📄 Resumes ]  [ 💼 Jobs ]  [ 📊 Tracker ]  [ 👤 Profile]│
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 4.6 Authoritative Data Models, Schemas & API Contract Registry
+
+#### MariaDB Relational Schemas:
+```sql
+-- 1. Resumes table with is_master designation
+CREATE TABLE IF NOT EXISTS resumes (
+    id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    template_id VARCHAR(64) NOT NULL DEFAULT 'modern-clean',
+    is_master TINYINT(1) NOT NULL DEFAULT 0,
+    ats_score INT NOT NULL DEFAULT 0,
+    content_json LONGTEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_user_resumes (user_id, is_master)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 2. Formal Job Applications
+CREATE TABLE IF NOT EXISTS applications (
+    id VARCHAR(64) PRIMARY KEY,
+    job_id VARCHAR(64) NOT NULL,
+    employer_id VARCHAR(64) NULL,
+    applicant_id VARCHAR(64) NOT NULL,
+    applicant_name VARCHAR(255) NOT NULL,
+    applicant_email VARCHAR(255) NOT NULL,
+    applicant_phone VARCHAR(64) NULL,
+    resume_id VARCHAR(64) NOT NULL,
+    cover_letter LONGTEXT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'PENDING',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_applicant (applicant_id, status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 3. Candidate Personal Kanban Job Tracker
+CREATE TABLE IF NOT EXISTS job_tracker (
+    id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL,
+    job_title VARCHAR(255) NOT NULL,
+    company VARCHAR(255) NOT NULL,
+    status ENUM('wishlist', 'applied', 'interviewing', 'offer', 'rejected') NOT NULL DEFAULT 'wishlist',
+    date_applied TIMESTAMP NULL,
+    location VARCHAR(255) NULL,
+    salary VARCHAR(64) NULL,
+    notes TEXT NULL,
+    revision INT NOT NULL DEFAULT 1,
+    sort_order INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_user_kanban (user_id, status, sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
+#### REST API Contracts:
+| Method | Endpoint | Description | Auth Required | Request Body / Query | Success Response (200) |
+| :--- | :--- | :--- | :---: | :--- | :--- |
+| `GET` | `/api/candidate/resumes` | Fetch all user resumes | Bearer JWT | Query: `?is_master=1` | `{ success: true, resumes: [...] }` |
+| `POST` | `/api/candidate/sync-profile-to-master-cv` | Sync Profile to Master CV | Bearer JWT | None | `{ success: true, resumeId: 'res_...', atsScore: 92 }` |
+| `POST` | `/api/jobs-data/applications/:id` | Submit job application (ACID dual-write) | Bearer JWT | `{ jobId, resumeId, coverLetter, ... }` | `{ success: true, applicationId: '...', trackerId: '...' }` |
+| `GET` | `/api/jobs-data/tracker` | Fetch candidate Kanban cards | Bearer JWT | None | `{ success: true, cards: [...] }` |
+| `PUT` | `/api/jobs-data/tracker/:id/stage` | Update Kanban stage (drag-drop) | Bearer JWT | `{ status: 'interviewing', sort_order: 2 }` | `{ success: true }` |
+| `GET` | `/api/cover-letters` | Fetch saved cover letters | Bearer JWT | None | `{ success: true, coverLetters: [...] }` |
+
 
 ---
 
