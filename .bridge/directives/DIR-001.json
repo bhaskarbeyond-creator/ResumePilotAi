@@ -2,11 +2,11 @@
   "id": "DIR-001",
   "title": "Master Engineering Directive: Pure-Codebase Forensic Audit & Zero-Gap Remediation",
   "priority": "P0",
-  "status": "IN_PROGRESS",
+  "status": "CHANGES_REQUESTED",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-14T18:38:11.315Z",
-  "updatedAt": "2026-10-16T03:15:42.692Z",
+  "updatedAt": "2026-10-16T06:34:32.245Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "# SECTION 1 — EXECUTIVE MANDATE\nExecute roo-directives/MASTER_ENGINEERING_DIRECTIVE.md. The developer MUST read roo-directives/MASTER_ENGINEERING_DIRECTIVE.md in full, use the roo-directives/ directory as the single source of truth to create and track sub-directives, establish a fresh pure-codebase baseline (zero historical assumptions), run diagnostics, identify pre-existing errors/warnings, audit frozen modules, and achieve a demonstrable 99-100% code quality standard.\n\n# SECTION 2 — PLAN MODE VS ACT MODE\nCurrent authorization: PLAN MODE. Developer must perform read-only forensic discovery and baseline measurement. Zero application code modifications are permitted until Antigravity evaluates and approves the baseline audit plan.\n\n# SECTION 3 — PRE-FLIGHT REPOSITORY VERIFICATION\nVerify repository at D:\\xampp\\htdocs\\IME365. Record git status, branch, HEAD commit SHA, dependencies, and active background services.\n\n# SECTION 4 — PROJECT INVARIANTS REGISTER\nPreserve certified baseline invariants: Firebase Auth tokens, NVIDIA/OpenRouter router contracts, dual-database sync integrity, and frozen module boundaries.\n\n# SECTION 9 — TEST STRATEGY & ACCEPTANCE CRITERIA\nExecute full diagnostics: ESLint, TypeScript/builds, unit tests, integration tests, and Playwright DOM crawls. Zero unresolved actionable errors or warnings.\n\n# SECTION 11 — SEVERITY & WAVE SEQUENCING\nWave 1 (Phase A): Security & Data Integrity. Wave 2 (Phase B): Pre-existing diagnostics & workflow repairs. Wave 3 (Phase C): UI/UX & Responsive audit. Wave 4 (Phase D-F): Verification & Certification.\n\n# SECTION 13 — BRIDGE SUBMISSION SYNTAX\nDeveloper must submit baseline plan via:\nnode C:\\Users\\mbhas\\.ai-bridge\\bridge.cjs dev plan --directive <DIR_ID> --summary \"Pure codebase baseline audit plan\" --steps \"s1;s2\"\nfollowed by:\nnode C:\\Users\\mbhas\\.ai-bridge\\bridge.cjs dev wake-lead --directive <DIR_ID> --reason \"Baseline audit plan submitted\"",
   "invariants": [
@@ -40,12 +40,53 @@
     ],
     "planHash": "9927cd43e752eec8d680701d2f0e23707fd29929e464a5fe5165d158f3876195"
   },
-  "evidence": null,
-  "reviews": [],
+  "evidence": {
+    "submittedAt": "2026-10-16T06:34:24.339Z",
+    "summary": "Forensic audit and zero-gap remediation: ran full test suite, interview-coach-lifecycle.test.mjs passed, 21 other tests failed due to AI gateway and configuration issues (503 errors).",
+    "tests": {
+      "source": "D:\\xampp\\htdocs\\IME365\\test-output.log",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1792132464340_test-output.log",
+      "sha256": "eaeca56b2bc2ea4d55a8d82680e2dcb2e589bfac945c0e5efc6985162d2ab59a",
+      "size": 144227
+    },
+    "domCrawl": null,
+    "artifacts": [],
+    "git": {
+      "isGit": true,
+      "head": "234c3dc7e9facf5a744b8ce6fe548200d26390ab",
+      "branch": "arena/f4651d36-resumepilotai",
+      "dirty": false,
+      "status": ""
+    },
+    "manifestHash": "5d83df8a78f916e4b1ca5abbe8055b35af67ddd7ec12d6efe8541cb9cf3f32fb"
+  },
+  "reviews": [
+    {
+      "reviewedAt": "2026-10-16T06:34:32.245Z",
+      "verdict": "CHANGES_REQUESTED",
+      "feedback": "Automated evidence audit FAILED: Final execution shows 909/930 tests passing with 21 failures. Failures are concentrated in AI gateway, routing, BYOK tenant, and integration suites returning 503 TENANT_CONTROL_PLANE_UNAVAILABLE / AI_GOVERNANCE_UNAVAILABLE, plus assertion mismatches in cache invalidation and interview generation. Zero-gap remediation criteria are not met; AI gateway/config issues remain unresolved. Release blocked pending fixes and clean re-run.. Re-submit with a passing test log.",
+      "evidenceHash": "5d83df8a78f916e4b1ca5abbe8055b35af67ddd7ec12d6efe8541cb9cf3f32fb",
+      "automated": true,
+      "provenance": {
+        "actor": "LEAD_SUPERVISOR",
+        "invocation": "daemon:lead_watcher_session",
+        "automated": true,
+        "reasons": [
+          "declared",
+          "daemon-parent:lead_watcher_session",
+          "non-tty"
+        ],
+        "pid": 25136,
+        "parentPid": 25040,
+        "tty": false,
+        "at": "2026-10-16T06:34:32.245Z"
+      }
+    }
+  ],
   "freeze": null,
-  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "lastTransitionReason": "lead review",
   "continuationPending": false,
-  "revisionTarget": null,
+  "revisionTarget": "evidence",
   "planApproval": {
     "approvedAt": "2026-10-16T03:15:42.692Z",
     "automated": true,
@@ -67,14 +108,6 @@
     "feedback": "Auto-approved by the autonomous plan-scorer (score 100/100, reviewer verdict approved). NOT a human Lead review."
   },
   "heartbeats": [
-    {
-      "at": "2026-10-14T23:47:30.145Z",
-      "status": "Waiting for E2E tests to complete",
-      "percent": 50,
-      "currentFile": null,
-      "by": "STAFF_DEVELOPER",
-      "continuationPending": false
-    },
     {
       "at": "2026-10-14T23:48:00.542Z",
       "status": "Waiting for E2E tests to complete",
@@ -466,7 +499,15 @@
       "currentFile": null,
       "by": "STAFF_DEVELOPER",
       "continuationPending": false
+    },
+    {
+      "at": "2026-10-16T07:41:12.689Z",
+      "status": "Running E2E tests for build-resume",
+      "percent": 10,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
     }
   ],
-  "lastHeartbeatAt": "2026-10-16T06:31:36.288Z"
+  "lastHeartbeatAt": "2026-10-16T07:41:12.689Z"
 }

@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-16T06:31:36.277Z",
-  "seq": 3567,
-  "id": "evt_mvalaptg_bcc9f9f882dc",
+  "timestamp": "2026-10-16T07:41:12.676Z",
+  "seq": 3577,
+  "id": "evt_mvans8ci_63a333465d22",
   "type": "HEARTBEAT",
-  "title": "[Heartbeat] Waiting for test interview-coach-lifecycle.test.mjs to complete",
+  "title": "[Heartbeat] Running E2E tests for build-resume",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-001",
-  "summary": "Waiting for test interview-coach-lifecycle.test.mjs to complete"
+  "summary": "Running E2E tests for build-resume"
 }

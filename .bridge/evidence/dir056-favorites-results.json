@@ -1,6 +1,6 @@
 {
   "directive": "DIR-056",
-  "generatedAt": "2026-10-16T03:43:34.705Z",
+  "generatedAt": "2026-10-16T07:50:25.538Z",
   "checks": [
     {
       "check": "AC-1",
@@ -21,7 +21,7 @@
     {
       "check": "AC-4a",
       "deletes": [
-        "http://127.0.0.1:64682/api/favourites/job-101"
+        "http://127.0.0.1:65338/api/favourites/job-101"
       ]
     },
     {
