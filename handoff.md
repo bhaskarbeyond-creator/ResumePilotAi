@@ -167,23 +167,43 @@ Below is the forensic SWOT audit of every core candidate surface, establishing t
 
 ---
 
-#### 6. AI Interview Coach & CBT Simulator (`/dashboard/interview`)
+#### 6. AI Interview Coach & CBT Simulator (`/dashboard/interview/coach`)
+- **Nature:** Asynchronous, self-paced, domain-specific AI training gym.
 - **Strengths (S):**
-  - Real-time speech-to-text / text-to-speech audio simulation.
-  - STAR rubric behavioral scoring (Situation, Task, Action, Result).
-  - Anti-leakage prompt guards preventing prompt injection.
+  - Instant STAR rubric behavioral scoring (Situation, Task, Action, Result).
+  - Rich question categories: Technical, Behavioral, System Design, HR, Case Studies.
+  - Power Bullet Generator providing immediate model answers.
+  - Multi-provider fallback chain (NVIDIA NIM $\rightarrow$ OpenRouter $\rightarrow$ Groq) with `extractJson` normalization.
 - **Weaknesses (W) [Failure Evidence]:**
-  - Canonical URL inconsistent: router mounts `/dashboard/interviews` (plural) vs `/dashboard/interview` (singular).
-  - Does not read initial `role` and `company` query parameters from incoming Kanban deep-links.
+  - Previously conflated with synchronous video calls, confusing candidates about whether camera/mic was mandatory.
+  - Lacked auto-hydration from target job descriptions when navigated from the Kanban board.
 - **Opportunities (O) [10/10 Upgrade]:**
-  - Canonicalize route to `/dashboard/interview`.
-  - Auto-hydrate session from query params (`?role=Staff+Frontend&company=Stripe`), immediately tailoring interview questions to that exact role description.
+  - Dedicated self-paced coaching studio: Candidate reads/listens to question, types or dictates answer, and receives real-time STAR breakdown with scored radar chart.
+  - Direct deep-link from Job Tracker (`/dashboard/interview/coach?role=Staff+Frontend&company=Stripe`) tailoring questions to that specific job.
 - **Threats (T) [Invariants]:**
-  - Multi-provider fallback chain (NVIDIA NIM $\rightarrow$ OpenRouter $\rightarrow$ Groq) must handle worker saturation gracefully.
+  - Zero simulated latency; prompt responses must stream or complete under established performance budgets.
 
 ---
 
-#### 7. Master Profile & Career Vault (`/dashboard/settings?tab=Profile`)
+#### 7. Live Face-to-Face Interview Stage (`/dashboard/interview/live`)
+- **Nature:** Synchronous, real-time video/audio meeting stage with interactive AI or proctored interviewer.
+- **Strengths (S):**
+  - Hardware media readiness validation (`LiveInterviewReadiness`: Camera, Mic, Speaker, Network Jitter).
+  - Turn-by-turn live interview engine (`submitLiveInterviewTurn` via `liveInterviewApi.js`).
+  - Real-time speech recognition, live audio spectrum visualizer, and candidate webcam feed.
+  - Live Answer Guide drawer (`LiveAnswerGuide`) for real-time prompt assistance.
+  - Comprehensive post-interview performance audit report (`LiveInterviewReport`).
+- **Weaknesses (W) [Failure Evidence]:**
+  - Buried as a secondary toggle inside CBT assessment settings rather than an independent premier destination.
+  - Session recovery (`liveRecoverySessionId`) not clearly highlighted on the dashboard when a session disconnects.
+- **Opportunities (O) [10/10 Upgrade]:**
+  - Dedicated premier **Live Face-to-Face Stage**: Full-screen video room with hardware check modal before entry, turn-based spoken dialogue, and post-session replay audit with timestamped performance highlights.
+- **Threats (T) [Invariants]:**
+  - Never fabricate hardware media access (`navigator.mediaDevices.getUserMedia`); must test real video/audio permissions and fail safely if unpermitted.
+
+---
+
+#### 8. Master Profile & Career Vault (`/dashboard/settings?tab=Profile`)
 - **Strengths (S):**
   - Rich profile data model with 9 sub-sections: Personal Info, Work History, Education, Skills, Certifications, Languages, Projects, Socials, Preferences.
 - **Weaknesses (W) [Failure Evidence]:**
@@ -196,7 +216,7 @@ Below is the forensic SWOT audit of every core candidate surface, establishing t
 
 ---
 
-#### 8. Candidate Mobile Navigation & Viewport Ergonomics ($<768\text{px}$)
+#### 9. Candidate Mobile Navigation & Viewport Ergonomics ($<768\text{px}$)
 - **Strengths (S):**
   - Tailwind CSS responsive utilities configured.
 - **Weaknesses (W) [Failure Evidence]:**
@@ -262,23 +282,28 @@ Below is the forensic SWOT audit of every core candidate surface, establishing t
                                            └──────────────┬────────────┘
                                                           │ Role moves to 'Interviewing'
                                                           ▼
-                                           ┌───────────────────────────┐
-                                           │ 7. AI Interview Coach     │
-                                           │ (/dashboard/interview)    │
-                                           └──────────────┬────────────┘
-                                                          │ Real-time STAR rubric prep
-                                                          ▼
-                                           ┌───────────────────────────┐
-                                           │ 8. Offer & Hire Stage     │
-                                           │ (Celebrate & Onboard)     │
-                                           └───────────────────────────┘
+                   ┌─────────────────────────────────────────────────────────────┐
+                   │               DUAL INTERVIEW PREPARATION SUITE              │
+                   ├──────────────────────────────┬──────────────────────────────┤
+                   │ 7a. AI Interview Coach (CBT) │ 7b. Live Face-to-Face Stage  │
+                   │ (/dashboard/interview/coach) │ (/dashboard/interview/live)  │
+                   │ • Self-paced question bank   │ • Live Webcam & Mic stream   │
+                   │ • Instant STAR rubric audit  │ • Turn-by-turn verbal speech │
+                   │ • Ideal sample answers       │ • Post-interview video audit │
+                   └──────────────────────────────┴──────────────────────────────┘
+                                                  │
+                                                  ▼
+                                   ┌───────────────────────────┐
+                                   │ 8. Offer & Hire Stage     │
+                                   │ (Celebrate & Onboard)     │
+                                   └───────────────────────────┘
 ```
 
 ---
 
 ### 4.3 Four-Pillar Information Architecture & Route Consolidation Matrix
 
-The 93 scattered candidate surfaces are consolidated into four natural, linear pillars:
+The scattered candidate surfaces are consolidated into four natural, linear pillars:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
@@ -298,27 +323,30 @@ The 93 scattered candidate surfaces are consolidated into four natural, linear p
 │    └── 9. Submitted Applications     (/dashboard/applied-jobs)         │
 │                                                                        │
 │ 🎙️ PILLAR 3: PREPARATION & COMMS                                       │
-│    ├── 10. AI Interview Coach & CBT  (/dashboard/interview)            │
-│    └── 11. Recruiter Messages        (/dashboard/messages)             │
+│    ├── 10. AI Interview Coach (CBT)  (/dashboard/interview/coach)     │
+│    ├── 11. Live Face-to-Face Stage   (/dashboard/interview/live)      │
+│    └── 12. Recruiter Messages        (/dashboard/messages)             │
 │                                                                        │
 │ ⚙️ PILLAR 4: ACCOUNT, PRIVACY & SUPPORT                                │
-│    ├── 12. Master Profile Data       (/dashboard/settings?tab=Profile) │
-│    ├── 13. Plans & Token Quotas      (/dashboard/plans)                │
-│    ├── 14. Security, 2FA & GDPR      (/dashboard/settings?tab=Security)│
-│    └── 15. Support & Help Desk       (/dashboard/support)              │
+│    ├── 13. Master Profile Data       (/dashboard/settings?tab=Profile) │
+│    ├── 14. Plans & Token Quotas      (/dashboard/plans)                │
+│    ├── 15. Security, 2FA & GDPR      (/dashboard/settings?tab=Security)│
+│    └── 16. Support & Help Desk       (/dashboard/support)              │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
 #### Canonical URL Restructuring Matrix:
 All legacy fragmented routes must redirect cleanly to canonical URLs while preserving state:
 
-| Legacy Route | Canonical 10/10 Route | Query Params & State Preserved |
+| Legacy Route | Canonical 10/10 Route | Purpose & View Mode |
 | :--- | :--- | :--- |
 | `/jobs/portal` | `/dashboard/jobs` | Retain search filters: `?q=...&remote=...` |
 | `/jobs/browse` | `/dashboard/jobs` | Mode set to list: `?view=browse` |
 | `/jobs/portal/:id` | `/dashboard/jobs` | Direct detail selection: `?jobId=:id` |
 | `/jobs/category/:cat` | `/dashboard/jobs` | Category filter: `?category=:cat` |
-| `/dashboard/interviews` | `/dashboard/interview` | Canonical singular naming |
+| `/dashboard/interviews` | `/dashboard/interview` | Interview Hub (Split Selector: AI Coach vs Live Stage) |
+| `/dashboard/interview/coach` | `/dashboard/interview/coach` | Dedicated AI Coach & CBT Simulator (Self-Paced) |
+| `/dashboard/interview/live` | `/dashboard/interview/live` | Dedicated Live Face-to-Face Video Stage |
 
 ---
 
@@ -377,14 +405,10 @@ async saveApplicationWithAutoTracking(appId, appData, userId, jobInfo) {
 - In `DashboardSettings.jsx` (Profile tab), provide a hero action button: **[ ⚡ 1-Click Sync to Master CV ]**.
 - Runs `syncProfileToResumeDraft(user.uid)` to transform profile facts (`workExperiences`, `education`, `skills`, `certifications`) into an authoritative Master CV marked with `is_master: 1` in `/dashboard/resumes`.
 
-#### Solution 5: Mobile Ergonomics & Native Bottom Navigation
-- Mount `<CubaMobileBottomNav>` globally for all viewports $<768\text{px}$ with 5 primary touch anchors ($48\text{px} \times 48\text{px}$ minimum target area):
-  1. **Home** (`/dashboard`)
-  2. **Resumes** (`/dashboard/resumes`)
-  3. **Jobs** (`/dashboard/jobs`)
-  4. **Tracker** (`/dashboard/job-tracker`)
-  5. **Profile** (`/dashboard/settings?tab=Profile`)
-- In Resume Builder, provide swipeable step cards with bottom "Previous" / "Next" action bars.
+#### Solution 5: Clean Separation of AI Coach & Live Face-to-Face Interview Stage
+- Decouple asynchronous AI coaching from synchronous WebRTC live sessions:
+  - **AI Coach (`/dashboard/interview/coach`):** Lightweight, instant-response React interface rendering questions, STAR rubric grading, and AI model answers without invoking media hardware.
+  - **Live Face-to-Face (`/dashboard/interview/live`):** Dedicated meeting room invoking `useInterviewMedia()` only after explicit hardware readiness confirmation (`LiveInterviewReadiness`), maintaining a persistent WebRTC / WebSocket connection with audio spectrum visualizers and post-interview report generation (`LiveInterviewReport`).
 
 ---
 
@@ -401,7 +425,7 @@ async saveApplicationWithAutoTracking(appId, appData, userId, jobInfo) {
 │ 4 METRIC CARDS (.cuba-stat-card):        │ UPCOMING ACTION HERO CARD:                  │
 │ • Total Resumes: 4                       │ 🎯 Upcoming Interview in 2 Days             │
 │ • Applications Submitted: 12             │    Company: Stripe | Role: Senior Frontend  │
-│ • Average ATS Score: 86 (Needs Imprv)    │    [🎙️ Launch AI Interview Coach] [Details]│
+│ • Average ATS Score: 86 (Needs Imprv)    │    [🎙️ Practice STAR Rubric] [Details]     │
 │ • Unread Recruiter Messages: 2           │                                             │
 ├──────────────────────────────────────────┴─────────────────────────────────────────────┤
 │ MAIN WORKSPACE (Left 65%):               │ ASSISTANT & INSIGHTS RAIL (Right 35%):      │
@@ -494,23 +518,43 @@ async saveApplicationWithAutoTracking(appId, appData, userId, jobInfo) {
 └───────────────────┴───────────────────┴────────────────────┴───────────────────────────┘
 ```
 
-#### Screen 6: AI Interview Coach & CBT Simulator (`/dashboard/interview`)
-- **Parent Component:** `src/components/Dashboard/DashboardInterviews.jsx`
-- **Sub-Components:** `InterviewStageAudioVideo.jsx`, `StarRubricGrader.jsx`, `SampleAnswerViewer.jsx`, `SessionSummaryModal.jsx`
+#### Screen 6A: AI Interview Coach & CBT Simulator (`/dashboard/interview/coach`)
+- **Parent Component:** `src/components/Dashboard/DashboardInterviews/DashboardInterviews.jsx`
+- **Sub-Components:** `QuestionNavRail.jsx`, `QuestionPromptCard.jsx`, `AnswerEditor.jsx`, `StarRubricGrader.jsx`, `SampleAnswerViewer.jsx`
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ HEADER: AI Interview Coach | Target Role: Senior Frontend Engineer | Company: Stripe   │
+│ HEADER: AI Interview Coach | Role: Senior Frontend Engineer | Mode: Self-Paced (CBT)  │
+├──────────────────────┬──────────────────────────────────┬──────────────────────────────┤
+│ QUESTIONS (20%):     │ ACTIVE QUESTION (50%):           │ REAL-TIME STAR FEEDBACK (30%)│
+│ 1. React Render (✓)  │ QUESTION 2 OF 5 (Behavioral):    │ 📊 STAR METHOD RUBRIC:       │
+│ 2. Team Conflict (•) │ "Describe a situation where you  │ • Situation: 9/10 (Clear)    │
+│ 3. System Scaling    │  disagreed with a tech lead."    │ • Task: 8/10 (Well framed)   │
+│ 4. CI/CD Pipelines   ├──────────────────────────────────┤ • Action: 9/10 (Constructive)│
+│ 5. Security & Auth   │ YOUR ANSWER (Text or Voice):     │ • Result: 10/10 (Quantified) │
+│                      │ [ Type or dictate response...  ] ├──────────────────────────────┤
+│ [Finish Session]     │                                  │ 💡 IDEAL POWER ANSWER:       │
+│                      │ [✨ Generate AI Feedback]         │ "At my previous company,..." │
+└──────────────────────┴──────────────────────────────────┴──────────────────────────────┘
+```
+
+#### Screen 6B: Live Face-to-Face Interview Stage (`/dashboard/interview/live`)
+- **Parent Component:** `src/components/Dashboard/DashboardInterviews/LiveInterviewSession.jsx`
+- **Sub-Components:** `LiveInterviewReadiness.jsx`, `LiveAnswerGuide.jsx`, `LiveInterviewReport.jsx`, `AudioSpectrumVisualizer.jsx`
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ TOP BAR: Live Face-to-Face Stage | Status: Connected 🟢 | Audio: Normal | [Settings ⚙️] │
 ├───────────────────────────────────┬────────────────────────────────────────────────────┤
-│ VIDEO & AUDIO STAGE (Left 55%):   │ REAL-TIME RUBRIC GRADING (Right 45%):              │
-│ ┌───────────────────────────────┐ │ QUESTION 3 OF 5 (Behavioral / STAR Method):        │
-│ │ [ Candidate Camera Feed /     │ │ "Tell me about a time you had to optimize a slow   │
-│ │   Waveform Audio Spectrum ]   │ │  React rendering tree under tight deadlines."      │
-│ └───────────────────────────────┘ ├────────────────────────────────────────────────────┤
-│ Controls:                         │ STAR RUBRIC EVALUATION:                            │
-│ [🎤 Start Speaking] [⏹️ Finish]    │ • Situation: Clear context provided (9/10)         │
-│ [Skip Question] [End Session]     │ • Task & Action: Good profiling details (8/10)     │
-│                                   │ • Result: Quantified 40% speedup (10/10)           │
-│                                   │ [💡 View Ideal Sample Answer]                      │
+│ VIDEO & AUDIO STAGE (Left 65%):   │ INTERVIEW PROMPTER & LIVE ASSIST (Right 35%):      │
+│ ┌───────────────────────────────┐ │ QUESTION 3 OF 5 (Spoken Turn):                     │
+│ │ [ CANDIDATE WEBCAM STREAM     │ │ "How do you handle zero-downtime database schema   │
+│ │   Active 1080p @ 60fps ]      │ │  migrations under high write traffic?"             │
+│ ├───────────────────────────────┤ ├────────────────────────────────────────────────────┤
+│ │ [ INTERVIEWER AVATAR / STREAM │ │ LIVE ANSWER GUIDE (Drawer):                        │
+│ │   Audio Waveform: ılılıllılı ]│ │ • Mention expand/contract pattern                  │
+│ └───────────────────────────────┘ │ • Mention dual-write and shadow validation         │
+│ Controls:                         ├────────────────────────────────────────────────────┤
+│ [🎤 Mute] [📷 Video Off]          │ REAL-TIME TRANSCRIPTION:                           │
+│ [⏹️ Finish Turn] [Exit Stage]     │ Candidate: "We implement dual-schema write..."     │
 └───────────────────────────────────┴────────────────────────────────────────────────────┘
 ```
 
@@ -546,7 +590,7 @@ async saveApplicationWithAutoTracking(appId, appData, userId, jobInfo) {
 │ │ MOBILE SWIPEABLE CARDS:                                            │ │
 │ │ • Resume: "Stripe Tailored CV" (ATS 94) [Edit] [Share]             │ │
 │ │ • Active Application: Linear - Frontend Lead (Stage: Interviewing) │ │
-│ │ • Next Interview: Oct 20, 2:00 PM  [🎙️ Launch AI Coach]           │ │
+│ │ • Next Interview: Oct 20, 2:00 PM  [🎙️ Launch Live Stage]         │ │
 │ └────────────────────────────────────────────────────────────────────┘ │
 │ ══════════════════════════════════════════════════════════════════════ │
 │ STICKY BOTTOM NAVIGATION BAR (<CubaMobileBottomNav>):                  │
@@ -619,6 +663,12 @@ CREATE TABLE IF NOT EXISTS job_tracker (
 | `GET` | `/api/jobs-data/tracker` | Fetch candidate Kanban cards | Bearer JWT | None | `{ success: true, cards: [...] }` |
 | `PUT` | `/api/jobs-data/tracker/:id/stage` | Update Kanban stage (drag-drop) | Bearer JWT | `{ status: 'interviewing', sort_order: 2 }` | `{ success: true }` |
 | `GET` | `/api/cover-letters` | Fetch saved cover letters | Bearer JWT | None | `{ success: true, coverLetters: [...] }` |
+| `POST` | `/api/interview/generate-questions` | Generate AI CBT coach questions | Bearer JWT | `{ role, discipline, difficulty }` | `{ success: true, questions: [...] }` |
+| `POST` | `/api/interview/evaluate-star` | Grade answer via STAR rubric | Bearer JWT | `{ questionId, answerText }` | `{ success: true, rubric: { s, t, a, r }, score: 92 }` |
+| `POST` | `/api/live-interview/sessions` | Initialize Live Face-to-Face stage | Bearer JWT | `{ role, company, mediaCheck: true }`| `{ success: true, sessionId: 'live_...', status: 'READY' }` |
+| `GET` | `/api/live-interview/sessions/:id` | Recover active live session | Bearer JWT | None | `{ success: true, session: { ... } }` |
+| `POST` | `/api/live-interview/sessions/:id/turns`| Submit spoken turn in live stage | Bearer JWT | `{ turnIndex, transcript, audioBlob }`| `{ success: true, nextPrompt: '...', evaluation: { ... } }` |
+| `POST` | `/api/live-interview/sessions/:id/complete`| Complete live stage & generate report | Bearer JWT | None | `{ success: true, report: { overallScore: 88, ... } }` |
 
 
 ---
