@@ -1,25 +1,25 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-16T11:48:15.987Z",
-  "eventCount": 3612,
+  "updatedAt": "2026-10-16T16:20:27.511Z",
+  "eventCount": 3652,
   "activeDirectiveId": "DIR-001",
   "activeDirectiveTitle": "Master Engineering Directive: Pure-Codebase Forensic Audit & Zero-Gap Remediation",
   "activeDirectiveStatus": "IN_PROGRESS",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-16T11:18:00.934Z",
-  "unreadForLead": 146,
-  "unreadForDev": 294,
+  "stallDeadline": "2026-10-16T14:06:21.532Z",
+  "unreadForLead": 152,
+  "unreadForDev": 328,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-16T11:18:00.934Z",
-    "status": "Starting forensic audit",
+    "timestamp": "2026-10-16T14:06:21.532Z",
+    "status": "Starting test run",
     "percent": 0
   },
   "integrity": {
     "ok": true,
-    "checked": 3612,
+    "checked": 3652,
     "legacy": 0,
     "bad": 0
   }

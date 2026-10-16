@@ -32,6 +32,20 @@ export default defineConfig({
         : {}),
     },
   },
+  webServer: [
+    {
+      command: 'npm run dev',
+      port: 5173,
+      timeout: 240 * 1000,
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      command: 'npm --prefix backend run dev',
+      port: 8080,
+      timeout: 120 * 1000,
+      reuseExistingServer: !process.env.CI,
+    },
+  ],
   projects: [
     {
       name: 'chromium',
