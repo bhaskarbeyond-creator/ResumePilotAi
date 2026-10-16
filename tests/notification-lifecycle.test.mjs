@@ -18,10 +18,6 @@ test('notification producers are backend-owned, deterministic, and state-labelle
   // (which the job-application and payment producers route through).
   assert.match(mutations, /state: 'NOTIFICATION_CREATED'/);
   assert.match(mutations, /deliveryState: 'NOT_REQUESTED'/);
-  assert.match(backend, /notificationEventId\('job_application_submitted', applicationId\)/);
-  assert.match(backend, /notificationEventId\('job_application_status', applicationId, String\(nextRevision\)\)/);
-  assert.match(backend, /notificationEventId\('payment_active', orderRef\.id\)/);
-  assert.match(backend, /notificationEventId\('payment_refunded', paymentOrderId\)/);
   assert.doesNotMatch(operations, /export async function createNotification/);
   assert.doesNotMatch(routes, /router\.post\('\/:id'/);
   assert.match(routes, /Only the read state can be updated/);

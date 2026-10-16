@@ -181,7 +181,7 @@ test.describe('DIR-014 AI Cover Letter Builder - live stack', () => {
 
         const tierSrc = source.match(/const atsTier = \(score\) => \{[\s\S]*?\n\};/);
         expect(tierSrc, 'atsTier helper must exist as the single tiering source').not.toBeNull();
-        // eslint-disable-next-line no-new-func
+         
         const atsTier = new Function(`${tierSrc[0]}; return atsTier;`)();
 
         // AC-5 bands: >= 80 strong, 60-79 warning, < 60 critical.
@@ -199,7 +199,7 @@ test.describe('DIR-014 AI Cover Letter Builder - live stack', () => {
         expect(metricsSrc, 'calculateAtsMetrics must exist').not.toBeNull();
         expect(metricsSrc[0]).toMatch(/Math\.min\(100,\s*Math\.max\(30,/);
 
-        // eslint-disable-next-line no-new-func
+         
         const calculateAtsMetrics = new Function(
             `${metricsSrc[0]}; return calculateAtsMetrics;`,
         )();

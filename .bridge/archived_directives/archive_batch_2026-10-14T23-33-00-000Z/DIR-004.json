@@ -2,11 +2,11 @@
   "id": "DIR-004",
   "title": "TEST-001: Developer Agent Connectivity Handshake",
   "priority": "P2",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-14T16:29:15.697Z",
-  "updatedAt": "2026-10-14T17:28:35.727Z",
+  "updatedAt": "2026-10-14T17:28:36.726Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "1. Verify agent responsiveness and bidirectional bridge integration. 2. Verify git working directory status and run lint/diagnostic checks without altering frozen baselines. 3. Document agent identity, active mode, and toolchain status. 4. Submit implementation plan, wait for approval, and submit verification evidence.",
   "invariants": [],
@@ -68,8 +68,31 @@
       }
     }
   ],
-  "freeze": null,
-  "lastTransitionReason": "lead review",
+  "freeze": {
+    "freezeHash": "21da9246e477c6e69a7105d05580bf3c1c329139",
+    "certifiedAt": "2026-10-14T17:28:36.726Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "Autonomous Lead (Antigravity): evidence audit passed, all criteria verified.",
+    "evidenceHash": "f8c470592d376ee0a8434322f9cc19e8d4eb8d3959344f22f90a0f571082fc10",
+    "automated": true,
+    "certificationKind": "automated",
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "daemon:lead_watcher_session",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "daemon-parent:lead_watcher_session",
+        "non-tty"
+      ],
+      "pid": 14932,
+      "parentPid": 10472,
+      "tty": false,
+      "at": "2026-10-14T17:28:36.158Z",
+      "explicitlyAllowed": true
+    }
+  },
+  "lastTransitionReason": "gatekeeper certification",
   "continuationPending": false,
   "revisionTarget": null,
   "heartbeats": [

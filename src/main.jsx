@@ -155,9 +155,9 @@ const RegionalJobsPage = lazy(() => import('./components/JobsListings/RegionalJo
 const BlogList = lazy(() => import('./components/Blog/BlogList/BlogList'));
 const BlogPost = lazy(() => import('./components/Blog/BlogPost/BlogPost'));
 const BlogEditor = lazy(() => import('./components/Blog/BlogEditor/BlogEditor'));
-// eslint-disable-next-line react-refresh/only-export-components
+ 
 const NotFound = () => <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6"><div className="text-center"><h1 className="text-3xl font-bold text-slate-900">Page not found</h1><p className="mt-3 text-slate-600">The requested page does not exist or is no longer available.</p><Link to="/" className="mt-5 inline-block rounded-lg bg-slate-900 px-4 py-2 text-white">Return home</Link></div></div>;
-// eslint-disable-next-line react-refresh/only-export-components
+ 
 function RequireAuthenticated({ user, children }) {
     const location = useLocation();
     if (user) return children;
@@ -165,35 +165,35 @@ function RequireAuthenticated({ user, children }) {
     return <Navigate to={loginPathWithNext(next)} replace />;
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
+ 
 function AdmAliasRedirect() {
     const location = useLocation();
     const suffix = location.pathname.replace(/^\/adm/, '') || '/';
     return <Navigate to={`/admin${suffix}${location.search}${location.hash}`} replace />;
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
+ 
 function PlatformAliasRedirect() {
     const location = useLocation();
     const suffix = location.pathname.replace(/^\/platform/, '') || '/';
     return <Navigate to={`/admin${suffix}${location.search}${location.hash}`} replace />;
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
+ 
 function EnterpriseLegacyRedirect() {
     const location = useLocation();
     const suffix = location.pathname.replace(/^\/enterprise/, '') || '';
     return <Navigate to={`/org${suffix}${location.search}${location.hash}`} replace />;
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
+ 
 function Dashboard2Redirect() {
     const location = useLocation();
     const suffix = location.pathname.replace(/^\/dashboard2/, '') || '';
     return <Navigate to={`/dashboard${suffix}${location.search}${location.hash}`} replace />;
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
+ 
 function JobsPortalRoute({ user }) {
     const location = useLocation();
     if (user) {
@@ -204,7 +204,7 @@ function JobsPortalRoute({ user }) {
     return <MainJobListings key="guest" />;
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
+ 
 function JobsBrowseRoute({ user }) {
     const location = useLocation();
     if (user) {
@@ -214,7 +214,7 @@ function JobsBrowseRoute({ user }) {
     return <MainJobListings key="guest" />;
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
+ 
 function PostLoginRedirect({ user }) {
     const location = useLocation();
     const navigate = useNavigate();
@@ -232,7 +232,7 @@ function PostLoginRedirect({ user }) {
 }
 
 const AuthenticatedAppShell = lazy(() => import('./components/AppShell/AuthenticatedAppShell'));
-// eslint-disable-next-line react-refresh/only-export-components
+ 
 const MaybeApplicationShell = ({ user, children }) => (
     user ? <AuthenticatedAppShell>{children}</AuthenticatedAppShell> : children
 );
@@ -243,7 +243,7 @@ import RouteFocus from './components/RouteFocus';
 import { clearAccountScopedBrowserState } from './utils/signOut';
 import RouteErrorBoundary from './components/common/RouteErrorBoundary';
 
-// eslint-disable-next-line react-refresh/only-export-components
+ 
 const AuthWrapper = () => {         
     const [user, setUser] = useState(null);
     const [authLoading, setAuthLoading] = useState(true);

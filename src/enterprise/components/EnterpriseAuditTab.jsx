@@ -100,7 +100,7 @@ export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = n
         return { name: 'System Service', sub: 'Internal Automated Worker', isSystem: true, initial: '⚙' };
       }
       if (currentUid && actorId === currentUid) {
-        return { name: `${currentDisplayName || 'Babu M'} (You)`, sub: `Principal: ${actorId}`, isCurrent: true, initial: (currentDisplayName || 'B').charAt(0).toUpperCase() };
+        return { name: `${currentDisplayName || '—'} (You)`, sub: `Principal: ${actorId}`, isCurrent: true, initial: (currentDisplayName || '—').charAt(0).toUpperCase() };
       }
       const member = memberMap.get(actorId);
       if (member) {

@@ -1260,19 +1260,6 @@ function buildHeroStack(resume, style, options = {}) {
   return nodes;
 }
 
-function buildBottomStack(resume, style, options = {}) {
-  const nodes = [];
-  nodes.push(...buildEducationBlock(resume.educations || resume.education, style, { beforeSpacing: 180 }));
-  if (options.includeSkills) nodes.push(...buildSkillsBlock(resume.skills, style, { beforeSpacing: 180, variant: style.skillVariant }));
-  nodes.push(...buildProjectsBlock(resume.projects, style, { beforeSpacing: 180 }));
-  if (options.includeCerts !== false) nodes.push(...buildCertificationsBlock(resume.certifications, style, { beforeSpacing: 180, columns: 2 }));
-  if (options.includeHobbies) nodes.push(...buildHobbiesBlock(resume.hobbies || resume.interests, style, { beforeSpacing: 180 }));
-  nodes.push(...buildAchievementsBlock(resume.achievements || resume.awards, style, { beforeSpacing: 180 }));
-  nodes.push(...buildReferencesBlock(resume.references, style, { beforeSpacing: 180 }));
-  if (options.includeLanguages) nodes.push(...buildLanguagesBlock(resume.languages, style, { beforeSpacing: 180 }));
-  nodes.push(...buildCustomSections(resume, style, { beforeSpacing: 180 }));
-  return nodes;
-}
 
 /**
  * DIR-069 — multi-page full-width reflow.

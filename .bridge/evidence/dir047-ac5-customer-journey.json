@@ -27,12 +27,12 @@
       "path": "/dashboard",
       "sessionIntact": true,
       "navs": [
-        "Breadcrumb",
-        "Candidate workspace navigation"
+        "Candidate workspace navigation",
+        "Primary mobile navigation"
       ],
       "overflowPx": 0,
-      "textLength": 1435,
-      "childCount": 333
+      "textLength": 1819,
+      "childCount": 405
     },
     {
       "hop": "recruiter portal",
@@ -42,12 +42,13 @@
       "path": "/employer",
       "sessionIntact": true,
       "navs": [
+        "Employer navigation",
         "Breadcrumb",
-        "Employer navigation"
+        "Primary mobile navigation"
       ],
       "overflowPx": 0,
-      "textLength": 1495,
-      "childCount": 187
+      "textLength": 1496,
+      "childCount": 231
     },
     {
       "hop": "enterprise console",
@@ -57,12 +58,13 @@
       "path": "/org/northwind/overview",
       "sessionIntact": true,
       "navs": [
+        "Organization navigation",
         "Breadcrumb",
-        "Organization navigation"
+        "Primary mobile navigation"
       ],
       "overflowPx": 0,
-      "textLength": 917,
-      "childCount": 225
+      "textLength": 918,
+      "childCount": 272
     },
     {
       "hop": "platform admin",
@@ -72,12 +74,13 @@
       "path": "/admin/dashboard",
       "sessionIntact": true,
       "navs": [
+        "Platform admin navigation",
         "Breadcrumb",
-        "Platform admin navigation"
+        "Primary mobile navigation"
       ],
       "overflowPx": 0,
-      "textLength": 3010,
-      "childCount": 510
+      "textLength": 3009,
+      "childCount": 564
     },
     {
       "hop": "candidate dashboard (return)",
@@ -87,12 +90,12 @@
       "path": "/dashboard",
       "sessionIntact": true,
       "navs": [
-        "Breadcrumb",
-        "Candidate workspace navigation"
+        "Candidate workspace navigation",
+        "Primary mobile navigation"
       ],
       "overflowPx": 0,
-      "textLength": 1435,
-      "childCount": 333
+      "textLength": 1819,
+      "childCount": 405
     }
   ],
   "consoleErrorCount": 0,

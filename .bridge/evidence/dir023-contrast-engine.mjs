@@ -29,7 +29,7 @@
  * getComputedStyle on a live, rendered, authenticated DOM.
  */
 
-/* eslint-disable no-undef */
+ 
 
 /** @type {() => (opts: { theme: string }) => any} */
 export function contrastKernelFactory() {

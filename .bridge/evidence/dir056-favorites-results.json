@@ -1,343 +1,40 @@
 {
-  "config": {
-    "argv": [
-      "C:\\Program Files\\nodejs\\node.exe",
-      "D:\\xampp\\htdocs\\IME365\\node_modules\\@playwright\\test\\cli.js",
-      "test",
-      "--config=playwright.dir056.config.js"
-    ],
-    "configFile": "D:\\xampp\\htdocs\\IME365\\playwright.dir056.config.js",
-    "rootDir": "D:/xampp/htdocs/IME365/tests/e2e",
-    "failOnFlakyTests": false,
-    "forbidOnly": false,
-    "fullyParallel": false,
-    "globalSetup": null,
-    "globalTeardown": null,
-    "globalTimeout": 0,
-    "grep": {},
-    "grepInvert": null,
-    "maxFailures": 0,
-    "metadata": {
-      "actualWorkers": 1
-    },
-    "preserveOutput": "always",
-    "projects": [
-      {
-        "outputDir": "D:/xampp/htdocs/IME365/.bridge/evidence/dir056-artifacts",
-        "repeatEach": 1,
-        "retries": 0,
-        "metadata": {
-          "actualWorkers": 1
-        },
-        "id": "dir056-favorites-workspace",
-        "name": "dir056-favorites-workspace",
-        "testDir": "D:/xampp/htdocs/IME365/tests/e2e",
-        "testIgnore": [],
-        "testMatch": [
-          "/dir0056-favorites-workspace\\.spec\\.js/"
-        ],
-        "timeout": 600000
-      }
-    ],
-    "quiet": false,
-    "reporter": [
-      [
-        "list",
-        null
-      ],
-      [
-        "json",
-        {
-          "outputFile": ".bridge/evidence/dir056-favorites-results.json"
-        }
-      ]
-    ],
-    "reportSlowTests": {
-      "max": 5,
-      "threshold": 300000
-    },
-    "shard": null,
-    "tags": [],
-    "updateSnapshots": "missing",
-    "updateSourceMethod": "patch",
-    "version": "1.62.1",
-    "workers": 1,
-    "webServer": null
-  },
-  "suites": [
+  "directive": "DIR-056",
+  "generatedAt": "2026-10-16T03:43:34.705Z",
+  "checks": [
     {
-      "title": "dir0056-favorites-workspace.spec.js",
-      "file": "dir0056-favorites-workspace.spec.js",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "AC-1: /dashboard/favorites renders a real workspace, not a blank screen",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 600000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "dir056-favorites-workspace",
-              "projectName": "dir056-favorites-workspace",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 6692,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [
-                    {
-                      "text": "\u001b[33m\u001b[1mDeprecation Warning\u001b[0m [\u001b[34mglobal-builtin\u001b[0m]: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.\nUse color.adjust instead.\n\nMore info and automated migrator: https://sass-lang.com/d/import\n\n\u001b[34m   ╷\u001b[0m\n\u001b[34m96 │\u001b[0m         background-color: \u001b[31mdarken($btn-default, 6%)\u001b[0m;\r\n\u001b[34m   │\u001b[0m \u001b[31m                          ^^^^^^^^^^^^^^^^^^^^^^^^\u001b[0m\n\u001b[34m   ╵\u001b[0m\n    ..\\..\\..\\..\\src\\index.scss 96:27  root stylesheet\n\n"
-                    },
-                    {
-                      "text": "\u001b[33m\u001b[1mDeprecation Warning\u001b[0m [\u001b[34mcolor-functions\u001b[0m]: darken() is deprecated. Suggestions:\n\ncolor.scale($color, $lightness: -9.5327102804%)\ncolor.adjust($color, $lightness: -6%)\n\nMore info: https://sass-lang.com/d/color-functions\n\n\u001b[34m   ╷\u001b[0m\n\u001b[34m96 │\u001b[0m         background-color: \u001b[31mdarken($btn-default, 6%)\u001b[0m;\r\n\u001b[34m   │\u001b[0m \u001b[31m                          ^^^^^^^^^^^^^^^^^^^^^^^^\u001b[0m\n\u001b[34m   ╵\u001b[0m\n    ..\\..\\..\\..\\src\\index.scss 96:27  root stylesheet\n\n"
-                    },
-                    {
-                      "text": "\u001b[33m\u001b[1mDeprecation Warning\u001b[0m [\u001b[34mglobal-builtin\u001b[0m]: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.\nUse color.adjust instead.\n\nMore info and automated migrator: https://sass-lang.com/d/import\n\n\u001b[34m    ╷\u001b[0m\n\u001b[34m152 │\u001b[0m         border-color: \u001b[31mdarken($btn-default, 10%)\u001b[0m;\r\n\u001b[34m    │\u001b[0m \u001b[31m                      ^^^^^^^^^^^^^^^^^^^^^^^^^\u001b[0m\n\u001b[34m    ╵\u001b[0m\n    ..\\..\\..\\..\\src\\index.scss 152:23  root stylesheet\n\n"
-                    },
-                    {
-                      "text": "\u001b[33m\u001b[1mDeprecation Warning\u001b[0m [\u001b[34mcolor-functions\u001b[0m]: darken() is deprecated. Suggestions:\n\ncolor.scale($color, $lightness: -15.8878504673%)\ncolor.adjust($color, $lightness: -10%)\n\nMore info: https://sass-lang.com/d/color-functions\n\n\u001b[34m    ╷\u001b[0m\n\u001b[34m152 │\u001b[0m         border-color: \u001b[31mdarken($btn-default, 10%)\u001b[0m;\r\n\u001b[34m    │\u001b[0m \u001b[31m                      ^^^^^^^^^^^^^^^^^^^^^^^^^\u001b[0m\n\u001b[34m    ╵\u001b[0m\n    ..\\..\\..\\..\\src\\index.scss 152:23  root stylesheet\n\n"
-                    },
-                    {
-                      "text": "\u001b[33m\u001b[1mDeprecation Warning\u001b[0m [\u001b[34mglobal-builtin\u001b[0m]: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.\nUse color.adjust instead.\n\nMore info and automated migrator: https://sass-lang.com/d/import\n\n\u001b[34m    ╷\u001b[0m\n\u001b[34m153 │\u001b[0m         color: \u001b[31mdarken($btn-default, 10%)\u001b[0m;\r\n\u001b[34m    │\u001b[0m \u001b[31m               ^^^^^^^^^^^^^^^^^^^^^^^^^\u001b[0m\n\u001b[34m    ╵\u001b[0m\n    ..\\..\\..\\..\\src\\index.scss 153:16  root stylesheet\n\n"
-                    },
-                    {
-                      "text": "\u001b[33m\u001b[1mDeprecation Warning\u001b[0m [\u001b[34mcolor-functions\u001b[0m]: darken() is deprecated. Suggestions:\n\ncolor.scale($color, $lightness: -15.8878504673%)\ncolor.adjust($color, $lightness: -10%)\n\nMore info: https://sass-lang.com/d/color-functions\n\n\u001b[34m    ╷\u001b[0m\n\u001b[34m153 │\u001b[0m         color: \u001b[31mdarken($btn-default, 10%)\u001b[0m;\r\n\u001b[34m    │\u001b[0m \u001b[31m               ^^^^^^^^^^^^^^^^^^^^^^^^^\u001b[0m\n\u001b[34m    ╵\u001b[0m\n    ..\\..\\..\\..\\src\\index.scss 153:16  root stylesheet\n\n"
-                    }
-                  ],
-                  "retry": 0,
-                  "startTime": "2026-10-09T04:33:18.597Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "307b5b0d320c7f83a5a0-aef398d0babecfdc0ed0",
-          "file": "dir0056-favorites-workspace.spec.js",
-          "line": 183,
-          "column": 1
-        },
-        {
-          "title": "AC-2: rows come from the REAL API, with the job title enriched from jobs-data",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 600000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "dir056-favorites-workspace",
-              "projectName": "dir056-favorites-workspace",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 1412,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-10-09T04:33:26.252Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "307b5b0d320c7f83a5a0-70587d7b69363a815259",
-          "file": "dir0056-favorites-workspace.spec.js",
-          "line": 200,
-          "column": 1
-        },
-        {
-          "title": "AC-3: the All / Documents / Jobs tabs actually filter the list",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 600000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "dir056-favorites-workspace",
-              "projectName": "dir056-favorites-workspace",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 1579,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-10-09T04:33:27.685Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "307b5b0d320c7f83a5a0-a221ace14403dbd03117",
-          "file": "dir0056-favorites-workspace.spec.js",
-          "line": 216,
-          "column": 1
-        },
-        {
-          "title": "AC-4a: delete is optimistic AND persisted (a real DELETE is issued)",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 600000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "dir056-favorites-workspace",
-              "projectName": "dir056-favorites-workspace",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 6381,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-10-09T04:33:29.272Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "307b5b0d320c7f83a5a0-fdc503b644aa247246dd",
-          "file": "dir0056-favorites-workspace.spec.js",
-          "line": 235,
-          "column": 1
-        },
-        {
-          "title": "AC-4b: a rejected removal restores the row (no silent data loss)",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 600000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "dir056-favorites-workspace",
-              "projectName": "dir056-favorites-workspace",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 1496,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-10-09T04:33:35.661Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "307b5b0d320c7f83a5a0-fdc947f4ec738bb41f78",
-          "file": "dir0056-favorites-workspace.spec.js",
-          "line": 254,
-          "column": 1
-        },
-        {
-          "title": "AC-5: a zero-result read renders the real empty state (never a blank screen)",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 600000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "dir056-favorites-workspace",
-              "projectName": "dir056-favorites-workspace",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 1445,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-10-09T04:33:37.165Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "307b5b0d320c7f83a5a0-c55ed0df0838b6441181",
-          "file": "dir0056-favorites-workspace.spec.js",
-          "line": 267,
-          "column": 1
-        },
-        {
-          "title": "AC-6: zero console errors and no placeholder text in the DOM",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 600000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "dir056-favorites-workspace",
-              "projectName": "dir056-favorites-workspace",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 1393,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-10-09T04:33:38.618Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "307b5b0d320c7f83a5a0-c225bfc55e184b747730",
-          "file": "dir0056-favorites-workspace.spec.js",
-          "line": 279,
-          "column": 1
-        }
+      "check": "AC-1",
+      "height": 663.609375,
+      "consoleErrors": []
+    },
+    {
+      "check": "AC-2",
+      "rows": 3,
+      "enrichedJob": "Senior AI Engineer"
+    },
+    {
+      "check": "AC-3",
+      "all": 3,
+      "jobs": 1,
+      "documents": 2
+    },
+    {
+      "check": "AC-4a",
+      "deletes": [
+        "http://127.0.0.1:64682/api/favourites/job-101"
       ]
+    },
+    {
+      "check": "AC-4b",
+      "rolledBack": true
+    },
+    {
+      "check": "AC-5",
+      "emptyState": "Nothing saved yet"
+    },
+    {
+      "check": "AC-6",
+      "consoleErrors": []
     }
-  ],
-  "errors": [],
-  "stats": {
-    "startTime": "2026-10-09T04:33:17.683Z",
-    "duration": 22685.209,
-    "expected": 7,
-    "skipped": 0,
-    "unexpected": 0,
-    "flaky": 0
-  }
+  ]
 }

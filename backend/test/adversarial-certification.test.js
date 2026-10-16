@@ -267,7 +267,7 @@ test('ADVERSARIAL CERTIFICATION SUITE — 10/10 Verification', async (t) => {
   // -------------------------------------------------------------
   // 1. ENTITLEMENT MUST BE SEPARATE FROM ROLE
   // -------------------------------------------------------------
-  await t.test('1. Entitlement Separation from Role', async (sub) => {
+  await t.test('1. Entitlement Separation from Role', async (_sub) => {
     // 1A. SUPER_ADMIN + Basic + INACTIVE -> Free
     const superAdminFree = mockPool.users.get('superadmin-free-uid');
     const entSuperAdmin = resolveEffectiveEntitlement(superAdminFree, { userClaims: { role: 'SUPER_ADMIN', superAdmin: true } });
@@ -313,7 +313,7 @@ test('ADVERSARIAL CERTIFICATION SUITE — 10/10 Verification', async (t) => {
   // -------------------------------------------------------------
   // 2. ADMIN TOGGLE DYNAMIC VERIFICATION (OFF -> ON -> OFF)
   // -------------------------------------------------------------
-  await t.test('2. Admin Toggle Dynamic Cycle: OFF -> ON -> OFF', async (sub) => {
+  await t.test('2. Admin Toggle Dynamic Cycle: OFF -> ON -> OFF', async (_sub) => {
     const freeToken = 'candidate-free-uid';
 
     // Phase 1: PDF toggle cycle

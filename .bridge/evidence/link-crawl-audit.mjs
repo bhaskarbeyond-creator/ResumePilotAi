@@ -128,7 +128,7 @@ async function waitForUrlToSettle(page, budgetMs = 8000) {
     let previous = null;
     let stableRounds = 0;
     while (Date.now() < deadline) {
-        // eslint-disable-next-line no-await-in-loop
+         
         const current = page.url();
         if (current === previous) {
             stableRounds += 1;
@@ -138,7 +138,7 @@ async function waitForUrlToSettle(page, budgetMs = 8000) {
             stableRounds = 0;
             previous = current;
         }
-        // eslint-disable-next-line no-await-in-loop
+         
         await page.waitForTimeout(250);
     }
     return page.url();
@@ -165,14 +165,14 @@ function isCrawlablePath(raw) {
 async function settlePage(page, budgetMs = 9000) {
     const deadline = Date.now() + budgetMs;
     while (Date.now() < deadline) {
-        // eslint-disable-next-line no-await-in-loop
+         
         const ready = await page.evaluate(() => {
             const main = document.querySelector('#main-content') || document.body;
             const text = (main?.innerText || '').trim();
             return text.length >= 30 || /page not found/i.test(document.body?.innerText || '');
         });
         if (ready) return true;
-        // eslint-disable-next-line no-await-in-loop
+         
         await page.waitForTimeout(250);
     }
     return false;
@@ -221,21 +221,21 @@ async function harvestFromPage(page, origin) {
         const count = await menu.count();
         for (let i = 0; i < count; i += 1) {
             // Defensive: never press Sign out even if a test id is ever removed.
-            // eslint-disable-next-line no-await-in-loop
+             
             if (/sign\s*out/i.test(await menu.nth(i).innerText())) continue;
-            // eslint-disable-next-line no-await-in-loop
+             
             const label = (await menu.nth(i).innerText()).trim();
             const before = page.url();
-            // eslint-disable-next-line no-await-in-loop
+             
             await menu.nth(i).click();
-            // eslint-disable-next-line no-await-in-loop
+             
             await page.waitForTimeout(700);
             const landed = page.url().replace(BASE_URL, '');
             if (landed !== before.replace(BASE_URL, '')) {
                 findings.push({ source: `${origin} :: account menu "${label}"`, path: landed });
             }
             // Re-open the menu for the next item; the popover closes on navigate.
-            // eslint-disable-next-line no-await-in-loop
+             
             if (await trigger.count()) await trigger.first().click();
         }
     }
@@ -335,16 +335,16 @@ async function runCrawl() {
     for (const entry of PORTAL_ENTRY_POINTS) {
         currentRoute = entry.path;
         try {
-            // eslint-disable-next-line no-await-in-loop
+             
             const response = await page.goto(BASE_URL + entry.path, { waitUntil: 'domcontentloaded', timeout: 30000 });
-            // eslint-disable-next-line no-await-in-loop
+             
             await settlePage(page);
             const info = await inspect(page, response);
             if (info.isNotFound) {
                 harvestProblems.push({ path: entry.path, reason: 'entry point rendered NotFound' });
                 continue;
             }
-            // eslint-disable-next-line no-await-in-loop
+             
             const findings = await harvestFromPage(page, `${entry.name} ${entry.path}`);
             for (const f of findings) {
                 if (!isCrawlablePath(f.path)) continue;
@@ -376,12 +376,12 @@ async function runCrawl() {
             errors: [],
         };
         try {
-            // eslint-disable-next-line no-await-in-loop
-            // eslint-disable-next-line no-await-in-loop
+             
+             
             await page.waitForTimeout(PACE_MS);
-            // eslint-disable-next-line no-await-in-loop
+             
             const response = await page.goto(BASE_URL + target, { waitUntil: 'domcontentloaded', timeout: 30000 });
-            // eslint-disable-next-line no-await-in-loop
+             
             await settlePage(page);
             const info = await inspect(page, response);
             record.httpStatus = info.httpStatus;
@@ -430,11 +430,11 @@ async function runCrawl() {
     const guardResults = [];
     for (const route of GUARDED_ROUTES) {
         try {
-            // eslint-disable-next-line no-await-in-loop
+             
             await guestPage.goto(BASE_URL + route, { waitUntil: 'domcontentloaded', timeout: 30000 });
-            // eslint-disable-next-line no-await-in-loop
+             
             await guestPage.waitForTimeout(PACE_MS);
-            // eslint-disable-next-line no-await-in-loop
+             
             await waitForUrlToSettle(guestPage);
             const landed = guestPage.url().replace(BASE_URL, '');
             guardResults.push({

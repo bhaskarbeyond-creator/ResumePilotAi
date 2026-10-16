@@ -822,12 +822,6 @@ router.post('/generate-interview', async (req, res) => {
         });
 
         const requestedTokens = Math.min(4000, Math.max(1600, requestedCount * 360));
-        const generateSet = (prompt) => generateConfiguredText(req, res, prompt, 'generate-interview', {
-            configuration,
-            tenantResolution,
-            maxTokens: requestedTokens,
-            timeoutMs: 90_000,
-        });
 
         let responseText = await generateConfiguredText(req, res, built.prompt, 'generate-interview', {
             configuration,

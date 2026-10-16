@@ -1,0 +1,156 @@
+{
+  "id": "DIR-001",
+  "title": "DIR-110: Performance & Code Hygiene - BuildResume Code-Splitting and Utility Lint Normalization",
+  "priority": "P1",
+  "status": "APPROVED_FROZEN",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-13T20:04:13.752Z",
+  "updatedAt": "2026-10-13T20:26:22.338Z",
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "spec": "### 1. OBJECTIVE\nResolve AUD-001 and AUD-003:\n1. Performance Bundle Splitting: Split heavyweight components in `src/components/Resume/BuildResume/` (e.g. Preview, Achievements, Extras) via React.lazy/dynamic imports to reduce the 1.27 MB bundle chunk.\n2. Utility Lint Normalization: Surgically fix the 38 benign ESLint warnings in `src/utils/autocompleteDirectories.js`, `src/utils/bulletQuality.js`, and `src/utils/candidateContext.js` (unused parameters prefixed with _, unnecessary regex escape slashes removed).\n\n### 2. INVARIANTS\n- Preserve all 51 template renderers (Cv1 to Cv51).\n- Preserve aiRuntime.js verbatim.\n- Zero functional regression in resume creation/editing journey.\n\n### 3. MANDATORY QUALITY GATES\n- `npm run build`: exits 0 with reduced bundle size.\n- `npm run lint`: exits 0 with zero warnings in src/utils.\n- `npm run test:templates`: 72/72 PASS.\n- `npm run test:security:static`: 67/67 PASS.",
+  "invariants": [],
+  "acceptanceCriteria": [],
+  "dependsOn": [],
+  "sourceEventId": null,
+  "plan": {
+    "submittedAt": "2026-10-13T20:06:50.167Z",
+    "summary": "Two-part AUD-001/AUD-003 resolution. (A) Bundle split: remove dead TemplateRenderer import (line 20, unused - drags SmartResumeComposer+templateRegistry+Cv1 into the 1,274,628B BuildResume chunk), convert 12 step components + 4 modals (PreviewModal/TemplateSelectionModal/ResumeImportModal/SyncProfileModal) + AtsScoreMeter to React.lazy dynamic imports, wrap in Suspense with minimal Cuba fallbacks, conditionally mount modals on open flags only after verifying internal null-when-closed behavior. (B) Lint: fix all 14 src/utils warnings (directive count of 38 is stale; actual = 14): 10 no-useless-escape in autocompleteDirectories/bulletQuality/candidateContext, underscore-prefix unused originalDraft/entryHasField/targetJd x2 (incl. roleInterviewGenerator.js which is required for the zero-warnings-in-src/utils gate). Invariants: 51 template renderers + aiRuntime.js + templateRegistry untouched; zero functional regression via identical props wiring.",
+    "steps": [
+      "1. Snapshot baseline evidence (chunk sizes + lint JSON) to .bridge/evidence",
+      "2. Remove dead TemplateRenderer import from BuildResume.jsx",
+      "3. Lazy-load 12 step components with Suspense around nested Routes",
+      "4. Lazy-load 4 modals + AtsScoreMeter with conditional mount + Suspense",
+      "5. Normalize 14 lint warnings in the 4 utils files",
+      "6. Run gates: eslint src/utils = 0 warnings, vite build exit 0 + reduced chunk, test:templates 72/72, test:security:static 67/67",
+      "7. Verify frozen files diff = 0 and submit evidence"
+    ],
+    "planHash": "60a9987a50426524b715fffac0ba8b2e83b31c4652db5e7d89b9d56d9dc7c029"
+  },
+  "evidence": {
+    "submittedAt": "2026-10-13T20:26:07.330Z",
+    "summary": "AUD-001+AUD-003 complete. BuildResume chunk 1,274,628B->81.01kB via React.lazy (12 steps + 4 modals + AtsScoreMeter, Suspense+conditional mount); dead TemplateRenderer import removed. 14 src/utils lint warnings fixed (eslint src/utils = 0/0). Gates: vite build exit 0, test:templates 72/72, test:security:static 67/67, test:dir088 6/6. Frozen surfaces diff=0 (cv-templates, aiRuntime.js, TemplateRenderer.jsx, template registry). Evidence: .bridge/evidence/dir001-build.log, dir001-templates.log, dir001-security.log, DIR-001-final-evidence.md",
+    "tests": {
+      "source": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir001-templates.log",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1791923167332_dir001-templates.log",
+      "sha256": "cffd569982493db995e7d7122f62dd9a86ac664f6464e803ef17020d4ec8a5cb",
+      "size": 7897
+    },
+    "domCrawl": null,
+    "artifacts": [],
+    "git": {
+      "isGit": true,
+      "head": "c75288598ef4c84b91db803640d09563834bc2c3",
+      "branch": "arena/f4651d36-resumepilotai",
+      "dirty": false,
+      "status": ""
+    },
+    "manifestHash": "652fe227572bf90587707947d1ca043fad6e733222ea9de432863ead541eb7ec"
+  },
+  "reviews": [
+    {
+      "reviewedAt": "2026-10-13T20:26:20.558Z",
+      "verdict": "APPROVED",
+      "feedback": "Automated evidence audit: test artifact scanned, no failure markers, clean tree. Evaluated by machine check.",
+      "evidenceHash": "652fe227572bf90587707947d1ca043fad6e733222ea9de432863ead541eb7ec",
+      "automated": true,
+      "provenance": {
+        "actor": "LEAD_SUPERVISOR",
+        "invocation": "daemon:lead_watcher_session",
+        "automated": true,
+        "reasons": [
+          "declared",
+          "daemon-parent:lead_watcher_session",
+          "non-tty"
+        ],
+        "pid": 41312,
+        "parentPid": 26852,
+        "tty": false,
+        "at": "2026-10-13T20:26:20.558Z",
+        "explicitlyAllowed": true
+      }
+    }
+  ],
+  "freeze": {
+    "freezeHash": "0e88b448f9a60a10e5429e76ee135e31c2937708",
+    "certifiedAt": "2026-10-13T20:26:22.338Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "Autonomous Lead (Antigravity): evidence audit passed, all criteria verified.",
+    "evidenceHash": "652fe227572bf90587707947d1ca043fad6e733222ea9de432863ead541eb7ec",
+    "automated": true,
+    "certificationKind": "automated",
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "daemon:lead_watcher_session",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "daemon-parent:lead_watcher_session",
+        "non-tty"
+      ],
+      "pid": 44744,
+      "parentPid": 26852,
+      "tty": false,
+      "at": "2026-10-13T20:26:21.107Z",
+      "explicitlyAllowed": true
+    }
+  },
+  "lastTransitionReason": "gatekeeper certification",
+  "continuationPending": false,
+  "revisionTarget": null,
+  "planApproval": {
+    "approvedAt": "2026-10-13T20:07:00.617Z",
+    "automated": true,
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "daemon:lead_watcher_session",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "daemon-parent:lead_watcher_session",
+        "non-tty"
+      ],
+      "pid": 14916,
+      "parentPid": 26852,
+      "tty": false,
+      "at": "2026-10-13T20:07:00.616Z",
+      "explicitlyAllowed": true
+    },
+    "feedback": "Auto-approved by the autonomous plan-scorer (score 88/100, reviewer verdict approved). NOT a human Lead review."
+  },
+  "heartbeats": [
+    {
+      "at": "2026-10-13T20:09:39.003Z",
+      "status": "Baseline snapshot: lint JSON captured (14 warnings), running baseline vite build for chunk comparison",
+      "percent": 5,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    },
+    {
+      "at": "2026-10-13T20:11:30.654Z",
+      "status": "Edits complete: 12 steps + 4 modals + AtsScoreMeter lazy, dead TemplateRenderer import removed, 14 lint warnings fixed. Running quality gates.",
+      "percent": 60,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    },
+    {
+      "at": "2026-10-13T20:21:42.812Z",
+      "status": "Directive received. Gathering baseline evidence: chunk sizes + lint snapshot",
+      "percent": 5,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    },
+    {
+      "at": "2026-10-13T20:26:07.290Z",
+      "status": "All gates green: build split 1.27MB->81kB, eslint src/utils 0 warnings, templates 72/72, security 67/67. Submitting evidence.",
+      "percent": 97,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    }
+  ],
+  "lastHeartbeatAt": "2026-10-13T20:26:07.290Z"
+}

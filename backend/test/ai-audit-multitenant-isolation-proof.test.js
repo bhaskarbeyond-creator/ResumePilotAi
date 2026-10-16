@@ -13,14 +13,12 @@ const { setTokenVerifierForTests } = require('../security/auth');
 const { clearProviderConfigurationCache, resetSharedAiRouterForTests } = require('../services/aiRuntime');
 const { setRepositoryForTests, resetRepositoryCacheForTests } = require('../repositories');
 const { tenantCacheKey } = require('../enterprise/tenantCache');
-const { buildTenantAiOperation, applyTenantAiPolicy } = require('../enterprise/tenantAi');
+const { _buildTenantAiOperation, _applyTenantAiPolicy } = require('../enterprise/tenantAi');
 const {
   LiveInterviewService,
   createMemoryLiveInterviewStore,
   buildTurnPrompt,
   parseTurn,
-  parseOpening,
-  repeatsEarlierQuestion,
 } = require('../services/liveInterviewSession');
 const { configureAbuseCounterStoreForTests } = require('../security/abuse');
 const { InMemoryAtomicCounterStore } = require('./helpers/inMemoryAtomicCounterStore');
@@ -370,7 +368,7 @@ test('3. Same-User Multi-Session Isolation: Interview 1 facts and state do not b
   let callCount = 0;
   const service = new LiveInterviewService({
     store,
-    generate: async ({ prompt }) => {
+    generate: async ({ _prompt }) => {
       callCount++;
       return {
         raw: JSON.stringify({

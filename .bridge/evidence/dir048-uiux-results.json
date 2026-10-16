@@ -1,71 +1,7 @@
 {
   "directive": "DIR-048",
-  "generatedAt": "2026-10-06T20:13:52.509Z",
+  "generatedAt": "2026-10-16T03:42:52.119Z",
   "checks": [
-    {
-      "check": "AC-1",
-      "visited": [
-        "/dashboard",
-        "/employer",
-        "/org/northwind",
-        "/admin/dashboard"
-      ],
-      "dialogs": [],
-      "consoleErrors": []
-    },
-    {
-      "check": "AC-3",
-      "label": "✦\nAI Engine Ready\n. The platform reports an AI provider configuration it can currently use."
-    },
-    {
-      "check": "AC-2",
-      "leaks": []
-    },
-    {
-      "check": "AC-5",
-      "measurements": [
-        {
-          "width": 375,
-          "left": 0,
-          "right": 0,
-          "mainWidth": 375,
-          "scrollWidth": 375,
-          "innerWidth": 375
-        },
-        {
-          "width": 696,
-          "left": 0,
-          "right": 0,
-          "mainWidth": 696,
-          "scrollWidth": 768,
-          "innerWidth": 768
-        },
-        {
-          "width": 952,
-          "left": 0,
-          "right": 0,
-          "mainWidth": 952,
-          "scrollWidth": 1024,
-          "innerWidth": 1024
-        },
-        {
-          "width": 1020,
-          "left": 0,
-          "right": 0,
-          "mainWidth": 1020,
-          "scrollWidth": 1280,
-          "innerWidth": 1280
-        },
-        {
-          "width": 1280,
-          "left": 190,
-          "right": 190,
-          "mainWidth": 1660,
-          "scrollWidth": 1920,
-          "innerWidth": 1920
-        }
-      ]
-    },
     {
       "check": "AC-10",
       "tabs": 4,

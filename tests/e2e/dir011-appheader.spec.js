@@ -294,9 +294,9 @@ test.describe('DIR-011 — universal Google M3 AppHeader & command surface', () 
         for (const route of ROUTES) {
             // Serial by design: the live stack is shared, and parallel route crawling
             // would interleave `/api/*` load and make a failure undiagnosable.
-            // eslint-disable-next-line no-await-in-loop
+             
             await openRoute(page, route.path);
-            // eslint-disable-next-line no-await-in-loop
+             
             const observed = await page.evaluate(() => {
                 const visible = (el) => {
                     const r = el.getBoundingClientRect();

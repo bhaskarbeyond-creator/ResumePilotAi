@@ -121,7 +121,7 @@ export default function ReviewStep({
         if (typeof updateResumeDataRef.current === 'function') {
             updateResumeDataRef.current({ targetJobDescription: targetJdRef.current });
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
     }, []);
 
     const atsResult = useMemo(() => {

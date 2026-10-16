@@ -171,7 +171,7 @@ class DiscoveryService {
         let request;
         try {
             request = adapter.buildDiscoveryRequest({ providerConfig });
-        } catch (err) {
+        } catch (_err) {
             return { source: 'none', error: 'adapter-error' };
         }
         let response;

@@ -645,7 +645,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
     if (heightOfPage(next[lastIdx], sectionGapPx) > capacityFor(lastIdx)) return buckets;
 
     // DIR-070 (mandate 2) VOID PREVENTION: refuse the move when it would leave a
-    // half-empty donor page (the 250-300px void under Projects on Babu M).
+    // half-empty donor page (the 250-300px void under Projects section).
     const voidLimit = Math.max(PAGE_VOID_MAX_PX, Math.round(capacityFor(0) * PAGE_VOID_MAX_FRACTION));
     for (const q of earlier) {
       const donorVoid = capacityFor(q) - heightOfPage(next[q], sectionGapPx);

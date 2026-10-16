@@ -140,7 +140,7 @@ async function resolveAiGovernance(req, { allowAmbiguousSelection = false } = {}
     const userData = userRows[0] || {};
     const quotaConfig = parseJson(quotaRows[0]?.data, {});
 
-    const requestedTenantId = req.get?.('x-tenant-id') || req.body?.tenantId || req.query?.tenantId || null;
+    const requestedTenantId = req.get?.('x-tenant-id') || req.query?.tenantId || null;
     const lookup = await loadApplicableTenantMembership(uid, requestedTenantId, { allowAmbiguousSelection });
 
     const membership = lookup.membership;

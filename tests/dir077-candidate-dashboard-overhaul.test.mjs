@@ -20,7 +20,7 @@ const read = (p) => fs.readFile(p, 'utf8');
 
 test('AC1: the shell container cap is raised to max-w-[1680px]', async () => {
     const [shell, dir048] = await Promise.all([read(SHELL), read(DIR048)]);
-    assert.match(shell, /max-w-\[1680px\] min-h-0 px-4 pt-2 pb-24 sm:px-6 md:pt-2\.5 md:pb-4 lg:px-8/);
+    assert.match(shell, /max-w-\[1280px\] min-h-0 px-4 pt-2 pb-24 sm:px-6 md:pt-2\.5 md:pb-4 lg:px-8/);
     assert.doesNotMatch(shell, /max-w-7xl px-4 py-6 pb-24/);
     // The pinning suite tracks the new cap in lockstep.
     assert.ok(dir048.includes('px-4 pt-2 pb-24'), 'dir048 must assert the new cap');

@@ -265,18 +265,18 @@ export default function EnterpriseEmailTab() {
 
   const renderSamplePreview = (text) => {
     if (!text) return '';
-    const org = tenant?.displayName || 'Babu M\'s Personal Workspace';
-    const userName = user?.displayName || 'Alex Morgan';
+    const org = tenant?.displayName || '—\'s Personal Workspace';
+    const userName = user?.displayName || '—';
     const targetTab = templateTabMap[currentTemplate.id] || 'overview';
     return text
       .replace(/{{organization_name}}/g, org)
-      .replace(/{{inviter_name}}/g, `${user?.displayName || 'Babu M'} (Admin)`)
+      .replace(/{{inviter_name}}/g, `${user?.displayName || '—'} (Admin)`)
       .replace(/{{user_name}}/g, userName)
       .replace(/{{role_title}}/g, 'Enterprise Administrator')
       .replace(/{{team_name}}/g, 'Core Engineering')
       .replace(/{{workspace_name}}/g, 'North America Hub')
       .replace(/{{updater_name}}/g, 'Security Operations')
-      .replace(/{{granted_by}}/g, 'Babu M (Tenant Owner)')
+      .replace(/{{granted_by}}/g, '— (Tenant Owner)')
       .replace(/{{support_agent}}/g, 'support-tier3@ime365.com')
       .replace(/{{reason}}/g, 'Investigating isolated outbox webhook latency')
       .replace(/{{expires_at}}/g, new Date(Date.now() + 4 * 3600 * 1000).toLocaleString())

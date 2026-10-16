@@ -1,0 +1,397 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "d:\\xampp\\htdocs\\IME365\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "tests/e2e/dir-001.spec.js",
+      "--reporter=json"
+    ],
+    "configFile": "d:\\xampp\\htdocs\\IME365\\playwright.config.js",
+    "rootDir": "d:/xampp/htdocs/IME365/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "d:/xampp/htdocs/IME365/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "d:/xampp/htdocs/IME365/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "/.*\\.spec\\.(js|cjs)/"
+        ],
+        "timeout": 90000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "e2e\\dir-001.spec.js",
+      "file": "e2e/dir-001.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "DIR-001 Cuba Executive Design System -- certification suite",
+          "file": "e2e/dir-001.spec.js",
+          "line": 235,
+          "column": 6,
+          "specs": [
+            {
+              "title": "AC-1: the Cuba chrome is the active shell on all four authenticated portals",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 13097,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-15T20:31:09.847Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "65bcb3487d1127ea8461-bfb044959b0c55c9082b",
+              "file": "e2e/dir-001.spec.js",
+              "line": 236,
+              "column": 5
+            },
+            {
+              "title": "AC-2: stat cards stack in two rows with zero geometric collision at 1280px",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 1811,
+                      "error": {
+                        "message": "Error: no .cuba-stat-card rendered, so AC-2 was never exercised\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: > \u001b[32m0\u001b[39m\nReceived:   \u001b[31m0\u001b[39m",
+                        "stack": "Error: no .cuba-stat-card rendered, so AC-2 was never exercised\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: > \u001b[32m0\u001b[39m\nReceived:   \u001b[31m0\u001b[39m\n    at d:\\xampp\\htdocs\\IME365\\tests\\e2e\\dir-001.spec.js:306:93",
+                        "location": {
+                          "file": "d:\\xampp\\htdocs\\IME365\\tests\\e2e\\dir-001.spec.js",
+                          "column": 93,
+                          "line": 306
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 304 |\u001b[39m         \u001b[90m// A zero count here means the probe silently proved nothing, so it is\u001b[39m\n \u001b[90m 305 |\u001b[39m         \u001b[90m// treated as a failure rather than a vacuous pass.\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 306 |\u001b[39m         expect(probe\u001b[33m.\u001b[39mcardCount\u001b[33m,\u001b[39m \u001b[32m'no .cuba-stat-card rendered, so AC-2 was never exercised'\u001b[39m)\u001b[33m.\u001b[39mtoBeGreaterThan(\u001b[35m0\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                                                                             \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 307 |\u001b[39m         expect(probe\u001b[33m.\u001b[39mtopRow\u001b[33m,\u001b[39m \u001b[32m'stat card icon/badge/value collide or are not stacked'\u001b[39m)\u001b[33m.\u001b[39mtoEqual([])\u001b[33m;\u001b[39m\n \u001b[90m 308 |\u001b[39m         expect(probe\u001b[33m.\u001b[39mpairwise\u001b[33m,\u001b[39m \u001b[32m'stat cards overlap each other'\u001b[39m)\u001b[33m.\u001b[39mtoEqual([])\u001b[33m;\u001b[39m\n \u001b[90m 309 |\u001b[39m     })\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "d:\\xampp\\htdocs\\IME365\\tests\\e2e\\dir-001.spec.js",
+                            "column": 93,
+                            "line": 306
+                          },
+                          "message": "Error: no .cuba-stat-card rendered, so AC-2 was never exercised\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: > \u001b[32m0\u001b[39m\nReceived:   \u001b[31m0\u001b[39m\n\n  304 |         // A zero count here means the probe silently proved nothing, so it is\n  305 |         // treated as a failure rather than a vacuous pass.\n> 306 |         expect(probe.cardCount, 'no .cuba-stat-card rendered, so AC-2 was never exercised').toBeGreaterThan(0);\n      |                                                                                             ^\n  307 |         expect(probe.topRow, 'stat card icon/badge/value collide or are not stacked').toEqual([]);\n  308 |         expect(probe.pairwise, 'stat cards overlap each other').toEqual([]);\n  309 |     });\n    at d:\\xampp\\htdocs\\IME365\\tests\\e2e\\dir-001.spec.js:306:93"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-15T20:31:23.461Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "d:\\xampp\\htdocs\\IME365\\test-results\\e2e-dir-001-DIR-001-Cuba-E-22d85-ometric-collision-at-1280px-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "d:\\xampp\\htdocs\\IME365\\test-results\\e2e-dir-001-DIR-001-Cuba-E-22d85-ometric-collision-at-1280px-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "d:\\xampp\\htdocs\\IME365\\tests\\e2e\\dir-001.spec.js",
+                        "column": 93,
+                        "line": 306
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "65bcb3487d1127ea8461-3f0f39626ecac45e17da",
+              "file": "e2e/dir-001.spec.js",
+              "line": 262,
+              "column": 5
+            },
+            {
+              "title": "AC-3: every nav landmark on a page carries a unique accessible name",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 13224,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-15T20:31:26.177Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "65bcb3487d1127ea8461-8058a5ffa5376590b842",
+              "file": "e2e/dir-001.spec.js",
+              "line": 311,
+              "column": 5
+            },
+            {
+              "title": "AC-4: Cuba/M3 tokens resolve and no shell source carries a hardcoded hex",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1931,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-15T20:31:39.955Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "65bcb3487d1127ea8461-fbe003fc1b6492000642",
+              "file": "e2e/dir-001.spec.js",
+              "line": 345,
+              "column": 5
+            },
+            {
+              "title": "AC-5: all five canonical breakpoints render without horizontal overflow",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 32088,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-15T20:31:41.894Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "65bcb3487d1127ea8461-6ad775332605537bf0db",
+              "file": "e2e/dir-001.spec.js",
+              "line": 378,
+              "column": 5
+            },
+            {
+              "title": "AC-6: zero console errors, zero page errors and zero 4xx/5xx API responses",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 12600,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-15T20:32:14.000Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "65bcb3487d1127ea8461-f6579cfaf2cb5d98f8ad",
+              "file": "e2e/dir-001.spec.js",
+              "line": 400,
+              "column": 5
+            },
+            {
+              "title": "INV-1: the frozen CV-template and AI-runtime baseline remains a 0-byte diff",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 80,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m0\u001b[39m\nReceived: \u001b[31m5827\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m0\u001b[39m\nReceived: \u001b[31m5827\u001b[39m\n    at d:\\xampp\\htdocs\\IME365\\tests\\e2e\\dir-001.spec.js:423:36",
+                        "location": {
+                          "file": "d:\\xampp\\htdocs\\IME365\\tests\\e2e\\dir-001.spec.js",
+                          "column": 36,
+                          "line": 423
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 421 |\u001b[39m             { encoding\u001b[33m:\u001b[39m \u001b[32m'utf8'\u001b[39m\u001b[33m,\u001b[39m maxBuffer\u001b[33m:\u001b[39m \u001b[35m8\u001b[39m \u001b[33m*\u001b[39m \u001b[35m1024\u001b[39m \u001b[33m*\u001b[39m \u001b[35m1024\u001b[39m }\u001b[33m,\u001b[39m\n \u001b[90m 422 |\u001b[39m         )\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 423 |\u001b[39m         expect(diff\u001b[33m.\u001b[39mtrim()\u001b[33m.\u001b[39mlength)\u001b[33m.\u001b[39mtoBe(\u001b[35m0\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                    \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 424 |\u001b[39m     })\u001b[33m;\u001b[39m\n \u001b[90m 425 |\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m 426 |\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "d:\\xampp\\htdocs\\IME365\\tests\\e2e\\dir-001.spec.js",
+                            "column": 36,
+                            "line": 423
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m0\u001b[39m\nReceived: \u001b[31m5827\u001b[39m\n\n  421 |             { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 },\n  422 |         );\n> 423 |         expect(diff.trim().length).toBe(0);\n      |                                    ^\n  424 |     });\n  425 | });\n  426 |\n    at d:\\xampp\\htdocs\\IME365\\tests\\e2e\\dir-001.spec.js:423:36"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-15T20:32:26.616Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "d:\\xampp\\htdocs\\IME365\\test-results\\e2e-dir-001-DIR-001-Cuba-E-d143f-eline-remains-a-0-byte-diff-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "d:\\xampp\\htdocs\\IME365\\test-results\\e2e-dir-001-DIR-001-Cuba-E-d143f-eline-remains-a-0-byte-diff-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "d:\\xampp\\htdocs\\IME365\\tests\\e2e\\dir-001.spec.js",
+                        "column": 36,
+                        "line": 423
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "65bcb3487d1127ea8461-80cd3cb5ec6743b42a5d",
+              "file": "e2e/dir-001.spec.js",
+              "line": 416,
+              "column": 5
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-15T20:31:09.135Z",
+    "duration": 77911.223,
+    "expected": 5,
+    "skipped": 0,
+    "unexpected": 2,
+    "flaky": 0
+  }
+}

@@ -710,9 +710,9 @@ const CubaAppShell = ({
                     {/* DIR-048 S9: the single responsive gutter + width cap shared by
                         every portal, with `pb-24` on mobile reserving room for the
                         bottom tab bar so it can never cover content.
-                        DIR-077: the cap is raised from max-w-7xl to max-w-[1680px] so
+                        DIR-077: the cap is raised from max-w-7xl to max-w-\[1280px\] so
                         a wide executive viewport stops wasting ~30% of its width. */}
-                    <div className="mx-auto w-full max-w-[1680px] min-h-0 px-4 pt-2 pb-24 sm:px-6 md:pt-2.5 md:pb-4 lg:px-8">
+                    <div className="mx-auto w-full max-w-\[1280px\] min-h-0 px-4 pt-2 pb-24 sm:px-6 md:pt-2.5 md:pb-4 lg:px-8">
                         {/* DIR-077: the semantic trail now anchors the MAIN workspace
                             column at its left edge (exactly one Breadcrumb landmark),
                             instead of floating over the sidebar header. */}

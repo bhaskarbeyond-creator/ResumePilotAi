@@ -43,7 +43,7 @@ function extractTargetRoleFromJd(jdText) {
     const clean = jdText.slice(0, 600);
     const patterns = [
         /(?:seeking|hiring|looking for|needs?|recruiting|appointing)\s+(?:an?|our next)\s+([^,.\n]{3,60}?)(?=\s+(?:to\b|who\b|responsible\b|reporting\b|with\b|in\b|at\b|[.\n,;]))/i,
-        /(?:position|role|job title|title)\s*[:\-]\s*([^,.\n]{3,50})/i,
+        /(?:position|role|job title|title)\s*[:-]\s*([^,.\n]{3,50})/i,
         /^#\s*([A-Za-z0-9&/\-\s]{3,50}?)(?:\s+position|\s+opening|\s+role)/im
     ];
     for (const pat of patterns) {
@@ -233,7 +233,7 @@ const SECTION_QUESTIONS = Object.freeze({
     ]),
 });
 
-function generateRoleInterviewQuestions(role = '', employer = '', targetJd = '') {
+function generateRoleInterviewQuestions(role = '', employer = '') {
     const r = String(role || '').trim();
     const org = String(employer || '').trim();
     const orgSuffix = org ? ` at ${org}` : '';
@@ -315,8 +315,7 @@ function sectionQuestions(section, context = {}) {
     if (section === 'work-history' && (context?.jobTitle || context?.role || context?.entry?.jobTitle)) {
         const title = context.jobTitle || context.role || context.entry?.jobTitle || '';
         const employer = context.employer || context.company || context.entry?.employer || '';
-        const targetJd = context.targetJobDescription || context.targetJd || '';
-        return generateRoleInterviewQuestions(title, employer, targetJd);
+        return generateRoleInterviewQuestions(title, employer);
     }
     return (SECTION_QUESTIONS[section] || SECTION_QUESTIONS.summary).map((q, index) => ({
         id: `q${index + 1}`,
@@ -375,10 +374,7 @@ function buildEvidencePayload(operation, rawPayload = {}) {
 
     const clamp = (value, max) => String(value ?? '').slice(0, max);
     const sectionText = (value, max = 4000) => clamp(String(value ?? ''), max);
-    const flatText = (value, max) => {
-        if (Array.isArray(value)) return clamp(value.map(v => (typeof v === 'object' && v !== null ? (v.title || v.name || v.skillName || v.degree || JSON.stringify(v)) : v)).join('; '), max);
-        return sectionText(value, max);
-    };
+    // flatText removed as it was unused
 
     // Extract roles polymorphically from context.facts or root payload
     const candidateRoles = (Array.isArray(facts.roles) && facts.roles.length)

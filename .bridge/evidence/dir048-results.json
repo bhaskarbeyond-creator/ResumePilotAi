@@ -2,12 +2,12 @@
   "config": {
     "argv": [
       "C:\\Program Files\\nodejs\\node.exe",
-      "D:\\xampp\\htdocs\\IME365\\node_modules\\@playwright\\test\\cli.js",
+      "d:\\xampp\\htdocs\\IME365\\node_modules\\@playwright\\test\\cli.js",
       "test",
       "--config=playwright.dir048.config.js"
     ],
-    "configFile": "D:\\xampp\\htdocs\\IME365\\playwright.dir048.config.js",
-    "rootDir": "D:/xampp/htdocs/IME365/tests/e2e",
+    "configFile": "d:\\xampp\\htdocs\\IME365\\playwright.dir048.config.js",
+    "rootDir": "d:/xampp/htdocs/IME365/tests/e2e",
     "failOnFlakyTests": false,
     "forbidOnly": false,
     "fullyParallel": false,
@@ -23,7 +23,7 @@
     "preserveOutput": "always",
     "projects": [
       {
-        "outputDir": "D:/xampp/htdocs/IME365/.bridge/evidence/dir048-artifacts",
+        "outputDir": "d:/xampp/htdocs/IME365/.bridge/evidence/dir048-artifacts",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
@@ -31,7 +31,7 @@
         },
         "id": "dir048-uiux-polish",
         "name": "dir048-uiux-polish",
-        "testDir": "D:/xampp/htdocs/IME365/tests/e2e",
+        "testDir": "d:/xampp/htdocs/IME365/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "/dir0048-uiux-polish\\.spec\\.js/"
@@ -87,31 +87,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 16649,
+                  "duration": 12711,
                   "errors": [],
                   "stdout": [],
-                  "stderr": [
-                    {
-                      "text": "\u001b[33m\u001b[1mDeprecation Warning\u001b[0m [\u001b[34mglobal-builtin\u001b[0m]: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.\nUse color.adjust instead.\n\nMore info and automated migrator: https://sass-lang.com/d/import\n\n\u001b[34m   ╷\u001b[0m\n\u001b[34m97 │\u001b[0m         background-color: \u001b[31mdarken($btn-default, 6%)\u001b[0m;\r\n\u001b[34m   │\u001b[0m \u001b[31m                          ^^^^^^^^^^^^^^^^^^^^^^^^\u001b[0m\n\u001b[34m   ╵\u001b[0m\n    ..\\..\\..\\..\\src\\index.scss 97:27  root stylesheet\n\n"
-                    },
-                    {
-                      "text": "\u001b[33m\u001b[1mDeprecation Warning\u001b[0m [\u001b[34mcolor-functions\u001b[0m]: darken() is deprecated. Suggestions:\n\ncolor.scale($color, $lightness: -9.5327102804%)\ncolor.adjust($color, $lightness: -6%)\n\nMore info: https://sass-lang.com/d/color-functions\n\n\u001b[34m   ╷\u001b[0m\n\u001b[34m97 │\u001b[0m         background-color: \u001b[31mdarken($btn-default, 6%)\u001b[0m;\r\n\u001b[34m   │\u001b[0m \u001b[31m                          ^^^^^^^^^^^^^^^^^^^^^^^^\u001b[0m\n\u001b[34m   ╵\u001b[0m\n    ..\\..\\..\\..\\src\\index.scss 97:27  root stylesheet\n\n"
-                    },
-                    {
-                      "text": "\u001b[33m\u001b[1mDeprecation Warning\u001b[0m [\u001b[34mglobal-builtin\u001b[0m]: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.\nUse color.adjust instead.\n\nMore info and automated migrator: https://sass-lang.com/d/import\n\n\u001b[34m    ╷\u001b[0m\n\u001b[34m153 │\u001b[0m         border-color: \u001b[31mdarken($btn-default, 10%)\u001b[0m;\r\n\u001b[34m    │\u001b[0m \u001b[31m                      ^^^^^^^^^^^^^^^^^^^^^^^^^\u001b[0m\n\u001b[34m    ╵\u001b[0m\n    ..\\..\\..\\..\\src\\index.scss 153:23  root stylesheet\n\n"
-                    },
-                    {
-                      "text": "\u001b[33m\u001b[1mDeprecation Warning\u001b[0m [\u001b[34mcolor-functions\u001b[0m]: darken() is deprecated. Suggestions:\n\ncolor.scale($color, $lightness: -15.8878504673%)\ncolor.adjust($color, $lightness: -10%)\n\nMore info: https://sass-lang.com/d/color-functions\n\n\u001b[34m    ╷\u001b[0m\n\u001b[34m153 │\u001b[0m         border-color: \u001b[31mdarken($btn-default, 10%)\u001b[0m;\r\n\u001b[34m    │\u001b[0m \u001b[31m                      ^^^^^^^^^^^^^^^^^^^^^^^^^\u001b[0m\n\u001b[34m    ╵\u001b[0m\n    ..\\..\\..\\..\\src\\index.scss 153:23  root stylesheet\n\n"
-                    },
-                    {
-                      "text": "\u001b[33m\u001b[1mDeprecation Warning\u001b[0m [\u001b[34mglobal-builtin\u001b[0m]: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.\nUse color.adjust instead.\n\nMore info and automated migrator: https://sass-lang.com/d/import\n\n\u001b[34m    ╷\u001b[0m\n\u001b[34m154 │\u001b[0m         color: \u001b[31mdarken($btn-default, 10%)\u001b[0m;\r\n\u001b[34m    │\u001b[0m \u001b[31m               ^^^^^^^^^^^^^^^^^^^^^^^^^\u001b[0m\n\u001b[34m    ╵\u001b[0m\n    ..\\..\\..\\..\\src\\index.scss 154:16  root stylesheet\n\n"
-                    },
-                    {
-                      "text": "\u001b[33m\u001b[1mDeprecation Warning\u001b[0m [\u001b[34mcolor-functions\u001b[0m]: darken() is deprecated. Suggestions:\n\ncolor.scale($color, $lightness: -15.8878504673%)\ncolor.adjust($color, $lightness: -10%)\n\nMore info: https://sass-lang.com/d/color-functions\n\n\u001b[34m    ╷\u001b[0m\n\u001b[34m154 │\u001b[0m         color: \u001b[31mdarken($btn-default, 10%)\u001b[0m;\r\n\u001b[34m    │\u001b[0m \u001b[31m               ^^^^^^^^^^^^^^^^^^^^^^^^^\u001b[0m\n\u001b[34m    ╵\u001b[0m\n    ..\\..\\..\\..\\src\\index.scss 154:16  root stylesheet\n\n"
-                    }
-                  ],
+                  "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-06T20:13:04.367Z",
+                  "startTime": "2026-10-15T20:52:52.815Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -140,12 +121,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 4609,
+                  "duration": 1631,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-06T20:13:22.105Z",
+                  "startTime": "2026-10-15T20:53:06.115Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -174,12 +155,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 6141,
+                  "duration": 5916,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-06T20:13:26.725Z",
+                  "startTime": "2026-10-15T20:53:07.756Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -194,7 +175,7 @@
         },
         {
           "title": "AC-5: uniform gutters and zero horizontal overflow at five breakpoints",
-          "ok": true,
+          "ok": false,
           "tags": [],
           "tests": [
             {
@@ -207,18 +188,58 @@
                 {
                   "workerIndex": 0,
                   "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 6736,
-                  "errors": [],
+                  "status": "failed",
+                  "duration": 7142,
+                  "error": {
+                    "message": "Error: content cap at 1920px\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m1280\u001b[39m\nReceived:    \u001b[31m1660\u001b[39m",
+                    "stack": "Error: content cap at 1920px\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m1280\u001b[39m\nReceived:    \u001b[31m1660\u001b[39m\n    at d:\\xampp\\htdocs\\IME365\\tests\\e2e\\dir0048-uiux-polish.spec.js:265:60",
+                    "location": {
+                      "file": "d:\\xampp\\htdocs\\IME365\\tests\\e2e\\dir0048-uiux-polish.spec.js",
+                      "column": 60,
+                      "line": 265
+                    },
+                    "snippet": "\u001b[0m \u001b[90m 263 |\u001b[39m         measurements\u001b[33m.\u001b[39mpush({ width\u001b[33m,\u001b[39m \u001b[33m...\u001b[39mmetrics })\u001b[33m;\u001b[39m\n \u001b[90m 264 |\u001b[39m         expect(\u001b[33mMath\u001b[39m\u001b[33m.\u001b[39mabs(metrics\u001b[33m.\u001b[39mleft \u001b[33m-\u001b[39m metrics\u001b[33m.\u001b[39mright)\u001b[33m,\u001b[39m \u001b[32m`gutter symmetry at ${width}px`\u001b[39m)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(\u001b[35m1\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 265 |\u001b[39m         expect(metrics\u001b[33m.\u001b[39mwidth\u001b[33m,\u001b[39m \u001b[32m`content cap at ${width}px`\u001b[39m)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(\u001b[35m1280\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                                            \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 266 |\u001b[39m         expect(metrics\u001b[33m.\u001b[39mscrollWidth\u001b[33m,\u001b[39m \u001b[32m`horizontal overflow at ${width}px`\u001b[39m)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(metrics\u001b[33m.\u001b[39minnerWidth \u001b[33m+\u001b[39m \u001b[35m1\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 267 |\u001b[39m     }\n \u001b[90m 268 |\u001b[39m     record(\u001b[32m'AC-5'\u001b[39m\u001b[33m,\u001b[39m { measurements })\u001b[33m;\u001b[39m\u001b[0m"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "d:\\xampp\\htdocs\\IME365\\tests\\e2e\\dir0048-uiux-polish.spec.js",
+                        "column": 60,
+                        "line": 265
+                      },
+                      "message": "Error: content cap at 1920px\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m1280\u001b[39m\nReceived:    \u001b[31m1660\u001b[39m\n\n  263 |         measurements.push({ width, ...metrics });\n  264 |         expect(Math.abs(metrics.left - metrics.right), `gutter symmetry at ${width}px`).toBeLessThanOrEqual(1);\n> 265 |         expect(metrics.width, `content cap at ${width}px`).toBeLessThanOrEqual(1280);\n      |                                                            ^\n  266 |         expect(metrics.scrollWidth, `horizontal overflow at ${width}px`).toBeLessThanOrEqual(metrics.innerWidth + 1);\n  267 |     }\n  268 |     record('AC-5', { measurements });\n    at d:\\xampp\\htdocs\\IME365\\tests\\e2e\\dir0048-uiux-polish.spec.js:265:60"
+                    }
+                  ],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-06T20:13:32.876Z",
+                  "startTime": "2026-10-15T20:53:13.682Z",
                   "annotations": [],
-                  "attachments": []
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "d:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir048-artifacts\\dir0048-uiux-polish-AC-5-u-043dd-verflow-at-five-breakpoints-dir048-uiux-polish\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "d:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir048-artifacts\\dir0048-uiux-polish-AC-5-u-043dd-verflow-at-five-breakpoints-dir048-uiux-polish\\error-context.md"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "d:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\dir048-artifacts\\dir0048-uiux-polish-AC-5-u-043dd-verflow-at-five-breakpoints-dir048-uiux-polish\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "d:\\xampp\\htdocs\\IME365\\tests\\e2e\\dir0048-uiux-polish.spec.js",
+                    "column": 60,
+                    "line": 265
+                  }
                 }
               ],
-              "status": "expected"
+              "status": "unexpected"
             }
           ],
           "id": "80a633e6bd8aaae71678-a98cb66b6f5773861327",
@@ -239,15 +260,15 @@
               "projectName": "dir048-uiux-polish",
               "results": [
                 {
-                  "workerIndex": 0,
+                  "workerIndex": 1,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1952,
+                  "duration": 8359,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-06T20:13:39.623Z",
+                  "startTime": "2026-10-15T20:53:21.870Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -273,15 +294,15 @@
               "projectName": "dir048-uiux-polish",
               "results": [
                 {
-                  "workerIndex": 0,
+                  "workerIndex": 1,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 3976,
+                  "duration": 4420,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-06T20:13:41.584Z",
+                  "startTime": "2026-10-15T20:53:30.785Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -307,15 +328,15 @@
               "projectName": "dir048-uiux-polish",
               "results": [
                 {
-                  "workerIndex": 0,
+                  "workerIndex": 1,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1743,
+                  "duration": 1736,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-06T20:13:45.569Z",
+                  "startTime": "2026-10-15T20:53:35.218Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -341,15 +362,15 @@
               "projectName": "dir048-uiux-polish",
               "results": [
                 {
-                  "workerIndex": 0,
+                  "workerIndex": 1,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 4932,
+                  "duration": 5016,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-06T20:13:47.320Z",
+                  "startTime": "2026-10-15T20:53:36.964Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -367,11 +388,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-10-06T20:13:03.447Z",
-    "duration": 49385.956000000006,
-    "expected": 8,
+    "startTime": "2026-10-15T20:52:51.903Z",
+    "duration": 50449.013,
+    "expected": 7,
     "skipped": 0,
-    "unexpected": 0,
+    "unexpected": 1,
     "flaky": 0
   }
 }

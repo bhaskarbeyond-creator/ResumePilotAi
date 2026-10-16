@@ -84,6 +84,7 @@ const ENTITIES = Object.freeze({
     oauth_exchange: maria('oauth_exchange', 'oauth_exchange_codes'),
     export_token: maria('export_token', 'export_render_tokens'),
     ai_usage: maria('ai_usage', 'ai_usage'),
+    ai_quota_counters: maria('ai_quota_counters', 'ai_quota_counters'),
     enterprise_tenant: maria('enterprise_tenant', 'enterprise_tenants'),
     enterprise_tenant_configuration: maria('enterprise_tenant_configuration', 'enterprise_tenant_configurations'),
     enterprise_principal_tenant: maria('enterprise_principal_tenant', 'enterprise_principal_tenants'),

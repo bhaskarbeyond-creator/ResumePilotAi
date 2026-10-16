@@ -153,7 +153,7 @@ class HealthStore {
     }
 
     /** Exponential backoff after consecutive hard failures; resets on success. */
-    cooldownUntil(entry, now) {
+    cooldownUntil(entry, _now) {
         if (entry.consecutiveFailures < this.opts.consecutiveFailureThreshold || !entry.lastFailureAt) return 0;
         const exponent = Math.min(entry.consecutiveFailures - this.opts.consecutiveFailureThreshold + 1, 10);
         const delay = Math.min(this.opts.backoffCapMs, this.opts.backoffBaseMs * 2 ** (exponent - 1));
@@ -182,7 +182,7 @@ class HealthStore {
     tenantSnapshot(tenantId) {
         const prefix = `${tenantId || 'platform'}|`;
         const out = [];
-        for (const [key, entry] of this.entries) {
+        for (const [key, _entry] of this.entries) {
             if (!key.startsWith(prefix)) continue;
             const [, provider, model] = key.split('|');
             const stats = this.stats({ tenantId, provider, model });

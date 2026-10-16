@@ -1,12 +1,12 @@
 {
   "directive": "DIR-055",
-  "generatedAt": "2026-10-09T03:21:07.424Z",
+  "generatedAt": "2026-10-16T03:43:19.211Z",
   "checks": [
     {
       "check": "AC-1",
       "topBars": 1,
       "allHeaders": 2,
-      "url": "http://127.0.0.1:62979/build-resume/heading",
+      "url": "http://127.0.0.1:57687/build-resume/heading",
       "consoleErrors": []
     },
     {

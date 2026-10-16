@@ -130,7 +130,7 @@ const EmployerApplicantPipeline = ({ showToast }) => {
             // endpoint is authoritative and already owner-scoped.
             const collected = [];
             for (const job of jobList) {
-                // eslint-disable-next-line no-await-in-loop
+                 
                 const applications = await getJobApplications(job.id);
                 (Array.isArray(applications) ? applications : []).forEach((application) => {
                     collected.push({

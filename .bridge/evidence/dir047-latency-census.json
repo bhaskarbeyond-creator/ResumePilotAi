@@ -1,20 +1,20 @@
 {
   "directive": "DIR-047",
   "vector": "SWOT-W zero simulated latency",
-  "generatedAt": "2026-10-06T19:56:20.657Z",
+  "generatedAt": "2026-10-16T03:48:01.129Z",
   "method": "comment-stripped source scan of src/**/*.{js,jsx,mjs,cjs}; balanced-paren argument split; every site classified",
   "definition": {
     "simulatedLatency": "a timer that gates completion of a user flow, stands in for network/AI/database work already performed, or delays first paint of content that is genuinely ready",
     "legitimate": "message auto-dismiss, debounce/throttle, retry backoff, sub-perceptual paint ordering, non-critical deferral"
   },
   "totals": {
-    "filesScanned": 617,
-    "timerSites": 239,
-    "userFlowSites": 239,
+    "filesScanned": 651,
+    "timerSites": 240,
+    "userFlowSites": 240,
     "infrastructureSites": 0,
     "byCategory": {
       "unclassified": 104,
-      "debounce": 44,
+      "debounce": 45,
       "auto-dismiss": 77,
       "deadline-guard": 5,
       "paint-deferral": 9
@@ -509,7 +509,7 @@
     },
     {
       "file": "src/components/admin/settings/ModulesSettings.jsx",
-      "line": 142,
+      "line": 144,
       "delay": "1500",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -520,7 +520,7 @@
     },
     {
       "file": "src/components/admin/settings/ModulesSettings.jsx",
-      "line": 143,
+      "line": 145,
       "delay": "4000",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -553,7 +553,7 @@
     },
     {
       "file": "src/components/admin/settings/socialSettings.jsx",
-      "line": 114,
+      "line": 115,
       "delay": "3000",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -828,7 +828,7 @@
     },
     {
       "file": "src/components/Boards/board-step-filling/BoardFilling.jsx",
-      "line": 101,
+      "line": 98,
       "delay": "1000",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -839,7 +839,7 @@
     },
     {
       "file": "src/components/Boards/board-step-filling/BoardFilling.jsx",
-      "line": 205,
+      "line": 189,
       "delay": "8000",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -850,7 +850,7 @@
     },
     {
       "file": "src/components/Boards/board-step-filling/BoardFilling.jsx",
-      "line": 215,
+      "line": 199,
       "delay": "8000",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -861,7 +861,7 @@
     },
     {
       "file": "src/components/Boards/board-step-filling/BoardFilling.jsx",
-      "line": 225,
+      "line": 209,
       "delay": "8000",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -872,7 +872,7 @@
     },
     {
       "file": "src/components/Boards/board-step-filling/BoardFilling.jsx",
-      "line": 286,
+      "line": 270,
       "delay": "1500",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -883,7 +883,7 @@
     },
     {
       "file": "src/components/Boards/board-step-filling/BoardFilling.jsx",
-      "line": 312,
+      "line": 296,
       "delay": "1000",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -894,7 +894,7 @@
     },
     {
       "file": "src/components/Boards/board-step-filling/BoardFilling.jsx",
-      "line": 385,
+      "line": 369,
       "delay": "1500",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -938,7 +938,7 @@
     },
     {
       "file": "src/components/BuildResume/BuildResume.jsx",
-      "line": 484,
+      "line": 554,
       "delay": "3000",
       "category": "debounce",
       "simulatedLatency": false,
@@ -949,7 +949,7 @@
     },
     {
       "file": "src/components/BuildResume/BuildResume.jsx",
-      "line": 500,
+      "line": 570,
       "delay": "delay",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -960,7 +960,7 @@
     },
     {
       "file": "src/components/BuildResume/BuildResume.jsx",
-      "line": 805,
+      "line": 875,
       "delay": "2500",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -971,7 +971,7 @@
     },
     {
       "file": "src/components/BuildResume/BuildResume.jsx",
-      "line": 936,
+      "line": 1015,
       "delay": "8000",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -982,18 +982,18 @@
     },
     {
       "file": "src/components/BuildResume/BuildResume.jsx",
-      "line": 942,
+      "line": 1021,
       "delay": "8000",
-      "category": "debounce",
+      "category": "unclassified",
       "simulatedLatency": false,
-      "reason": "trailing-edge debounce cancelled by clearTimeout; fires earlier as keystrokes arrive and never holds a completed action",
+      "reason": "does not gate a user flow, hold a pending state, or stand in for real work; recorded for audit",
       "scope": "user-flow",
       "infrastructureNote": null,
       "callback": "() => { setIsSuccessToastVisible(false); }"
     },
     {
       "file": "src/components/BuildResume/BuildResume.jsx",
-      "line": 948,
+      "line": 1027,
       "delay": "8000",
       "category": "debounce",
       "simulatedLatency": false,
@@ -1004,7 +1004,7 @@
     },
     {
       "file": "src/components/BuildResume/BuildResume.jsx",
-      "line": 966,
+      "line": 1054,
       "delay": "4000",
       "category": "debounce",
       "simulatedLatency": false,
@@ -1015,7 +1015,7 @@
     },
     {
       "file": "src/components/BuildResume/BuildResume.jsx",
-      "line": 1404,
+      "line": 1494,
       "delay": "0",
       "category": "paint-deferral",
       "simulatedLatency": false,
@@ -1202,7 +1202,7 @@
     },
     {
       "file": "src/components/BuildResume/steps/HeadingStep.jsx",
-      "line": 157,
+      "line": 182,
       "delay": "500",
       "category": "debounce",
       "simulatedLatency": false,
@@ -1213,7 +1213,7 @@
     },
     {
       "file": "src/components/BuildResume/steps/HeadingStep.jsx",
-      "line": 204,
+      "line": 229,
       "delay": "150",
       "category": "debounce",
       "simulatedLatency": false,
@@ -1224,7 +1224,7 @@
     },
     {
       "file": "src/components/BuildResume/steps/HeadingStep.jsx",
-      "line": 415,
+      "line": 440,
       "delay": "5000",
       "category": "auto-dismiss",
       "simulatedLatency": false,
@@ -1235,7 +1235,7 @@
     },
     {
       "file": "src/components/BuildResume/steps/HeadingStep.jsx",
-      "line": 420,
+      "line": 445,
       "delay": "4000",
       "category": "auto-dismiss",
       "simulatedLatency": false,
@@ -1246,7 +1246,7 @@
     },
     {
       "file": "src/components/BuildResume/steps/HeadingStep.jsx",
-      "line": 430,
+      "line": 455,
       "delay": "4000",
       "category": "auto-dismiss",
       "simulatedLatency": false,
@@ -1444,7 +1444,7 @@
     },
     {
       "file": "src/components/CoverLetter/CoverLetter.jsx",
-      "line": 316,
+      "line": 325,
       "delay": "4000",
       "category": "auto-dismiss",
       "simulatedLatency": false,
@@ -1455,7 +1455,7 @@
     },
     {
       "file": "src/components/CoverLetter/CoverLetter.jsx",
-      "line": 349,
+      "line": 358,
       "delay": "5000",
       "category": "auto-dismiss",
       "simulatedLatency": false,
@@ -1466,7 +1466,7 @@
     },
     {
       "file": "src/components/CoverLetter/CoverLetter.jsx",
-      "line": 365,
+      "line": 374,
       "delay": "4000",
       "category": "auto-dismiss",
       "simulatedLatency": false,
@@ -1477,7 +1477,7 @@
     },
     {
       "file": "src/components/CoverLetter/CoverLetter.jsx",
-      "line": 381,
+      "line": 390,
       "delay": "4000",
       "category": "auto-dismiss",
       "simulatedLatency": false,
@@ -1488,7 +1488,7 @@
     },
     {
       "file": "src/components/CoverLetter/CoverLetter.jsx",
-      "line": 460,
+      "line": 469,
       "delay": "5000",
       "category": "auto-dismiss",
       "simulatedLatency": false,
@@ -1499,7 +1499,7 @@
     },
     {
       "file": "src/components/CoverLetter/CoverLetter.jsx",
-      "line": 467,
+      "line": 476,
       "delay": "5000",
       "category": "auto-dismiss",
       "simulatedLatency": false,
@@ -1510,7 +1510,7 @@
     },
     {
       "file": "src/components/CoverLetter/CoverLetter.jsx",
-      "line": 511,
+      "line": 520,
       "delay": "6000",
       "category": "auto-dismiss",
       "simulatedLatency": false,
@@ -1521,7 +1521,7 @@
     },
     {
       "file": "src/components/CoverLetter/CoverLetter.jsx",
-      "line": 564,
+      "line": 573,
       "delay": "300",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -1532,7 +1532,7 @@
     },
     {
       "file": "src/components/CoverLetter/CoverLetter.jsx",
-      "line": 572,
+      "line": 581,
       "delay": "6000",
       "category": "auto-dismiss",
       "simulatedLatency": false,
@@ -1543,7 +1543,7 @@
     },
     {
       "file": "src/components/CoverLetter/CoverLetter.jsx",
-      "line": 610,
+      "line": 619,
       "delay": "600",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -1554,7 +1554,7 @@
     },
     {
       "file": "src/components/CoverLetter/CoverLetter.jsx",
-      "line": 646,
+      "line": 655,
       "delay": "600",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -1565,7 +1565,7 @@
     },
     {
       "file": "src/components/CoverLetter/CoverLetter.jsx",
-      "line": 659,
+      "line": 668,
       "delay": "4000",
       "category": "auto-dismiss",
       "simulatedLatency": false,
@@ -1576,7 +1576,7 @@
     },
     {
       "file": "src/components/CoverLetter/CoverLetter.jsx",
-      "line": 723,
+      "line": 732,
       "delay": "4000",
       "category": "auto-dismiss",
       "simulatedLatency": false,
@@ -1587,7 +1587,7 @@
     },
     {
       "file": "src/components/CoverLetter/CoverLetter.jsx",
-      "line": 727,
+      "line": 736,
       "delay": "4000",
       "category": "auto-dismiss",
       "simulatedLatency": false,
@@ -1598,7 +1598,7 @@
     },
     {
       "file": "src/components/CoverLetter/CoverLetter.jsx",
-      "line": 810,
+      "line": 819,
       "delay": "350",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -1609,7 +1609,7 @@
     },
     {
       "file": "src/components/cuba/CubaCommandPalette.jsx",
-      "line": 246,
+      "line": 260,
       "delay": "entitySearchDebounceMs",
       "category": "debounce",
       "simulatedLatency": false,
@@ -1631,7 +1631,7 @@
     },
     {
       "file": "src/components/Dashboard/CoversList/CoversList.jsx",
-      "line": 42,
+      "line": 98,
       "delay": "1300",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -1730,18 +1730,7 @@
     },
     {
       "file": "src/components/Dashboard/DashboardMain/DashboardMain.jsx",
-      "line": 200,
-      "delay": "2000",
-      "category": "unclassified",
-      "simulatedLatency": false,
-      "reason": "does not gate a user flow, hold a pending state, or stand in for real work; recorded for audit",
-      "scope": "user-flow",
-      "infrastructureNote": null,
-      "callback": "() => { this.setState((prevStat, _props) => ({ isCommingSoonShowed: !prevStat.isCommingSoonShowed, })); }"
-    },
-    {
-      "file": "src/components/Dashboard/DashboardMain/DashboardMain.jsx",
-      "line": 221,
+      "line": 218,
       "delay": "1000",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -1752,7 +1741,7 @@
     },
     {
       "file": "src/components/Dashboard/DashboardMessages/DashboardMessages.jsx",
-      "line": 323,
+      "line": 343,
       "delay": "0",
       "category": "paint-deferral",
       "simulatedLatency": false,
@@ -1774,18 +1763,29 @@
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 369,
+      "line": 371,
       "delay": "2000",
       "category": "auto-dismiss",
       "simulatedLatency": false,
       "reason": "clears an already-delivered message; nothing is gated behind it",
       "scope": "user-flow",
       "infrastructureNote": null,
-      "callback": "() => el.classList.remove('ring-2', 'ring-indigo-400')"
+      "callback": "() => el.classList.remove('ring-2', 'ring-[var(--cuba-primary-ring)]')"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 523,
+      "line": 411,
+      "delay": "120",
+      "category": "debounce",
+      "simulatedLatency": false,
+      "reason": "trailing-edge debounce cancelled by clearTimeout; fires earlier as keystrokes arrive and never holds a completed action",
+      "scope": "user-flow",
+      "infrastructureNote": null,
+      "callback": "() => { const el = document.getElementById(targetId); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }"
+    },
+    {
+      "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
+      "line": 546,
       "delay": "5000",
       "category": "auto-dismiss",
       "simulatedLatency": false,
@@ -1796,7 +1796,7 @@
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1114,
+      "line": 1143,
       "delay": "1500",
       "category": "debounce",
       "simulatedLatency": false,
@@ -1807,7 +1807,7 @@
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2882,
+      "line": 2927,
       "delay": "2000",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -1906,7 +1906,7 @@
     },
     {
       "file": "src/components/EmployerPortal/EmployerApplicantPipeline.jsx",
-      "line": 252,
+      "line": 269,
       "delay": "1000",
       "category": "unclassified",
       "simulatedLatency": false,
@@ -1939,7 +1939,7 @@
     },
     {
       "file": "src/components/Exporter/Exporter.jsx",
-      "line": 58,
+      "line": 68,
       "delay": "1500",
       "category": "deadline-guard",
       "simulatedLatency": false,
@@ -2445,7 +2445,7 @@
     },
     {
       "file": "src/enterprise/components/EnterpriseResumePdfModal.jsx",
-      "line": 188,
+      "line": 190,
       "delay": "3000",
       "category": "auto-dismiss",
       "simulatedLatency": false,
@@ -2456,7 +2456,7 @@
     },
     {
       "file": "src/enterprise/components/EnterpriseResumePdfModal.jsx",
-      "line": 192,
+      "line": 194,
       "delay": "3500",
       "category": "auto-dismiss",
       "simulatedLatency": false,
@@ -2598,8 +2598,19 @@
       "callback": "resolve"
     },
     {
+      "file": "src/hooks/unreadMessagesPoller.js",
+      "line": 85,
+      "delay": "ms",
+      "category": "debounce",
+      "simulatedLatency": false,
+      "reason": "trailing-edge debounce cancelled by clearTimeout; fires earlier as keystrokes arrive and never holds a completed action",
+      "scope": "user-flow",
+      "infrastructureNote": null,
+      "callback": "fn"
+    },
+    {
       "file": "src/main.jsx",
-      "line": 56,
+      "line": 64,
       "delay": "1500",
       "category": "deadline-guard",
       "simulatedLatency": false,
@@ -2610,7 +2621,7 @@
     },
     {
       "file": "src/services/aiService.js",
-      "line": 114,
+      "line": 193,
       "delay": "1200",
       "category": "debounce",
       "simulatedLatency": false,
@@ -2621,7 +2632,7 @@
     },
     {
       "file": "src/services/aiService.js",
-      "line": 140,
+      "line": 219,
       "delay": "timeoutMs",
       "category": "debounce",
       "simulatedLatency": false,

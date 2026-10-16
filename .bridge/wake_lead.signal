@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-14T17:28:25.523Z",
-  "seq": 3251,
-  "id": "evt_mv8dvouw_80300760d7da",
-  "type": "EVIDENCE_SUBMITTED",
-  "title": "[Evidence] DIR-004: TEST-001: Developer Agent Connectivity Handshake",
+  "timestamp": "2026-10-16T06:31:36.277Z",
+  "seq": 3567,
+  "id": "evt_mvalaptg_bcc9f9f882dc",
+  "type": "HEARTBEAT",
+  "title": "[Heartbeat] Waiting for test interview-coach-lifecycle.test.mjs to complete",
   "sender": "STAFF_DEVELOPER",
-  "directiveId": "DIR-004",
-  "summary": "Lint and git status checked, no errors in lint (239 warnings but 0 errors), git shows changes from previous directives but working directory is clean for DIR-004 (no new changes). Bridge integration verified via status call."
+  "directiveId": "DIR-001",
+  "summary": "Waiting for test interview-coach-lifecycle.test.mjs to complete"
 }

@@ -28,7 +28,7 @@ const [jobs] = await conn.query(
 );
 console.log('\n=== JOBS (live MariaDB) ===');
 for (const j of jobs) {
-    // eslint-disable-next-line no-await-in-loop
+     
     const [cnt] = await conn.query(
         'SELECT COUNT(*) AS n FROM applications WHERE job_id = ?',
         [j.id],

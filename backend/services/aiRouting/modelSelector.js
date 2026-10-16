@@ -34,7 +34,6 @@ const {
     evaluateCapability,
     evaluateContext,
     evaluateModalities,
-    safeNumber,
 } = require('./capabilityModel');
 
 // Scoring weights. Deliberate, documented, and small: configuration intent and
@@ -151,14 +150,7 @@ function selectModels({
 
         for (const [model, meta] of enumerated) {
             const reasons = [];
-            let rejectionReason = null;
 
-            const gate = (ok, passNote, failNote, failReason) => {
-                if (ok) { if (passNote) reasons.push(passNote); return true; }
-                reasons.push(failNote);
-                rejectionReason = failReason;
-                return false;
-            };
 
             // G1: tenant model allowlist (governance data, not routing intelligence).
             if (allowedModels && !allowedModels.has(model)) {

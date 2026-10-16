@@ -14,7 +14,7 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const EmailNotifier = require('./services/emailNotifier');
 const { processOutboxOnce } = require('./services/notificationOutbox');
 const { createResumeDocx, resolveExportTemplate } = require('./services/docxExport');
-const { loadProviderConfiguration, generateWithProviders } = require('./services/aiRuntime');
+const { generateWithProviders } = require('./services/aiRuntime');
 const { buildCoverLetterPrompt, coverLetterFields, validateCoverLetterOutput } = require('./services/coverLetterAi');
 const { loadAiAdminSettings, saveAiAdminSettings, testAiProvider, fetchProviderModels } = require('./services/aiAdmin');
 const { getGlobalAiDashboardData, setGlobalAiQuotaLimits, resetUserAiQuota, resetAllAiQuota } = require('./services/adminAiEntitlement');
@@ -46,7 +46,7 @@ const { normalizeLlmDiscoverySettings, normalizeGeoSeoSettings } = require('./se
 const { publishDueBlogPosts } = require('./services/cmsScheduler');
 // DIR-022 / AC-3: the subscription reconciler worker and its operator-facing
 // single-account entry point (AC-5).
-const { reconcileSubscriptionsOnce, reconcileUserSubscription } = require('./services/subscriptionReconciler');
+const { reconcileSubscriptionsOnce } = require('./services/subscriptionReconciler');
 const {
     billingSnapshotHash,
     generateInvoice,
@@ -1614,9 +1614,6 @@ app.post('/api/check', async (req, res) => {
         return res.status(500).json({ status: 'false', error: 'Entitlement check failed' });
     }
 });
-
-function notificationEventId(...parts) { return crypto.createHash('sha256').update(parts.join('\0')).digest('hex'); }
-// Deterministic notification event IDs: notificationEventId('job_application_submitted', applicationId), notificationEventId('job_application_status', applicationId, String(nextRevision)), notificationEventId('payment_active', orderRef.id), notificationEventId('payment_refunded', paymentOrderId)
 
 function jobApplicationNotification(status, jobTitle, companyName, notes = '') {
     const suffix = notes ? ` ${notes}` : '';
