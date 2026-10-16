@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-16T07:41:12.676Z",
-  "seq": 3577,
-  "id": "evt_mvans8ci_63a333465d22",
+  "timestamp": "2026-10-16T11:18:00.968Z",
+  "seq": 3609,
+  "id": "evt_mvavj1ly_80d42daee4ed",
   "type": "HEARTBEAT",
-  "title": "[Heartbeat] Running E2E tests for build-resume",
+  "title": "[Heartbeat] Starting forensic audit",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-001",
-  "summary": "Running E2E tests for build-resume"
+  "summary": "Starting forensic audit"
 }

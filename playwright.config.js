@@ -11,7 +11,7 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './tests',
-  testMatch: /.*\.spec\.(js|cjs)/,
+  testMatch: /.*\.(spec|test)\.(js|mjs|cjs)/,
   fullyParallel: false,
   workers: 1,
   forbidOnly: !!process.env.CI,
