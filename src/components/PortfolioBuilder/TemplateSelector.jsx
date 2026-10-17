@@ -5,7 +5,7 @@ const TemplateSelector = ({ isVisible, onClose, onSelectTemplate, isLoading }) =
     if (!isVisible) return null;
 
     return (
-        <div className="fixed inset-0 overflow-y-auto" style={{ zIndex: 99999, backgroundColor: 'rgba(0,0,0,0.75)' }}>
+        <div className="card bs-card-executive fixed inset-0 overflow-y-auto" style={{ zIndex: 99999, backgroundColor: 'rgba(0,0,0,0.75)' }}>
             <div className="flex items-center justify-center min-h-screen p-4">
                 <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col" style={{ zIndex: 100000 }}>
                     {/* Header */}

@@ -69,7 +69,7 @@ function DurableJobsCard({ focused = false }) {
 
   return (
     <div ref={cardRef} className={`enterprise-card ${focused ? 'enterprise-focus-target' : ''}`} style={{ marginTop: '1.5rem' }} id="durable-jobs">
-      <div className="enterprise-card-header-flex">
+      <div className="card bs-card-executive enterprise-card-header-flex">
         <div>
           <h2 className="enterprise-tab-title"><FiLayers aria-hidden="true" /> Durable Jobs & Dead Letters</h2>
           <p className="enterprise-tab-subtitle">
@@ -108,8 +108,8 @@ function DurableJobsCard({ focused = false }) {
         {jobs.length === 0 ? (
           <p className="enterprise-empty">No jobs in this state for the active tenant.</p>
         ) : (
-          <div className="enterprise-table-wrap" role="region" aria-label="Durable jobs">
-            <table className="enterprise-table">
+          <div className="table enterprise-table table-hover align-middle-wrap" role="region" aria-label="Durable jobs">
+            <table className="table enterprise-table table-hover align-middle">
               <thead>
                 <tr>
                   <th scope="col">Job</th>
@@ -136,7 +136,7 @@ function DurableJobsCard({ focused = false }) {
                       {canReplay && job.status === 'DEAD_LETTER' && (
                         <button
                           type="button"
-                          className="enterprise-button enterprise-button-secondary enterprise-button-sm"
+                          className="btn btn-outline-secondary enterprise-button enterprise-button-secondary enterprise-button-sm"
                           onClick={() => handleReplay(job.jobId)}
                           disabled={busyId === job.jobId}
                         >
@@ -308,7 +308,7 @@ export default function EnterpriseSecurityTab({ initialParams = null }) {
         </div>
       )}
       {actionError && (
-        <div className="enterprise-card" role="alert">
+        <div className="card bs-card-executive enterprise-card" role="alert">
           <div className="enterprise-error-row">
             <span className="enterprise-error-icon" aria-hidden="true">⚠</span>
             <div><strong>Security action failed</strong><p className="text-muted">{actionError}</p></div>
@@ -317,9 +317,9 @@ export default function EnterpriseSecurityTab({ initialParams = null }) {
       )}
 
       {generatedKey && (
-        <div className="enterprise-card" role="alert" style={{ border: '2px solid var(--enterprise-primary-active)', background: 'var(--enterprise-primary-soft)' }}>
-          <h3 className="enterprise-card-title">API Key Generated — Save It Now</h3>
-          <p className="enterprise-card-subtitle" style={{ color: 'var(--enterprise-ink)' }}>
+        <div className="card bs-card-executive enterprise-card" role="alert" style={{ border: '2px solid var(--enterprise-primary-active)', background: 'var(--enterprise-primary-soft)' }}>
+          <h3 className="card bs-card-executive enterprise-card-title">API Key Generated — Save It Now</h3>
+          <p className="card bs-card-executive enterprise-card-subtitle" style={{ color: 'var(--enterprise-ink)' }}>
             The plaintext secret for <strong>{generatedKey.name}</strong> is shown exactly once and is never stored. Copy it before closing this panel.
           </p>
           <div style={{ display: 'flex', alignItems: 'center', background: 'var(--enterprise-surface)', border: '1px solid var(--enterprise-border)', borderRadius: 'var(--enterprise-radius-md)', padding: '16px', marginTop: '16px', marginBottom: '20px' }}>
@@ -330,18 +330,18 @@ export default function EnterpriseSecurityTab({ initialParams = null }) {
               {copied ? <FiCheck aria-hidden="true" /> : <FiCopy aria-hidden="true" />} {copied ? 'Copied to Clipboard' : 'Copy Secret'}
             </button>
           </div>
-          <button type="button" className="enterprise-button enterprise-button-secondary" onClick={() => setGeneratedKey(null)}>
+          <button type="button" className="btn btn-outline-secondary enterprise-button enterprise-button-secondary" onClick={() => setGeneratedKey(null)}>
             <FiX aria-hidden="true" /> I have saved the key securely
           </button>
         </div>
       )}
 
-      <div className="enterprise-card">
-        <h3 className="enterprise-card-title">
+      <div className="card bs-card-executive enterprise-card">
+        <h3 className="card bs-card-executive enterprise-card-title">
           <FiShield aria-hidden="true" /> Security Posture
           <HelpTooltip text="Live server-enforced security controls, MFA requirements, session lifetimes, and cryptographic validation" />
         </h3>
-        <p className="enterprise-card-subtitle">Live policy state — every value is enforced server-side at enterprise context resolution</p>
+        <p className="card bs-card-executive enterprise-card-subtitle">Live policy state — every value is enforced server-side at enterprise context resolution</p>
         <ul className="enterprise-health-list">
           <li className="enterprise-health-item">
             <div className={`enterprise-health-status ${posture.loaded ? (posture.requireMfaForAdmins ? 'online' : 'checking') : 'checking'}`} />
@@ -359,7 +359,7 @@ export default function EnterpriseSecurityTab({ initialParams = null }) {
               <strong>Session Policy</strong>
               <small>Administrator sessions are re-authenticated after {posture.sessionMaxMinutes ?? '—'} minutes (enforced from the verified token auth_time claim)</small>
             </div>
-            <span className="enterprise-pill enterprise-pill-success">Enforced</span>
+            <span className="badge rounded-pill enterprise-pill enterprise-pill-success">Enforced</span>
           </li>
           <li className="enterprise-health-item">
             <div className={`enterprise-health-status ${posture.loaded ? (posture.ssoMode === 'NONE' ? 'checking' : 'online') : 'checking'}`} />
@@ -402,26 +402,26 @@ export default function EnterpriseSecurityTab({ initialParams = null }) {
         </ul>
       </div>
 
-      <div className="enterprise-card">
+      <div className="card bs-card-executive enterprise-card">
         <h2 className="enterprise-tab-title">Enterprise Security Center</h2>
         <p className="enterprise-tab-subtitle">Machine-to-machine API keys, scopes, and lifecycle controls</p>
 
         <div className="enterprise-security-cards-grid">
-          <div className="enterprise-card enterprise-sec-item">
+          <div className="card bs-card-executive enterprise-card enterprise-sec-item">
             <div className="enterprise-sec-icon text-success"><FiShield /></div>
             <div>
               <strong>Server-Side Authorization</strong>
               <p>Every enterprise request is re-verified against active membership on the server. Client headers are only requested context.</p>
             </div>
           </div>
-          <div className="enterprise-card enterprise-sec-item">
+          <div className="card bs-card-executive enterprise-card enterprise-sec-item">
             <div className="enterprise-sec-icon text-success"><FiLock /></div>
             <div>
               <strong>First-Class M2M Authentication</strong>
               <p>Service keys authenticate the operational APIs directly via <code>x-api-key</code> — resources, AI, usage and audit — with server-side scopes, per-key rate limiting, instant rotation/revocation. Plaintext secrets are returned exactly once.</p>
             </div>
           </div>
-          <div className="enterprise-card enterprise-sec-item">
+          <div className="card bs-card-executive enterprise-card enterprise-sec-item">
             <div className="enterprise-sec-icon text-success"><FiKey /></div>
             <div>
               <strong>Signed Artifact Tokens</strong>
@@ -430,18 +430,18 @@ export default function EnterpriseSecurityTab({ initialParams = null }) {
           </div>
         </div>
 
-        <div className="enterprise-card-header-flex" style={{ marginTop: '1.5rem' }}>
+        <div className="card bs-card-executive enterprise-card-header-flex" style={{ marginTop: '1.5rem' }}>
           <div>
-            <h3 className="enterprise-card-title">
+            <h3 className="card bs-card-executive enterprise-card-title">
               Service Accounts & M2M API Keys
               <HelpTooltip text="Machine-to-machine scoped API tokens for automated CI/CD pipelines, background daemons, and microservices" />
             </h3>
-            <p className="enterprise-card-subtitle">Credential lifecycle managed through the enterprise API</p>
+            <p className="card bs-card-executive enterprise-card-subtitle">Credential lifecycle managed through the enterprise API</p>
           </div>
           {canManageServiceAccounts && (
             <button
               type="button"
-              className="enterprise-button enterprise-button-primary"
+              className="btn btn-primary enterprise-button enterprise-button-primary"
               onClick={() => setShowCreateModal(true)}
             >
               <FiPlus aria-hidden="true" /> Create Service Account
@@ -453,8 +453,8 @@ export default function EnterpriseSecurityTab({ initialParams = null }) {
           {serviceAccounts.length === 0 ? (
             <p className="enterprise-empty">No active service accounts. Create one to enable machine-to-machine access.</p>
           ) : (
-            <div className="enterprise-table-wrapper" style={{ marginTop: '1rem' }}>
-              <table className="enterprise-table">
+            <div className="table enterprise-table table-hover align-middle-wrapper" style={{ marginTop: '1rem' }}>
+              <table className="table enterprise-table table-hover align-middle">
                 <thead>
                   <tr>
                     <th>Name</th>
@@ -478,7 +478,7 @@ export default function EnterpriseSecurityTab({ initialParams = null }) {
                           </span>
                           <br /><small className="text-muted">{account.workspaceId ? String(account.workspaceId).slice(0, 8) : 'all workspaces'}</small>
                         </td>
-                        <td>{Array.isArray(account.scopes) ? account.scopes.map(s => <span key={s} className="enterprise-pill enterprise-pill-secondary">{s}</span>) : <small>—</small>}</td>
+                        <td>{Array.isArray(account.scopes) ? account.scopes.map(s => <span key={s} className="badge rounded-pill enterprise-pill enterprise-pill-secondary">{s}</span>) : <small>—</small>}</td>
                         <td>
                           <code 
                             className="text-muted" 
@@ -489,19 +489,19 @@ export default function EnterpriseSecurityTab({ initialParams = null }) {
                           </code>
                           <br />
                           {expired ? (
-                            <span className="enterprise-pill enterprise-pill-danger">expired</span>
+                            <span className="badge rounded-pill enterprise-pill enterprise-pill-danger">expired</span>
                           ) : expiringSoon ? (
-                            <span className="enterprise-pill enterprise-pill-warning">expiring soon</span>
+                            <span className="badge rounded-pill enterprise-pill enterprise-pill-warning">expiring soon</span>
                           ) : account.expiresAt ? (
                             <small>{new Date(account.expiresAt).toLocaleDateString()}</small>
                           ) : (
                             <small className="text-muted">no expiry</small>
                           )}
                         </td>
-                        <td><span className="enterprise-pill enterprise-pill-success">{account.status}</span></td>
+                        <td><span className="badge rounded-pill enterprise-pill enterprise-pill-success">{account.status}</span></td>
                         <td className="text-right">
                           {canManageServiceAccounts && (
-                            <div className="enterprise-table-actions" style={{ justifyContent: 'flex-end' }}>
+                            <div className="table enterprise-table table-hover align-middle-actions" style={{ justifyContent: 'flex-end' }}>
                               <button
                                 type="button"
                                 className="enterprise-button-icon"
@@ -533,16 +533,16 @@ export default function EnterpriseSecurityTab({ initialParams = null }) {
       </div>
 
       {showCreateModal && (
-        <div className="enterprise-modal-backdrop" role="presentation" onClick={() => !busy && setShowCreateModal(false)}>
-          <div className="enterprise-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-            <div className="enterprise-modal-header">
+        <div className="modal-content enterprise-modal-backdrop" role="presentation" onClick={() => !busy && setShowCreateModal(false)}>
+          <div className="modal-content enterprise-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content enterprise-modal-header">
               <h3>Create Service Account</h3>
               <button type="button" className="enterprise-button-icon" onClick={() => setShowCreateModal(false)} disabled={busy}>
                 <FiX />
               </button>
             </div>
             <form onSubmit={handleCreate}>
-              <div className="enterprise-modal-body">
+              <div className="modal-content enterprise-modal-body">
                 <div className="enterprise-form-group">
                   <label htmlFor="sa-name">Service Account Name</label>
                   <input
@@ -595,9 +595,9 @@ export default function EnterpriseSecurityTab({ initialParams = null }) {
                   </div>
                 </div>
               </div>
-              <div className="enterprise-modal-footer">
-                <button type="button" className="enterprise-button enterprise-button-secondary" onClick={() => setShowCreateModal(false)} disabled={busy}>Cancel</button>
-                <button type="submit" className="enterprise-button enterprise-button-primary" disabled={busy || saScopes.length === 0}>
+              <div className="modal-content enterprise-modal-footer">
+                <button type="button" className="btn btn-outline-secondary enterprise-button enterprise-button-secondary" onClick={() => setShowCreateModal(false)} disabled={busy}>Cancel</button>
+                <button type="submit" className="btn btn-primary enterprise-button enterprise-button-primary" disabled={busy || saScopes.length === 0}>
                   {busy ? 'Creating…' : 'Create & Reveal Key'}
                 </button>
               </div>
@@ -606,12 +606,12 @@ export default function EnterpriseSecurityTab({ initialParams = null }) {
         </div>
       )}
 
-      <div className="enterprise-card" style={{ marginTop: '1.5rem' }}>
-        <h3 className="enterprise-card-title">
+      <div className="card bs-card-executive enterprise-card" style={{ marginTop: '1.5rem' }}>
+        <h3 className="card bs-card-executive enterprise-card-title">
           <FiKey aria-hidden="true" /> M2M Integration Quick Reference
           <HelpTooltip text="Exact request shape for machine clients. Tenant and workspace are resolved from the key server-side; client-supplied identifiers can only restrict, never expand." />
         </h3>
-        <p className="enterprise-card-subtitle">Send exactly one credential per request — an <code>x-api-key</code> header, without a bearer token</p>
+        <p className="card bs-card-executive enterprise-card-subtitle">Send exactly one credential per request — an <code>x-api-key</code> header, without a bearer token</p>
         <pre style={{ background: 'var(--enterprise-surface)', border: '1px solid var(--enterprise-border)', borderRadius: 'var(--enterprise-radius-md)', padding: '14px 16px', overflowX: 'auto', fontSize: '0.82rem', lineHeight: 1.5 }} aria-label="M2M request example">
 {`curl -H "x-api-key: rpa_your_key_here" \\
      "${typeof window !== 'undefined' ? window.location.origin : ''}/api/enterprise/resources"

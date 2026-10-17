@@ -9,7 +9,7 @@ export default function SmartSummary({ summary = '', title = 'Professional Summa
   const dividerClass = `smart-section-title--${theme.dividerStyle || 'solid-thin'}`;
 
   return (
-    <section className="smart-section smart-summary-section">
+    <section className="container-fluid bs-container-fluid-adaptive smart-section smart-summary-section">
       <h3 className={`smart-section-title ${dividerClass}`}>
         <span className="smart-section-title__text">{title}</span>
         <span className="smart-section-title__line" />

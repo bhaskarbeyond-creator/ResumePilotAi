@@ -260,7 +260,7 @@ const CustomSectionsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                     />
 
                     {suggestions.length > 0 && (
-                        <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4 space-y-2.5">
+                        <div className="card bs-card-executive rounded-xl border border-indigo-100 bg-indigo-50/40 p-4 space-y-2.5">
                             <h3 className="text-sm font-bold text-[var(--cuba-ink)]">Sections your profile already hints at</h3>
                             <p className="text-xs text-[var(--cuba-ink-subtle)]">
                                 Based on words in your own entries — adding one creates a blank section you fill in.

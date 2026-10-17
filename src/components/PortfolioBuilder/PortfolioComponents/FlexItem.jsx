@@ -4,7 +4,7 @@ const FlexItem = ({ flexGrow = 0, flexShrink = 1, flexBasis = 'auto', alignSelf 
     const ItemContent = itemContent;
 
     return (
-        <div
+    <div className="col flex-item"
             ref={puck?.dragRef}
             style={{
                 flexGrow,
@@ -78,3 +78,5 @@ const FlexItemCategory = {
 };
 
 export default FlexItemCategory;
+
+// bs-card-executive-block

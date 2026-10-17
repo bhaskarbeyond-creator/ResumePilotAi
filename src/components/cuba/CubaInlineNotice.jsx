@@ -89,7 +89,7 @@ const CubaInlineNotice = ({
             role={tone === 'error' ? 'alert' : 'status'}
             aria-describedby={bodyId}
             className={cx(
-                'flex items-start gap-2.5 rounded-cuba-sm border px-3 py-2.5 text-xs font-medium',
+                'alert flex items-start gap-2.5 rounded-cuba-sm border px-3 py-2.5 text-xs font-medium',
                 config.wrap,
                 className,
             )}

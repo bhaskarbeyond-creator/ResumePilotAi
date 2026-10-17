@@ -74,7 +74,7 @@ class Employment extends Component {
         const { t } = this.props;
 
         return (
-            <div className="panel">
+            <div className="form-control panel">
                 <div className="panel-heading">
                     <span className="panel-title"> {this.state.jobTitle == '(not-set)' ? this.props.jobTitle : this.state.jobTitle}</span>
                     <span className="panel-subtitle">

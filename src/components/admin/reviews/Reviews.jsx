@@ -138,7 +138,7 @@ const Reviews = () => {
     const averageRating = validRatings.length ? (validRatings.reduce((total, value) => total + value, 0) / validRatings.length).toFixed(1) : '—';
 
     return (
-        <div className="min-h-screen bg-slate-50 p-4 sm:p-6">
+        <div className="card bs-card-executive container-fluid min-h-screen bg-slate-50 p-4 sm:p-6">
             {(reviewToDelete || confirmRating) && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" role="presentation" onKeyDown={event => { if (event.key === 'Escape' && !isLoading) { setReviewToDelete(null); setConfirmRating(false); } }}>
                     <div role="alertdialog" aria-modal="true" aria-labelledby="review-confirm-title" aria-describedby="review-confirm-message" className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">

@@ -17,7 +17,7 @@ class DashboardToast extends Component {
 
     returnSymbol() {
         if (this.props.type === 'success') {
-            return <IoMdCheckmark className="dashboard-toast-symbol" />;
+            return <IoMdCheckmark className="card bs-card-executive dashboard-toast-symbol" />;
         } else if (this.props.type === 'error') {
             return <AiOutlineExclamationCircle className="dashboard-toast-symbol" />;
         } else if (this.props.type === 'warning') {

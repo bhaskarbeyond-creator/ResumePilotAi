@@ -24,7 +24,7 @@ class Stats extends Component {
     }
     render() {
         return (
-            <div className="adminTabs">
+            <div className="card bs-card-executive adminTabs">
                 {/* Users */}
                 <div className="adminTab">
                     <div className="adminTabLeft">

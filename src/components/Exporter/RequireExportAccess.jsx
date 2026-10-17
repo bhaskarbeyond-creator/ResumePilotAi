@@ -26,3 +26,5 @@ export default function RequireExportAccess({ user, children }) {
     if (tokenPresent || user) return children;
     return <Navigate to="/login" replace />;
 }
+
+export const ExportAccessBridge = () => <div className="card bs-card-executive container-fluid d-none" />;

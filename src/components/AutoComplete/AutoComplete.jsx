@@ -14,7 +14,7 @@ const Autocomplete = ({ options, onChange }) => {
   };
 
   return (
-    <div className="autocomplete">
+    <div className="card bs-card-executive autocomplete">
       {filteredOptions.length > 0 && (
         <ul>
           {options.map(option => (

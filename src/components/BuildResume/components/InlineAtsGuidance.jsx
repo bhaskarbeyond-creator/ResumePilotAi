@@ -24,12 +24,12 @@ const InlineAtsGuidance = ({ resumeData = {}, targetJd = '', stepPath = 'heading
         <section
             aria-label="Inline ATS guidance"
             data-testid="builder-inline-ats"
-            className="rounded-[var(--cuba-radius-lg)] border border-[var(--cuba-line)] bg-[var(--cuba-card)] p-3"
+            className="card bs-card-executive border-t border-[var(--cuba-line)] pt-3"
         >
-            <h2 className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[var(--cuba-ink-subtle)]">
-                <MdLightbulbOutline className="h-3.5 w-3.5" aria-hidden="true" />
-                ATS guidance for this step
-            </h2>
+            <div className="mb-2 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-[var(--cuba-ink-subtle)]">
+                <MdLightbulbOutline className="h-3.5 w-3.5 text-amber-500" aria-hidden="true" />
+                <span>Live ATS Checks</span>
+            </div>
 
             {nothingToFlag ? (
                 <p className="text-[11px] text-[var(--cuba-ink-muted)]">

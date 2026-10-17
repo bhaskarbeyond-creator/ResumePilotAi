@@ -99,7 +99,7 @@ const EnterprisePortalCuba = ({ children }) => {
             {isSimulating && (
                 <EnterpriseRoleSimulationBanner tenant={tenant} simulatedRole={simulatedRole} />
             )}
-            <div className="space-y-6">
+            <div className="container-fluid p-0 space-y-6">
                 {/* Tenant identity strip. Values come from the server-resolved
                     context, so this can never display another tenant's data. */}
                 {tenant && (

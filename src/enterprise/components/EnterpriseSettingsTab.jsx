@@ -150,7 +150,7 @@ export default function EnterpriseSettingsTab({ tenant }) {
         </div>
       )}
       {actionError && (
-        <div className="enterprise-card" role="alert">
+        <div className="card bs-card-executive enterprise-card" role="alert">
           <div className="enterprise-error-row">
             <span className="enterprise-error-icon" aria-hidden="true">⚠</span>
             <div><strong>Settings action failed</strong><p className="text-muted">{actionError}</p></div>
@@ -159,7 +159,7 @@ export default function EnterpriseSettingsTab({ tenant }) {
       )}
 
       <DataState loading={loading} error={error} onRetry={refreshConfig}>
-        <div className="enterprise-card">
+        <div className="card bs-card-executive enterprise-card">
           <h2 className="enterprise-tab-title">
             Organization Settings
             <HelpTooltip text="Configure tenant identity, document retention policies, security controls, and enterprise data export" />
@@ -190,7 +190,7 @@ export default function EnterpriseSettingsTab({ tenant }) {
               </div>
             </div>
             <div className="enterprise-form-actions" style={{ marginTop: 0, marginBottom: '0.5rem' }}>
-              <button type="submit" className="enterprise-button enterprise-button-secondary" disabled={busy || !orgNameDirty || orgName.trim().length < 2 || orgName.trim() === tenant?.displayName}>
+              <button type="submit" className="btn btn-outline-secondary enterprise-button enterprise-button-secondary" disabled={busy || !orgNameDirty || orgName.trim().length < 2 || orgName.trim() === tenant?.displayName}>
                 <FiSave aria-hidden="true" /> Rename Organization
               </button>
             </div>
@@ -213,7 +213,7 @@ export default function EnterpriseSettingsTab({ tenant }) {
               <small className="text-muted">Recorded as the tenant retention policy (revision {configuration?.revision ?? '—'}).</small>
             </div>
 
-            <h3 className="enterprise-card-title" style={{ marginTop: '1.5rem' }}>Security Policy — enforced at sign-in</h3>
+            <h3 className="card bs-card-executive enterprise-card-title" style={{ marginTop: '1.5rem' }}>Security Policy — enforced at sign-in</h3>
             <div className="enterprise-checkbox-list" style={{ marginTop: '0.5rem' }}>
               <label className="enterprise-checkbox">
                 <input
@@ -233,7 +233,7 @@ export default function EnterpriseSettingsTab({ tenant }) {
               </label>
             </div>
 
-            <h3 className="enterprise-card-title" style={{ marginTop: '1.5rem' }}>Identity Policy</h3>
+            <h3 className="card bs-card-executive enterprise-card-title" style={{ marginTop: '1.5rem' }}>Identity Policy</h3>
             <div className="enterprise-two-column-grid" style={{ marginTop: '0.5rem' }}>
               <div className="enterprise-form-group">
                 <label htmlFor="sso-mode">Single Sign-On Mode</label>
@@ -267,16 +267,16 @@ export default function EnterpriseSettingsTab({ tenant }) {
             </div>
 
             <div className="enterprise-form-actions" style={{ marginTop: '1.5rem' }}>
-              <button type="submit" className="enterprise-button enterprise-button-primary" disabled={busy || !configuration}>
+              <button type="submit" className="btn btn-primary enterprise-button enterprise-button-primary" disabled={busy || !configuration}>
                 <FiSave aria-hidden="true" /> {busy ? 'Saving…' : 'Save Organization Settings'}
               </button>
             </div>
           </form>
         </div>
 
-        <div className="enterprise-card" style={{ marginTop: '24px' }}>
-          <h3 className="enterprise-card-title"><FiDownload aria-hidden="true" /> Data Export</h3>
-          <p className="enterprise-card-subtitle">
+        <div className="card bs-card-executive enterprise-card" style={{ marginTop: '24px' }}>
+          <h3 className="card bs-card-executive enterprise-card-title"><FiDownload aria-hidden="true" /> Data Export</h3>
+          <p className="card bs-card-executive enterprise-card-subtitle">
             Download a checksum-verified snapshot of this organization&apos;s enterprise data (tenant registry, configuration, memberships, workspaces, teams, resources, audit events, and usage ledger).
           </p>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', padding: '16px', background: 'var(--enterprise-surface)', border: '1px solid var(--enterprise-border)', borderRadius: 'var(--enterprise-radius-md)', flexWrap: 'wrap', gap: '16px' }}>
@@ -286,7 +286,7 @@ export default function EnterpriseSettingsTab({ tenant }) {
             </div>
             <button
               type="button"
-              className="enterprise-button enterprise-button-secondary"
+              className="btn btn-outline-secondary enterprise-button enterprise-button-secondary"
               onClick={handleExport}
               disabled={exporting}
             >
@@ -295,11 +295,11 @@ export default function EnterpriseSettingsTab({ tenant }) {
           </div>
         </div>
 
-        <div className="enterprise-card" style={{ marginTop: '24px', border: '1px solid var(--enterprise-danger)', background: 'rgba(239,68,68,0.05)' }}>
-          <h3 className="enterprise-card-title" style={{ color: 'var(--enterprise-danger)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className="card bs-card-executive enterprise-card" style={{ marginTop: '24px', border: '1px solid var(--enterprise-danger)', background: 'rgba(239,68,68,0.05)' }}>
+          <h3 className="card bs-card-executive enterprise-card-title" style={{ color: 'var(--enterprise-danger)', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <FiAlertTriangle aria-hidden="true" /> Tenant Lifecycle & Danger Zone
           </h3>
-          <p className="enterprise-card-subtitle" style={{ color: 'var(--enterprise-danger)' }}>
+          <p className="card bs-card-executive enterprise-card-subtitle" style={{ color: 'var(--enterprise-danger)' }}>
             Suspending a tenant prevents all members and M2M service accounts from resolving context. Reactivation requires a platform administrator.
           </p>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', padding: '16px', background: 'var(--enterprise-surface)', border: '1px solid var(--enterprise-danger)', borderRadius: 'var(--enterprise-radius-md)', flexWrap: 'wrap', gap: '16px' }}>
@@ -309,7 +309,7 @@ export default function EnterpriseSettingsTab({ tenant }) {
             </div>
             <button
               type="button"
-              className="enterprise-button enterprise-button-danger"
+              className="btn btn-danger enterprise-button enterprise-button-danger"
               onClick={handleSuspend}
             >
               Suspend Organization

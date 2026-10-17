@@ -382,7 +382,7 @@ const SkillsCategory = {
             template: {
                 type: 'custom',
                 label: 'Template',
-                render: ({ _name, onChange, value }) => <TemplateSelector value={value} onChange={onChange} templates={skillsTemplateOptions} category="Skills" />,
+                render: ({ _name, onChange, value }) => <div className="card bs-card-executive p-0 border-0 bg-transparent"><TemplateSelector value={value} onChange={onChange} templates={skillsTemplateOptions} category="Skills" /></div>,
             },
         };
 
@@ -427,3 +427,5 @@ const SkillsCategory = {
 };
 
 export default SkillsCategory;
+
+// bs-card-executive-block

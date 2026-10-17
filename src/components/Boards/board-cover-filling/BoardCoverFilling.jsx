@@ -6,7 +6,7 @@ class BoardCoverFilling extends Component {
    }
 
    render() {
-      return <div className="cover-wrapper">
+      return <div className="card bs-card-executive cover-wrapper">
 
       </div>;
    }

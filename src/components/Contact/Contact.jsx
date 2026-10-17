@@ -192,7 +192,7 @@ const Contact = ({ user, t }) => {
 
   if (!state.loaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50/50">
+    <div className="container py-5 card bs-card-executive min-h-screen flex items-center justify-center bg-gray-50/50">
         {/* Clean loading screen */}
         <div className="text-center">
           <div className="w-24 h-24 mx-auto mb-4">

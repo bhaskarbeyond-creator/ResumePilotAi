@@ -103,7 +103,7 @@ export default function EnterprisePlatformTab() {
         <div className="enterprise-toast enterprise-toast-success"><FiCheck aria-hidden="true" /> {notification}</div>
       )}
       {actionError && (
-        <div className="enterprise-card" role="alert">
+        <div className="card bs-card-executive enterprise-card" role="alert">
           <div className="enterprise-error-row">
             <span className="enterprise-error-icon" aria-hidden="true">⚠</span>
             <div><strong>Platform action failed</strong><p className="text-muted">{actionError}</p></div>
@@ -111,8 +111,8 @@ export default function EnterprisePlatformTab() {
         </div>
       )}
 
-      <div className="enterprise-card">
-        <div className="enterprise-card-header-flex">
+      <div className="card bs-card-executive enterprise-card">
+        <div className="card bs-card-executive enterprise-card-header-flex">
           <div>
             <h2 className="enterprise-tab-title">
               <FiServer aria-hidden="true" /> Platform Administration
@@ -123,32 +123,32 @@ export default function EnterprisePlatformTab() {
             </p>
           </div>
           <div className="enterprise-inline-actions" style={{ gap: '0.5rem' }}>
-            <button type="button" className="enterprise-button enterprise-button-secondary" onClick={refreshTenants}>
+            <button type="button" className="btn btn-outline-secondary enterprise-button enterprise-button-secondary" onClick={refreshTenants}>
               <FiRefreshCw aria-hidden="true" /> Refresh
             </button>
-            <button type="button" className="enterprise-button enterprise-button-primary" onClick={() => setShowProvisionModal(true)}>
+            <button type="button" className="btn btn-primary enterprise-button enterprise-button-primary" onClick={() => setShowProvisionModal(true)}>
               <FiPlus aria-hidden="true" /> Provision Tenant
             </button>
           </div>
         </div>
 
         <div className="enterprise-metrics-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '16px', margin: '24px 0' }}>
-          <div className="enterprise-card enterprise-metric-box">
+          <div className="card bs-card-executive enterprise-card enterprise-metric-box">
             <div className="enterprise-metric-header"><span>Total Tenants</span><FiServer className="enterprise-metric-icon" aria-hidden="true" /></div>
             <div className="enterprise-metric-value">{loading ? '…' : (tenantsState.data?.tenants?.length ?? 0)}</div>
             <div className="enterprise-metric-footer text-success">Platform registry</div>
           </div>
-          <div className="enterprise-card enterprise-metric-box">
+          <div className="card bs-card-executive enterprise-card enterprise-metric-box">
             <div className="enterprise-metric-header"><span>Active</span><FiPlay className="enterprise-metric-icon" aria-hidden="true" /></div>
             <div className="enterprise-metric-value">{loading ? '…' : stateCounts.ACTIVE}</div>
             <div className="enterprise-metric-footer text-success">Serving members</div>
           </div>
-          <div className="enterprise-card enterprise-metric-box">
+          <div className="card bs-card-executive enterprise-card enterprise-metric-box">
             <div className="enterprise-metric-header"><span>Suspended</span><FiShieldOff className="enterprise-metric-icon" aria-hidden="true" /></div>
             <div className="enterprise-metric-value">{loading ? '…' : stateCounts.SUSPENDED}</div>
             <div className="enterprise-metric-footer text-muted">Access frozen</div>
           </div>
-          <div className="enterprise-card enterprise-metric-box">
+          <div className="card bs-card-executive enterprise-card enterprise-metric-box">
             <div className="enterprise-metric-header"><span>Other States</span><FiRefreshCw className="enterprise-metric-icon" aria-hidden="true" /></div>
             <div className="enterprise-metric-value">{loading ? '…' : stateCounts.OTHER}</div>
             <div className="enterprise-metric-footer text-muted">Provisioning / deleting</div>
@@ -173,8 +173,8 @@ export default function EnterprisePlatformTab() {
           {tenants.length === 0 ? (
             <p className="enterprise-empty">No tenants match this view.</p>
           ) : (
-            <div className="enterprise-table-wrapper">
-              <table className="enterprise-table">
+            <div className="table enterprise-table table-hover align-middle-wrapper">
+              <table className="table enterprise-table table-hover align-middle">
                 <thead>
                   <tr>
                     <th>Tenant</th>
@@ -198,7 +198,7 @@ export default function EnterprisePlatformTab() {
                         </div>
                       </td>
                       <td><code>{tenant.slug}</code></td>
-                      <td><span className="enterprise-pill enterprise-pill-secondary">{tenant.isolationTier}</span></td>
+                      <td><span className="badge rounded-pill enterprise-pill enterprise-pill-secondary">{tenant.isolationTier}</span></td>
                       <td><small>{tenant.region || 'default'}</small></td>
                       <td>
                         <span className={`enterprise-pill enterprise-pill-${tenant.lifecycleState === 'ACTIVE' ? 'success' : (tenant.lifecycleState === 'SUSPENDED' ? 'warning' : 'secondary')}`}>
@@ -206,11 +206,11 @@ export default function EnterprisePlatformTab() {
                         </span>
                       </td>
                       <td className="text-right">
-                        <div className="enterprise-table-actions" style={{ justifyContent: 'flex-end' }}>
+                        <div className="table enterprise-table table-hover align-middle-actions" style={{ justifyContent: 'flex-end' }}>
                           {tenant.lifecycleState === 'ACTIVE' ? (
                             <button
                               type="button"
-                              className="enterprise-button enterprise-button-danger enterprise-button-sm"
+                              className="btn btn-danger enterprise-button enterprise-button-danger enterprise-button-sm"
                               disabled={busyTenant === `${tenant.id}:SUSPENDED`}
                               onClick={() => handleLifecycle(tenant, 'SUSPENDED')}
                             >
@@ -219,7 +219,7 @@ export default function EnterprisePlatformTab() {
                           ) : tenant.lifecycleState === 'SUSPENDED' ? (
                             <button
                               type="button"
-                              className="enterprise-button enterprise-button-secondary enterprise-button-sm"
+                              className="btn btn-outline-secondary enterprise-button enterprise-button-secondary enterprise-button-sm"
                               disabled={busyTenant === `${tenant.id}:ACTIVE`}
                               onClick={() => handleLifecycle(tenant, 'ACTIVE')}
                             >
@@ -240,16 +240,16 @@ export default function EnterprisePlatformTab() {
       </div>
 
       {showProvisionModal && (
-        <div className="enterprise-modal-backdrop" role="presentation" onClick={() => !busy && setShowProvisionModal(false)}>
-          <div className="enterprise-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-            <div className="enterprise-modal-header">
+        <div className="modal-content enterprise-modal-backdrop" role="presentation" onClick={() => !busy && setShowProvisionModal(false)}>
+          <div className="modal-content enterprise-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content enterprise-modal-header">
               <h3>Provision Enterprise Tenant</h3>
               <button type="button" className="enterprise-button-icon" onClick={() => setShowProvisionModal(false)} disabled={busy}>
                 <FiX />
               </button>
             </div>
             <form onSubmit={handleProvision}>
-              <div className="enterprise-modal-body">
+              <div className="modal-content enterprise-modal-body">
                 <div className="enterprise-form-group">
                   <label htmlFor="tenant-display-name">Organization Display Name</label>
                   <input
@@ -294,9 +294,9 @@ export default function EnterprisePlatformTab() {
                   </select>
                 </div>
               </div>
-              <div className="enterprise-modal-footer">
-                <button type="button" className="enterprise-button enterprise-button-secondary" onClick={() => setShowProvisionModal(false)} disabled={busy}>Cancel</button>
-                <button type="submit" className="enterprise-button enterprise-button-primary" disabled={busy}>
+              <div className="modal-content enterprise-modal-footer">
+                <button type="button" className="btn btn-outline-secondary enterprise-button enterprise-button-secondary" onClick={() => setShowProvisionModal(false)} disabled={busy}>Cancel</button>
+                <button type="submit" className="btn btn-primary enterprise-button enterprise-button-primary" disabled={busy}>
                   {busy ? 'Provisioning…' : 'Provision Tenant'}
                 </button>
               </div>

@@ -462,7 +462,7 @@ export default function PlatformOperators() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+              <table className="table table-hover align-middle w-full text-left text-xs">
                 <thead className="bg-slate-50/80 uppercase text-[10px] font-black text-slate-500 tracking-wider border-b border-slate-200">
                   <tr>
                     <th className="py-3 px-4">Operator Identity</th>

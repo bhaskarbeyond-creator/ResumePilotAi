@@ -45,7 +45,7 @@ const CubaCopilotMascot = ({ size = 44, className = '', active = true, label = '
             height={Math.round(size * 0.64)}
             aria-hidden="true"
             focusable="false"
-            className="relative"
+            className="badge rounded-pill relative"
         >
             {/* antenna */}
             <path d="M16 7.4V4.6" stroke="rgba(255,255,255,0.95)" strokeWidth="1.6" strokeLinecap="round" />

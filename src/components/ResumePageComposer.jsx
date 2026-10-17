@@ -712,7 +712,7 @@ export default function ResumePageComposer({ templateId, language = 'en', values
     if (!enabled) return children;
 
     return (
-        <div className="resume-document" dir={getTemplateDirection(language)} data-template-id={templateId}>
+    <div className="container-fluid p-0 composer-bs-root" className="resume-document" dir={getTemplateDirection(language)} data-template-id={templateId}>
             <div className="resume-live" ref={liveRef} aria-hidden="true">
                 {children}
             </div>

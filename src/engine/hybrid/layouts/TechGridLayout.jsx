@@ -12,7 +12,7 @@ import SmartReferences from '../components/SmartReferences';
 
 export default function TechGridLayout({ values = {}, theme = {} }) {
   return (
-    <div className="smart-layout smart-layout--tech-grid" style={{
+    <div className="container-fluid bs-container-fluid-adaptive smart-layout smart-layout--tech-grid" style={{
       '--primary': theme.primary,
       '--secondary': theme.secondary,
       '--sidebar-width': theme.sidebarWidth || '34%',

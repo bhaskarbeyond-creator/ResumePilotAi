@@ -99,15 +99,15 @@ const Dashboard = () => {
   return (
     <div className="space-y-6">
       {/* ── Executive Mission Control Hero Banner ── */}
-      <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="card bs-card-executive bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-2 max-w-2xl">
           <div className="flex flex-wrap items-center gap-2.5">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black tracking-wider uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+            <span className="badge rounded-pill inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black tracking-wider uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
               <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
               {center?.status === 'HEALTHY' ? 'System Fully Operational' : center?.status === 'DEGRADED' ? 'System Degraded' : 'Platform Telemetry Online'}
             </span>
             {center?.commitSha && (
-              <span className="px-2.5 py-1 rounded-full text-[11px] font-mono font-bold bg-slate-800/80 text-slate-300 border border-slate-700">
+              <span className="badge rounded-pill px-2.5 py-1 rounded-full text-[11px] font-mono font-bold bg-slate-800/80 text-slate-300 border border-slate-700">
                 SHA: {center.commitSha.substring(0, 7)}
               </span>
             )}
@@ -126,7 +126,7 @@ const Dashboard = () => {
             <button
               type="button"
               onClick={() => setAutoRefresh(prev => !prev)}
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border transition ${
+              className={`btn btn-sm inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border transition ${
                 autoRefresh ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-slate-800 text-slate-400 border-slate-700'
               }`}
             >
@@ -141,14 +141,14 @@ const Dashboard = () => {
             type="button"
             onClick={loadDashboard}
             disabled={loading}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-100 text-xs font-extrabold transition border border-slate-700/80 shadow-sm hover:border-slate-600 disabled:opacity-50 cursor-pointer whitespace-nowrap"
+            className="btn btn-dark shadow-sm inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-100 text-xs font-extrabold transition border border-slate-700/80 hover:border-slate-600 disabled:opacity-50 cursor-pointer whitespace-nowrap"
           >
             <FaSyncAlt className={`h-3.5 w-3.5 text-slate-300 ${loading ? 'animate-spin' : ''}`} />
             <span>Refresh Stream</span>
           </button>
           <Link
             to="/admin/health"
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 !text-white text-xs font-extrabold transition shadow-md shadow-indigo-600/30 border border-indigo-500/30 cursor-pointer whitespace-nowrap"
+            className="btn btn-primary shadow-sm inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 !text-white text-xs font-extrabold transition shadow-md shadow-indigo-600/30 border border-indigo-500/30 cursor-pointer whitespace-nowrap"
           >
             <FaHeartbeat className="h-3.5 w-3.5 !text-white shrink-0" />
             <span className="!text-white font-extrabold">Health Matrix</span>
@@ -157,7 +157,7 @@ const Dashboard = () => {
       </div>
 
       {error && (
-        <div role="alert" className="flex items-start justify-between gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-xs text-amber-900 shadow-2xs">
+        <div role="alert" className="alert alert-warning flex items-start justify-between gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-xs text-amber-900 shadow-2xs">
           <div className="flex items-center gap-2 font-medium">
             <FaExclamationTriangle className="text-amber-600 shrink-0" />
             <span>{error}</span>
@@ -167,12 +167,12 @@ const Dashboard = () => {
       )}
 
       {/* ── 4 KPI Metric Cards ── */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="row g-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map(({ label, value, icon, badgeBg, sub, href }) => (
           <Link
             key={label}
             to={href}
-            className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs hover:shadow-md hover:border-indigo-200 transition block"
+            className="card bs-card-executive group rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs hover:shadow-md hover:border-indigo-200 transition block text-decoration-none"
           >
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-bold text-slate-500 tracking-wide uppercase group-hover:text-indigo-600 transition">{label}</span>
@@ -191,7 +191,7 @@ const Dashboard = () => {
 
       {/* ── Platform Health Index & Telemetry Subsystems ── */}
       {center && (
-        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-2xs space-y-5">
+        <div className="card bs-card-executive bg-white rounded-3xl border border-slate-200 p-6 shadow-2xs space-y-5">
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <ScoreBadge score={healthScore} label="Health" good />

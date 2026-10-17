@@ -77,7 +77,7 @@ const MetricCard = ({ label, value, caption, icon, tone = 'primary', children, t
         <Tag
             {...(interactive ? { type: 'button', onClick: onOpen, 'aria-label': openLabel } : {})}
             data-testid={testId}
-            className="cuba-focusable flex min-w-0 items-center gap-3 rounded-cuba-lg border border-cuba-line bg-cuba-card px-3.5 py-3 text-left shadow-cuba-sm transition duration-200 ease-cuba hover:-translate-y-0.5 hover:bg-cuba-primary-soft hover:shadow-cuba-md cursor-pointer"
+            className="card bs-card-executive cuba-focusable flex min-w-0 items-center gap-3 rounded-cuba-lg border border-cuba-line bg-cuba-card px-3.5 py-3 text-left shadow-cuba-sm transition duration-200 ease-cuba hover:-translate-y-0.5 hover:bg-cuba-primary-soft hover:shadow-cuba-md cursor-pointer"
         >
             {children ? (
                 <div className="flex-none">{children}</div>

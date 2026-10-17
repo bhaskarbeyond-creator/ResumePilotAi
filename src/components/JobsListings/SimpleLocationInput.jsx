@@ -93,7 +93,7 @@ const SimpleLocationInput = ({ value, onChange, placeholder = 'Location', classN
     };
 
     return (
-        <div className="relative">
+        <div className="card bs-card-executive relative">
             <FaMapMarkerAlt className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4 z-10" />
             {value && (
                 <button onClick={clearInput} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 w-4 h-4 z-10" type="button">

@@ -152,8 +152,8 @@ export default function EnterpriseAiTab() {
         </div>
       )}
 
-      <div className="enterprise-card">
-        <div className="enterprise-card-header-flex">
+      <div className="card bs-card-executive enterprise-card">
+        <div className="card bs-card-executive enterprise-card-header-flex">
           <div>
             <h2 className="enterprise-tab-title">
               Enterprise AI Policy & Quota Console
@@ -165,7 +165,7 @@ export default function EnterpriseAiTab() {
           </div>
           <button
             type="button"
-            className="enterprise-button enterprise-button-secondary"
+            className="btn btn-outline-secondary enterprise-button enterprise-button-secondary"
             onClick={handleTestAi}
             disabled={testing}
           >
@@ -195,13 +195,13 @@ export default function EnterpriseAiTab() {
         {configLoading ? (
           <div className="enterprise-loading-row"><span className="enterprise-spinner" aria-hidden="true" /><span className="text-muted">Loading AI policy…</span></div>
         ) : configError ? (
-          <div className="enterprise-card" role="alert">
+          <div className="card bs-card-executive enterprise-card" role="alert">
             <div className="enterprise-error-row">
               <span className="enterprise-error-icon" aria-hidden="true">⚠</span>
               <div>
                 <strong>AI policy unavailable</strong>
                 <p className="text-muted">{configError}</p>
-                <button type="button" className="enterprise-button enterprise-button-secondary enterprise-button-sm" onClick={loadConfiguration} style={{ marginTop: '0.75rem' }}>
+                <button type="button" className="btn btn-outline-secondary enterprise-button enterprise-button-secondary enterprise-button-sm" onClick={loadConfiguration} style={{ marginTop: '0.75rem' }}>
                   Retry
                 </button>
               </div>
@@ -209,8 +209,8 @@ export default function EnterpriseAiTab() {
           </div>
         ) : configuration ? (
           <form onSubmit={handleSavePolicy}>
-            <h3 className="enterprise-card-title" style={{ marginTop: '1.5rem' }}>Approved Provider Allowlist</h3>
-            <p className="enterprise-card-subtitle">Only providers enabled below receive tenant generation requests. An empty allowlist denies all providers (fail closed).</p>
+            <h3 className="card bs-card-executive enterprise-card-title" style={{ marginTop: '1.5rem' }}>Approved Provider Allowlist</h3>
+            <p className="card bs-card-executive enterprise-card-subtitle">Only providers enabled below receive tenant generation requests. An empty allowlist denies all providers (fail closed).</p>
 
             <div className="enterprise-provider-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
               {PROVIDERS.map(provider => {
@@ -234,8 +234,8 @@ export default function EnterpriseAiTab() {
               })}
             </div>
 
-            <h3 className="enterprise-card-title" style={{ marginTop: '1.75rem' }}><FiCpu aria-hidden="true" /> Model Allowlist</h3>
-            <p className="enterprise-card-subtitle">
+            <h3 className="card bs-card-executive enterprise-card-title" style={{ marginTop: '1.75rem' }}><FiCpu aria-hidden="true" /> Model Allowlist</h3>
+            <p className="card bs-card-executive enterprise-card-subtitle">
               When at least one model is approved, providers serving a non-approved model are disabled at generation time — even if the provider itself is approved. An empty model allowlist permits every model of the approved providers.
             </p>
 
@@ -303,7 +303,7 @@ export default function EnterpriseAiTab() {
             </div>
 
             <div className="enterprise-form-actions">
-              <button type="submit" className="enterprise-button enterprise-button-primary" disabled={busy}>
+              <button type="submit" className="btn btn-primary enterprise-button enterprise-button-primary" disabled={busy}>
                 {busy ? 'Saving…' : 'Save AI Policy Changes'}
               </button>
             </div>

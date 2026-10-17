@@ -19,7 +19,7 @@ class InitialisationWrapper extends Component {
     }
     render() {
         return (
-            <div id="authWrapper" className="authWrapper">
+            <div id="authWrapper" className="card bs-card-executive authWrapper">
                 <div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="authModal">
                     <AnimatePresence>
                         {this.state.step == 0 && <motion.div style={{position:"absolute",height:"100%",width:"100%"}} initial={{opacity:0}} animate={{opacity:1}}  transition={{duration:0.4}} exit={{opacity:0}}> <InstallationSuccess  nextStep={this.nextStep} /> </motion.div>}

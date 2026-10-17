@@ -85,7 +85,7 @@ const GeoSeoSettings = () => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center p-8" role="status" aria-live="polite">
+    <div className="card bs-card-executive container-fluid p-4 flex items-center justify-center p-8" role="status" aria-live="polite">
                 <FaSpinner className="animate-spin text-slate-500 w-6 h-6 mr-2" aria-hidden="true" />
                 <span className="text-slate-600 text-sm">Loading authoritative Geo-SEO settings…</span>
             </div>

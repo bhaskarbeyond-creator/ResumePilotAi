@@ -9,7 +9,7 @@ function SettingsDropdown(props) {
 
 
   return (
-    <div className="settings-dropdown">
+    <div className="card bs-card-executive settings-dropdown">
         <select name={props.name} id="country">
             <option value="Profile">Profile</option>
             <option value="Account">Account</option>

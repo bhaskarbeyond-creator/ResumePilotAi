@@ -26,7 +26,7 @@ const AiSurface = ({
 
     return (
         <section
-            className={cx('cuba-ai-panel', compact ? 'p-4' : 'p-5 sm:p-6', className)}
+            className={cx('card bs-card-executive cuba-ai-panel', compact ? 'p-4' : 'p-5 sm:p-6', className)}
             data-testid="ai-surface"
             data-ai-status={status || 'idle'}
             aria-labelledby="ai-surface-title"

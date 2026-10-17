@@ -95,7 +95,7 @@ const CubaPromptDialog = ({
     };
 
     return (
-        <CubaModal
+        <CubaModal className="modal-dialog modal-content card bs-card-executive"
             open={open}
             onClose={busy ? undefined : onClose}
             closeOnBackdrop={!busy}

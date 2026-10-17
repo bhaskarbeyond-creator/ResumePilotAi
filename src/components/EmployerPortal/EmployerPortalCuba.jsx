@@ -65,7 +65,7 @@ const EmployerPortalCuba = () => {
     }, [toast.isShowed]);
 
     return (
-        <CubaPortalShell
+        <CubaPortalShell className="container-fluid p-0 bs-employer-portal-shell"
             persona="Recruiter & Hiring"
             title="Recruiter Overview"
             navigation={NAV}

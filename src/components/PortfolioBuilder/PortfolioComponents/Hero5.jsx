@@ -121,7 +121,7 @@ const Hero5 = {
         return (
             <div className={`${backgroundColor} relative min-h-screen overflow-hidden`}>
                 {/* Scanline Effect */}
-                <div className="absolute inset-0 pointer-events-none">
+                <div className="card bs-card-executive absolute inset-0 pointer-events-none">
                     <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/5 to-transparent animate-pulse opacity-20"></div>
                     <div
                         className="absolute inset-0 opacity-10"

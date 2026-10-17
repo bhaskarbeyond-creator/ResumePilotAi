@@ -40,7 +40,7 @@ class Languages extends Component {
 render() {
         const { t, currentResumeName } = this.props;
         return (
-            <div className="panel">
+            <div className="form-control panel">
                 <div className="panel-heading">
                     <span className="panel-title"> {this.state.title == '(not-set)' ? this.props.title : this.state.title}</span>
                     <span className="panel-subtitle">{this.props.level} </span>

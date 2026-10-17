@@ -599,7 +599,7 @@ const RichTextEditor = ({ value = '', onChange, placeholder = 'Enter your text..
     };
 
     return (
-        <div className={`relative ${className}`}>
+        <div className={`form-control bs-rich-editor p-0 relative ${className}`}>
             <LexicalComposer initialConfig={getInitialConfig()}>
                 <div className="bg-white border border-[var(--cuba-line-strong)] hover:border-[var(--cuba-line-strong)] focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 rounded-md transition-all duration-200 ease-in-out">
                     <ToolbarPlugin />

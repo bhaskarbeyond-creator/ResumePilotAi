@@ -4,7 +4,7 @@ const GridItem = ({ columnSpan = 1, rowSpan = 1, alignSelf = 'auto', justifySelf
     const ItemContent = itemContent;
 
     return (
-        <div
+    <div className="col grid-item"
             ref={puck?.dragRef}
             style={{
                 gridColumn: `span ${columnSpan}`,
@@ -74,3 +74,5 @@ const GridItemCategory = {
 };
 
 export default GridItemCategory;
+
+// bs-card-executive-block

@@ -180,7 +180,7 @@ export default function LiveAnswerGuide({
     return (
         <section
             aria-label="Interview answer guide"
-            className="rounded-2xl border border-indigo-200/80 bg-white p-3 shadow-xs shrink-0 flex flex-col gap-2 animate-fadeIn"
+            className="card bs-card-executive rounded-2xl border border-indigo-200/80 bg-white p-3 shadow-xs shrink-0 flex flex-col gap-2 animate-fadeIn"
         >
             {/* 1) Interviewer's Goal of asking that particular Question */}
             <div className="flex items-start gap-2.5 bg-gradient-to-r from-indigo-50/90 via-slate-50 to-white border border-indigo-100/90 rounded-xl px-3 py-2 text-xs">
@@ -221,7 +221,7 @@ export default function LiveAnswerGuide({
                             type="button"
                             onClick={handleRegenerate}
                             disabled={loading || regenerating || !question}
-                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 hover:border-slate-300 px-2 py-0.5 text-[10px] font-bold text-slate-700 shadow-2xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="btn btn-sm btn-outline-secondary inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] font-bold shadow-2xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                             title="Regenerate an alternative 10/10 STAR answer for this question"
                         >
                             <FaRedo className={`w-2 h-2 text-indigo-600 ${regenerating ? 'animate-spin' : ''}`} />
@@ -231,7 +231,7 @@ export default function LiveAnswerGuide({
                             <button
                                 type="button"
                                 onClick={() => onInsertSnippet(activeGuide.modelAnswer)}
-                                className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-white hover:bg-indigo-50 px-2 py-0.5 text-[10px] font-bold text-indigo-700 shadow-2xs transition-colors cursor-pointer"
+                                className="btn btn-sm btn-primary inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] font-bold shadow-2xs transition-colors cursor-pointer"
                                 title="Click to insert this model answer into your response box"
                             >
                                 <FaPlus className="w-2 h-2 text-indigo-600" />

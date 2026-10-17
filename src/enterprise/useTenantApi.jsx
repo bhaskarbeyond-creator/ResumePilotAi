@@ -57,7 +57,7 @@ export function useAsyncResource(loader, deps = []) {
 export function DataState({ loading, error, onRetry = null, children }) {
   if (loading) {
     return (
-      <div className="enterprise-card" role="status" aria-live="polite">
+      <div className="card bs-card-executive enterprise-card" role="status" aria-live="polite">
         <div className="enterprise-loading-row">
           <span className="enterprise-spinner" aria-hidden="true" />
           <span className="text-muted">Loading enterprise data…</span>
@@ -67,14 +67,14 @@ export function DataState({ loading, error, onRetry = null, children }) {
   }
   if (error) {
     return (
-      <div className="enterprise-card" role="alert">
+      <div className="card bs-card-executive enterprise-card" role="alert">
         <div className="enterprise-error-row">
           <span className="enterprise-error-icon" aria-hidden="true">⚠</span>
           <div>
             <strong>Data unavailable</strong>
             <p className="text-muted">{error?.message || 'The enterprise service did not respond as expected.'}</p>
             {typeof onRetry === 'function' && (
-              <button type="button" className="enterprise-button enterprise-button-secondary enterprise-button-sm" onClick={onRetry} style={{ marginTop: '0.75rem' }}>
+              <button type="button" className="btn btn-outline-secondary enterprise-button enterprise-button-secondary enterprise-button-sm" onClick={onRetry} style={{ marginTop: '0.75rem' }}>
                 Retry
               </button>
             )}

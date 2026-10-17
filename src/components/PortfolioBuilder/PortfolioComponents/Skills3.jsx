@@ -82,7 +82,7 @@ const Skills3 = {
         }[accentColor] || { primary: 'from-cyan-400 to-blue-500', text: 'text-cyan-400', border: 'border-cyan-400/30' };
 
         return (
-            <div className="bg-black relative py-24 px-6 overflow-hidden min-h-screen" style={{ backgroundColor: '#000000' }}>
+            <div className="card bs-card-executive bg-black relative py-24 px-6 overflow-hidden min-h-screen" style={{ backgroundColor: '#000000' }}>
                 <div className="relative max-w-7xl mx-auto">
                     <div className="text-center mb-20">
                         <h2 className="text-6xl md:text-7xl font-black text-white leading-none mb-6">

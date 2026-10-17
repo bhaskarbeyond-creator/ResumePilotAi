@@ -456,7 +456,7 @@ const CubaAppShell = ({
                     opens the identical palette — the mobile collapse is a change of
                     presentation, never a loss of function. */}
                 {commands.length > 0 && (
-                    <div className="mx-auto flex w-full max-w-xl flex-none items-center justify-center md:w-auto md:flex-1">
+                    <div className="flex flex-none items-center justify-center md:mx-auto md:max-w-xl md:w-auto md:flex-1">
                         <button
                             type="button"
                             onClick={() => setPaletteOpen(true)}
@@ -712,7 +712,7 @@ const CubaAppShell = ({
                         bottom tab bar so it can never cover content.
                         DIR-077: the cap is raised from max-w-7xl to max-w-\[1280px\] so
                         a wide executive viewport stops wasting ~30% of its width. */}
-                    <div className="mx-auto w-full max-w-\[1280px\] min-h-0 px-4 pt-2 pb-24 sm:px-6 md:pt-2.5 md:pb-4 lg:px-8">
+                    <div className="container-fluid bs-container-fluid-adaptive mx-auto w-full max-w-[1280px] min-h-0 px-4 pt-2 pb-24 sm:px-6 md:pt-2.5 md:pb-4 lg:px-8 2xl:max-w-[1536px] 3xl:max-w-[1800px] 4xl:max-w-[2200px]">
                         {/* DIR-077: the semantic trail now anchors the MAIN workspace
                             column at its left edge (exactly one Breadcrumb landmark),
                             instead of floating over the sidebar header. */}

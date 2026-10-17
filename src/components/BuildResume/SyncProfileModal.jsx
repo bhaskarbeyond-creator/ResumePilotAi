@@ -532,7 +532,7 @@ export default function SyncProfileModal({
                             type="button"
                             onClick={handlePushToProfile}
                             disabled={saving || loading || pushDiffs.totalNew === 0}
-                            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-[var(--cuba-line-strong)] text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                            className="btn btn-primary px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-[var(--cuba-line-strong)] text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
                         >
                             {saving ? (
                                 <>

@@ -28,7 +28,7 @@ export default function ResumeWatermarkOverlay({ watermark, entitlement, isPaid 
     if (position === 'bottom-center') {
         return (
             <div
-                className="resume-watermark-overlay resume-watermark-bottom"
+                className="card bs-card-executive resume-watermark-overlay resume-watermark-bottom"
                 data-testid="resume-watermark-overlay"
                 data-watermark-position="bottom-center"
                 style={{

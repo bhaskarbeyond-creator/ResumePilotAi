@@ -76,7 +76,7 @@ const JobFilters = ({
         const activeCountInSection = selectedFilters[key]?.length || 0;
 
         return (
-            <div className="border-b border-slate-100 last:border-b-0 pb-4 last:pb-0">
+            <div className="card bs-card-executive border-b border-slate-100 last:border-b-0 pb-4 last:pb-0">
                 <button
                     type="button"
                     onClick={() => toggleFilterSection(key)}

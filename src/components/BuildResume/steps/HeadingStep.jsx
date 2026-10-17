@@ -59,8 +59,6 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate, onPreview }) =>
         Boolean(resumeData?.website || resumeData?.linkedin || resumeData?.github || resumeData?.address || resumeData?.postalcode),
     );
     const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
-    const [assistantTab, setAssistantTab] = useState('suggestions');
-
     const [isGeneratingJd, setIsGeneratingJd] = useState(false);
     const [jdAutofillMessage, setJdAutofillMessage] = useState('');
     const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -467,61 +465,6 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate, onPreview }) =>
     const completedRequiredFields = requiredFields.filter((field) => String(formData[field] || '').trim() !== '').length;
     const isStepComplete = completedRequiredFields === requiredFields.length;
 
-    const assistantRoleChips = useMemo(() => {
-        const occ = String(formData.occupation || targetRole || '').trim();
-        if (occ) {
-            return getOrganicRoleProgressions(occ).slice(0, 3);
-        }
-        return ['Senior Product Designer', 'Lead UX/UI Designer', 'Product Design Lead'];
-    }, [formData.occupation, targetRole]);
-
-    const assistantSummaryStarters = useMemo(() => {
-        const roleLabel = String(formData.occupation || targetRole || 'Product Designer').trim();
-        return [
-            `${roleLabel} with a track record of shipping high-impact digital products, measurable outcomes, and scalable systems.`,
-            `User-focused ${roleLabel.toLowerCase()} specializing in cross-functional execution, research-backed decisions, and end-to-end delivery.`,
-        ];
-    }, [formData.occupation, targetRole]);
-
-    const assistantSkillKeywords = useMemo(() => {
-        if (targetJd && targetJd.trim().length >= 20) {
-            const parsed = extractJdKeywords(targetJd, { limit: 8 }).map((k) => k.term).filter(Boolean);
-            if (parsed.length > 0) return parsed;
-        }
-        return ['Figma', 'Design Systems', 'Prototyping', 'User Research', 'Wireframing', 'Usability Testing', 'Interaction Design', 'Agile'];
-    }, [targetJd]);
-
-    const existingSkillNames = useMemo(
-        () => new Set(
-            (Array.isArray(resumeData?.skills) ? resumeData.skills : [])
-                .map((s) => String(typeof s === 'string' ? s : (s?.name || s?.skill || '')).trim().toLowerCase())
-                .filter(Boolean),
-        ),
-        [resumeData?.skills],
-    );
-
-    const handleApplyAssistantRole = (roleTitle) => {
-        const clean = String(roleTitle || '').trim();
-        if (!clean) return;
-        setFormData((prev) => ({ ...prev, occupation: clean }));
-        updateResumeData({ ...formData, occupation: clean, targetRole, targetJobDescription: targetJd });
-    };
-
-    const handleApplyAssistantSummary = (summaryText) => {
-        const clean = String(summaryText || '').trim();
-        if (!clean) return;
-        updateResumeData({ ...formData, summary: clean, targetRole, targetJobDescription: targetJd });
-    };
-
-    const handleAddAssistantSkill = (skillName) => {
-        const clean = String(skillName || '').trim();
-        if (!clean) return;
-        const currentSkills = Array.isArray(resumeData?.skills) ? resumeData.skills : [];
-        if (existingSkillNames.has(clean.toLowerCase())) return;
-        const nextSkills = [...currentSkills, { name: clean, rating: 80 }];
-        updateResumeData({ ...formData, skills: nextSkills, targetRole, targetJobDescription: targetJd });
-    };
-
     return (
         <StepShell
             stepNumber={1}
@@ -532,178 +475,6 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate, onPreview }) =>
             statusBadge={`${completedRequiredFields} of ${requiredFields.length} required fields`}
             resumeData={resumeData}
             targetJd={targetJd}
-            headerActions={onPreview ? (
-                <button
-                    type="button"
-                    onClick={onPreview}
-                    aria-label="Preview resume"
-                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 text-xs font-bold text-indigo-700 transition-colors hover:bg-indigo-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                >
-                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7Z" />
-                        <circle cx="12" cy="12" r="3" strokeWidth="2" />
-                    </svg>
-                    Preview
-                </button>
-            ) : null}
-            guideChildren={(
-                <div
-                    data-testid="builder-career-assistant"
-                    className="mt-3.5 border-t border-[var(--cuba-line)] pt-3.5 space-y-3"
-                >
-                    <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[var(--cuba-primary-soft)] text-[var(--cuba-primary-strong)]">
-                                <MdAutoAwesome className="h-3.5 w-3.5" aria-hidden="true" />
-                            </span>
-                            <span className="truncate text-xs font-extrabold text-[var(--cuba-ink)]">AI Career Assistant</span>
-                        </div>
-                        <span className="inline-flex items-center gap-1 rounded-full bg-[var(--cuba-success-soft)] px-2 py-0.5 text-[10px] font-bold text-[var(--cuba-success)]">
-                            <span className="h-1.5 w-1.5 rounded-full bg-[var(--cuba-success)]" aria-hidden="true" />
-                            Online
-                        </span>
-                    </div>
-
-                    <div role="tablist" aria-label="AI Career Assistant tabs" className="flex items-center gap-0.5 rounded-lg bg-[var(--cuba-canvas)] p-1 border border-[var(--cuba-line)]">
-                        {[
-                            ['suggestions', 'Suggestions'],
-                            ['insights', 'Resume Insights'],
-                            ['match', 'Job Match'],
-                        ].map(([id, label]) => (
-                            <button
-                                key={id}
-                                type="button"
-                                role="tab"
-                                aria-selected={assistantTab === id}
-                                onClick={() => setAssistantTab(id)}
-                                className={`flex-1 rounded-md px-1 py-1 text-[10px] font-bold transition-colors whitespace-nowrap text-center ${
-                                    assistantTab === id
-                                        ? 'bg-[var(--cuba-primary)] text-white'
-                                        : 'text-[var(--cuba-ink-muted)] hover:text-[var(--cuba-ink)]'
-                                }`}
-                            >
-                                {label}
-                            </button>
-                        ))}
-                    </div>
-
-                    {assistantTab === 'suggestions' && (
-                        <div className="space-y-2.5" role="tabpanel" aria-label="Suggestions">
-                            {/* Suggested Job Titles */}
-                            <div className="rounded-lg border border-[var(--cuba-line)] bg-[var(--cuba-canvas)] p-2.5 space-y-2">
-                                <div className="flex items-center justify-between gap-1">
-                                    <span className="text-[11px] font-bold text-[var(--cuba-ink)]">Suggested Job Titles</span>
-                                    <span className="text-[9px] font-semibold text-[var(--cuba-ink-subtle)]">Click to apply</span>
-                                </div>
-                                <div className="flex flex-wrap gap-1.5">
-                                    {assistantRoleChips.map((roleTitle) => {
-                                        const isCurrent = String(formData.occupation || '').toLowerCase() === roleTitle.toLowerCase();
-                                        return (
-                                            <button
-                                                key={roleTitle}
-                                                type="button"
-                                                onClick={() => handleApplyAssistantRole(roleTitle)}
-                                                className={`rounded-md border px-2 py-1 text-[10px] font-semibold transition-colors ${
-                                                    isCurrent
-                                                        ? 'border-[var(--cuba-primary)] bg-[var(--cuba-primary-soft)] text-[var(--cuba-primary-strong)]'
-                                                        : 'border-[var(--cuba-line)] bg-white text-[var(--cuba-ink)] hover:border-[var(--cuba-primary-line)]'
-                                                }`}
-                                            >
-                                                {roleTitle}
-                                            </button>
-                                        );
-                                    })}
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            const el = document.querySelector('input[name="occupation"]');
-                                            if (el) el.focus();
-                                        }}
-                                        className="rounded-md border border-dashed border-[var(--cuba-primary-line)] bg-white px-2 py-1 text-[10px] font-bold text-[var(--cuba-primary-strong)] hover:bg-[var(--cuba-primary-soft)]"
-                                    >
-                                        + Custom Title
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Professional Summary Suggestions */}
-                            <div className="rounded-lg border border-[var(--cuba-line)] bg-[var(--cuba-canvas)] p-2.5 space-y-2">
-                                <div className="flex items-center justify-between gap-2">
-                                    <span className="text-[11px] font-bold text-[var(--cuba-ink)]">Professional Summary</span>
-                                    <button
-                                        type="button"
-                                        onClick={handleAutofillJd}
-                                        className="rounded border border-[var(--cuba-primary-line)] bg-[var(--cuba-primary-soft)] px-1.5 py-0.5 text-[9px] font-bold text-[var(--cuba-primary-strong)] hover:bg-[var(--cuba-primary-soft-hover)]"
-                                    >
-                                        Autofill from Profile
-                                    </button>
-                                </div>
-                                <div className="space-y-1.5">
-                                    {assistantSummaryStarters.map((starter, idx) => (
-                                        <button
-                                            key={`starter-${idx}`}
-                                            type="button"
-                                            onClick={() => handleApplyAssistantSummary(starter)}
-                                            className="w-full rounded-md border border-[var(--cuba-line)] bg-white p-2 text-left text-[10px] leading-snug text-[var(--cuba-ink-muted)] hover:border-[var(--cuba-primary-line)] hover:text-[var(--cuba-ink)] transition-colors"
-                                        >
-                                            {starter}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Add Key Skills to Boost Match */}
-                            <div className="rounded-lg border border-[var(--cuba-line)] bg-[var(--cuba-canvas)] p-2.5 space-y-2">
-                                <span className="block text-[11px] font-bold text-[var(--cuba-ink)]">Add Key Skills to Boost Match</span>
-                                <div className="flex flex-wrap gap-1">
-                                    {assistantSkillKeywords.map((skill) => {
-                                        const added = existingSkillNames.has(skill.toLowerCase());
-                                        return (
-                                            <button
-                                                key={skill}
-                                                type="button"
-                                                onClick={() => handleAddAssistantSkill(skill)}
-                                                className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold transition-colors ${
-                                                    added
-                                                        ? 'border-[var(--cuba-success)] bg-[var(--cuba-success-soft)] text-[var(--cuba-success)]'
-                                                        : 'border-[var(--cuba-primary-line)] bg-white text-[var(--cuba-primary-strong)] hover:bg-[var(--cuba-primary-soft)]'
-                                                }`}
-                                            >
-                                                {added ? `✓ ${skill}` : `+ ${skill}`}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {assistantTab === 'insights' && (
-                        <div className="rounded-lg border border-[var(--cuba-line)] bg-[var(--cuba-canvas)] p-2.5 space-y-2" role="tabpanel" aria-label="Resume Insights">
-                            <div className="flex items-center justify-between text-[11px]">
-                                <span className="font-bold text-[var(--cuba-ink)]">Contact Completeness</span>
-                                <span className="font-extrabold text-[var(--cuba-primary-strong)]">{completedRequiredFields}/{requiredFields.length} required</span>
-                            </div>
-                            <p className="text-[10px] leading-relaxed text-[var(--cuba-ink-muted)]">
-                                {isStepComplete
-                                    ? 'All required personal & contact fields are complete and ready for ATS parsing.'
-                                    : 'Complete your name, target job title, email, and phone number so recruiters can reach you.'}
-                            </p>
-                        </div>
-                    )}
-
-                    {assistantTab === 'match' && (
-                        <div className="rounded-lg border border-[var(--cuba-line)] bg-[var(--cuba-canvas)] p-2.5 space-y-2" role="tabpanel" aria-label="Job Match">
-                            <span className="block text-[11px] font-bold text-[var(--cuba-ink)]">Target Role Alignment</span>
-                            <p className="text-[10px] leading-relaxed text-[var(--cuba-ink-muted)]">
-                                {targetJd && targetJd.trim().length >= 20
-                                    ? `Tailoring active with ${assistantSkillKeywords.length} detected role keywords.`
-                                    : 'Paste a job description in Target Role & Job Description to unlock live keyword matching.'}
-                            </p>
-                        </div>
-                    )}
-                </div>
-            )}
             headerActions={(
                 <>
                     {!resetConfirmOpen ? (
@@ -733,6 +504,20 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate, onPreview }) =>
                             <button type="button" onClick={() => setResetConfirmOpen(false)} className="rounded px-1.5 py-1 hover:bg-[var(--cuba-warning-soft)]">Cancel</button>
                         </span>
                     )}
+                    {onPreview ? (
+                        <button
+                            type="button"
+                            onClick={onPreview}
+                            aria-label="Preview resume"
+                            className="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[10px] font-bold text-indigo-700 transition-colors hover:bg-indigo-100"
+                        >
+                            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7Z" />
+                                <circle cx="12" cy="12" r="3" strokeWidth="2" />
+                            </svg>
+                            Preview
+                        </button>
+                    ) : null}
                 </>
             )}
         >

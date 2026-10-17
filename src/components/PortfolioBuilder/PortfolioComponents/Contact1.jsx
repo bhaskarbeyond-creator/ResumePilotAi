@@ -53,7 +53,7 @@ const Contact1 = {
     render: ({ title, subtitle, backgroundColor, email, phone, location, linkedin, github, twitter, website }) => (
         <div className={`${backgroundColor} relative py-24 px-4`}>
             {/* Background Pattern */}
-            <div className="absolute inset-0 opacity-10">
+            <div className="card bs-card-executive absolute inset-0 opacity-10">
                 <div
                     className="absolute inset-0"
                     style={{

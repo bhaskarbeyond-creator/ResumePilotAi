@@ -122,7 +122,7 @@ class LanguagePicker extends Component {
     return (
       <div
         style={this.props.isHome ? { transform: "translateX(20px)" } : null}
-        className="languagePickerWrapper"
+        className="form-control languagePickerWrapper"
       >
         {/* Current Language */}
         <div className="languagePicker">

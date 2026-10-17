@@ -170,7 +170,7 @@ const NavbarDarkCyberSec = {
                     }
                 `}</style>
 
-                <nav className="bg-black/98 backdrop-blur-md border-b-2 sticky top-0 z-50 overflow-hidden relative security-grid hex-pattern" style={{ borderBottomColor: currentSecurity.border }}>
+                <nav className="card bs-card-executive bg-black/98 backdrop-blur-md border-b-2 sticky top-0 z-50 overflow-hidden relative security-grid hex-pattern" style={{ borderBottomColor: currentSecurity.border }}>
                     {/* Security scan overlay */}
                     <div className="absolute inset-0 pointer-events-none">
                         <div className="absolute top-0 left-0 w-full h-0.5 threat-scan" style={{ backgroundColor: currentSecurity.color }}></div>

@@ -505,7 +505,7 @@ export function resolveStorageConflict(parsed, { tabId, lastWriteAt }) {
     if (typeof parsed.tabId === 'string' && parsed.tabId === tabId) return 'ignore';
     const theirWriteAt = Number(parsed.lastSaved) || 0;
     const ourWriteAt = Number(lastWriteAt) || 0;
-    return theirWriteAt > ourWriteAt ? 'yield' : 'ignore';
+    return theirWriteAt >= ourWriteAt ? 'yield' : 'ignore';
 }
 
 // ── STAR MARKDOWN EXPORT ─────────────────────────────────────────────────────

@@ -94,7 +94,7 @@ const LandingPages = () => {
     }
 
     return (
-        <div className="p-6 max-w-6xl mx-auto">
+        <div className="card bs-card-executive container-fluid p-6 max-w-6xl mx-auto">
             {confirmSave && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="presentation" onKeyDown={event => { if (event.key === 'Escape' && !saving) setConfirmSave(false); }}><div role="alertdialog" aria-modal="true" aria-labelledby="landing-save-title" className="w-full max-w-md rounded-lg bg-white p-6"><h2 id="landing-save-title" className="text-lg font-bold">{stats.published ? 'Publish verified landing claims?' : 'Save landing claims as a draft?'}</h2><p className="mt-2 text-sm text-gray-600">{stats.published ? 'All values will become public. The evidence URL and review date are required, publication is revision-guarded, and the change is audited.' : 'Draft values remain private and will not render on the public landing page.'}</p><div className="mt-6 flex justify-end gap-3"><button type="button" autoFocus onClick={() => setConfirmSave(false)} disabled={saving} className="rounded border px-4 py-2">Cancel</button><button type="button" onClick={handleSave} disabled={saving} className="rounded bg-blue-700 px-4 py-2 text-white">{saving ? 'Saving…' : stats.published ? 'Publish verified claims' : 'Save draft'}</button></div></div></div>}
             {/* Header */}
             <div className="mb-8">

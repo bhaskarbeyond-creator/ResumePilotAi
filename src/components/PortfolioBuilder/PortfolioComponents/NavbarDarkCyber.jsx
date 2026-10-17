@@ -153,7 +153,7 @@ const NavbarDarkCyber = {
                     }
                 `}</style>
 
-                <nav className="bg-black/95 backdrop-blur-md border-b-2 border-cyan-400/30 sticky top-0 z-50 overflow-hidden relative cyber-grid">
+                <nav className="card bs-card-executive bg-black/95 backdrop-blur-md border-b-2 border-cyan-400/30 sticky top-0 z-50 overflow-hidden relative cyber-grid">
                     {/* Holographic overlay */}
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-500/5 to-transparent cyber-scan"></div>
 

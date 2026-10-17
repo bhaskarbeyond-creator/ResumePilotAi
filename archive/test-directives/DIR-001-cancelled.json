@@ -1,0 +1,87 @@
+{
+  "id": "DIR-001",
+  "title": "MASTER ENGINEERING MANDATE: 100% Application-Wide UI/UX Audit, Structural Redesign & Verified Completion",
+  "priority": "P0",
+  "status": "CANCELLED",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-17T10:29:39.413Z",
+  "updatedAt": "2026-10-17T17:00:58.546Z",
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "spec": "# SECTION 1 — EXECUTIVE MANDATE\nMaster Engineering Mandate: 100% Application-Wide UI/UX Audit, Structural Redesign, Deep Interactive Discovery, Backward Compatibility, Autonomous Implementation & Verified Completion.\nTarget: IME365 (D:\\xampp\\htdocs\\IME365)\nScope: Every discovered in-scope route, page, hidden interface, interactive control, popup, modal, nested workflow, shared component, responsive state, and relevant user journey across all 4 portals:\n1. Candidate Portal (Dashboard, Resume Builder / Build Resume, Master CV, Quick Pitch, Job Tracker, Interviews, Settings)\n2. Employer / Recruiter Portal (Job Postings, Candidate Pipeline, Applicant Review, Analytics)\n3. Enterprise Organization Console (Tenant Management, RBAC, Team Quotas, Billing, Audit Logs)\n4. Platform Admin Console (AI Model Governance, System Diagnostics, Feature Flags, User Management)\n\nDesign Foundation: Google Material Design 3 principles (surfaces, tonal containers, 9999px pill buttons, 16px cards, 28px dialogs, 80px mobile bottom navigation) + Bootstrap 5 implementation foundation + existing application architecture.\nOperating Model: Discover -> Baseline -> Audit -> Analyse -> Plan -> Design -> Implement -> Simulate -> Test -> Self-Review -> Correct -> Re-Test -> Verify -> Report.\n\n# SECTION 2 — PLAN MODE VS ACT MODE BOUNDARIES\nPlan Mode: Deep discovery, route and interaction inventory, AST symbol inspection, layout and contract analysis. Absolutely zero code edits, file mutations, or destructive database operations in Plan Mode.\nAct Mode: Authorized only upon formal Lead plan approval. Perform surgical, durable code implementation, regression tests, Playwright DOM crawls, and evidence compilation.\n\n# SECTION 3 — PRE-FLIGHT REPOSITORY VERIFICATION\nTarget Project Root: D:\\xampp\\htdocs\\IME365\nVerify Git status, branch, HEAD commit SHA, dependencies, and clean baseline.\nPreserve pre-existing user changes and distinguish from new modifications.\n\n# SECTION 4 — NON-NEGOTIABLE PROJECT INVARIANTS\n1. Protected Files: src/cv-templates/ (55 CV templates remain frozen).\n2. Zero Fabricated Data: All production-facing views must bind to real MariaDB database records, API endpoints, or deterministic engines (e.g. calculateAtsScore). Zero hardcoded mock users, scores, or fake progress bars.\n3. Preserve Contracts: Preserve Firebase Auth token verification, RBAC guards, router contracts, and API payload schemas.\n4. Performance & Build: npm run build must complete cleanly under 4.0s budget; zero ESLint errors.\n5. Responsive Isolation: Mobile bottom navigation bar (.bs-mobile-bottom-bar / cuba-bottom-nav) must remain strictly hidden on desktop (>=768px).\n\n# SECTION 9 — TEST STRATEGY AND ACCEPTANCE REQUIREMENTS\nLayer 1: npm run build (clean production build) and lint checks.\nLayer 2: Architecture & Portal test suites (npm test -- tests/four-portal-architecture.test.mjs, tests/cuba-candidate-portal.test.mjs, tests/unlayered-css-guard.test.mjs).\nLayer 3: Playwright real-DOM browser crawl and interactive control census across all 147 targets and 46 canonical review units.\nLayer 4: 7-tier responsive verification (320px, 375px, 430px, 768px, 1024px, 1440px, 1920px) and WCAG 2.2 AA accessibility audit (unique nav landmarks, >=4.5:1 contrast, visible focus rings).\nLayer 5: Evidence-backed Gatekeeper certification.\n\n# SECTION 11 — SEVERITY, PRIORITISATION, AND IMPLEMENTATION SEQUENCING\nWave 1: Pre-flight repository verification, route reconciliation, and interactive inventory.\nWave 2: M3 design token validation and shared component structural hardening.\nWave 3: Portal-by-portal UI/UX structural redesign and interactive state verification.\nWave 4: Backward compatibility regression testing and data integrity verification.\nWave 5: 7-tier responsive and WCAG 2.2 AA accessibility crawl.\nWave 6: Critical self-review, defect correction, and evidence compilation.\n\n# SECTION 13 — MANDATORY BRIDGE PLAN SUBMISSION\nThe developer must formulate a detailed step-by-step plan and submit it using the bridge CLI:\nnode C:\\Users\\mbhas\\.ai-bridge\\bridge.cjs dev plan --directive <DIR-ID> --projectDir \"D:\\xampp\\htdocs\\IME365\" --summary \"<Evidence-based plan summary>\" --steps \"<Step 1>;<Step 2>;<Step 3>\"",
+  "invariants": [
+    "Preserve existing 55 CV templates in src/cv-templates/ (Frozen module).",
+    "Zero solo coding by Lead: Developer implements code and runs verification; Lead supervises, reviews, and certifies.",
+    "Zero synthetic data: Bind all UI views to real backend endpoints and MariaDB database.",
+    "Preserve all existing route contracts, auth guards (Firebase Auth), and RBAC boundaries.",
+    "Production bundle build must succeed cleanly with npm run build under 4.0s budget."
+  ],
+  "acceptanceCriteria": [
+    "Gate A - Scope completeness: Reconciled inventory of all discoverable in-scope routes, pages, and interactive entry points across all 4 portals (Candidate, Employer, Enterprise, Platform Admin). Zero silently skipped interfaces.",
+    "Gate B - UI/UX implementation: Genuine structural redesign applying Google Material Design 3 principles over Bootstrap foundations (5 surface container levels, 9999px pills, 16px cards, 28px modals, 80px mobile bottom nav with active pill). Zero superficial styling.",
+    "Gate C - Backward compatibility: Applicable contracts inventoried and regression-tested (routes, deep links, APIs, permissions, forms, state persistence). Zero breaking changes or data loss.",
+    "Gate D - Functional correctness: Critical journeys tested through positive, negative, and recovery paths on real MariaDB and live backend. Zero fake mock or synthetic data.",
+    "Gate E - Responsiveness: Verified at all representative widths (320px, 375px, 430px, 768px, 1024px, 1440px, 1920px). Mobile bottom bar strictly hidden on desktop (>=768px).",
+    "Gate F - Accessibility: WCAG 2.2 AA compliance verified with unique nav landmark labels, >=4.5:1 contrast ratios, and visible keyboard focus rings.",
+    "Gate G - Engineering quality: Production build passes (<4.0s budget), zero ESLint errors, zero regressions in existing test suite.",
+    "Gate H - Evidence: Before-and-after screenshots across all 4 portals, Playwright trace logs, and real-DOM interactive control census submitted to Bridge ledger.",
+    "Gate I - Self-review & Completion: Critical self-review completed, all actionable findings resolved with verified dispositions in final completion report."
+  ],
+  "dependsOn": [],
+  "sourceEventId": null,
+  "plan": {
+    "submittedAt": "2026-10-17T15:51:36.219Z",
+    "summary": "Evidence-based plan to audit and redesign BuildResume component per UI/UX target, ensure zero hardcoded data, responsive design, accessibility, and performance compliance, while preserving existing CV templates and route contracts.",
+    "steps": [
+      "Perform complete file inventory and dependency mapping of src directory",
+      "Analyze BuildResume component and subcomponents against UI/UX target and invariants",
+      "Inspect AppShell for sidebar and layout compliance with M3 design tokens",
+      "Review routing and Firebase Auth integration for contract preservation",
+      "Examine database schema and API endpoints for real data binding and hardcoded values",
+      "Audit CSS and design tokens for M3 compliance and update as needed",
+      "Plan and implement responsive design adjustments for all breakpoints",
+      "Conduct WCAG 2.2 AA accessibility audit and implement fixes",
+      "Optimize build process and render performance to meet budget constraints",
+      "Develop unit tests for utilities and Playwright E2E tests for critical journeys",
+      "Compile evidence and submit for gatekeeper certification"
+    ],
+    "planHash": "2726029db220d43a84e5d149b5f698b511913b494c09ce67fbdcefafb881414e"
+  },
+  "evidence": null,
+  "reviews": [],
+  "freeze": null,
+  "lastTransitionReason": "Cancelled per user command: stop developer and clear directives.",
+  "continuationPending": false,
+  "revisionTarget": null,
+  "planApproval": {
+    "approvedAt": "2026-10-17T15:52:13.493Z",
+    "automated": true,
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "daemon:lead_watcher_session",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "daemon-parent:lead_watcher_session",
+        "non-tty"
+      ],
+      "pid": 28532,
+      "parentPid": 8556,
+      "tty": false,
+      "at": "2026-10-17T15:52:13.492Z",
+      "explicitlyAllowed": true
+    },
+    "feedback": "Auto-approved by the autonomous plan-scorer (score 85/100, reviewer verdict approved). NOT a human Lead review."
+  },
+  "heartbeats": [
+    {
+      "at": "2026-10-17T11:49:47.041Z",
+      "status": "Starting file inventory and dependency mapping",
+      "percent": 5,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    }
+  ],
+  "lastHeartbeatAt": "2026-10-17T11:49:47.041Z"
+}

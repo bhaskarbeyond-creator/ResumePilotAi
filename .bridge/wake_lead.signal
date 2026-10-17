@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-16T16:10:13.869Z",
-  "seq": 3648,
-  "id": "evt_mvb5yu2w_f46914bf2f2c",
+  "timestamp": "2026-10-17T22:00:14.698Z",
+  "seq": 3772,
+  "id": "evt_mvcxwt30_d2d9e197b17b",
   "type": "PLAN_SUBMITTED",
-  "title": "[Plan] DIR-001: Master Engineering Directive: Pure-Codebase Forensic Audit & Zero-Gap Remediation",
+  "title": "[Plan] DIR-001: SMOKE TEST: Verify Claude Code Developer Engine Integration",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-001",
-  "summary": "Forensic audit and remediation plan affirming certified baseline invariants, WCAG 2.2 focus management, sub-100ms render budgets, loading skeletons, empty states, and responsive viewports"
+  "summary": "Verify Claude Code CLI integration by confirming directive reception, validating CLAUDE.md compliance (zero hardcoded data, breadcrumb spec), and submitting a plan ensuring real data binding, WCAG 2.1 AA accessibility, and responsive design per M3 tokens, while explicitly affirming contract boundaries, pins, system invariants, and detailing UX states and UI polish."
 }

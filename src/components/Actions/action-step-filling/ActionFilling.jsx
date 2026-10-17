@@ -537,7 +537,7 @@ class ActionFilling extends Component {
         const { t } = this.props;
         const randomAdIndex = Math.floor(Math.random() * this.state.ads.length);
         return (
-            <div id="introd" className="action-introWrapper filling">
+            <div id="introd" className="card bs-card-executive action-introWrapper filling">
                 {/* Heading of form contains Language select, Title  */}
                 <div className="formHead">
                     <div className="cvTitle">

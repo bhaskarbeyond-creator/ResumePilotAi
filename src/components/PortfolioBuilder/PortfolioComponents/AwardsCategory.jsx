@@ -28,7 +28,7 @@ const AwardsCategory = {
         template: {
             type: 'custom',
             label: 'Template',
-            render: ({ _name, onChange, value }) => <TemplateSelector value={value} onChange={onChange} templates={awardsTemplateOptions} category="Awards" />,
+            render: ({ _name, onChange, value }) => <div className="card bs-card-executive p-0 border-0 bg-transparent"><TemplateSelector value={value} onChange={onChange} templates={awardsTemplateOptions} category="Awards" /></div>,
         },
         title: { type: 'text', label: 'Section Title' },
         subtitle: { type: 'text', label: 'Subtitle' },
@@ -145,3 +145,5 @@ const AwardsCategory = {
 };
 
 export default AwardsCategory;
+
+// bs-card-executive-block

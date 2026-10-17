@@ -16,7 +16,7 @@ const CubaViewport = ({ className = '', scroll = true, padded = true, children, 
     <div
         data-testid="cuba-viewport"
         className={cx(
-            'min-w-0 h-[calc(100vh-var(--cuba-header-h))] max-h-[calc(100vh-var(--cuba-header-h))]',
+            'container-fluid bs-viewport min-w-0 h-[calc(100vh-var(--cuba-header-h))] max-h-[calc(100vh-var(--cuba-header-h))]',
             'lg:h-[calc(100vh-var(--cuba-header-h))]',
             scroll ? 'overflow-y-auto overscroll-contain' : 'overflow-hidden',
             padded ? 'px-4 pb-6 pt-4 sm:px-6 lg:px-8' : '',

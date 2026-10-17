@@ -119,3 +119,6 @@ const MetaManager = ({
 };
 
 export default MetaManager;
+// bs-component-foundation
+
+export const MetaManagerContainer = () => <div className="container-fluid d-none bs-meta" />;

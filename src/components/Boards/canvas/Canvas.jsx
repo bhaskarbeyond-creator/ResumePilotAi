@@ -70,7 +70,7 @@ class Canvas extends Component {
     if (isLoading || totalPages <= 1) return null;
 
     return (
-      <div className="pagination-controls" style={styles.paginationControls}>
+    <div className="container-fluid p-0 canvas-bs-wrapper pagination-controls" style={styles.paginationControls}>
         <button
           onClick={this.handlePrevPage}
           disabled={currentPage === 1}

@@ -35,7 +35,7 @@ export class RouteErrorBoundary extends React.Component {
             const returnLabel = isAdminRoute ? 'Return to Admin' : 'Return to Dashboard';
             
             return (
-                <div className="min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center p-6 select-none font-sans">
+                <div className="card bs-card-executive min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center p-6 select-none font-sans">
                     <div className="max-w-lg w-full bg-slate-800/90 border border-slate-700/80 rounded-2xl p-8 shadow-2xl backdrop-blur-xl">
                         <div className="flex items-center gap-3 text-amber-400 mb-4">
                             <FiAlertTriangle className="h-8 w-8 shrink-0" />

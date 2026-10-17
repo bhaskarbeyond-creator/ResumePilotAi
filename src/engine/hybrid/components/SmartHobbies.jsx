@@ -10,7 +10,7 @@ export default function SmartHobbies({ hobbies = [], _theme = {}, title = 'Hobbi
   if (typeof hobbies === 'string') {
     if (!hasMeaningfulText(hobbies)) return null;
     return (
-      <section className="smart-section smart-hobbies-section">
+      <section className="container-fluid bs-container-fluid-adaptive smart-section smart-hobbies-section">
         <h3 className="smart-section-title">
           <span className="smart-section-title__text">{title}</span>
           <span className="smart-section-title__line" />

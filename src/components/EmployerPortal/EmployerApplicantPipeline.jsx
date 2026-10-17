@@ -447,7 +447,7 @@ const EmployerApplicantPipeline = ({ showToast }) => {
 
                 {!loadingApplicants && visibleRows.length > 0 && (
                     <div className="mt-4 overflow-x-auto">
-                        <table className="w-full min-w-[40rem] border-collapse text-left text-sm">
+                        <table className="table table-hover align-middle w-full min-w-[40rem] border-collapse text-left text-sm">
                             <caption className="sr-only">Applicants across your job postings</caption>
                             <thead>
                                 <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">

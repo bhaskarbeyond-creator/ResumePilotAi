@@ -199,7 +199,7 @@ export default function EnterpriseResumePdfModal({
 
   return (
     <div
-      className="enterprise-modal-overlay"
+      className="modal-content enterprise-modal-overlay"
       role="dialog"
       aria-modal="true"
       aria-labelledby="pdf-preview-title"
@@ -219,7 +219,7 @@ export default function EnterpriseResumePdfModal({
     >
       <div
         ref={modalRef}
-        className="enterprise-modal"
+        className="modal-content enterprise-modal"
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%',

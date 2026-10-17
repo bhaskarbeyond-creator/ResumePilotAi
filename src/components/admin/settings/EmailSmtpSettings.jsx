@@ -1525,7 +1525,7 @@ const EmailSmtpSettings = () => {
                     </div>
 
                     <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
-                        <table className="w-full text-left text-xs">
+                        <table className="table table-hover align-middle w-full text-left text-xs">
                             <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-extrabold uppercase text-[10px]">
                                 <tr>
                                     <th className="p-3.5">Status</th>

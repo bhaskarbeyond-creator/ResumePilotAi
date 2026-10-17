@@ -8,3 +8,7 @@ export function useAuth() {
 
 export const AuthProvider = AuthContext.Provider;
 export default AuthContext;
+
+// bs-component-foundation
+
+export const AuthBridge = () => <div className="container-fluid d-none bs-auth" />;

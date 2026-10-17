@@ -174,7 +174,7 @@ const NavbarDarkTerminal = {
                     }
                 `}</style>
 
-                <nav className="bg-black/98 backdrop-blur-md border-b-2 sticky top-0 z-50 overflow-hidden relative terminal-bg terminal-scan" style={{ borderBottomColor: currentStyle.border }}>
+                <nav className="card bs-card-executive bg-black/98 backdrop-blur-md border-b-2 sticky top-0 z-50 overflow-hidden relative terminal-bg terminal-scan" style={{ borderBottomColor: currentStyle.border }}>
                     {/* Matrix rain effect */}
                     <div className="absolute inset-0 pointer-events-none overflow-hidden">
                         {[...Array(15)].map((_, i) => (

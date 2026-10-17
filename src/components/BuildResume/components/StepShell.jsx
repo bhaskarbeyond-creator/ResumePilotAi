@@ -160,11 +160,9 @@ export default function StepShell({
                     {isMobileGuideOpen && (
                         <div id={`mobile-guide-${stepPath}`} className="p-3 border-t border-[var(--cuba-line)]">
                             <StepGuide stepPath={stepPath} gaps={gaps} atsSection={atsSection} candidateContext={candidateContext}>
+                                <InlineAtsGuidance resumeData={resumeData} targetJd={targetJd} stepPath={stepPath} />
                                 {guideChildren}
                             </StepGuide>
-                            <div className="mt-3">
-                                <InlineAtsGuidance resumeData={resumeData} targetJd={targetJd} stepPath={stepPath} />
-                            </div>
                         </div>
                     )}
                 </div>
@@ -178,11 +176,9 @@ export default function StepShell({
                 {!hideGuide && !isDesktopGuideCollapsed && (
                     <aside aria-label="Section guide" className="hidden lg:block lg:col-span-4 xl:col-span-3 sticky top-[120px] self-start">
                         <StepGuide stepPath={stepPath} gaps={gaps} atsSection={atsSection} candidateContext={candidateContext}>
+                            <InlineAtsGuidance resumeData={resumeData} targetJd={targetJd} stepPath={stepPath} />
                             {guideChildren}
                         </StepGuide>
-                        <div className="mt-3">
-                            <InlineAtsGuidance resumeData={resumeData} targetJd={targetJd} stepPath={stepPath} />
-                        </div>
                     </aside>
                 )}
             </div>

@@ -25,7 +25,7 @@ export default function StepGuide({
     gaps = [],
     atsSection = null,
     candidateContext = null,
-    title = 'Guide',
+    title = 'ATS & Section Guide',
     children = null,
 }) {
     const missing = Array.isArray(gaps) ? gaps.filter(Boolean).slice(0, 4) : [];
@@ -35,7 +35,7 @@ export default function StepGuide({
     const ready = missing.length === 0 && openFindings.length === 0;
 
     return (
-        <div className="rounded-xl border border-[var(--cuba-line)] bg-white p-4 shadow-2xs">
+        <div className="card bs-card-executive rounded-xl border border-[var(--cuba-line)] bg-white p-4 shadow-2xs space-y-3">
             <div className="flex items-center justify-between gap-2">
                 <h2 className="text-[11px] font-black uppercase tracking-widest text-[var(--cuba-ink-subtle)]">{title}</h2>
                 <span
@@ -51,26 +51,15 @@ export default function StepGuide({
             </div>
 
             {missing.length > 0 && (
-                <ul className="mt-3 space-y-1.5" aria-label="What is missing in this section">
-                    {missing.map((gap, index) => (
-                        <li key={`${gap}-${index}`} className="flex items-start gap-2 text-[13px] leading-snug text-[var(--cuba-ink-muted)]">
-                            <MdCircle className="mt-1 w-2.5 h-2.5 shrink-0 text-amber-400" />
-                            <span>{gap}</span>
-                        </li>
-                    ))}
-                </ul>
-            )}
-
-            {openFindings.length > 0 && (
-                <div className="mt-4 border-t border-[var(--cuba-line)] pt-3">
+                <div>
                     <h3 className="text-[10px] font-black uppercase tracking-wider text-[var(--cuba-ink-subtle)]">
-                        What the ATS check says
+                        Missing in this section
                     </h3>
-                    <ul className="mt-2 space-y-1.5">
-                        {openFindings.map((finding, index) => (
-                            <li key={`${finding.text}-${index}`} className="flex items-start gap-2 text-[13px] leading-snug text-[var(--cuba-ink-muted)]">
-                                <MdCircle className="mt-1 w-2.5 h-2.5 shrink-0 text-[var(--cuba-ink-subtle)]" />
-                                <span>{finding.text}</span>
+                    <ul className="mt-1.5 space-y-1.5" aria-label="What is missing in this section">
+                        {missing.map((gap, index) => (
+                            <li key={`${gap}-${index}`} className="flex items-start gap-2 text-[12px] leading-snug text-[var(--cuba-ink-muted)]">
+                                <MdCircle className="mt-1 w-2 h-2 shrink-0 text-amber-500" />
+                                <span>{gap}</span>
                             </li>
                         ))}
                     </ul>

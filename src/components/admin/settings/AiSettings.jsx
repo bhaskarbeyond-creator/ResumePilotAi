@@ -1469,7 +1469,7 @@ const AiSettings = () => {
                         <p className="text-xs text-slate-400 text-center py-3">No AI usage recorded today.</p>
                     ) : (
                         <div className="max-h-64 overflow-y-auto">
-                            <table className="w-full text-xs">
+                            <table className="table table-hover align-middle w-full text-xs">
                                 <thead className="sticky top-0 bg-slate-50">
                                     <tr className="border-b border-slate-200">
                                         <th className="text-left py-1.5 px-2 font-semibold text-slate-600">User</th>

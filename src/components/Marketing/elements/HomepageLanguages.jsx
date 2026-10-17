@@ -150,7 +150,7 @@ const HomepageLanguages = () => {
 
     return (
         <div 
-            className="relative"
+            className="card bs-card-executive relative"
             ref={dropdownRef}
             onMouseEnter={handleDropdownEnter}
             onMouseLeave={handleDropdownLeave}

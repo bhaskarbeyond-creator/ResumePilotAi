@@ -68,7 +68,7 @@ class DropdownInput extends Component {
         ref={this.containerRef}
         className={`dropdownInput relative ${checkout ? "checkout" : ""}`}
       >
-        {title && <span className="dropdownInputTitle">{title}</span>}
+        {title && <span className="form-control dropdownInputTitle">{title}</span>}
 
         <div
           onClick={this.togglerHandler}

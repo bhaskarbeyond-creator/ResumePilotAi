@@ -338,7 +338,7 @@ const ModulesSettings = () => {
     ];
 
     return (
-        <form onSubmit={handleSave} className="space-y-6">
+        <form onSubmit={handleSave} className="card bs-card-executive admin-card space-y-6">
             {/* Header Banner */}
             <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 rounded-xl border border-indigo-900/60 shadow-md text-white">
                 <div className="flex items-center space-x-3 mb-2">

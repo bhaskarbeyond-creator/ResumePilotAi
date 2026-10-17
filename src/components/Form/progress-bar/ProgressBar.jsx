@@ -121,7 +121,7 @@ class ProgressBar extends Component {
         const statusText = pct >= 80 ? t('form.progress.excellent', 'Excellent') : pct >= 50 ? t('form.progress.onTrack', 'On track') : t('form.progress.gettingStarted', 'Getting started');
 
         return (
-            <div className="compact-progress-bar">
+            <div className="form-control compact-progress-bar">
                 {this.props.textHidden === false && (
                     <div className="progress-info">
                         <span className="progress-label">{t('form.resumeProgress', 'Resume progress')}</span>

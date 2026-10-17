@@ -55,7 +55,7 @@ class Education extends Component {
     render() {
         const { t } = this.props;
         return (
-            <div className="panel">
+            <div className="form-control panel">
                 <div className="panel-heading">
                     <span className="panel-title"> {this.state.school == '(not-set)' ? this.props.school : this.state.school}</span>
                     <span className="panel-subtitle">

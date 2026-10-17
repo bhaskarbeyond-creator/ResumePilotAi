@@ -11,7 +11,7 @@ import CompaniesManagement from '../Dashboard/EmployerDashboard/CompaniesManagem
  */
 const EmployerCompanyProfile = ({ showToast }) => {
     return (
-        <div>
+        <div className="container-fluid p-0 bs-employer-company">
             <EmployerPageHeader
                 eyebrow="Brand & Settings"
                 title="Company Profile"
@@ -23,3 +23,5 @@ const EmployerCompanyProfile = ({ showToast }) => {
 };
 
 export default EmployerCompanyProfile;
+
+// bs-component-foundation

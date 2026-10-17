@@ -26,7 +26,7 @@ class TemplateErrorBoundary extends React.Component {
 
     render() {
         if (this.state.error) return this.props.errorFallback || (
-            <div role="alert" className="flex min-h-48 items-center justify-center bg-slate-50 p-6 text-center text-sm text-slate-600">
+            <div role="alert" className="alert alert-danger flex min-h-48 items-center justify-center bg-slate-50 p-6 text-center text-sm text-slate-600">
                 This template could not be rendered. Try another template or review the resume data.
             </div>
         );
@@ -55,7 +55,7 @@ export default function TemplateRenderer({ templateId = 'Cv1', values, language 
                     {isResumeTemplate ? (
                         <SmartResumeComposer templateId={safeTemplateId} language={language} values={values} />
                     ) : (
-                        <div style={{ position: 'relative' }}>
+                        <div className="template-renderer-container container-fluid p-0" style={{ position: 'relative' }}>
                             <ResumeWatermarkOverlay
                                 watermark={values?._watermark || values?.watermark}
                                 entitlement={readEntitlement(values)}

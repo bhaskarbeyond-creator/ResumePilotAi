@@ -366,7 +366,7 @@ export default function EnterpriseResumesTab() {
         </div>
       )}
       {actionError && (
-        <div className="enterprise-card" role="alert">
+        <div className="card bs-card-executive enterprise-card" role="alert">
           <div className="enterprise-error-row">
             <span className="enterprise-error-icon" aria-hidden="true">⚠</span>
             <div><strong>Repository Action Error</strong><p className="text-muted">{actionError}</p></div>
@@ -375,10 +375,10 @@ export default function EnterpriseResumesTab() {
       )}
 
       {/* Top Banner */}
-      <div className="enterprise-card enterprise-banner-card">
+      <div className="card bs-card-executive enterprise-card enterprise-banner-card">
         <div className="enterprise-banner-header">
           <div>
-            <span className="enterprise-pill enterprise-pill-success">
+            <span className="badge rounded-pill enterprise-pill enterprise-pill-success">
               <FiCheckCircle aria-hidden="true" /> Enterprise Talent Hub · {tenant?.displayName || 'Active Organization'}
             </span>
             <h2 className="enterprise-tab-title" style={{ marginTop: '0.75rem' }}>
@@ -393,7 +393,7 @@ export default function EnterpriseResumesTab() {
             {canCreate && (
               <Link
                 to="/build-resume"
-                className="enterprise-button enterprise-button-primary"
+                className="btn btn-primary enterprise-button enterprise-button-primary"
               >
                 <FiPlus aria-hidden="true" /> Create Enterprise Resume
               </Link>
@@ -404,7 +404,7 @@ export default function EnterpriseResumesTab() {
 
       {/* Live Statistics Cards */}
       <div className="enterprise-metrics-grid">
-        <div className="enterprise-card enterprise-metric-box">
+        <div className="card bs-card-executive enterprise-card enterprise-metric-box">
           <div className="enterprise-metric-header">
             <span>Managed Resumes</span>
             <FiFileText className="enterprise-metric-icon" aria-hidden="true" />
@@ -415,7 +415,7 @@ export default function EnterpriseResumesTab() {
           </div>
         </div>
 
-        <div className="enterprise-card enterprise-metric-box">
+        <div className="card bs-card-executive enterprise-card enterprise-metric-box">
           <div className="enterprise-metric-header">
             <span>Average ATS Match</span>
             <FiStar className="enterprise-metric-icon" aria-hidden="true" />
@@ -426,7 +426,7 @@ export default function EnterpriseResumesTab() {
           </div>
         </div>
 
-        <div className="enterprise-card enterprise-metric-box">
+        <div className="card bs-card-executive enterprise-card enterprise-metric-box">
           <div className="enterprise-metric-header">
             <span>High-Scoring Talent (80%+)</span>
             <FiAward className="enterprise-metric-icon" aria-hidden="true" />
@@ -437,7 +437,7 @@ export default function EnterpriseResumesTab() {
           </div>
         </div>
 
-        <div className="enterprise-card enterprise-metric-box">
+        <div className="card bs-card-executive enterprise-card enterprise-metric-box">
           <div className="enterprise-metric-header">
             <span>Profile Completeness</span>
             <FiLayers className="enterprise-metric-icon" aria-hidden="true" />
@@ -450,11 +450,11 @@ export default function EnterpriseResumesTab() {
       </div>
 
       {/* Main Repository Card */}
-      <div className="enterprise-card">
-        <div className="enterprise-card-header-flex">
+      <div className="card bs-card-executive enterprise-card">
+        <div className="card bs-card-executive enterprise-card-header-flex">
           <div>
-            <h3 className="enterprise-card-title">Candidate Profiles &amp; Executive Resumes</h3>
-            <p className="enterprise-card-subtitle">
+            <h3 className="card bs-card-executive enterprise-card-title">Candidate Profiles &amp; Executive Resumes</h3>
+            <p className="card bs-card-executive enterprise-card-subtitle">
               {viewMode === 'grouped'
                 ? `Clubbed Candidate Roster (${groupedCandidates.length} Candidates · ${filtered.length} Resumes)`
                 : `Individual Resume Catalog (${filtered.length} Resumes)`}
@@ -517,7 +517,7 @@ export default function EnterpriseResumesTab() {
               <div style={{ display: 'inline-flex', gap: '4px' }}>
                 <button
                   type="button"
-                  className="enterprise-button enterprise-button-secondary enterprise-button-sm"
+                  className="btn btn-outline-secondary enterprise-button enterprise-button-secondary enterprise-button-sm"
                   onClick={expandAllCandidates}
                   title="Expand all candidate resumes"
                   style={{ fontSize: '0.76rem', padding: '5px 10px' }}
@@ -526,7 +526,7 @@ export default function EnterpriseResumesTab() {
                 </button>
                 <button
                   type="button"
-                  className="enterprise-button enterprise-button-secondary enterprise-button-sm"
+                  className="btn btn-outline-secondary enterprise-button enterprise-button-secondary enterprise-button-sm"
                   onClick={collapseAllCandidates}
                   title="Collapse all candidate resumes"
                   style={{ fontSize: '0.76rem', padding: '5px 10px' }}
@@ -538,7 +538,7 @@ export default function EnterpriseResumesTab() {
 
             <button
               type="button"
-              className="enterprise-button enterprise-button-secondary enterprise-button-sm"
+              className="btn btn-outline-secondary enterprise-button enterprise-button-secondary enterprise-button-sm"
               onClick={() => handleBulkAction('export-csv')}
               disabled={filtered.length === 0 || busy}
             >
@@ -546,7 +546,7 @@ export default function EnterpriseResumesTab() {
             </button>
             <button
               type="button"
-              className="enterprise-button enterprise-button-secondary enterprise-button-sm"
+              className="btn btn-outline-secondary enterprise-button enterprise-button-secondary enterprise-button-sm"
               onClick={() => handleBulkAction('export-json')}
               disabled={filtered.length === 0 || busy}
             >
@@ -589,14 +589,14 @@ export default function EnterpriseResumesTab() {
               {selectedRows.size} resume{selectedRows.size === 1 ? '' : 's'} selected
             </span>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <button type="button" className="enterprise-button enterprise-button-secondary enterprise-button-sm" onClick={() => handleBulkAction('export-csv')} disabled={busy}>
+              <button type="button" className="btn btn-outline-secondary enterprise-button enterprise-button-secondary enterprise-button-sm" onClick={() => handleBulkAction('export-csv')} disabled={busy}>
                 <FiDownload aria-hidden="true" /> Export CSV
               </button>
-              <button type="button" className="enterprise-button enterprise-button-secondary enterprise-button-sm" onClick={() => handleBulkAction('export-json')} disabled={busy}>
+              <button type="button" className="btn btn-outline-secondary enterprise-button enterprise-button-secondary enterprise-button-sm" onClick={() => handleBulkAction('export-json')} disabled={busy}>
                 <FiDownload aria-hidden="true" /> Export JSON
               </button>
               {canUpdate && (
-                <button type="button" className="enterprise-button enterprise-button-danger enterprise-button-sm" onClick={() => handleBulkAction('delete')} disabled={busy}>
+                <button type="button" className="btn btn-danger enterprise-button enterprise-button-danger enterprise-button-sm" onClick={() => handleBulkAction('delete')} disabled={busy}>
                   <FiTrash2 aria-hidden="true" /> Delete
                 </button>
               )}
@@ -618,7 +618,7 @@ export default function EnterpriseResumesTab() {
                   : 'Start building your enterprise candidate talent repository by creating a new resume.'}
               </p>
               {canCreate && (
-                <Link to="/build-resume" className="enterprise-button enterprise-button-primary">
+                <Link to="/build-resume" className="btn btn-primary enterprise-button enterprise-button-primary">
                   <FiPlus aria-hidden="true" /> Create Candidate Resume
                 </Link>
               )}
@@ -627,8 +627,8 @@ export default function EnterpriseResumesTab() {
             /* =========================================================================
                GROUPED / CLUBBED BY CANDIDATE VIEW
                ========================================================================= */
-            <div className="enterprise-table-wrapper">
-              <table className="enterprise-table">
+            <div className="table enterprise-table table-hover align-middle-wrapper">
+              <table className="table enterprise-table table-hover align-middle">
                 <thead>
                   <tr>
                     <th style={{ width: '40px' }}>
@@ -787,7 +787,7 @@ export default function EnterpriseResumesTab() {
                             </small>
                           </td>
                           <td className="text-right">
-                            <div className="enterprise-table-actions">
+                            <div className="table enterprise-table table-hover align-middle-actions">
                               {/* EYE ICON: Opens Full-Fidelity PDF Resume Popup Modal */}
                               <button
                                 type="button"
@@ -844,7 +844,7 @@ export default function EnterpriseResumesTab() {
                                   {canCreate && (
                                     <Link
                                       to={`/build-resume?clone=${group.latestResume?.id || ''}`}
-                                      className="enterprise-button enterprise-button-secondary enterprise-button-sm"
+                                      className="btn btn-outline-secondary enterprise-button enterprise-button-secondary enterprise-button-sm"
                                       style={{ padding: '3px 8px', fontSize: '0.72rem' }}
                                     >
                                       <FiPlus aria-hidden="true" /> New Version
@@ -923,7 +923,7 @@ export default function EnterpriseResumesTab() {
                                             {formatRelativeTime(resume.updatedAt || resume.createdAt)}
                                           </td>
                                           <td style={{ padding: '8px 12px', textAlign: 'right' }}>
-                                            <div className="enterprise-table-actions" style={{ justifyContent: 'flex-end', gap: '4px' }}>
+                                            <div className="table enterprise-table table-hover align-middle-actions" style={{ justifyContent: 'flex-end', gap: '4px' }}>
                                               {/* EYE ICON: Opens Full-Fidelity PDF Resume Popup Modal */}
                                               <button
                                                 type="button"
@@ -986,8 +986,8 @@ export default function EnterpriseResumesTab() {
             /* =========================================================================
                FLAT ALL RESUMES LIST VIEW
                ========================================================================= */
-            <div className="enterprise-table-wrapper">
-              <table className="enterprise-table">
+            <div className="table enterprise-table table-hover align-middle-wrapper">
+              <table className="table enterprise-table table-hover align-middle">
                 <thead>
                   <tr>
                     <th style={{ width: '40px' }}>
@@ -1071,7 +1071,7 @@ export default function EnterpriseResumesTab() {
                           </small>
                         </td>
                         <td className="text-right">
-                          <div className="enterprise-table-actions">
+                          <div className="table enterprise-table table-hover align-middle-actions">
                             {/* EYE ICON: Opens Full-Fidelity PDF Resume Popup Modal */}
                             <button
                               type="button"

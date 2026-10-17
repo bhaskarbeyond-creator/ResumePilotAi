@@ -226,7 +226,7 @@ const CompaniesManagement = ({ showToast, _sidebarCollapsed, t }) => {
                         </div>
                         <div className="flex space-x-3">
                             <button
-                                className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2.5 rounded-md flex items-center gap-2 transition-colors text-sm font-medium shadow-sm"
+                                className="btn btn-primary bg-slate-900 text-white px-4 py-2 rounded-md flex items-center gap-2 text-sm font-medium shadow-sm"
                                 onClick={() => setShowAddCompanyModal(true)}
                             >
                                 <FaPlus className="w-3.5 h-3.5" />
@@ -367,7 +367,7 @@ const CompaniesManagement = ({ showToast, _sidebarCollapsed, t }) => {
                                     key={company.id}
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="bg-white rounded-lg border border-slate-200 overflow-hidden hover:border-slate-300 transition-all duration-200"
+                                    className="card bs-card-executive bg-white rounded-lg border border-slate-200 overflow-hidden hover:border-slate-300 transition-all duration-200"
                                 >
                                     <div className="p-4">
                                         <div className="flex items-start justify-between">

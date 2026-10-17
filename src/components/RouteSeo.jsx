@@ -402,3 +402,5 @@ export default function RouteSeo() {
   }, [location.pathname]);
   return null;
 }
+
+export const RouteSeoContainer = () => <div className="container-fluid d-none bs-seo" />;

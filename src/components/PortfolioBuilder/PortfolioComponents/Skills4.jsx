@@ -88,7 +88,7 @@ const Skills4 = {
         const theme = themes[terminalTheme] || themes.matrix;
 
         return (
-            <div className="bg-black relative py-24 px-6 overflow-hidden min-h-screen" style={{ backgroundColor: '#000000' }}>
+            <div className="card bs-card-executive bg-black relative py-24 px-6 overflow-hidden min-h-screen" style={{ backgroundColor: '#000000' }}>
                 <div className="relative max-w-7xl mx-auto">
                     <div className="text-center mb-20">
                         <h2 className="text-6xl md:text-7xl font-black text-white leading-none mb-6 font-mono">

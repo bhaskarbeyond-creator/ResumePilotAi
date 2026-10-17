@@ -345,7 +345,7 @@ const BlogSettings = () => {
                                 {editingCategory ? 'Edit Category' : 'Add New Category'}
                             </h4>
                             
-                            <form onSubmit={handleCategorySubmit} className="space-y-4">
+                            <form onSubmit={handleCategorySubmit} className="card bs-card-executive admin-card space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">

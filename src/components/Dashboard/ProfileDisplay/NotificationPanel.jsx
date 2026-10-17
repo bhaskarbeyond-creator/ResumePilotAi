@@ -58,7 +58,7 @@ const NotificationPanel = ({ isOpen, onClose, sidebarCollapsed = false }) => {
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby="notification-panel-title"
-                        className={`fixed top-24 w-[24rem] bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-xl shadow-xl z-50 overflow-hidden ${
+                        className={`card bs-card-executive fixed top-24 w-[24rem] bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-xl shadow-xl z-50 overflow-hidden ${
                             sidebarCollapsed ? 'left-24' : 'left-72'
                         }`}
                         style={{ transform: 'translateX(10px)' }}

@@ -153,7 +153,7 @@ const CandidateCareerAssistant = ({
     return (
         <aside
             aria-label="AI Career Assistant"
-            className={`candidate-career-assistant overflow-hidden rounded-2xl border border-[var(--cuba-primary-line)] bg-white shadow-cuba-md ${className}`}
+            className={`candidate-career-assistant card bs-card-executive overflow-hidden rounded-2xl border border-[var(--cuba-primary-line)] bg-white shadow-cuba-md ${className}`}
         >
             <div className="border-b border-[var(--cuba-primary)]/15 bg-[linear-gradient(135deg,rgba(115,102,255,0.12),rgba(56,189,248,0.09))] px-4 pb-3 pt-4">
                 <div className="flex items-start justify-between gap-3">
@@ -166,7 +166,7 @@ const CandidateCareerAssistant = ({
                             <p className="mt-0.5 text-[11px] font-medium text-cuba-ink-subtle">Grounded in your saved career data</p>
                         </div>
                     </div>
-                    <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-cuba-success bg-cuba-success-soft px-2 py-1 text-[10px] font-bold text-cuba-success">
+                    <span className="badge rounded-pill inline-flex shrink-0 items-center gap-1 border border-cuba-success bg-cuba-success-soft px-2.5 py-1 text-[10px] font-bold text-cuba-success">
                         <span className="h-1.5 w-1.5 rounded-full bg-cuba-success" aria-hidden="true" />
                         Live
                     </span>

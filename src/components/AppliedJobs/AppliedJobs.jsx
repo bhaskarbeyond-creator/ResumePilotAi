@@ -313,10 +313,10 @@ const AppliedJobs = ({ showToast, t }) => {
         >
 
                 {/* Search and Filter Section */}
-                <div className="bg-cuba-card rounded-lg p-4 border border-cuba-line shadow-sm mb-6">
-                    <div className="flex flex-col sm:flex-row gap-3">
+                <div className="card bs-card-executive bg-cuba-card rounded-3 p-3 border border-cuba-line shadow-sm mb-4">
+                    <div className="row g-3">
                         {/* Search */}
-                        <div className="flex-1">
+                        <div className="col-12 col-md">
                             <label htmlFor="application-search" className="sr-only">Search applications</label>
                             <div className="relative">
                                 <FaSearch aria-hidden="true" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-cuba-ink-subtle w-3.5 h-3.5" />
@@ -326,19 +326,19 @@ const AppliedJobs = ({ showToast, t }) => {
                                     placeholder={t('JobsUpdate.AppliedJobs.search.placeholder', 'Search jobs, companies, or locations...')}
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pl-9 pr-3 py-2.5 text-sm border border-cuba-line-strong rounded-md focus:outline-none focus:ring-1 focus:ring-cuba-primary focus:border-cuba-primary placeholder-cuba-ink-subtle"
+                                    className="form-control w-full pl-9 pr-3 py-2 text-sm border border-cuba-line-strong rounded-md"
                                 />
                             </div>
                         </div>
 
                         {/* Status Filter */}
-                        <div className="sm:w-40">
+                        <div className="col-12 col-sm-6 col-md-auto">
                             <label htmlFor="application-status-filter" className="sr-only">Filter by status</label>
                             <select
                                 id="application-status-filter"
                                 value={statusFilter}
                                 onChange={(e) => setStatusFilter(e.target.value)}
-                                className="w-full px-3 py-2.5 text-sm border border-cuba-line-strong rounded-md focus:outline-none focus:ring-1 focus:ring-cuba-primary focus:border-cuba-primary bg-cuba-card">
+                                className="form-select w-full px-3 py-2 text-sm border border-cuba-line-strong rounded-md bg-cuba-card">
                                 <option value="all">{t('JobsUpdate.AppliedJobs.filters.allStatus', 'All Status')}</option>
                                 <option value="pending">{t('JobsUpdate.AppliedJobs.filters.underReview', 'Under Review')}</option>
                                 <option value="interview">{t('JobsUpdate.AppliedJobs.filters.interview', 'Interview')}</option>
@@ -348,13 +348,13 @@ const AppliedJobs = ({ showToast, t }) => {
                         </div>
 
                         {/* Sort */}
-                        <div className="sm:w-40">
+                        <div className="col-12 col-sm-6 col-md-auto">
                             <label htmlFor="application-sort" className="sr-only">Sort applications</label>
                             <select
                                 id="application-sort"
                                 value={sortBy}
                                 onChange={(e) => setSortBy(e.target.value)}
-                                className="w-full px-3 py-2.5 text-sm border border-cuba-line-strong rounded-md focus:outline-none focus:ring-1 focus:ring-cuba-primary focus:border-cuba-primary bg-cuba-card">
+                                className="form-select w-full px-3 py-2 text-sm border border-cuba-line-strong rounded-md bg-cuba-card">
                                 <option value="date">{t('JobsUpdate.AppliedJobs.sort.byDate', 'Sort by Date')}</option>
                                 <option value="company">{t('JobsUpdate.AppliedJobs.sort.byCompany', 'Sort by Company')}</option>
                                 <option value="status">{t('JobsUpdate.AppliedJobs.sort.byStatus', 'Sort by Status')}</option>
@@ -376,7 +376,7 @@ const AppliedJobs = ({ showToast, t }) => {
                                 {searchTerm || statusFilter !== 'all' ? t('JobsUpdate.AppliedJobs.noApplications.filterMessage', 'Try adjusting your search or filter criteria.') : t('JobsUpdate.AppliedJobs.noApplications.emptyMessage', "You haven't applied to any jobs yet. Start exploring opportunities!")}
                             </p>
                             {!searchTerm && statusFilter === 'all' && (
-                                <button onClick={redirectToJobs} className="cuba-btn-primary px-4 py-2 rounded-xl text-sm font-bold shadow-xs">{t('JobsUpdate.AppliedJobs.actions.browseJobs', 'Browse Jobs')}</button>
+                                <button onClick={redirectToJobs} className="btn btn-primary cuba-btn-primary px-4 py-2 rounded-pill text-sm font-bold shadow-xs">{t('JobsUpdate.AppliedJobs.actions.browseJobs', 'Browse Jobs')}</button>
                             )}
                         </div>
                     ) : (
@@ -385,13 +385,13 @@ const AppliedJobs = ({ showToast, t }) => {
                                 key={job.id}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="bg-cuba-card rounded-lg border border-cuba-line overflow-hidden hover:border-cuba-line-strong transition-all duration-200">
+                                className="card bs-card-executive bg-cuba-card rounded-3 border border-cuba-line overflow-hidden hover:border-cuba-line-strong transition-all duration-200">
                                 <div className="p-4">
                                     <div className="flex items-start justify-between">
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center justify-between mb-1">
                                                 <h3 className="text-sm font-semibold text-cuba-ink truncate">{job.jobTitle}</h3>
-                                                <div className={`inline-flex items-center gap-2 px-2 py-1 rounded border text-xs font-medium ${getStatusColor(job.status)}`}>
+                                                <div className={`badge rounded-pill inline-flex items-center gap-2 px-2.5 py-1.5 border text-xs font-medium ${getStatusColor(job.status)}`}>
                                                     {getStatusIcon(job.status)}
                                                     {getStatusText(job.status)}
                                                 </div>

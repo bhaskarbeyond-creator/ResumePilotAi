@@ -7,7 +7,7 @@ class ProfileDropdown extends Component {
     const { t } = this.props;
     return (
       <ul>
-        <div className="mobileItems">
+        <div className="card bs-card-executive mobileItems">
           <li><Link to="/" className="dropDownItem">Homepage</Link></li>
           <li><Link onClick={() => this.props.handleDashboardClick()} className="dropDownItem"> {t("dashboard.dashboard")}</Link></li>
           {/* <li><Link className="dropDownItem">Cover Letter</Link></li> */}

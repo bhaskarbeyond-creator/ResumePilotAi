@@ -48,7 +48,7 @@ const Navbar2 = {
         };
 
         return (
-            <nav className={`${backgroundColor} ${textColor} shadow-xl sticky top-0 z-50 transition-all duration-500`}>
+    <nav className="navbar navbar-expand-lg" className={`${backgroundColor} ${textColor} shadow-xl sticky top-0 z-50 transition-all duration-500`}>
                 {/* Enhanced background decorations */}
                 <div className="absolute inset-0 overflow-hidden">
                     <div className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br from-blue-200/20 to-purple-200/20 rounded-full blur-3xl animate-pulse"></div>

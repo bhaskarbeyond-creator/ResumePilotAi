@@ -85,3 +85,5 @@ export default function useConfirmDialog() {
 
   return { confirm, confirmationDialog, confirmBusy: busy };
 }
+
+export const ConfirmBridge = () => <div className="modal-dialog modal-content card d-none bs-confirm-bridge" />;

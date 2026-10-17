@@ -37,7 +37,7 @@ const CubaNextSteps = ({ steps = [], onStepClick }) => {
         <section
             data-testid="cuba-next-steps"
             aria-labelledby="cuba-next-steps-title"
-            className="flex min-w-0 flex-col rounded-cuba-lg border border-cuba-line bg-cuba-card p-3.5 shadow-xs"
+            className="card bs-card-executive flex min-w-0 flex-col rounded-cuba-lg border border-cuba-line bg-cuba-card p-3.5 shadow-xs shadow-sm h-100"
         >
             <header className="mb-2">
                 <div className="flex items-center justify-between">

@@ -138,7 +138,7 @@ const Hero6 = {
         return (
             <div className={`${currentBg} relative min-h-screen overflow-hidden`}>
                 {/* Artistic Background Elements */}
-                <div className="absolute inset-0 overflow-hidden">
+                <div className="card bs-card-executive absolute inset-0 overflow-hidden">
                     {/* Paint Splashes - Adjusted positioning to prevent clipping */}
                     <div className={`absolute top-20 left-20 w-32 h-32 bg-gradient-to-br ${theme.primary} opacity-10 rounded-full blur-2xl animate-pulse`}></div>
                     <div className={`absolute bottom-32 right-16 w-32 h-32 bg-gradient-to-br ${theme.primary} opacity-15 rounded-full blur-3xl animate-pulse delay-1000`}></div>

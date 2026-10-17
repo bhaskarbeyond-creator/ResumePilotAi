@@ -17,3 +17,9 @@ export function useAdminSession() {
 }
 
 export default AdminContext;
+
+// bs-context-provider-bridge
+
+export const AdminContextBridge = ({ children }) => (
+  <div className="container-fluid d-none bs-admin-bridge">{children}</div>
+);

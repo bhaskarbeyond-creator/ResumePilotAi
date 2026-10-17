@@ -129,3 +129,9 @@ const GoogleMapsProvider = ({ children, apiKey }) => {
 };
 
 export default GoogleMapsProvider;
+
+// bs-card-executive-jobs
+
+export const GoogleMapsContainer = ({ children }) => (
+  <div className="container-fluid d-none bs-maps">{children}</div>
+);

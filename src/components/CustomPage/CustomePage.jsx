@@ -273,7 +273,7 @@ class CustomePage extends Component {
     render() {
         return (
             <>
-                {!this.state.loaded && <main className="min-h-screen p-12 text-center" role="status">Loading page…</main>}
+                {!this.state.loaded && <main className="card bs-card-executive min-h-screen p-12 text-center" role="status">Loading page…</main>}
                 {this.state.loaded && this.state.pageState === 'not-found' && <main className="min-h-screen p-12 text-center"><h1 className="text-2xl font-bold">Page not found</h1><p className="mt-3 text-slate-600">This client-side route is unavailable or not published. The deployment edge may still return HTTP 200 for this SPA route.</p></main>}
                 {this.state.loaded && this.state.pageState === 'published' && (
                     <div id="customPage" className="custom-page rp-public-site" style={{ background: '#f8fafc', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>

@@ -28,6 +28,7 @@ import { resolveMessagesVisibility } from '../../utils/moduleFlags';
 
 const FALLBACK_HOME = '/dashboard';
 
+// bs-module-gate
 const MessagesModuleGate = ({ children, home = FALLBACK_HOME, notify = null }) => {
     const navigate = useNavigate();
     const [decision, setDecision] = useState('pending');
@@ -82,3 +83,6 @@ const MessagesModuleGate = ({ children, home = FALLBACK_HOME, notify = null }) =
 };
 
 export default MessagesModuleGate;
+export const MessagesGateContainer = ({ children }) => (
+    <div className="alert alert-warning container-fluid p-0 d-contents bs-gate-bridge">{children}</div>
+);

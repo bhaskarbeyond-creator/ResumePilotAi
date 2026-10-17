@@ -67,14 +67,14 @@ const EmployerOverview = ({ showToast }) => {
                             type="button"
                             onClick={handleRefresh}
                             disabled={refreshing}
-                            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 cuba-focusable"
+                            className="btn btn-outline-secondary shadow-sm inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 cuba-focusable"
                         >
                             <FiTrendingUp className="h-4 w-4" aria-hidden="true" />
                             {refreshing ? 'Refreshing…' : 'Refresh'}
                         </button>
                         <Link
                             to="/employer/jobs"
-                            className="cuba-btn-primary inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold"
+                            className="btn btn-primary shadow-sm cuba-btn-primary inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold"
                         >
                             <FiBriefcase className="h-4 w-4" aria-hidden="true" />
                             Manage job postings
@@ -83,7 +83,7 @@ const EmployerOverview = ({ showToast }) => {
                 }
             />
 
-            <section aria-label="Hiring metrics" className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 sm:gap-5">
+            <section aria-label="Hiring metrics" className="row g-3 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 sm:gap-5">
                 <EmployerStatCard
                     icon={<FiBriefcase className="h-5 w-5" aria-hidden="true" />}
                     label="Active jobs"
@@ -119,7 +119,7 @@ const EmployerOverview = ({ showToast }) => {
             </section>
 
             <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 lg:col-span-2">
+                <div className="card bs-card-executive rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 lg:col-span-2">
                     <h2 className="text-sm font-extrabold text-slate-900">Recent requisitions</h2>
                     <p className="mt-1 text-xs text-slate-500">Newest first, straight from your employer job records.</p>
                     <ul className="mt-4 divide-y divide-slate-100">
@@ -129,7 +129,7 @@ const EmployerOverview = ({ showToast }) => {
                                     <span className="block truncate text-sm font-bold text-slate-800">{job.title}</span>
                                     <span className="block truncate text-xs text-slate-500">{job.company} · {job.location}</span>
                                 </span>
-                                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold capitalize text-slate-600">{job.status}</span>
+                                <span className="badge rounded-pill bg-secondary-subtle text-secondary rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold capitalize text-slate-600">{job.status}</span>
                                 <span className="w-24 text-right text-xs font-bold text-slate-700">{job.applicationCount} applicant{job.applicationCount === 1 ? '' : 's'}</span>
                             </li>
                         ))}
@@ -139,7 +139,7 @@ const EmployerOverview = ({ showToast }) => {
                     )}
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+                <div className="card bs-card-executive rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
                     <h2 className="text-sm font-extrabold text-slate-900">Quick actions</h2>
                     <ul className="mt-4 space-y-2">
                         <li>

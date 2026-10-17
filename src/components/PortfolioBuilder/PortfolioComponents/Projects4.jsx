@@ -153,7 +153,7 @@ const Projects4 = {
         const theme = terminalThemes[terminalTheme] || terminalThemes.matrix;
 
         return (
-            <div className="bg-black relative py-24 px-6 overflow-hidden min-h-screen" style={{ backgroundColor: '#000000' }}>
+            <div className="card bs-card-executive bg-black relative py-24 px-6 overflow-hidden min-h-screen" style={{ backgroundColor: '#000000' }}>
                 {/* Matrix Binary Background */}
                 <div className="absolute inset-0 opacity-10">
                     <div className="absolute inset-0 font-mono text-xs text-gray-400 leading-tight">

@@ -169,9 +169,9 @@ function CustomRoleModal({ initial, existingIds, busy, onClose, onSubmit }) {
   };
 
   return (
-    <div className="enterprise-modal-backdrop" role="presentation" onClick={() => !busy && onClose()}>
-      <div className="enterprise-modal enterprise-modal-lg" role="dialog" aria-modal="true" aria-label="Define custom role" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '680px' }}>
-        <div className="enterprise-modal-header">
+    <div className="modal-content enterprise-modal-backdrop" role="presentation" onClick={() => !busy && onClose()}>
+      <div className="modal-content enterprise-modal enterprise-modal-lg" role="dialog" aria-modal="true" aria-label="Define custom role" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '680px' }}>
+        <div className="modal-content enterprise-modal-header">
           <div>
             <h3>{initial?.id ? `Edit custom role ${initial.id}` : 'Define Custom Role'}</h3>
             <p className="text-muted" style={{ fontSize: '0.8rem', margin: '4px 0 0' }}>Create a scoped, least-privilege permission bundle tailored for specific team functions.</p>
@@ -181,7 +181,7 @@ function CustomRoleModal({ initial, existingIds, busy, onClose, onSubmit }) {
           </button>
         </div>
         <form onSubmit={(e) => { e.preventDefault(); onSubmit({ id: idCandidate, label: label.trim() || idCandidate, permissions }); }}>
-          <div className="enterprise-modal-body" style={{ maxHeight: '65vh', overflowY: 'auto' }}>
+          <div className="modal-content enterprise-modal-body" style={{ maxHeight: '65vh', overflowY: 'auto' }}>
             <div className="enterprise-two-column-grid">
               <div className="enterprise-form-group">
                 <label htmlFor="custom-role-id">Role Identifier</label>
@@ -220,7 +220,7 @@ function CustomRoleModal({ initial, existingIds, busy, onClose, onSubmit }) {
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '16px 0 8px' }}>
               <label style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--enterprise-ink)' }}>
-                Granted Capabilities <span className="enterprise-pill enterprise-pill-template" style={{ marginLeft: '8px' }}>{permissions.length} selected</span>
+                Granted Capabilities <span className="badge rounded-pill enterprise-pill enterprise-pill-template" style={{ marginLeft: '8px' }}>{permissions.length} selected</span>
               </label>
             </div>
 
@@ -260,9 +260,9 @@ function CustomRoleModal({ initial, existingIds, busy, onClose, onSubmit }) {
               })}
             </div>
           </div>
-          <div className="enterprise-modal-footer">
-            <button type="button" className="enterprise-button enterprise-button-secondary" onClick={onClose} disabled={busy}>Cancel</button>
-            <button type="submit" className="enterprise-button enterprise-button-primary" disabled={busy || permissions.length === 0 || (!idValid && !(initial?.id && !changedId))}>
+          <div className="modal-content enterprise-modal-footer">
+            <button type="button" className="btn btn-outline-secondary enterprise-button enterprise-button-secondary" onClick={onClose} disabled={busy}>Cancel</button>
+            <button type="submit" className="btn btn-primary enterprise-button enterprise-button-primary" disabled={busy || permissions.length === 0 || (!idValid && !(initial?.id && !changedId))}>
               {busy ? 'Saving…' : initial?.id ? 'Save Changes' : 'Create Role'}
             </button>
           </div>
@@ -397,7 +397,7 @@ export default function EnterpriseRolesTab({ onNavigate = null }) {
         <div className="enterprise-toast enterprise-toast-success"><FiCheck aria-hidden="true" /> {notification}</div>
       )}
       {actionError && (
-        <div className="enterprise-card" role="alert">
+        <div className="card bs-card-executive enterprise-card" role="alert">
           <div className="enterprise-error-row">
             <span className="enterprise-error-icon" aria-hidden="true">⚠</span>
             <div><strong>Role action failed</strong><p className="text-muted">{actionError}</p></div>
@@ -406,14 +406,14 @@ export default function EnterpriseRolesTab({ onNavigate = null }) {
       )}
 
       {/* Top Banner Card */}
-      <div className="enterprise-card">
-        <div className="enterprise-card-header-flex">
+      <div className="card bs-card-executive enterprise-card">
+        <div className="card bs-card-executive enterprise-card-header-flex">
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <span className="enterprise-pill enterprise-pill-success">
+              <span className="badge rounded-pill enterprise-pill enterprise-pill-success">
                 <FiShield aria-hidden="true" /> Server Policy Engine Active
               </span>
-              <span className="enterprise-pill enterprise-pill-secondary">
+              <span className="badge rounded-pill enterprise-pill enterprise-pill-secondary">
                 {roleEntries.length} Total Roles
               </span>
             </div>
@@ -428,7 +428,7 @@ export default function EnterpriseRolesTab({ onNavigate = null }) {
           {canManageRoles && (
             <button
               type="button"
-              className="enterprise-button enterprise-button-primary"
+              className="btn btn-primary enterprise-button enterprise-button-primary"
               onClick={() => setEditor({ custom: true })}
               title="Define a new tenant custom role with specific capability permissions"
             >
@@ -525,7 +525,7 @@ export default function EnterpriseRolesTab({ onNavigate = null }) {
                       <FiExternalLink style={{ fontSize: '0.7rem', opacity: 0.6 }} />
                     </button>
 
-                    <span className="enterprise-pill enterprise-pill-secondary" style={{ fontSize: '0.72rem', fontWeight: 600 }}>
+                    <span className="badge rounded-pill enterprise-pill enterprise-pill-secondary" style={{ fontSize: '0.72rem', fontWeight: 600 }}>
                       {role.permissions.includes('*') ? 'All 24 Permissions' : `${permCount} Permissions`}
                     </span>
                   </div>
@@ -538,13 +538,13 @@ export default function EnterpriseRolesTab({ onNavigate = null }) {
           <div style={{ borderTop: '1px solid var(--enterprise-border)', paddingTop: '24px', marginBottom: '18px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '14px' }}>
               <div>
-                <h3 className="enterprise-card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h3 className="card bs-card-executive enterprise-card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span>Detailed Capability Matrix</span>
-                  <span className="enterprise-pill enterprise-pill-secondary" style={{ fontSize: '0.75rem' }}>
+                  <span className="badge rounded-pill enterprise-pill enterprise-pill-secondary" style={{ fontSize: '0.75rem' }}>
                     {totalMatchingPermissions} Capabilities
                   </span>
                   {highlightedRoleId && (
-                    <span className="enterprise-pill enterprise-pill-template" style={{ fontSize: '0.75rem', cursor: 'pointer' }} onClick={() => setHighlightedRoleId(null)}>
+                    <span className="badge rounded-pill enterprise-pill enterprise-pill-template" style={{ fontSize: '0.75rem', cursor: 'pointer' }} onClick={() => setHighlightedRoleId(null)}>
                       Highlighting {highlightedRoleId} ✕
                     </span>
                   )}
@@ -593,8 +593,8 @@ export default function EnterpriseRolesTab({ onNavigate = null }) {
           </div>
 
           {/* Grouped Permission Table */}
-          <div className="enterprise-table-wrapper" style={{ borderRadius: '12px', overflow: 'hidden' }}>
-            <table className="enterprise-table">
+          <div className="table enterprise-table table-hover align-middle-wrapper" style={{ borderRadius: '12px', overflow: 'hidden' }}>
+            <table className="table enterprise-table table-hover align-middle">
               <thead>
                 <tr>
                   <th style={{ minWidth: '300px' }}>Resource Capability</th>
@@ -690,7 +690,7 @@ export default function EnterpriseRolesTab({ onNavigate = null }) {
           </div>
 
           <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-            <p className="enterprise-card-subtitle" style={{ fontSize: '0.78rem' }}>
+            <p className="card bs-card-executive enterprise-card-subtitle" style={{ fontSize: '0.78rem' }}>
               ℹ️ Custom roles are scoped permission bundles from the platform whitelist. They never receive the wildcard (<code>*</code>) and never grant cross-workspace tenant authority.
             </p>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '0.76rem', color: 'var(--ep-slate-500)' }}>
@@ -713,22 +713,22 @@ export default function EnterpriseRolesTab({ onNavigate = null }) {
       )}
 
       {deleteTarget && (
-        <div className="enterprise-modal-backdrop enterprise-modal-overlay" role="presentation" onClick={() => setDeleteTarget(null)}>
-          <div className="enterprise-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-            <div className="enterprise-modal-header">
+        <div className="modal-content enterprise-modal-backdrop enterprise-modal-overlay" role="presentation" onClick={() => setDeleteTarget(null)}>
+          <div className="modal-content enterprise-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content enterprise-modal-header">
               <h3>Delete custom role &quot;{customRoles[deleteTarget]?.label || deleteTarget.replace(/^CUSTOM_/, '').replace(/_/g, ' ')}&quot;?</h3>
               <button type="button" className="enterprise-button-icon" onClick={() => setDeleteTarget(null)}>
                 <FiX />
               </button>
             </div>
-            <div className="enterprise-modal-body">
+            <div className="modal-content enterprise-modal-body">
               <p className="text-muted">
                 Members currently assigned this role will lose its permissions. The role can only be deleted when no member holds it.
               </p>
             </div>
-            <div className="enterprise-modal-footer">
-              <button type="button" className="enterprise-button enterprise-button-secondary" onClick={() => setDeleteTarget(null)}>Cancel</button>
-              <button type="button" className="enterprise-button enterprise-button-danger" onClick={handleDeleteRole} disabled={busy}>
+            <div className="modal-content enterprise-modal-footer">
+              <button type="button" className="btn btn-outline-secondary enterprise-button enterprise-button-secondary" onClick={() => setDeleteTarget(null)}>Cancel</button>
+              <button type="button" className="btn btn-danger enterprise-button enterprise-button-danger" onClick={handleDeleteRole} disabled={busy}>
                 {busy ? 'Deleting…' : 'Delete Role'}
               </button>
             </div>

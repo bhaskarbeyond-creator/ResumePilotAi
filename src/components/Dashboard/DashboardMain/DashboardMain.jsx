@@ -553,7 +553,7 @@ class DashboardMain extends Component {
                 {isCubaShellEnabled() ? (
                     <Suspense fallback={<div className="min-h-screen bg-cuba-canvas" aria-busy="true" />}>
                         <CubaCandidateShell>
-                            <div className="dashboardMainContent w-full">
+                            <div className="dashboardMainContent container-fluid p-0 w-full">
                                 <Suspense fallback={<Spinner inline />}>
                                     {this.renderRoutes()}
                                 </Suspense>

@@ -134,7 +134,7 @@ const LayoutTemplate = ({ layoutType = 'twoColumn', gap = 24, padding = 16, left
         }
     };
 
-    return <div style={getLayoutStyles()}>{renderLayout()}</div>;
+    return <div className="container-fluid p-0 card bs-card-executive layout-category-root" style={getLayoutStyles()}>{renderLayout()}</div>;
 };
 
 // Layout Category Component
@@ -209,3 +209,5 @@ const LayoutCategory = {
 };
 
 export default LayoutCategory;
+
+// bs-card-executive-block

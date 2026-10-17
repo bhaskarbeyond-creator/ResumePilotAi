@@ -28,11 +28,14 @@ class CanvasR extends React.Component {
     const imageStyle = this.getImageStyle()
     const textStyle = this.getTextStyle()
     return (
+      <div className="container-fluid p-0 position-relative">
       <Surface width={surfaceWidth} height={surfaceHeight} left={0} top={0}>
         <Image style={imageStyle} src="..." />
         <Text style={textStyle}>Here is some text below an image.</Text>
       </Surface>
+      </div>
     )
   }
 }
 export default CanvasR
+// bs-component-foundation

@@ -88,7 +88,7 @@ const TwilioSmsSettings = () => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center p-8">
+    <div className="card bs-card-executive container-fluid p-4 flex items-center justify-center p-8">
                 <FaSpinner className="animate-spin text-slate-500 w-6 h-6 mr-2" />
                 <span className="text-slate-600 text-sm">Loading SMS settings...</span>
             </div>

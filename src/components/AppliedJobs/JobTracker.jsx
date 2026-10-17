@@ -562,6 +562,16 @@ export default function JobTracker({ showToast }) {
             {...pageIdentity}
             dense
             hud={<CubaHud items={hudItems} label="Pipeline metrics" />}
+            actions={
+                <button
+                    type="button"
+                    onClick={() => { closeForm(); setForm(formForStatus('wishlist')); setShowForm(true); }}
+                    className="btn btn-primary cuba-btn-primary rounded-xl px-4 py-2 text-sm font-bold shadow-xs shadow-sm"
+                    data-testid="tracker-add-job"
+                >
+                    + Add Tracked Job
+                </button>
+            }
         >
             {deleteTarget && (
                 <div
@@ -679,25 +689,11 @@ export default function JobTracker({ showToast }) {
                         </div>
                     </div>
                 )}
-                <header className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <h1 className="text-2xl font-semibold">Job Tracker</h1>
-                        <p className="mt-1 text-sm" style={{ color: 'var(--cuba-ink-muted)' }}>
-                            Drag a card between stages, or use the controls on each card to advance it.
-                        </p>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={() => { closeForm(); setForm(formForStatus('wishlist')); setShowForm(true); }}
-                        className="cuba-btn-primary rounded-xl px-4 py-2 text-sm font-bold shadow-xs"
-                        data-testid="tracker-add-job"
-                    >
-                        {/* AC-10: the single consolidated primary creation
-                            action for the whole board; the per-column
-                            "+ Add Job" duplicates are gone. */}
-                        + Add Tracked Job
-                    </button>
-                </header>
+                <div className="mb-4 flex items-center justify-between">
+                    <p className="text-xs font-medium" style={{ color: 'var(--cuba-ink-muted)' }}>
+                        Drag a card between stages, or use the controls on each card to advance it.
+                    </p>
+                </div>
 
                 {/* AC-6: the pipeline analytics ribbon. Reads the whole pipeline, not the search filter. */}
                 <section

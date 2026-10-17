@@ -164,7 +164,7 @@ function UserIdentityMenu({ user, roles, platformAdmin }) {
               <strong>{displayName}</strong>
               <small>{displayEmail}</small>
               <div style={{ marginTop: '4px' }}>
-                <span className="enterprise-pill enterprise-pill-template" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
+                <span className="badge rounded-pill enterprise-pill enterprise-pill-template" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
                   {roles[0] || 'MEMBER'}{platformAdmin ? ' · Platform Admin' : ''}
                 </span>
               </div>
@@ -459,8 +459,8 @@ function EnterpriseConsoleInner({ isCubaChrome = false }) {
         <h1>Enterprise Unavailable</h1>
         <p>Enterprise features are disabled or unavailable in this environment.</p>
         <div className="enterprise-inline-actions" style={{ justifyContent: 'center', gap: '0.75rem' }}>
-          <Link to="/dashboard" className="enterprise-button enterprise-button-primary">Return to Dashboard</Link>
-          <Link to="/" className="enterprise-button enterprise-button-secondary">Return Home</Link>
+          <Link to="/dashboard" className="btn btn-primary enterprise-button enterprise-button-primary">Return to Dashboard</Link>
+          <Link to="/" className="btn btn-outline-secondary enterprise-button enterprise-button-secondary">Return Home</Link>
         </div>
       </main>
     );
@@ -525,10 +525,10 @@ function EnterpriseConsoleInner({ isCubaChrome = false }) {
               <p style={{ color: '#b91c1c', fontSize: '11px', marginTop: '6px' }}>{reauthError}</p>
             )}
             <div style={{ display: 'flex', gap: '8px', marginTop: '12px', justifyContent: 'flex-end' }}>
-              <button type="button" onClick={() => { setShowReauthModal(false); setReauthError(''); }} className="enterprise-button enterprise-button-secondary" style={{ padding: '6px 12px', fontSize: '12px' }}>
+              <button type="button" onClick={() => { setShowReauthModal(false); setReauthError(''); }} className="btn btn-outline-secondary enterprise-button enterprise-button-secondary" style={{ padding: '6px 12px', fontSize: '12px' }}>
                 Cancel
               </button>
-              <button type="submit" disabled={reauthenticating || !reauthPassword} className="enterprise-button enterprise-button-primary" style={{ padding: '6px 12px', fontSize: '12px' }}>
+              <button type="submit" disabled={reauthenticating || !reauthPassword} className="btn btn-primary enterprise-button enterprise-button-primary" style={{ padding: '6px 12px', fontSize: '12px' }}>
                 {reauthenticating ? 'Verifying…' : 'Verify & Continue'}
               </button>
             </div>
@@ -542,7 +542,7 @@ function EnterpriseConsoleInner({ isCubaChrome = false }) {
                 <button
                   type="button"
                   data-testid="enterprise-reauth-button"
-                  className="enterprise-button enterprise-button-primary"
+                  className="btn btn-primary enterprise-button enterprise-button-primary"
                   onClick={() => setShowReauthModal(true)}
                 >
                   Re-authenticate Session
@@ -551,18 +551,18 @@ function EnterpriseConsoleInner({ isCubaChrome = false }) {
               <button
                 type="button"
                 data-testid="enterprise-signin-again-button"
-                className="enterprise-button enterprise-button-secondary"
+                className="btn btn-outline-secondary enterprise-button enterprise-button-secondary"
                 onClick={handleSignInAgain}
               >
                 Sign In Again
               </button>
             </>
           ) : (
-            <button type="button" className="enterprise-button enterprise-button-primary" onClick={() => reload().catch(() => {})}>
+            <button type="button" className="btn btn-primary enterprise-button enterprise-button-primary" onClick={() => reload().catch(() => {})}>
               Retry Connection
             </button>
           )}
-          <Link to="/dashboard" className="enterprise-button enterprise-button-secondary">Return to Dashboard</Link>
+          <Link to="/dashboard" className="btn btn-outline-secondary enterprise-button enterprise-button-secondary">Return to Dashboard</Link>
         </div>
       </main>
     );
@@ -731,7 +731,7 @@ function EnterpriseConsoleInner({ isCubaChrome = false }) {
         {/* Dynamic Main Workspace */}
         <main className="enterprise-main" role="main">
           {loading ? (
-            <div className="enterprise-card" role="status" aria-live="polite" style={{ padding: '3.5rem 2rem', textAlign: 'center', marginTop: '1rem' }}>
+            <div className="card bs-card-executive enterprise-card" role="status" aria-live="polite" style={{ padding: '3.5rem 2rem', textAlign: 'center', marginTop: '1rem' }}>
               <div className="enterprise-loading-row" style={{ justifyContent: 'center' }}>
                 <span className="enterprise-spinner" aria-hidden="true" />
                 <span className="text-muted" style={{ fontSize: '0.95rem', marginLeft: '0.75rem', fontWeight: 500 }}>

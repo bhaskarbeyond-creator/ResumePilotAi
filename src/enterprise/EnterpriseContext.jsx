@@ -166,3 +166,9 @@ export function useEnterpriseTenant() {
   if (!context) throw new Error('EnterpriseTenantProvider is required');
   return context;
 }
+
+// bs-context-provider-bridge
+
+export const EnterpriseContextBridge = ({ children }) => (
+  <div className="container-fluid d-none bs-enterprise-bridge">{children}</div>
+);

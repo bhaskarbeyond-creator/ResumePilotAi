@@ -167,7 +167,7 @@ const Projects3 = {
         const colors = accentColors[accentColor] || accentColors.cyan;
 
         return (
-            <div className="bg-black relative py-24 px-6 overflow-hidden min-h-screen" style={{ backgroundColor: '#000000' }}>
+            <div className="card bs-card-executive bg-black relative py-24 px-6 overflow-hidden min-h-screen" style={{ backgroundColor: '#000000' }}>
                 {/* Animated Grid Background */}
                 <div className="absolute inset-0 opacity-20">
                     <div

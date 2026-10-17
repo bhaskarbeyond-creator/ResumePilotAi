@@ -220,14 +220,14 @@ export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = n
 
   return (
     <div className="enterprise-tab-content">
-      <div className="enterprise-card" style={{ padding: '24px' }}>
-        <div className="enterprise-card-header-flex" style={{ marginBottom: '20px' }}>
+      <div className="card bs-card-executive enterprise-card" style={{ padding: '24px' }}>
+        <div className="card bs-card-executive enterprise-card-header-flex" style={{ marginBottom: '20px' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <span className="enterprise-pill enterprise-pill-success">
+              <span className="badge rounded-pill enterprise-pill enterprise-pill-success">
                 <FiShield aria-hidden="true" /> Immutable Ledger
               </span>
-              <span className="enterprise-pill enterprise-pill-secondary">
+              <span className="badge rounded-pill enterprise-pill enterprise-pill-secondary">
                 {filtered.length} Events Loaded
               </span>
             </div>
@@ -242,7 +242,7 @@ export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = n
           <div className="enterprise-inline-actions" style={{ gap: '0.5rem' }}>
             <button
               type="button"
-              className="enterprise-button enterprise-button-secondary"
+              className="btn btn-outline-secondary enterprise-button enterprise-button-secondary"
               onClick={handleExportCsv}
               disabled={filtered.length === 0}
               title="Export filtered audit events as CSV"
@@ -252,7 +252,7 @@ export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = n
             </button>
             <button
               type="button"
-              className="enterprise-button enterprise-button-secondary"
+              className="btn btn-outline-secondary enterprise-button enterprise-button-secondary"
               onClick={handleExportJson}
               disabled={filtered.length === 0}
               title="Export filtered audit events as JSON"
@@ -262,7 +262,7 @@ export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = n
             </button>
             <button
               type="button"
-              className="enterprise-button enterprise-button-secondary"
+              className="btn btn-outline-secondary enterprise-button enterprise-button-secondary"
               onClick={handleCopyDeepLink}
               title="Copy shareable link with current filter parameters"
               data-tooltip={linkCopied ? 'Copied!' : 'Copy Link'}
@@ -295,7 +295,7 @@ export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = n
             />
             <button
               type="button"
-              className="enterprise-button enterprise-button-secondary enterprise-button-sm"
+              className="btn btn-outline-secondary enterprise-button enterprise-button-secondary enterprise-button-sm"
               onClick={() => setManualLink('')}
               aria-label="Dismiss investigation link"
             >
@@ -404,8 +404,8 @@ export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = n
             )
           ) : (
             <>
-              <div className="enterprise-table-wrapper" style={{ marginTop: '16px', borderRadius: '10px', overflow: 'hidden' }}>
-                <table className="enterprise-table">
+              <div className="table enterprise-table table-hover align-middle-wrapper" style={{ marginTop: '16px', borderRadius: '10px', overflow: 'hidden' }}>
+                <table className="table enterprise-table table-hover align-middle">
                   <thead>
                     <tr>
                       <th style={{ minWidth: '150px' }} title="UTC Timestamp of event">Timestamp (UTC)</th>
@@ -510,7 +510,7 @@ export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = n
                 {nextCursor && (
                   <button
                     type="button"
-                    className="enterprise-button enterprise-button-secondary enterprise-button-sm"
+                    className="btn btn-outline-secondary enterprise-button enterprise-button-secondary enterprise-button-sm"
                     onClick={() => setCursor(nextCursor)}
                     disabled={loading}
                   >
@@ -525,19 +525,19 @@ export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = n
       </div>
 
       {inspectEvent && (
-        <div className="enterprise-modal-backdrop" role="presentation" onClick={() => setInspectEvent(null)}>
-          <div className="enterprise-modal enterprise-modal-lg" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-            <div className="enterprise-modal-header">
+        <div className="modal-content enterprise-modal-backdrop" role="presentation" onClick={() => setInspectEvent(null)}>
+          <div className="modal-content enterprise-modal enterprise-modal-lg" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content enterprise-modal-header">
               <h3>Audit Event Record: {inspectEvent.id}</h3>
               <button type="button" className="enterprise-button-icon" onClick={() => setInspectEvent(null)}>
                 <FiX />
               </button>
             </div>
-            <div className="enterprise-modal-body" style={{ padding: '0 24px' }}>
+            <div className="modal-content enterprise-modal-body" style={{ padding: '0 24px' }}>
               <SyntaxHighlightedJson obj={inspectEvent} />
             </div>
-            <div className="enterprise-modal-footer">
-              <button type="button" className="enterprise-button enterprise-button-secondary" onClick={() => setInspectEvent(null)}>
+            <div className="modal-content enterprise-modal-footer">
+              <button type="button" className="btn btn-outline-secondary enterprise-button enterprise-button-secondary" onClick={() => setInspectEvent(null)}>
                 Close
               </button>
             </div>

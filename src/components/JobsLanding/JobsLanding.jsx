@@ -31,7 +31,7 @@ const JobsLanding = () => {
     };
     
     return (
-        <div className="jobs-landing-wrapper relative min-h-screen h-full w-full">
+        <div className="card bs-card-executive jobs-landing-wrapper relative min-h-screen h-full w-full">
             <GridBackground className="z-0" />
             <div className="relative z-10 bg-transparent h-full w-full">
                 <HomepageNavbar 

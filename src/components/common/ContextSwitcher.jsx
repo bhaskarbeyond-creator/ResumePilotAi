@@ -224,7 +224,7 @@ const ContextSwitcher = ({ variant = 'sidebar', onNavigate, className = '' }) =>
                 data-testid="context-switcher-trigger"
                 className={`flex w-full items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1e222d] text-slate-700 dark:text-slate-200 transition-colors hover:border-indigo-300 dark:hover:border-indigo-500 hover:bg-indigo-50/40 dark:hover:bg-slate-800/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${variant === 'header' ? 'px-2.5 py-1.5 text-xs font-bold' : 'px-3 py-2 text-xs font-bold'}`}
             >
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
+                <span className="card bs-card-executive flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
                     <CurrentIcon className="h-4 w-4" aria-hidden="true" />
                 </span>
                 <span className="min-w-0 flex-1 truncate text-left">{variant === 'sidebar' ? (currentMeta.shortLabel || currentMeta.label) : currentMeta.label}</span>

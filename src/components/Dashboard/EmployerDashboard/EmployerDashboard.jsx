@@ -401,14 +401,14 @@ const EmployerDashboard = ({ showToast, _sidebarCollapsed, t }) => {
                         </div>
                         <div className="flex space-x-3">
                             <button 
-                                className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2.5 rounded-md flex items-center gap-2 transition-colors text-sm font-medium shadow-sm"
+                                className="btn btn-outline-secondary bg-slate-700 text-white px-4 py-2 rounded-md flex items-center gap-2 text-sm font-medium shadow-sm"
                                 onClick={() => setShowAddCompanyModal(true)}
                             >
                                 <FaBuilding className="w-3.5 h-3.5" />
                                 <span className="hidden sm:inline">{t('JobsUpdate.EmployerDashboard.buttons.addCompany', 'Add Company')}</span>
                                 <span className="sm:hidden">{t('JobsUpdate.EmployerDashboard.buttons.company', 'Company')}</span>
                             </button>
-                            <button className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2.5 rounded-md flex items-center gap-2 transition-colors text-sm font-medium shadow-sm">
+                            <button className="btn btn-primary bg-slate-900 text-white px-4 py-2 rounded-md flex items-center gap-2 text-sm font-medium shadow-sm">
                                 <FaPlus className="w-3.5 h-3.5" />
                                 <span className="hidden sm:inline">{t('JobsUpdate.EmployerDashboard.buttons.postNewJob', 'Post New Job')}</span>
                                 <span className="sm:hidden">{t('JobsUpdate.EmployerDashboard.buttons.newJob', 'New Job')}</span>
@@ -546,7 +546,7 @@ const EmployerDashboard = ({ showToast, _sidebarCollapsed, t }) => {
                                 data-job-id={job.id}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="bg-white rounded-lg border border-slate-200 overflow-hidden hover:border-slate-300 transition-all duration-200">
+                                className="card bs-card-executive bg-white rounded-lg border border-slate-200 overflow-hidden hover:border-slate-300 transition-all duration-200">
                                 <div className="p-4">
                                     <div className="flex items-start justify-between">
                                         <div className="flex-1 min-w-0">

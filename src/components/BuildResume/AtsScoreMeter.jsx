@@ -8,7 +8,7 @@ export { calculateAtsScore } from '../../utils/atsScore';
 
 const STATUS_THEME = {
     excellent: { stroke: '#059669', chip: 'bg-emerald-50 border-emerald-200 text-emerald-800' },
-    strong: { stroke: '#4f46e5', chip: 'bg-indigo-50 border-indigo-200 text-indigo-800' },
+    strong: { stroke: '#4f46e5', chip: 'badge rounded-pill bg-indigo-50 border-indigo-200 text-indigo-800' },
     'needs-improvement': { stroke: '#d97706', chip: 'bg-amber-50 border-amber-200 text-amber-800' },
     'getting-started': { stroke: '#475569', chip: 'bg-[var(--cuba-canvas)] border-[var(--cuba-line-strong)] text-[var(--cuba-ink)]' },
 };
@@ -19,7 +19,7 @@ const RadialGauge = ({ score = 0, stroke = '#475569', label = '' }) => {
     const safeScore = typeof score === 'number' && Number.isFinite(score) ? score : 0;
     const offset = circumference - (Math.max(0, Math.min(100, safeScore)) / 100) * circumference;
     return (
-        <div className="relative flex h-12 w-12 flex-shrink-0 items-center justify-center">
+        <div className="badge rounded-pill relative flex h-12 w-12 flex-shrink-0 items-center justify-center">
             <svg className="h-12 w-12 -rotate-90 transform" viewBox="0 0 56 56" aria-hidden="true">
                 <circle cx="28" cy="28" r={radius} stroke="currentColor" strokeWidth="4.5" fill="transparent" className="text-[var(--cuba-ink-inverse)]" />
                 <circle

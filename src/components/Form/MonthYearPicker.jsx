@@ -87,7 +87,7 @@ export function MonthYearPicker({ label, value, onChange, disabled, showPresentC
     const isPresentActive = Boolean(isCurrent || month === 'Present' || year === 'Present' || String(value || '').toLowerCase() === 'present');
 
     return (
-        <div className="space-y-1.5 font-sans">
+        <div className="form-control bs-month-picker border-0 p-0 space-y-1.5 font-sans">
             {/* Header row: Render only if label, showPresentCheck, or headerRight is present */}
             {(label || showPresentCheck || headerRight) && (
                 <div className="flex items-center justify-between gap-2 min-h-[18px]">

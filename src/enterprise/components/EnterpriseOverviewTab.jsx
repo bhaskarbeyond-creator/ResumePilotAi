@@ -157,10 +157,10 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
 
   return (
     <div className="enterprise-tab-content">
-      <div className="enterprise-card enterprise-banner-card">
+      <div className="card bs-card-executive enterprise-card enterprise-banner-card">
         <div className="enterprise-banner-header">
           <div>
-            <span className="enterprise-pill enterprise-pill-success">
+            <span className="badge rounded-pill enterprise-pill enterprise-pill-success">
               <FiCheckCircle aria-hidden="true" /> Enterprise Active · {tenant?.isolationTier || 'STANDARD'}
             </span>
             <h2 className="enterprise-tab-title" style={{ marginTop: '0.75rem' }}>
@@ -174,14 +174,14 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
           <div className="enterprise-actions-row">
             <button
               type="button"
-              className="enterprise-button enterprise-button-secondary"
+              className="btn btn-outline-secondary enterprise-button enterprise-button-secondary"
               onClick={() => onNavigate('members')}
             >
               <FiUserPlus aria-hidden="true" /> Manage Members
             </button>
             <button
               type="button"
-              className="enterprise-button enterprise-button-primary"
+              className="btn btn-primary enterprise-button enterprise-button-primary"
               onClick={() => onNavigate('resumes')}
             >
               <FiPlus aria-hidden="true" /> New Resume
@@ -191,7 +191,7 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
       </div>
 
       <div className="enterprise-metrics-grid">
-        <div className="enterprise-card enterprise-metric-box" title="Total registered enterprise identities and team memberships in this tenant">
+        <div className="card bs-card-executive enterprise-card enterprise-metric-box" title="Total registered enterprise identities and team memberships in this tenant">
           <div className="enterprise-metric-header">
             <span>Enterprise Members</span>
             <FiUsers className="enterprise-metric-icon" aria-hidden="true" />
@@ -202,7 +202,7 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
           </div>
         </div>
 
-        <div className="enterprise-card enterprise-metric-box" title="Configured workspace partitions for team and resource isolation">
+        <div className="card bs-card-executive enterprise-card enterprise-metric-box" title="Configured workspace partitions for team and resource isolation">
           <div className="enterprise-metric-header">
             <span>Workspaces</span>
             <FiSliders className="enterprise-metric-icon" aria-hidden="true" />
@@ -213,7 +213,7 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
           </div>
         </div>
 
-        <div className="enterprise-card enterprise-metric-box" title="Active departmental squads and project teams in scope">
+        <div className="card bs-card-executive enterprise-card enterprise-metric-box" title="Active departmental squads and project teams in scope">
           <div className="enterprise-metric-header">
             <span>Teams</span>
             <FiUsers className="enterprise-metric-icon" aria-hidden="true" />
@@ -222,7 +222,7 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
           <div className="enterprise-metric-footer">Active teams in scope</div>
         </div>
 
-        <div className="enterprise-card enterprise-metric-box" title="Daily AI generation requests consumed versus your provisioned quota limit">
+        <div className="card bs-card-executive enterprise-card enterprise-metric-box" title="Daily AI generation requests consumed versus your provisioned quota limit">
           <div className="enterprise-metric-header">
             <span>AI Usage Today</span>
             <FiZap className="enterprise-metric-icon" aria-hidden="true" />
@@ -246,7 +246,7 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
           </div>
         </div>
 
-        <div className="enterprise-card enterprise-metric-box" title="95th percentile response latency for API requests in the current telemetry window">
+        <div className="card bs-card-executive enterprise-card enterprise-metric-box" title="95th percentile response latency for API requests in the current telemetry window">
           <div className="enterprise-metric-header">
             <span>Request Latency (p95)</span>
             <FiZap className="enterprise-metric-icon" aria-hidden="true" />
@@ -257,7 +257,7 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
           </div>
         </div>
 
-        <div className="enterprise-card enterprise-metric-box" title="Server-side HTTP 5xx errors recorded by in-process telemetry">
+        <div className="card bs-card-executive enterprise-card enterprise-metric-box" title="Server-side HTTP 5xx errors recorded by in-process telemetry">
           <div className="enterprise-metric-header">
             <span>Server Errors (5xx)</span>
             <FiDatabase className="enterprise-metric-icon" aria-hidden="true" />
@@ -271,15 +271,15 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
 
       {/* Operational trend: real durable-ledger data, deep links into Usage */}
       {usageByDay.length >= 2 && (
-        <div className="enterprise-card" style={{ marginTop: '1.5rem' }}>
-          <div className="enterprise-card-header-flex">
+        <div className="card bs-card-executive enterprise-card" style={{ marginTop: '1.5rem' }}>
+          <div className="card bs-card-executive enterprise-card-header-flex">
             <div>
-              <h3 className="enterprise-card-title"><FiTrendingUp aria-hidden="true" /> AI Activity — last {usageByDay.length} days</h3>
-              <p className="enterprise-card-subtitle">Requests per day from the durable usage ledger</p>
+              <h3 className="card bs-card-executive enterprise-card-title"><FiTrendingUp aria-hidden="true" /> AI Activity — last {usageByDay.length} days</h3>
+              <p className="card bs-card-executive enterprise-card-subtitle">Requests per day from the durable usage ledger</p>
             </div>
             <button
               type="button"
-              className="enterprise-button enterprise-button-secondary enterprise-button-sm"
+              className="btn btn-outline-secondary enterprise-button enterprise-button-secondary enterprise-button-sm"
               onClick={() => onNavigate('usage', { days: '30' })}
             >
               Open Usage Analytics
@@ -290,9 +290,9 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
       )}
 
       {recommendations.length > 0 ? (
-        <div className="enterprise-card" style={{ marginTop: '1.5rem' }}>
-          <h3 className="enterprise-card-title"><FiAlertTriangle aria-hidden="true" /> Recommended Actions ({recommendations.length})</h3>
-          <p className="enterprise-card-subtitle">Derived from the live state of this tenant — never synthesized</p>
+        <div className="card bs-card-executive enterprise-card" style={{ marginTop: '1.5rem' }}>
+          <h3 className="card bs-card-executive enterprise-card-title"><FiAlertTriangle aria-hidden="true" /> Recommended Actions ({recommendations.length})</h3>
+          <p className="card bs-card-executive enterprise-card-subtitle">Derived from the live state of this tenant — never synthesized</p>
           <ul className="enterprise-health-list">
             {recommendations.map(item => (
               <li className="enterprise-health-item" key={item.id}>
@@ -303,7 +303,7 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
                 </div>
                 <button
                   type="button"
-                  className="enterprise-button enterprise-button-secondary enterprise-button-sm"
+                  className="btn btn-outline-secondary enterprise-button enterprise-button-secondary enterprise-button-sm"
                   onClick={() => onNavigate(item.target, item.params || null)}
                 >
                   Review
@@ -313,9 +313,9 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
           </ul>
         </div>
       ) : (
-        <div className="enterprise-card" style={{ marginTop: '1.5rem' }}>
-          <h3 className="enterprise-card-title"><FiCheckCircle aria-hidden="true" style={{ color: 'var(--ep-emerald-600)' }} /> Recommended Actions · All Systems Optimal</h3>
-          <p className="enterprise-card-subtitle">Zero configuration warnings or pending security tasks detected for this organization</p>
+        <div className="card bs-card-executive enterprise-card" style={{ marginTop: '1.5rem' }}>
+          <h3 className="card bs-card-executive enterprise-card-title"><FiCheckCircle aria-hidden="true" style={{ color: 'var(--ep-emerald-600)' }} /> Recommended Actions · All Systems Optimal</h3>
+          <p className="card bs-card-executive enterprise-card-subtitle">Zero configuration warnings or pending security tasks detected for this organization</p>
           <div className="enterprise-health-item" style={{ background: 'var(--ep-emerald-50)', border: '1px solid var(--ep-emerald-200)', borderRadius: '10px', padding: '14px 18px', marginTop: '12px' }}>
             <div className="enterprise-health-status online" />
             <div className="enterprise-health-copy">
@@ -327,9 +327,9 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
       )}
 
       <div className="enterprise-two-column-grid">
-        <div className="enterprise-card">
-          <h3 className="enterprise-card-title">Management Shortcuts</h3>
-          <p className="enterprise-card-subtitle">Common enterprise administrative workflows</p>
+        <div className="card bs-card-executive enterprise-card">
+          <h3 className="card bs-card-executive enterprise-card-title">Management Shortcuts</h3>
+          <p className="card bs-card-executive enterprise-card-subtitle">Common enterprise administrative workflows</p>
           <div className="enterprise-shortcuts-list">
             {[
               { id: 'members', label: 'Manage Team & User Access', icon: FiUsers },
@@ -358,12 +358,12 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
           </div>
         </div>
 
-        <div className="enterprise-card">
-          <h3 className="enterprise-card-title">
+        <div className="card bs-card-executive enterprise-card">
+          <h3 className="card bs-card-executive enterprise-card-title">
             <FiShield aria-hidden="true" /> Infrastructure & Security Posture
             <HelpTooltip text="Live verification of MariaDB persistence, transactional outbox workers, encryption tier, and system metrics" />
           </h3>
-          <p className="enterprise-card-subtitle">Live subsystem status</p>
+          <p className="card bs-card-executive enterprise-card-subtitle">Live subsystem status</p>
           <ul className="enterprise-health-list">
             <li className="enterprise-health-item">
               <div className={`enterprise-health-status ${metrics.loading ? 'checking' : 'online'}`} />
@@ -371,7 +371,7 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
                 <strong>Observability & Metrics</strong>
                 <small>{sampleCount > 0 ? `${formatNumber(sampleCount)} requests tracked` : 'No requests tracked yet'}</small>
               </div>
-              <span className="enterprise-pill enterprise-pill-success">Online</span>
+              <span className="badge rounded-pill enterprise-pill enterprise-pill-success">Online</span>
             </li>
             <li className="enterprise-health-item">
               <div className={`enterprise-health-status ${dataPlane.loading ? 'checking' : (planeOk ? 'online' : 'offline')}`} />
@@ -407,21 +407,21 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
                 <strong>Server-side Tenant Authorization</strong>
                 <small>Tenant and workspace context are resolved server-side on each request.</small>
               </div>
-              <span className="enterprise-pill enterprise-pill-success">Enforced</span>
+              <span className="badge rounded-pill enterprise-pill enterprise-pill-success">Enforced</span>
             </li>
           </ul>
         </div>
       </div>
 
-      <div className="enterprise-card" style={{ marginTop: '1.5rem' }}>
-        <div className="enterprise-card-header-flex">
+      <div className="card bs-card-executive enterprise-card" style={{ marginTop: '1.5rem' }}>
+        <div className="card bs-card-executive enterprise-card-header-flex">
           <div>
-            <h3 className="enterprise-card-title">Recent Activity</h3>
-            <p className="enterprise-card-subtitle">Audit stream of verified actions in active context</p>
+            <h3 className="card bs-card-executive enterprise-card-title">Recent Activity</h3>
+            <p className="card bs-card-executive enterprise-card-subtitle">Audit stream of verified actions in active context</p>
           </div>
           <button
             type="button"
-            className="enterprise-button enterprise-button-secondary enterprise-button-sm"
+            className="btn btn-outline-secondary enterprise-button enterprise-button-secondary enterprise-button-sm"
             onClick={() => onNavigate('audit')}
           >
             View Full Audit Log

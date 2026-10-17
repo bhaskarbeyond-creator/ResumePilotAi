@@ -276,7 +276,7 @@ const NavbarCategory = {
             template: {
                 type: 'custom',
                 label: 'Template Style',
-                render: ({ _name, onChange, value }) => <TemplateSelector value={value} onChange={onChange} templates={navbarTemplateOptions} category="Navbar" />,
+                render: ({ _name, onChange, value }) => <div className="card bs-card-executive p-0 border-0 bg-transparent"><TemplateSelector value={value} onChange={onChange} templates={navbarTemplateOptions} category="Navbar" /></div>,
             },
         };
 
@@ -322,3 +322,5 @@ const NavbarCategory = {
 };
 
 export default NavbarCategory;
+
+// bs-card-executive-block

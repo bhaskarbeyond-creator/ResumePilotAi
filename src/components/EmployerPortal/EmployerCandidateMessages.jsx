@@ -12,7 +12,7 @@ import DashboardMessages from '../Dashboard/DashboardMessages/DashboardMessages'
  */
 const EmployerCandidateMessages = ({ showToast }) => {
     return (
-        <div>
+        <div className="container-fluid p-0 bs-employer-messages">
             <EmployerPageHeader
                 eyebrow="Requisitions & Applicants"
                 title="Candidate Messages"

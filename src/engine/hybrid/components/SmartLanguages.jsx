@@ -19,7 +19,7 @@ export default function SmartLanguages({ languages = [], theme = {}, title = 'La
   const showDots = theme.skillVariant === 'dots';
 
   return (
-    <section className="smart-section smart-languages-section">
+    <section className="container-fluid bs-container-fluid-adaptive smart-section smart-languages-section">
       <h3 className={`smart-section-title ${dividerClass}`}>
         <span className="smart-section-title__text">{title}</span>
         <span className="smart-section-title__line" />

@@ -319,7 +319,7 @@ export default function EnterpriseEmailTab() {
         </div>
       )}
       {actionError && (
-        <div className="enterprise-card" role="alert">
+        <div className="card bs-card-executive enterprise-card" role="alert">
           <div className="enterprise-error-row">
             <span className="enterprise-error-icon" aria-hidden="true">⚠</span>
             <div><strong>Email dispatch error</strong><p className="text-muted">{actionError}</p></div>
@@ -327,14 +327,14 @@ export default function EnterpriseEmailTab() {
         </div>
       )}
 
-      <div className="enterprise-card">
-        <div className="enterprise-card-header-flex">
+      <div className="card bs-card-executive enterprise-card">
+        <div className="card bs-card-executive enterprise-card-header-flex">
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <span className="enterprise-pill enterprise-pill-success">
+              <span className="badge rounded-pill enterprise-pill enterprise-pill-success">
                 <FiMail aria-hidden="true" /> Enterprise Notification Gateway
               </span>
-              <span className="enterprise-pill enterprise-pill-secondary">
+              <span className="badge rounded-pill enterprise-pill enterprise-pill-secondary">
                 5 Configured Scenarios
               </span>
             </div>
@@ -350,7 +350,7 @@ export default function EnterpriseEmailTab() {
 
         <div className="enterprise-two-column-grid" style={{ marginTop: '24px', alignItems: 'start' }}>
           {/* Template Selection Sidebar */}
-          <div className="enterprise-card" style={{ padding: '16px', background: 'var(--ep-slate-25)' }}>
+          <div className="card bs-card-executive enterprise-card" style={{ padding: '16px', background: 'var(--ep-slate-25)' }}>
             <h3 style={{ fontSize: '0.88rem', fontWeight: 700, margin: '0 0 12px', color: 'var(--enterprise-ink)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Notification Scenarios
             </h3>
@@ -384,8 +384,8 @@ export default function EnterpriseEmailTab() {
           </div>
 
           {/* Template Editor & Live Preview */}
-          <div className="enterprise-card" style={{ padding: '24px' }}>
-            <div className="enterprise-card-header-flex" style={{ marginBottom: '16px' }}>
+          <div className="card bs-card-executive enterprise-card" style={{ padding: '24px' }}>
+            <div className="card bs-card-executive enterprise-card-header-flex" style={{ marginBottom: '16px' }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--enterprise-ink)' }}>
                   {currentTemplate.name}
@@ -459,7 +459,7 @@ export default function EnterpriseEmailTab() {
                     className="enterprise-input"
                     style={{ maxWidth: '320px' }}
                   />
-                  <button type="submit" className="enterprise-button enterprise-button-secondary enterprise-button-sm" disabled={sendingTest}>
+                  <button type="submit" className="btn btn-outline-secondary enterprise-button enterprise-button-secondary enterprise-button-sm" disabled={sendingTest}>
                     <FiSend aria-hidden="true" /> {sendingTest ? 'Sending…' : 'Send Test Preview'}
                   </button>
                 </form>
@@ -503,7 +503,7 @@ export default function EnterpriseEmailTab() {
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                   <button
                     type="button"
-                    className="enterprise-button enterprise-button-primary"
+                    className="btn btn-primary enterprise-button enterprise-button-primary"
                     onClick={() => { notify(`Saved customized template for "${currentTemplate.name}".`); setPreviewMode(true); }}
                     disabled={!canManageSettings}
                   >

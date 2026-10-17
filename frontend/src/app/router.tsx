@@ -1,0 +1,264 @@
+/**
+ * Application Router
+ *
+ * Central route configuration for the entire IME365 application.
+ * Preserves all existing backend-supported route URLs for backward compatibility.
+ */
+
+import { Suspense, lazy } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { PageSpinner } from '@/components/ui/loading';
+import { RouteErrorBoundary } from '@/components/guards/route-error-boundary';
+import { RequireAuth, RedirectIfAuthenticated } from '@/components/guards/require-auth';
+import { AppShell } from '@/components/layout/app-shell';
+
+
+// ─── Lazy-loaded pages ───
+const LandingPage = lazy(() => import('@/pages/landing').then((m) => ({ default: m.LandingPage })));
+const LoginPage = lazy(() => import('@/pages/auth/login').then((m) => ({ default: m.LoginPage })));
+const DashboardOverview = lazy(() => import('@/pages/dashboard/overview').then((m) => ({ default: m.DashboardOverview })));
+const ResumesPage = lazy(() => import('@/pages/dashboard/resumes').then((m) => ({ default: m.ResumesPage })));
+const SettingsPage = lazy(() => import('@/pages/dashboard/settings').then((m) => ({ default: m.SettingsPage })));
+const JobTrackerPage = lazy(() => import('@/pages/dashboard/job-tracker').then((m) => ({ default: m.JobTrackerPage })));
+const InterviewCoachPage = lazy(() => import('@/pages/dashboard/interview-coach').then((m) => ({ default: m.InterviewCoachPage })));
+const CoverLettersPage = lazy(() => import('@/pages/dashboard/cover-letters').then((m) => ({ default: m.CoverLettersPage })));
+const ResumeBuilderPage = lazy(() => import('@/pages/dashboard/resume-builder').then((m) => ({ default: m.ResumeBuilderPage })));
+const AdminConsolePage = lazy(() => import('@/pages/admin/console').then((m) => ({ default: m.AdminConsolePage })));
+const JobsPortalPage = lazy(() => import('@/pages/jobs/portal').then((m) => ({ default: m.JobsPortalPage })));
+const BlogPage = lazy(() => import('@/pages/blog/index').then((m) => ({ default: m.BlogPage })));
+const ATSScorePage = lazy(() => import('@/pages/dashboard/ats-score').then((m) => ({ default: m.ATSScorePage })));
+const PricingPage = lazy(() => import('@/pages/billing/pricing').then((m) => ({ default: m.PricingPage })));
+const FeaturesPage = lazy(() => import('@/pages/features/index').then((m) => ({ default: m.FeaturesPage })));
+const ContactPage = lazy(() => import('@/pages/cms/index').then((m) => ({ default: m.ContactPage })));
+const CMSPage = lazy(() => import('@/pages/cms/index').then((m) => ({ default: m.CMSPage })));
+const AIAssistantPage = lazy(() => import('@/pages/dashboard/ai-assistant').then((m) => ({ default: m.AIAssistantPage })));
+const PortfolioBuilderPage = lazy(() => import('@/pages/portfolio/builder').then((m) => ({ default: m.PortfolioBuilderPage })));
+const EmployerPortalPage = lazy(() => import('@/pages/employer/portal').then((m) => ({ default: m.EmployerPortalPage })));
+const EnterpriseConsolePage = lazy(() => import('@/pages/enterprise/console').then((m) => ({ default: m.EnterpriseConsolePage })));
+const MessagesPage = lazy(() => import('@/pages/dashboard/messages').then((m) => ({ default: m.MessagesPage })));
+const SharedResumePage = lazy(() => import('@/pages/shared/resume-view').then((m) => ({ default: m.SharedResumePage })));
+const BlogEditorPage = lazy(() => import('@/pages/blog/editor').then((m) => ({ default: m.BlogEditorPage })));
+const CoverLetterBuilderPage = lazy(() => import('@/pages/dashboard/cover-letter-builder').then((m) => ({ default: m.CoverLetterBuilderPage })));
+const NotFoundPage = lazy(() => import('@/pages/placeholder').then((m) => ({ default: m.NotFoundPage })));
+const CVRendererPage = lazy(() => import('@/pages/export/cv-renderer').then((m) => ({ default: m.CVRendererPage })));
+
+export function AppRouter() {
+  return (
+    <BrowserRouter>
+      <RouteErrorBoundary>
+        <Suspense fallback={<PageSpinner />}>
+          <Routes>
+            {/* ─── Public Routes ─── */}
+            <Route path="/" element={<LandingPage />} />
+            <Route
+              path="/login"
+              element={
+                <RedirectIfAuthenticated>
+                  <LoginPage />
+                </RedirectIfAuthenticated>
+              }
+            />
+            <Route path="/sign-up" element={<Navigate to="/login" replace />} />
+            <Route path="/front" element={<Navigate to="/" replace />} />
+            <Route path="/features" element={<FeaturesPage />} />
+            <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+
+            {/* ─── Blog ─── */}
+            <Route path="/blog" element={<BlogPage />} />
+            <Route path="/blog/:slug" element={<BlogPage />} />
+            <Route
+              path="/blog-editor"
+              element={<RequireAuth roles={['ADMIN', 'SUPER_ADMIN']}><AppShell><BlogEditorPage /></AppShell></RequireAuth>}
+            />
+            <Route
+              path="/blog-editor/:postId"
+              element={<RequireAuth roles={['ADMIN', 'SUPER_ADMIN']}><AppShell><BlogEditorPage /></AppShell></RequireAuth>}
+            />
+
+            {/* ─── Jobs (public) ─── */}
+            <Route path="/jobs" element={<JobsPortalPage />} />
+            <Route path="/jobs/browse" element={<JobsPortalPage />} />
+            <Route path="/jobs/portal" element={<JobsPortalPage />} />
+            <Route path="/jobs/portal/:jobId" element={<JobsPortalPage />} />
+            <Route path="/jobs/categories" element={<JobsPortalPage />} />
+            <Route path="/jobs/category/:catName" element={<JobsPortalPage />} />
+            <Route path="/jobs/city/:slug" element={<JobsPortalPage />} />
+            <Route path="/jobs/in/:slug" element={<JobsPortalPage />} />
+
+            {/* ─── Portfolio (public) ─── */}
+            <Route path="/portfolios" element={<PortfolioBuilderPage />} />
+            <Route path="/portfolio/:slug" element={<PortfolioBuilderPage />} />
+
+            {/* ─── Billing (mixed) ─── */}
+            <Route path="/billing/plans" element={<PricingPage />} />
+
+            {/* ─── CMS Pages ─── */}
+            <Route path="/p/:custompage" element={<CMSPage />} />
+            <Route path="/shared/:resumeId" element={<SharedResumePage />} />
+
+            {/* ─── Authenticated — Dashboard ─── */}
+            <Route
+              path="/dashboard"
+              element={
+                <RequireAuth>
+                  <AppShell><DashboardOverview /></AppShell>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/dashboard/resumes"
+              element={
+                <RequireAuth>
+                  <AppShell><ResumesPage /></AppShell>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/dashboard/ats"
+              element={<RequireAuth><AppShell><ATSScorePage /></AppShell></RequireAuth>}
+            />
+            <Route
+              path="/dashboard/jobs/*"
+              element={<RequireAuth><AppShell><JobTrackerPage /></AppShell></RequireAuth>}
+            />
+            <Route
+              path="/dashboard/interviews/*"
+              element={<RequireAuth><AppShell><InterviewCoachPage /></AppShell></RequireAuth>}
+            />
+            <Route
+              path="/dashboard/cover-letters/*"
+              element={<RequireAuth><AppShell><CoverLettersPage /></AppShell></RequireAuth>}
+            />
+            <Route
+              path="/dashboard/ats-score"
+              element={<RequireAuth><AppShell><ATSScorePage /></AppShell></RequireAuth>}
+            />
+            <Route
+              path="/dashboard/portfolio/*"
+              element={<RequireAuth><AppShell><PortfolioBuilderPage /></AppShell></RequireAuth>}
+            />
+            <Route
+              path="/dashboard/ai/*"
+              element={<RequireAuth><AppShell><AIAssistantPage /></AppShell></RequireAuth>}
+            />
+            <Route
+              path="/dashboard/messages/*"
+              element={<RequireAuth><AppShell><MessagesPage /></AppShell></RequireAuth>}
+            />
+            <Route
+              path="/dashboard/messages"
+              element={<RequireAuth><AppShell><MessagesPage /></AppShell></RequireAuth>}
+            />
+            <Route
+              path="/dashboard/settings/*"
+              element={<RequireAuth><AppShell><SettingsPage /></AppShell></RequireAuth>}
+            />
+
+            {/* ─── Resume Builder ─── */}
+            <Route
+              path="/build-resume"
+              element={<RequireAuth><AppShell><ResumeBuilderPage /></AppShell></RequireAuth>}
+            />
+            <Route
+              path="/build-resume/:resumeId"
+              element={<RequireAuth><AppShell><ResumeBuilderPage /></AppShell></RequireAuth>}
+            />
+            <Route
+              path="/create-resume/*"
+              element={<RequireAuth><Navigate to="/build-resume" replace /></RequireAuth>}
+            />
+            <Route path="/create-resume" element={<Navigate to="/build-resume" replace />} />
+
+            {/* ─── Cover Letters ─── */}
+            <Route
+              path="/coverletter/*"
+              element={<RequireAuth><AppShell><CoverLetterBuilderPage /></AppShell></RequireAuth>}
+            />
+            <Route
+              path="/cover-letter/*"
+              element={<RequireAuth><AppShell><CoverLetterBuilderPage /></AppShell></RequireAuth>}
+            />
+
+            {/* ─── Portfolio Builder ─── */}
+            <Route
+              path="/portfolio/builder"
+              element={<RequireAuth><AppShell><PortfolioBuilderPage /></AppShell></RequireAuth>}
+            />
+
+            {/* ─── Employer Portal ─── */}
+            <Route
+              path="/employer/*"
+              element={<RequireAuth><AppShell><EmployerPortalPage /></AppShell></RequireAuth>}
+            />
+
+            {/* ─── Enterprise Console ─── */}
+            <Route
+              path="/org/:slug/*"
+              element={<RequireAuth><AppShell><EnterpriseConsolePage /></AppShell></RequireAuth>}
+            />
+            <Route
+              path="/org/*"
+              element={<RequireAuth><AppShell><EnterpriseConsolePage /></AppShell></RequireAuth>}
+            />
+
+            {/* ─── Admin Console ─── */}
+            <Route
+              path="/admin/*"
+              element={<RequireAuth roles={['ADMIN', 'SUPER_ADMIN']}><AppShell><AdminConsolePage /></AppShell></RequireAuth>}
+            />
+
+            {/* ─── Legacy Redirects (backward compatibility) ─── */}
+            <Route path="/enterprise/*" element={<RequireAuth><LegacyRedirect from="/enterprise" to="/org" /></RequireAuth>} />
+            <Route path="/dashboard2/*" element={<RequireAuth><LegacyRedirect from="/dashboard2" to="/dashboard" /></RequireAuth>} />
+            <Route path="/dashboard2" element={<RequireAuth><Navigate to="/dashboard" replace /></RequireAuth>} />
+            <Route path="/adm/*" element={<RequireAuth><LegacyRedirect from="/adm" to="/admin" /></RequireAuth>} />
+            <Route path="/platform/*" element={<RequireAuth><LegacyRedirect from="/platform" to="/admin" /></RequireAuth>} />
+            <Route path="/resume/:step" element={<Navigate to="/build-resume/heading" replace />} />
+            <Route path="/resume-builder" element={<Navigate to="/build-resume" replace />} />
+            <Route path="/resume-builder/*" element={<Navigate to="/build-resume" replace />} />
+            <Route path="/resumes" element={<Navigate to="/dashboard/resumes" replace />} />
+            <Route path="/resumes/*" element={<Navigate to="/dashboard/resumes" replace />} />
+            <Route path="/templates" element={<Navigate to="/#templates" replace />} />
+            <Route path="/faq" element={<Navigate to="/#faqs" replace />} />
+            <Route path="/faqs" element={<Navigate to="/#faqs" replace />} />
+            <Route path="/plans" element={<Navigate to="/pricing" replace />} />
+            <Route path="/career-resources" element={<Navigate to="/blog" replace />} />
+            <Route path="/privacy" element={<Navigate to="/p/privacy-policy" replace />} />
+            <Route path="/terms" element={<Navigate to="/p/terms-of-service" replace />} />
+            <Route path="/cookies" element={<Navigate to="/p/cookie-policy" replace />} />
+            <Route path="/about" element={<Navigate to="/p/about-us" replace />} />
+            <Route path="/about-us" element={<Navigate to="/p/about-us" replace />} />
+
+            {/* ─── Export Routes (preserve contract) ─── */}
+            {Array.from({ length: 51 }, (_, i) => i + 1).map((num) => (
+              <Route
+                key={`cv-${num}`}
+                path={`/export/Cv${num}/:resumeId/:language`}
+                element={<RequireAuth><CVRendererPage /></RequireAuth>}
+              />
+            ))}
+            {Array.from({ length: 4 }, (_, i) => i + 1).map((num) => (
+              <Route
+                key={`cover-${num}`}
+                path={`/export/Cover${num}/:resumeId/:language`}
+                element={<RequireAuth><CVRendererPage /></RequireAuth>}
+              />
+            ))}
+
+            {/* ─── Catch-all ─── */}
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </Suspense>
+      </RouteErrorBoundary>
+    </BrowserRouter>
+  );
+}
+
+/** Utility: redirect legacy paths preserving subpath and query */
+function LegacyRedirect({ from, to }: { from: string; to: string }) {
+  const path = window.location.pathname.replace(new RegExp(`^${from}`), to) || to;
+  const search = window.location.search;
+  const hash = window.location.hash;
+  return <Navigate to={`${path}${search}${hash}`} replace />;
+}

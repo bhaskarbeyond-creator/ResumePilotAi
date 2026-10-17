@@ -56,7 +56,7 @@ const AuthenticatedAppShell = ({ children }) => {
             <div data-testid="application-shell" data-shell-variant="cuba">
                 {/* The candidate shell is a lazy chunk; this boundary keeps the
                     opt-in path from ever showing a blank frame. */}
-                <Suspense fallback={<div className="min-h-screen bg-cuba-canvas" aria-busy="true" />}>
+                <Suspense fallback={<div className="card bs-card-executive min-h-screen bg-cuba-canvas" aria-busy="true" />}>
                     <CubaCandidateShell>{children || <Outlet />}</CubaCandidateShell>
                 </Suspense>
             </div>

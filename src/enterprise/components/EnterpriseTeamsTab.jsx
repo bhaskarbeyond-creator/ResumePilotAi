@@ -69,15 +69,15 @@ function TeamMembersDrawer({ team, onClose }) {
   };
 
   return (
-    <div className="enterprise-modal-backdrop" role="presentation" onClick={onClose}>
-      <div className="enterprise-modal enterprise-modal-lg" role="dialog" aria-modal="true" aria-label={`Members of team ${team.name}`} onClick={(e) => e.stopPropagation()}>
-        <div className="enterprise-modal-header">
+    <div className="modal-content enterprise-modal-backdrop" role="presentation" onClick={onClose}>
+      <div className="modal-content enterprise-modal enterprise-modal-lg" role="dialog" aria-modal="true" aria-label={`Members of team ${team.name}`} onClick={(e) => e.stopPropagation()}>
+        <div className="modal-content enterprise-modal-header">
           <h3><FiUsers aria-hidden="true" /> Team Members — {team.name}</h3>
           <button type="button" className="enterprise-button-icon" onClick={onClose} aria-label="Close team members panel">
             <FiX />
           </button>
         </div>
-        <div className="enterprise-modal-body">
+        <div className="modal-content enterprise-modal-body">
           {actionError && (
             <div role="alert" className="enterprise-error-row" style={{ marginBottom: '0.75rem' }}>
               <span className="enterprise-error-icon" aria-hidden="true">⚠</span>
@@ -100,7 +100,7 @@ function TeamMembersDrawer({ team, onClose }) {
                   </option>
                 ))}
               </select>
-              <button type="submit" className="enterprise-button enterprise-button-primary enterprise-button-sm" disabled={!selectedPrincipal || busy}>
+              <button type="submit" className="btn btn-primary enterprise-button enterprise-button-primary enterprise-button-sm" disabled={!selectedPrincipal || busy}>
                 <FiUserPlus aria-hidden="true" /> {busy ? 'Adding…' : 'Add to Team'}
               </button>
             </form>
@@ -109,8 +109,8 @@ function TeamMembersDrawer({ team, onClose }) {
             {members.length === 0 ? (
               <p className="enterprise-empty">No members are assigned to this team yet.</p>
             ) : (
-              <div className="enterprise-table-wrapper">
-                <table className="enterprise-table">
+              <div className="table enterprise-table table-hover align-middle-wrapper">
+                <table className="table enterprise-table table-hover align-middle">
                   <thead>
                     <tr>
                       <th>Team Member</th>
@@ -126,11 +126,11 @@ function TeamMembersDrawer({ team, onClose }) {
                           <td>
                             <strong>{label}</strong>
                             {team.leadPrincipalId && team.leadPrincipalId === member.principalId && (
-                              <span className="enterprise-pill enterprise-pill-template" style={{ marginLeft: '0.5rem' }}>Lead</span>
+                              <span className="badge rounded-pill enterprise-pill enterprise-pill-template" style={{ marginLeft: '0.5rem' }}>Lead</span>
                             )}
                             <br /><small className="text-muted">Principal ID: {String(member.principalId)}</small>
                           </td>
-                          <td><span className="enterprise-pill enterprise-pill-success">{member.status}</span></td>
+                          <td><span className="badge rounded-pill enterprise-pill enterprise-pill-success">{member.status}</span></td>
                           {canManage && (
                             <td className="text-right">
                               <button
@@ -152,8 +152,8 @@ function TeamMembersDrawer({ team, onClose }) {
             )}
           </DataState>
         </div>
-        <div className="enterprise-modal-footer">
-          <button type="button" className="enterprise-button enterprise-button-secondary" onClick={onClose}>Close</button>
+        <div className="modal-content enterprise-modal-footer">
+          <button type="button" className="btn btn-outline-secondary enterprise-button enterprise-button-secondary" onClick={onClose}>Close</button>
         </div>
       </div>
     </div>
@@ -323,7 +323,7 @@ export default function EnterpriseTeamsTab({ initialParams = null }) {
         </div>
       )}
       {actionError && (
-        <div className="enterprise-card" role="alert">
+        <div className="card bs-card-executive enterprise-card" role="alert">
           <div className="enterprise-error-row">
             <span className="enterprise-error-icon" aria-hidden="true">⚠</span>
             <div><strong>Team action failed</strong><p className="text-muted">{actionError}</p></div>
@@ -331,8 +331,8 @@ export default function EnterpriseTeamsTab({ initialParams = null }) {
         </div>
       )}
 
-      <div className="enterprise-card">
-        <div className="enterprise-card-header-flex">
+      <div className="card bs-card-executive enterprise-card">
+        <div className="card bs-card-executive enterprise-card-header-flex">
           <div>
             <h2 className="enterprise-tab-title">
               Teams Management
@@ -345,7 +345,7 @@ export default function EnterpriseTeamsTab({ initialParams = null }) {
           {canManageTeams && (
             <button
               type="button"
-              className="enterprise-button enterprise-button-primary"
+              className="btn btn-primary enterprise-button enterprise-button-primary"
               onClick={() => setShowModal(true)}
             >
               <FiPlus aria-hidden="true" /> Create Team
@@ -379,7 +379,7 @@ export default function EnterpriseTeamsTab({ initialParams = null }) {
                   <div key={wid} className="enterprise-hierarchy-group" style={{ marginBottom: '24px' }}>
                     <div className="enterprise-hierarchy-header" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', padding: '10px 16px', background: 'var(--enterprise-surface-hover)', borderRadius: 'var(--enterprise-radius-sm)', border: '1px solid var(--enterprise-border)' }}>
                       <span style={{ fontWeight: 600, color: 'var(--enterprise-ink)' }}>{getWorkspaceName(wid)}</span>
-                      <span className="enterprise-pill enterprise-pill-secondary">{groupTeams.length} {groupTeams.length === 1 ? 'team' : 'teams'}</span>
+                      <span className="badge rounded-pill enterprise-pill enterprise-pill-secondary">{groupTeams.length} {groupTeams.length === 1 ? 'team' : 'teams'}</span>
                     </div>
                     <div className="enterprise-teams-grid" style={{ paddingLeft: '16px', borderLeft: '2px solid var(--enterprise-border)', marginLeft: '8px' }}>
                       {groupTeams.map(team => (
@@ -388,7 +388,7 @@ export default function EnterpriseTeamsTab({ initialParams = null }) {
                             <div>
                               <h3 className="enterprise-team-name" style={{ margin: '0 0 6px', fontSize: '1.05rem', color: 'var(--enterprise-ink)' }}>{team.name}</h3>
                               {team.leadPrincipalId && (
-                                <span className="enterprise-pill enterprise-pill-template" title={`Team lead: ${team.leadPrincipalId}`}>
+                                <span className="badge rounded-pill enterprise-pill enterprise-pill-template" title={`Team lead: ${team.leadPrincipalId}`}>
                                   <FiAward aria-hidden="true" /> Lead: {formatMemberIdentity(team.leadPrincipalId, user, activeMemberOptions)}
                                 </span>
                               )}
@@ -405,7 +405,7 @@ export default function EnterpriseTeamsTab({ initialParams = null }) {
                             <div className="enterprise-team-meta text-muted" style={{ fontSize: '0.8125rem' }}>
                               <FiUsers aria-hidden="true" /> Scoped team
                             </div>
-                            <button type="button" className="enterprise-button enterprise-button-secondary enterprise-button-sm" onClick={() => setMembersTarget(team)}>
+                            <button type="button" className="btn btn-outline-secondary enterprise-button enterprise-button-secondary enterprise-button-sm" onClick={() => setMembersTarget(team)}>
                               <FiUsers aria-hidden="true" /> Manage Members
                             </button>
                           </div>
@@ -421,11 +421,11 @@ export default function EnterpriseTeamsTab({ initialParams = null }) {
       </div>
 
       {canManageTeams && (
-        <div className="enterprise-card" style={{ marginTop: '1.5rem' }}>
-          <div className="enterprise-card-header-flex">
+        <div className="card bs-card-executive enterprise-card" style={{ marginTop: '1.5rem' }}>
+          <div className="card bs-card-executive enterprise-card-header-flex">
             <div>
-              <h3 className="enterprise-card-title"><FiArchive aria-hidden="true" /> Archived Teams</h3>
-              <p className="enterprise-card-subtitle">Archived teams are hidden from the roster until restored. Data and history are preserved.</p>
+              <h3 className="card bs-card-executive enterprise-card-title"><FiArchive aria-hidden="true" /> Archived Teams</h3>
+              <p className="card bs-card-executive enterprise-card-subtitle">Archived teams are hidden from the roster until restored. Data and history are preserved.</p>
             </div>
           </div>
           <DataState loading={archivedState.loading} error={archivedState.error} onRetry={refreshArchived}>
@@ -438,12 +438,12 @@ export default function EnterpriseTeamsTab({ initialParams = null }) {
                     <div className="enterprise-team-header">
                       <div>
                         <h3 className="enterprise-team-name">{team.name}</h3>
-                        <span className="enterprise-pill enterprise-pill-warning">Archived</span>
+                        <span className="badge rounded-pill enterprise-pill enterprise-pill-warning">Archived</span>
                       </div>
                       <div className="enterprise-inline-actions" style={{ gap: '0.25rem' }}>
                         <button
                           type="button"
-                          className="enterprise-button enterprise-button-secondary enterprise-button-sm"
+                          className="btn btn-outline-secondary enterprise-button enterprise-button-secondary enterprise-button-sm"
                           onClick={() => handleRestore(team)}
                         >
                           <FiRotateCcw aria-hidden="true" /> Restore
@@ -459,16 +459,16 @@ export default function EnterpriseTeamsTab({ initialParams = null }) {
       )}
 
       {showModal && (
-        <div className="enterprise-modal-backdrop" role="presentation" onClick={() => !busy && setShowModal(false)}>
-          <div className="enterprise-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-            <div className="enterprise-modal-header">
+        <div className="modal-content enterprise-modal-backdrop" role="presentation" onClick={() => !busy && setShowModal(false)}>
+          <div className="modal-content enterprise-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content enterprise-modal-header">
               <h3>Create Enterprise Team</h3>
               <button type="button" className="enterprise-button-icon" onClick={() => setShowModal(false)} disabled={busy}>
                 <FiX />
               </button>
             </div>
             <form onSubmit={handleCreateTeam}>
-              <div className="enterprise-modal-body">
+              <div className="modal-content enterprise-modal-body">
                 <div className="enterprise-form-group">
                   <label htmlFor="team-name">Team Name</label>
                   <input
@@ -483,16 +483,16 @@ export default function EnterpriseTeamsTab({ initialParams = null }) {
                   />
                 </div>
               </div>
-              <div className="enterprise-modal-footer">
+              <div className="modal-content enterprise-modal-footer">
                 <button
                   type="button"
-                  className="enterprise-button enterprise-button-secondary"
+                  className="btn btn-outline-secondary enterprise-button enterprise-button-secondary"
                   onClick={() => setShowModal(false)}
                   disabled={busy}
                 >
                   Cancel
                 </button>
-                <button type="submit" className="enterprise-button enterprise-button-primary" disabled={busy}>
+                <button type="submit" className="btn btn-primary enterprise-button enterprise-button-primary" disabled={busy}>
                   {busy ? 'Creating…' : 'Create Team'}
                 </button>
               </div>
@@ -502,16 +502,16 @@ export default function EnterpriseTeamsTab({ initialParams = null }) {
       )}
 
       {renameTarget && (
-        <div className="enterprise-modal-backdrop" role="presentation" onClick={() => !busy && setRenameTarget(null)}>
-          <div className="enterprise-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-            <div className="enterprise-modal-header">
+        <div className="modal-content enterprise-modal-backdrop" role="presentation" onClick={() => !busy && setRenameTarget(null)}>
+          <div className="modal-content enterprise-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content enterprise-modal-header">
               <h3>Rename Team</h3>
               <button type="button" className="enterprise-button-icon" onClick={() => setRenameTarget(null)} disabled={busy}>
                 <FiX />
               </button>
             </div>
             <form onSubmit={handleRename}>
-              <div className="enterprise-modal-body">
+              <div className="modal-content enterprise-modal-body">
                 <div className="enterprise-form-group">
                   <label htmlFor="team-rename">Team Name</label>
                   <input
@@ -525,9 +525,9 @@ export default function EnterpriseTeamsTab({ initialParams = null }) {
                   />
                 </div>
               </div>
-              <div className="enterprise-modal-footer">
-                <button type="button" className="enterprise-button enterprise-button-secondary" onClick={() => setRenameTarget(null)} disabled={busy}>Cancel</button>
-                <button type="submit" className="enterprise-button enterprise-button-primary" disabled={busy}>
+              <div className="modal-content enterprise-modal-footer">
+                <button type="button" className="btn btn-outline-secondary enterprise-button enterprise-button-secondary" onClick={() => setRenameTarget(null)} disabled={busy}>Cancel</button>
+                <button type="submit" className="btn btn-primary enterprise-button enterprise-button-primary" disabled={busy}>
                   {busy ? 'Saving…' : 'Save Name'}
                 </button>
               </div>
@@ -537,16 +537,16 @@ export default function EnterpriseTeamsTab({ initialParams = null }) {
       )}
 
       {leadTarget && (
-        <div className="enterprise-modal-backdrop" role="presentation" onClick={() => !busy && setLeadTarget(null)}>
-          <div className="enterprise-modal" role="dialog" aria-modal="true" aria-label="Set team lead" onClick={(e) => e.stopPropagation()}>
-            <div className="enterprise-modal-header">
+        <div className="modal-content enterprise-modal-backdrop" role="presentation" onClick={() => !busy && setLeadTarget(null)}>
+          <div className="modal-content enterprise-modal" role="dialog" aria-modal="true" aria-label="Set team lead" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content enterprise-modal-header">
               <h3>Team Lead — {leadTarget.name}</h3>
               <button type="button" className="enterprise-button-icon" onClick={() => setLeadTarget(null)} disabled={busy}>
                 <FiX />
               </button>
             </div>
             <form onSubmit={handleSaveLead}>
-              <div className="enterprise-modal-body">
+              <div className="modal-content enterprise-modal-body">
                 <div className="enterprise-form-group">
                   <label htmlFor="team-lead">Lead Principal</label>
                   <select
@@ -565,9 +565,9 @@ export default function EnterpriseTeamsTab({ initialParams = null }) {
                   <small className="text-muted">The lead must be an active member of the team&apos;s workspace. The change is audited.</small>
                 </div>
               </div>
-              <div className="enterprise-modal-footer">
-                <button type="button" className="enterprise-button enterprise-button-secondary" onClick={() => setLeadTarget(null)} disabled={busy}>Cancel</button>
-                <button type="submit" className="enterprise-button enterprise-button-primary" disabled={busy}>
+              <div className="modal-content enterprise-modal-footer">
+                <button type="button" className="btn btn-outline-secondary enterprise-button enterprise-button-secondary" onClick={() => setLeadTarget(null)} disabled={busy}>Cancel</button>
+                <button type="submit" className="btn btn-primary enterprise-button enterprise-button-primary" disabled={busy}>
                   {busy ? 'Saving…' : 'Save Lead'}
                 </button>
               </div>

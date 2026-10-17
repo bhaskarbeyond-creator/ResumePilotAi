@@ -174,7 +174,7 @@ class SocialSettings extends Component {
         ];
 
         return (
-            <div className="space-y-6">
+    <div className="card bs-card-executive container-fluid p-4 space-y-6">
                 {/* Success Alert */}
                 {this.state.isSuccesShowed && (
                     <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 flex items-center justify-between">

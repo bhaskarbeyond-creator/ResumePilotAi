@@ -680,7 +680,7 @@ const DashboardResumes = ({ showToast, t, membership }) => {
                                         : 'border-orange-200 bg-orange-50 text-orange-700';
                             return (
                                 <li key={docId} className="min-w-0" data-testid="resume-card">
-                                    <article className="relative flex h-full flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md sm:p-5">
+                                    <article className="card bs-card-executive relative flex h-full flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md sm:p-5">
                                         <header className="flex min-w-0 items-center justify-between gap-2">
                                             <h2 className="min-w-0 flex-1 truncate text-[15px] font-semibold text-slate-900" title={title}>{title}</h2>
                                             <div className="relative flex-none" data-resume-menu>
@@ -690,7 +690,7 @@ const DashboardResumes = ({ showToast, t, membership }) => {
                                                     aria-haspopup="menu"
                                                     aria-expanded={openMenuId === docId}
                                                     onClick={() => setOpenMenuId((current) => current === docId ? null : docId)}
-                                                    className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                                                    className="btn btn-light flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                                                 >
                                                     <FiMoreHorizontal className="h-5 w-5" aria-hidden="true" />
                                                 </button>
@@ -708,22 +708,22 @@ const DashboardResumes = ({ showToast, t, membership }) => {
                                         </header>
                                         <div className="flex min-h-6 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
                                             <span>{date ? (created ? 'Created ' : 'Updated ') + date : t('DashboardResumes.dateUnavailable', 'Date unavailable')}</span>
-                                            <span className={'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold leading-none ' + scoreClass} title={t('DashboardResumes.atsScoreTitle', 'ATS readiness score')}>
+                                            <span className={'badge rounded-pill inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold leading-none ' + scoreClass} title={t('DashboardResumes.atsScoreTitle', 'ATS readiness score')}>
                                                 {t('DashboardResumes.atsScore', 'ATS: {{score}}/100', { score: score === null ? '—' : score })}
                                             </span>
                                         </div>
                                         <ResumeThumbnail doc={doc} title={title} onPreview={() => setPreviewTarget(doc)} t={t} />
                                         <div className="mt-auto flex flex-col gap-2.5 pt-1">
-                                            <button type="button" onClick={() => openEditor(doc)} disabled={Boolean(pendingKey)} aria-label={t('DashboardResumes.editNamed', 'Edit {{title}}', { title })} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-slate-950 px-4 text-base font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:opacity-50">
+                                            <button type="button" onClick={() => openEditor(doc)} disabled={Boolean(pendingKey)} aria-label={t('DashboardResumes.editNamed', 'Edit {{title}}', { title })} className="btn btn-dark shadow-sm flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-slate-950 px-4 text-base font-semibold text-white transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:opacity-50">
                                                 <FiEdit3 className="h-4 w-4" aria-hidden="true" />{t('DashboardResumes.editResume', 'Edit Resume')}
                                             </button>
-                                            <button type="button" onClick={() => shareResume(doc)} disabled={sharingId === docId} aria-label={t('DashboardResumes.shareNamed', 'Share {{title}}', { title })} data-testid="resume-action-share" className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-base font-medium text-slate-800 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:opacity-60">
+                                            <button type="button" onClick={() => shareResume(doc)} disabled={sharingId === docId} aria-label={t('DashboardResumes.shareNamed', 'Share {{title}}', { title })} data-testid="resume-action-share" className="btn btn-outline-secondary shadow-sm flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-base font-medium text-slate-800 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:opacity-60">
                                                 <FiShare2 className="h-4 w-4 text-indigo-600" aria-hidden="true" />{sharingId === docId ? t('DashboardResumes.sharing', 'Sharing…') : t('DashboardResumes.shareResume', 'Share Resume')}
                                             </button>
-                                            <button type="button" onClick={() => runDownload(doc, 'pdf')} disabled={downloadingPdfId === docId} aria-label={t('DashboardResumes.downloadPdfNamed', 'Download PDF for {{title}}', { title })} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-green-700 px-4 text-base font-semibold text-white shadow-sm transition hover:bg-green-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-700 focus-visible:ring-offset-2 disabled:opacity-60">
+                                            <button type="button" onClick={() => runDownload(doc, 'pdf')} disabled={downloadingPdfId === docId} aria-label={t('DashboardResumes.downloadPdfNamed', 'Download PDF for {{title}}', { title })} className="btn btn-success shadow-sm flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-green-700 px-4 text-base font-semibold text-white transition hover:bg-green-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-700 focus-visible:ring-offset-2 disabled:opacity-60">
                                                 <FiDownload className="h-4 w-4" aria-hidden="true" />{downloadingPdfId === docId ? t('DashboardResumes.downloadingPdf', 'Preparing PDF…') : t('DashboardResumes.downloadPdf', 'Download PDF')}
                                             </button>
-                                            <button type="button" onClick={() => runDownload(doc, 'docx')} disabled={downloadingDocxId === docId} aria-label={t('DashboardResumes.downloadDocxNamed', 'Download Word (DOCX) for {{title}}', { title })} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 text-base font-semibold text-white shadow-sm transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:opacity-60">
+                                            <button type="button" onClick={() => runDownload(doc, 'docx')} disabled={downloadingDocxId === docId} aria-label={t('DashboardResumes.downloadDocxNamed', 'Download Word (DOCX) for {{title}}', { title })} className="btn btn-primary shadow-sm flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 text-base font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:opacity-60">
                                                 <FiDownload className="h-4 w-4" aria-hidden="true" />{downloadingDocxId === docId ? t('DashboardResumes.downloadingDocx', 'Preparing Word document…') : t('DashboardResumes.downloadDocx', 'Download Word (DOCX)')}
                                             </button>
                                         </div>

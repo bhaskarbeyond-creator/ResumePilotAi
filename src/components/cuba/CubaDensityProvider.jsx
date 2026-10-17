@@ -22,6 +22,7 @@ export const CubaDensityContext = createContext({
     densities: CUBA_DENSITIES,
 });
 
+// bs-density-provider
 export function CubaDensityProvider({ children, initial }) {
     const [density, setDensityState] = useState(() => {
         if (initial && CUBA_DENSITIES.includes(initial)) return initial;
@@ -61,3 +62,7 @@ export function CubaDensityProvider({ children, initial }) {
 export const useCubaDensity = () => useContext(CubaDensityContext);
 
 export default CubaDensityProvider;
+
+export const CubaDensityContainer = ({ children, className = '' }) => (
+    <div className={`container-fluid p-0 ${className}`}>{children}</div>
+);

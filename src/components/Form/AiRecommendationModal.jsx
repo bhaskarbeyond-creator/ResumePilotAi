@@ -47,7 +47,7 @@ export function AiRecommendationModal({ isOpen, onClose, title, _type, items = [
     const recommendedItems = items.map((item, idx) => ({ ...item, originalIndex: idx })).filter(item => item.category !== 'mandatory' && item.type !== 'mandatory');
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-slate-900/60 backdrop-blur-xs font-sans animate-fadeIn">
+        <div className="form-control fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-slate-900/60 backdrop-blur-xs font-sans animate-fadeIn">
             <div className="bg-white border border-slate-200 rounded-2xl sm:rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden flex flex-col max-h-[82vh] sm:max-h-[88vh] my-auto">
                 
                 {/* Modal Header */}

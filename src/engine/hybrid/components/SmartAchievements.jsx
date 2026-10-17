@@ -8,7 +8,7 @@ export default function SmartAchievements({ achievements = [], _theme = {}, titl
   if (!validAchievements.length) return null;
 
   return (
-    <section className="smart-section smart-achievements-section">
+    <section className="container-fluid bs-container-fluid-adaptive smart-section smart-achievements-section">
       <h3 className="smart-section-title">
         <span className="smart-section-title__text">{title}</span>
         <span className="smart-section-title__line" />

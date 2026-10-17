@@ -149,7 +149,7 @@ export default function FeatureFlagsSettings() {
 
       {/* Flags Table */}
       <div className="border border-slate-200 rounded-lg overflow-hidden">
-        <table className="w-full text-sm">
+        <table className="table table-hover align-middle w-full text-sm">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200">
               <th className="text-left px-4 py-3 font-semibold text-slate-600 text-xs uppercase tracking-wider">Flag</th>

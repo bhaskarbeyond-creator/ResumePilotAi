@@ -1,5 +1,5 @@
 {
-  "certifiedAt": "2026-10-14T18:14:06.266Z",
+  "certifiedAt": "2026-10-17T19:33:09.810Z",
   "version": "3.0.0",
   "architecture": "BIDIRECTIONAL_INSTANT_WAKE_V1",
   "status": "FROZEN_AND_CERTIFIED",
@@ -20,7 +20,7 @@
       },
       {
         "id": "saoudrizwan.claude-dev",
-        "dir": "saoudrizwan.claude-dev-4.1.24-universal",
+        "dir": "saoudrizwan.claude-dev-4.1.25-universal",
         "taskSupported": true,
         "promptFileSupported": true,
         "sidebarAutoFocus": true,
@@ -34,7 +34,7 @@
     "udpPort": 48222,
     "leadWatcher": {
       "running": true,
-      "pid": 10136,
+      "pid": 11744,
       "udpPort": 48222,
       "scriptExists": true,
       "certifiedBackupExists": true
@@ -43,20 +43,20 @@
   "certifiedFiles": [
     {
       "file": "bridge.cjs",
-      "sha256": "b95fa446a86a23b6d3b55463178ad96ad802626fa79699ece6ca891da8048823",
-      "bytes": 291698,
+      "sha256": "117d18a2fc4d7f8cc833488bd1dbea931d13ce29f2ad9778aea78f9726310ccf",
+      "bytes": 294031,
       "certifiedBackup": "bridge.cjs.certified.bak"
     },
     {
       "file": "lead_watcher.cjs",
-      "sha256": "f2feb0998afc031afa29b90e72cc7dd30f04c55bd3fc51ee8c6f0c651c27cebd",
-      "bytes": 39941,
+      "sha256": "309dacb3331e77f8f5a1e72983de265dd51e256840592c72bd0208323dbf61e5",
+      "bytes": 39963,
       "certifiedBackup": "lead_watcher.cjs.certified.bak"
     },
     {
       "file": "autowake.cjs",
-      "sha256": "2a6eb18d2a15134d13607e36e884abd14953814f7e0bd5e7ed58ecf76c2a7f1a",
-      "bytes": 53780,
+      "sha256": "206277fa9dceae2e6539f392e3f66dce41e54101d301b323fe8d25cc48fddbcb",
+      "bytes": 54463,
       "certifiedBackup": "autowake.cjs.certified.bak"
     }
   ]

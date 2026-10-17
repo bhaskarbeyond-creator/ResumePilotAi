@@ -53,7 +53,7 @@ const withMetadata = (WrappedComponent, defaultMeta = {}) => {
                         keywords={websiteKeywords}
                         language={websiteLanguage}
                     />
-                    <WrappedComponent {...this.props} />
+                    <div className="container-fluid p-0 d-contents bs-metadata-wrapper"><WrappedComponent {...this.props} /></div>
                 </>
             );
         }
@@ -66,3 +66,4 @@ const withMetadata = (WrappedComponent, defaultMeta = {}) => {
 };
 
 export default withMetadata;
+// bs-component-foundation

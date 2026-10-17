@@ -21,10 +21,10 @@ const CubaCard = ({
 }) => (
     <Tag
         className={cx(
-            'relative rounded-cuba-lg border border-cuba-line bg-cuba-card shadow-cuba-sm',
+            'card bs-card-executive relative rounded-cuba-lg border border-cuba-line bg-cuba-card shadow-cuba-sm shadow-sm',
             glass && 'cuba-glass',
             ai && 'cuba-ai-panel',
-            padded && 'p-5',
+            padded && 'p-4 p-md-5',
             hover && 'transition-[transform,box-shadow] duration-200 ease-cuba hover:-translate-y-0.5 hover:shadow-cuba-md motion-reduce:transform-none motion-reduce:transition-none',
             className,
         )}

@@ -11,7 +11,7 @@ export default function SmartEducation({ educations = [], theme = {}, title = 'E
   const timelineClass = `smart-timeline--${theme.timelineStyle || 'modern-node'}`;
 
   return (
-    <section className="smart-section smart-education-section">
+    <section className="container-fluid bs-container-fluid-adaptive smart-section smart-education-section">
       <h3 className={`smart-section-title ${dividerClass}`}>
         <span className="smart-section-title__text">{title}</span>
         <span className="smart-section-title__line" />

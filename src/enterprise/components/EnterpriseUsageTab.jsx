@@ -27,7 +27,7 @@ function QuotaBar({ label, used, limit, hint }) {
   const percent = Number(limit) > 0 ? Math.min(100, Math.round((Number(used) / Number(limit)) * 100)) : 0;
   const tone = percent >= 90 ? 'danger' : percent >= 75 ? 'warning' : 'success';
   return (
-    <div className="enterprise-card" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div className="card bs-card-executive enterprise-card" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div className="enterprise-usage-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
         <div className="enterprise-usage-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--enterprise-ink)' }}>
           <FiZap style={{ color: 'var(--enterprise-primary-active)' }} /> <strong>{label}</strong>
@@ -113,8 +113,8 @@ export default function EnterpriseUsageTab({ initialParams = null, onNavigate = 
 
   return (
     <div className="enterprise-tab-content">
-      <div className="enterprise-card">
-        <div className="enterprise-card-header-flex">
+      <div className="card bs-card-executive enterprise-card">
+        <div className="card bs-card-executive enterprise-card-header-flex">
           <div>
             <h2 className="enterprise-tab-title">
               Usage & Quota Analytics
@@ -141,28 +141,28 @@ export default function EnterpriseUsageTab({ initialParams = null, onNavigate = 
 
         <DataState loading={loading} error={error} onRetry={() => { refreshMetrics(); refreshUsage(); }}>
           <div className="enterprise-usage-bars-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
-            <div className="enterprise-card" style={{ display: 'flex', flexDirection: 'column' }}>
+            <div className="card bs-card-executive enterprise-card" style={{ display: 'flex', flexDirection: 'column' }}>
               <div className="enterprise-usage-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                 <div className="enterprise-usage-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><FiZap className="text-primary" /> <strong>AI Requests</strong></div>
                 <span style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>{formatNumber(windowRequests)}</span>
               </div>
               <small className="text-muted" style={{ marginTop: 'auto' }}>Recorded in the durable tenant usage ledger ({formatNumber(todayRequests)} today)</small>
             </div>
-            <div className="enterprise-card" style={{ display: 'flex', flexDirection: 'column' }}>
+            <div className="card bs-card-executive enterprise-card" style={{ display: 'flex', flexDirection: 'column' }}>
               <div className="enterprise-usage-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                 <div className="enterprise-usage-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><FiHash className="text-primary" /> <strong>Tokens</strong></div>
                 <span style={{ fontSize: '1rem', fontWeight: 'bold' }}>{formatNumber(usageData?.inputTokens)} / {formatNumber(usageData?.outputTokens)}</span>
               </div>
               <small className="text-muted" style={{ marginTop: 'auto' }}>Estimated cost {formatCost(usageData?.estimatedCostMicros)}</small>
             </div>
-            <div className="enterprise-card" style={{ display: 'flex', flexDirection: 'column' }}>
+            <div className="card bs-card-executive enterprise-card" style={{ display: 'flex', flexDirection: 'column' }}>
               <div className="enterprise-usage-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                 <div className="enterprise-usage-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><FiActivity className="text-primary" /> <strong>Latency</strong></div>
                 <span style={{ fontSize: '1rem', fontWeight: 'bold' }}>{formatDuration(m.p95)} (p95)</span>
               </div>
               <small className="text-muted" style={{ marginTop: 'auto' }}>p50: {formatDuration(m.p50)} / p99: {formatDuration(m.p99)}</small>
             </div>
-            <div className="enterprise-card" style={{ display: 'flex', flexDirection: 'column' }}>
+            <div className="card bs-card-executive enterprise-card" style={{ display: 'flex', flexDirection: 'column' }}>
               <div className="enterprise-usage-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                 <div className="enterprise-usage-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><FiAlertTriangle className="text-danger" /> <strong>Errors</strong></div>
                 <span style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>{formatNumber((errors.serverErrors || 0) + (errors.clientErrors || 0))}</span>
@@ -173,11 +173,11 @@ export default function EnterpriseUsageTab({ initialParams = null, onNavigate = 
         </DataState>
       </div>
 
-      <div className="enterprise-card" style={{ marginTop: '1.5rem' }}>
-        <div className="enterprise-card-header-flex">
+      <div className="card bs-card-executive enterprise-card" style={{ marginTop: '1.5rem' }}>
+        <div className="card bs-card-executive enterprise-card-header-flex">
           <div>
-            <h3 className="enterprise-card-title"><FiCheckCircle aria-hidden="true" /> Quota Consumption</h3>
-            <p className="enterprise-card-subtitle">
+            <h3 className="card bs-card-executive enterprise-card-title"><FiCheckCircle aria-hidden="true" /> Quota Consumption</h3>
+            <p className="card bs-card-executive enterprise-card-subtitle">
               {quotaPolicy
                 ? `Tenant policy: ${formatNumber(quotaPolicy.aiRequestsPerDay)} AI requests/day · ${formatNumber(quotaPolicy.aiRequestsPerMinute)}/minute per principal`
                 : 'Quota policy is unavailable for this tenant.'}
@@ -199,7 +199,7 @@ export default function EnterpriseUsageTab({ initialParams = null, onNavigate = 
                 limit={Number(dailyLimit) * daysWindow}
                 hint={`${formatNumber(windowRequests)} requests over ${daysWindow} days vs a ${formatNumber(Number(dailyLimit) * daysWindow)} request allowance`}
               />
-              <div className="enterprise-card" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+              <div className="card bs-card-executive enterprise-card" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                 <div className="enterprise-usage-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <div className="enterprise-usage-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--enterprise-ink)' }}>
                     <FiZap style={{ color: 'var(--enterprise-primary-active)' }} /> <strong>Rate limit</strong>
@@ -207,7 +207,7 @@ export default function EnterpriseUsageTab({ initialParams = null, onNavigate = 
                   <span style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>{formatNumber(quotaPolicy.aiRequestsPerMinute)}/min</span>
                 </div>
                 <div style={{ padding: '8px 0', borderBottom: '1px solid var(--enterprise-border)', marginBottom: '8px' }}>
-                  <span className="enterprise-pill enterprise-pill-success">Active</span>
+                  <span className="badge rounded-pill enterprise-pill enterprise-pill-success">Active</span>
                 </div>
                 <small className="text-muted" style={{ marginTop: 'auto' }}>Per principal, enforced through durable atomic counters before any provider call.</small>
               </div>
@@ -218,11 +218,11 @@ export default function EnterpriseUsageTab({ initialParams = null, onNavigate = 
         </DataState>
       </div>
 
-      <div className="enterprise-card" style={{ marginTop: '1.5rem' }}>
-        <div className="enterprise-card-header-flex">
+      <div className="card bs-card-executive enterprise-card" style={{ marginTop: '1.5rem' }}>
+        <div className="card bs-card-executive enterprise-card-header-flex">
           <div>
-            <h3 className="enterprise-card-title"><FiBarChart2 aria-hidden="true" /> Daily AI Consumption</h3>
-            <p className="enterprise-card-subtitle">Atomic per-day rollups from the tenant ledger</p>
+            <h3 className="card bs-card-executive enterprise-card-title"><FiBarChart2 aria-hidden="true" /> Daily AI Consumption</h3>
+            <p className="card bs-card-executive enterprise-card-subtitle">Atomic per-day rollups from the tenant ledger</p>
           </div>
         </div>
         <DataState loading={usage.loading} error={usage.error} onRetry={refreshUsage}>
@@ -235,8 +235,8 @@ export default function EnterpriseUsageTab({ initialParams = null, onNavigate = 
               <UsageTrendChart points={byDay} />
               <details className="enterprise-disclosure" style={{ marginTop: '12px' }}>
                 <summary>View the per-day ledger table ({byDay.length} days)</summary>
-                <div className="enterprise-table-wrap" role="region" aria-label="Daily AI usage">
-                  <table className="enterprise-table">
+                <div className="table enterprise-table table-hover align-middle-wrap" role="region" aria-label="Daily AI usage">
+                  <table className="table enterprise-table table-hover align-middle">
                     <thead>
                       <tr>
                         <th scope="col">Day</th>
@@ -272,8 +272,8 @@ export default function EnterpriseUsageTab({ initialParams = null, onNavigate = 
       </div>
 
       <div className="enterprise-usage-bars-grid" style={{ marginTop: '1.5rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
-        <div className="enterprise-card">
-          <h3 className="enterprise-card-title" style={{ marginBottom: '12px' }}><FiCpu aria-hidden="true" /> By Workspace</h3>
+        <div className="card bs-card-executive enterprise-card">
+          <h3 className="card bs-card-executive enterprise-card-title" style={{ marginBottom: '12px' }}><FiCpu aria-hidden="true" /> By Workspace</h3>
           {workspaceRows.length === 0 ? (
             <p className="enterprise-empty">No workspace usage recorded yet.</p>
           ) : workspaceRows.map(([workspaceId, value]) => (
@@ -283,8 +283,8 @@ export default function EnterpriseUsageTab({ initialParams = null, onNavigate = 
             </div>
           ))}
         </div>
-        <div className="enterprise-card">
-          <h3 className="enterprise-card-title" style={{ marginBottom: '12px' }}><FiUser aria-hidden="true" /> By User</h3>
+        <div className="card bs-card-executive enterprise-card">
+          <h3 className="card bs-card-executive enterprise-card-title" style={{ marginBottom: '12px' }}><FiUser aria-hidden="true" /> By User</h3>
           {userRows.length === 0 ? (
             <p className="enterprise-empty">No per-user usage recorded yet.</p>
           ) : userRows.map(([principalId, value]) => (
@@ -306,8 +306,8 @@ export default function EnterpriseUsageTab({ initialParams = null, onNavigate = 
             </div>
           ))}
         </div>
-        <div className="enterprise-card">
-          <h3 className="enterprise-card-title" style={{ marginBottom: '12px' }}>By Provider</h3>
+        <div className="card bs-card-executive enterprise-card">
+          <h3 className="card bs-card-executive enterprise-card-title" style={{ marginBottom: '12px' }}>By Provider</h3>
           {providerRows.length === 0 ? (
             <p className="enterprise-empty">No provider usage recorded yet.</p>
           ) : providerRows.map(([provider, count]) => (
@@ -317,8 +317,8 @@ export default function EnterpriseUsageTab({ initialParams = null, onNavigate = 
             </div>
           ))}
         </div>
-        <div className="enterprise-card">
-          <h3 className="enterprise-card-title" style={{ marginBottom: '12px' }}>By Model</h3>
+        <div className="card bs-card-executive enterprise-card">
+          <h3 className="card bs-card-executive enterprise-card-title" style={{ marginBottom: '12px' }}>By Model</h3>
           {modelRows.length === 0 ? (
             <p className="enterprise-empty">No model usage recorded yet.</p>
           ) : modelRows.map(([model, count]) => (
@@ -330,19 +330,19 @@ export default function EnterpriseUsageTab({ initialParams = null, onNavigate = 
         </div>
       </div>
 
-      <div className="enterprise-card" style={{ marginTop: '1.5rem' }}>
-        <div className="enterprise-card-header-flex">
+      <div className="card bs-card-executive enterprise-card" style={{ marginTop: '1.5rem' }}>
+        <div className="card bs-card-executive enterprise-card-header-flex">
           <div>
-            <h3 className="enterprise-card-title"><FiActivity aria-hidden="true" /> Recent AI Generations</h3>
-            <p className="enterprise-card-subtitle">Per-event ledger entries with correlation ids — the auditable AI activity trail</p>
+            <h3 className="card bs-card-executive enterprise-card-title"><FiActivity aria-hidden="true" /> Recent AI Generations</h3>
+            <p className="card bs-card-executive enterprise-card-subtitle">Per-event ledger entries with correlation ids — the auditable AI activity trail</p>
           </div>
         </div>
         <DataState loading={events.loading} error={events.error} onRetry={refreshEvents}>
           {recentEvents.length === 0 ? (
             <p className="enterprise-empty">No AI generations have been metered for this tenant yet.</p>
           ) : (
-            <div className="enterprise-table-wrap" role="region" aria-label="Recent AI generations">
-              <table className="enterprise-table">
+            <div className="table enterprise-table table-hover align-middle-wrap" role="region" aria-label="Recent AI generations">
+              <table className="table enterprise-table table-hover align-middle">
                 <thead>
                   <tr>
                     <th scope="col">When (UTC)</th>

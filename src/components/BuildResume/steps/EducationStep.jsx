@@ -259,7 +259,7 @@ const EducationStep = ({ resumeData, updateResumeData, onNavigate }) => {
     const renderEntryBody = (education) => {
         return (
             <div
-                className="space-y-4 pt-1"
+                className="card bs-card-executive space-y-4 pt-1"
                 onFocus={() => setActiveEducationId(education.id)}
                 onClick={() => setActiveEducationId(education.id)}
             >

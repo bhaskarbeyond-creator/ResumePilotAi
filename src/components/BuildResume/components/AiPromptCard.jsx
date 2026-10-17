@@ -172,7 +172,7 @@ export default function AiPromptCard({
 
     if (status === 'loading') {
         return (
-            <div ref={panelRef} className="rounded-xl border border-[var(--cuba-line)] bg-[var(--cuba-canvas)]/60 px-4 py-3.5" aria-busy="true">
+            <div ref={panelRef} className="card bs-card-executive rounded-xl border border-[var(--cuba-line)] bg-[var(--cuba-canvas)]/60 px-4 py-3.5" aria-busy="true">
                 <LoadingRow />
             </div>
         );

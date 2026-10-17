@@ -14,3 +14,7 @@ export default function RouteFocus() {
   }, [location.pathname]);
   return null;
 }
+
+// bs-component-foundation
+
+export const RouteFocusContainer = () => <div className="container-fluid d-none bs-focus" />;

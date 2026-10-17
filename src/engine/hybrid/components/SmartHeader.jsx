@@ -30,7 +30,7 @@ export default function SmartHeader({ values = {}, theme = {}, variant }) {
         '--secondary': theme.secondary,
       }}
     >
-      <div className="smart-header__main">
+      <div className="container-fluid bs-container-fluid-adaptive smart-header__main">
         {isPhotoVisible && (
           <div className="smart-header__avatar-wrap">
             <img

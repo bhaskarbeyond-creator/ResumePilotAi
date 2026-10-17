@@ -41,7 +41,7 @@ const About1 = {
     render: ({ title, content, backgroundColor, skills, showCTA = true }) => (
         <div className={`${backgroundColor} relative py-24 px-4`}>
             {/* Background Pattern */}
-            <div className="absolute inset-0 opacity-10">
+            <div className="card bs-card-executive absolute inset-0 opacity-10">
                 <div
                     className="absolute inset-0"
                     style={{

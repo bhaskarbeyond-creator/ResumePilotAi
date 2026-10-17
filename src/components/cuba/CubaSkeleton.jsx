@@ -14,7 +14,7 @@ const CubaSkeleton = ({ className = '', width, height = '1rem', rounded = 'round
         role="status"
         aria-live="polite"
         aria-busy="true"
-        className={cx('cuba-skeleton block', rounded, className)}
+        className={cx('placeholder-glow placeholder col-12 placeholder-glow placeholder bs-skeleton placeholder-glow placeholder cuba-skeleton block', rounded, className)}
         style={{ width, height }}
     >
         <span className="cuba-sr-only">{text || 'Loading content'}</span>

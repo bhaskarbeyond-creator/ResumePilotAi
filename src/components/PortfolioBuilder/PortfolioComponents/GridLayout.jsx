@@ -4,7 +4,7 @@ const GridLayout = ({ columns = 2, gap = 16, gridContent, minColumnWidth = '250p
     const GridContent = gridContent;
 
     return (
-        <div
+    <div className="row grid-layout"
             style={{
                 display: 'grid',
                 gridTemplateColumns: `repeat(${columns}, minmax(${minColumnWidth}, 1fr))`,
@@ -77,3 +77,5 @@ const GridLayoutCategory = {
 };
 
 export default GridLayoutCategory;
+
+// bs-card-executive-block

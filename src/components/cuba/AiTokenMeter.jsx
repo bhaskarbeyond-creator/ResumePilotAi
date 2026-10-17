@@ -55,6 +55,7 @@ const AiTokenMeter = ({ enabled = true, className = 'inline-flex' }) => {
     return (
         <span
             className={cx(
+                'badge rounded-pill',
                 // NOTE: no display utility in the base list, deliberately. An
                 // unscoped `inline-flex` here would out-rank a caller's `hidden`
                 // and leave the chip on screen at 320px; leaving display to the

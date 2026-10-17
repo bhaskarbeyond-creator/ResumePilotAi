@@ -156,8 +156,10 @@ class Action extends Component {
                 );
 
             default:
-                return <LandingPage />;
+                return <div className="container-fluid p-0"><LandingPage /></div>;
         }
     }
 }
 export default Action;
+
+// bs-component-foundation

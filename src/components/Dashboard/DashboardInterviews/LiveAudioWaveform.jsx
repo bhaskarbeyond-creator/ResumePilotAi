@@ -249,7 +249,7 @@ export default function LiveAudioWaveform({
     }, [active, color, height, isJSDOM, mediaStream, mode, reducedMotion]);
 
     return (
-        <div className={`relative overflow-hidden w-full flex items-center justify-center ${className}`} style={{ height: `${height}px` }}>
+        <div className={`bs-waveform-container card-body p-0 relative overflow-hidden w-full flex items-center justify-center ${className}`} style={{ height: `${height}px` }}>
             <canvas ref={canvasRef} className="w-full h-full block" />
         </div>
     );

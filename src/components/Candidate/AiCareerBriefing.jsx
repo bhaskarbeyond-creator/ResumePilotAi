@@ -74,7 +74,7 @@ const AiCareerBriefing = ({ className = '' }) => {
 
     return (
         <AiSurface
-            className={className}
+            className={`card bs-card-executive ${className}`}
             status={loading ? 'thinking' : briefing.state === 'error' ? 'failed' : 'idle'}
             statusLabel={loading ? 'Reading your career data' : undefined}
             title="AI Career Briefing"

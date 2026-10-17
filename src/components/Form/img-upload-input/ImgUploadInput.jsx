@@ -194,7 +194,7 @@ class ImgUploadInput extends Component {
 
     renderUploadIcon() {
         return (
-            <svg className="w-12 h-12 text-[#4a6cf7] opacity-80 mb-2 transition-transform duration-300 ease-in-out group-hover:scale-110" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg className="form-control w-12 h-12 text-[#4a6cf7] opacity-80 mb-2 transition-transform duration-300 ease-in-out group-hover:scale-110" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 15V3M12 3L8 7M12 3L16 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 <path d="M2 12V15C2 18.3137 4.68629 21 8 21H16C19.3137 21 22 18.3137 22 15V12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>

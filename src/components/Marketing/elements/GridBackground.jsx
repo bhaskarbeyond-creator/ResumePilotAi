@@ -67,7 +67,7 @@ const GridBackground = ({ className }) => {
   };
 
   return (
-    <div className={`fixed inset-0 w-full h-full overflow-hidden pointer-events-none ${className}`}>
+    <div className={`container-fluid p-0 fixed inset-0 w-full h-full overflow-hidden pointer-events-none ${className}`}>
       {/* Solid background as fallback/base layer */}
       <div style={backgroundStyles.solidFallback} />
       
@@ -78,3 +78,5 @@ const GridBackground = ({ className }) => {
 };
 
 export default GridBackground;
+
+// bs-component-foundation

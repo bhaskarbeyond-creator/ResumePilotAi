@@ -85,7 +85,7 @@ const EmployerPortal = () => {
     if (cubaChrome) {
         return (
             <div data-testid="employer-portal-shell" data-shell-variant="cuba">
-                <Suspense fallback={<div className="min-h-screen bg-cuba-canvas" aria-busy="true" />}>
+                <Suspense fallback={<div className="card bs-card-executive min-h-screen bg-cuba-canvas" aria-busy="true" />}>
                     <EmployerPortalCuba />
                 </Suspense>
             </div>

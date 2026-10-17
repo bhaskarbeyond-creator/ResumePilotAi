@@ -104,7 +104,7 @@ class DashboardSearch extends Component {
 
         return (
             <>
-                <div className="dashboard-search">
+                <div className="card bs-card-executive dashboard-search">
                     <div className="dashboard-search-group">
                         {isLoading ? <AiOutlineLoading className="dashboard-search-loading" /> : <SearchIcon className="dashboard-search-icon" />}
 

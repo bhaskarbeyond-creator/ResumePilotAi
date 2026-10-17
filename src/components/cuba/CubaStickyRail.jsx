@@ -12,10 +12,10 @@ const cx = (...parts) => parts.filter(Boolean).join(' ');
  */
 const CubaStickyRail = ({ className = '', label, children, ...rest }) => (
     <aside
-        data-testid="cuba-sticky-rail"
+        data-testid="card bs-sticky-rail sticky-top cuba-sticky-rail"
         aria-label={label}
         className={cx(
-            'min-w-0 md:sticky md:top-[calc(var(--cuba-header-h)+0.75rem)]',
+            'card bs-sticky-rail min-w-0 md:sticky md:top-[calc(var(--cuba-header-h)+0.75rem)]',
             'md:max-h-[calc(100vh-var(--cuba-header-h)-1.5rem)] md:overflow-y-auto cuba-scrollbar',
             className,
         )}

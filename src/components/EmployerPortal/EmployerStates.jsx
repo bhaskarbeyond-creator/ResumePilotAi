@@ -60,7 +60,7 @@ export function EmployerErrorState({ error, onRetry, title = 'We could not load 
 
 export function EmployerEmptyState({ icon, title, description, action }) {
     return (
-        <div className="mx-auto max-w-2xl rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center sm:p-10">
+        <div className="card bs-card-executive mx-auto max-w-2xl rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center sm:p-10">
             {icon && <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">{icon}</span>}
             <h2 className="mt-4 text-base font-extrabold text-slate-900">{title}</h2>
             {description && <p className="mx-auto mt-2 max-w-lg text-sm leading-relaxed text-slate-600">{description}</p>}
@@ -78,7 +78,7 @@ export function EmployerStatCard({ icon, label, value, hint, trend, tone = 'indi
     };
     const active = tones[tone] || tones.indigo;
     return (
-        <div className="rounded-[15px] border border-cuba-line bg-cuba-card p-5 shadow-[0_9px_20px_rgba(46,35,94,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_24px_rgba(46,35,94,0.12)] flex flex-col justify-between">
+        <div className="card bs-card-executive rounded-[15px] border border-cuba-line bg-cuba-card p-5 shadow-[0_9px_20px_rgba(46,35,94,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_24px_rgba(46,35,94,0.12)] flex flex-col justify-between">
             <div className="flex items-center justify-between gap-2 mb-3">
                 {icon && (
                     <div className={`relative flex-none p-1 rounded-full border border-dashed transition-transform duration-300 ${active.bubble}`}>
@@ -88,7 +88,7 @@ export function EmployerStatCard({ icon, label, value, hint, trend, tone = 'indi
                     </div>
                 )}
                 {trend && (
-                    <span className={`flex-none inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold border whitespace-nowrap ${active.pill}`}>
+                    <span className={`badge rounded-pill flex-none inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold border whitespace-nowrap ${active.pill}`}>
                         {trend}
                     </span>
                 )}

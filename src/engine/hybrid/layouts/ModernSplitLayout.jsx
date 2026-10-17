@@ -12,7 +12,7 @@ import SmartReferences from '../components/SmartReferences';
 
 export default function ModernSplitLayout({ values = {}, theme = {} }) {
   return (
-    <div className="smart-layout smart-layout--modern-split" style={{
+    <div className="container-fluid bs-container-fluid-adaptive smart-layout smart-layout--modern-split" style={{
       '--primary': theme.primary,
       '--secondary': theme.secondary,
       '--sidebar-bg': theme.sidebarBg || '#f8fafc',

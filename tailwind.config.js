@@ -8,6 +8,10 @@ export default {
     ],
     theme: {
         extend: {
+            screens: {
+                '3xl': '1920px',
+                '4xl': '2560px',
+            },
             fontFamily: {
                 poppins: ['Poppins', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
                 sans: ['Poppins', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],

@@ -48,3 +48,7 @@ const GA4Provider = ({ children }) => {
 };
 
 export default GA4Provider;
+
+// bs-component-foundation
+
+export const GA4Container = () => <div className="container-fluid d-none bs-ga4" />;

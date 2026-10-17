@@ -4,7 +4,7 @@ import { FiGrid, FiTag } from 'react-icons/fi';
 const CategoryFilter = ({ categories, selectedCategory, onCategoryChange }) => {
     return (
         <div>
-            <div className="flex items-center mb-4">
+            <div className="card bs-card-executive flex items-center mb-4">
                 <FiTag className="w-5 h-5 text-gray-600 mr-2" />
                 <h3 className="text-lg font-semibold text-gray-900">Categories</h3>
             </div>

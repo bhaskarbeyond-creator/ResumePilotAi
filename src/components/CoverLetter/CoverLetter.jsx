@@ -848,10 +848,10 @@ class CoverLetter extends Component {
             return (
                 <div className={`cover-letter cl-canvas${isEmbeddedInShell ? '' : ' cl-canvas--standalone'}`}>
                     <div className="cl-stack">
-                        <div className="cl-card cl-card--tight">
+                        <div className="card bs-card-executive cl-card cl-card--tight">
                             <h1 className="cl-section-title">Cover letters are unavailable</h1>
                             <p className="cl-body-copy">This workspace has the cover letter module turned off.</p>
-                            <Link to="/dashboard" className="cl-btn cl-btn--primary cl-btn--sm" style={{ marginTop: '1.25rem' }}>
+                            <Link to="/dashboard" className="btn btn-primary cl-btn cl-btn--primary cl-btn--sm" style={{ marginTop: '1.25rem' }}>
                                 Back to Dashboard
                             </Link>
                         </div>
@@ -909,7 +909,7 @@ class CoverLetter extends Component {
                 {/* Fullscreen Preview Modal (Same as Resume Preview Modal) */}
                 {this.state.showPreviewModal && (
                     <div
-                        className="cl-modal__scrim"
+                        className="modal-content cl-modal__scrim"
                         role="presentation"
                         onMouseDown={(e) => {
                             // Click on the scrim itself (not the dialog) dismisses.
@@ -920,23 +920,23 @@ class CoverLetter extends Component {
                             role="dialog"
                             aria-modal="true"
                             aria-label={`Cover letter preview, ${activeTemplate.name}`}
-                            className="cl-modal"
+                            className="modal-content cl-modal"
                         >
                             {/* Modal Header */}
-                            <div className="cl-modal__head">
-                                <div className="cl-modal__brand">
+                            <div className="modal-content cl-modal__head">
+                                <div className="modal-content cl-modal__brand">
                                     <div className="cl-ats__icon">
                                         <FaExpand />
                                     </div>
                                     <div>
-                                        <h2 className="cl-modal__title">Cover Letter Preview</h2>
-                                        <p className="cl-modal__sub">
+                                        <h2 className="modal-content cl-modal__title">Cover Letter Preview</h2>
+                                        <p className="modal-content cl-modal__sub">
                                             {activeTemplate.name} ({activeTemplate.id}) &bull; A4 Print Ready
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className="cl-modal__tools">
+                                <div className="modal-content cl-modal__tools">
                                     {/* Zoom Controls */}
                                     <div className="cl-zoom">
                                         <button
@@ -965,7 +965,7 @@ class CoverLetter extends Component {
                                     {/* Print / Save PDF in Modal */}
                                     <button
                                         onClick={this.handlePrintCoverLetter}
-                                        className="cl-btn cl-btn--primary cl-btn--sm">
+                                        className="btn btn-primary cl-btn cl-btn--primary cl-btn--sm">
                                         <FaPrint className="cl-btn__glyph" />
                                         <span>Print / PDF</span>
                                     </button>
@@ -981,7 +981,7 @@ class CoverLetter extends Component {
                             </div>
 
                             {/* Modal Canvas Body */}
-                            <div className="cl-modal__body custom-scrollbar">
+                            <div className="modal-content cl-modal__body custom-scrollbar">
                                 <div
                                     className="cl-paper"
                                     style={{
@@ -1003,23 +1003,23 @@ class CoverLetter extends Component {
 
                 {/* Delete Confirmation Modal Overlay */}
                 {this.state.letterToDelete && (
-                    <div className="cl-modal__scrim cl-modal__scrim--soft">
-                        <div className="cl-modal cl-modal--sm" role="dialog" aria-modal="true" aria-label="Confirm delete cover letter">
-                            <div className="cl-card cl-card--tight">
+                    <div className="modal-content cl-modal__scrim cl-modal__scrim--soft">
+                        <div className="modal-content cl-modal cl-modal--sm" role="dialog" aria-modal="true" aria-label="Confirm delete cover letter">
+                            <div className="card bs-card-executive cl-card cl-card--tight">
                                 <h3 className="cl-section-title">Delete Cover Letter?</h3>
                                 <p className="cl-body-copy">
                                     Are you sure you want to delete <strong>{this.state.letterToDelete.jobTitle || 'this cover letter'}</strong>? This action cannot be undone.
                                 </p>
                             </div>
-                            <div className="cl-modal__foot">
+                            <div className="modal-content cl-modal__foot">
                                 <button
                                     onClick={() => this.setState({ letterToDelete: null })}
-                                    className="cl-btn cl-btn--neutral cl-btn--sm">
+                                    className="btn btn-secondary cl-btn cl-btn--neutral cl-btn--sm">
                                     Cancel
                                 </button>
                                 <button
                                     onClick={this.handleConfirmDeleteCoverLetter}
-                                    className="cl-btn cl-btn--danger cl-btn--sm">
+                                    className="btn btn-danger cl-btn cl-btn--danger cl-btn--sm">
                                     Delete
                                 </button>
                             </div>
@@ -1047,11 +1047,11 @@ class CoverLetter extends Component {
                                 </div>
                             </div>
                             <div className="cl-header__actions">
-                                <button onClick={this.handleResetForm} className="cl-btn cl-btn--soft cl-btn--sm cuba-focus-ring">
+                                <button onClick={this.handleResetForm} className="btn btn-outline-secondary cl-btn cl-btn--soft cl-btn--sm cuba-focus-ring">
                                     + Create New Cover Letter
                                 </button>
                                 {!isEmbeddedInShell && (
-                                    <Link to="/dashboard" className="cl-btn cl-btn--neutral cl-btn--sm">
+                                    <Link to="/dashboard" className="btn btn-secondary cl-btn cl-btn--neutral cl-btn--sm">
                                         Back to Dashboard
                                     </Link>
                                 )}
@@ -1073,7 +1073,7 @@ class CoverLetter extends Component {
                     )}
 
                     {/* Stepper Indicator & View Switcher */}
-                    <nav className="cl-card cl-card--flush" aria-label="Cover letter builder steps">
+                    <nav className="card bs-card-executive cl-card cl-card--flush" aria-label="Cover letter builder steps">
                         <div className="cl-stepper">
                             {[
                                 { step: 1, label: 'Candidate & Role Details' },
@@ -1115,7 +1115,7 @@ class CoverLetter extends Component {
 
                     {/* Step 1: Candidate Profile + Job Target Details */}
                     {this.state.step === 1 && (
-                        <div className="cl-card">
+                        <div className="card bs-card-executive cl-card">
                             {/* Candidate Profile Information */}
                             <div className="cl-subcard">
                                 <div className="cl-subcard__head">
@@ -1125,33 +1125,33 @@ class CoverLetter extends Component {
                                 <div className="cl-grid-4">
                                     <div className="cl-field">
                                         <label className="cl-field__label" htmlFor="cl-firstname">First Name</label>
-                                        <input id="cl-firstname" type="text" value={this.state.candidateFirstname} onChange={(e) => this.setState({ candidateFirstname: e.target.value })} placeholder="Enter first name" className="cl-input cl-input--sm cuba-field" />
+                                        <input id="cl-firstname" type="text" value={this.state.candidateFirstname} onChange={(e) => this.setState({ candidateFirstname: e.target.value })} placeholder="Enter first name" className="form-control cl-input cl-input--sm cuba-field" />
                                     </div>
                                     <div className="cl-field">
                                         <label className="cl-field__label" htmlFor="cl-lastname">Last Name</label>
-                                        <input id="cl-lastname" type="text" value={this.state.candidateLastname} onChange={(e) => this.setState({ candidateLastname: e.target.value })} placeholder="Enter last name" className="cl-input cl-input--sm cl-input--mono cuba-field" />
+                                        <input id="cl-lastname" type="text" value={this.state.candidateLastname} onChange={(e) => this.setState({ candidateLastname: e.target.value })} placeholder="Enter last name" className="form-control cl-input cl-input--sm cl-input--mono cuba-field" />
                                     </div>
                                     <div className="cl-field">
                                         <label className="cl-field__label" htmlFor="cl-email">Email Address</label>
-                                        <input id="cl-email" type="email" value={this.state.candidateEmail} onChange={(e) => this.setState({ candidateEmail: e.target.value })} placeholder="Enter email address" className="cl-input cl-input--sm cuba-field" />
+                                        <input id="cl-email" type="email" value={this.state.candidateEmail} onChange={(e) => this.setState({ candidateEmail: e.target.value })} placeholder="Enter email address" className="form-control cl-input cl-input--sm cuba-field" />
                                     </div>
                                     <div className="cl-field">
                                         <label className="cl-field__label" htmlFor="cl-phone">Phone Number</label>
-                                        <input id="cl-phone" type="text" value={this.state.candidatePhone} onChange={(e) => this.setState({ candidatePhone: e.target.value })} placeholder="Enter phone number" className="cl-input cl-input--sm cuba-field" />
+                                        <input id="cl-phone" type="text" value={this.state.candidatePhone} onChange={(e) => this.setState({ candidatePhone: e.target.value })} placeholder="Enter phone number" className="form-control cl-input cl-input--sm cuba-field" />
                                     </div>
                                 </div>
                                 <div className="cl-grid-3" style={{ marginTop: '1rem' }}>
                                     <div className="cl-field">
                                         <label className="cl-field__label" htmlFor="cl-address">Street Address</label>
-                                        <input id="cl-address" type="text" value={this.state.candidateAddress} onChange={(e) => this.setState({ candidateAddress: e.target.value })} placeholder="e.g. 123 Innovation Way" className="cl-input cl-input--sm cuba-field" />
+                                        <input id="cl-address" type="text" value={this.state.candidateAddress} onChange={(e) => this.setState({ candidateAddress: e.target.value })} placeholder="e.g. 123 Innovation Way" className="form-control cl-input cl-input--sm cuba-field" />
                                     </div>
                                     <div className="cl-field">
                                         <label className="cl-field__label" htmlFor="cl-city">City / Region</label>
-                                        <input id="cl-city" type="text" value={this.state.candidateCity} onChange={(e) => this.setState({ candidateCity: e.target.value })} placeholder="e.g. San Francisco, CA" className="cl-input cl-input--sm cuba-field" />
+                                        <input id="cl-city" type="text" value={this.state.candidateCity} onChange={(e) => this.setState({ candidateCity: e.target.value })} placeholder="e.g. San Francisco, CA" className="form-control cl-input cl-input--sm cuba-field" />
                                     </div>
                                     <div className="cl-field">
                                         <label className="cl-field__label" htmlFor="cl-postal">Postal Code</label>
-                                        <input id="cl-postal" type="text" value={this.state.candidatePostalCode} onChange={(e) => this.setState({ candidatePostalCode: e.target.value })} placeholder="e.g. 94105" className="cl-input cl-input--sm cuba-field" />
+                                        <input id="cl-postal" type="text" value={this.state.candidatePostalCode} onChange={(e) => this.setState({ candidatePostalCode: e.target.value })} placeholder="e.g. 94105" className="form-control cl-input cl-input--sm cuba-field" />
                                     </div>
                                 </div>
                             </div>
@@ -1162,29 +1162,29 @@ class CoverLetter extends Component {
                                 <div className="cl-grid-3" style={{ marginTop: '1rem' }}>
                                     <div className="cl-field">
                                         <label className="cl-field__label" htmlFor="cl-jobtitle">Target Job Title *</label>
-                                        <input id="cl-jobtitle" type="text" value={this.state.jobTitle} onChange={(e) => this.setState({ jobTitle: e.target.value })} placeholder="e.g. Senior Software Engineer" className="cl-input cuba-field" />
+                                        <input id="cl-jobtitle" type="text" value={this.state.jobTitle} onChange={(e) => this.setState({ jobTitle: e.target.value })} placeholder="e.g. Senior Software Engineer" className="form-control cl-input cuba-field" />
                                     </div>
                                     <div className="cl-field">
                                         <label className="cl-field__label" htmlFor="cl-company">Target Company Name *</label>
-                                        <input id="cl-company" type="text" value={this.state.companyName} onChange={(e) => this.setState({ companyName: e.target.value })} placeholder="e.g. TechCorp Inc." className="cl-input cuba-field" />
+                                        <input id="cl-company" type="text" value={this.state.companyName} onChange={(e) => this.setState({ companyName: e.target.value })} placeholder="e.g. TechCorp Inc." className="form-control cl-input cuba-field" />
                                     </div>
                                     <div className="cl-field">
                                         <label className="cl-field__label" htmlFor="cl-recipient">Hiring Manager / Recipient</label>
-                                        <input id="cl-recipient" type="text" value={this.state.recipientName} onChange={(e) => this.setState({ recipientName: e.target.value })} placeholder="e.g. Sarah Jenkins" className="cl-input cuba-field" />
+                                        <input id="cl-recipient" type="text" value={this.state.recipientName} onChange={(e) => this.setState({ recipientName: e.target.value })} placeholder="e.g. Sarah Jenkins" className="form-control cl-input cuba-field" />
                                     </div>
                                 </div>
                                 <div className="cl-grid-3" style={{ marginTop: '1rem' }}>
                                     <div className="cl-field">
                                         <label className="cl-field__label" htmlFor="cl-caddr">Company Street Address</label>
-                                        <input id="cl-caddr" type="text" value={this.state.companyAddress} onChange={(e) => this.setState({ companyAddress: e.target.value })} placeholder="e.g. 500 Market St" className="cl-input cuba-field" />
+                                        <input id="cl-caddr" type="text" value={this.state.companyAddress} onChange={(e) => this.setState({ companyAddress: e.target.value })} placeholder="e.g. 500 Market St" className="form-control cl-input cuba-field" />
                                     </div>
                                     <div className="cl-field">
                                         <label className="cl-field__label" htmlFor="cl-ccity">Company City</label>
-                                        <input id="cl-ccity" type="text" value={this.state.companyCity} onChange={(e) => this.setState({ companyCity: e.target.value })} placeholder="e.g. San Francisco, CA" className="cl-input cuba-field" />
+                                        <input id="cl-ccity" type="text" value={this.state.companyCity} onChange={(e) => this.setState({ companyCity: e.target.value })} placeholder="e.g. San Francisco, CA" className="form-control cl-input cuba-field" />
                                     </div>
                                     <div className="cl-field">
                                         <label className="cl-field__label" htmlFor="cl-cpostal">Company Postal Code</label>
-                                        <input id="cl-cpostal" type="text" value={this.state.companyPostalCode} onChange={(e) => this.setState({ companyPostalCode: e.target.value })} placeholder="e.g. 94105" className="cl-input cuba-field" />
+                                        <input id="cl-cpostal" type="text" value={this.state.companyPostalCode} onChange={(e) => this.setState({ companyPostalCode: e.target.value })} placeholder="e.g. 94105" className="form-control cl-input cuba-field" />
                                     </div>
                                 </div>
                             </div>
@@ -1250,7 +1250,7 @@ class CoverLetter extends Component {
                                         </button>
 
                                         {this.state.showAtsSection && (
-                                            <div id="cl-ats-panel" className="cl-card cl-card--tight" style={{ marginTop: '0.75rem' }}>
+                                            <div id="cl-ats-panel" className="card bs-card-executive cl-card cl-card--tight" style={{ marginTop: '0.75rem' }}>
                                                 <label className="cl-field__label" htmlFor="cl-jobdesc">Job description</label>
                                                 <textarea
                                                     id="cl-jobdesc"
@@ -1345,7 +1345,7 @@ class CoverLetter extends Component {
                             <button
                                 onClick={() => this.generateAiCoverLetter()}
                                 disabled={this.state.isAiGenerating}
-                                className="cl-btn cl-btn--primary cl-btn--block cl-btn--lg"
+                                className="btn btn-primary cl-btn cl-btn--primary cl-btn--block cl-btn--lg"
                                 style={{ marginTop: '1.5rem' }}
                             >
                                 <FaMagic className="cl-btn__glyph" />
@@ -1356,7 +1356,7 @@ class CoverLetter extends Component {
 
                     {/* Step 2: 4-Template Selection & Live Visual Preview */}
                     {this.state.step === 2 && (
-                        <div className="cl-card">
+                        <div className="card bs-card-executive cl-card">
                             {/* 4 Cover Templates Selector Cards */}
                             <div className="cl-subcard">
                                 <div className="cl-subcard__head">
@@ -1404,7 +1404,7 @@ class CoverLetter extends Component {
                                         <button
                                             type="button"
                                             onClick={() => this.setState({ showPreviewModal: true })}
-                                            className="cl-btn cl-btn--soft cl-btn--sm cuba-focus-ring">
+                                            className="btn btn-outline-secondary cl-btn cl-btn--soft cl-btn--sm cuba-focus-ring">
                                             <FaExpand className="cl-btn__glyph" />
                                             <span>Open Fullscreen Modal</span>
                                         </button>
@@ -1456,19 +1456,19 @@ class CoverLetter extends Component {
                                 </div>
                             </div>
 
-                            <div className="cl-card__head" style={{ marginTop: '1.5rem' }}>
+                            <div className="card bs-card-executive cl-card__head" style={{ marginTop: '1.5rem' }}>
                                 <button
                                     type="button"
                                     onClick={() => this.setState({ step: 1 })}
-                                    className="cl-btn cl-btn--neutral cl-btn--sm cuba-focus-ring">
+                                    className="btn btn-secondary cl-btn cl-btn--neutral cl-btn--sm cuba-focus-ring">
                                     Back to Role Details
                                 </button>
-                                <div className="cl-modal__tools">
+                                <div className="modal-content cl-modal__tools">
                                     <button
                                         type="button"
                                         onClick={() => this.generateAiCoverLetter()}
                                         disabled={this.state.isAiGenerating}
-                                        className="cl-btn cl-btn--soft cl-btn--sm cuba-focus-ring">
+                                        className="btn btn-outline-secondary cl-btn cl-btn--soft cl-btn--sm cuba-focus-ring">
                                         <FaSyncAlt className="cl-btn__glyph" />
                                         <span>{this.state.isAiGenerating ? '⚡ Regenerating...' : '⚡ 🔄 Regenerate AI Variation'}</span>
                                     </button>
@@ -1476,14 +1476,14 @@ class CoverLetter extends Component {
                                         type="button"
                                         onClick={this.handleSaveCoverLetter}
                                         disabled={this.state.isSaving}
-                                        className="cl-btn cl-btn--neutral cl-btn--sm cuba-focus-ring">
+                                        className="btn btn-secondary cl-btn cl-btn--neutral cl-btn--sm cuba-focus-ring">
                                         <FaBookmark className="cl-btn__glyph" />
                                         <span>{this.state.isSaving ? 'Saving...' : 'Save to Dashboard'}</span>
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => this.setState({ step: 3 })}
-                                        className="cl-btn cl-btn--primary cl-btn--sm cuba-focus-ring">
+                                        className="btn btn-primary cl-btn cl-btn--primary cl-btn--sm cuba-focus-ring">
                                         Next: Export &amp; Share Package
                                     </button>
                                 </div>
@@ -1493,7 +1493,7 @@ class CoverLetter extends Component {
 
                     {/* Step 3: Final Export, Fullscreen Modal & Omni-Channel Share Package */}
                     {this.state.step === 3 && (
-                        <div className="cl-card">
+                        <div className="card bs-card-executive cl-card">
                             {/* Template Switcher Bar */}
                             <div className="cl-subcard">
                                 <h2 className="cl-section-title" style={{ marginBottom: '0.75rem' }}>Cover Letter Style:</h2>
@@ -1554,7 +1554,7 @@ class CoverLetter extends Component {
                                             />
                                         </div>
                                     </div>
-                                    <div className="cl-card__head" style={{ marginTop: '0.5rem', paddingInline: '0.25rem' }}>
+                                    <div className="card bs-card-executive cl-card__head" style={{ marginTop: '0.5rem', paddingInline: '0.25rem' }}>
                                         <span className="cl-hint">Click preview card to open modal</span>
                                         <button
                                             type="button"
@@ -1568,7 +1568,7 @@ class CoverLetter extends Component {
 
                                 {/* Download & Omni-Channel Share Actions */}
                                 <div>
-                                    <div className="cl-card__head">
+                                    <div className="card bs-card-executive cl-card__head">
                                         <span className="cl-pill cl-pill--success">Ready for Submission</span>
                                         <span className="cl-subtle" style={{ fontSize: '0.625rem', fontFamily: 'ui-monospace, monospace' }}>{activeTemplate.id}</span>
                                     </div>
@@ -1582,7 +1582,7 @@ class CoverLetter extends Component {
                                         <button
                                             type="button"
                                             onClick={this.handlePrintCoverLetter}
-                                            className="cl-btn cl-btn--primary cl-btn--block cuba-focus-ring">
+                                            className="btn btn-primary cl-btn cl-btn--primary cl-btn--block cuba-focus-ring">
                                             <FaPrint className="cl-btn__glyph" />
                                             <span>Print / Save as PDF ({activeTemplate.name})</span>
                                         </button>
@@ -1590,7 +1590,7 @@ class CoverLetter extends Component {
                                             type="button"
                                             disabled={this.state.isSyncingTracker}
                                             onClick={() => this.handleSyncToJobTracker()}
-                                            className="cl-btn cl-btn--soft cl-btn--block cuba-focus-ring">
+                                            className="btn btn-outline-secondary cl-btn cl-btn--soft cl-btn--block cuba-focus-ring">
                                             <FaBriefcase className="cl-btn__glyph" />
                                             <span>{this.state.isSyncingTracker ? 'Syncing to Job Tracker...' : '📌 Sync & Attach to Job Tracker'}</span>
                                         </button>
@@ -1598,14 +1598,14 @@ class CoverLetter extends Component {
                                             <button
                                                 type="button"
                                                 onClick={this.exportCoverLetterTxt}
-                                                className="cl-btn cl-btn--neutral cuba-focus-ring">
+                                                className="btn btn-secondary cl-btn cl-btn--neutral cuba-focus-ring">
                                                 <FaFileDownload className="cl-btn__glyph" />
                                                 <span>Download Plain Text (.txt)</span>
                                             </button>
                                             <button
                                                 type="button"
                                                 onClick={this.handleCopyFormattedText}
-                                                className="cl-btn cl-btn--soft cuba-focus-ring">
+                                                className="btn btn-outline-secondary cl-btn cl-btn--soft cuba-focus-ring">
                                                 <FaCopy className="cl-btn__glyph" />
                                                 <span>Copy Formatted Text</span>
                                             </button>
@@ -1644,8 +1644,8 @@ class CoverLetter extends Component {
 
                     {/* MED-001: honest letters-gallery failure state with retry */}
                     {this.state.lettersLoadFailed && (
-                        <div className="cl-card" role="alert" aria-live="polite">
-                            <div className="cl-card__head" style={{ justifyContent: 'flex-start', gap: '0.75rem', alignItems: 'center' }}>
+                        <div className="card bs-card-executive cl-card" role="alert" aria-live="polite">
+                            <div className="card bs-card-executive cl-card__head" style={{ justifyContent: 'flex-start', gap: '0.75rem', alignItems: 'center' }}>
                                 <FaExclamationCircle className="cl-btn__glyph" style={{ color: 'var(--cuba-warning, #b45309)' }} aria-hidden="true" />
                                 <div style={{ minWidth: 0, flex: 1 }}>
                                     <h3 className="cl-section-title" style={{ marginBottom: '0.25rem' }}>
@@ -1658,7 +1658,7 @@ class CoverLetter extends Component {
                                 <button
                                     type="button"
                                     onClick={() => this.loadSavedLetters()}
-                                    className="cl-btn cl-btn--soft cl-btn--sm cuba-focus-ring"
+                                    className="btn btn-outline-secondary cl-btn cl-btn--soft cl-btn--sm cuba-focus-ring"
                                     style={{ flex: 'none' }}
                                 >
                                     <FaSyncAlt className="cl-btn__glyph" aria-hidden="true" />
@@ -1670,7 +1670,7 @@ class CoverLetter extends Component {
 
                     {/* Saved Cover Letters Gallery with Full CRUD */}
                     {this.state.savedLetters && this.state.savedLetters.length > 0 && (
-                        <div className="cl-card">
+                        <div className="card bs-card-executive cl-card">
                             <h2 className="cl-section-title" style={{ marginBottom: '0.5rem' }}>
                                 Saved Cover Letters ({this.state.savedLetters.length})
                             </h2>
@@ -1680,9 +1680,9 @@ class CoverLetter extends Component {
                                     return (
                                         <div key={letter.id} className="cl-subcard">
                                             {/* Card Top Row: Title, Template Badge, and View Popup Icon */}
-                                            <div className="cl-card__head" style={{ alignItems: 'flex-start' }}>
+                                            <div className="card bs-card-executive cl-card__head" style={{ alignItems: 'flex-start' }}>
                                                 <div style={{ minWidth: 0, flex: 1 }}>
-                                                    <div className="cl-card__head" style={{ justifyContent: 'flex-start' }}>
+                                                    <div className="card bs-card-executive cl-card__head" style={{ justifyContent: 'flex-start' }}>
                                                         <h3 className="cl-section-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                             {letter.jobTitle || 'Target Position'}
                                                         </h3>
@@ -1703,7 +1703,7 @@ class CoverLetter extends Component {
                                                     type="button"
                                                     title="Preview Cover Letter (Fullscreen A4)"
                                                     onClick={() => this.handleViewSavedLetter(letter)}
-                                                    className="cl-btn cl-btn--soft cl-btn--sm cuba-focus-ring"
+                                                    className="btn btn-outline-secondary cl-btn cl-btn--soft cl-btn--sm cuba-focus-ring"
                                                     style={{ flex: 'none' }}
                                                 >
                                                     <FaEye className="cl-btn__glyph" />
@@ -1713,7 +1713,7 @@ class CoverLetter extends Component {
 
                                             {/* Card Bottom Row: Share Icons & Primary Actions */}
                                             <hr className="cl-divider" style={{ margin: '0.75rem 0' }} />
-                                            <div className="cl-card__head">
+                                            <div className="card bs-card-executive cl-card__head">
                                                 {/* Quick Share Icons */}
                                                 <div className="cl-share-tray">
                                                     <button
@@ -1789,21 +1789,21 @@ class CoverLetter extends Component {
                                                             templateId: letter.templateId || 'Cover1',
                                                             step: 2
                                                         })}
-                                                        className="cl-btn cl-btn--soft cl-btn--sm cuba-focus-ring">
+                                                        className="btn btn-outline-secondary cl-btn cl-btn--soft cl-btn--sm cuba-focus-ring">
                                                         <FaEdit className="cl-btn__glyph" />
                                                         <span>Edit</span>
                                                     </button>
                                                     <button
                                                         type="button"
                                                         onClick={() => this.handleDuplicateCoverLetter(letter)}
-                                                        className="cl-btn cl-btn--neutral cl-btn--sm cuba-focus-ring">
+                                                        className="btn btn-secondary cl-btn cl-btn--neutral cl-btn--sm cuba-focus-ring">
                                                         <FaClone className="cl-btn__glyph" />
                                                         <span>Duplicate</span>
                                                     </button>
                                                     <button
                                                         type="button"
                                                         onClick={() => this.setState({ letterToDelete: letter })}
-                                                        className="cl-btn cl-btn--danger cl-btn--sm cuba-focus-ring">
+                                                        className="btn btn-danger cl-btn cl-btn--danger cl-btn--sm cuba-focus-ring">
                                                         <FaTrashAlt className="cl-btn__glyph" />
                                                         <span>Delete</span>
                                                     </button>

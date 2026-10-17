@@ -1,0 +1,150 @@
+- generic [ref=f69e8]:
+  - complementary "Main navigation" [ref=f69e9]:
+    - generic [ref=f69e10]:
+      - link "IM IME365" [ref=f69e11] [cursor=pointer]:
+        - /url: /dashboard
+        - generic [ref=f69e12]: IM
+        - generic [ref=f69e13]: IME365
+      - button "Collapse sidebar" [ref=f69e14]
+    - navigation [ref=f69e18]:
+      - list [ref=f69e19]:
+        - listitem [ref=f69e20]:
+          - link "Overview" [ref=f69e21] [cursor=pointer]:
+            - /url: /dashboard
+        - listitem [ref=f69e28]:
+          - link "Resumes" [ref=f69e29] [cursor=pointer]:
+            - /url: /dashboard/resumes
+        - listitem [ref=f69e34]:
+          - link "ATS Score" [ref=f69e35] [cursor=pointer]:
+            - /url: /dashboard/ats-score
+        - listitem [ref=f69e39]:
+          - link "Jobs" [ref=f69e40] [cursor=pointer]:
+            - /url: /dashboard/jobs
+        - listitem [ref=f69e45]:
+          - link "Interviews" [ref=f69e46] [cursor=pointer]:
+            - /url: /dashboard/interviews
+        - listitem [ref=f69e51]:
+          - link "Cover Letters" [ref=f69e52] [cursor=pointer]:
+            - /url: /dashboard/cover-letters
+        - listitem [ref=f69e56]:
+          - link "Portfolio" [ref=f69e57] [cursor=pointer]:
+            - /url: /dashboard/portfolio
+        - listitem [ref=f69e62]:
+          - link "AI Assistant" [ref=f69e63] [cursor=pointer]:
+            - /url: /dashboard/ai
+        - listitem [ref=f69e68]:
+          - link "Messages" [ref=f69e69] [cursor=pointer]:
+            - /url: /dashboard/messages
+    - generic [ref=f69e73]:
+      - list [ref=f69e74]:
+        - listitem [ref=f69e75]:
+          - link "Admin Console" [ref=f69e76] [cursor=pointer]:
+            - /url: /admin
+        - listitem [ref=f69e82]:
+          - link "Settings" [ref=f69e83] [cursor=pointer]:
+            - /url: /dashboard/settings
+      - generic [ref=f69e88]:
+        - generic [ref=f69e89]: SA
+        - generic [ref=f69e90]:
+          - paragraph [ref=f69e91]: Sarah Administrator
+          - paragraph [ref=f69e92]: admin@ime365.com
+        - button "Sign out" [ref=f69e93]
+  - generic [ref=f69e97]:
+    - banner [ref=f69e98]:
+      - searchbox "Search" [ref=f69e104]
+      - button "Notifications" [ref=f69e106]
+    - main [ref=f69e110]:
+      - generic [ref=f69e111]:
+        - generic [ref=f69e112]:
+          - heading "Admin Console" [level=1] [ref=f69e113]
+          - paragraph [ref=f69e114]: Platform administration and operational management.
+        - generic [ref=f69e115]:
+          - navigation "Admin sections" [ref=f69e116]:
+            - button "Overview" [ref=f69e117]
+            - button "Users" [ref=f69e120]
+            - button "AI Settings" [active] [ref=f69e126]
+            - button "System" [ref=f69e135]
+          - generic [ref=f69e233]:
+            - generic [ref=f69e234]:
+              - heading "AI Provider Status" [level=2] [ref=f69e235]
+              - button "Refresh" [ref=f69e236] [cursor=pointer]
+            - generic [ref=f69e237]:
+              - generic [ref=f69e239]:
+                - generic [ref=f69e240]:
+                  - generic [ref=f69e241]:
+                    - heading "NVIDIA NIM" [level=3] [ref=f69e242]
+                    - generic [ref=f69e243]: Healthy
+                  - button "Configure" [ref=f69e247] [cursor=pointer]
+                - generic [ref=f69e248]:
+                  - generic [ref=f69e249]:
+                    - generic [ref=f69e250]: Model
+                    - generic [ref=f69e251]: meta/llama-3.2-11b-vision-instruct
+                  - generic [ref=f69e252]:
+                    - generic [ref=f69e253]: Latency
+                    - generic [ref=f69e254]: 245ms
+                  - generic [ref=f69e255]:
+                    - generic [ref=f69e256]: Requests Today
+                    - generic [ref=f69e257]: 1,420
+                  - generic [ref=f69e258]:
+                    - generic [ref=f69e259]: Errors Today
+                    - generic [ref=f69e260]: "3"
+              - generic [ref=f69e262]:
+                - generic [ref=f69e263]:
+                  - generic [ref=f69e264]:
+                    - heading "Google Gemini" [level=3] [ref=f69e265]
+                    - generic [ref=f69e266]: Healthy
+                  - button "Configure" [ref=f69e270] [cursor=pointer]
+                - generic [ref=f69e271]:
+                  - generic [ref=f69e272]:
+                    - generic [ref=f69e273]: Model
+                    - generic [ref=f69e274]: gemini-1.5-flash
+                  - generic [ref=f69e275]:
+                    - generic [ref=f69e276]: Latency
+                    - generic [ref=f69e277]: 180ms
+                  - generic [ref=f69e278]:
+                    - generic [ref=f69e279]: Requests Today
+                    - generic [ref=f69e280]: "890"
+                  - generic [ref=f69e281]:
+                    - generic [ref=f69e282]: Errors Today
+                    - generic [ref=f69e283]: "0"
+              - generic [ref=f69e285]:
+                - generic [ref=f69e286]:
+                  - generic [ref=f69e287]:
+                    - heading "OpenAI" [level=3] [ref=f69e288]
+                    - generic [ref=f69e289]: Degraded
+                  - button "Configure" [ref=f69e292] [cursor=pointer]
+                - generic [ref=f69e293]:
+                  - generic [ref=f69e294]:
+                    - generic [ref=f69e295]: Model
+                    - generic [ref=f69e296]: gpt-4o-mini
+                  - generic [ref=f69e297]:
+                    - generic [ref=f69e298]: Latency
+                    - generic [ref=f69e299]: 520ms
+                  - generic [ref=f69e300]:
+                    - generic [ref=f69e301]: Requests Today
+                    - generic [ref=f69e302]: "340"
+                  - generic [ref=f69e303]:
+                    - generic [ref=f69e304]: Errors Today
+                    - generic [ref=f69e305]: "12"
+              - generic [ref=f69e307]:
+                - generic [ref=f69e308]:
+                  - generic [ref=f69e309]:
+                    - heading "Groq" [level=3] [ref=f69e310]
+                    - generic [ref=f69e311]: Healthy
+                  - button "Configure" [ref=f69e315] [cursor=pointer]
+                - generic [ref=f69e316]:
+                  - generic [ref=f69e317]:
+                    - generic [ref=f69e318]: Model
+                    - generic [ref=f69e319]: llama-3.1-70b-versatile
+                  - generic [ref=f69e320]:
+                    - generic [ref=f69e321]: Latency
+                    - generic [ref=f69e322]: 95ms
+                  - generic [ref=f69e323]:
+                    - generic [ref=f69e324]: Requests Today
+                    - generic [ref=f69e325]: 2,100
+                  - generic [ref=f69e326]:
+                    - generic [ref=f69e327]: Errors Today
+                    - generic [ref=f69e328]: "1"
+            - generic [ref=f69e334]:
+              - heading "API Key Security" [level=4] [ref=f69e335]
+              - paragraph [ref=f69e336]: API keys are stored server-side and never exposed to the client. Use the backend admin panel to update provider credentials.

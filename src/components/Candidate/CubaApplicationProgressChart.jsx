@@ -151,16 +151,16 @@ const CubaApplicationProgressChart = () => {
         <section
             data-testid="cuba-application-progress"
             aria-labelledby="cuba-application-progress-title"
-            className="flex min-w-0 flex-col rounded-cuba-lg border border-cuba-line bg-cuba-card p-3.5 shadow-xs"
+            className="card bs-card-executive h-100 p-3 shadow-sm border text-body bg-body w-100"
         >
-            <header className="mb-2 flex items-center justify-between">
+            <header className="mb-2 d-flex align-items-center justify-content-between">
                 <div className="min-w-0">
-                    <h2 id="cuba-application-progress-title" className="text-sm font-bold text-cuba-ink flex items-center gap-1.5">
-                        <span className="text-[#7366ff]">📊</span> Application Progress
+                    <h2 id="cuba-application-progress-title" className="h6 fw-bold mb-0 d-flex align-items-center gap-1.5 text-body">
+                        <span className="text-primary">📊</span> Application Progress
                     </h2>
-                    <p className="text-[11px] text-cuba-ink-subtle">Last 6 months · current pipeline stage</p>
+                    <p className="small text-secondary mb-0" style={{ fontSize: '11px' }}>Last 6 months · current pipeline stage</p>
                 </div>
-                <a href="/dashboard/applied-jobs" className="text-[11px] font-bold text-[#7366ff] hover:underline">
+                <a href="/dashboard/applied-jobs" className="small fw-bold text-primary text-decoration-none">
                     View Details
                 </a>
             </header>

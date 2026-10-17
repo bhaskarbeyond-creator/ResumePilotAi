@@ -50,7 +50,7 @@ const Navbar1 = {
         return (
             <nav className={`${backgroundColor} ${textColor} shadow-xl sticky top-0 z-50 transition-all duration-500`}>
                 {/* Subtle background decoration */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50"></div>
+                <div className="card bs-card-executive absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50"></div>
 
                 <div className="relative max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
                     <div className="flex justify-between items-center h-20">

@@ -14,7 +14,7 @@ import { FiChevronRight } from 'react-icons/fi';
  *   received a finished node.
  *
  * THE CONTRACT THIS ESTABLISHES:
- *   - ONE `<nav aria-label="Breadcrumb">` wrapping an `<ol>`, the WAI-ARIA
+ *   - ONE `<nav aria-label="Breadcrumb" className="breadcrumb bs-breadcrumbs">` wrapping an `<ol>`, the WAI-ARIA
  *     Authoring Practices breadcrumb pattern. Every portal mounts exactly one, so
  *     the landmark stays unique per authenticated route (§14, §37).
  *   - Ancestors are real buttons with an accessible name, so they are reachable by

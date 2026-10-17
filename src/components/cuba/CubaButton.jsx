@@ -4,14 +4,14 @@ const cx = (...parts) => parts.filter(Boolean).join(' ');
 
 const VARIANTS = {
     primary:
-        'bg-cuba-primary-fill text-cuba-on-primary hover:brightness-110 disabled:hover:bg-cuba-primary-fill shadow-cuba-sm',
+        'btn btn-primary bg-cuba-primary-fill text-cuba-on-primary hover:brightness-110 disabled:hover:bg-cuba-primary-fill shadow-cuba-sm shadow-sm',
     secondary:
-        'bg-cuba-primary-soft text-cuba-primary hover:bg-cuba-primary-soft-hover border border-transparent',
+        'btn btn-light bg-cuba-primary-soft text-cuba-primary hover:bg-cuba-primary-soft-hover border border-transparent',
     outline:
-        'border border-cuba-line-strong bg-transparent text-cuba-ink hover:bg-cuba-primary-soft',
+        'btn btn-outline-secondary border border-cuba-line-strong bg-transparent text-cuba-ink hover:bg-cuba-primary-soft',
     ghost:
-        'bg-transparent text-cuba-ink-muted hover:bg-cuba-primary-soft hover:text-cuba-ink',
-    danger: 'bg-cuba-danger text-white hover:brightness-95 shadow-cuba-sm',
+        'btn btn-link bg-transparent text-cuba-ink-muted hover:bg-cuba-primary-soft hover:text-cuba-ink text-decoration-none',
+    danger: 'btn btn-danger bg-cuba-danger text-white hover:brightness-95 shadow-cuba-sm shadow-sm',
 };
 
 const SIZES = {
@@ -55,7 +55,7 @@ const CubaButton = ({
             aria-disabled={!isNativeButton && isDisabled ? 'true' : undefined}
             aria-busy={loading ? 'true' : undefined}
             className={cx(
-                'cuba-focusable inline-flex items-center justify-center rounded-cuba-sm font-semibold',
+                'btn cuba-focusable inline-flex items-center justify-center rounded-cuba-sm font-semibold',
                 'transition-[background-color,box-shadow,transform] duration-200 ease-cuba',
                 'active:translate-y-px motion-reduce:transform-none',
                 'disabled:cursor-not-allowed disabled:opacity-55',

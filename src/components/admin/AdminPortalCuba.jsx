@@ -36,7 +36,7 @@ import { searchAdminEntities } from './command/adminEntitySearch';
 import { COPILOT_PORTALS } from '../cuba/copilotActions';
 
 const AdminPortalCuba = ({ children }) => (
-  <CubaPortalShell
+  <CubaPortalShell className="container-fluid p-0 bs-admin-portal-shell"
     persona="Platform Admin"
     title="Command Center"
     navigation={ADMIN_PORTAL_NAVIGATION}

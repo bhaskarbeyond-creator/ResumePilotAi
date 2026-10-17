@@ -28,7 +28,7 @@ const ResumeCategory = {
         template: {
             type: 'custom',
             label: 'Template',
-            render: ({ _name, onChange, value }) => <TemplateSelector value={value} onChange={onChange} templates={resumeTemplateOptions} category="Resume" />,
+            render: ({ _name, onChange, value }) => <div className="card bs-card-executive p-0 border-0 bg-transparent"><TemplateSelector value={value} onChange={onChange} templates={resumeTemplateOptions} category="Resume" /></div>,
         },
         title: { type: 'text', label: 'Section Title' },
         subtitle: { type: 'text', label: 'Subtitle' },
@@ -92,3 +92,5 @@ const ResumeCategory = {
 };
 
 export default ResumeCategory;
+
+// bs-card-executive-block

@@ -1244,7 +1244,7 @@ class SubscriptionSetting extends Component {
                         )}
 
                         <div className="overflow-x-auto rounded-xl border border-slate-200/80">
-                            <table className="w-full text-left text-xs border-collapse">
+                            <table className="table table-hover align-middle w-full text-left text-xs border-collapse">
                                 <thead className="bg-slate-50/80 text-slate-500 font-extrabold uppercase text-[10px] tracking-wider border-b border-slate-200">
                                     <tr>
                                         <th className="py-3 px-4">Event ID / Timestamp</th>
@@ -1538,7 +1538,7 @@ class SubscriptionSetting extends Component {
 
                             return (
                                 <div className="overflow-x-auto rounded-xl border border-slate-200">
-                                    <table className="w-full text-left border-collapse min-w-[850px]">
+                                    <table className="table table-hover align-middle w-full text-left border-collapse min-w-[850px]">
                                         <thead>
                                             <tr className="bg-slate-100/80 border-b border-slate-200 text-[11px] font-black text-slate-600 uppercase tracking-wider">
                                                 <th className="p-3">Transaction &amp; Date</th>
@@ -2436,7 +2436,7 @@ class SubscriptionSetting extends Component {
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
-                            <table className="w-full text-left text-xs">
+                            <table className="table table-hover align-middle w-full text-left text-xs">
                                 <thead className="bg-slate-50 text-slate-500 font-extrabold uppercase border-b border-slate-200">
                                     <tr>
                                         <th className="p-3">Code</th>
@@ -2692,7 +2692,7 @@ class SubscriptionSetting extends Component {
                             </div>
 
                             <div className="overflow-x-auto border border-slate-200 rounded-xl mb-6">
-                                <table className="w-full text-left text-sm text-slate-600">
+                                <table className="table table-hover align-middle w-full text-left text-sm text-slate-600">
                                     <thead className="bg-slate-50 border-b border-slate-200 text-xs uppercase font-extrabold text-slate-700">
                                         <tr>
                                             <th className="px-4 py-3">Currency</th>

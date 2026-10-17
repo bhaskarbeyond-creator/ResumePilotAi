@@ -83,7 +83,7 @@ class PagesSettings extends Component {
         const totalPages = this.state.pages ? this.state.pages.length : 0;
         
         return (
-            <div className="space-y-6">
+    <div className="card bs-card-executive container-fluid p-4 space-y-6">
                 {this.state.error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{this.state.error}</div>}
                 {/* Success Alert */}
                 {this.state.isSuccesShowed && (

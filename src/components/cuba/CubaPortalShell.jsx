@@ -337,7 +337,7 @@ const CubaPortalShell = ({
             user={headerUser}
             onSignOut={onSignOut}
         >
-            <div className="cuba-portal-stage flex-1 min-w-0">
+            <div className="container-fluid p-0 cuba-portal-stage flex-1 min-w-0">
                 {children}
             </div>
         </CubaAppShell>

@@ -64,7 +64,7 @@ const SystemHealthSettings = () => {
     const services = diagnosticsResult?.services;
     const providerEntries = Object.entries(services?.aiProviders || {});
     return (
-        <form onSubmit={handleSave} className="space-y-6">
+        <form onSubmit={handleSave} className="card bs-card-executive container-fluid p-4 space-y-6">
             {statusMessage && <div role={statusMessage.type === 'success' ? 'status' : 'alert'} aria-live="polite" className={`flex items-center gap-2 rounded-lg border p-4 text-sm ${statusMessage.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-red-200 bg-red-50 text-red-800'}`}>{statusMessage.type === 'success' ? <FaCheck aria-hidden="true" /> : <FaTimes aria-hidden="true" />}{statusMessage.text}</div>}
 
             <section className="rounded-lg border border-slate-200 bg-slate-50 p-4" aria-labelledby="maintenance-heading">

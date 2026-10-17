@@ -11,7 +11,7 @@ import EmployerDashboard from '../Dashboard/EmployerDashboard/EmployerDashboard'
  */
 const EmployerJobPostings = ({ showToast }) => {
     return (
-        <div>
+        <div className="container-fluid p-0 bs-employer-jobs">
             <EmployerPageHeader
                 eyebrow="Requisitions & Applicants"
                 title="Job Postings"

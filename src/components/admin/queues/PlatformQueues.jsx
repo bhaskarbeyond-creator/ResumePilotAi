@@ -269,7 +269,7 @@ export default function PlatformQueues() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="table table-hover align-middle w-full text-left border-collapse">
               <thead className="bg-slate-50/50 border-b border-slate-200 text-[11px] font-extrabold uppercase text-slate-500 tracking-wider">
                 <tr>
                   <th className="py-3 px-4">Event ID</th>

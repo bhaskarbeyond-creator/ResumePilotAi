@@ -459,7 +459,7 @@ const AutocompleteInputField = ({
     };
 
     return (
-        <div className="relative w-full" ref={containerRef}>
+        <div className="form-control-wrapper relative w-full" ref={containerRef}>
             {!hideLabel && label && (
                 <label htmlFor={name} className={labelClassName || "block text-xs font-bold text-[var(--cuba-ink-muted)] uppercase tracking-wider mb-1.5"}>
                     {label}

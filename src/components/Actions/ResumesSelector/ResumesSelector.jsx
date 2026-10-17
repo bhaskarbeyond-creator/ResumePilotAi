@@ -142,7 +142,7 @@ const ResumesSelector = (props) => {
         animate={{ translateX: 0 }}
         exit={{ translateX: 400 }}
         transition={{ duration: 0.3 }}
-        className="select_body"
+        className="select_body modal-dialog modal-content card bs-card-executive"
       >
         <div className="select_header">
           <h2>

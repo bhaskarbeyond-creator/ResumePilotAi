@@ -1,25 +1,25 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-16T16:20:27.511Z",
-  "eventCount": 3652,
+  "updatedAt": "2026-10-17T22:59:29.060Z",
+  "eventCount": 3779,
   "activeDirectiveId": "DIR-001",
-  "activeDirectiveTitle": "Master Engineering Directive: Pure-Codebase Forensic Audit & Zero-Gap Remediation",
+  "activeDirectiveTitle": "SMOKE TEST: Verify Claude Code Developer Engine Integration",
   "activeDirectiveStatus": "IN_PROGRESS",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-16T14:06:21.532Z",
-  "unreadForLead": 152,
-  "unreadForDev": 328,
+  "stallDeadline": "2026-10-17T20:28:48.511Z",
+  "unreadForLead": 8,
+  "unreadForDev": 33,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-16T14:06:21.532Z",
-    "status": "Starting test run",
-    "percent": 0
+    "timestamp": "2026-10-17T20:28:48.511Z",
+    "status": "In Progress",
+    "percent": 50
   },
   "integrity": {
     "ok": true,
-    "checked": 3652,
+    "checked": 3779,
     "legacy": 0,
     "bad": 0
   }

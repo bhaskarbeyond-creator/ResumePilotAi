@@ -72,7 +72,7 @@ const FacebookAuthSettings = () => {
     }
 
     return (
-        <form onSubmit={handleSave} className="space-y-6">
+        <form onSubmit={handleSave} className="card bs-card-executive admin-card space-y-6">
             {statusMessage && (
                 <div className={`p-4 rounded-lg flex items-center justify-between text-sm ${
                     statusMessage.type === 'success' ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-red-50 border border-red-200 text-red-800'

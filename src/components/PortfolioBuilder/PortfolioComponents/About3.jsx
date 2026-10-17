@@ -154,7 +154,7 @@ const About3 = {
         };
 
         return (
-            <div className={`bg-black relative py-24 px-6 overflow-hidden min-h-screen`} style={{ backgroundColor: '#000000' }}>
+    <div className="container py-4 row" className={`bg-black relative py-24 px-6 overflow-hidden min-h-screen`} style={{ backgroundColor: '#000000' }}>
                 {/* Animated Grid Background */}
                 <div className="absolute inset-0 opacity-20">
                     <div

@@ -46,7 +46,7 @@ export function Section({ id, title, show, children, className, headingClassName
     if (!show) return null;
     return (
         <section id={id} className={className} aria-labelledby={title ? `${id}-title` : undefined}>
-            {eyebrow ? <p className="webcv-eyebrow">{eyebrow}</p> : null}
+            {eyebrow ? <p className="card bs-card-executive webcv-eyebrow">{eyebrow}</p> : null}
             {title ? <h2 id={`${id}-title`} className={headingClassName}>{title}</h2> : null}
             {children}
         </section>

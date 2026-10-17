@@ -4,3 +4,7 @@ import { getWebsiteData } from '../services/api/platform';
 export async function Analytics() {
     return getWebsiteData();
 }
+
+// bs-component-foundation
+
+export const AnalyticsContainer = () => <div className="container-fluid d-none bs-analytics" />;

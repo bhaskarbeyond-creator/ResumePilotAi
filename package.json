@@ -159,6 +159,7 @@
     "@tiptap/starter-kit": "^3.4.4",
     "@types/dompurify": "^3.0.5",
     "axios": "1.19.0",
+    "bootstrap": "^5.3.8",
     "dompurify": "^3.2.7",
     "downloadjs": "^1.4.7",
     "firebase": "12.17.1",
@@ -205,7 +206,8 @@
     "sass-embedded": "^1.89.2",
     "sharp": "^0.35.4",
     "typescript": "^5.9.3",
-    "vite": "8.2.1"
+    "vite": "8.2.1",
+    "vitest": "^5.0.5"
   },
   "overrides": {
     "uuid": "11.1.1",

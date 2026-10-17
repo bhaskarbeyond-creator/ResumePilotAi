@@ -23,7 +23,7 @@ export default function SmartSkills({ skills = [], theme = {}, title = 'Skills' 
   if (!normalized.length) return null;
 
   return (
-    <section className="smart-section smart-skills-section">
+    <section className="container-fluid bs-container-fluid-adaptive smart-section smart-skills-section">
       <h3 className={`smart-section-title ${dividerClass}`}>
         <span className="smart-section-title__text">{title}</span>
         <span className="smart-section-title__line" />

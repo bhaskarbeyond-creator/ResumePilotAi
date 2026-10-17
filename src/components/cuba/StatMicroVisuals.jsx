@@ -67,14 +67,14 @@ export const ResumeProgressBar = ({ count, target = 5, className = '' }) => {
     const safeCount = Number.isFinite(count) ? Math.max(0, count) : 0;
     const pct = Math.min(100, Math.round((safeCount / Math.max(1, target)) * 100));
     return (
-        <div className={cx('w-full', className)} data-testid="cuba-resume-progress">
+        <div className={cx('progress w-full', className)} data-testid="cuba-resume-progress">
             <div
                 role="progressbar"
                 aria-label={`Active resumes: ${safeCount} of ${target} workspace slots`}
                 aria-valuemin={0}
                 aria-valuemax={target}
                 aria-valuenow={Math.min(safeCount, target)}
-                className="h-1.5 w-full overflow-hidden rounded-full"
+                className="progress-bar h-1.5 w-full overflow-hidden rounded-full"
                 style={{ backgroundColor: 'var(--cuba-line)' }}
             >
                 <div
@@ -98,7 +98,7 @@ export const PipelineStepper = ({ applied = 0, className = '' }) => {
     const reached = Number.isFinite(applied) && applied > 0 ? 1 : 0;
     return (
         <ol
-            className={cx('flex flex-wrap items-center gap-x-1 gap-y-0.5', className)}
+            className={cx('badge rounded-pill bs-pipeline-stepper flex flex-wrap items-center gap-x-1 gap-y-0.5', className)}
             aria-label="Application pipeline stages"
             data-testid="cuba-pipeline-stepper"
         >

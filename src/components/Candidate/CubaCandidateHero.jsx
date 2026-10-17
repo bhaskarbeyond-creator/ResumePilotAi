@@ -127,7 +127,7 @@ const CubaCandidateHero = ({ displayName = 'Candidate', onNavigate }) => {
                     data-testid="cuba-api-reconnect"
                     role="status"
                     aria-live="polite"
-                    className="flex items-center gap-3 rounded-[14px] border border-amber-300/80 bg-amber-50/90 px-4 py-3 text-sm font-semibold text-amber-900 shadow-[0_6px_18px_-8px_rgba(217,119,6,0.45)] dark:border-amber-400/40 dark:bg-amber-500/10 dark:text-amber-100"
+                    className="alert alert-warning d-flex align-items-center gap-3 border-warning-subtle bg-warning-subtle text-warning-emphasis shadow-sm flex items-center gap-3 rounded-[14px] border border-amber-300/80 bg-amber-50/90 px-4 py-3 text-sm font-semibold text-amber-900 shadow-[0_6px_18px_-8px_rgba(217,119,6,0.45)] dark:border-amber-400/40 dark:bg-amber-500/10 dark:text-amber-100"
                 >
                     <FiRefreshCw className="h-4 w-4 shrink-0 animate-spin" aria-hidden="true" />
                     <span>

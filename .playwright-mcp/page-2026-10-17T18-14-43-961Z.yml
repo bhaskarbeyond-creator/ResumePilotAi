@@ -1,0 +1,132 @@
+- generic [ref=f59e3]:
+  - complementary "Main navigation" [ref=f59e4]:
+    - generic [ref=f59e5]:
+      - link "IM IME365" [ref=f59e6] [cursor=pointer]:
+        - /url: /dashboard
+        - generic [ref=f59e7]: IM
+        - generic [ref=f59e8]: IME365
+      - button "Collapse sidebar" [ref=f59e9]
+    - navigation [ref=f59e13]:
+      - list [ref=f59e14]:
+        - listitem [ref=f59e15]:
+          - link "Overview" [ref=f59e16] [cursor=pointer]:
+            - /url: /dashboard
+        - listitem [ref=f59e23]:
+          - link "Resumes" [ref=f59e24] [cursor=pointer]:
+            - /url: /dashboard/resumes
+        - listitem [ref=f59e29]:
+          - link "ATS Score" [ref=f59e30] [cursor=pointer]:
+            - /url: /dashboard/ats-score
+        - listitem [ref=f59e34]:
+          - link "Jobs" [ref=f59e35] [cursor=pointer]:
+            - /url: /dashboard/jobs
+        - listitem [ref=f59e40]:
+          - link "Interviews" [ref=f59e41] [cursor=pointer]:
+            - /url: /dashboard/interviews
+        - listitem [ref=f59e46]:
+          - link "Cover Letters" [ref=f59e47] [cursor=pointer]:
+            - /url: /dashboard/cover-letters
+        - listitem [ref=f59e51]:
+          - link "Portfolio" [ref=f59e52] [cursor=pointer]:
+            - /url: /dashboard/portfolio
+        - listitem [ref=f59e57]:
+          - link "AI Assistant" [ref=f59e58] [cursor=pointer]:
+            - /url: /dashboard/ai
+        - listitem [ref=f59e63]:
+          - link "Messages" [ref=f59e64] [cursor=pointer]:
+            - /url: /dashboard/messages
+    - generic [ref=f59e68]:
+      - list [ref=f59e69]:
+        - listitem [ref=f59e70]:
+          - link "Settings" [ref=f59e71] [cursor=pointer]:
+            - /url: /dashboard/settings
+      - generic [ref=f59e76]:
+        - generic [ref=f59e77]: AM
+        - generic [ref=f59e78]:
+          - paragraph [ref=f59e79]: Alex Morgan
+          - paragraph [ref=f59e80]: candidate@ime365.com
+        - button "Sign out" [ref=f59e81]
+  - generic [ref=f59e85]:
+    - banner [ref=f59e86]:
+      - searchbox "Search" [ref=f59e92]
+      - button "Notifications" [ref=f59e94]
+    - main [ref=f59e98]:
+      - generic [ref=f59e99]:
+        - generic [ref=f59e100]:
+          - heading "Good evening, Alex Morgan! 👋" [level=1] [ref=f59e101]
+          - paragraph [ref=f59e102]: Here's an overview of your career progress.
+        - generic [ref=f59e103]:
+          - link "— Resumes" [ref=f59e104] [cursor=pointer]:
+            - /url: /dashboard/resumes
+            - generic [ref=f59e111]:
+              - generic [ref=f59e112]: —
+              - generic [ref=f59e116]: Resumes
+          - link "— Applications" [ref=f59e120] [cursor=pointer]:
+            - /url: /dashboard/jobs
+            - generic [ref=f59e127]:
+              - generic [ref=f59e128]: —
+              - generic [ref=f59e132]: Applications
+          - link "— Interviews" [ref=f59e136] [cursor=pointer]:
+            - /url: /dashboard/interviews
+            - generic [ref=f59e143]:
+              - generic [ref=f59e144]: —
+              - generic [ref=f59e148]: Interviews
+          - link "— ATS Scores" [ref=f59e152] [cursor=pointer]:
+            - /url: /dashboard/ats
+            - generic [ref=f59e158]:
+              - generic [ref=f59e159]: —
+              - generic [ref=f59e163]: ATS Scores
+        - generic [ref=f59e167]:
+          - heading "Quick Actions" [level=2] [ref=f59e168]
+          - generic [ref=f59e169]:
+            - link "Create Resume Build a professional resume" [ref=f59e170] [cursor=pointer]:
+              - /url: /build-resume
+              - generic [ref=f59e175]:
+                - generic [ref=f59e176]: Create Resume
+                - generic [ref=f59e177]: Build a professional resume
+            - link "Check ATS Score Analyze resume compatibility" [ref=f59e180] [cursor=pointer]:
+              - /url: /dashboard/ats
+              - generic [ref=f59e184]:
+                - generic [ref=f59e185]: Check ATS Score
+                - generic [ref=f59e186]: Analyze resume compatibility
+            - link "Practice Interview AI-powered mock interview" [ref=f59e189] [cursor=pointer]:
+              - /url: /dashboard/interviews
+              - generic [ref=f59e194]:
+                - generic [ref=f59e195]: Practice Interview
+                - generic [ref=f59e196]: AI-powered mock interview
+            - link "Browse Jobs Find matching opportunities" [ref=f59e199] [cursor=pointer]:
+              - /url: /dashboard/jobs
+              - generic [ref=f59e204]:
+                - generic [ref=f59e205]: Browse Jobs
+                - generic [ref=f59e206]: Find matching opportunities
+        - generic [ref=f59e209]:
+          - generic [ref=f59e210]:
+            - heading "Recent Activity" [level=3] [ref=f59e212]
+            - generic [ref=f59e218]:
+              - paragraph [ref=f59e222]: No recent activity
+              - paragraph [ref=f59e223]: Your activity will appear here as you use the platform.
+              - link "Create your first resume" [ref=f59e224] [cursor=pointer]:
+                - /url: /build-resume
+          - generic [ref=f59e225]:
+            - heading "Getting Started" [level=3] [ref=f59e227]
+            - generic [ref=f59e232]:
+              - link "Create your first resume Choose from 51+ professional templates" [ref=f59e233] [cursor=pointer]:
+                - /url: /build-resume
+                - generic [ref=f59e236]:
+                  - generic [ref=f59e237]: Create your first resume
+                  - generic [ref=f59e238]: Choose from 51+ professional templates
+              - link "Check your ATS score See how your resume performs with ATS" [ref=f59e239] [cursor=pointer]:
+                - /url: /dashboard/ats
+                - generic [ref=f59e242]:
+                  - generic [ref=f59e243]: Check your ATS score
+                  - generic [ref=f59e244]: See how your resume performs with ATS
+              - link "Practice an interview Get AI-powered feedback on your responses" [ref=f59e245] [cursor=pointer]:
+                - /url: /dashboard/interviews
+                - generic [ref=f59e248]:
+                  - generic [ref=f59e249]: Practice an interview
+                  - generic [ref=f59e250]: Get AI-powered feedback on your responses
+              - link "Explore job opportunities Find and track jobs that match your profile" [ref=f59e251] [cursor=pointer]:
+                - /url: /dashboard/jobs
+                - generic [ref=f59e254]:
+                  - generic [ref=f59e255]: Explore job opportunities
+                  - generic [ref=f59e256]: Find and track jobs that match your profile

@@ -449,7 +449,7 @@ export default function BlogEditor({ user: propUser }) {
 
   if (loading) {
     return (
-      <div className="rp-public-site">
+      <div className="rp-public-site container-fluid p-0">
         <HomepageNavbar />
         <div style={{ minHeight: '70vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
           <Spinner inline />
@@ -461,7 +461,7 @@ export default function BlogEditor({ user: propUser }) {
   }
 
   return (
-    <div className="rp-public-site" style={{ background: '#f8fafd', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div className="rp-public-site container-fluid p-0" style={{ background: '#f8fafd', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       
       {/* 1. Studio Header Bar */}
       <header 

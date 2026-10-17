@@ -1,0 +1,54 @@
+{
+  "backupType": "PRE_REFACTOR_COMPREHENSIVE_SNAPSHOT",
+  "timestamp": "2026-10-17T17:18:00.000Z",
+  "localTime": "2026-10-17T22:48:00+05:30",
+  "git": {
+    "localHeadSha": "bc4ed11134d666935b70a34389b4e0dfec1fdd0d",
+    "workingTreeCommitSha": "98eca34de853c58cbc6971b67f6fb30800bc9d1b",
+    "gitTag": "pre-refactor-backup-20261017-2246",
+    "branch": "arena/f4651d36-resumepilotai"
+  },
+  "database": {
+    "engine": "MariaDB 10.4.32",
+    "databaseName": "ai_resume_builder",
+    "tableCount": 80,
+    "rowCount": 4137,
+    "migrationVersion": "026",
+    "schemaChecksum": "c5551fa9830a684c3a37b812cdd030a7e4028af9b82803ed5aee92a5bbb62f26",
+    "backupFile": "database-backup.sql.gz",
+    "sha256": "7f61b4bfb67a3077ae5488aec3f999a01598193f8437b77f9f0653507456af71"
+  },
+  "artifacts": [
+    {
+      "name": "src-backup.zip",
+      "description": "Complete source code of React frontend (src/ directory)",
+      "sizeBytes": 24130197,
+      "sha256": "D2D5D4D15B297F928C8789CD350CC8A93391259168FA6362243DA441113247AA"
+    },
+    {
+      "name": "backend-backup.zip",
+      "description": "Complete source code of Node.js Express backend (backend/ directory excluding node_modules)",
+      "sizeBytes": 3320963,
+      "sha256": "CFF61E812DC7E399D5BFE2ED86196FD06E1F324F9EC860F5F294C66986F9A279"
+    },
+    {
+      "name": "git-diff.patch",
+      "description": "Complete git diff patch capturing all modified working-tree changes",
+      "sizeBytes": 7538342,
+      "sha256": "EEBC8DC4BDF4882DED1F6DD67912EE4CABABC522E1A2B23696775EC06C3EBC49"
+    },
+    {
+      "name": "database-backup.sql.gz",
+      "description": "Compressed SQL dump of authoritative MariaDB production database",
+      "sizeBytes": 2705266,
+      "sha256": "7F61B4BFB67A3077AE5488AEC3F999A01598193F8437B77F9F0653507456AF71"
+    }
+  ],
+  "restorationInstructions": {
+    "git": "To restore working tree from git tag: git checkout pre-refactor-backup-20261017-2246",
+    "patch": "To apply patch: git apply backups/pre-refactor-20261017/git-diff.patch",
+    "frontend": "Extract backups/pre-refactor-20261017/src-backup.zip into project root",
+    "backend": "Extract backups/pre-refactor-20261017/backend-backup.zip into backend/",
+    "database": "gunzip < backups/pre-refactor-20261017/database-backup.sql.gz | mysql -u root -p ai_resume_builder"
+  }
+}

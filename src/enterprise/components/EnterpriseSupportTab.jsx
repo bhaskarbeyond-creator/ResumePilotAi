@@ -119,7 +119,7 @@ export default function EnterpriseSupportTab() {
         </div>
       )}
       {actionError && (
-        <div className="enterprise-card" role="alert">
+        <div className="card bs-card-executive enterprise-card" role="alert">
           <div className="enterprise-error-row">
             <span className="enterprise-error-icon" aria-hidden="true">⚠</span>
             <div><strong>Support grant action failed</strong><p className="text-muted">{actionError}</p></div>
@@ -127,8 +127,8 @@ export default function EnterpriseSupportTab() {
         </div>
       )}
 
-      <div className="enterprise-card">
-        <div className="enterprise-card-header-flex">
+      <div className="card bs-card-executive enterprise-card">
+        <div className="card bs-card-executive enterprise-card-header-flex">
           <div>
             <h2 className="enterprise-tab-title">
               Break-Glass & Support Access
@@ -140,7 +140,7 @@ export default function EnterpriseSupportTab() {
           </div>
           <button
             type="button"
-            className="enterprise-button enterprise-button-primary"
+            className="btn btn-primary enterprise-button enterprise-button-primary"
             onClick={() => setShowModal(true)}
           >
             <FiPlus aria-hidden="true" /> Grant Support Access
@@ -180,8 +180,8 @@ export default function EnterpriseSupportTab() {
               {filteredGrants.length === 0 ? (
                 <p className="enterprise-empty">No grants match this view.</p>
               ) : (
-                <div className="enterprise-table-wrapper">
-                  <table className="enterprise-table">
+                <div className="table enterprise-table table-hover align-middle-wrapper">
+                  <table className="table enterprise-table table-hover align-middle">
                     <thead>
                       <tr>
                         <th>Support Subject</th>
@@ -204,7 +204,7 @@ export default function EnterpriseSupportTab() {
                             <td>
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                                 {(grant.scopes || []).map(scope => (
-                                  <span key={scope} className="enterprise-pill enterprise-pill-secondary" style={{ fontSize: '0.7rem', padding: '2px 6px' }}>{scope}</span>
+                                  <span key={scope} className="badge rounded-pill enterprise-pill enterprise-pill-secondary" style={{ fontSize: '0.7rem', padding: '2px 6px' }}>{scope}</span>
                                 ))}
                               </div>
                             </td>
@@ -227,7 +227,7 @@ export default function EnterpriseSupportTab() {
                               {grant.status === 'ACTIVE' && !expired && (
                                 <button
                                   type="button"
-                                  className="enterprise-button enterprise-button-danger enterprise-button-sm"
+                                  className="btn btn-danger enterprise-button enterprise-button-danger enterprise-button-sm"
                                   onClick={() => handleRevoke(grant.id)}
                                 >
                                   Revoke Immediately
@@ -247,16 +247,16 @@ export default function EnterpriseSupportTab() {
       </div>
 
       {showModal && (
-        <div className="enterprise-modal-backdrop" role="presentation" onClick={() => !busy && setShowModal(false)}>
-          <div className="enterprise-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-            <div className="enterprise-modal-header">
+        <div className="modal-content enterprise-modal-backdrop" role="presentation" onClick={() => !busy && setShowModal(false)}>
+          <div className="modal-content enterprise-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content enterprise-modal-header">
               <h3>Authorize Temporary Support Grant</h3>
               <button type="button" className="enterprise-button-icon" onClick={() => setShowModal(false)} disabled={busy}>
                 <FiX />
               </button>
             </div>
             <form onSubmit={handleGrant}>
-              <div className="enterprise-modal-body">
+              <div className="modal-content enterprise-modal-body">
                 <div className="enterprise-form-group">
                   <label htmlFor="grant-subject">Support Engineer Identity Code</label>
                   <input
@@ -348,9 +348,9 @@ export default function EnterpriseSupportTab() {
                   )}
                 </div>
               </div>
-              <div className="enterprise-modal-footer">
-                <button type="button" className="enterprise-button enterprise-button-secondary" onClick={() => setShowModal(false)} disabled={busy}>Cancel</button>
-                <button type="submit" className="enterprise-button enterprise-button-primary" disabled={busy}>
+              <div className="modal-content enterprise-modal-footer">
+                <button type="button" className="btn btn-outline-secondary enterprise-button enterprise-button-secondary" onClick={() => setShowModal(false)} disabled={busy}>Cancel</button>
+                <button type="submit" className="btn btn-primary enterprise-button enterprise-button-primary" disabled={busy}>
                   {busy ? 'Issuing…' : 'Issue Timed Grant'}
                 </button>
               </div>

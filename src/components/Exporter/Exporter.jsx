@@ -84,7 +84,7 @@ export default function Exporter({ resumeName }) {
     }
 
     if (status === 'loading') {
-        return <main role="status" className="flex min-h-screen items-center justify-center bg-white text-slate-500">Loading resume…</main>;
+        return <main role="status" className="container-fluid min-h-screen d-flex items-center justify-center bg-white text-slate-500">Loading resume…</main>;
     }
 
     return (

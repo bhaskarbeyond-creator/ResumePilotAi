@@ -139,7 +139,7 @@ const Experience4 = {
         const theme = themes[terminalTheme] || themes.matrix;
 
         return (
-            <div className="bg-black relative py-24 px-6 overflow-hidden min-h-screen" style={{ backgroundColor: '#000000' }}>
+            <div className="card bs-card-executive bg-black relative py-24 px-6 overflow-hidden min-h-screen" style={{ backgroundColor: '#000000' }}>
                 {/* Scanline Effect */}
                 <div className="absolute inset-0 pointer-events-none">
                     <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/5 to-transparent animate-pulse opacity-20" />

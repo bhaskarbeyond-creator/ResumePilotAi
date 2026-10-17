@@ -134,7 +134,7 @@ const Hero4 = {
         return (
             <div className={`${backgroundColor} relative min-h-screen overflow-hidden`}>
                 {/* Animated Grid Background */}
-                <div className="absolute inset-0 opacity-20">
+                <div className="card bs-card-executive absolute inset-0 opacity-20">
                     <div
                         className="absolute inset-0"
                         style={{

@@ -72,7 +72,7 @@ class Toasts extends Component {
             },
         };
         return (
-            <div className="toast success">
+            <div className="card bs-card-executive toast success">
                 <div className="iconAnimation">
                     {/* <Lottie options={this.props.type == "Success" ? successOptions : this.props.type == "Name Changed" ? successOptions : this.props.type == "Password Changed" ? successOptions : this.props.type == "Delete" ? deleteOptions : this.props.type == "Error" ? errorOptions : this.props.type == "Download" ? downloadOptions : this.props.type == "SuccessEmail" && successOptions}
                         height={this.props.type == "Delete" ? 70 : 50}

@@ -224,7 +224,7 @@ export function EnterpriseRoleSimulationBanner({ tenant, simulatedRole }) {
       role="status"
       aria-live="polite"
       data-testid="enterprise-role-simulation-banner"
-      className="enterprise-role-simulation-banner"
+      className="alert alert-info card bs-card-executive enterprise-role-simulation-banner"
     >
       <div className="enterprise-role-simulation-copy">
         <span className="enterprise-role-simulation-icon" aria-hidden="true">🛡️</span>

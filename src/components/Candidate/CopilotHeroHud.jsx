@@ -55,7 +55,7 @@ const CopilotHeroHud = ({ insight = '', onNavigate, displayName = 'Candidate', c
             data-testid="cuba-copilot-hud"
             aria-label="AI Copilot"
             className={cx(
-                'cuba-glass flex flex-wrap items-center gap-x-4 gap-y-3 rounded-cuba-lg border border-cuba-line px-3.5 py-3 shadow-cuba-sm transition-shadow duration-200 ease-cuba hover:shadow-cuba-md',
+                'card bs-card-executive cuba-glass flex flex-wrap items-center gap-x-4 gap-y-3 rounded-cuba-lg border border-cuba-line px-3.5 py-3 shadow-cuba-sm transition-shadow duration-200 ease-cuba hover:shadow-cuba-md',
                 className,
             )}
         >
@@ -93,8 +93,8 @@ const CopilotHeroHud = ({ insight = '', onNavigate, displayName = 'Candidate', c
                         data-testid={`cuba-copilot-cta-${id}`}
                         onClick={(event) => go(event, to)}
                         className={variant === 'primary'
-                            ? 'cuba-focusable relative inline-flex items-center gap-2 rounded-full cuba-btn-primary px-4 py-2 text-xs font-bold tracking-tight'
-                            : 'cuba-focusable inline-flex items-center gap-1.5 rounded-full border border-cuba-line bg-cuba-card px-3.5 py-2 text-xs font-bold text-cuba-ink transition-colors hover:bg-cuba-primary-soft'}
+                            ? 'btn btn-primary rounded-pill cuba-focusable relative inline-flex items-center gap-2 cuba-btn-primary px-4 py-2 text-xs font-bold tracking-tight shadow-sm'
+                            : 'btn btn-outline-secondary rounded-pill cuba-focusable inline-flex items-center gap-1.5 border border-cuba-line bg-cuba-card px-3.5 py-2 text-xs font-bold text-cuba-ink transition-colors hover:bg-cuba-primary-soft'}
                     >
                         {variant === 'primary' ? (
                             <>

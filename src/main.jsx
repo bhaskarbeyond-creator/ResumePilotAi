@@ -3,9 +3,11 @@ import React, { Suspense, lazy, useState, useEffect, useRef, createContext } fro
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { isSafeInternalPath, loginPathWithNext, getPostLoginRedirectPath, clearPostLoginRedirectPath } from './utils/safeInternalPath';
+import 'bootstrap/dist/css/bootstrap.min.css';
 import './tailwind.css';
 import './index.scss';
 import './index.css';
+import './styles/bootstrap-dashboard.css';
 import './components/Marketing/public-site.css';
 // DIR-056 SUB-056-5: the ONE print contract. Imported here so `@media print`
 // applies globally (Ctrl+P on any page), and ALSO imported with `?raw` by

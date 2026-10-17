@@ -1,0 +1,318 @@
+@import 'tailwindcss';
+
+/*
+ * IME365 Design System — "Meridian"
+ * A clean, enterprise-grade design system built from scratch.
+ * No legacy code, colors, or structural patterns reused.
+ */
+
+@theme {
+  /* ─── Brand Colors ─── */
+  --color-brand-50: #eef2ff;
+  --color-brand-100: #dbe4ff;
+  --color-brand-200: #bfcfff;
+  --color-brand-300: #93aeff;
+  --color-brand-400: #6183fc;
+  --color-brand-500: #3b5cf8;
+  --color-brand-600: #2540ed;
+  --color-brand-700: #1d30d9;
+  --color-brand-800: #1e29b0;
+  --color-brand-900: #1e278b;
+  --color-brand-950: #161a55;
+
+  /* ─── Neutral Palette ─── */
+  --color-neutral-25: #fcfcfd;
+  --color-neutral-50: #f8f9fb;
+  --color-neutral-100: #f0f1f5;
+  --color-neutral-200: #e2e4ea;
+  --color-neutral-300: #cacdd6;
+  --color-neutral-400: #a1a6b4;
+  --color-neutral-500: #7c8293;
+  --color-neutral-600: #636878;
+  --color-neutral-700: #515562;
+  --color-neutral-800: #3e414c;
+  --color-neutral-900: #2d2f37;
+  --color-neutral-950: #1a1b21;
+
+  /* ─── Semantic Colors ─── */
+  --color-success-50: #ecfdf5;
+  --color-success-100: #d1fae5;
+  --color-success-500: #10b981;
+  --color-success-600: #059669;
+  --color-success-700: #047857;
+
+  --color-warning-50: #fffbeb;
+  --color-warning-100: #fef3c7;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+  --color-warning-700: #b45309;
+
+  --color-error-50: #fef2f2;
+  --color-error-100: #fee2e2;
+  --color-error-500: #ef4444;
+  --color-error-600: #dc2626;
+  --color-error-700: #b91c1c;
+
+  --color-info-50: #eff6ff;
+  --color-info-100: #dbeafe;
+  --color-info-500: #3b82f6;
+  --color-info-600: #2563eb;
+  --color-info-700: #1d4ed8;
+
+  /* ─── Surface & Background Roles ─── */
+  --color-canvas: #f8f9fb;
+  --color-surface: #ffffff;
+  --color-surface-elevated: #ffffff;
+  --color-surface-overlay: rgba(255, 255, 255, 0.96);
+
+  /* ─── Semantic Aliases & Accents ─── */
+  --color-accent: #2540ed;
+  --color-accent-soft: #eef2ff;
+  --color-canvas-soft: #f0f1f5;
+  --color-edge: #e2e4ea;
+  --color-edge-strong: #cacdd6;
+
+  /* ─── Border ─── */
+  --color-border: #e2e4ea;
+  --color-border-subtle: #f0f1f5;
+  --color-border-strong: #cacdd6;
+
+  /* ─── Text Roles ─── */
+  --color-ink: #1a1b21;
+  --color-ink-secondary: #515562;
+  --color-ink-muted: #7c8293;
+  --color-ink-subtle: #a1a6b4;
+  --color-ink-on-brand: #ffffff;
+
+  /* ─── Typography ─── */
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+
+  /* ─── Spacing Scale ─── */
+  --spacing-0: 0;
+  --spacing-0-5: 0.125rem;
+  --spacing-1: 0.25rem;
+  --spacing-1-5: 0.375rem;
+  --spacing-2: 0.5rem;
+  --spacing-2-5: 0.625rem;
+  --spacing-3: 0.75rem;
+  --spacing-3-5: 0.875rem;
+  --spacing-4: 1rem;
+  --spacing-5: 1.25rem;
+  --spacing-6: 1.5rem;
+  --spacing-8: 2rem;
+  --spacing-10: 2.5rem;
+  --spacing-12: 3rem;
+  --spacing-16: 4rem;
+  --spacing-20: 5rem;
+  --spacing-24: 6rem;
+
+  /* ─── Content Widths ─── */
+  --width-content-sm: 640px;
+  --width-content-md: 768px;
+  --width-content-lg: 1024px;
+  --width-content-xl: 1280px;
+  --width-content-2xl: 1536px;
+
+  /* ─── Corner Radii ─── */
+  --radius-none: 0;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+  --radius-full: 9999px;
+
+  /* ─── Shadows ─── */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.18);
+  --shadow-dialog: 0 24px 48px -12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.04);
+
+  /* ─── Transitions ─── */
+  --duration-fast: 100ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+  --duration-slower: 500ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ─── Z-index Scale ─── */
+  --z-dropdown: 50;
+  --z-sticky: 100;
+  --z-overlay: 200;
+  --z-modal: 300;
+  --z-popover: 400;
+  --z-toast: 500;
+  --z-tooltip: 600;
+}
+
+/* ─── Base Styles ─── */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    border-color: var(--color-border);
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    color: var(--color-ink);
+    background-color: var(--color-canvas);
+    line-height: 1.6;
+  }
+
+  /* Accessible focus rings */
+  :focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-neutral-300);
+    border-radius: var(--radius-full);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-neutral-400);
+  }
+}
+
+/* ─── Utility Classes ─── */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .animation-delay-100 {
+    animation-delay: 100ms;
+  }
+
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .animation-delay-300 {
+    animation-delay: 300ms;
+  }
+}
+
+/* ─── Keyframes ─── */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes slide-in-bottom {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ─── Dark Mode Overrides ─── */
+.dark {
+  --color-canvas: #0b0d13;
+  --color-surface: #141722;
+  --color-surface-elevated: #1d2130;
+  --color-surface-overlay: rgba(20, 23, 34, 0.96);
+
+  --color-accent: #4f6ff8;
+  --color-accent-soft: rgba(79, 111, 248, 0.15);
+  --color-canvas-soft: #10131c;
+  --color-edge: #232838;
+  --color-edge-strong: #32394e;
+
+  --color-border: #232838;
+  --color-border-subtle: #191c28;
+  --color-border-strong: #353c52;
+
+  --color-ink: #f3f4f8;
+  --color-ink-secondary: #c0c6d6;
+  --color-ink-muted: #8e95aa;
+  --color-ink-subtle: #62697e;
+
+  --color-neutral-25: #0e1017;
+  --color-neutral-50: #141722;
+  --color-neutral-100: #1a1e2b;
+  --color-neutral-200: #262c3e;
+  --color-neutral-300: #373e56;
+  --color-neutral-400: #555f7e;
+  --color-neutral-500: #7c85a0;
+  --color-neutral-600: #a3abbf;
+  --color-neutral-700: #cbcfdc;
+  --color-neutral-800: #e5e7ee;
+  --color-neutral-900: #f4f5f8;
+  --color-neutral-950: #ffffff;
+}
+
+/* ─── Print Media Queries ─── */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
+

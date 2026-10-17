@@ -1,11 +1,11 @@
 {
   "active": true,
   "reason": "user-requested",
-  "note": "User explicitly instructed: stop developer here, delete all his directives. you handle this task independently. Match the live dashboard with the reference exactly 100%.",
+  "note": "User explicitly instructed: clear all directives in dev-lead on bridge. I will give him fresh tonight. stop him",
   "evidence": {
-    "note": "User explicitly instructed: stop developer here, delete all his directives. you handle this task independently. Match the live dashboard with the reference exactly 100%."
+    "note": "User explicitly instructed: clear all directives in dev-lead on bridge. I will give him fresh tonight. stop him"
   },
-  "startedAt": "2026-10-11T09:20:07.974Z",
+  "startedAt": "2026-10-17T07:32:00.000Z",
   "startedBy": "lead",
   "directiveId": null,
   "projectRoot": "D:\\xampp\\htdocs\\IME365"

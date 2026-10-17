@@ -349,7 +349,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
         </div>
       )}
       {actionError && (
-        <div className="enterprise-card" role="alert">
+        <div className="card bs-card-executive enterprise-card" role="alert">
           <div className="enterprise-error-row">
             <span className="enterprise-error-icon" aria-hidden="true">⚠</span>
             <div><strong>Member action failed</strong><p className="text-muted">{actionError}</p></div>
@@ -357,8 +357,8 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
         </div>
       )}
 
-      <div className="enterprise-card">
-        <div className="enterprise-card-header-flex">
+      <div className="card bs-card-executive enterprise-card">
+        <div className="card bs-card-executive enterprise-card-header-flex">
           <div>
             <h2 className="enterprise-tab-title">
               Users & IAM
@@ -371,7 +371,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
           <div className="enterprise-inline-actions" style={{ gap: '0.5rem' }}>
             <button
               type="button"
-              className="enterprise-button enterprise-button-secondary"
+              className="btn btn-outline-secondary enterprise-button enterprise-button-secondary"
               onClick={() => handleExport('csv')}
               disabled={filtered.length === 0}
               title="Export the current filtered member list"
@@ -380,7 +380,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
             </button>
             <button
               type="button"
-              className="enterprise-button enterprise-button-secondary"
+              className="btn btn-outline-secondary enterprise-button enterprise-button-secondary"
               onClick={() => handleExport('json')}
               disabled={filtered.length === 0}
             >
@@ -389,7 +389,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
             {canManageMembers && (
               <button
                 type="button"
-                className="enterprise-button enterprise-button-primary"
+                className="btn btn-primary enterprise-button enterprise-button-primary"
                 onClick={() => setShowInviteModal(true)}
               >
                 <FiUserPlus aria-hidden="true" /> Invite / Grant Access
@@ -457,13 +457,13 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
               {selectedRows.size} member{selectedRows.size === 1 ? '' : 's'} selected
             </span>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <button type="button" className="enterprise-button enterprise-button-secondary enterprise-button-sm" onClick={() => handleBulkAction('activate')} disabled={busy}>
+              <button type="button" className="btn btn-outline-secondary enterprise-button enterprise-button-secondary enterprise-button-sm" onClick={() => handleBulkAction('activate')} disabled={busy}>
                 <FiShield aria-hidden="true" /> Activate
               </button>
-              <button type="button" className="enterprise-button enterprise-button-secondary enterprise-button-sm" onClick={() => handleBulkAction('suspend')} disabled={busy}>
+              <button type="button" className="btn btn-outline-secondary enterprise-button enterprise-button-secondary enterprise-button-sm" onClick={() => handleBulkAction('suspend')} disabled={busy}>
                 <FiShieldOff aria-hidden="true" /> Suspend
               </button>
-              <button type="button" className="enterprise-button enterprise-button-danger enterprise-button-sm" onClick={() => handleBulkAction('remove')} disabled={busy}>
+              <button type="button" className="btn btn-danger enterprise-button enterprise-button-danger enterprise-button-sm" onClick={() => handleBulkAction('remove')} disabled={busy}>
                 <FiTrash2 aria-hidden="true" /> Remove
               </button>
             </div>
@@ -474,8 +474,8 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
           {filtered.length === 0 ? (
             <p className="enterprise-empty">No enterprise members match this view. Invite a teammate to begin.</p>
           ) : (
-            <div className="enterprise-table-wrapper">
-              <table className="enterprise-table">
+            <div className="table enterprise-table table-hover align-middle-wrapper">
+              <table className="table enterprise-table table-hover align-middle">
                 <thead>
                   <tr>
                     {canManageMembers && (
@@ -542,7 +542,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
                           {isCurrent && isOwner ? (
                             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                               <span
-                                className="enterprise-pill enterprise-pill-template"
+                                className="badge rounded-pill enterprise-pill enterprise-pill-template"
                                 title="Root Owner Authority: sovereign control over tenant lifecycle and policies"
                                 style={{ display: 'inline-flex', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 650 }}
                               >
@@ -583,12 +583,12 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
                                 <FiMail aria-hidden="true" /> {member.invitationEmail || 'no address'}
                               </small>
                               {member.invitationDeliveryState === 'DELIVERED' ? (
-                                <span className="enterprise-pill enterprise-pill-success" style={{ fontSize: '0.72rem', padding: '2px 6px' }}>
+                                <span className="badge rounded-pill enterprise-pill enterprise-pill-success" style={{ fontSize: '0.72rem', padding: '2px 6px' }}>
                                   ✓ Sent
                                 </span>
                               ) : member.invitationDeliveryState === 'DELIVERY_FAILED' ? (
                                 <span
-                                  className="enterprise-pill enterprise-pill-danger"
+                                  className="badge rounded-pill enterprise-pill enterprise-pill-danger"
                                   style={{ fontSize: '0.72rem', padding: '2px 6px', cursor: 'pointer' }}
                                   title="Click to retry invitation dispatch"
                                   onClick={() => handleResendInvitation(member)}
@@ -596,7 +596,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
                                   ⚠ Delivery Failed · Retry
                                 </span>
                               ) : member.invitationDeliveryState ? (
-                                <span className="enterprise-pill enterprise-pill-secondary" style={{ fontSize: '0.72rem', padding: '2px 6px' }}>
+                                <span className="badge rounded-pill enterprise-pill enterprise-pill-secondary" style={{ fontSize: '0.72rem', padding: '2px 6px' }}>
                                   {String(member.invitationDeliveryState).toLowerCase().replace(/_/g, ' ')}
                                 </span>
                               ) : null}
@@ -606,7 +606,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
                           )}
                         </td>
                         <td className="text-right">
-                          <div className="enterprise-table-actions">
+                          <div className="table enterprise-table table-hover align-middle-actions">
                             <button
                               type="button"
                               className="enterprise-button-icon"
@@ -672,16 +672,16 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
       </div>
 
       {showInviteModal && (
-        <div className="enterprise-modal-backdrop" role="presentation" onClick={() => !busy && setShowInviteModal(false)}>
-          <div className="enterprise-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-            <div className="enterprise-modal-header">
+        <div className="modal-content enterprise-modal-backdrop" role="presentation" onClick={() => !busy && setShowInviteModal(false)}>
+          <div className="modal-content enterprise-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content enterprise-modal-header">
               <h3>Invite to Enterprise</h3>
               <button type="button" className="enterprise-button-icon" onClick={() => setShowInviteModal(false)} disabled={busy}>
                 <FiX />
               </button>
             </div>
             <form onSubmit={handleInvite}>
-              <div className="enterprise-modal-body">
+              <div className="modal-content enterprise-modal-body">
                 <div className="enterprise-form-group">
                   <label>Access mode</label>
                   <div className="enterprise-checkbox-list">
@@ -779,9 +779,9 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
                   <small className="text-muted">The workspace this member lands in when they open the enterprise console.</small>
                 </div>
               </div>
-              <div className="enterprise-modal-footer">
-                <button type="button" className="enterprise-button enterprise-button-secondary" onClick={() => setShowInviteModal(false)} disabled={busy}>Cancel</button>
-                <button type="submit" className="enterprise-button enterprise-button-primary" disabled={busy}>
+              <div className="modal-content enterprise-modal-footer">
+                <button type="button" className="btn btn-outline-secondary enterprise-button enterprise-button-secondary" onClick={() => setShowInviteModal(false)} disabled={busy}>Cancel</button>
+                <button type="submit" className="btn btn-primary enterprise-button enterprise-button-primary" disabled={busy}>
                   {busy ? 'Working…' : inviteMode === 'INVITE' ? 'Send Invitation' : 'Grant Access'}
                 </button>
               </div>
@@ -791,15 +791,15 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
       )}
 
       {detailMember && (
-        <div className="enterprise-modal-backdrop" role="presentation" onClick={() => setDetailMember(null)}>
-          <div className="enterprise-modal enterprise-modal-lg" role="dialog" aria-modal="true" aria-label={`Membership details for ${detailMember.principalId}`} onClick={(e) => e.stopPropagation()}>
-            <div className="enterprise-modal-header">
+        <div className="modal-content enterprise-modal-backdrop" role="presentation" onClick={() => setDetailMember(null)}>
+          <div className="modal-content enterprise-modal enterprise-modal-lg" role="dialog" aria-modal="true" aria-label={`Membership details for ${detailMember.principalId}`} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content enterprise-modal-header">
               <h3>Membership Details</h3>
               <button type="button" className="enterprise-button-icon" onClick={() => setDetailMember(null)} aria-label="Close membership details">
                 <FiX />
               </button>
             </div>
-            <div className="enterprise-modal-body">
+            <div className="modal-content enterprise-modal-body">
               <div className="enterprise-two-column-grid">
                 <div className="enterprise-form-group">
                   <label>Principal</label>
@@ -818,7 +818,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
                 </div>
               </div>
 
-              <div className="enterprise-card" style={{ padding: '16px', background: 'var(--ep-slate-25)', border: '1px solid var(--enterprise-border)', marginBottom: '16px' }}>
+              <div className="card bs-card-executive enterprise-card" style={{ padding: '16px', background: 'var(--ep-slate-25)', border: '1px solid var(--enterprise-border)', marginBottom: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                   <label htmlFor="detail-role" style={{ margin: 0, fontWeight: 700, fontSize: '0.86rem', color: 'var(--enterprise-ink)' }}>
                     Access Level & Role Management
@@ -930,7 +930,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
                 <label>Effective Permissions <small className="text-muted">(resolved from the live server role definitions)</small></label>
                 <div className="enterprise-inline-actions" style={{ flexWrap: 'wrap', gap: '0.35rem' }} aria-label="Effective permissions">
                   {effectivePermissions(detailMember).map(permission => (
-                    <span key={permission} className="enterprise-pill enterprise-pill-secondary">{permission}</span>
+                    <span key={permission} className="badge rounded-pill enterprise-pill enterprise-pill-secondary">{permission}</span>
                   ))}
                   {effectivePermissions(detailMember).length === 0 && (
                     <small className="text-muted">No permissions are granted by the assigned roles.</small>
@@ -938,17 +938,17 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
                 </div>
               </div>
             </div>
-            <div className="enterprise-modal-footer">
+            <div className="modal-content enterprise-modal-footer">
               {onInspectActivity && (
                 <button
                   type="button"
-                  className="enterprise-button enterprise-button-secondary"
+                  className="btn btn-outline-secondary enterprise-button enterprise-button-secondary"
                   onClick={() => { const id = detailMember.principalId; setDetailMember(null); onInspectActivity(id); }}
                 >
                   <FiActivity aria-hidden="true" /> View Audit Activity
                 </button>
               )}
-              <button type="button" className="enterprise-button enterprise-button-primary" onClick={() => setDetailMember(null)}>Close</button>
+              <button type="button" className="btn btn-primary enterprise-button enterprise-button-primary" onClick={() => setDetailMember(null)}>Close</button>
             </div>
           </div>
         </div>

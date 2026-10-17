@@ -154,7 +154,7 @@ const LanguagesStep = ({ resumeData, updateResumeData, onNavigate }) => {
         >
             <div className="space-y-4">
                 {/* Languages */}
-                <div className="rounded-xl border border-[var(--cuba-line)] bg-white p-4 sm:p-5 shadow-2xs space-y-3">
+                <div className="card bs-card-executive rounded-xl border border-[var(--cuba-line)] bg-white p-4 sm:p-5 shadow-2xs space-y-3">
                     <h2 className="text-sm font-bold text-[var(--cuba-ink)]">Languages you speak</h2>
 
                     {languages.length === 0 && (

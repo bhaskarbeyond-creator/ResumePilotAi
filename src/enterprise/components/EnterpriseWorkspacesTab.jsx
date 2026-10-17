@@ -69,21 +69,21 @@ function WorkspaceMembersDrawer({ workspace, onClose }) {
   };
 
   return (
-    <div className="enterprise-modal-backdrop" role="presentation" onClick={onClose}>
+    <div className="modal-content enterprise-modal-backdrop" role="presentation" onClick={onClose}>
       {confirmConfig && (
         <EnterpriseConfirmModal
           {...confirmConfig}
           onCancel={() => setConfirmConfig(null)}
         />
       )}
-      <div className="enterprise-modal enterprise-modal-lg" role="dialog" aria-modal="true" aria-label={`Members of ${workspace.name}`} onClick={(e) => e.stopPropagation()}>
-        <div className="enterprise-modal-header">
+      <div className="modal-content enterprise-modal enterprise-modal-lg" role="dialog" aria-modal="true" aria-label={`Members of ${workspace.name}`} onClick={(e) => e.stopPropagation()}>
+        <div className="modal-content enterprise-modal-header">
           <h3><FiUsers aria-hidden="true" /> Workspace Members — {workspace.name}</h3>
           <button type="button" className="enterprise-button-icon" onClick={onClose} aria-label="Close members panel">
             <FiX />
           </button>
         </div>
-        <div className="enterprise-modal-body">
+        <div className="modal-content enterprise-modal-body">
           {actionError && (
             <div role="alert" className="enterprise-error-row" style={{ marginBottom: '0.75rem' }}>
               <span className="enterprise-error-icon" aria-hidden="true">⚠</span>
@@ -106,7 +106,7 @@ function WorkspaceMembersDrawer({ workspace, onClose }) {
                   </option>
                 ))}
               </select>
-              <button type="submit" className="enterprise-button enterprise-button-primary enterprise-button-sm" disabled={!selectedPrincipal || busy}>
+              <button type="submit" className="btn btn-primary enterprise-button enterprise-button-primary enterprise-button-sm" disabled={!selectedPrincipal || busy}>
                 <FiUserPlus aria-hidden="true" /> {busy ? 'Adding…' : 'Add to Workspace'}
               </button>
             </form>
@@ -115,8 +115,8 @@ function WorkspaceMembersDrawer({ workspace, onClose }) {
             {members.length === 0 ? (
               <p className="enterprise-empty">No members are assigned to this workspace yet. Tenant owners and admins always retain tenant-wide access.</p>
             ) : (
-              <div className="enterprise-table-wrapper">
-                <table className="enterprise-table">
+              <div className="table enterprise-table table-hover align-middle-wrapper">
+                <table className="table enterprise-table table-hover align-middle">
                   <thead>
                     <tr>
                       <th>Workspace Member</th>
@@ -133,7 +133,7 @@ function WorkspaceMembersDrawer({ workspace, onClose }) {
                             <strong>{label}</strong>
                             <br /><small className="text-muted">Principal ID: {String(member.principalId)}</small>
                           </td>
-                          <td><span className="enterprise-pill enterprise-pill-success">{member.status}</span></td>
+                          <td><span className="badge rounded-pill enterprise-pill enterprise-pill-success">{member.status}</span></td>
                           {canManage && (
                             <td className="text-right">
                               <button
@@ -155,8 +155,8 @@ function WorkspaceMembersDrawer({ workspace, onClose }) {
             )}
           </DataState>
         </div>
-        <div className="enterprise-modal-footer">
-          <button type="button" className="enterprise-button enterprise-button-secondary" onClick={onClose}>Close</button>
+        <div className="modal-content enterprise-modal-footer">
+          <button type="button" className="btn btn-outline-secondary enterprise-button enterprise-button-secondary" onClick={onClose}>Close</button>
         </div>
       </div>
     </div>
@@ -283,7 +283,7 @@ export default function EnterpriseWorkspacesTab({
         </div>
       )}
       {error && (
-        <div className="enterprise-card" role="alert">
+        <div className="card bs-card-executive enterprise-card" role="alert">
           <div className="enterprise-error-row">
             <span className="enterprise-error-icon" aria-hidden="true">⚠</span>
             <div><strong>Workspace action failed</strong><p className="text-muted">{error}</p></div>
@@ -291,8 +291,8 @@ export default function EnterpriseWorkspacesTab({
         </div>
       )}
 
-      <div className="enterprise-card">
-        <div className="enterprise-card-header-flex">
+      <div className="card bs-card-executive enterprise-card">
+        <div className="card bs-card-executive enterprise-card-header-flex">
           <div>
             <h2 className="enterprise-tab-title">
               Workspaces
@@ -305,7 +305,7 @@ export default function EnterpriseWorkspacesTab({
           {canManageWorkspaces && (
             <button
               type="button"
-              className="enterprise-button enterprise-button-primary"
+              className="btn btn-primary enterprise-button enterprise-button-primary"
               onClick={() => setShowModal(true)}
             >
               <FiPlus aria-hidden="true" /> New Workspace
@@ -326,9 +326,9 @@ export default function EnterpriseWorkspacesTab({
                       <div className="enterprise-workspace-title-row">
                         <h3>{activeWorkspace.name}</h3>
                         {activeWorkspace.isDefault && (
-                          <span className="enterprise-pill enterprise-pill-template">Default</span>
+                          <span className="badge rounded-pill enterprise-pill enterprise-pill-template">Default</span>
                         )}
-                        <span className="enterprise-pill enterprise-pill-success">Active Context</span>
+                        <span className="badge rounded-pill enterprise-pill enterprise-pill-success">Active Context</span>
                       </div>
                       <p className="enterprise-workspace-desc">
                         Scoped access boundary for documents, team members, and templates
@@ -338,7 +338,7 @@ export default function EnterpriseWorkspacesTab({
                       {canSeeMembers && (
                         <button
                           type="button"
-                          className="enterprise-button enterprise-button-secondary enterprise-button-sm"
+                          className="btn btn-outline-secondary enterprise-button enterprise-button-secondary enterprise-button-sm"
                           onClick={() => setMembersTarget(activeWorkspace)}
                         >
                           <FiUsers aria-hidden="true" /> Members
@@ -374,7 +374,7 @@ export default function EnterpriseWorkspacesTab({
                         <div className="enterprise-workspace-title-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                           <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{ws.name}</h3>
                           {ws.isDefault && (
-                            <span className="enterprise-pill enterprise-pill-template">Default</span>
+                            <span className="badge rounded-pill enterprise-pill enterprise-pill-template">Default</span>
                           )}
                         </div>
                         <p className="enterprise-workspace-desc text-muted" style={{ fontSize: '0.875rem', marginBottom: '16px' }}>
@@ -384,7 +384,7 @@ export default function EnterpriseWorkspacesTab({
                       <div className="enterprise-workspace-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--enterprise-border)', paddingTop: '12px', marginTop: 'auto' }}>
                         <button
                           type="button"
-                          className="enterprise-button enterprise-button-secondary enterprise-button-sm"
+                          className="btn btn-outline-secondary enterprise-button enterprise-button-secondary enterprise-button-sm"
                           onClick={() => onSelectWorkspace(ws.id)}
                         >
                           Switch Context
@@ -421,11 +421,11 @@ export default function EnterpriseWorkspacesTab({
       </div>
 
       {canAdministerLifecycle && (
-        <div className="enterprise-card" style={{ marginTop: '1.5rem' }}>
-          <div className="enterprise-card-header-flex">
+        <div className="card bs-card-executive enterprise-card" style={{ marginTop: '1.5rem' }}>
+          <div className="card bs-card-executive enterprise-card-header-flex">
             <div>
-              <h3 className="enterprise-card-title"><FiArchive aria-hidden="true" /> Archived Workspaces</h3>
-              <p className="enterprise-card-subtitle">Archived workspaces are inaccessible to members until restored. Data is preserved.</p>
+              <h3 className="card bs-card-executive enterprise-card-title"><FiArchive aria-hidden="true" /> Archived Workspaces</h3>
+              <p className="card bs-card-executive enterprise-card-subtitle">Archived workspaces are inaccessible to members until restored. Data is preserved.</p>
             </div>
           </div>
           <DataState loading={archivedState.loading} error={archivedState.error} onRetry={refreshArchived}>
@@ -439,13 +439,13 @@ export default function EnterpriseWorkspacesTab({
                       <div>
                         <div className="enterprise-workspace-title-row">
                           <h3>{ws.name}</h3>
-                          <span className="enterprise-pill enterprise-pill-warning">Archived</span>
+                          <span className="badge rounded-pill enterprise-pill enterprise-pill-warning">Archived</span>
                         </div>
                       </div>
                       <div className="enterprise-workspace-actions">
                         <button
                           type="button"
-                          className="enterprise-button enterprise-button-secondary enterprise-button-sm"
+                          className="btn btn-outline-secondary enterprise-button enterprise-button-secondary enterprise-button-sm"
                           onClick={() => handleRestore(ws)}
                         >
                           <FiRotateCcw aria-hidden="true" /> Restore
@@ -461,16 +461,16 @@ export default function EnterpriseWorkspacesTab({
       )}
 
       {showModal && (
-        <div className="enterprise-modal-backdrop" role="presentation" onClick={() => !busy && setShowModal(false)}>
-          <div className="enterprise-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-            <div className="enterprise-modal-header">
+        <div className="modal-content enterprise-modal-backdrop" role="presentation" onClick={() => !busy && setShowModal(false)}>
+          <div className="modal-content enterprise-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content enterprise-modal-header">
               <h3>Create New Workspace</h3>
               <button type="button" className="enterprise-button-icon" onClick={() => setShowModal(false)} disabled={busy}>
                 <FiX />
               </button>
             </div>
             <form onSubmit={handleCreate}>
-              <div className="enterprise-modal-body">
+              <div className="modal-content enterprise-modal-body">
                 <div className="enterprise-form-group">
                   <label htmlFor="ws-name">Workspace Name</label>
                   <input
@@ -485,16 +485,16 @@ export default function EnterpriseWorkspacesTab({
                   />
                 </div>
               </div>
-              <div className="enterprise-modal-footer">
+              <div className="modal-content enterprise-modal-footer">
                 <button
                   type="button"
-                  className="enterprise-button enterprise-button-secondary"
+                  className="btn btn-outline-secondary enterprise-button enterprise-button-secondary"
                   onClick={() => setShowModal(false)}
                   disabled={busy}
                 >
                   Cancel
                 </button>
-                <button type="submit" className="enterprise-button enterprise-button-primary" disabled={busy}>
+                <button type="submit" className="btn btn-primary enterprise-button enterprise-button-primary" disabled={busy}>
                   {busy ? 'Creating…' : 'Create Workspace'}
                 </button>
               </div>
@@ -504,16 +504,16 @@ export default function EnterpriseWorkspacesTab({
       )}
 
       {renameTarget && (
-        <div className="enterprise-modal-backdrop" role="presentation" onClick={() => !busy && setRenameTarget(null)}>
-          <div className="enterprise-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-            <div className="enterprise-modal-header">
+        <div className="modal-content enterprise-modal-backdrop" role="presentation" onClick={() => !busy && setRenameTarget(null)}>
+          <div className="modal-content enterprise-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content enterprise-modal-header">
               <h3>Rename Workspace</h3>
               <button type="button" className="enterprise-button-icon" onClick={() => setRenameTarget(null)} disabled={busy}>
                 <FiX />
               </button>
             </div>
             <form onSubmit={handleRename}>
-              <div className="enterprise-modal-body">
+              <div className="modal-content enterprise-modal-body">
                 <div className="enterprise-form-group">
                   <label htmlFor="ws-rename">Workspace Name</label>
                   <input
@@ -527,9 +527,9 @@ export default function EnterpriseWorkspacesTab({
                   />
                 </div>
               </div>
-              <div className="enterprise-modal-footer">
-                <button type="button" className="enterprise-button enterprise-button-secondary" onClick={() => setRenameTarget(null)} disabled={busy}>Cancel</button>
-                <button type="submit" className="enterprise-button enterprise-button-primary" disabled={busy}>
+              <div className="modal-content enterprise-modal-footer">
+                <button type="button" className="btn btn-outline-secondary enterprise-button enterprise-button-secondary" onClick={() => setRenameTarget(null)} disabled={busy}>Cancel</button>
+                <button type="submit" className="btn btn-primary enterprise-button enterprise-button-primary" disabled={busy}>
                   {busy ? 'Saving…' : 'Save Name'}
                 </button>
               </div>

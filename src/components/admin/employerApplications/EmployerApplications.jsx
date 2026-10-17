@@ -373,7 +373,7 @@ class EmployerApplications extends Component {
                 ) : (
                     <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
                         <div className="overflow-x-auto">
-                            <table className="min-w-full">
+                            <table className="table table-hover align-middle min-w-full">
                                 <thead className="bg-slate-50 border-b border-slate-200">
                                     <tr>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-slate-600">Company</th>

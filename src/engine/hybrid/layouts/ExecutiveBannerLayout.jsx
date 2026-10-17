@@ -12,7 +12,7 @@ import SmartReferences from '../components/SmartReferences';
 
 export default function ExecutiveBannerLayout({ values = {}, theme = {} }) {
   return (
-    <div className="smart-layout smart-layout--executive-banner" style={{
+    <div className="container-fluid bs-container-fluid-adaptive smart-layout smart-layout--executive-banner" style={{
       '--primary': theme.primary,
       '--secondary': theme.secondary,
       '--header-bg': theme.headerBg || theme.primary,

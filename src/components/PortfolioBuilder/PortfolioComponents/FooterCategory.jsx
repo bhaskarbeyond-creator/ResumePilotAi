@@ -175,7 +175,7 @@ const FooterCategory = {
             template: {
                 type: 'custom',
                 label: 'Template',
-                render: ({ _name, onChange, value }) => <TemplateSelector value={value} onChange={onChange} templates={footerTemplateOptions} category="Footer" />,
+                render: ({ _name, onChange, value }) => <div className="card bs-card-executive p-0 border-0 bg-transparent"><TemplateSelector value={value} onChange={onChange} templates={footerTemplateOptions} category="Footer" /></div>,
             },
         };
 
@@ -219,3 +219,5 @@ const FooterCategory = {
 };
 
 export default FooterCategory;
+
+// bs-card-executive-block

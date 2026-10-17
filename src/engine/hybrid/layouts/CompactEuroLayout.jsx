@@ -12,7 +12,7 @@ import SmartReferences from '../components/SmartReferences';
 
 export default function CompactEuroLayout({ values = {}, theme = {} }) {
   return (
-    <div className="smart-layout smart-layout--compact-euro" style={{
+    <div className="container-fluid bs-container-fluid-adaptive smart-layout smart-layout--compact-euro" style={{
       '--primary': theme.primary,
       '--secondary': theme.secondary,
       fontFamily: theme.font,

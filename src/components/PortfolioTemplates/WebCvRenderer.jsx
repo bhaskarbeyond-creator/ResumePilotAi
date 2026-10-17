@@ -18,7 +18,7 @@ export default function WebCvRenderer({ canonical, templateKey, className = '' }
     const resolved = resolvePortfolioTemplate(templateKey || data.template);
     const Template = TEMPLATES[resolved] || ModernMinimal;
     return (
-        <div className={className} data-webcv-root="true" data-template={resolved}>
+    <div className="container-fluid p-0 web-cv-bs-root" className={className} data-webcv-root="true" data-template={resolved}>
             <Template canonical={data} />
         </div>
     );
@@ -28,3 +28,5 @@ export default function WebCvRenderer({ canonical, templateKey, className = '' }
 export function getTemplateComponent(templateKey) {
     return TEMPLATES[resolvePortfolioTemplate(templateKey)] || ModernMinimal;
 }
+
+// bs-card-executive-block

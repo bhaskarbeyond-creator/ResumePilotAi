@@ -45,7 +45,7 @@ const Hero1 = {
     render: ({ name, title, description, image, backgroundColor }) => (
         <div className={`${backgroundColor} relative min-h-screen`}>
             {/* Background Pattern */}
-            <div className="absolute inset-0 opacity-10">
+            <div className="card bs-card-executive absolute inset-0 opacity-10">
                 <div
                     className="absolute inset-0"
                     style={{

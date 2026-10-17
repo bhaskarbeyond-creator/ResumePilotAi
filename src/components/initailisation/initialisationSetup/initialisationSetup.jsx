@@ -6,7 +6,7 @@ import React from 'react';
  */
 export default function InitialisationSetup() {
     return (
-        <div className="p-6 text-sm text-slate-700">
+        <div className="card bs-card-executive p-6 text-sm text-slate-700">
             Administrative bootstrap is managed securely by the deployment operator.
         </div>
     );

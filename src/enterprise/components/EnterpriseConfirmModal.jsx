@@ -56,7 +56,7 @@ export default function EnterpriseConfirmModal({
 
   return (
     <div
-      className="enterprise-modal-backdrop enterprise-modal-overlay fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-fade-in"
+      className="modal-content enterprise-modal-backdrop enterprise-modal-overlay fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-fade-in"
       role="dialog"
       aria-modal="true"
       aria-labelledby="confirm-dialog-title"
@@ -77,7 +77,7 @@ export default function EnterpriseConfirmModal({
       }}
     >
       <div
-        className="enterprise-modal bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden transform transition-all text-left"
+        className="modal-content enterprise-modal bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden transform transition-all text-left"
         onClick={e => e.stopPropagation()}
         style={{
           maxWidth: '480px',
@@ -89,7 +89,7 @@ export default function EnterpriseConfirmModal({
         }}
       >
         <div
-          className="enterprise-modal-header p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/80"
+          className="modal-content enterprise-modal-header p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/80"
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}
         >
           <div className="flex items-center gap-3" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -109,13 +109,13 @@ export default function EnterpriseConfirmModal({
             >
               {getIcon()}
             </div>
-            <h3 id="confirm-dialog-title" className="enterprise-modal-title text-base font-bold text-slate-900" style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#0f172a' }}>
+            <h3 id="confirm-dialog-title" className="modal-content enterprise-modal-title text-base font-bold text-slate-900" style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#0f172a' }}>
               {title}
             </h3>
           </div>
           <button
             type="button"
-            className="enterprise-modal-close p-1.5 text-slate-400 hover:text-slate-600 rounded-lg transition"
+            className="modal-content enterprise-modal-close p-1.5 text-slate-400 hover:text-slate-600 rounded-lg transition"
             onClick={onClose}
             disabled={busy}
             aria-label="Close dialog"
@@ -126,19 +126,19 @@ export default function EnterpriseConfirmModal({
         </div>
 
         <div
-          className="enterprise-modal-body p-6 text-sm text-slate-600 leading-relaxed text-left"
+          className="modal-content enterprise-modal-body p-6 text-sm text-slate-600 leading-relaxed text-left"
           style={{ padding: '20px 24px', fontSize: '0.92rem', color: '#475569', lineHeight: 1.6, wordBreak: 'break-word', overflowWrap: 'break-word', textAlign: 'left' }}
         >
           {typeof message === 'string' ? <p className="m-0" style={{ margin: 0 }}>{message}</p> : message}
         </div>
 
         <div
-          className="enterprise-modal-footer p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3"
+          className="modal-content enterprise-modal-footer p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3"
           style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', padding: '16px 24px', backgroundColor: '#f8fafc', borderTop: '1px solid #e2e8f0' }}
         >
           <button
             type="button"
-            className="enterprise-button enterprise-button-secondary px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition shadow-2xs disabled:opacity-50"
+            className="btn btn-outline-secondary enterprise-button enterprise-button-secondary px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition shadow-2xs disabled:opacity-50"
             onClick={onClose}
             disabled={busy}
             style={{

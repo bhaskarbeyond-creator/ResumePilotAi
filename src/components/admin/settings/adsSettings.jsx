@@ -98,7 +98,7 @@ class AdsSettings extends Component {
         const isFormValid = this.state.bannerName.trim() && this.state.imageLink.trim() && this.state.destinationLink.trim();
 
         return (
-            <div className="space-y-6">
+    <div className="card bs-card-executive container-fluid p-4 space-y-6">
                 {this.state.deleteTarget && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="presentation" onKeyDown={event => { if (event.key === 'Escape' && !this.state.saving) this.setState({ deleteTarget: null }); }}><div role="alertdialog" aria-modal="true" aria-labelledby="delete-ad-title" className="w-full max-w-md rounded-xl bg-white p-6"><h2 id="delete-ad-title" className="text-lg font-bold">Delete advertisement?</h2><p className="mt-2 text-sm text-slate-600">Delete “{this.state.deleteTarget.name}”? The target revision will be verified and the action audited.</p><div className="mt-6 flex justify-end gap-3"><button type="button" autoFocus onClick={() => this.setState({ deleteTarget: null })} disabled={this.state.saving} className="rounded border px-4 py-2">Cancel</button><button type="button" onClick={this.removeAddHandler} disabled={this.state.saving} className="rounded bg-red-700 px-4 py-2 text-white">{this.state.saving ? 'Deleting…' : 'Delete'}</button></div></div></div>}
                 {this.state.error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">{this.state.error}<button type="button" className="ml-3 underline" onClick={() => this.setState({ error: '' })}>Dismiss</button></div>}
                 {/* Success Alert */}

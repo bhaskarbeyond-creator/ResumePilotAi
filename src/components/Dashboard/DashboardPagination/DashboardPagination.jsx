@@ -74,7 +74,7 @@ function DashboardPagination(props) {
     }, [props.totalDocuments]);
 
     return (
-        <div className='dashboard_pagination'>
+        <div className='card bs-card-executive dashboard_pagination'>
             <ul>
                 <li onClick={()=>setPrevPageNumber()}>
                     <HiChevronLeft />

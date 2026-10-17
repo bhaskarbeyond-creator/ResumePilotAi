@@ -1,0 +1,84 @@
+- generic [ref=f69e8]:
+  - complementary "Main navigation" [ref=f69e9]:
+    - generic [ref=f69e10]:
+      - link "IM IME365" [ref=f69e11] [cursor=pointer]:
+        - /url: /dashboard
+        - generic [ref=f69e12]: IM
+        - generic [ref=f69e13]: IME365
+      - button "Collapse sidebar" [ref=f69e14]
+    - navigation [ref=f69e18]:
+      - list [ref=f69e19]:
+        - listitem [ref=f69e20]:
+          - link "Overview" [ref=f69e21] [cursor=pointer]:
+            - /url: /dashboard
+        - listitem [ref=f69e28]:
+          - link "Resumes" [ref=f69e29] [cursor=pointer]:
+            - /url: /dashboard/resumes
+        - listitem [ref=f69e34]:
+          - link "ATS Score" [ref=f69e35] [cursor=pointer]:
+            - /url: /dashboard/ats-score
+        - listitem [ref=f69e39]:
+          - link "Jobs" [ref=f69e40] [cursor=pointer]:
+            - /url: /dashboard/jobs
+        - listitem [ref=f69e45]:
+          - link "Interviews" [ref=f69e46] [cursor=pointer]:
+            - /url: /dashboard/interviews
+        - listitem [ref=f69e51]:
+          - link "Cover Letters" [ref=f69e52] [cursor=pointer]:
+            - /url: /dashboard/cover-letters
+        - listitem [ref=f69e56]:
+          - link "Portfolio" [ref=f69e57] [cursor=pointer]:
+            - /url: /dashboard/portfolio
+        - listitem [ref=f69e62]:
+          - link "AI Assistant" [ref=f69e63] [cursor=pointer]:
+            - /url: /dashboard/ai
+        - listitem [ref=f69e68]:
+          - link "Messages" [ref=f69e69] [cursor=pointer]:
+            - /url: /dashboard/messages
+    - generic [ref=f69e73]:
+      - list [ref=f69e74]:
+        - listitem [ref=f69e75]:
+          - link "Admin Console" [ref=f69e76] [cursor=pointer]:
+            - /url: /admin
+        - listitem [ref=f69e82]:
+          - link "Settings" [ref=f69e83] [cursor=pointer]:
+            - /url: /dashboard/settings
+      - generic [ref=f69e88]:
+        - generic [ref=f69e89]: SA
+        - generic [ref=f69e90]:
+          - paragraph [ref=f69e91]: Sarah Administrator
+          - paragraph [ref=f69e92]: admin@ime365.com
+        - button "Sign out" [ref=f69e93]
+  - generic [ref=f69e97]:
+    - banner [ref=f69e98]:
+      - searchbox "Search" [ref=f69e104]
+      - button "Notifications" [ref=f69e106]
+    - main [ref=f69e110]:
+      - generic [ref=f69e111]:
+        - generic [ref=f69e112]:
+          - heading "Admin Console" [level=1] [ref=f69e113]
+          - paragraph [ref=f69e114]: Platform administration and operational management.
+        - generic [ref=f69e115]:
+          - navigation "Admin sections" [ref=f69e116]:
+            - button "Overview" [ref=f69e117]
+            - button "Users" [active] [ref=f69e120]
+            - button "AI Settings" [ref=f69e126]
+            - button "System" [ref=f69e135]
+          - generic [ref=f69e337]:
+            - generic [ref=f69e338]:
+              - heading "User Management" [level=2] [ref=f69e339]
+              - generic [ref=f69e340]: 0 total users
+            - generic [ref=f69e341]: Authentication required
+            - textbox "Search users by name or email…" [ref=f69e348]
+            - table [ref=f69e350]:
+              - rowgroup [ref=f69e351]:
+                - row [ref=f69e352]:
+                  - columnheader "User" [ref=f69e353]
+                  - columnheader "Role" [ref=f69e354]
+                  - columnheader "Status" [ref=f69e355]
+                  - columnheader "Resumes" [ref=f69e356]
+                  - columnheader "Last Login" [ref=f69e357]
+                  - columnheader "Actions" [ref=f69e358]
+              - rowgroup [ref=f69e359]:
+                - row [ref=f69e360]:
+                  - cell "No users found." [ref=f69e361]

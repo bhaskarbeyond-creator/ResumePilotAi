@@ -2,7 +2,7 @@ import React from 'react';
 
 const Testimonials1 = {
     render: ({ title, subtitle, testimonials }) => (
-        <div className="py-16 px-4 bg-pink-50">
+        <div className="card bs-card-executive py-16 px-4 bg-pink-50">
             <div className="max-w-4xl mx-auto">
                 <div className="text-center mb-12">
                     <h2 className="text-3xl font-bold mb-4 text-gray-800">{title}</h2>

@@ -106,13 +106,11 @@ const ServicesCategory = {
             template: {
                 type: 'custom',
                 label: 'Template',
-                render: ({ _name, onChange, value }) => 
-                    <TemplateSelector 
+                render: ({ _name, onChange, value }) => <div className="card bs-card-executive p-0 border-0 bg-transparent"><TemplateSelector 
                         value={value} 
                         onChange={onChange} 
                         templates={servicesTemplateOptions} 
-                        category="Services" 
-                    />,
+                        category="Services" /></div>,
             },
         };
 

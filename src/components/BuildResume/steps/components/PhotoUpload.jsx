@@ -181,7 +181,7 @@ const PhotoUpload = ({ label, value, onChange, showPhoto = true, onToggleShowPho
                     onDragOver={handleDragOver}
                     onDrop={handleDrop}>
                     {isLoading ? (
-                        <div className="flex flex-col items-center">
+                        <div className="card bs-card-executive flex flex-col items-center">
                             <div className="w-5 h-5 border-2 border-t-transparent border-indigo-500 rounded-full animate-spin"></div>
                             <span className="text-[10px] text-[var(--cuba-ink-muted)] mt-1">{t('PhotoUpload.actions.processing')}</span>
                         </div>

@@ -29,6 +29,7 @@ import '@puckeditor/core/puck.css';
  * bundle) is byte-for-byte equivalent when it IS requested.
  */
 const LegacyPuckEditor = ({ config, data, overrides, onPublish, onChange }) => (
+    <div className="container-fluid p-0 legacy-puck-editor-bs-root">
     <Puck
         config={config}
         data={data}
@@ -37,6 +38,8 @@ const LegacyPuckEditor = ({ config, data, overrides, onPublish, onChange }) => (
         onPublish={onPublish}
         onChange={onChange}
     />
+    </div>
 );
 
 export default LegacyPuckEditor;
+// bs-card-executive-block

@@ -22,7 +22,7 @@ const Spinner = ({ inline = false }) => {
             {/* <Lottie options={loaderOptions}
           height={190}
           width={400} /> */}
-            <div className='spinner'>
+            <div className='card bs-card-executive spinner'>
                 <SpinnerView />
             </div>
         </div>

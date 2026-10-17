@@ -4,7 +4,7 @@ const FlexLayout = ({ direction = 'row', wrap = 'wrap', gap = 16, alignItems = '
     const FlexContent = flexContent;
 
     return (
-        <div
+    <div className="row flex-layout"
             style={{
                 display: 'flex',
                 flexDirection: direction,

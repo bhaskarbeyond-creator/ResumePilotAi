@@ -30,6 +30,7 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
  * `quotaRing.js` for the three-state honesty contract (measured / unknown /
  * error). An unreadable quota is drawn as "—", never as 0%.
  */
+// bs-quota-ring
 const AiQuotaRing = ({ days = 30 }) => {
     const { request } = useTenantApi();
     const [refreshKey, setRefreshKey] = useState(0);
@@ -54,7 +55,7 @@ const AiQuotaRing = ({ days = 30 }) => {
     const retry = () => { setRefreshKey((k) => k + 1); reloadConfig?.(); reloadUsage?.(); };
 
 return (
-        <CubaCard className="h-full">
+        <CubaCard className="card bs-card-executive h-full">
             <div className="flex items-start justify-between gap-3">
                 <div>
                     <h3 className="text-sm font-bold tracking-tight text-cuba-ink">AI request quota</h3>

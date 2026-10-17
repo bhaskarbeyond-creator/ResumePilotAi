@@ -22,7 +22,7 @@ export default function SmartCustomSection({ section, items = [], _theme = {}, t
   if (!validItems.length) return null;
 
   return (
-    <section className="smart-section smart-custom-section">
+    <section className="container-fluid bs-container-fluid-adaptive smart-section smart-custom-section">
       <h3 className="smart-section-title">
         <span className="smart-section-title__text">{heading}</span>
         <span className="smart-section-title__line" />

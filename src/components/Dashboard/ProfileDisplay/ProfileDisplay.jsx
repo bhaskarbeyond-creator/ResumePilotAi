@@ -365,7 +365,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
             `}</style>
 
             {/* ── MOBILE TOP BAR ────────────────────────────────────────────── */}
-            <div className="fixed top-0 left-0 right-0 h-14 bg-white border-b border-gray-100 z-[60] lg:hidden flex items-center justify-between px-4 shadow-sm">
+            <div className="card bs-card-executive fixed top-0 left-0 right-0 h-14 bg-white border-b border-gray-100 z-[60] lg:hidden flex items-center justify-between px-4 shadow-sm">
                 {/* Hamburger */}
                 <button
                     onClick={toggleSidebar}

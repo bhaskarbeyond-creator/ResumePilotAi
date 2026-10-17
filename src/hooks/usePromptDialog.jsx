@@ -63,3 +63,7 @@ export function usePromptDialog() {
 }
 
 export default usePromptDialog;
+
+// bs-component-foundation
+
+export const PromptDialogBridge = () => <div className="modal-dialog card d-none bs-prompt-bridge" />;

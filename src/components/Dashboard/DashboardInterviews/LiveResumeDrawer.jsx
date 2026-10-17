@@ -59,9 +59,9 @@ export default function LiveResumeDrawer({ isOpen, onClose, resumeFacts = '', co
             />
 
             <div className="fixed inset-y-0 right-0 max-w-full flex pl-10 pointer-events-none">
-                <div className="w-screen max-w-md pointer-events-auto bg-white border-l border-slate-200 shadow-2xl flex flex-col">
+                <div className="offcanvas offcanvas-end show w-screen max-w-md pointer-events-auto bg-white border-l border-slate-200 shadow-2xl flex flex-col">
                     {/* Drawer Header */}
-                    <div className="p-5 border-b border-slate-200 bg-gradient-to-r from-slate-900 to-indigo-950 text-white flex items-center justify-between">
+                    <div className="modal-header offcanvas-header p-5 border-b border-slate-200 bg-gradient-to-r from-slate-900 to-indigo-950 text-white flex items-center justify-between">
                         <div>
                             <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-indigo-300">
                                 <FaFileAlt /> Resume Grounding HUD

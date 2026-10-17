@@ -67,7 +67,7 @@ class AuthWrapper extends Component {
     }
     render() {
         return (
-            <div id="authWrapper" className="authWrapper ">
+            <div id="authWrapper" className="card bs-card-executive authWrapper ">
                 <AnimatePresence>
                     {this.state.isErrorToastShowed && (
                         <motion.div

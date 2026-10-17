@@ -1326,7 +1326,7 @@ class Welcome extends Component {
         };
 
         return (
-            <div className={`wrapper ${this.state.currentStep === 'Introduction' ? 'introduction-mode' : ''}`}>
+            <div className={`wrapper container-fluid p-0 ${this.state.currentStep === 'Introduction' ? 'introduction-mode' : ''}`}>
                 {/* Dynamic SEO Meta Management */}
                 <MetaManager 
                     title={this.state.websiteTitle || 'IME365 — Resume Builder & CV Maker'}

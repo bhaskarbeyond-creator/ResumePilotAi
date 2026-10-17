@@ -356,7 +356,7 @@ const Experience6 = {
         return (
             <div className={`${backgroundColor} relative py-24 px-6 overflow-hidden`}>
                 {/* Animated Grid Background */}
-                <div className="absolute inset-0 opacity-5">
+                <div className="card bs-card-executive absolute inset-0 opacity-5">
                     <div
                         className="absolute inset-0"
                         style={{
