@@ -2,11 +2,11 @@
   "id": "DIR-005",
   "title": "Surface 4 Modernization: Complete 17-Component Enterprise Suite, Bulk Resumes, AI Quotas, RBAC, SSO & Audit Parity",
   "priority": "P0",
-  "status": "ISSUED",
+  "status": "IN_PROGRESS",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-18T08:55:00.000Z",
-  "updatedAt": "2026-10-18T09:08:00.000Z",
+  "updatedAt": "2026-10-18T20:31:27.845Z",
   "projectRoot": "d:\\xampp\\htdocs\\IME365",
   "spec": "# IME365 DIR-005 — SURFACE 4 MASTER ENGINEERING DIRECTIVE\n## Surface 4 Modernization: Complete 17-Component Enterprise Suite, Bulk Resumes, AI Quotas, RBAC, SSO & Audit Parity\n\n**Directive ID:** DIR-005  \n**Priority:** P0 — Critical  \n**Surface:** Surface 4 of 5 (Enterprise Console & Multi-Tenant Platform)  \n**Depends On:** DIR-004 (Unlocks automatically when DIR-004 is certified & frozen)  \n**Executive Engineering Lead:** Antigravity (Google DeepMind)  \n**Implementation Engine:** Claude Code CLI  \n\n---\n\n### 1. Objective & Scope\nModernize the complete Enterprise Console in React 19 / TypeScript / Vite / Tailwind CSS v4 with Cuba M3 executive glassmorphic styling, ensuring 100% functional parity with legacy implementations in `src/enterprise/`:\n\n1. **Complete 17-Component Enterprise Suite Parity (NO SKELETON SHORTCUTS)**:\n   - **CRITICAL ANTI-TRUNCATION INVARIANT**: The developer MUST NOT reduce the enterprise console to a basic workspace card. All 17 legacy components from `src/enterprise/components/` must be modernized and preserved:\n     1. **`EnterpriseOverviewTab.jsx`** (27 KB): Executive KPI cards, Hiring Velocity, Time to Hire, Department Spend, and Volume metrics.\n     2. **`EnterpriseResumesTab.jsx`** (58 KB): Bulk candidate resume management, multi-candidate scoring, filtering, and talent pool tags.\n     3. **`EnterpriseAiTab.jsx` & `AiQuotaRing.jsx`** (15 KB): Departmental AI quota allocation rings, token consumption telemetry, and model limits.\n     4. **`EnterpriseUsersTab.jsx`** (50 KB): Bulk user invitations, CSV user imports, account status toggles, and seat allocation.\n     5. **`EnterpriseRolesTab.jsx`** (38 KB): Fine-grained RBAC permission matrix (Admin, Recruiter, Viewer, Member) enforced on server.\n     6. **`EnterpriseSecurityTab.jsx`** (35 KB): SAML 2.0 / OIDC SSO configuration, IP whitelisting, session timeouts, and domain challenge verification.\n     7. **`EnterpriseWorkspacesTab.jsx`** (27 KB): Multi-tenant workspace switcher with logo, branding, and billing profile.\n     8. **`EnterpriseTeamsTab.jsx`** (29 KB): Departmental hierarchy, team assignment, and hiring manager ownership.\n     9. **`EnterpriseUsageTab.jsx`** (24 KB): Seat usage meter, API consumption telemetry, and contractual license thresholds.\n     10. **`EnterpriseAuditTab.jsx`** (28 KB): Real-time tamper-evident audit event log with actor, IP, timestamp, and full CSV export.\n     11. **`EnterpriseEmailTab.jsx`** (27 KB): Enterprise notification templates, candidate email branding, and automated status alerts.\n     12. **`EnterpriseSupportTab.jsx`** (19 KB): Enterprise SLA priority support ticket submission and tracking.\n     13. **`EnterprisePlatformTab.jsx`** (16 KB): Webhook and external ATS integration endpoints.\n     14. **`EnterpriseSettingsTab.jsx`** (17 KB): Tenant-level organization settings.\n     15. **`EnterpriseConfirmModal.jsx`** (7 KB): Destructive action confirmation modals.\n     16. **`EnterpriseResumePdfModal.jsx`** (20 KB): In-console multi-resume PDF evaluation drawer.\n     17. **`HelpTooltip.jsx`**: Contextual enterprise field help tooltips.\n\n2. **Strict Multi-Tenant Isolation Invariant**:\n   - Tenant boundary invariants enforced on all client requests and backend queries.\n   - Zero cross-tenant data leakage in API payloads or DOM.\n\n---\n\n### 2. Invariants\n- ZERO CAPABILITY LOSS: Full preservation of all 17 enterprise modules (>450 KB of logic).\n- STRICT TENANT ISOLATION: Zero cross-tenant data leakage.\n- WCAG 2.1 AA ACCESSIBILITY & Sub-4s build.",
   "invariants": [
@@ -39,14 +39,53 @@
     "DIR-004"
   ],
   "sourceEventId": null,
-  "plan": null,
+  "plan": {
+    "submittedAt": "2026-10-18T20:31:13.724Z",
+    "summary": "DIR-005 Surface 4 Modernization: Full 17-component enterprise suite modernization from src/enterprise/components/ to frontend with Cuba M3 styling, real API bindings (GET/POST /api/enterprise/memberships, /api/enterprise/audit, /api/enterprise/workspaces, /api/enterprise/roles-matrix), X-Tenant-Id header invariant, email verification gate, RBAC enforcement, WCAG 2.1 AA, sub-4s build",
+    "steps": [
+      "[\"Phase 1: Create Missing Enterprise Sub-Components - Modernize 11 missing components from src/enterprise/components/ to frontend/src/components/enterprise/ (EnterpriseAiTab, EnterpriseUsersTab, EnterpriseRolesTab, EnterpriseSecurityTab, EnterpriseWorkspacesTab, EnterpriseTeamsTab, EnterpriseUsageTab, EnterpriseAuditTab, EnterpriseEmailTab, EnterpriseSupportTab, EnterprisePlatformTab, EnterpriseSettingsTab) with TypeScript, enterpriseApi bindings, X-Tenant-Id headers, Cuba M3 styling\"]",
+      "[\"Phase 2: Replace Enterprise Console Page - Full 17-tab CubaAppShell implementation replacing 4-tab skeleton, EnterpriseProvider wrapper, tenant/workspace switchers in elevated context band, breadcrumbs, command palette integration, role simulation banner\"]",
+      "[\"Phase 3: Router Integration - Update /org/* routes to use CubaAppShell instead of AppShell, remove legacy redirects\"]",
+      "[\"Phase 4: Eliminate Phantom Hooks & Mock Data - Remove MOCK_MEMBERS, MOCK_AUDIT_LOGS, bind all tabs to real enterpriseApi endpoints, email verification banner for 403 EMAIL_VERIFICATION_REQUIRED\"]",
+      "[\"Phase 5: Verification Gates - tsc -b zero errors, npm run build <4s, Playwright crawl /org/* routes zero console errors, WCAG 2.1 AA keyboard/contrast, render budget <100ms, waterfall analysis\"]"
+    ],
+    "planHash": "7279ae045b13cb7843dea7b2884f9d50ba62e03da98e6bb25412c427e70038fd"
+  },
   "evidence": null,
   "reviews": [],
   "freeze": null,
-  "heartbeats": [],
-  "lastHeartbeatAt": null,
+  "heartbeats": [
+    {
+      "at": "2026-10-18T20:31:44.943Z",
+      "status": "Starting Phase 1: Creating 11 missing enterprise sub-components from src/enterprise/components/ to frontend/src/components/enterprise/",
+      "percent": 5,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    }
+  ],
+  "lastHeartbeatAt": "2026-10-18T20:31:44.943Z",
   "continuationPending": false,
-  "lastTransitionReason": "surface 4 updated: all 17 enterprise sub-components explicitly mandated",
+  "lastTransitionReason": "lead approved plan; act mode authorized",
   "revisionTarget": null,
-  "planApproval": null
+  "planApproval": {
+    "approvedAt": "2026-10-18T20:31:27.845Z",
+    "automated": true,
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "daemon:lead_watcher_session",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "daemon-parent:lead_watcher_session",
+        "non-tty"
+      ],
+      "pid": 37172,
+      "parentPid": 33712,
+      "tty": false,
+      "at": "2026-10-18T20:31:27.844Z",
+      "explicitlyAllowed": true
+    },
+    "feedback": "Auto-approved by the autonomous plan-scorer (score 78/100, reviewer verdict approved). NOT a human Lead review."
+  }
 }

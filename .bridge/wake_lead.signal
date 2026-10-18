@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-18T20:20:38.514Z",
-  "seq": 4007,
-  "id": "evt_mve9skhn_2c3eb4c522ef",
-  "type": "EVIDENCE_SUBMITTED",
-  "title": "[Evidence] DIR-004: Surface 3 Modernization: Full 53KB CreateJobModal Parity, Screening Questions, Candidate Review Drawer & ATS Pipeline",
+  "timestamp": "2026-10-18T20:31:44.934Z",
+  "seq": 4017,
+  "id": "evt_mvea6up8_04317b257ffd",
+  "type": "HEARTBEAT",
+  "title": "[Heartbeat] Starting Phase 1: Creating 11 missing enterprise sub-components from src/enterprise/components/ to frontend/src/components/enterprise/",
   "sender": "STAFF_DEVELOPER",
-  "directiveId": "DIR-004",
-  "summary": "Surface 3 fully modernized: Full 53KB CreateJobModal parity, candidate review drawer, ATS pipeline (Kanban & List views), CompanyProfile, TeamSeats RBAC. Built in 1.27s (<4s), tsc -b clean, 33/33 Playwright a11y pass, 12/12 employer portal pass, 3/3 employer lifecycle pass."
+  "directiveId": "DIR-005",
+  "summary": "Starting Phase 1: Creating 11 missing enterprise sub-components from src/enterprise/components/ to frontend/src/components/enterprise/"
 }

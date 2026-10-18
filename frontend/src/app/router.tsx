@@ -217,11 +217,11 @@ export function AppRouter() {
             {/* ─── Enterprise Console ─── */}
             <Route
               path="/org/:slug/*"
-              element={<RequireAuth><AppShell><EnterpriseConsolePage /></AppShell></RequireAuth>}
+              element={<RequireAuth><CubaAppShell><EnterpriseConsolePage /></CubaAppShell></RequireAuth>}
             />
             <Route
               path="/org/*"
-              element={<RequireAuth><AppShell><EnterpriseConsolePage /></AppShell></RequireAuth>}
+              element={<RequireAuth><CubaAppShell><EnterpriseConsolePage /></CubaAppShell></RequireAuth>}
             />
 
             {/* ─── Admin Console ─── */}

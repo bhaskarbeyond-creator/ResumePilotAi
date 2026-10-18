@@ -1,25 +1,25 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-18T20:19:30.517Z",
-  "eventCount": 4003,
-  "activeDirectiveId": "DIR-004",
-  "activeDirectiveTitle": "Surface 3 Modernization: Full 53KB CreateJobModal Parity, Screening Questions, Candidate Review Drawer & ATS Pipeline",
+  "updatedAt": "2026-10-18T20:43:25.318Z",
+  "eventCount": 4018,
+  "activeDirectiveId": "DIR-005",
+  "activeDirectiveTitle": "Surface 4 Modernization: Complete 17-Component Enterprise Suite, Bulk Resumes, AI Quotas, RBAC, SSO & Audit Parity",
   "activeDirectiveStatus": "IN_PROGRESS",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-18T19:52:11.327Z",
-  "unreadForLead": 9,
-  "unreadForDev": 63,
+  "stallDeadline": "2026-10-18T20:31:44.876Z",
+  "unreadForLead": 14,
+  "unreadForDev": 73,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-18T19:52:11.327Z",
-    "status": "Starting Phase 1: CreateJobModal Full Parity (53KB) - creating new component in frontend/src/components/employer/",
-    "percent": 10
+    "timestamp": "2026-10-18T20:31:44.876Z",
+    "status": "Starting Phase 1: Creating 11 missing enterprise sub-components from src/enterprise/components/ to frontend/src/components/enterprise/",
+    "percent": 5
   },
   "integrity": {
     "ok": true,
-    "checked": 4003,
+    "checked": 4018,
     "legacy": 0,
     "bad": 0
   }
