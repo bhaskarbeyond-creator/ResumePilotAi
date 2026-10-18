@@ -1,7 +1,7 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-18T09:51:06.429Z",
-  "eventCount": 3904,
+  "updatedAt": "2026-10-18T10:16:52.640Z",
+  "eventCount": 3910,
   "activeDirectiveId": "DIR-002",
   "activeDirectiveTitle": "Surface 1 Modernization: Public Website, Dynamic CMS, SEO, Regional Hubs, Full Billing Checkout & Public Sharing Parity",
   "activeDirectiveStatus": "CHANGES_REQUESTED",
@@ -9,8 +9,8 @@
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
   "stallDeadline": "2026-10-18T06:36:27.129Z",
-  "unreadForLead": 31,
-  "unreadForDev": 135,
+  "unreadForLead": 32,
+  "unreadForDev": 140,
   "pendingBlockers": 0,
   "latestHeartbeat": {
     "timestamp": "2026-10-18T06:36:27.129Z",
@@ -19,7 +19,7 @@
   },
   "integrity": {
     "ok": false,
-    "checked": 3904,
+    "checked": 3910,
     "legacy": 1,
     "bad": 1
   }
