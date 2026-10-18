@@ -1,815 +1,218 @@
 /**
- * Admin Console
+ * Super Admin Control Plane & Command Center Console
  *
- * Platform administration: user management, platform stats,
- * AI settings, system configuration, and operational health.
+ * Implements the comprehensive 24-module Super Admin control plane
+ * organized across Cuba's canonical governance categories:
+ * - Observability: Command Center, Platform Health, Queues & DLQ, Operations & Maintenance, Attention Needed
+ * - Identity: Users Manager & User 360, Help Desk & Tickets
+ * - Moderation: Employer Verifications, Job Postings, Company Registry, Tenants Registry
+ * - Content: Blog Management, Marketing CMS (ATS Phrases, Reviews, Trusted By, Landing Pages)
+ * - Configuration: AI Multi-Provider Orchestration, Email & SMTP Deliverability, Security & Staff RBAC
  */
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/loading';
+import { useSearchParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
-  Users,
-  FileText,
-  Briefcase,
-  Shield,
-  Activity,
-  Search,
-  RefreshCw,
-  AlertCircle,
-  CheckCircle2,
-  XCircle,
   BarChart3,
-  Brain,
   Server,
   Database,
-  MoreVertical,
-  Eye,
-  Zap,
+  Activity,
+  AlertTriangle,
+  Users,
   HelpCircle,
-  MessageSquare,
-  Send,
-  Play,
+  ShieldCheck,
+  Briefcase,
+  FileText,
+  Brain,
+  Mail,
+  Sliders,
+  Layers,
+  Sparkles,
 } from 'lucide-react';
-import {
-  usePlatformStats,
-  useAdminUsers,
-  useAIProviders,
-  useAdminSupportTickets,
-  useAdminAuditLogs,
-  useSystemHealth,
-  useReplyToTicket,
-  useUpdateTicketStatus,
-  type PlatformStats,
-  type AdminUser,
-  type AIProviderStatus,
-  type SupportTicket,
-} from '@/hooks/use-api-hooks';
 
-type AdminTab = 'overview' | 'users' | 'ai-settings' | 'support' | 'audit' | 'database' | 'system';
+// Sub-Module Tabs
+import { AdminDashboardTab } from '@/components/admin/AdminDashboardTab';
+import { AdminHealthTab } from '@/components/admin/AdminHealthTab';
+import { AdminQueuesTab } from '@/components/admin/AdminQueuesTab';
+import { AdminOperationsTab } from '@/components/admin/AdminOperationsTab';
+import { AdminAttentionTab } from '@/components/admin/AdminAttentionTab';
+import { AdminUsersTab } from '@/components/admin/AdminUsersTab';
+import { AdminHelpDeskTab } from '@/components/admin/AdminHelpDeskTab';
+import { AdminModerationTab } from '@/components/admin/AdminModerationTab';
+import { AdminBlogManagementTab } from '@/components/admin/AdminBlogManagementTab';
+import { AdminContentMarketingTab } from '@/components/admin/AdminContentMarketingTab';
+import { AdminAiSettingsTab } from '@/components/admin/AdminAiSettingsTab';
+import { AdminEmailSmtpTab } from '@/components/admin/AdminEmailSmtpTab';
+import { AdminSecurityTab } from '@/components/admin/AdminSecurityTab';
+
+type AdminTabId =
+  | 'dashboard'
+  | 'health'
+  | 'queues'
+  | 'operations'
+  | 'attention'
+  | 'users'
+  | 'support'
+  | 'moderation'
+  | 'blog'
+  | 'content'
+  | 'ai-settings'
+  | 'email'
+  | 'security';
+
+interface NavGroup {
+  label: string;
+  items: {
+    id: AdminTabId;
+    label: string;
+    icon: typeof BarChart3;
+    badge?: string;
+  }[];
+}
+
+const NAVIGATION_GROUPS: NavGroup[] = [
+  {
+    label: 'Observability & Core',
+    items: [
+      { id: 'dashboard', label: 'Command Center', icon: BarChart3 },
+      { id: 'health', label: 'Platform Health (28 Services)', icon: Activity, badge: 'Live' },
+      { id: 'queues', label: 'Queues & Outbox DLQ', icon: Database },
+      { id: 'operations', label: 'Operations & Maintenance', icon: Server },
+      { id: 'attention', label: 'Attention Needed', icon: AlertTriangle, badge: '2' },
+    ],
+  },
+  {
+    label: 'Identity & Support',
+    items: [
+      { id: 'users', label: 'Users Manager & 360', icon: Users },
+      { id: 'support', label: 'Help Desk & Tickets', icon: HelpCircle },
+      { id: 'security', label: 'Security & Staff RBAC', icon: ShieldCheck },
+    ],
+  },
+  {
+    label: 'Moderation Hub',
+    items: [
+      { id: 'moderation', label: 'Employers, Jobs & Tenants', icon: Briefcase },
+    ],
+  },
+  {
+    label: 'Content & CMS',
+    items: [
+      { id: 'blog', label: 'Blog Engine (/blog-editor)', icon: FileText },
+      { id: 'content', label: 'ATS Phrases & Reviews', icon: Sparkles },
+    ],
+  },
+  {
+    label: 'System Configuration',
+    items: [
+      { id: 'ai-settings', label: 'AI Multi-Provider Engine', icon: Brain },
+      { id: 'email', label: 'Email & SMTP Deliverability', icon: Mail },
+    ],
+  },
+];
 
 export function AdminConsolePage() {
-  const [activeTab, setActiveTab] = useState<AdminTab>('overview');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTab = (searchParams.get('tab') as AdminTabId) || 'dashboard';
+  
+  const [activeTab, setActiveTab] = useState<AdminTabId>(requestedTab);
 
-  const tabs: { id: AdminTab; label: string; icon: typeof Users }[] = [
-    { id: 'overview', label: 'Overview', icon: BarChart3 },
-    { id: 'users', label: 'Users', icon: Users },
-    { id: 'ai-settings', label: 'AI Settings', icon: Brain },
-    { id: 'support', label: 'Support Desk', icon: HelpCircle },
-    { id: 'audit', label: 'Audit Logs', icon: Shield },
-    { id: 'database', label: 'Database & Sync', icon: Database },
-    { id: 'system', label: 'System Health', icon: Server },
-  ];
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab') as AdminTabId;
+    if (tabFromUrl && tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [searchParams]);
+
+  const handleSelectTab = (tabId: AdminTabId) => {
+    setActiveTab(tabId);
+    setSearchParams({ tab: tabId });
+  };
 
   return (
-    <div className="p-4 lg:p-6 xl:p-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-ink">Admin Console</h1>
-        <p className="mt-1 text-sm text-ink-muted">Platform administration and operational management.</p>
+    <div className="p-4 lg:p-6 xl:p-8 space-y-6 max-w-7xl mx-auto">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl font-extrabold text-ink tracking-tight">Super Admin Control Plane</h1>
+            <span className="rounded-full bg-brand-50 border border-brand-200 px-2.5 py-0.5 text-xs font-bold text-brand-700">
+              Root Level
+            </span>
+          </div>
+          <p className="mt-1 text-sm text-ink-muted">
+            Platform governance, 28-service operational telemetry, AI provider orchestration, and CMS control.
+          </p>
+        </div>
       </div>
 
       <div className="flex flex-col gap-6 lg:flex-row">
-        {/* Tab navigation */}
-        <nav className="flex shrink-0 gap-1 overflow-x-auto lg:w-48 lg:flex-col" aria-label="Admin sections">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const active = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors',
-                  active
-                    ? 'bg-brand-50 text-brand-700'
-                    : 'text-ink-secondary hover:bg-neutral-100 hover:text-ink',
-                )}
-                aria-current={active ? 'page' : undefined}
-              >
-                <Icon className={cn('size-4', active ? 'text-brand-600' : 'text-ink-muted')} />
-                {tab.label}
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Content */}
-        <div className="flex-1">
-          {activeTab === 'overview' && <AdminOverview />}
-          {activeTab === 'users' && <AdminUsers />}
-          {activeTab === 'ai-settings' && <AdminAISettings />}
-          {activeTab === 'support' && <AdminSupport />}
-          {activeTab === 'audit' && <AdminAudit />}
-          {activeTab === 'database' && <AdminDatabase />}
-          {activeTab === 'system' && <AdminSystem />}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Overview Tab ─── */
-
-function AdminOverview() {
-  const { data: stats, isLoading, error } = usePlatformStats();
-
-  const statCards = stats ? [
-    { label: 'Total Users', value: stats.totalUsers, icon: Users, color: 'bg-brand-50 text-brand-600' },
-    { label: 'Active Users', value: stats.activeUsers, icon: Activity, color: 'bg-success-50 text-success-600' },
-    { label: 'Resumes Created', value: stats.totalResumes, icon: FileText, color: 'bg-info-50 text-info-600' },
-    { label: 'Job Applications', value: stats.totalJobApplications, icon: Briefcase, color: 'bg-warning-50 text-warning-600' },
-    { label: 'AI Generations', value: stats.aiGenerations, icon: Zap, color: 'bg-purple-50 text-purple-600' },
-    { label: 'Storage Used', value: stats.storageUsed, icon: Database, color: 'bg-neutral-100 text-neutral-600' },
-  ] : [];
-
-  return (
-    <div>
-      <h2 className="text-lg font-semibold text-ink mb-4">Platform Overview</h2>
-
-      {isLoading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-24" />
-          ))}
-        </div>
-      ) : error ? (
-        <div className="flex items-center gap-2 rounded-lg border border-error-200 bg-error-50 p-3 text-sm text-error-700">
-          <AlertCircle className="size-4 shrink-0" />
-          Failed to load platform statistics.
-        </div>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {statCards.map((stat) => {
-            const Icon = stat.icon;
-            return (
-              <Card key={stat.label}>
-                <CardContent className="flex items-center gap-4 p-4">
-                  <div className={cn('flex size-12 items-center justify-center rounded-xl', stat.color)}>
-                    <Icon className="size-6" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-ink">
-                      {typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value}
-                    </div>
-                    <div className="text-xs text-ink-muted">{stat.label}</div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Quick actions */}
-      <h3 className="mt-8 mb-3 text-sm font-semibold text-ink">Quick Actions</h3>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          { label: 'Manage Users', icon: Users, desc: 'View and manage user accounts' },
-          { label: 'AI Configuration', icon: Brain, desc: 'Configure AI providers and models' },
-          { label: 'System Health', icon: Activity, desc: 'Check system operational status' },
-          { label: 'Security Audit', icon: Shield, desc: 'Review security events and logs' },
-        ].map((action) => {
-          const Icon = action.icon;
-          return (
-            <button
-              key={action.label}
-              className="flex items-start gap-3 rounded-xl border border-border bg-surface p-4 text-left transition-colors hover:bg-neutral-50"
-            >
-              <Icon className="size-5 text-ink-muted shrink-0 mt-0.5" />
-              <div>
-                <div className="text-sm font-medium text-ink">{action.label}</div>
-                <div className="text-xs text-ink-muted">{action.desc}</div>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-/* ─── Users Tab ─── */
-
-function AdminUsers() {
-  const { data: users = [], isLoading, error, refetch } = useAdminUsers();
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const filteredUsers = users.filter((u) => {
-    if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
-    return u.email.toLowerCase().includes(q) || u.displayName.toLowerCase().includes(q);
-  });
-
-  const statusColors = {
-    active: 'bg-success-100 text-success-700',
-    suspended: 'bg-error-100 text-error-700',
-    pending: 'bg-warning-100 text-warning-700',
-  };
-
-  if (isLoading) return <div className="space-y-3">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-16" />)}</div>;
-
-  return (
-    <div>
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-ink">User Management</h2>
-        <span className="text-sm text-ink-muted">{users.length} total users</span>
-      </div>
-
-      {error && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg border border-error-200 bg-error-50 p-3 text-sm text-error-700">
-          <AlertCircle className="size-4 shrink-0" />
-          {error instanceof Error ? error.message : String(error)}
-        </div>
-      )}
-
-      <div className="mb-4 relative max-w-md">
-        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-muted" />
-        <Input
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search users by name or email…"
-          className="pl-9"
-        />
-      </div>
-
-      {/* Users table */}
-      <div className="overflow-x-auto rounded-xl border border-border">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border bg-neutral-50">
-              <th className="px-4 py-3 text-left font-medium text-ink-secondary">User</th>
-              <th className="px-4 py-3 text-left font-medium text-ink-secondary">Role</th>
-              <th className="px-4 py-3 text-left font-medium text-ink-secondary">Status</th>
-              <th className="px-4 py-3 text-left font-medium text-ink-secondary">Resumes</th>
-              <th className="px-4 py-3 text-left font-medium text-ink-secondary">Last Login</th>
-              <th className="px-4 py-3 text-right font-medium text-ink-secondary">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredUsers.map((user) => (
-              <tr key={user.id} className="border-b border-border last:border-0 hover:bg-neutral-25 transition-colors">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-8 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-700">
-                      {(user.displayName?.[0] ?? user.email?.[0] ?? 'U').toUpperCase()}
-                    </div>
-                    <div>
-                      <div className="font-medium text-ink">{user.displayName || 'No name'}</div>
-                      <div className="text-xs text-ink-muted">{user.email}</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <span className={cn(
-                    'rounded-full px-2 py-0.5 text-xs font-medium',
-                    user.role === 'SUPER_ADMIN' ? 'bg-purple-100 text-purple-700' :
-                    user.role === 'ADMIN' ? 'bg-brand-100 text-brand-700' :
-                    'bg-neutral-100 text-neutral-600',
-                  )}>
-                    {user.role}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', statusColors[user.status])}>
-                    {user.status}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-ink-secondary">{user.resumeCount}</td>
-                <td className="px-4 py-3 text-xs text-ink-muted">
-                  {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <div className="flex items-center justify-end gap-1">
-                    <button className="rounded-md p-1 text-ink-muted hover:bg-neutral-100" title="View user">
-                      <Eye className="size-4" />
-                    </button>
-                    <button className="rounded-md p-1 text-ink-muted hover:bg-neutral-100" title="More actions">
-                      <MoreVertical className="size-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {filteredUsers.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-sm text-ink-muted">
-                  {searchQuery ? 'No users match your search.' : 'No users found.'}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-/* ─── AI Settings Tab ─── */
-
-function AdminAISettings() {
-  const { data: providers = [], isLoading, refetch } = useAIProviders();
-
-  const statusConfig = {
-    healthy: { label: 'Healthy', color: 'bg-success-100 text-success-700', icon: CheckCircle2 },
-    degraded: { label: 'Degraded', color: 'bg-warning-100 text-warning-700', icon: AlertCircle },
-    down: { label: 'Down', color: 'bg-error-100 text-error-700', icon: XCircle },
-  };
-
-  if (isLoading) return <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)}</div>;
-
-  return (
-    <div>
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-ink">AI Provider Status</h2>
-        <Button variant="outline" size="sm" onClick={() => refetch()}>
-          <RefreshCw className="size-3.5" /> Refresh
-        </Button>
-      </div>
-
-      <div className="space-y-4">
-        {providers.map((provider) => {
-          const config = statusConfig[provider.status];
-          const StatusIcon = config.icon;
-          return (
-            <Card key={provider.name}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <h3 className="text-sm font-semibold text-ink">{provider.name}</h3>
-                    <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium', config.color)}>
-                      <StatusIcon className="size-3" />
-                      {config.label}
-                    </span>
-                  </div>
-                  <Button variant="ghost" size="sm">Configure</Button>
+        {/* Sidebar Nav Rail */}
+        <aside className="lg:w-64 shrink-0 space-y-6">
+          <nav className="space-y-5" aria-label="Admin Control Plane Navigation">
+            {NAVIGATION_GROUPS.map((group) => (
+              <div key={group.label} className="space-y-1.5">
+                <h3 className="px-3 text-xs font-bold uppercase tracking-wider text-ink-muted">
+                  {group.label}
+                </h3>
+                <div className="space-y-1">
+                  {group.items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = activeTab === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => handleSelectTab(item.id)}
+                        className={cn(
+                          'w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition-all cursor-pointer text-left',
+                          isActive
+                            ? 'bg-brand-600 text-white shadow-xs'
+                            : 'text-ink-secondary hover:bg-neutral-100 hover:text-ink'
+                        )}
+                        aria-current={isActive ? 'page' : undefined}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Icon className={cn('size-4', isActive ? 'text-white' : 'text-ink-muted')} />
+                          <span>{item.label}</span>
+                        </div>
+                        {item.badge && (
+                          <span
+                            className={cn(
+                              'rounded-full px-1.5 py-0.2 text-[10px] font-extrabold',
+                              isActive ? 'bg-white/20 text-white' : 'bg-brand-50 text-brand-700'
+                            )}
+                          >
+                            {item.badge}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
-
-                <div className="grid grid-cols-4 gap-4 text-center">
-                  <div>
-                    <div className="text-xs text-ink-muted">Model</div>
-                    <div className="mt-0.5 text-xs font-mono font-medium text-ink truncate">{provider.model}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-ink-muted">Latency</div>
-                    <div className="mt-0.5 text-sm font-semibold text-ink">{provider.latencyMs}ms</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-ink-muted">Requests Today</div>
-                    <div className="mt-0.5 text-sm font-semibold text-ink">{provider.requestsToday.toLocaleString()}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-ink-muted">Errors Today</div>
-                    <div className={cn('mt-0.5 text-sm font-semibold', provider.errorsToday > 10 ? 'text-error-600' : provider.errorsToday > 0 ? 'text-warning-600' : 'text-success-600')}>
-                      {provider.errorsToday}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* API Key management hint */}
-      <Card className="mt-6 border-warning-200 bg-warning-50/50">
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            <Shield className="size-5 text-warning-600 shrink-0 mt-0.5" />
-            <div>
-              <h4 className="text-sm font-semibold text-warning-800">API Key Security</h4>
-              <p className="mt-1 text-xs text-warning-700">
-                API keys are stored server-side and never exposed to the client. Use the backend admin panel to update provider credentials.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-/* ─── System Tab ─── */
-
-function AdminSystem() {
-  const { data: systemChecks = [], isLoading } = useSystemHealth();
-
-  const statusIcon = {
-    healthy: <CheckCircle2 className="size-4 text-success-600" />,
-    degraded: <AlertCircle className="size-4 text-warning-600" />,
-    down: <XCircle className="size-4 text-error-600" />,
-  };
-
-  return (
-    <div>
-      <h2 className="text-lg font-semibold text-ink mb-4">System Health</h2>
-
-      {isLoading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-14" />
-          ))}
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {systemChecks.map((check) => (
-            <div
-              key={check.name}
-              className="flex items-center justify-between rounded-xl border border-border bg-surface p-4"
-            >
-              <div className="flex items-center gap-3">
-                {statusIcon[check.status as keyof typeof statusIcon] || statusIcon.healthy}
-                <div>
-                  <div className="text-sm font-medium text-ink">{check.name}</div>
-                  <div className="text-xs text-ink-muted">{check.detail}</div>
-                </div>
-              </div>
-              <span className={cn(
-                'rounded-full px-2 py-0.5 text-xs font-medium',
-                check.status === 'healthy' ? 'bg-success-100 text-success-700' :
-                check.status === 'degraded' ? 'bg-warning-100 text-warning-700' :
-                'bg-error-100 text-error-700',
-              )}>
-                {check.status}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Server info */}
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle className="text-base">Server Information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            {[
-              ['Node.js Version', 'v20.x LTS'],
-              ['Environment', 'Development'],
-              ['Uptime', '14 days, 6 hours'],
-              ['Memory Usage', '512 MB / 2 GB'],
-              ['CPU Usage', '12%'],
-              ['Disk Usage', '8.2 GB / 100 GB'],
-            ].map(([label, value]) => (
-              <div key={label} className="flex justify-between border-b border-border pb-2">
-                <span className="text-ink-muted">{label}</span>
-                <span className="font-medium text-ink">{value}</span>
               </div>
             ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
+          </nav>
+        </aside>
 
-/* ─── Support Desk Tab ─── */
-
-function AdminSupport() {
-  const { data: tickets = [], isLoading, refetch } = useAdminSupportTickets();
-  const [selectedTicketId, setSelectedTicketId] = useState<string>(tickets[0]?.id ?? '');
-  const [replyText, setReplyText] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'OPEN' | 'RESOLVED'>('ALL');
-  const replyMutation = useReplyToTicket();
-  const statusMutation = useUpdateTicketStatus();
-
-  const selectedTicket = tickets.find((t) => t.id === selectedTicketId) || tickets[0];
-
-  const handleSendReply = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!replyText.trim() || !selectedTicket) return;
-
-    await replyMutation.mutateAsync({ ticketId: selectedTicket.id, body: replyText });
-    setReplyText('');
-    refetch();
-  };
-
-  const handleStatusChange = async (status: SupportTicket['status']) => {
-    if (!selectedTicket) return;
-    await statusMutation.mutateAsync({ ticketId: selectedTicket.id, status });
-    refetch();
-  };
-
-  const filteredTickets = tickets.filter((t) => {
-    if (statusFilter === 'ALL') return true;
-    return t.status === statusFilter;
-  });
-
-  if (isLoading && tickets.length === 0) {
-    return <div className="space-y-3">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-16" />)}</div>;
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-ink">Support Help Desk</h2>
-          <p className="text-xs text-ink-muted">Manage incoming candidate and organization support inquiries.</p>
-        </div>
-        <div className="flex items-center gap-1.5 text-xs">
-          {(['ALL', 'OPEN', 'RESOLVED'] as const).map((filter) => (
-            <button
-              key={filter}
-              onClick={() => setStatusFilter(filter)}
-              className={cn(
-                'rounded-lg px-2.5 py-1 font-medium transition-colors',
-                statusFilter === filter
-                  ? 'bg-brand-600 text-white'
-                  : 'bg-neutral-100 text-ink-muted hover:bg-neutral-200',
-              )}
-            >
-              {filter}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 rounded-xl border border-border bg-surface overflow-hidden shadow-sm">
-        {/* Ticket List (5 cols) */}
-        <div className="lg:col-span-5 border-b lg:border-b-0 lg:border-r border-border divide-y divide-border overflow-y-auto max-h-[500px]">
-          {filteredTickets.map((t) => {
-            const isSelected = selectedTicket?.id === t.id;
-            return (
-              <div
-                key={t.id}
-                onClick={() => setSelectedTicketId(t.id)}
-                className={cn(
-                  'p-3.5 cursor-pointer text-left transition-colors',
-                  isSelected ? 'bg-brand-50/60' : 'hover:bg-neutral-50',
-                )}
-              >
-                <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="font-semibold text-ink truncate max-w-[180px]">{t.email}</span>
-                  <span className="text-ink-muted">{t.createdAt}</span>
-                </div>
-                <div className="text-xs font-medium text-ink line-clamp-1 mb-1.5">{t.subject}</div>
-                <div className="flex items-center gap-2">
-                  <span
-                    className={cn(
-                      'rounded px-1.5 py-0.5 text-[10px] font-semibold',
-                      t.status === 'OPEN'
-                        ? 'bg-amber-100 text-amber-700'
-                        : t.status === 'RESOLVED'
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : 'bg-blue-100 text-blue-700',
-                    )}
-                  >
-                    {t.status}
-                  </span>
-                  <span className="text-[10px] uppercase font-bold text-ink-muted">
-                    {t.priority}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-          {filteredTickets.length === 0 && (
-            <div className="p-8 text-center text-xs text-ink-muted">No tickets match your filter.</div>
-          )}
-        </div>
-
-        {/* Ticket Thread & Reply (7 cols) */}
-        <div className="lg:col-span-7 flex flex-col justify-between p-4">
-          {selectedTicket ? (
-            <>
-              <div>
-                <div className="flex items-start justify-between border-b border-border pb-3 mb-3">
-                  <div>
-                    <h3 className="text-sm font-bold text-ink">{selectedTicket.subject}</h3>
-                    <p className="text-xs text-ink-muted mt-0.5">From: {selectedTicket.email}</p>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    {selectedTicket.status !== 'RESOLVED' ? (
-                      <Button size="xs" variant="outline" onClick={() => handleStatusChange('RESOLVED')}>
-                        Mark Resolved
-                      </Button>
-                    ) : (
-                      <Button size="xs" variant="outline" onClick={() => handleStatusChange('OPEN')}>
-                        Reopen Ticket
-                      </Button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Messages */}
-                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1 text-xs">
-                  {selectedTicket.messages?.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={cn(
-                        'p-3 rounded-xl max-w-[85%]',
-                        msg.role === 'STAFF'
-                          ? 'ml-auto bg-brand-50 text-brand-900 border border-brand-100'
-                          : 'bg-neutral-100 text-neutral-800',
-                      )}
-                    >
-                      <div className="flex items-center justify-between text-[10px] font-semibold text-ink-muted mb-1">
-                        <span>{msg.role === 'STAFF' ? 'Support Specialist' : 'Candidate'}</span>
-                        <span>{msg.createdAt}</span>
-                      </div>
-                      <p className="leading-relaxed whitespace-pre-wrap">{msg.body}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Reply Form */}
-              <form onSubmit={handleSendReply} className="mt-4 pt-3 border-t border-border flex gap-2">
-                <Input
-                  value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                  placeholder="Type official staff response..."
-                  className="text-xs flex-1"
-                />
-                <Button type="submit" size="sm" disabled={!replyText.trim()} loading={replyMutation.isPending}>
-                  <Send className="size-3.5 mr-1.5" />
-                  Reply
-                </Button>
-              </form>
-            </>
-          ) : (
-            <div className="py-12 text-center text-xs text-ink-muted">Select a ticket to view thread</div>
-          )}
-        </div>
+        {/* Tab Content Surface */}
+        <main className="flex-1 min-w-0" aria-label="Admin Control Tab Content">
+          {activeTab === 'dashboard' && <AdminDashboardTab onNavigateTab={handleSelectTab} />}
+          {activeTab === 'health' && <AdminHealthTab />}
+          {activeTab === 'queues' && <AdminQueuesTab />}
+          {activeTab === 'operations' && <AdminOperationsTab />}
+          {activeTab === 'attention' && <AdminAttentionTab onNavigateTab={handleSelectTab} />}
+          {activeTab === 'users' && <AdminUsersTab />}
+          {activeTab === 'support' && <AdminHelpDeskTab />}
+          {activeTab === 'security' && <AdminSecurityTab />}
+          {activeTab === 'moderation' && <AdminModerationTab />}
+          {activeTab === 'blog' && <AdminBlogManagementTab />}
+          {activeTab === 'content' && <AdminContentMarketingTab />}
+          {activeTab === 'ai-settings' && <AdminAiSettingsTab />}
+          {activeTab === 'email' && <AdminEmailSmtpTab />}
+        </main>
       </div>
     </div>
   );
 }
-
-/* ─── Audit Logs Tab ─── */
-
-function AdminAudit() {
-  const { data: logs = [], isLoading } = useAdminAuditLogs();
-  const [filterQuery, setFilterQuery] = useState('');
-
-  const filteredLogs = logs.filter((l) => {
-    if (!filterQuery.trim()) return true;
-    const q = filterQuery.toLowerCase();
-    return l.actor.toLowerCase().includes(q) || l.action.toLowerCase().includes(q) || l.resource.toLowerCase().includes(q);
-  });
-
-  if (isLoading && logs.length === 0) {
-    return <div className="space-y-3">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12" />)}</div>;
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-ink">Administrative Audit Trail</h2>
-          <p className="text-xs text-ink-muted">Cryptographically stamped record of all administrative and security actions.</p>
-        </div>
-        <div className="w-64">
-          <Input
-            value={filterQuery}
-            onChange={(e) => setFilterQuery(e.target.value)}
-            placeholder="Filter by actor, action, target..."
-            className="text-xs"
-          />
-        </div>
-      </div>
-
-      <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
-        <table className="w-full text-xs">
-          <thead className="bg-canvas border-b border-border">
-            <tr>
-              <th className="px-4 py-3 text-left font-semibold text-ink-secondary">Timestamp</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-secondary">Actor</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-secondary">Action</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-secondary">Target Resource</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-secondary">Outcome</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-secondary">IP</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {filteredLogs.map((log) => (
-              <tr key={log.id} className="hover:bg-neutral-25 transition-colors">
-                <td className="px-4 py-3 text-ink-muted whitespace-nowrap">{log.timestamp}</td>
-                <td className="px-4 py-3 font-medium text-ink">{log.actor}</td>
-                <td className="px-4 py-3 font-mono text-[11px] text-brand-700">{log.action}</td>
-                <td className="px-4 py-3 text-ink-secondary">{log.resource}</td>
-                <td className="px-4 py-3">
-                  <span
-                    className={cn(
-                      'rounded-full px-2 py-0.5 text-[10px] font-semibold',
-                      log.outcome === 'SUCCESS'
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : 'bg-rose-100 text-rose-700',
-                    )}
-                  >
-                    {log.outcome}
-                  </span>
-                </td>
-                <td className="px-4 py-3 font-mono text-[11px] text-ink-muted">{log.ip}</td>
-              </tr>
-            ))}
-            {filteredLogs.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-xs text-ink-muted">No audit logs found.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Database & Sync Tab ─── */
-
-function AdminDatabase() {
-  const [migrating, setMigrating] = useState(false);
-  const [migratedSuccess, setMigratedSuccess] = useState(false);
-
-  const handleRunMigrations = () => {
-    setMigrating(true);
-    setTimeout(() => {
-      setMigrating(false);
-      setMigratedSuccess(true);
-      setTimeout(() => setMigratedSuccess(false), 3000);
-    }, 1200);
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-ink">Database & Sync Telemetry</h2>
-          <p className="text-xs text-ink-muted">MariaDB connection health, query budgets, outbox queues, and schema migrations.</p>
-        </div>
-        <Button size="sm" onClick={handleRunMigrations} loading={migrating}>
-          <Play className="size-3.5 mr-1.5" />
-          Run Pending Migrations
-        </Button>
-      </div>
-
-      {migratedSuccess && (
-        <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 animate-[fade-in_200ms_ease-out]">
-          <CheckCircle2 className="size-4 shrink-0" />
-          <span>All pending migrations were executed successfully. Schema version is current.</span>
-        </div>
-      )}
-
-      {/* Grid status cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: 'Database Engine', value: 'MariaDB 10.11 InnoDB', status: 'Connected', color: 'text-emerald-600' },
-          { label: 'Active Tables', value: '38 tables', status: 'Healthy', color: 'text-brand-600' },
-          { label: 'Notification Outbox', value: '0 queued', status: 'Drained', color: 'text-emerald-600' },
-          { label: 'Enterprise Outbox', value: '0 queued', status: 'Drained', color: 'text-emerald-600' },
-        ].map((item) => (
-          <Card key={item.label}>
-            <CardContent className="p-4">
-              <div className="text-xs text-ink-muted">{item.label}</div>
-              <div className="text-lg font-bold text-ink mt-1">{item.value}</div>
-              <div className={cn('text-xs font-semibold mt-1', item.color)}>● {item.status}</div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Migrations Table */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm">Schema Migration Status</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-hidden rounded-lg border border-border">
-            <table className="w-full text-xs">
-              <thead className="bg-canvas border-b border-border">
-                <tr>
-                  <th className="px-3 py-2 text-left font-semibold text-ink-secondary">Migration ID</th>
-                  <th className="px-3 py-2 text-left font-semibold text-ink-secondary">Description</th>
-                  <th className="px-3 py-2 text-left font-semibold text-ink-secondary">State</th>
-                  <th className="px-3 py-2 text-left font-semibold text-ink-secondary">Applied Date</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {[
-                  { id: '0032', name: 'Dual Database Platform Sync & Tables', status: 'APPLIED', date: 'Oct 17, 2026' },
-                  { id: '0031', name: 'Enterprise Multi-Tenant IAM & Outbox', status: 'APPLIED', date: 'Oct 16, 2026' },
-                  { id: '0030', name: 'Job Tracker Kanban Metadata Extension', status: 'APPLIED', date: 'Oct 15, 2026' },
-                  { id: '0029', name: 'AI Model Selection & Telemetry Tables', status: 'APPLIED', date: 'Oct 14, 2026' },
-                ].map((m) => (
-                  <tr key={m.id} className="hover:bg-neutral-25">
-                    <td className="px-3 py-2 font-mono font-semibold text-brand-700">{m.id}</td>
-                    <td className="px-3 py-2 text-ink font-medium">{m.name}</td>
-                    <td className="px-3 py-2">
-                      <span className="rounded bg-emerald-100 text-emerald-800 px-1.5 py-0.5 text-[10px] font-semibold">
-                        {m.status}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 text-ink-muted">{m.date}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
+export default AdminConsolePage;

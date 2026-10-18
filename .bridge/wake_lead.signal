@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-18T20:43:51.240Z",
-  "seq": 4019,
-  "id": "evt_mveamf4j_9ce79ae6f92d",
-  "type": "EVIDENCE_SUBMITTED",
-  "title": "[Evidence] DIR-005: Surface 4 Modernization: Complete 17-Component Enterprise Suite, Bulk Resumes, AI Quotas, RBAC, SSO & Audit Parity",
+  "timestamp": "2026-10-18T21:03:21.515Z",
+  "seq": 4026,
+  "id": "evt_mvebbi47_3611b08d5f83",
+  "type": "PLAN_SUBMITTED",
+  "title": "[Plan] DIR-006: Surface 5 Modernization: Complete 24-Module Admin Console, In-App Blog Editor, Maintenance Controller & AI Provider Orchestration",
   "sender": "STAFF_DEVELOPER",
-  "directiveId": "DIR-005",
-  "summary": "Surface 4: Enterprise Console & 17-Component Multi-Tenant Platform completed. 18 sub-components, typed API client enforcing X-Tenant-Id, RBAC matrix, Bulk Resumes with ATS scoring & PDF modal, DLQ replay, and email verification gate verified. 80/80 tests passing, build 1.27s (<4.0s budget), zero TypeScript errors."
+  "directiveId": "DIR-006",
+  "summary": "Surface 5 Modernization: Complete 24-Module Admin Console, In-App Blog Editor, Maintenance Controller & AI Provider Orchestration. Replace partial 12-tab AdminConsolePage with full 24-module Cuba M3 implementation. Create 12 missing sub-components, bind all to correct admin API contracts (platform health → GET /api/platform/operational-status, AI orchestration → GET /api/admin/ai-settings, support → /api/admin/support/tickets, email → /api/email/admin/*), enforce zero plaintext secret leakage with post-save masking, SUPER_AUTHORIZATION on all mutations, WCAG 2.1 AA compliance."
 }
