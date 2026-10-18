@@ -24,13 +24,16 @@ import {
   CheckCircle2,
   AlertCircle,
   Sparkles,
+  Award,
 } from 'lucide-react';
 
 interface UserStats {
-  totalResumes: number;
-  totalApplications: number;
-  interviewsCompleted: number;
-  atsScoresGenerated: number;
+  resumes: number;
+  coverLetters: number;
+  portfolios: number;
+  applications: number;
+  trackedJobs: number;
+  profileComplete: boolean;
 }
 
 interface QuickAction {
@@ -91,7 +94,7 @@ export function DashboardOverview() {
 
     async function fetchStats() {
       try {
-        const data = await get<{ stats: UserStats }>('/misc/user-stats');
+        const data = await get<{ stats: UserStats }>('/api/user-stats');
         if (!cancelled) {
           setStats(data.stats);
           setStatsError(null);
@@ -123,10 +126,10 @@ export function DashboardOverview() {
       </div>
 
       {/* Stats grid */}
-      <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
         <StatCard
           label="Resumes"
-          value={stats?.totalResumes}
+          value={stats?.resumes}
           icon={FileText}
           loading={statsLoading}
           error={statsError}
@@ -135,8 +138,28 @@ export function DashboardOverview() {
           iconBg="bg-brand-50"
         />
         <StatCard
+          label="Cover Letters"
+          value={stats?.coverLetters}
+          icon={FileText}
+          loading={statsLoading}
+          error={statsError}
+          href="/dashboard/cover-letters"
+          iconColor="text-purple-600"
+          iconBg="bg-purple-50"
+        />
+        <StatCard
+          label="Portfolios"
+          value={stats?.portfolios}
+          icon={Award}
+          loading={statsLoading}
+          error={statsError}
+          href="/dashboard/portfolio"
+          iconColor="text-amber-600"
+          iconBg="bg-amber-50"
+        />
+        <StatCard
           label="Applications"
-          value={stats?.totalApplications}
+          value={stats?.applications}
           icon={Briefcase}
           loading={statsLoading}
           error={statsError}
@@ -145,24 +168,24 @@ export function DashboardOverview() {
           iconBg="bg-info-50"
         />
         <StatCard
-          label="Interviews"
-          value={stats?.interviewsCompleted}
+          label="Tracked Jobs"
+          value={stats?.trackedJobs}
           icon={GraduationCap}
           loading={statsLoading}
           error={statsError}
-          href="/dashboard/interviews"
+          href="/dashboard/jobs"
           iconColor="text-success-600"
           iconBg="bg-success-50"
         />
         <StatCard
-          label="ATS Scores"
-          value={stats?.atsScoresGenerated}
-          icon={BarChart3}
+          label="Profile"
+          value={stats?.profileComplete ? 100 : 0}
+          icon={CheckCircle2}
           loading={statsLoading}
           error={statsError}
-          href="/dashboard/ats"
-          iconColor="text-warning-600"
-          iconBg="bg-warning-50"
+          href="/dashboard/settings"
+          iconColor="text-emerald-600"
+          iconBg="bg-emerald-50"
         />
       </div>
 
@@ -223,25 +246,25 @@ export function DashboardOverview() {
                 label="Create your first resume"
                 description="Choose from 51+ professional templates"
                 href="/build-resume"
-                completed={!!stats && stats.totalResumes > 0}
+                completed={!!stats && stats.resumes > 0}
               />
               <ChecklistItem
                 label="Check your ATS score"
                 description="See how your resume performs with ATS"
                 href="/dashboard/ats"
-                completed={!!stats && stats.atsScoresGenerated > 0}
+                completed={!!stats && stats.resumes > 0}
               />
               <ChecklistItem
                 label="Practice an interview"
                 description="Get AI-powered feedback on your responses"
                 href="/dashboard/interviews"
-                completed={!!stats && stats.interviewsCompleted > 0}
+                completed={!!stats && stats.resumes > 0}
               />
               <ChecklistItem
                 label="Explore job opportunities"
                 description="Find and track jobs that match your profile"
                 href="/dashboard/jobs"
-                completed={!!stats && stats.totalApplications > 0}
+                completed={!!stats && stats.applications > 0}
               />
             </div>
           </CardContent>

@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { PageSpinner } from '@/components/ui/loading';
-import { get, post, normalizeError } from '@/lib/api-client';
+import { get, post, put, normalizeError } from '@/lib/api-client';
 import {
   Sparkles,
   Download,
@@ -27,6 +27,7 @@ import {
   Briefcase,
   User,
   FileText,
+  Save,
 } from 'lucide-react';
 
 type ToneType = 'professional' | 'executive' | 'confident' | 'passionate' | 'technical';
@@ -83,15 +84,20 @@ export function CoverLetterBuilderPage() {
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'editor' | 'preview'>('editor');
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (id && id !== 'new') {
       setLoading(true);
-      get<CoverLetterForm>(`/covers/${id}`)
+      get<CoverLetterForm>(`/api/covers/${id}`)
         .then((res) => {
           if (res) setForm(res);
         })
-        .catch(() => {})
+        .catch((err) => {
+          setError(normalizeError(err).message);
+        })
         .finally(() => setLoading(false));
     }
   }, [id]);
@@ -99,34 +105,50 @@ export function CoverLetterBuilderPage() {
   const handleGenerateAI = async () => {
     setGenerating(true);
     try {
-      const response = await post<{ content: string }>('/generate-content', {
-        type: 'cover_letter',
-        company: form.companyName,
-        position: form.positionTitle,
+      const response = await post<{ content: string }>('/api/generate-ai-cover-letter', {
+        candidateName: form.candidateName,
+        candidateEmail: form.candidateEmail,
+        candidatePhone: form.candidatePhone,
+        candidateLocation: form.candidateLocation,
+        recipientName: form.recipientName,
+        recipientTitle: form.recipientTitle,
+        companyName: form.companyName,
+        companyAddress: form.companyAddress,
+        positionTitle: form.positionTitle,
         jobDescription: form.jobDescription,
         tone: form.tone,
       });
 
       if (response && response.content) {
         setForm((prev) => ({ ...prev, letterBody: response.content }));
+      } else {
+        throw new Error('No content returned from AI generation');
       }
-    } catch {
-      // Deterministic generative synthesis based on tone & inputs
-      const synthesized = `Dear ${form.recipientName || 'Hiring Team'} at ${form.companyName || 'your organization'},
-
-I am writing to express my strong interest in the ${form.positionTitle || 'open role'} position. Having tracked ${form.companyName || 'your company'}’s recent milestones, I am eager to contribute my background in engineering leadership, systems architecture, and scalable software delivery.
-
-Throughout my career, I have focused on delivering measurable business impact by designing robust systems, mentoring cross-functional engineering squads, and adhering to strict quality benchmarks. Given your focus on ${form.jobDescription ? 'the technical challenges outlined in your job posting' : 'accelerating product velocity'}, I am confident that my technical proficiency and collaborative mindset will make an immediate contribution.
-
-Thank you for considering my application. I look forward to speaking with you regarding how my experience aligns with your team’s strategic vision.
-
-Sincerely,
-
-${form.candidateName || 'Candidate'}`;
-
-      setForm((prev) => ({ ...prev, letterBody: synthesized }));
+    } catch (err) {
+      setError(normalizeError(err).message);
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveMessage(null);
+    try {
+      const isNew = !id || id === 'new';
+      const endpoint = isNew ? '/api/covers' : `/api/covers/${id}`;
+      const method = isNew ? post : put;
+      const result = await method<{ coverLetter: { id: string } }>(endpoint, form);
+
+      if (result.coverLetter?.id && isNew) {
+        navigate(`/cover-letter/${result.coverLetter.id}`, { replace: true });
+      }
+      setSaveMessage('Saved successfully');
+      setTimeout(() => setSaveMessage(null), 3000);
+    } catch (err) {
+      setSaveMessage(`Save failed: ${normalizeError(err).message}`);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -199,8 +221,19 @@ ${form.candidateName || 'Candidate'}`;
             <Download className="size-4 mr-1.5" />
             Export PDF
           </Button>
+
+          <Button size="sm" onClick={handleSave} loading={saving} className="bg-brand-600 hover:bg-brand-700">
+            <Save className="size-4 mr-1.5" />
+            Save
+          </Button>
         </div>
       </div>
+
+      {error && (
+        <div className="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-sm" role="alert">
+          {error}
+        </div>
+      )}
 
       {/* Main Split Interface */}
       <div className="grid flex-1 grid-cols-1 lg:grid-cols-12 gap-6 overflow-hidden">

@@ -29,6 +29,7 @@ import {
   Globe,
   Zap,
 } from 'lucide-react';
+import { JobApplicationModal } from '@/components/jobs/job-application-modal';
 
 interface Job {
   id: string;
@@ -60,6 +61,7 @@ export function JobsPortalPage() {
   const [locationFilter, setLocationFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('All');
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedJobForApply, setSelectedJobForApply] = useState<Job | null>(null);
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
@@ -232,17 +234,27 @@ export function JobsPortalPage() {
 
             <div className="space-y-4">
               {jobs.map((job) => (
-                <JobListingCard key={job.id} job={job} />
+                <JobListingCard
+                  key={job.id}
+                  job={job}
+                  onApply={() => setSelectedJobForApply(job)}
+                />
               ))}
             </div>
           </>
         )}
       </div>
+
+      <JobApplicationModal
+        isOpen={Boolean(selectedJobForApply)}
+        onClose={() => setSelectedJobForApply(null)}
+        job={selectedJobForApply}
+      />
     </div>
   );
 }
 
-function JobListingCard({ job }: { job: Job }) {
+function JobListingCard({ job, onApply }: { job: Job; onApply: () => void }) {
   const typeColors: Record<string, string> = {
     'full-time': 'bg-success-100 text-success-700',
     'part-time': 'bg-info-100 text-info-700',
@@ -307,7 +319,7 @@ function JobListingCard({ job }: { job: Job }) {
           <Button variant="ghost" size="sm">
             <Bookmark className="size-3.5" /> Save
           </Button>
-          <Button size="sm">
+          <Button size="sm" onClick={onApply}>
             Apply Now
             <ExternalLink className="size-3.5" />
           </Button>

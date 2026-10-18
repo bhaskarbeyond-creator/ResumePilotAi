@@ -6,11 +6,12 @@
  * highlight categorized skills, configure custom themes, and publish a live portfolio.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { get, post, put, normalizeError } from '@/lib/api-client';
 import {
   Globe,
   ExternalLink,
@@ -25,6 +26,8 @@ import {
   User,
   Layers,
   Share2,
+  Save,
+  Loader2,
 } from 'lucide-react';
 
 interface ProjectItem {
@@ -107,12 +110,76 @@ export function PortfolioBuilderPage() {
   const [copied, setCopied] = useState(false);
   const [isPublished, setIsPublished] = useState(true);
   const [newTag, setNewTag] = useState<{ [key: string]: string }>({});
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [portfolioId, setPortfolioId] = useState<string | null>(null);
+
+  // Load portfolio on mount
+  useEffect(() => {
+    setLoading(true);
+    get<{ portfolio: PortfolioConfig }>('/api/portfolios')
+      .then((res) => {
+        if (res?.portfolio) {
+          setData(res.portfolio);
+          setPortfolioId(res.portfolio.slug);
+          setIsPublished(true);
+        }
+      })
+      .catch((err) => {
+        setError(normalizeError(err).message);
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   const copyShareLink = () => {
     const url = `${window.location.origin}/portfolio/${data.slug}`;
     navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveMessage(null);
+    setError(null);
+    try {
+      if (portfolioId) {
+        await put<{ portfolio: PortfolioConfig }>(`/api/portfolios/${portfolioId}`, data);
+      } else {
+        const result = await post<{ portfolio: PortfolioConfig }>('/api/portfolios', data);
+        if (result?.portfolio?.slug) {
+          setPortfolioId(result.portfolio.slug);
+        }
+      }
+      setSaveMessage('Saved successfully');
+      setTimeout(() => setSaveMessage(null), 3000);
+    } catch (err) {
+      setError(normalizeError(err).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handlePublish = async () => {
+    if (!portfolioId) {
+      await handleSave();
+      if (!portfolioId) return;
+    }
+    setSaving(true);
+    setSaveMessage(null);
+    setError(null);
+    try {
+      await post<{ portfolio: PortfolioConfig }>(`/api/portfolios/${portfolioId}/publish`, {});
+      setIsPublished(true);
+      setSaveMessage('Published successfully!');
+      setTimeout(() => setSaveMessage(null), 3000);
+    } catch (err) {
+      setError(normalizeError(err).message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const addProject = () => {
@@ -206,14 +273,38 @@ export function PortfolioBuilderPage() {
           <Button
             variant={isPublished ? 'secondary' : 'primary'}
             size="sm"
-            onClick={() => setIsPublished(!isPublished)}
+            onClick={handlePublish}
+            loading={saving}
             className="text-xs font-semibold gap-1.5"
           >
             <Sparkles className="size-3.5" />
             {isPublished ? 'Update Changes' : 'Publish Portfolio'}
           </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSave}
+            loading={saving}
+            className="text-xs font-semibold gap-1.5"
+          >
+            <Save className="size-3.5" />
+            Save Draft
+          </Button>
         </div>
       </div>
+
+      {error && (
+        <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-sm" role="alert">
+          {error}
+        </div>
+      )}
+
+      {saveMessage && (
+        <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm">
+          {saveMessage}
+        </div>
+      )}
 
       {/* ─── Builder Tabs ─── */}
       <div className="flex items-center gap-1 border-b border-edge overflow-x-auto pb-px">

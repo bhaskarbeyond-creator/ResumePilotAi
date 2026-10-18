@@ -12,6 +12,7 @@ import { RouteErrorBoundary } from '@/components/guards/route-error-boundary';
 import { RequireAuth, RedirectIfAuthenticated } from '@/components/guards/require-auth';
 import { RequireExportAccess } from '@/components/guards/require-export-access';
 import { AppShell } from '@/components/layout/app-shell';
+import { CubaAppShell } from '@/components/layout/cuba-app-shell';
 
 
 // ─── Lazy-loaded pages ───
@@ -97,19 +98,21 @@ export function AppRouter() {
             <Route path="/portfolios" element={<PortfolioGalleryPage />} />
             <Route path="/portfolio/:slug" element={<PublicPortfolioPage />} />
 
-            {/* ─── Billing (mixed) ─── */}
+            {/* ─── Billing & Checkout (mixed) ─── */}
             <Route path="/billing/plans" element={<PricingPage />} />
+            <Route path="/billing/checkout" element={<PricingPage />} />
+            <Route path="/checkout" element={<PricingPage />} />
 
             {/* ─── CMS Pages ─── */}
             <Route path="/p/:custompage" element={<CMSPage />} />
             <Route path="/shared/:resumeId" element={<SharedResumePage />} />
 
-            {/* ─── Authenticated — Dashboard ─── */}
+            {/* ─── Authenticated — Candidate Dashboard (CubaAppShell) ─── */}
             <Route
               path="/dashboard"
               element={
                 <RequireAuth>
-                  <AppShell><DashboardOverview /></AppShell>
+                  <CubaAppShell><DashboardOverview /></CubaAppShell>
                 </RequireAuth>
               }
             />
@@ -117,71 +120,71 @@ export function AppRouter() {
               path="/dashboard/resumes"
               element={
                 <RequireAuth>
-                  <AppShell><ResumesPage /></AppShell>
+                  <CubaAppShell><ResumesPage /></CubaAppShell>
                 </RequireAuth>
               }
             />
             <Route
               path="/dashboard/ats"
-              element={<RequireAuth><AppShell><ATSScorePage /></AppShell></RequireAuth>}
+              element={<RequireAuth><CubaAppShell><ATSScorePage /></CubaAppShell></RequireAuth>}
             />
             <Route
               path="/dashboard/jobs/*"
-              element={<RequireAuth><AppShell><JobTrackerPage /></AppShell></RequireAuth>}
+              element={<RequireAuth><CubaAppShell><JobTrackerPage /></CubaAppShell></RequireAuth>}
             />
             <Route
               path="/dashboard/interviews/*"
-              element={<RequireAuth><AppShell><InterviewCoachPage /></AppShell></RequireAuth>}
+              element={<RequireAuth><CubaAppShell><InterviewCoachPage /></CubaAppShell></RequireAuth>}
             />
             <Route
               path="/dashboard/cover-letters/*"
-              element={<RequireAuth><AppShell><CoverLettersPage /></AppShell></RequireAuth>}
+              element={<RequireAuth><CubaAppShell><CoverLettersPage /></CubaAppShell></RequireAuth>}
             />
             <Route
               path="/dashboard/ats-score"
-              element={<RequireAuth><AppShell><ATSScorePage /></AppShell></RequireAuth>}
+              element={<RequireAuth><CubaAppShell><ATSScorePage /></CubaAppShell></RequireAuth>}
             />
             <Route
               path="/dashboard/portfolio/*"
-              element={<RequireAuth><AppShell><PortfolioBuilderPage /></AppShell></RequireAuth>}
+              element={<RequireAuth><CubaAppShell><PortfolioBuilderPage /></CubaAppShell></RequireAuth>}
             />
             <Route
               path="/dashboard/ai/*"
-              element={<RequireAuth><AppShell><AIAssistantPage /></AppShell></RequireAuth>}
+              element={<RequireAuth><CubaAppShell><AIAssistantPage /></CubaAppShell></RequireAuth>}
             />
             <Route
               path="/dashboard/messages/*"
-              element={<RequireAuth><AppShell><MessagesPage /></AppShell></RequireAuth>}
+              element={<RequireAuth><CubaAppShell><MessagesPage /></CubaAppShell></RequireAuth>}
             />
             <Route
               path="/dashboard/messages"
-              element={<RequireAuth><AppShell><MessagesPage /></AppShell></RequireAuth>}
+              element={<RequireAuth><CubaAppShell><MessagesPage /></CubaAppShell></RequireAuth>}
             />
             <Route
               path="/dashboard/favourites"
-              element={<RequireAuth><AppShell><FavouritesPage /></AppShell></RequireAuth>}
+              element={<RequireAuth><CubaAppShell><FavouritesPage /></CubaAppShell></RequireAuth>}
             />
             <Route
               path="/dashboard/notifications"
-              element={<RequireAuth><AppShell><NotificationsPage /></AppShell></RequireAuth>}
+              element={<RequireAuth><CubaAppShell><NotificationsPage /></CubaAppShell></RequireAuth>}
             />
             <Route
               path="/dashboard/support"
-              element={<RequireAuth><AppShell><SupportPage /></AppShell></RequireAuth>}
+              element={<RequireAuth><CubaAppShell><SupportPage /></CubaAppShell></RequireAuth>}
             />
             <Route
               path="/dashboard/settings/*"
-              element={<RequireAuth><AppShell><SettingsPage /></AppShell></RequireAuth>}
+              element={<RequireAuth><CubaAppShell><SettingsPage /></CubaAppShell></RequireAuth>}
             />
 
             {/* ─── Resume Builder ─── */}
             <Route
               path="/build-resume"
-              element={<RequireAuth><AppShell><ResumeBuilderPage /></AppShell></RequireAuth>}
+              element={<RequireAuth><CubaAppShell><ResumeBuilderPage /></CubaAppShell></RequireAuth>}
             />
             <Route
               path="/build-resume/:resumeId"
-              element={<RequireAuth><AppShell><ResumeBuilderPage /></AppShell></RequireAuth>}
+              element={<RequireAuth><CubaAppShell><ResumeBuilderPage /></CubaAppShell></RequireAuth>}
             />
             <Route
               path="/create-resume/*"
@@ -192,17 +195,17 @@ export function AppRouter() {
             {/* ─── Cover Letters ─── */}
             <Route
               path="/coverletter/*"
-              element={<RequireAuth><AppShell><CoverLetterBuilderPage /></AppShell></RequireAuth>}
+              element={<RequireAuth><CubaAppShell><CoverLetterBuilderPage /></CubaAppShell></RequireAuth>}
             />
             <Route
               path="/cover-letter/*"
-              element={<RequireAuth><AppShell><CoverLetterBuilderPage /></AppShell></RequireAuth>}
+              element={<RequireAuth><CubaAppShell><CoverLetterBuilderPage /></CubaAppShell></RequireAuth>}
             />
 
             {/* ─── Portfolio Builder ─── */}
             <Route
               path="/portfolio/builder"
-              element={<RequireAuth><AppShell><PortfolioBuilderPage /></AppShell></RequireAuth>}
+              element={<RequireAuth><CubaAppShell><PortfolioBuilderPage /></CubaAppShell></RequireAuth>}
             />
 
             {/* ─── Employer Portal ─── */}

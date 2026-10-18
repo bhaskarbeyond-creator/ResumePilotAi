@@ -398,7 +398,7 @@ export function useReplyToSupportTicket() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ ticketId, body }: { ticketId: string; body: string }) => {
-      const data = await post<{ ticket: SupportTicket }>(`/support/tickets/${ticketId}/reply`, { body });
+      const data = await post<{ ticket: SupportTicket }>(`/support/tickets/${ticketId}/messages`, { body });
       return SupportTicketSchema.parse(data.ticket);
     },
     onSuccess: () => {

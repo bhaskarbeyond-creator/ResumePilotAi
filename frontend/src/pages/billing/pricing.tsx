@@ -6,10 +6,11 @@
  * complete feature comparison table, and billing FAQ.
  */
 
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { CheckoutModal } from './checkout-modal';
 import { cn } from '@/lib/utils';
 import {
   Check,
@@ -185,8 +186,40 @@ const FAQS = [
 ];
 
 export function PricingPage() {
+  const [searchParams] = useSearchParams();
   const [annualBilling, setAnnualBilling] = useState(true);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [selectedPlanForCheckout, setSelectedPlanForCheckout] = useState('pro');
+
+  useEffect(() => {
+    const planParam = searchParams.get('plan');
+    const cycleParam = searchParams.get('cycle');
+    const checkoutParam = searchParams.get('checkout');
+    if (cycleParam === 'monthly') setAnnualBilling(false);
+    if (cycleParam === 'annual') setAnnualBilling(true);
+    if (planParam && ['starter', 'pro', 'executive', 'enterprise'].includes(planParam)) {
+      if (planParam !== 'starter') {
+        setSelectedPlanForCheckout(planParam);
+        setCheckoutOpen(true);
+      }
+    } else if (
+      checkoutParam === 'true' ||
+      checkoutParam === '1' ||
+      window.location.pathname.toLowerCase().includes('checkout')
+    ) {
+      setCheckoutOpen(true);
+    }
+  }, [searchParams]);
+
+  const handleSelectPlan = (planId: string) => {
+    if (planId === 'starter') {
+      window.location.href = '/login?tab=register';
+      return;
+    }
+    setSelectedPlanForCheckout(planId);
+    setCheckoutOpen(true);
+  };
 
   return (
     <div className="min-h-screen bg-canvas text-ink">
@@ -308,16 +341,27 @@ export function PricingPage() {
                   </div>
 
                   <div className="mt-8 pt-4">
-                    <Button
-                      variant={plan.ctaVariant}
-                      className="w-full font-semibold text-xs"
-                      asChild
-                    >
-                      <Link to="/login?tab=register">
+                    {plan.id === 'starter' ? (
+                      <Button
+                        variant={plan.ctaVariant}
+                        className="w-full font-semibold text-xs"
+                        asChild
+                      >
+                        <Link to="/login?tab=register">
+                          {plan.ctaText}
+                          <ArrowRight className="size-3.5 ml-1.5" />
+                        </Link>
+                      </Button>
+                    ) : (
+                      <Button
+                        variant={plan.ctaVariant}
+                        className="w-full font-semibold text-xs"
+                        onClick={() => handleSelectPlan(plan.id)}
+                      >
                         {plan.ctaText}
                         <ArrowRight className="size-3.5 ml-1.5" />
-                      </Link>
-                    </Button>
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -455,6 +499,14 @@ export function PricingPage() {
           </div>
         </div>
       </section>
+
+      {/* ─── Interactive Checkout Modal ─── */}
+      <CheckoutModal
+        open={checkoutOpen}
+        onClose={() => setCheckoutOpen(false)}
+        initialPlanId={selectedPlanForCheckout}
+        initialBillingCycle={annualBilling ? 'annual' : 'monthly'}
+      />
     </div>
   );
 }

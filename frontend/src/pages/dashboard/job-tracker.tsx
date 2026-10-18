@@ -1,25 +1,24 @@
 /**
  * Job Tracker Page
  *
- * Track job applications through stages: Applied → Interview → Offer → Accepted/Rejected.
- * Kanban-style board with list/board toggle.
+ * Contract: /api/jobs-data/tracker
+ * Track job applications through stages: Wishlist → Applied → Interview → Offer → Rejected.
+ * Kanban-style board with list/board toggle, optimistic concurrency locking with expectedRevision.
  */
 
 import { useState, useEffect, useCallback, type FormEvent } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PageSpinner, Skeleton } from '@/components/ui/loading';
+import { PageSpinner } from '@/components/ui/loading';
 import { get, post, patch, del, normalizeError } from '@/lib/api-client';
 import {
   Plus,
-  Briefcase,
   Building2,
   MapPin,
   Calendar,
   ExternalLink,
   MoreVertical,
-  Edit,
   Trash2,
   Search,
   LayoutGrid,
@@ -31,27 +30,39 @@ import {
   Star,
   AlertCircle,
   RefreshCw,
+  Bookmark,
+  ArrowRight,
 } from 'lucide-react';
 
-interface TrackedJob {
+export interface TrackedJob {
   id: string;
   company: string;
-  position: string;
+  title?: string;
+  position?: string;
   location: string;
-  status: 'applied' | 'interview' | 'offer' | 'accepted' | 'rejected';
+  status: 'wishlist' | 'applied' | 'interview' | 'offer' | 'rejected';
   url: string;
   notes: string;
-  appliedDate: string;
+  deadline?: string;
+  appliedDate?: string;
+  dateApplied?: string;
   salary?: string;
+  order?: number;
+  revision?: number;
 }
 
-const statusConfig = {
+const statusConfig: Record<
+  TrackedJob['status'],
+  { label: string; color: string; icon: typeof Clock }
+> = {
+  wishlist: { label: 'Wishlist', color: 'bg-neutral-100 text-neutral-700', icon: Bookmark },
   applied: { label: 'Applied', color: 'bg-info-100 text-info-700', icon: Clock },
   interview: { label: 'Interview', color: 'bg-warning-100 text-warning-700', icon: Calendar },
   offer: { label: 'Offer', color: 'bg-success-100 text-success-700', icon: Star },
-  accepted: { label: 'Accepted', color: 'bg-success-100 text-success-700', icon: CheckCircle2 },
   rejected: { label: 'Rejected', color: 'bg-error-100 text-error-700', icon: XCircle },
 };
+
+const boardColumns: Array<TrackedJob['status']> = ['wishlist', 'applied', 'interview', 'offer', 'rejected'];
 
 export function JobTrackerPage() {
   const [jobs, setJobs] = useState<TrackedJob[]>([]);
@@ -66,7 +77,7 @@ export function JobTrackerPage() {
     setLoading(true);
     setError(null);
     try {
-      const data = await get<{ jobs: TrackedJob[] }>('/jobs/tracker');
+      const data = await get<{ jobs: TrackedJob[] }>('/jobs-data/tracker');
       setJobs(data.jobs ?? []);
     } catch (err) {
       setError(normalizeError(err).message);
@@ -75,13 +86,38 @@ export function JobTrackerPage() {
     }
   }, []);
 
-  useEffect(() => { fetchJobs(); }, [fetchJobs]);
+  useEffect(() => {
+    fetchJobs();
+  }, [fetchJobs]);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, revision?: number) => {
     if (!confirm('Delete this tracked job?')) return;
     try {
-      await del(`/jobs/tracker/${id}`);
+      const expectedRevision = revision && revision > 0 ? revision : 1;
+      await del(`/jobs-data/tracker/${id}`, { expectedRevision });
       setJobs((prev) => prev.filter((j) => j.id !== id));
+    } catch (err) {
+      alert(normalizeError(err).message);
+    }
+  };
+
+  const handleMoveStatus = async (job: TrackedJob, nextStatus: TrackedJob['status']) => {
+    try {
+      const expectedRevision = job.revision && job.revision > 0 ? job.revision : 1;
+      const res = await patch<{ success: boolean; job: TrackedJob }>(`/jobs-data/tracker/${job.id}`, {
+        status: nextStatus,
+        expectedRevision,
+      });
+      if (res?.job) {
+        setJobs((prev) => prev.map((j) => (j.id === job.id ? res.job : j)));
+      } else {
+        setJobs((prev) =>
+          prev.map((j) =>
+            j.id === job.id ? { ...j, status: nextStatus, revision: (j.revision || 1) + 1 } : j
+          )
+        );
+      }
+      setActionMenuId(null);
     } catch (err) {
       alert(normalizeError(err).message);
     }
@@ -90,10 +126,13 @@ export function JobTrackerPage() {
   const filteredJobs = jobs.filter((j) => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
-    return j.company.toLowerCase().includes(q) || j.position.toLowerCase().includes(q) || j.location.toLowerCase().includes(q);
+    const pos = (j.title || j.position || '').toLowerCase();
+    return (
+      (j.company || '').toLowerCase().includes(q) ||
+      pos.includes(q) ||
+      (j.location || '').toLowerCase().includes(q)
+    );
   });
-
-  const boardColumns: Array<TrackedJob['status']> = ['applied', 'interview', 'offer', 'accepted', 'rejected'];
 
   if (loading) return <PageSpinner />;
 
@@ -111,14 +150,18 @@ export function JobTrackerPage() {
           <div className="flex rounded-lg border border-border bg-surface p-0.5">
             <button
               onClick={() => setView('board')}
-              className={`rounded-md px-2.5 py-1 text-sm font-medium transition-colors ${view === 'board' ? 'bg-brand-50 text-brand-700' : 'text-ink-muted hover:text-ink'}`}
+              className={`rounded-md px-2.5 py-1 text-sm font-medium transition-colors ${
+                view === 'board' ? 'bg-brand-50 text-brand-700' : 'text-ink-muted hover:text-ink'
+              }`}
               aria-label="Board view"
             >
               <LayoutGrid className="size-4" />
             </button>
             <button
               onClick={() => setView('list')}
-              className={`rounded-md px-2.5 py-1 text-sm font-medium transition-colors ${view === 'list' ? 'bg-brand-50 text-brand-700' : 'text-ink-muted hover:text-ink'}`}
+              className={`rounded-md px-2.5 py-1 text-sm font-medium transition-colors ${
+                view === 'list' ? 'bg-brand-50 text-brand-700' : 'text-ink-muted hover:text-ink'
+              }`}
               aria-label="List view"
             >
               <List className="size-4" />
@@ -158,14 +201,14 @@ export function JobTrackerPage() {
       {!error && jobs.length === 0 && (
         <Card>
           <CardContent className="flex flex-col items-center py-16 text-center">
-            <div className="mb-4 flex size-16 items-center justify-center rounded-2xl bg-info-50">
-              <Briefcase className="size-8 text-info-600" />
+            <div className="flex size-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-600 mb-4">
+              <Clock className="size-7" />
             </div>
-            <h3 className="text-lg font-semibold text-ink">Start tracking your applications</h3>
-            <p className="mt-2 max-w-sm text-sm text-ink-muted">
-              Keep track of jobs you've applied to, interviews scheduled, and offers received.
+            <h3 className="text-lg font-semibold text-ink">No tracked jobs yet</h3>
+            <p className="mt-1 max-w-sm text-sm text-ink-muted">
+              Organize your job search by tracking applications, interviews, and offers in one place.
             </p>
-            <Button className="mt-6" onClick={() => setShowAddForm(true)}>
+            <Button onClick={() => setShowAddForm(true)} className="mt-5">
               <Plus className="size-4" />
               Track Your First Job
             </Button>
@@ -183,7 +226,9 @@ export function JobTrackerPage() {
             return (
               <div key={status} className="w-72 shrink-0">
                 <div className="mb-3 flex items-center gap-2">
-                  <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${config.color}`}>
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${config.color}`}
+                  >
                     <config.icon className="size-3" />
                     {config.label}
                   </span>
@@ -192,7 +237,14 @@ export function JobTrackerPage() {
 
                 <div className="space-y-3">
                   {columnJobs.map((job) => (
-                    <JobCard key={job.id} job={job} onDelete={handleDelete} actionMenuId={actionMenuId} setActionMenuId={setActionMenuId} />
+                    <JobCard
+                      key={job.id}
+                      job={job}
+                      onDelete={() => handleDelete(job.id, job.revision)}
+                      onMoveStatus={(next) => handleMoveStatus(job, next)}
+                      actionMenuId={actionMenuId}
+                      setActionMenuId={setActionMenuId}
+                    />
                   ))}
                   {columnJobs.length === 0 && (
                     <div className="rounded-xl border-2 border-dashed border-border p-6 text-center text-xs text-ink-muted">
@@ -215,22 +267,36 @@ export function JobTrackerPage() {
               className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4 transition-colors hover:bg-neutral-25"
             >
               <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-neutral-100 font-bold text-neutral-500 text-sm">
-                {job.company.charAt(0).toUpperCase()}
+                {(job.company || 'J').charAt(0).toUpperCase()}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-semibold text-ink">{job.position}</div>
+                <div className="text-sm font-semibold text-ink">{job.title || job.position || 'Position'}</div>
                 <div className="flex items-center gap-3 text-xs text-ink-muted">
-                  <span className="flex items-center gap-1"><Building2 className="size-3" />{job.company}</span>
-                  {job.location && <span className="flex items-center gap-1"><MapPin className="size-3" />{job.location}</span>}
+                  <span className="flex items-center gap-1">
+                    <Building2 className="size-3" />
+                    {job.company}
+                  </span>
+                  {job.location && (
+                    <span className="flex items-center gap-1">
+                      <MapPin className="size-3" />
+                      {job.location}
+                    </span>
+                  )}
                 </div>
               </div>
-              <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${statusConfig[job.status].color}`}>
-                {statusConfig[job.status].label}
+              <span
+                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
+                  statusConfig[job.status]?.color || 'bg-neutral-100 text-neutral-700'
+                }`}
+              >
+                {statusConfig[job.status]?.label || job.status}
               </span>
-              <span className="text-xs text-ink-muted">{formatDateShort(job.appliedDate)}</span>
+              <span className="text-xs text-ink-muted">
+                {formatDateShort(job.appliedDate || job.dateApplied || '')}
+              </span>
               <button
                 className="rounded-md p-1 text-ink-muted hover:bg-neutral-100"
-                onClick={() => handleDelete(job.id)}
+                onClick={() => handleDelete(job.id, job.revision)}
                 aria-label="Delete"
               >
                 <Trash2 className="size-4" />
@@ -251,11 +317,13 @@ export function JobTrackerPage() {
 function JobCard({
   job,
   onDelete,
+  onMoveStatus,
   actionMenuId,
   setActionMenuId,
 }: {
   job: TrackedJob;
-  onDelete: (id: string) => void;
+  onDelete: () => void;
+  onMoveStatus: (next: TrackedJob['status']) => void;
   actionMenuId: string | null;
   setActionMenuId: (id: string | null) => void;
 }) {
@@ -264,7 +332,9 @@ function JobCard({
       <CardContent className="p-3">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <h4 className="truncate text-sm font-semibold text-ink">{job.position}</h4>
+            <h4 className="truncate text-sm font-semibold text-ink">
+              {job.title || job.position || 'Position'}
+            </h4>
             <div className="mt-1 flex items-center gap-1.5 text-xs text-ink-muted">
               <Building2 className="size-3 shrink-0" />
               <span className="truncate">{job.company}</span>
@@ -286,22 +356,36 @@ function JobCard({
             {actionMenuId === job.id && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setActionMenuId(null)} />
-                <div className="absolute right-0 top-7 z-20 w-36 rounded-lg border border-border bg-surface py-1 shadow-lg">
+                <div className="absolute right-0 top-7 z-20 w-44 rounded-lg border border-border bg-surface py-1 shadow-lg">
+                  <div className="px-3 py-1 text-[11px] font-semibold text-ink-muted uppercase tracking-wider">
+                    Move Stage
+                  </div>
+                  {boardColumns.map((st) => (
+                    <button
+                      key={st}
+                      disabled={st === job.status}
+                      className="flex w-full items-center justify-between px-3 py-1.5 text-xs text-ink hover:bg-neutral-50 disabled:opacity-40"
+                      onClick={() => onMoveStatus(st)}
+                    >
+                      <span className="capitalize">{st}</span>
+                      {st === job.status && <CheckCircle2 className="size-3 text-brand-600" />}
+                    </button>
+                  ))}
+                  <div className="my-1 border-t border-border" />
                   {job.url && (
                     <a
                       href={job.url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-ink hover:bg-neutral-50 no-underline"
-                      onClick={() => setActionMenuId(null)}
                     >
-                      <ExternalLink className="size-3.5 text-ink-muted" />
-                      Open listing
+                      <ExternalLink className="size-3.5" />
+                      View Posting
                     </a>
                   )}
                   <button
                     className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-error-600 hover:bg-error-50"
-                    onClick={() => { onDelete(job.id); setActionMenuId(null); }}
+                    onClick={onDelete}
                   >
                     <Trash2 className="size-3.5" />
                     Delete
@@ -312,7 +396,9 @@ function JobCard({
           </div>
         </div>
         <div className="mt-2 flex items-center justify-between">
-          <span className="text-xs text-ink-muted">{formatDateShort(job.appliedDate)}</span>
+          <span className="text-xs text-ink-muted">
+            {formatDateShort(job.appliedDate || job.dateApplied || '')}
+          </span>
           {job.salary && <span className="text-xs font-medium text-success-600">{job.salary}</span>}
         </div>
       </CardContent>
@@ -324,7 +410,7 @@ function AddJobModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =>
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     company: '',
-    position: '',
+    title: '',
     location: '',
     url: '',
     status: 'applied' as TrackedJob['status'],
@@ -336,7 +422,7 @@ function AddJobModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =>
     e.preventDefault();
     setSaving(true);
     try {
-      await post('/jobs/tracker', formData);
+      await post('/jobs-data/tracker', formData);
       onAdded();
       onClose();
     } catch (err) {
@@ -360,30 +446,70 @@ function AddJobModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="job-company" className="mb-1.5 block text-sm font-medium text-ink">Company *</label>
-              <Input id="job-company" value={formData.company} onChange={(e) => setFormData({ ...formData, company: e.target.value })} required placeholder="Acme Inc." />
+              <label htmlFor="job-company" className="mb-1.5 block text-sm font-medium text-ink">
+                Company *
+              </label>
+              <Input
+                id="job-company"
+                value={formData.company}
+                onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                required
+                placeholder="Acme Inc."
+              />
             </div>
             <div>
-              <label htmlFor="job-position" className="mb-1.5 block text-sm font-medium text-ink">Position *</label>
-              <Input id="job-position" value={formData.position} onChange={(e) => setFormData({ ...formData, position: e.target.value })} required placeholder="Software Engineer" />
+              <label htmlFor="job-title" className="mb-1.5 block text-sm font-medium text-ink">
+                Position / Title *
+              </label>
+              <Input
+                id="job-title"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                required
+                placeholder="Software Engineer"
+              />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="job-location" className="mb-1.5 block text-sm font-medium text-ink">Location</label>
-              <Input id="job-location" value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} placeholder="Remote / City" />
+              <label htmlFor="job-location" className="mb-1.5 block text-sm font-medium text-ink">
+                Location
+              </label>
+              <Input
+                id="job-location"
+                value={formData.location}
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                placeholder="Remote / City"
+              />
             </div>
             <div>
-              <label htmlFor="job-salary" className="mb-1.5 block text-sm font-medium text-ink">Salary Range</label>
-              <Input id="job-salary" value={formData.salary} onChange={(e) => setFormData({ ...formData, salary: e.target.value })} placeholder="$80K - $120K" />
+              <label htmlFor="job-salary" className="mb-1.5 block text-sm font-medium text-ink">
+                Salary Range
+              </label>
+              <Input
+                id="job-salary"
+                value={formData.salary}
+                onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
+                placeholder="$80K - $120K"
+              />
             </div>
           </div>
           <div>
-            <label htmlFor="job-url" className="mb-1.5 block text-sm font-medium text-ink">Job URL</label>
-            <Input id="job-url" type="url" value={formData.url} onChange={(e) => setFormData({ ...formData, url: e.target.value })} placeholder="https://..." />
+            <label htmlFor="job-url" className="mb-1.5 block text-sm font-medium text-ink">
+              Job URL
+            </label>
+            <Input
+              id="job-url"
+              type="url"
+              value={formData.url}
+              onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+              placeholder="https://..."
+            />
           </div>
           <div>
-            <label htmlFor="job-notes" className="mb-1.5 block text-sm font-medium text-ink">Notes</label>
+            <label htmlFor="job-notes" className="mb-1.5 block text-sm font-medium text-ink">
+              Notes
+            </label>
             <textarea
               id="job-notes"
               value={formData.notes}
@@ -395,7 +521,9 @@ function AddJobModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =>
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
-            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
             <Button type="submit" loading={saving}>
               <Plus className="size-4" />
               Track Application
@@ -409,6 +537,7 @@ function AddJobModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =>
 
 function formatDateShort(dateString: string): string {
   try {
+    if (!dateString) return '';
     return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   } catch {
     return '';

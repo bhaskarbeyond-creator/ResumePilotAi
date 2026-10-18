@@ -1,8 +1,12 @@
 /**
  * Settings Page
  *
- * Account settings: profile info, email, password change, connected accounts,
- * preferences, and danger zone (account deletion).
+ * Full contract implementation for Surface 2:
+ * - Profile: GET /api/users-data/profile, POST /api/users-data/profile with { expectedRevision, profile }
+ * - Password: Firebase updatePassword
+ * - 2FA MFA: POST /api/users-data/mfa/disable
+ * - Danger Zone: GDPR Export (POST /api/account/export), Account Deletion (POST /api/account/delete)
+ * - Support Desk: GET /api/support/tickets, POST /api/support/tickets, POST /api/support/tickets/:ticketId/messages
  */
 
 import { useState, useEffect, type FormEvent } from 'react';
@@ -10,8 +14,9 @@ import { useAuth } from '@/providers/auth-provider';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/loading';
 import { get, post, normalizeError } from '@/lib/api-client';
+import { auth, signOut } from '@/lib/firebase';
+import { updatePassword } from 'firebase/auth';
 import {
   User,
   Mail,
@@ -23,13 +28,14 @@ import {
   CheckCircle2,
   Save,
   Trash2,
-  Eye,
-  EyeOff,
   Globe,
-  Upload,
   HelpCircle,
   Send,
   Plus,
+  Download,
+  ShieldAlert,
+  KeyRound,
+  RefreshCw,
 } from 'lucide-react';
 import { useTheme } from '@/providers/theme-provider';
 
@@ -50,19 +56,38 @@ export function SettingsPage() {
   const { theme: currentTheme, setTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [revision, setRevision] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Security tab state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passUpdating, setPassUpdating] = useState(false);
+  const [passMessage, setPassMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Danger zone state
+  const [exportingData, setExportingData] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [mfaDisabling, setMfaDisabling] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     async function loadProfile() {
       try {
-        const data = await get<{ profile: UserProfile }>('/users/profile');
-        if (!cancelled) setProfile(data.profile);
-      } catch (err) {
+        const data = await get<{ success?: boolean; user?: { revision?: number; profile?: UserProfile } }>(
+          '/users-data/profile'
+        );
+        if (!cancelled && data.user) {
+          setRevision(Number(data.user.revision ?? 0));
+          if (data.user.profile) {
+            setProfile(data.user.profile);
+          }
+        }
+      } catch {
         if (!cancelled) {
-          // Initialize with fallback from auth
           setProfile({
             firstName: user?.displayName?.split(' ')[0] ?? '',
             lastName: user?.displayName?.split(' ').slice(1).join(' ') ?? '',
@@ -78,7 +103,9 @@ export function SettingsPage() {
       }
     }
     loadProfile();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
   const handleSaveProfile = async (e: FormEvent) => {
@@ -87,7 +114,16 @@ export function SettingsPage() {
     setSaving(true);
     setMessage(null);
     try {
-      await post('/users/profile', profile);
+      const res = await post<{ success: boolean; user?: { revision?: number; profile?: UserProfile } }>(
+        '/users-data/profile',
+        {
+          expectedRevision: revision,
+          profile,
+        }
+      );
+      if (res?.user?.revision !== undefined) {
+        setRevision(res.user.revision);
+      }
       setMessage({ type: 'success', text: 'Profile updated successfully.' });
     } catch (err) {
       const apiErr = normalizeError(err);
@@ -97,9 +133,88 @@ export function SettingsPage() {
     }
   };
 
+  const handleUpdatePassword = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!newPassword || newPassword.length < 6) {
+      setPassMessage({ type: 'error', text: 'New password must be at least 6 characters.' });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPassMessage({ type: 'error', text: 'Passwords do not match.' });
+      return;
+    }
+    setPassUpdating(true);
+    setPassMessage(null);
+    try {
+      if (auth.currentUser) {
+        await updatePassword(auth.currentUser, newPassword);
+        setPassMessage({ type: 'success', text: 'Password successfully updated.' });
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        throw new Error('No active authenticated session.');
+      }
+    } catch (err) {
+      setPassMessage({ type: 'error', text: normalizeError(err).message });
+    } finally {
+      setPassUpdating(false);
+    }
+  };
+
+  const handleExportData = async () => {
+    setExportingData(true);
+    try {
+      const data = await post<{ success: boolean; export?: unknown }>('/account/export', {});
+      const blob = new Blob([JSON.stringify(data.export || data, null, 2)], {
+        type: 'application/json',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `personal-data-export-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(`Export failed: ${normalizeError(err).message}`);
+    } finally {
+      setExportingData(false);
+    }
+  };
+
+  const handleDisableMfa = async () => {
+    if (!confirm('Disable multi-factor authentication for this account?')) return;
+    setMfaDisabling(true);
+    try {
+      await post('/users-data/mfa/disable', {});
+      alert('2FA MFA has been successfully unenrolled.');
+    } catch (err) {
+      alert(`Failed to disable 2FA: ${normalizeError(err).message}`);
+    } finally {
+      setMfaDisabling(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    const confirmation = prompt(
+      'Are you ABSOLUTELY sure? This will permanently delete your identity, resumes, cover letters, and all personal data.\n\nType DELETE to confirm:'
+    );
+    if (confirmation !== 'DELETE') return;
+
+    setDeletingAccount(true);
+    try {
+      await post('/account/delete', {});
+      await signOut();
+      window.location.href = '/';
+    } catch (err) {
+      alert(`Account deletion failed: ${normalizeError(err).message}`);
+      setDeletingAccount(false);
+    }
+  };
+
   const tabs: { id: SettingsTab; label: string; icon: typeof User }[] = [
     { id: 'profile', label: 'Profile', icon: User },
-    { id: 'security', label: 'Security', icon: Shield },
+    { id: 'security', label: 'Security & 2FA', icon: Shield },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'appearance', label: 'Appearance', icon: Palette },
     { id: 'support', label: 'Support & Tickets', icon: HelpCircle },
@@ -109,7 +224,7 @@ export function SettingsPage() {
     <div className="p-4 lg:p-6 xl:p-8">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-ink">Settings</h1>
-        <p className="mt-1 text-sm text-ink-muted">Manage your account preferences and profile.</p>
+        <p className="mt-1 text-sm text-ink-muted">Manage your account preferences, security, and profile.</p>
       </div>
 
       <div className="flex flex-col gap-6 lg:flex-row">
@@ -121,7 +236,10 @@ export function SettingsPage() {
             return (
               <button
                 key={tab.id}
-                onClick={() => { setActiveTab(tab.id); setMessage(null); }}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setMessage(null);
+                }}
                 className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
                   active
                     ? 'bg-brand-50 text-brand-700'
@@ -148,7 +266,11 @@ export function SettingsPage() {
               }`}
               role="alert"
             >
-              {message.type === 'success' ? <CheckCircle2 className="size-4 shrink-0" /> : <AlertTriangle className="size-4 shrink-0" />}
+              {message.type === 'success' ? (
+                <CheckCircle2 className="size-4 shrink-0" />
+              ) : (
+                <AlertTriangle className="size-4 shrink-0" />
+              )}
               {message.text}
             </div>
           )}
@@ -158,35 +280,17 @@ export function SettingsPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Profile Information</CardTitle>
-                <CardDescription>Update your personal information and public profile.</CardDescription>
+                <CardDescription>Update your personal details displayed on your resumes.</CardDescription>
               </CardHeader>
               <form onSubmit={handleSaveProfile}>
                 <CardContent className="space-y-4">
-                  {loading ? (
-                    <div className="space-y-4">
-                      <Skeleton className="h-9 w-full" />
-                      <Skeleton className="h-9 w-full" />
-                      <Skeleton className="h-9 w-full" />
-                    </div>
-                  ) : profile ? (
+                  {profile ? (
                     <>
-                      {/* Avatar area */}
-                      <div className="flex items-center gap-4">
-                        <div className="flex size-16 items-center justify-center rounded-full bg-brand-100 text-xl font-bold text-brand-700">
-                          {(profile.firstName?.[0] ?? '').toUpperCase()}{(profile.lastName?.[0] ?? '').toUpperCase()}
-                        </div>
-                        <div>
-                          <Button type="button" variant="outline" size="sm">
-                            <Upload className="size-3.5" />
-                            Upload photo
-                          </Button>
-                          <p className="mt-1 text-xs text-ink-muted">JPG, PNG or GIF. Max 2MB.</p>
-                        </div>
-                      </div>
-
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label htmlFor="settings-firstName" className="mb-1.5 block text-sm font-medium text-ink">First name</label>
+                          <label htmlFor="settings-firstName" className="mb-1.5 block text-sm font-medium text-ink">
+                            First name
+                          </label>
                           <Input
                             id="settings-firstName"
                             value={profile.firstName}
@@ -195,7 +299,9 @@ export function SettingsPage() {
                           />
                         </div>
                         <div>
-                          <label htmlFor="settings-lastName" className="mb-1.5 block text-sm font-medium text-ink">Last name</label>
+                          <label htmlFor="settings-lastName" className="mb-1.5 block text-sm font-medium text-ink">
+                            Last name
+                          </label>
                           <Input
                             id="settings-lastName"
                             value={profile.lastName}
@@ -207,7 +313,9 @@ export function SettingsPage() {
 
                       <div>
                         <label htmlFor="settings-email" className="mb-1.5 block text-sm font-medium text-ink">
-                          <span className="flex items-center gap-1.5"><Mail className="size-3.5 text-ink-muted" /> Email</span>
+                          <span className="flex items-center gap-1.5">
+                            <Mail className="size-3.5 text-ink-muted" /> Email
+                          </span>
                         </label>
                         <Input
                           id="settings-email"
@@ -216,11 +324,15 @@ export function SettingsPage() {
                           disabled
                           className="bg-neutral-50"
                         />
-                        <p className="mt-1 text-xs text-ink-muted">Email is managed through your authentication provider.</p>
+                        <p className="mt-1 text-xs text-ink-muted">
+                          Email is managed through your authentication provider.
+                        </p>
                       </div>
 
                       <div>
-                        <label htmlFor="settings-phone" className="mb-1.5 block text-sm font-medium text-ink">Phone</label>
+                        <label htmlFor="settings-phone" className="mb-1.5 block text-sm font-medium text-ink">
+                          Phone
+                        </label>
                         <Input
                           id="settings-phone"
                           type="tel"
@@ -232,7 +344,9 @@ export function SettingsPage() {
 
                       <div>
                         <label htmlFor="settings-location" className="mb-1.5 block text-sm font-medium text-ink">
-                          <span className="flex items-center gap-1.5"><Globe className="size-3.5 text-ink-muted" /> Location</span>
+                          <span className="flex items-center gap-1.5">
+                            <Globe className="size-3.5 text-ink-muted" /> Location
+                          </span>
                         </label>
                         <Input
                           id="settings-location"
@@ -243,7 +357,9 @@ export function SettingsPage() {
                       </div>
 
                       <div>
-                        <label htmlFor="settings-bio" className="mb-1.5 block text-sm font-medium text-ink">Bio</label>
+                        <label htmlFor="settings-bio" className="mb-1.5 block text-sm font-medium text-ink">
+                          Bio
+                        </label>
                         <textarea
                           id="settings-bio"
                           value={profile.bio}
@@ -269,6 +385,7 @@ export function SettingsPage() {
           {/* Security tab */}
           {activeTab === 'security' && (
             <div className="space-y-6">
+              {/* Password update */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -277,44 +394,143 @@ export function SettingsPage() {
                   </CardTitle>
                   <CardDescription>Change your password to keep your account secure.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <label htmlFor="current-password" className="mb-1.5 block text-sm font-medium text-ink">Current password</label>
-                    <Input id="current-password" type="password" placeholder="••••••••" autoComplete="current-password" />
-                  </div>
-                  <div>
-                    <label htmlFor="new-password" className="mb-1.5 block text-sm font-medium text-ink">New password</label>
-                    <Input id="new-password" type="password" placeholder="••••••••" autoComplete="new-password" />
-                  </div>
-                  <div>
-                    <label htmlFor="confirm-password" className="mb-1.5 block text-sm font-medium text-ink">Confirm new password</label>
-                    <Input id="confirm-password" type="password" placeholder="••••••••" autoComplete="new-password" />
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button>
-                    <Lock className="size-4" />
-                    Update Password
-                  </Button>
-                </CardFooter>
+                <form onSubmit={handleUpdatePassword}>
+                  <CardContent className="space-y-4">
+                    {passMessage && (
+                      <div
+                        className={`rounded-lg border p-3 text-sm ${
+                          passMessage.type === 'success'
+                            ? 'border-success-200 bg-success-50 text-success-700'
+                            : 'border-error-200 bg-error-50 text-error-700'
+                        }`}
+                      >
+                        {passMessage.text}
+                      </div>
+                    )}
+                    <div>
+                      <label htmlFor="current-password" className="mb-1.5 block text-sm font-medium text-ink">
+                        Current password
+                      </label>
+                      <Input
+                        id="current-password"
+                        type="password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        placeholder="••••••••"
+                        autoComplete="current-password"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="new-password" className="mb-1.5 block text-sm font-medium text-ink">
+                        New password
+                      </label>
+                      <Input
+                        id="new-password"
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="••••••••"
+                        autoComplete="new-password"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="confirm-password" className="mb-1.5 block text-sm font-medium text-ink">
+                        Confirm new password
+                      </label>
+                      <Input
+                        id="confirm-password"
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="••••••••"
+                        autoComplete="new-password"
+                      />
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Button type="submit" loading={passUpdating}>
+                      <KeyRound className="size-4" />
+                      Update Password
+                    </Button>
+                  </CardFooter>
+                </form>
               </Card>
 
-              {/* Danger zone */}
+              {/* TOTP 2FA MFA Management */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="size-4 text-ink-muted" />
+                    Two-Factor Authentication (TOTP 2FA)
+                  </CardTitle>
+                  <CardDescription>
+                    Manage server-assisted multi-factor enrollment and active authentication factors.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between rounded-lg border border-border p-4">
+                    <div>
+                      <p className="text-sm font-medium text-ink">Disable 2FA / Unenroll Factors</p>
+                      <p className="text-xs text-ink-muted">
+                        Unenroll all registered TOTP factors if you lost access to your authenticator app.
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDisableMfa}
+                      loading={mfaDisabling}
+                    >
+                      <ShieldAlert className="size-3.5 text-warning-600 mr-1" />
+                      Disable 2FA
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* GDPR Data Export & Danger zone */}
               <Card className="border-error-200">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-error-600">
                     <AlertTriangle className="size-4" />
-                    Danger Zone
+                    Danger Zone & Privacy Compliance
                   </CardTitle>
-                  <CardDescription>Irreversible actions that will permanently affect your account.</CardDescription>
+                  <CardDescription>
+                    Export your personal GDPR data archive or permanently delete your account.
+                  </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center justify-between rounded-lg border border-border bg-surface p-4">
+                    <div>
+                      <p className="text-sm font-medium text-ink">GDPR Personal Data Export</p>
+                      <p className="text-xs text-ink-muted">
+                        Download a machine-readable JSON archive of your resumes, portfolios, and history.
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleExportData}
+                      loading={exportingData}
+                    >
+                      <Download className="size-3.5 mr-1" />
+                      Export Data
+                    </Button>
+                  </div>
+
                   <div className="flex items-center justify-between rounded-lg border border-error-200 bg-error-50/50 p-4">
                     <div>
                       <p className="text-sm font-medium text-ink">Delete account</p>
-                      <p className="text-xs text-ink-muted">Permanently delete your account and all data.</p>
+                      <p className="text-xs text-ink-muted">
+                        Permanently delete your account, credentials, and all personal data.
+                      </p>
                     </div>
-                    <Button variant="destructive" size="sm">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleDeleteAccount}
+                      loading={deletingAccount}
+                    >
                       <Trash2 className="size-3.5" />
                       Delete Account
                     </Button>
@@ -425,23 +641,10 @@ interface UserTicket {
   messages?: Array<{ id: string; role: string; body: string; createdAt: string }>;
 }
 
-const DEFAULT_USER_TICKETS: UserTicket[] = [
-  {
-    id: 'tk-1',
-    subject: 'Assistance with ATS export typography formatting',
-    priority: 'normal',
-    status: 'IN_PROGRESS',
-    createdAt: 'Yesterday',
-    messages: [
-      { id: 'm-1', role: 'USER', body: 'Hi support team, I noticed my skills section was wrapped on two lines in template #4. Is there an option to adjust bullet margin?', createdAt: 'Yesterday' },
-      { id: 'm-2', role: 'STAFF', body: 'Hello! You can switch the spacing density from Comfortable to Compact under the Resume Builder > Design tab to adjust bullet line-height.', createdAt: '4 hours ago' },
-    ],
-  },
-];
-
 function CandidateSupportTab() {
-  const [tickets, setTickets] = useState<UserTicket[]>(DEFAULT_USER_TICKETS);
-  const [selectedTicketId, setSelectedTicketId] = useState<string>(DEFAULT_USER_TICKETS[0]?.id ?? '');
+  const [tickets, setTickets] = useState<UserTicket[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedTicketId, setSelectedTicketId] = useState<string>('');
   const [showNewModal, setShowNewModal] = useState(false);
   const [newSubject, setNewSubject] = useState('');
   const [newPriority, setNewPriority] = useState('normal');
@@ -449,50 +652,71 @@ function CandidateSupportTab() {
   const [replyText, setReplyText] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  const fetchTickets = async () => {
+    setLoading(true);
+    try {
+      const data = await get<{ tickets: UserTicket[] }>('/support/tickets');
+      const list = data.tickets ?? [];
+      setTickets(list);
+      if (list.length > 0 && !selectedTicketId) {
+        setSelectedTicketId(list[0].id);
+      }
+    } catch {
+      // Fallback empty
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTickets();
+  }, []);
+
   const selectedTicket = tickets.find((t) => t.id === selectedTicketId) || tickets[0];
 
-  const handleCreateTicket = (e: React.FormEvent) => {
+  const handleCreateTicket = async (e: FormEvent) => {
     e.preventDefault();
     if (!newSubject.trim() || !newMessage.trim()) return;
 
     setSubmitting(true);
-    setTimeout(() => {
-      const created: UserTicket = {
-        id: `tk-${Date.now()}`,
+    try {
+      const res = await post<{ ticket: UserTicket }>('/support/tickets', {
         subject: newSubject,
         priority: newPriority,
-        status: 'OPEN',
-        createdAt: 'Just now',
-        messages: [{ id: `m-${Date.now()}`, role: 'USER', body: newMessage, createdAt: 'Just now' }],
-      };
-      setTickets([created, ...tickets]);
-      setSelectedTicketId(created.id);
+        message: newMessage,
+      });
+      if (res?.ticket) {
+        setTickets([res.ticket, ...tickets]);
+        setSelectedTicketId(res.ticket.id);
+      }
       setShowNewModal(false);
       setNewSubject('');
       setNewMessage('');
+    } catch (err) {
+      alert(`Failed to create ticket: ${normalizeError(err).message}`);
+    } finally {
       setSubmitting(false);
-    }, 600);
+    }
   };
 
-  const handleSendReply = (e: React.FormEvent) => {
+  const handleSendReply = async (e: FormEvent) => {
     e.preventDefault();
     if (!replyText.trim() || !selectedTicket) return;
 
-    const newMsg = {
-      id: `m-${Date.now()}`,
-      role: 'USER',
-      body: replyText,
-      createdAt: 'Just now',
-    };
-
-    setTickets((prev) =>
-      prev.map((t) =>
-        t.id === selectedTicket.id
-          ? { ...t, messages: [...(t.messages || []), newMsg] }
-          : t,
-      ),
-    );
-    setReplyText('');
+    setSubmitting(true);
+    try {
+      const res = await post<{ ticket: UserTicket }>(`/support/tickets/${selectedTicket.id}/messages`, {
+        body: replyText,
+      });
+      if (res?.ticket) {
+        setTickets((prev) => prev.map((t) => (t.id === selectedTicket.id ? res.ticket : t)));
+      }
+      setReplyText('');
+    } catch (err) {
+      alert(`Failed to send reply: ${normalizeError(err).message}`);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -502,16 +726,23 @@ function CandidateSupportTab() {
           <div>
             <CardTitle className="text-base font-bold text-ink">Support & Help Desk</CardTitle>
             <CardDescription className="text-xs">
-              Reach out directly to our engineering support team for account, billing, or export assistance.
+              Direct line to our engineering team for account, billing, or export assistance.
             </CardDescription>
           </div>
-          <Button size="sm" onClick={() => setShowNewModal(true)}>
-            <Plus className="size-4 mr-1.5" />
-            New Ticket
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={fetchTickets}>
+              <RefreshCw className="size-3.5" />
+            </Button>
+            <Button size="sm" onClick={() => setShowNewModal(true)}>
+              <Plus className="size-4 mr-1.5" />
+              New Ticket
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
-          {tickets.length === 0 ? (
+          {loading ? (
+            <div className="py-12 text-center text-sm text-ink-muted">Loading tickets…</div>
+          ) : tickets.length === 0 ? (
             <div className="py-12 text-center text-sm text-ink-muted">
               You currently have no open support tickets.
             </div>
@@ -559,7 +790,7 @@ function CandidateSupportTab() {
                     <div>
                       <div className="border-b border-border pb-2 mb-3">
                         <h4 className="text-xs font-bold text-ink">{selectedTicket.subject}</h4>
-                        <span className="text-[10px] text-ink-muted">Created {selectedTicket.createdAt}</span>
+                        <span className="text-[10px] text-ink-muted">Ticket ID: {selectedTicket.id}</span>
                       </div>
                       <div className="space-y-2.5 max-h-[220px] overflow-y-auto text-xs pr-1">
                         {selectedTicket.messages?.map((m) => (
@@ -588,7 +819,7 @@ function CandidateSupportTab() {
                         placeholder="Reply to ticket..."
                         className="text-xs flex-1"
                       />
-                      <Button type="submit" size="sm" disabled={!replyText.trim()}>
+                      <Button type="submit" size="sm" disabled={!replyText.trim() || submitting}>
                         <Send className="size-3.5 mr-1" />
                         Send
                       </Button>
@@ -603,53 +834,49 @@ function CandidateSupportTab() {
         </CardContent>
       </Card>
 
-      {/* New Ticket Modal */}
+      {/* New ticket modal */}
       {showNewModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/40 backdrop-blur-xs">
-          <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-5 shadow-xl space-y-4">
-            <h3 className="text-base font-bold text-ink">Submit Support Ticket</h3>
-            <form onSubmit={handleCreateTicket} className="space-y-3 text-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl border border-border">
+            <h3 className="text-base font-bold text-ink mb-4">Create Support Ticket</h3>
+            <form onSubmit={handleCreateTicket} className="space-y-3">
               <div>
-                <label className="font-semibold text-ink block mb-1">Subject</label>
+                <label className="text-xs font-medium text-ink block mb-1">Subject</label>
                 <Input
                   value={newSubject}
                   onChange={(e) => setNewSubject(e.target.value)}
-                  placeholder="Summary of issue or question..."
+                  placeholder="Summary of your issue..."
                   required
-                  className="text-xs"
                 />
               </div>
-
               <div>
-                <label className="font-semibold text-ink block mb-1">Priority</label>
+                <label className="text-xs font-medium text-ink block mb-1">Priority</label>
                 <select
                   value={newPriority}
                   onChange={(e) => setNewPriority(e.target.value)}
-                  className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-xs text-ink focus:border-brand-500 focus:outline-none"
+                  className="w-full text-xs rounded-lg border border-border p-2 bg-surface"
                 >
-                  <option value="low">Low Priority</option>
+                  <option value="low">Low</option>
                   <option value="normal">Normal</option>
                   <option value="urgent">Urgent</option>
                 </select>
               </div>
-
               <div>
-                <label className="font-semibold text-ink block mb-1">Message Description</label>
+                <label className="text-xs font-medium text-ink block mb-1">Message</label>
                 <textarea
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Provide context or steps to reproduce..."
-                  required
                   rows={4}
-                  className="w-full rounded-lg border border-border bg-surface p-2.5 text-xs text-ink focus:border-brand-500 focus:outline-none"
+                  required
+                  placeholder="Detailed description of your question or issue..."
+                  className="w-full text-xs rounded-lg border border-border p-2 bg-surface"
                 />
               </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <Button type="button" variant="outline" size="sm" onClick={() => setShowNewModal(false)}>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button type="button" variant="outline" onClick={() => setShowNewModal(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" size="sm" loading={submitting}>
+                <Button type="submit" loading={submitting}>
                   Submit Ticket
                 </Button>
               </div>
