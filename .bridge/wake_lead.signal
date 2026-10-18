@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-18T19:52:11.377Z",
-  "seq": 4002,
-  "id": "evt_mve8rz9b_0c3e56311089",
-  "type": "HEARTBEAT",
-  "title": "[Heartbeat] Starting Phase 1: CreateJobModal Full Parity (53KB) - creating new component in frontend/src/components/employer/",
+  "timestamp": "2026-10-18T20:20:01.833Z",
+  "seq": 4004,
+  "id": "evt_mve9rs62_fbf3d12ce4a2",
+  "type": "EVIDENCE_SUBMITTED",
+  "title": "[Evidence] DIR-004: Surface 3 Modernization: Full 53KB CreateJobModal Parity, Screening Questions, Candidate Review Drawer & ATS Pipeline",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-004",
-  "summary": "Starting Phase 1: CreateJobModal Full Parity (53KB) - creating new component in frontend/src/components/employer/"
+  "summary": "Surface 3 fully modernized: Full 53KB CreateJobModal parity, candidate review drawer, ATS pipeline (Kanban & List views), CompanyProfile, TeamSeats RBAC. Built in 1.27s (<4s), tsc -b clean, 33/33 Playwright a11y pass, 12/12 employer portal pass, 3/3 employer lifecycle pass."
 }
