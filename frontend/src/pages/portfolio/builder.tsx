@@ -442,7 +442,7 @@ export function PortfolioBuilderPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {data.skills.map((cat, catIdx) => (
+            {data.skills.map((cat) => (
               <div key={cat.category} className="p-3.5 rounded-lg border border-edge bg-surface/50">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-semibold text-xs text-ink uppercase tracking-wider">{cat.category}</h3>

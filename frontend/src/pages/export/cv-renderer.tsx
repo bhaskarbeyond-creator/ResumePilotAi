@@ -369,7 +369,7 @@ export function CVRendererPage() {
           }}
         >
           {isCoverLetter ? (
-            <CoverLetterDocument resume={resumeData} palette={activePalette} templateNum={templateNum} />
+            <CoverLetterDocument resume={resumeData} palette={activePalette} />
           ) : archetype === 'two-column' ? (
             <TwoColumnTemplate resume={resumeData} palette={activePalette} />
           ) : archetype === 'modern-banner' ? (
@@ -698,7 +698,7 @@ function TwoColumnTemplate({ resume, palette }: TemplateProps) {
 }
 
 /* ─── 3. Minimal ATS-Optimized Template ─── */
-function MinimalATSTemplate({ resume, palette }: TemplateProps) {
+function MinimalATSTemplate({ resume }: TemplateProps) {
   const { heading, summary, experience, education, skillCategories } = resume;
 
   return (
@@ -888,7 +888,7 @@ function TechGridTemplate({ resume, palette }: TemplateProps) {
 }
 
 /* ─── 5. Classic Serif Template ─── */
-function ClassicSerifTemplate({ resume, palette }: TemplateProps) {
+function ClassicSerifTemplate({ resume }: TemplateProps) {
   const { heading, summary, experience, education, skillCategories } = resume;
 
   return (
@@ -1258,11 +1258,10 @@ function CompactExecTemplate({ resume, palette }: TemplateProps) {
 function CoverLetterDocument({
   resume,
   palette,
-  templateNum,
 }: {
   resume: typeof FALLBACK_RESUME;
   palette: (typeof PALETTES)[0];
-  templateNum: number;
+
 }) {
   const { heading } = resume;
   const today = new Date().toLocaleDateString('en-US', {

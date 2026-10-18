@@ -1,25 +1,25 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-17T22:59:29.060Z",
-  "eventCount": 3779,
+  "updatedAt": "2026-10-18T05:57:46.392Z",
+  "eventCount": 3834,
   "activeDirectiveId": "DIR-001",
   "activeDirectiveTitle": "SMOKE TEST: Verify Claude Code Developer Engine Integration",
   "activeDirectiveStatus": "IN_PROGRESS",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-17T20:28:48.511Z",
-  "unreadForLead": 8,
-  "unreadForDev": 33,
+  "stallDeadline": "2026-10-18T05:30:23.787Z",
+  "unreadForLead": 13,
+  "unreadForDev": 83,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-17T20:28:48.511Z",
-    "status": "In Progress",
-    "percent": 50
+    "timestamp": "2026-10-18T05:30:23.787Z",
+    "status": "Executing act phase: inspecting router.tsx, resume-builder.tsx, app-shell.tsx for invariant compliance",
+    "percent": 25
   },
   "integrity": {
     "ok": true,
-    "checked": 3779,
+    "checked": 3834,
     "legacy": 0,
     "bad": 0
   }
