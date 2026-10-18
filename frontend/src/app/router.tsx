@@ -211,7 +211,7 @@ export function AppRouter() {
             {/* ─── Employer Portal ─── */}
             <Route
               path="/employer/*"
-              element={<RequireAuth><AppShell><EmployerPortalPage /></AppShell></RequireAuth>}
+              element={<RequireAuth><CubaAppShell><EmployerPortalPage /></CubaAppShell></RequireAuth>}
             />
 
             {/* ─── Enterprise Console ─── */}

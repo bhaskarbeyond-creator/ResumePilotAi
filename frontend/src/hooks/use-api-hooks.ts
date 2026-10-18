@@ -15,19 +15,63 @@ import { get, post, patch, del, normalizeError } from '@/lib/api-client';
 // Zod Schemas (Backend Contract Validation)
 // ──────────────────────────────────────────────────────────────────────────────
 
-/** Employer Portal: Job Listing */
+/** Employer Portal: Job Listing (full backend contract) */
 export const JobListingSchema = z.object({
   id: z.string(),
   title: z.string(),
-  department: z.string(),
+  department: z.string().optional().default(''),
   location: z.string(),
-  type: z.string(),
-  salary: z.string(),
-  applicantCount: z.number().int().nonnegative(),
-  status: z.enum(['active', 'paused', 'closed']),
-  postedAt: z.string(),
+  country: z.string().optional().default(''),
+  type: z.string().optional().default(''),
+  jobType: z.string().optional().default(''),
+  workMode: z.string().optional().default(''),
+  experienceLevel: z.string().optional().default(''),
+  salary: z.string().optional().default(''),
+  minSalary: z.number().nullable().optional(),
+  maxSalary: z.number().nullable().optional(),
+  description: z.string().optional().default(''),
+  requirements: z.array(z.string()).optional().default([]),
+  benefits: z.array(z.string()).optional().default([]),
+  deadline: z.string().nullable().optional(),
+  companyId: z.string().optional().default(''),
+  company: z.string().optional().default(''),
+  companyImage: z.string().optional().default(''),
+  applicantCount: z.number().int().nonnegative().optional().default(0),
+  status: z.enum(['active', 'paused', 'closed', 'pending']).optional().default('pending'),
+  postedAt: z.string().optional().default(''),
+  revision: z.number().optional().default(0),
 });
 export type JobListing = z.infer<typeof JobListingSchema>;
+
+/** Employer Portal: Company */
+export const EmployerCompanySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  website: z.string().optional().default(''),
+  logo: z.string().optional().default(''),
+  status: z.string().optional().default('pending'),
+  featured: z.boolean().optional().default(false),
+  revision: z.number().optional().default(0),
+  createdAt: z.string().optional().default(''),
+});
+export type EmployerCompany = z.infer<typeof EmployerCompanySchema>;
+
+/** Employer Portal: Job Application (per-job scoped) */
+export const JobApplicationSchema = z.object({
+  id: z.string(),
+  jobId: z.string().optional().default(''),
+  applicantId: z.string().optional().default(''),
+  applicantName: z.string().optional().default('Applicant'),
+  applicantEmail: z.string().optional().default(''),
+  applicantPhone: z.string().optional().default(''),
+  status: z.string().optional().default('pending'),
+  coverLetter: z.string().optional().default(''),
+  resumeId: z.string().nullable().optional(),
+  resumeUrl: z.string().nullable().optional(),
+  appliedAt: z.string().nullable().optional(),
+  revision: z.number().optional().default(0),
+});
+export type JobApplication = z.infer<typeof JobApplicationSchema>;
 
 /** Admin Console: Platform Stats */
 export const PlatformStatsSchema = z.object({
@@ -142,6 +186,8 @@ export type FavouriteItem = z.infer<typeof FavouriteItemSchema>;
 export const queryKeys = {
   employer: {
     jobs: ['employer', 'jobs'] as const,
+    companies: ['employer', 'companies'] as const,
+    applications: (jobId: string) => ['employer', 'applications', jobId] as const,
   },
   enterprise: {
     // PHANTOM KEYS REMOVED: members and auditLogs hooks removed per DIR-002
@@ -176,14 +222,73 @@ export function useJobs() {
   });
 }
 
-// PHANTOM HOOK REMOVED: useCandidates() - was bound to /api/employer/candidates (non-existent endpoint)
+/** Employer companies — GET /api/employer/companies */
+export function useEmployerCompanies() {
+  return useQuery({
+    queryKey: queryKeys.employer.companies,
+    queryFn: async () => {
+      const data = await get<{ companies: EmployerCompany[] }>('/employer/companies');
+      return z.array(EmployerCompanySchema).parse(data.companies ?? []);
+    },
+    staleTime: 30_000,
+  });
+}
 
+/** Job applications for a specific job — GET /api/jobs/:jobId/applications */
+export function useJobApplications(jobId: string | null) {
+  return useQuery({
+    queryKey: queryKeys.employer.applications(jobId || ''),
+    queryFn: async () => {
+      if (!jobId) return [];
+      const data = await get<{ applications: JobApplication[] }>(`/jobs/${jobId}/applications`);
+      return z.array(JobApplicationSchema).parse(data.applications ?? []);
+    },
+    enabled: !!jobId,
+    staleTime: 15_000,
+  });
+}
+
+/** Candidate application resume — GET /api/employer/jobs/:jobId/applications/:applicationId/resume */
+export function useApplicationResume(jobId: string | null, applicationId: string | null) {
+  return useQuery({
+    queryKey: ['employer', 'application-resume', jobId, applicationId],
+    queryFn: async () => {
+      if (!jobId || !applicationId) return null;
+      const data = await get<{ success: boolean; application: JobApplication; resume: any }>(
+        `/employer/jobs/${jobId}/applications/${applicationId}/resume`
+      );
+      return data;
+    },
+    enabled: !!jobId && !!applicationId,
+    staleTime: 30_000,
+  });
+}
+
+/**
+ * Create job — POST /api/employer/jobs
+ * Backend contract: payload nested in { data: { companyId, title, ... } }
+ */
 export function useCreateJob() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (job: Omit<JobListing, 'id' | 'applicantCount' | 'postedAt'>) => {
-      const data = await post<{ job: JobListing }>('/employer/jobs', job);
-      return JobListingSchema.parse(data.job);
+    mutationFn: async (jobData: {
+      companyId: string;
+      title: string;
+      department?: string;
+      description: string;
+      location: string;
+      country?: string;
+      jobType?: string;
+      workMode?: string;
+      experienceLevel?: string;
+      minSalary?: number | null;
+      maxSalary?: number | null;
+      requirements?: string[];
+      benefits?: string[];
+      deadline?: string | null;
+    }) => {
+      const data = await post<{ success: boolean; job?: JobListing }>('/employer/jobs', { data: jobData });
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.employer.jobs });
@@ -191,12 +296,13 @@ export function useCreateJob() {
   });
 }
 
+/** Update job — PATCH /api/employer/jobs/:jobId with expectedRevision */
 export function useUpdateJob() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...jobPatch }: Partial<JobListing> & { id: string }) => {
-      const data = await patch<{ job: JobListing }>(`/employer/jobs/${id}`, jobPatch);
-      return JobListingSchema.parse(data.job);
+    mutationFn: async ({ id, expectedRevision, ...patchData }: { id: string; expectedRevision: number } & Record<string, unknown>) => {
+      const data = await patch<{ success: boolean }>(`/employer/jobs/${id}`, { ...patchData, expectedRevision });
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.employer.jobs });
@@ -204,7 +310,28 @@ export function useUpdateJob() {
   });
 }
 
-// PHANTOM HOOK REMOVED: useAdvanceCandidateStage() - was bound to /api/employer/candidates (non-existent endpoint)
+/** Update application status — PATCH /api/job-applications/:applicationId/status */
+export function useUpdateApplicationStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ applicationId, status, notes, expectedStatus, expectedRevision }: {
+      applicationId: string;
+      status: string;
+      notes?: string;
+      expectedStatus?: string;
+      expectedRevision?: number;
+    }) => {
+      const data = await patch<{ success: boolean }>(`/job-applications/${applicationId}/status`, {
+        status, notes, expectedStatus, expectedRevision,
+      });
+      return data;
+    },
+    onSuccess: () => {
+      // Invalidate all application queries
+      queryClient.invalidateQueries({ queryKey: ['employer', 'applications'] });
+    },
+  });
+}
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Enterprise Console Hooks
