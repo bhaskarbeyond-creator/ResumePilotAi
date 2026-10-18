@@ -2,11 +2,11 @@
   "id": "DIR-005",
   "title": "Surface 4 Modernization: Complete 17-Component Enterprise Suite, Bulk Resumes, AI Quotas, RBAC, SSO & Audit Parity",
   "priority": "P0",
-  "status": "IN_PROGRESS",
+  "status": "APPROVED",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-18T08:55:00.000Z",
-  "updatedAt": "2026-10-18T20:31:27.845Z",
+  "updatedAt": "2026-10-18T20:44:04.187Z",
   "projectRoot": "d:\\xampp\\htdocs\\IME365",
   "spec": "# IME365 DIR-005 — SURFACE 4 MASTER ENGINEERING DIRECTIVE\n## Surface 4 Modernization: Complete 17-Component Enterprise Suite, Bulk Resumes, AI Quotas, RBAC, SSO & Audit Parity\n\n**Directive ID:** DIR-005  \n**Priority:** P0 — Critical  \n**Surface:** Surface 4 of 5 (Enterprise Console & Multi-Tenant Platform)  \n**Depends On:** DIR-004 (Unlocks automatically when DIR-004 is certified & frozen)  \n**Executive Engineering Lead:** Antigravity (Google DeepMind)  \n**Implementation Engine:** Claude Code CLI  \n\n---\n\n### 1. Objective & Scope\nModernize the complete Enterprise Console in React 19 / TypeScript / Vite / Tailwind CSS v4 with Cuba M3 executive glassmorphic styling, ensuring 100% functional parity with legacy implementations in `src/enterprise/`:\n\n1. **Complete 17-Component Enterprise Suite Parity (NO SKELETON SHORTCUTS)**:\n   - **CRITICAL ANTI-TRUNCATION INVARIANT**: The developer MUST NOT reduce the enterprise console to a basic workspace card. All 17 legacy components from `src/enterprise/components/` must be modernized and preserved:\n     1. **`EnterpriseOverviewTab.jsx`** (27 KB): Executive KPI cards, Hiring Velocity, Time to Hire, Department Spend, and Volume metrics.\n     2. **`EnterpriseResumesTab.jsx`** (58 KB): Bulk candidate resume management, multi-candidate scoring, filtering, and talent pool tags.\n     3. **`EnterpriseAiTab.jsx` & `AiQuotaRing.jsx`** (15 KB): Departmental AI quota allocation rings, token consumption telemetry, and model limits.\n     4. **`EnterpriseUsersTab.jsx`** (50 KB): Bulk user invitations, CSV user imports, account status toggles, and seat allocation.\n     5. **`EnterpriseRolesTab.jsx`** (38 KB): Fine-grained RBAC permission matrix (Admin, Recruiter, Viewer, Member) enforced on server.\n     6. **`EnterpriseSecurityTab.jsx`** (35 KB): SAML 2.0 / OIDC SSO configuration, IP whitelisting, session timeouts, and domain challenge verification.\n     7. **`EnterpriseWorkspacesTab.jsx`** (27 KB): Multi-tenant workspace switcher with logo, branding, and billing profile.\n     8. **`EnterpriseTeamsTab.jsx`** (29 KB): Departmental hierarchy, team assignment, and hiring manager ownership.\n     9. **`EnterpriseUsageTab.jsx`** (24 KB): Seat usage meter, API consumption telemetry, and contractual license thresholds.\n     10. **`EnterpriseAuditTab.jsx`** (28 KB): Real-time tamper-evident audit event log with actor, IP, timestamp, and full CSV export.\n     11. **`EnterpriseEmailTab.jsx`** (27 KB): Enterprise notification templates, candidate email branding, and automated status alerts.\n     12. **`EnterpriseSupportTab.jsx`** (19 KB): Enterprise SLA priority support ticket submission and tracking.\n     13. **`EnterprisePlatformTab.jsx`** (16 KB): Webhook and external ATS integration endpoints.\n     14. **`EnterpriseSettingsTab.jsx`** (17 KB): Tenant-level organization settings.\n     15. **`EnterpriseConfirmModal.jsx`** (7 KB): Destructive action confirmation modals.\n     16. **`EnterpriseResumePdfModal.jsx`** (20 KB): In-console multi-resume PDF evaluation drawer.\n     17. **`HelpTooltip.jsx`**: Contextual enterprise field help tooltips.\n\n2. **Strict Multi-Tenant Isolation Invariant**:\n   - Tenant boundary invariants enforced on all client requests and backend queries.\n   - Zero cross-tenant data leakage in API payloads or DOM.\n\n---\n\n### 2. Invariants\n- ZERO CAPABILITY LOSS: Full preservation of all 17 enterprise modules (>450 KB of logic).\n- STRICT TENANT ISOLATION: Zero cross-tenant data leakage.\n- WCAG 2.1 AA ACCESSIBILITY & Sub-4s build.",
   "invariants": [
@@ -51,8 +51,70 @@
     ],
     "planHash": "7279ae045b13cb7843dea7b2884f9d50ba62e03da98e6bb25412c427e70038fd"
   },
-  "evidence": null,
-  "reviews": [],
+  "evidence": {
+    "submittedAt": "2026-10-18T20:43:50.099Z",
+    "summary": "Surface 4: Enterprise Console & 17-Component Multi-Tenant Platform completed. 18 sub-components, typed API client enforcing X-Tenant-Id, RBAC matrix, Bulk Resumes with ATS scoring & PDF modal, DLQ replay, and email verification gate verified. 80/80 tests passing, build 1.27s (<4.0s budget), zero TypeScript errors.",
+    "tests": {
+      "source": "D:\\xampp\\htdocs\\IME365\\test-results\\cuba-enterprise-console.log",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1792356230100_cuba-enterprise-console.log",
+      "sha256": "8f991c043ebc85c4d50a27b68127f2ad085cc48c1cfc5544a61085d89be33777",
+      "size": 8057
+    },
+    "domCrawl": null,
+    "artifacts": [],
+    "git": {
+      "isGit": true,
+      "head": "ac37f91f436e63117f0590f9aee64ad8dd8c13e6",
+      "branch": "arena/f4651d36-resumepilotai",
+      "dirty": false,
+      "status": ""
+    },
+    "manifestHash": "95c839f662ce1c35e43acb5caa54b27fb44886507f2365299f1bde7d09e47732"
+  },
+  "reviews": [
+    {
+      "reviewedAt": "2026-10-18T20:44:04.187Z",
+      "verdict": "APPROVED",
+      "feedback": "Automated evidence audit: All 80 tests pass with zero failures. Evidence covers all 10 acceptance criteria: 17-component parity, CubaAppShell mounting, X-Tenant-Id header enforcement on authentic endpoints (/api/enterprise/memberships, /api/enterprise/audit, /api/enterprise/workspaces, /api/enterprise/roles-matrix), zero phantom hooks, Bulk Resumes with ATS scoring/PDF, AI Quota Ring honesty, RBAC hierarchy, SSO/custom domain flows, email verification gate banner. TypeScript clean, build 1.27s (<4s budget), WCAG 2.1 AA patterns verified (focus rings, keyboard reachability, reduced motion). Tenant isolation and legacy header rejection confirmed. No capability loss detected.. Evaluated by Cloud AI Gatekeeper (nvidia/nemotron-3-ultra-550b-a55b:free).",
+      "evidenceHash": "95c839f662ce1c35e43acb5caa54b27fb44886507f2365299f1bde7d09e47732",
+      "automated": true,
+      "provenance": {
+        "actor": "LEAD_SUPERVISOR",
+        "invocation": "daemon:lead_watcher_session",
+        "automated": true,
+        "reasons": [
+          "declared",
+          "daemon-parent:lead_watcher_session",
+          "non-tty"
+        ],
+        "pid": 38888,
+        "parentPid": 33712,
+        "tty": false,
+        "at": "2026-10-18T20:44:04.186Z",
+        "explicitlyAllowed": true
+      }
+    },
+    {
+      "reviewedAt": "2026-10-18T20:44:04.609Z",
+      "verdict": "APPROVED",
+      "feedback": "",
+      "evidenceHash": "95c839f662ce1c35e43acb5caa54b27fb44886507f2365299f1bde7d09e47732",
+      "automated": true,
+      "provenance": {
+        "actor": "LEAD_SUPERVISOR",
+        "invocation": "non-tty",
+        "automated": true,
+        "reasons": [
+          "non-tty"
+        ],
+        "pid": 35144,
+        "parentPid": 40756,
+        "tty": false,
+        "at": "2026-10-18T20:44:04.608Z",
+        "explicitlyAllowed": true
+      }
+    }
+  ],
   "freeze": null,
   "heartbeats": [
     {
@@ -66,7 +128,7 @@
   ],
   "lastHeartbeatAt": "2026-10-18T20:31:44.943Z",
   "continuationPending": false,
-  "lastTransitionReason": "lead approved plan; act mode authorized",
+  "lastTransitionReason": "lead review",
   "revisionTarget": null,
   "planApproval": {
     "approvedAt": "2026-10-18T20:31:27.845Z",
