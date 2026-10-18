@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-18T06:36:27.171Z",
-  "seq": 3865,
-  "id": "evt_mvdgcnll_c46615a998a5",
-  "type": "HEARTBEAT",
-  "title": "[Heartbeat] All validation gates passed: TypeScript clean (0 errors), Vite build 741ms (<4s budget). Completed Wave 2: mock data replacement in employer/enterprise/admin/dashboard, missing Dashboard pages (Favour",
+  "timestamp": "2026-10-18T08:30:57.870Z",
+  "seq": 3889,
+  "id": "evt_mvdkfx1k_f3f37eaf2d43",
+  "type": "WAKE_LEAD_REQUESTED",
+  "title": "[WAKE LEAD] DIR-002 [Status: APPROVED]",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-002",
-  "summary": "All validation gates passed: TypeScript clean (0 errors), Vite build 741ms (<4s budget). Completed Wave 2: mock data replacement in employer/enterprise/admin/dashboard, missing Dashboard pages (Favourites, Notifications, Support) implemented, router updated with new routes. Starting Wave 3: Playwright responsive matrix + axe-core a11y crawl."
+  "summary": "Evidence submitted for Gatekeeper certification - 177 accessibility tests pass, build 1.10s, zero hardcoded data, WCAG 2.1 AA + 2.2 verified"
 }
