@@ -4,7 +4,9 @@
       "C:\\Program Files\\nodejs\\node.exe",
       "D:\\xampp\\htdocs\\IME365\\frontend\\node_modules\\@playwright\\test\\cli.js",
       "test",
-      "tests/billing-checkout.spec.ts"
+      "accessibility.spec.ts",
+      "-g",
+      "Employer Portal"
     ],
     "configFile": "D:\\xampp\\htdocs\\IME365\\frontend\\playwright.config.ts",
     "rootDir": "D:/xampp/htdocs/IME365/frontend/tests",
@@ -226,156 +228,1214 @@
   },
   "suites": [
     {
-      "title": "billing-checkout.spec.ts",
-      "file": "billing-checkout.spec.ts",
+      "title": "accessibility.spec.ts",
+      "file": "accessibility.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "Billing & Checkout Engine Parity (DIR-002)",
-          "file": "billing-checkout.spec.ts",
-          "line": 3,
+          "title": "WCAG 2.1 AA Accessibility & Responsive Crawl",
+          "file": "accessibility.spec.ts",
+          "line": 47,
+          "column": 6,
+          "specs": [],
+          "suites": [
+            {
+              "title": "Mobile (375px) Viewport",
+              "file": "accessibility.spec.ts",
+              "line": 49,
+              "column": 10,
+              "specs": [
+                {
+                  "title": "Employer Portal - axe-core accessibility scan",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium-mobile",
+                      "projectName": "chromium-mobile",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 7412,
+                          "errors": [],
+                          "stdout": [
+                            {
+                              "text": "\nMobile (375px) - Employer Portal Accessibility Violations:\n"
+                            },
+                            {
+                              "text": "  - heading-order (moderate): Ensure the order of headings is semantically correct\n"
+                            },
+                            {
+                              "text": "    Target: h3\n"
+                            },
+                            {
+                              "text": "  - landmark-unique (moderate): Ensure landmarks are unique\n"
+                            },
+                            {
+                              "text": "    Target: .overflow-x-auto\n"
+                            }
+                          ],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-10-18T20:18:27.507Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "ddd864604af8a6a0198f-9bc7e07ddb981fbc6efe",
+                  "file": "accessibility.spec.ts",
+                  "line": 156,
+                  "column": 9
+                },
+                {
+                  "title": "Employer Portal - DOM structure & interactive elements crawl",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium-mobile",
+                      "projectName": "chromium-mobile",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 3468,
+                          "errors": [],
+                          "stdout": [
+                            {
+                              "text": "\nMobile (375px) - Employer Portal Interactive Elements: 27\n"
+                            },
+                            {
+                              "text": "  By role: { native: \u001b[33m27\u001b[39m }\n"
+                            }
+                          ],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-10-18T20:18:27.560Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "ddd864604af8a6a0198f-0162cc60fa9b14431055",
+                  "file": "accessibility.spec.ts",
+                  "line": 189,
+                  "column": 9
+                },
+                {
+                  "title": "Employer Portal - Responsive layout integrity",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium-mobile",
+                      "projectName": "chromium-mobile",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 3333,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [
+                            {
+                              "text": "⚠️ Mobile (375px) - Employer Portal potentially clipped elements: [ \u001b[32m'a'\u001b[39m, \u001b[32m'p'\u001b[39m, \u001b[32m'svg'\u001b[39m, \u001b[32m'svg'\u001b[39m, \u001b[32m'svg'\u001b[39m ]\n"
+                            }
+                          ],
+                          "retry": 0,
+                          "startTime": "2026-10-18T20:18:27.472Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "ddd864604af8a6a0198f-964cb2ef7f734751b6e4",
+                  "file": "accessibility.spec.ts",
+                  "line": 226,
+                  "column": 9
+                },
+                {
+                  "title": "Employer Portal - axe-core accessibility scan",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium-tablet",
+                      "projectName": "chromium-tablet",
+                      "results": [
+                        {
+                          "workerIndex": 8,
+                          "parallelIndex": 5,
+                          "status": "passed",
+                          "duration": 4175,
+                          "errors": [],
+                          "stdout": [
+                            {
+                              "text": "\nMobile (375px) - Employer Portal Accessibility Violations:\n"
+                            },
+                            {
+                              "text": "  - heading-order (moderate): Ensure the order of headings is semantically correct\n"
+                            },
+                            {
+                              "text": "    Target: h3\n"
+                            },
+                            {
+                              "text": "  - landmark-unique (moderate): Ensure landmarks are unique\n"
+                            },
+                            {
+                              "text": "    Target: .overflow-x-auto\n"
+                            }
+                          ],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-10-18T20:18:36.990Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "ddd864604af8a6a0198f-52267deef7f8ee3eebe8",
+                  "file": "accessibility.spec.ts",
+                  "line": 156,
+                  "column": 9
+                },
+                {
+                  "title": "Employer Portal - DOM structure & interactive elements crawl",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium-tablet",
+                      "projectName": "chromium-tablet",
+                      "results": [
+                        {
+                          "workerIndex": 9,
+                          "parallelIndex": 7,
+                          "status": "passed",
+                          "duration": 2565,
+                          "errors": [],
+                          "stdout": [
+                            {
+                              "text": "\nMobile (375px) - Employer Portal Interactive Elements: 27\n"
+                            },
+                            {
+                              "text": "  By role: { native: \u001b[33m27\u001b[39m }\n"
+                            }
+                          ],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-10-18T20:18:37.956Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "ddd864604af8a6a0198f-61fe0af425a30ae8b4b5",
+                  "file": "accessibility.spec.ts",
+                  "line": 189,
+                  "column": 9
+                },
+                {
+                  "title": "Employer Portal - Responsive layout integrity",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium-tablet",
+                      "projectName": "chromium-tablet",
+                      "results": [
+                        {
+                          "workerIndex": 11,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 7326,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [
+                            {
+                              "text": "⚠️ Mobile (375px) - Employer Portal potentially clipped elements: [ \u001b[32m'a'\u001b[39m, \u001b[32m'p'\u001b[39m, \u001b[32m'svg'\u001b[39m, \u001b[32m'svg'\u001b[39m, \u001b[32m'svg'\u001b[39m ]\n"
+                            }
+                          ],
+                          "retry": 0,
+                          "startTime": "2026-10-18T20:18:37.897Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "ddd864604af8a6a0198f-317ce362cbdace751c0a",
+                  "file": "accessibility.spec.ts",
+                  "line": 226,
+                  "column": 9
+                },
+                {
+                  "title": "Employer Portal - axe-core accessibility scan",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium-desktop",
+                      "projectName": "chromium-desktop",
+                      "results": [
+                        {
+                          "workerIndex": 17,
+                          "parallelIndex": 5,
+                          "status": "passed",
+                          "duration": 4258,
+                          "errors": [],
+                          "stdout": [
+                            {
+                              "text": "\nMobile (375px) - Employer Portal Accessibility Violations:\n"
+                            },
+                            {
+                              "text": "  - heading-order (moderate): Ensure the order of headings is semantically correct\n"
+                            },
+                            {
+                              "text": "    Target: h3\n"
+                            },
+                            {
+                              "text": "  - landmark-unique (moderate): Ensure landmarks are unique\n"
+                            },
+                            {
+                              "text": "    Target: .overflow-x-auto\n"
+                            }
+                          ],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-10-18T20:18:47.471Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "ddd864604af8a6a0198f-1f51082a361915fa765d",
+                  "file": "accessibility.spec.ts",
+                  "line": 156,
+                  "column": 9
+                },
+                {
+                  "title": "Employer Portal - DOM structure & interactive elements crawl",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium-desktop",
+                      "projectName": "chromium-desktop",
+                      "results": [
+                        {
+                          "workerIndex": 16,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 2704,
+                          "errors": [],
+                          "stdout": [
+                            {
+                              "text": "\nMobile (375px) - Employer Portal Interactive Elements: 27\n"
+                            },
+                            {
+                              "text": "  By role: { native: \u001b[33m27\u001b[39m }\n"
+                            }
+                          ],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-10-18T20:18:47.345Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "ddd864604af8a6a0198f-3ee872b3f80d37326bc8",
+                  "file": "accessibility.spec.ts",
+                  "line": 189,
+                  "column": 9
+                },
+                {
+                  "title": "Employer Portal - Responsive layout integrity",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium-desktop",
+                      "projectName": "chromium-desktop",
+                      "results": [
+                        {
+                          "workerIndex": 20,
+                          "parallelIndex": 3,
+                          "status": "passed",
+                          "duration": 2128,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [
+                            {
+                              "text": "⚠️ Mobile (375px) - Employer Portal potentially clipped elements: [ \u001b[32m'a'\u001b[39m, \u001b[32m'p'\u001b[39m, \u001b[32m'svg'\u001b[39m, \u001b[32m'svg'\u001b[39m, \u001b[32m'svg'\u001b[39m ]\n"
+                            }
+                          ],
+                          "retry": 0,
+                          "startTime": "2026-10-18T20:18:47.486Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "ddd864604af8a6a0198f-e213f86e2dedf2c69a6e",
+                  "file": "accessibility.spec.ts",
+                  "line": 226,
+                  "column": 9
+                }
+              ]
+            },
+            {
+              "title": "Tablet (768px) Viewport",
+              "file": "accessibility.spec.ts",
+              "line": 49,
+              "column": 10,
+              "specs": [
+                {
+                  "title": "Employer Portal - axe-core accessibility scan",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium-mobile",
+                      "projectName": "chromium-mobile",
+                      "results": [
+                        {
+                          "workerIndex": 3,
+                          "parallelIndex": 3,
+                          "status": "passed",
+                          "duration": 8548,
+                          "errors": [],
+                          "stdout": [
+                            {
+                              "text": "\nTablet (768px) - Employer Portal Accessibility Violations:\n"
+                            },
+                            {
+                              "text": "  - heading-order (moderate): Ensure the order of headings is semantically correct\n"
+                            },
+                            {
+                              "text": "    Target: h3\n"
+                            },
+                            {
+                              "text": "  - landmark-unique (moderate): Ensure landmarks are unique\n"
+                            },
+                            {
+                              "text": "    Target: .overflow-x-auto\n"
+                            }
+                          ],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-10-18T20:18:27.513Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "ddd864604af8a6a0198f-97c4ee858eb789eb86a2",
+                  "file": "accessibility.spec.ts",
+                  "line": 156,
+                  "column": 9
+                },
+                {
+                  "title": "Employer Portal - DOM structure & interactive elements crawl",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium-mobile",
+                      "projectName": "chromium-mobile",
+                      "results": [
+                        {
+                          "workerIndex": 4,
+                          "parallelIndex": 4,
+                          "status": "passed",
+                          "duration": 3261,
+                          "errors": [],
+                          "stdout": [
+                            {
+                              "text": "\nTablet (768px) - Employer Portal Interactive Elements: 0\n"
+                            },
+                            {
+                              "text": "  By role: {}\n"
+                            }
+                          ],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-10-18T20:18:27.515Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "ddd864604af8a6a0198f-0599e62f735e8ff75dc3",
+                  "file": "accessibility.spec.ts",
+                  "line": 189,
+                  "column": 9
+                },
+                {
+                  "title": "Employer Portal - Responsive layout integrity",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium-mobile",
+                      "projectName": "chromium-mobile",
+                      "results": [
+                        {
+                          "workerIndex": 5,
+                          "parallelIndex": 5,
+                          "status": "passed",
+                          "duration": 3764,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [
+                            {
+                              "text": "⚠️ Tablet (768px) - Employer Portal potentially clipped elements: [ \u001b[32m'a'\u001b[39m ]\n"
+                            }
+                          ],
+                          "retry": 0,
+                          "startTime": "2026-10-18T20:18:27.488Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "ddd864604af8a6a0198f-2171e8757080b4e318b8",
+                  "file": "accessibility.spec.ts",
+                  "line": 226,
+                  "column": 9
+                },
+                {
+                  "title": "Employer Portal - axe-core accessibility scan",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium-tablet",
+                      "projectName": "chromium-tablet",
+                      "results": [
+                        {
+                          "workerIndex": 10,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 6384,
+                          "errors": [],
+                          "stdout": [
+                            {
+                              "text": "\nTablet (768px) - Employer Portal Accessibility Violations:\n"
+                            },
+                            {
+                              "text": "  - heading-order (moderate): Ensure the order of headings is semantically correct\n"
+                            },
+                            {
+                              "text": "    Target: h3\n"
+                            },
+                            {
+                              "text": "  - landmark-unique (moderate): Ensure landmarks are unique\n"
+                            },
+                            {
+                              "text": "    Target: .overflow-x-auto\n"
+                            }
+                          ],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-10-18T20:18:37.800Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "ddd864604af8a6a0198f-a7306a23823c0b062bcd",
+                  "file": "accessibility.spec.ts",
+                  "line": 156,
+                  "column": 9
+                },
+                {
+                  "title": "Employer Portal - DOM structure & interactive elements crawl",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium-tablet",
+                      "projectName": "chromium-tablet",
+                      "results": [
+                        {
+                          "workerIndex": 12,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 2676,
+                          "errors": [],
+                          "stdout": [
+                            {
+                              "text": "\nTablet (768px) - Employer Portal Interactive Elements: 27\n"
+                            },
+                            {
+                              "text": "  By role: { native: \u001b[33m27\u001b[39m }\n"
+                            }
+                          ],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-10-18T20:18:37.884Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "ddd864604af8a6a0198f-4f5e3551b01994a86e9a",
+                  "file": "accessibility.spec.ts",
+                  "line": 189,
+                  "column": 9
+                },
+                {
+                  "title": "Employer Portal - Responsive layout integrity",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium-tablet",
+                      "projectName": "chromium-tablet",
+                      "results": [
+                        {
+                          "workerIndex": 13,
+                          "parallelIndex": 3,
+                          "status": "passed",
+                          "duration": 3453,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [
+                            {
+                              "text": "⚠️ Tablet (768px) - Employer Portal potentially clipped elements: [ \u001b[32m'a'\u001b[39m, \u001b[32m'p'\u001b[39m ]\n"
+                            }
+                          ],
+                          "retry": 0,
+                          "startTime": "2026-10-18T20:18:39.446Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "ddd864604af8a6a0198f-bc59ed86777c42b4da8f",
+                  "file": "accessibility.spec.ts",
+                  "line": 226,
+                  "column": 9
+                },
+                {
+                  "title": "Employer Portal - axe-core accessibility scan",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium-desktop",
+                      "projectName": "chromium-desktop",
+                      "results": [
+                        {
+                          "workerIndex": 18,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 4565,
+                          "errors": [],
+                          "stdout": [
+                            {
+                              "text": "\nTablet (768px) - Employer Portal Accessibility Violations:\n"
+                            },
+                            {
+                              "text": "  - heading-order (moderate): Ensure the order of headings is semantically correct\n"
+                            },
+                            {
+                              "text": "    Target: h3\n"
+                            },
+                            {
+                              "text": "  - landmark-unique (moderate): Ensure landmarks are unique\n"
+                            },
+                            {
+                              "text": "    Target: .overflow-x-auto\n"
+                            }
+                          ],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-10-18T20:18:47.455Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "ddd864604af8a6a0198f-99d9c8f4d8c9ad69a7ba",
+                  "file": "accessibility.spec.ts",
+                  "line": 156,
+                  "column": 9
+                },
+                {
+                  "title": "Employer Portal - DOM structure & interactive elements crawl",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium-desktop",
+                      "projectName": "chromium-desktop",
+                      "results": [
+                        {
+                          "workerIndex": 22,
+                          "parallelIndex": 7,
+                          "status": "passed",
+                          "duration": 2314,
+                          "errors": [],
+                          "stdout": [
+                            {
+                              "text": "\nTablet (768px) - Employer Portal Interactive Elements: 27\n"
+                            },
+                            {
+                              "text": "  By role: { native: \u001b[33m27\u001b[39m }\n"
+                            }
+                          ],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-10-18T20:18:47.421Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "ddd864604af8a6a0198f-fa39130f03e3bc616f86",
+                  "file": "accessibility.spec.ts",
+                  "line": 189,
+                  "column": 9
+                },
+                {
+                  "title": "Employer Portal - Responsive layout integrity",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium-desktop",
+                      "projectName": "chromium-desktop",
+                      "results": [
+                        {
+                          "workerIndex": 19,
+                          "parallelIndex": 4,
+                          "status": "passed",
+                          "duration": 2738,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [
+                            {
+                              "text": "⚠️ Tablet (768px) - Employer Portal potentially clipped elements: [ \u001b[32m'a'\u001b[39m, \u001b[32m'p'\u001b[39m ]\n"
+                            }
+                          ],
+                          "retry": 0,
+                          "startTime": "2026-10-18T20:18:47.659Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "ddd864604af8a6a0198f-d457d1b9c6b362913c58",
+                  "file": "accessibility.spec.ts",
+                  "line": 226,
+                  "column": 9
+                }
+              ]
+            },
+            {
+              "title": "Desktop (1440px) Viewport",
+              "file": "accessibility.spec.ts",
+              "line": 49,
+              "column": 10,
+              "specs": [
+                {
+                  "title": "Employer Portal - axe-core accessibility scan",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium-mobile",
+                      "projectName": "chromium-mobile",
+                      "results": [
+                        {
+                          "workerIndex": 6,
+                          "parallelIndex": 6,
+                          "status": "passed",
+                          "duration": 8466,
+                          "errors": [],
+                          "stdout": [
+                            {
+                              "text": "\nDesktop (1440px) - Employer Portal Accessibility Violations:\n"
+                            },
+                            {
+                              "text": "  - heading-order (moderate): Ensure the order of headings is semantically correct\n"
+                            },
+                            {
+                              "text": "    Target: h3\n"
+                            },
+                            {
+                              "text": "  - landmark-unique (moderate): Ensure landmarks are unique\n"
+                            },
+                            {
+                              "text": "    Target: .overflow-x-auto\n"
+                            }
+                          ],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-10-18T20:18:27.547Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "ddd864604af8a6a0198f-4ae14314a38f5aed7b0f",
+                  "file": "accessibility.spec.ts",
+                  "line": 156,
+                  "column": 9
+                },
+                {
+                  "title": "Employer Portal - DOM structure & interactive elements crawl",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium-mobile",
+                      "projectName": "chromium-mobile",
+                      "results": [
+                        {
+                          "workerIndex": 7,
+                          "parallelIndex": 7,
+                          "status": "passed",
+                          "duration": 3874,
+                          "errors": [],
+                          "stdout": [
+                            {
+                              "text": "\nDesktop (1440px) - Employer Portal Interactive Elements: 0\n"
+                            },
+                            {
+                              "text": "  By role: {}\n"
+                            }
+                          ],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-10-18T20:18:27.691Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "ddd864604af8a6a0198f-13b8e9fda1d33f393c5f",
+                  "file": "accessibility.spec.ts",
+                  "line": 189,
+                  "column": 9
+                },
+                {
+                  "title": "Employer Portal - Responsive layout integrity",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium-mobile",
+                      "projectName": "chromium-mobile",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 3989,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [
+                            {
+                              "text": "⚠️ Desktop (1440px) - Employer Portal potentially clipped elements: [ \u001b[32m'a'\u001b[39m, \u001b[32m'p'\u001b[39m ]\n"
+                            }
+                          ],
+                          "retry": 0,
+                          "startTime": "2026-10-18T20:18:31.158Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "ddd864604af8a6a0198f-21c06cbc6cead2a0bfb4",
+                  "file": "accessibility.spec.ts",
+                  "line": 226,
+                  "column": 9
+                },
+                {
+                  "title": "Employer Portal - axe-core accessibility scan",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium-tablet",
+                      "projectName": "chromium-tablet",
+                      "results": [
+                        {
+                          "workerIndex": 14,
+                          "parallelIndex": 6,
+                          "status": "passed",
+                          "duration": 6527,
+                          "errors": [],
+                          "stdout": [
+                            {
+                              "text": "\nDesktop (1440px) - Employer Portal Accessibility Violations:\n"
+                            },
+                            {
+                              "text": "  - heading-order (moderate): Ensure the order of headings is semantically correct\n"
+                            },
+                            {
+                              "text": "    Target: h3\n"
+                            },
+                            {
+                              "text": "  - landmark-unique (moderate): Ensure landmarks are unique\n"
+                            },
+                            {
+                              "text": "    Target: .overflow-x-auto\n"
+                            }
+                          ],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-10-18T20:18:38.950Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "ddd864604af8a6a0198f-cc082ad0a7503a48c55e",
+                  "file": "accessibility.spec.ts",
+                  "line": 156,
+                  "column": 9
+                },
+                {
+                  "title": "Employer Portal - DOM structure & interactive elements crawl",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium-tablet",
+                      "projectName": "chromium-tablet",
+                      "results": [
+                        {
+                          "workerIndex": 15,
+                          "parallelIndex": 4,
+                          "status": "passed",
+                          "duration": 3372,
+                          "errors": [],
+                          "stdout": [
+                            {
+                              "text": "\nDesktop (1440px) - Employer Portal Interactive Elements: 0\n"
+                            },
+                            {
+                              "text": "  By role: {}\n"
+                            }
+                          ],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-10-18T20:18:41.175Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "ddd864604af8a6a0198f-328cd028b7f4061f2a84",
+                  "file": "accessibility.spec.ts",
+                  "line": 189,
+                  "column": 9
+                },
+                {
+                  "title": "Employer Portal - Responsive layout integrity",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium-tablet",
+                      "projectName": "chromium-tablet",
+                      "results": [
+                        {
+                          "workerIndex": 12,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 3150,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [
+                            {
+                              "text": "⚠️ Desktop (1440px) - Employer Portal potentially clipped elements: [ \u001b[32m'a'\u001b[39m, \u001b[32m'p'\u001b[39m ]\n"
+                            }
+                          ],
+                          "retry": 0,
+                          "startTime": "2026-10-18T20:18:40.900Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "ddd864604af8a6a0198f-889934801199ce022847",
+                  "file": "accessibility.spec.ts",
+                  "line": 226,
+                  "column": 9
+                },
+                {
+                  "title": "Employer Portal - axe-core accessibility scan",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium-desktop",
+                      "projectName": "chromium-desktop",
+                      "results": [
+                        {
+                          "workerIndex": 21,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 4654,
+                          "errors": [],
+                          "stdout": [
+                            {
+                              "text": "\nDesktop (1440px) - Employer Portal Accessibility Violations:\n"
+                            },
+                            {
+                              "text": "  - heading-order (moderate): Ensure the order of headings is semantically correct\n"
+                            },
+                            {
+                              "text": "    Target: h3\n"
+                            },
+                            {
+                              "text": "  - landmark-unique (moderate): Ensure landmarks are unique\n"
+                            },
+                            {
+                              "text": "    Target: .overflow-x-auto\n"
+                            }
+                          ],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-10-18T20:18:47.820Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "ddd864604af8a6a0198f-5e97b539a24ee9011cf8",
+                  "file": "accessibility.spec.ts",
+                  "line": 156,
+                  "column": 9
+                },
+                {
+                  "title": "Employer Portal - DOM structure & interactive elements crawl",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium-desktop",
+                      "projectName": "chromium-desktop",
+                      "results": [
+                        {
+                          "workerIndex": 23,
+                          "parallelIndex": 6,
+                          "status": "passed",
+                          "duration": 3852,
+                          "errors": [],
+                          "stdout": [
+                            {
+                              "text": "\nDesktop (1440px) - Employer Portal Interactive Elements: 26\n"
+                            },
+                            {
+                              "text": "  By role: { native: \u001b[33m26\u001b[39m }\n"
+                            }
+                          ],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-10-18T20:18:47.782Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "ddd864604af8a6a0198f-8b0c9574603552bcdbe8",
+                  "file": "accessibility.spec.ts",
+                  "line": 189,
+                  "column": 9
+                },
+                {
+                  "title": "Employer Portal - Responsive layout integrity",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium-desktop",
+                      "projectName": "chromium-desktop",
+                      "results": [
+                        {
+                          "workerIndex": 22,
+                          "parallelIndex": 7,
+                          "status": "passed",
+                          "duration": 2461,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [
+                            {
+                              "text": "⚠️ Desktop (1440px) - Employer Portal potentially clipped elements: [ \u001b[32m'a'\u001b[39m, \u001b[32m'p'\u001b[39m ]\n"
+                            }
+                          ],
+                          "retry": 0,
+                          "startTime": "2026-10-18T20:18:50.050Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "ddd864604af8a6a0198f-7241e3f632a6a81387f5",
+                  "file": "accessibility.spec.ts",
+                  "line": 226,
+                  "column": 9
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "Color Contrast Verification (WCAG 2.1 AA)",
+          "file": "accessibility.spec.ts",
+          "line": 342,
           "column": 6,
           "specs": [
             {
-              "title": "Pricing page renders all tiers and comparison matrix",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium-mobile",
-                  "projectName": "chromium-mobile",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 4085,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-10-18T19:06:10.313Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "cb3edf752550362af440-6c73c6a6e490dcdb4ad9",
-              "file": "billing-checkout.spec.ts",
-              "line": 4,
-              "column": 3
-            },
-            {
-              "title": "Clicking plan CTA launches interactive CheckoutModal",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium-mobile",
-                  "projectName": "chromium-mobile",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 1,
-                      "status": "passed",
-                      "duration": 6393,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-10-18T19:06:10.489Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "cb3edf752550362af440-f8fdbb67d2a3d3c21e89",
-              "file": "billing-checkout.spec.ts",
-              "line": 27,
-              "column": 3
-            },
-            {
-              "title": "Checkout modal currency converter switches rates dynamically",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium-mobile",
-                  "projectName": "chromium-mobile",
-                  "results": [
-                    {
-                      "workerIndex": 2,
-                      "parallelIndex": 2,
-                      "status": "passed",
-                      "duration": 6708,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-10-18T19:06:10.316Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "cb3edf752550362af440-8153707524caab8776e2",
-              "file": "billing-checkout.spec.ts",
-              "line": 42,
-              "column": 3
-            },
-            {
-              "title": "Promo coupon engine validates and applies discount",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium-mobile",
-                  "projectName": "chromium-mobile",
-                  "results": [
-                    {
-                      "workerIndex": 3,
-                      "parallelIndex": 3,
-                      "status": "passed",
-                      "duration": 6676,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-10-18T19:06:10.413Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "cb3edf752550362af440-5c5a7745ceb13ea473d8",
-              "file": "billing-checkout.spec.ts",
-              "line": 60,
-              "column": 3
-            },
-            {
-              "title": "Direct /checkout and /billing/checkout URLs automatically open CheckoutModal",
+              "title": "Employer Portal - color contrast scan (AA)",
               "ok": true,
               "tags": [],
               "tests": [
@@ -390,12 +1450,12 @@
                       "workerIndex": 4,
                       "parallelIndex": 4,
                       "status": "passed",
-                      "duration": 6353,
+                      "duration": 6210,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-18T19:06:10.631Z",
+                      "startTime": "2026-10-18T20:18:31.303Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -403,13 +1463,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "cb3edf752550362af440-9958abd2fea4c66e4f30",
-              "file": "billing-checkout.spec.ts",
-              "line": 76,
-              "column": 3
+              "id": "ddd864604af8a6a0198f-03bc209aaacecdda3023",
+              "file": "accessibility.spec.ts",
+              "line": 346,
+              "column": 5
             },
             {
-              "title": "Pricing page renders all tiers and comparison matrix",
+              "title": "Employer Portal - color contrast scan (AA)",
               "ok": true,
               "tags": [],
               "tests": [
@@ -421,83 +1481,15 @@
                   "projectName": "chromium-tablet",
                   "results": [
                     {
-                      "workerIndex": 5,
-                      "parallelIndex": 5,
-                      "status": "passed",
-                      "duration": 4421,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-10-18T19:06:10.687Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "cb3edf752550362af440-5ad0e6e1749ed9d5db2f",
-              "file": "billing-checkout.spec.ts",
-              "line": 4,
-              "column": 3
-            },
-            {
-              "title": "Clicking plan CTA launches interactive CheckoutModal",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium-tablet",
-                  "projectName": "chromium-tablet",
-                  "results": [
-                    {
-                      "workerIndex": 6,
-                      "parallelIndex": 6,
-                      "status": "passed",
-                      "duration": 6872,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-10-18T19:06:10.471Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "cb3edf752550362af440-a892e46e5fe33e2d86b4",
-              "file": "billing-checkout.spec.ts",
-              "line": 27,
-              "column": 3
-            },
-            {
-              "title": "Checkout modal currency converter switches rates dynamically",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium-tablet",
-                  "projectName": "chromium-tablet",
-                  "results": [
-                    {
-                      "workerIndex": 7,
+                      "workerIndex": 9,
                       "parallelIndex": 7,
                       "status": "passed",
-                      "duration": 6894,
+                      "duration": 4208,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-18T19:06:10.364Z",
+                      "startTime": "2026-10-18T20:18:41.191Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -505,13 +1497,112 @@
                   "status": "expected"
                 }
               ],
-              "id": "cb3edf752550362af440-995812280b4423710ca1",
-              "file": "billing-checkout.spec.ts",
-              "line": 42,
-              "column": 3
+              "id": "ddd864604af8a6a0198f-38041d3a8ff0037287fa",
+              "file": "accessibility.spec.ts",
+              "line": 346,
+              "column": 5
             },
             {
-              "title": "Promo coupon engine validates and applies discount",
+              "title": "Employer Portal - color contrast scan (AA)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 20,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 3142,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-18T20:18:50.049Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ddd864604af8a6a0198f-9b2d67acb9b045c70811",
+              "file": "accessibility.spec.ts",
+              "line": 346,
+              "column": 5
+            }
+          ]
+        },
+        {
+          "title": "ARIA & Semantic Structure",
+          "file": "accessibility.spec.ts",
+          "line": 371,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Employer Portal - ARIA landmarks and semantic structure",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 3734,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\nEmployer Portal Structure:\n"
+                        },
+                        {
+                          "text": "  Landmarks: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "  Headings: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "  Images: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "  Images without alt: \u001b[33m0\u001b[39m\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️ Employer Portal missing main landmark\n"
+                        },
+                        {
+                          "text": "⚠️ Employer Portal missing h1\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-10-18T20:18:31.411Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ddd864604af8a6a0198f-25e27c4914715869ca56",
+              "file": "accessibility.spec.ts",
+              "line": 375,
+              "column": 5
+            },
+            {
+              "title": "Employer Portal - ARIA landmarks and semantic structure",
               "ok": true,
               "tags": [],
               "tests": [
@@ -524,48 +1615,37 @@
                   "results": [
                     {
                       "workerIndex": 8,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 3543,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-10-18T19:06:18.712Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "cb3edf752550362af440-0d3d5d24158af2852191",
-              "file": "billing-checkout.spec.ts",
-              "line": 60,
-              "column": 3
-            },
-            {
-              "title": "Direct /checkout and /billing/checkout URLs automatically open CheckoutModal",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium-tablet",
-                  "projectName": "chromium-tablet",
-                  "results": [
-                    {
-                      "workerIndex": 5,
                       "parallelIndex": 5,
                       "status": "passed",
-                      "duration": 3275,
+                      "duration": 2084,
                       "errors": [],
-                      "stdout": [],
-                      "stderr": [],
+                      "stdout": [
+                        {
+                          "text": "\nEmployer Portal Structure:\n"
+                        },
+                        {
+                          "text": "  Landmarks: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "  Headings: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "  Images: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "  Images without alt: \u001b[33m0\u001b[39m\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️ Employer Portal missing main landmark\n"
+                        },
+                        {
+                          "text": "⚠️ Employer Portal missing h1\n"
+                        }
+                      ],
                       "retry": 0,
-                      "startTime": "2026-10-18T19:06:15.812Z",
+                      "startTime": "2026-10-18T20:18:41.448Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -573,13 +1653,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "cb3edf752550362af440-6bab89a33176b7d65f99",
-              "file": "billing-checkout.spec.ts",
-              "line": 76,
-              "column": 3
+              "id": "ddd864604af8a6a0198f-751d323797dcf0cf4494",
+              "file": "accessibility.spec.ts",
+              "line": 375,
+              "column": 5
             },
             {
-              "title": "Pricing page renders all tiers and comparison matrix",
+              "title": "Employer Portal - ARIA landmarks and semantic structure",
               "ok": true,
               "tags": [],
               "tests": [
@@ -591,117 +1671,31 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 12,
-                      "parallelIndex": 1,
-                      "status": "passed",
-                      "duration": 2190,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-10-18T19:06:20.524Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "cb3edf752550362af440-b5eb6c2450b26a5971ed",
-              "file": "billing-checkout.spec.ts",
-              "line": 4,
-              "column": 3
-            },
-            {
-              "title": "Clicking plan CTA launches interactive CheckoutModal",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium-desktop",
-                  "projectName": "chromium-desktop",
-                  "results": [
-                    {
-                      "workerIndex": 11,
-                      "parallelIndex": 3,
-                      "status": "passed",
-                      "duration": 2353,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-10-18T19:06:20.392Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "cb3edf752550362af440-42154fd590ea9a5df1de",
-              "file": "billing-checkout.spec.ts",
-              "line": 27,
-              "column": 3
-            },
-            {
-              "title": "Checkout modal currency converter switches rates dynamically",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium-desktop",
-                  "projectName": "chromium-desktop",
-                  "results": [
-                    {
-                      "workerIndex": 10,
-                      "parallelIndex": 4,
-                      "status": "passed",
-                      "duration": 3161,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-10-18T19:06:19.927Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "cb3edf752550362af440-498a17bf75fa14ec74df",
-              "file": "billing-checkout.spec.ts",
-              "line": 42,
-              "column": 3
-            },
-            {
-              "title": "Promo coupon engine validates and applies discount",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium-desktop",
-                  "projectName": "chromium-desktop",
-                  "results": [
-                    {
-                      "workerIndex": 13,
+                      "workerIndex": 16,
                       "parallelIndex": 2,
                       "status": "passed",
-                      "duration": 2638,
+                      "duration": 2219,
                       "errors": [],
-                      "stdout": [],
+                      "stdout": [
+                        {
+                          "text": "\nEmployer Portal Structure:\n"
+                        },
+                        {
+                          "text": "  Landmarks: \u001b[33m1\u001b[39m\n"
+                        },
+                        {
+                          "text": "  Headings: \u001b[33m3\u001b[39m\n"
+                        },
+                        {
+                          "text": "  Images: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "  Images without alt: \u001b[33m0\u001b[39m\n"
+                        }
+                      ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-18T19:06:20.283Z",
+                      "startTime": "2026-10-18T20:18:50.343Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -709,44 +1703,10 @@
                   "status": "expected"
                 }
               ],
-              "id": "cb3edf752550362af440-616d56ed2830a87258fd",
-              "file": "billing-checkout.spec.ts",
-              "line": 60,
-              "column": 3
-            },
-            {
-              "title": "Direct /checkout and /billing/checkout URLs automatically open CheckoutModal",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium-desktop",
-                  "projectName": "chromium-desktop",
-                  "results": [
-                    {
-                      "workerIndex": 9,
-                      "parallelIndex": 7,
-                      "status": "passed",
-                      "duration": 2970,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-10-18T19:06:19.895Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "cb3edf752550362af440-d13f1bf503279855c23d",
-              "file": "billing-checkout.spec.ts",
-              "line": 76,
-              "column": 3
+              "id": "ddd864604af8a6a0198f-3f8d6644a9d9cefdc4ee",
+              "file": "accessibility.spec.ts",
+              "line": 375,
+              "column": 5
             }
           ]
         }
@@ -755,9 +1715,9 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-10-18T19:06:09.118Z",
-    "duration": 15866.301,
-    "expected": 15,
+    "startTime": "2026-10-18T20:18:26.137Z",
+    "duration": 27394.481,
+    "expected": 33,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

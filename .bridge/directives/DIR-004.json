@@ -2,11 +2,11 @@
   "id": "DIR-004",
   "title": "Surface 3 Modernization: Full 53KB CreateJobModal Parity, Screening Questions, Candidate Review Drawer & ATS Pipeline",
   "priority": "P0",
-  "status": "ISSUED",
+  "status": "IN_PROGRESS",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-18T08:54:00.000Z",
-  "updatedAt": "2026-10-18T09:07:00.000Z",
+  "updatedAt": "2026-10-18T19:51:11.314Z",
   "projectRoot": "d:\\xampp\\htdocs\\IME365",
   "spec": "# IME365 DIR-004 — SURFACE 3 MASTER ENGINEERING DIRECTIVE\n## Surface 3 Modernization: Full 53KB CreateJobModal Parity, Screening Questions, Candidate Review Drawer & ATS Pipeline\n\n**Directive ID:** DIR-004  \n**Priority:** P0 — Critical  \n**Surface:** Surface 3 of 5 (Employer Portal & Recruitment Hub)  \n**Depends On:** DIR-003 (Unlocks automatically when DIR-003 is certified & frozen)  \n**Executive Engineering Lead:** Antigravity (Google DeepMind)  \n**Implementation Engine:** Claude Code CLI  \n\n---\n\n### 1. Objective & Scope\nModernize the complete Employer Portal in React 19 / TypeScript / Vite / Tailwind CSS v4 with Cuba M3 executive glassmorphic styling, ensuring 100% functional parity with legacy implementations in `src/`:\n\n1. **Full-Field Job Creation (`CreateJobModal.jsx` Parity — SHORTCUTS STRICTLY PROHIBITED)**:\n   - **CRITICAL ANTI-TRUNCATION INVARIANT**: The developer MUST NOT reduce the job creation modal to 4 raw text inputs. Full functional parity with the 53 KB `CreateJobModal.jsx` is mandatory:\n     - Job title, department, employment type (Full-time, Part-time, Contract, Internship).\n     - Location and Remote / Hybrid / On-site workplace policy toggles.\n     - Minimum and maximum salary range with currency selector (USD, EUR, GBP, INR) and pay period (Annual, Monthly, Hourly).\n     - Experience level selector (Entry, Mid, Senior, Lead, Executive).\n     - Perks and Benefits multi-select pill badges (Health insurance, 401(k), Remote stipend, Equity, Unlimited PTO).\n     - **Interactive Custom Screening Questions Builder**: Adding, editing, ordering questions with answer formats (Short text, Yes/No, Multiple Choice, Required/Optional flag).\n     - Application deadline date picker.\n     - Rich-text job description and responsibilities/requirements editor.\n     - Server-side validation and persistence to MariaDB `jobs` table.\n\n2. **Candidate Review Drawer**:\n   - Candidate list with search, sorting, and ATS match score pills.\n   - Slide-out candidate review drawer with live resume viewer, ATS match breakdown, candidate notes, and rating stars.\n   - Candidate rejection/shortlisting actions with confirmation and audit logging.\n\n3. **Applicant Tracking Pipeline (Kanban & List)**:\n   - Stage transitions: Applied → Reviewing → Shortlisted → Interview → Hired / Rejected.\n   - State refresh, drag-and-drop or dropdown stage progression, and persistent backend sync.\n\n4. **Company Profile & Team Seats**:\n   - Company branding assets (logo, banner, description, website, team culture).\n   - Direct applicant messaging thread.\n   - Team seats, role permissions (Admin, Recruiter, Viewer), and invite workflows.\n\n---\n\n### 2. Invariants\n- ZERO CAPABILITY LOSS: Full preservation of CreateJobModal (53 KB) with all fields, screening questions, and backend persistence.\n- ZERO FABRICATED DATA: No hardcoded fake candidate profiles or static pipeline counts.\n- WCAG 2.1 AA ACCESSIBILITY & Sub-4s build.",
   "invariants": [
@@ -34,14 +34,55 @@
     "DIR-003"
   ],
   "sourceEventId": null,
-  "plan": null,
+  "plan": {
+    "submittedAt": "2026-10-18T19:50:53.011Z",
+    "summary": "DIR-004 Surface 3 Modernization: Full 53KB CreateJobModal parity with explicit UX states, responsive design across mobile/desktop, render budget <100ms assessment, CubaAppShell integration, and full verification gates",
+    "steps": [
+      "Phase 1: CreateJobModal Full Parity (53KB) - New component CreateJobModal.tsx in frontend/src/components/employer/ with company selector (GET /api/employer/companies), job title, department, employment type (Full-time/Part-time/Contract/Internship), location with CustomLocationAutocomplete, remote policy (On-site/Remote/Hybrid), salary range min/max with currency (USD/EUR/GBP/INR) and period (Annual/Monthly/Hourly), experience level (Entry/Junior/Mid/Senior/Lead/Executive), perks/benefits multi-select pill badges (predefined: Health/401k/Remote Stipend/Equity/Unlimited PTO + custom), screening questions builder (add/edit/reorder questions, answer types: Short Text/Yes-No/Multiple Choice, required flag), application deadline date picker, rich-text editor for description/requirements, server validation, POST /api/employer/jobs nested in {data:{companyId,...}}",
+      "Phase 2: Candidate Review Drawer - Replace MOCK_CANDIDATES with real data from GET /api/jobs/:jobId/applications, slide-out drawer with live resume preview via GET /api/employer/jobs/:jobId/applications/:applicationId/resume, ATS match breakdown with score chips, candidate notes (auto-save), 5-star rating, reject/shortlist actions with confirmation dialog",
+      "Phase 3: Applicant Tracking Pipeline (Kanban & List) - Kanban board columns Applied/Reviewing/Shortlisted/Interview/Hired/Rejected, drag-and-drop (dnd-kit) and dropdown stage transitions, PATCH /api/job-applications/:applicationId/status with {status,notes,expectedStatus,expectedRevision}, optimistic updates with rollback on 400 INVALID_STATUS_TRANSITION, list view with sortable columns",
+      "Phase 4: Company Profile & Team Seats - CompanyProfile.tsx with logo/banner upload (drag-drop, crop), description, website, culture, TeamSeats.tsx with role permissions matrix (Admin/Recruiter/Viewer), invite workflow POST /api/enterprise/team/invite, seat usage meter",
+      "Phase 5: Eliminate Phantom Hooks - Remove useCandidates/useAdvanceCandidateStage imports from portal.tsx, add useJobApplications(jobId), useAdvanceApplicationStage hooks to use-api-hooks.ts bound to real endpoints",
+      "Phase 6: CubaAppShell Integration - Employer portal within CubaAppShell with 4-level breadcrumbs (Dashboard > Employer > Jobs/Candidates/Pipeline > [Job Title]), reactive header with green Saved pill, ATS score gauge, Preview/Download dropdowns, theme toggle",
+      "Phase 7: Verification Gates - tsc -b zero errors, npm run build <4s, Playwright crawl /employer/* routes zero console errors, WCAG 2.1 AA keyboard/contrast, render budget <100ms measurement, waterfall analysis"
+    ],
+    "planHash": "cc62df9994ea48a0db9c542638afdd4f64917939706743cd7975a25a708e6eca"
+  },
   "evidence": null,
   "reviews": [],
   "freeze": null,
-  "heartbeats": [],
-  "lastHeartbeatAt": null,
+  "heartbeats": [
+    {
+      "at": "2026-10-18T19:52:11.385Z",
+      "status": "Starting Phase 1: CreateJobModal Full Parity (53KB) - creating new component in frontend/src/components/employer/",
+      "percent": 10,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    }
+  ],
+  "lastHeartbeatAt": "2026-10-18T19:52:11.385Z",
   "continuationPending": false,
-  "lastTransitionReason": "surface 3 updated: strict CreateJobModal 53KB parity and screening questions mandated",
+  "lastTransitionReason": "lead approved plan; act mode authorized",
   "revisionTarget": null,
-  "planApproval": null
+  "planApproval": {
+    "approvedAt": "2026-10-18T19:51:11.314Z",
+    "automated": true,
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "daemon:lead_watcher_session",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "daemon-parent:lead_watcher_session",
+        "non-tty"
+      ],
+      "pid": 36308,
+      "parentPid": 33712,
+      "tty": false,
+      "at": "2026-10-18T19:51:11.314Z",
+      "explicitlyAllowed": true
+    },
+    "feedback": "Auto-approved by the autonomous plan-scorer (score 85/100, reviewer verdict approved). NOT a human Lead review."
+  }
 }
