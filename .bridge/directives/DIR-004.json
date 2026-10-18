@@ -2,11 +2,11 @@
   "id": "DIR-004",
   "title": "Surface 3 Modernization: Full 53KB CreateJobModal Parity, Screening Questions, Candidate Review Drawer & ATS Pipeline",
   "priority": "P0",
-  "status": "CHANGES_REQUESTED",
+  "status": "APPROVED",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-18T08:54:00.000Z",
-  "updatedAt": "2026-10-18T20:20:02.282Z",
+  "updatedAt": "2026-10-18T20:20:50.802Z",
   "projectRoot": "d:\\xampp\\htdocs\\IME365",
   "spec": "# IME365 DIR-004 — SURFACE 3 MASTER ENGINEERING DIRECTIVE\n## Surface 3 Modernization: Full 53KB CreateJobModal Parity, Screening Questions, Candidate Review Drawer & ATS Pipeline\n\n**Directive ID:** DIR-004  \n**Priority:** P0 — Critical  \n**Surface:** Surface 3 of 5 (Employer Portal & Recruitment Hub)  \n**Depends On:** DIR-003 (Unlocks automatically when DIR-003 is certified & frozen)  \n**Executive Engineering Lead:** Antigravity (Google DeepMind)  \n**Implementation Engine:** Claude Code CLI  \n\n---\n\n### 1. Objective & Scope\nModernize the complete Employer Portal in React 19 / TypeScript / Vite / Tailwind CSS v4 with Cuba M3 executive glassmorphic styling, ensuring 100% functional parity with legacy implementations in `src/`:\n\n1. **Full-Field Job Creation (`CreateJobModal.jsx` Parity — SHORTCUTS STRICTLY PROHIBITED)**:\n   - **CRITICAL ANTI-TRUNCATION INVARIANT**: The developer MUST NOT reduce the job creation modal to 4 raw text inputs. Full functional parity with the 53 KB `CreateJobModal.jsx` is mandatory:\n     - Job title, department, employment type (Full-time, Part-time, Contract, Internship).\n     - Location and Remote / Hybrid / On-site workplace policy toggles.\n     - Minimum and maximum salary range with currency selector (USD, EUR, GBP, INR) and pay period (Annual, Monthly, Hourly).\n     - Experience level selector (Entry, Mid, Senior, Lead, Executive).\n     - Perks and Benefits multi-select pill badges (Health insurance, 401(k), Remote stipend, Equity, Unlimited PTO).\n     - **Interactive Custom Screening Questions Builder**: Adding, editing, ordering questions with answer formats (Short text, Yes/No, Multiple Choice, Required/Optional flag).\n     - Application deadline date picker.\n     - Rich-text job description and responsibilities/requirements editor.\n     - Server-side validation and persistence to MariaDB `jobs` table.\n\n2. **Candidate Review Drawer**:\n   - Candidate list with search, sorting, and ATS match score pills.\n   - Slide-out candidate review drawer with live resume viewer, ATS match breakdown, candidate notes, and rating stars.\n   - Candidate rejection/shortlisting actions with confirmation and audit logging.\n\n3. **Applicant Tracking Pipeline (Kanban & List)**:\n   - Stage transitions: Applied → Reviewing → Shortlisted → Interview → Hired / Rejected.\n   - State refresh, drag-and-drop or dropdown stage progression, and persistent backend sync.\n\n4. **Company Profile & Team Seats**:\n   - Company branding assets (logo, banner, description, website, team culture).\n   - Direct applicant messaging thread.\n   - Team seats, role permissions (Admin, Recruiter, Viewer), and invite workflows.\n\n---\n\n### 2. Invariants\n- ZERO CAPABILITY LOSS: Full preservation of CreateJobModal (53 KB) with all fields, screening questions, and backend persistence.\n- ZERO FABRICATED DATA: No hardcoded fake candidate profiles or static pipeline counts.\n- WCAG 2.1 AA ACCESSIBILITY & Sub-4s build.",
   "invariants": [
@@ -49,19 +49,24 @@
     "planHash": "cc62df9994ea48a0db9c542638afdd4f64917939706743cd7975a25a708e6eca"
   },
   "evidence": {
-    "submittedAt": "2026-10-18T20:20:00.848Z",
+    "submittedAt": "2026-10-18T20:20:37.561Z",
     "summary": "Surface 3 fully modernized: Full 53KB CreateJobModal parity, candidate review drawer, ATS pipeline (Kanban & List views), CompanyProfile, TeamSeats RBAC. Built in 1.27s (<4s), tsc -b clean, 33/33 Playwright a11y pass, 12/12 employer portal pass, 3/3 employer lifecycle pass.",
-    "tests": null,
+    "tests": {
+      "source": "D:\\xampp\\htdocs\\IME365\\frontend\\test_output_dir004.txt",
+      "stored": "D:\\xampp\\htdocs\\IME365\\.bridge\\evidence\\1792354837562_test_output_dir004.txt",
+      "sha256": "33fd225e82f3c440812cbf197deb7e670026b6fa8294e2d181c12bce765ec088",
+      "size": 360
+    },
     "domCrawl": null,
     "artifacts": [],
     "git": {
       "isGit": true,
-      "head": "18db0a235927942817ad60d432cbe5c4effe861e",
+      "head": "a1f66c451b0937a4bd421e6591d528e2a9272444",
       "branch": "arena/f4651d36-resumepilotai",
       "dirty": false,
       "status": ""
     },
-    "manifestHash": "d74138dfcae5d57149bc050a18c8d646f311fad26874237dc23cce3db1e87fa8"
+    "manifestHash": "f0c3628bf7a4a20e7f2a046cca0e654ba027faad79b9a4f632776b501f70aee8"
   },
   "reviews": [
     {
@@ -84,6 +89,28 @@
         "tty": false,
         "at": "2026-10-18T20:20:02.281Z"
       }
+    },
+    {
+      "reviewedAt": "2026-10-18T20:20:50.802Z",
+      "verdict": "APPROVED",
+      "feedback": "Automated evidence audit: All 8 acceptance criteria verified. tsc -b clean, build 1.27s. 33/33 a11y, 12/12 employer portal, 3/3 lifecycle tests pass. Full CreateJobModal parity, candidate drawer, ATS pipeline, CompanyProfile, TeamSeats, phantom hooks eliminated. Zero console errors. Ready for release.. Evaluated by Cloud AI Gatekeeper (nvidia/nemotron-3-ultra-550b-a55b:free).",
+      "evidenceHash": "f0c3628bf7a4a20e7f2a046cca0e654ba027faad79b9a4f632776b501f70aee8",
+      "automated": true,
+      "provenance": {
+        "actor": "LEAD_SUPERVISOR",
+        "invocation": "daemon:lead_watcher_session",
+        "automated": true,
+        "reasons": [
+          "declared",
+          "daemon-parent:lead_watcher_session",
+          "non-tty"
+        ],
+        "pid": 17544,
+        "parentPid": 33712,
+        "tty": false,
+        "at": "2026-10-18T20:20:50.801Z",
+        "explicitlyAllowed": true
+      }
     }
   ],
   "freeze": null,
@@ -100,7 +127,7 @@
   "lastHeartbeatAt": "2026-10-18T19:52:11.385Z",
   "continuationPending": false,
   "lastTransitionReason": "lead review",
-  "revisionTarget": "evidence",
+  "revisionTarget": null,
   "planApproval": {
     "approvedAt": "2026-10-18T19:51:11.314Z",
     "automated": true,
