@@ -2,11 +2,11 @@
   "id": "DIR-002",
   "title": "Surface 1 Modernization: Public Website, Dynamic CMS, SEO, Regional Hubs, Full Billing Checkout & Public Sharing Parity",
   "priority": "P0",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-18T06:19:23.552Z",
-  "updatedAt": "2026-10-18T10:25:11.436Z",
+  "updatedAt": "2026-10-18T10:25:17.344Z",
   "projectRoot": "d:\\xampp\\htdocs\\IME365",
   "spec": "# IME365 DIR-002 — SURFACE 1 MASTER ENGINEERING DIRECTIVE\n## Surface 1 Modernization: Public Website, Dynamic CMS, SEO, Regional Hubs, Full Billing Checkout & Public Sharing Parity\n\n**Directive ID:** DIR-002  \n**Priority:** P0 — Critical  \n**Surface:** Surface 1 of 5 (Public Website & Monetization Engines)  \n**Executive Engineering Lead:** Antigravity (Google DeepMind)  \n**Implementation Engine:** Claude Code CLI  \n**Execution Mode:** Changes Requested in ACT Mode  \n\n---\n\n### 1. Objective & Scope\nModernize the complete public-facing web surface and monetization engines of IME365 in React 19 / TypeScript / Vite / Tailwind CSS v4 with Cuba M3 executive glassmorphic styling, ensuring 100% functional parity with legacy implementations in `src/`:\n\n1. **Landing Page & Marketing**:\n   - Modern hero section with animated Cuba glass gradient cards, headline, and primary CTA.\n   - Interactive feature showcase highlighting AI interview coach, resume builder, and job matching.\n   - Live metric indicators (bound to real API counts or honest baseline statistics; NO fabricated testimonials).\n   - Fully responsive navigation bar with mobile hamburger drawer and sticky header.\n   - Comprehensive footer with platform links, legal terms, privacy policy, and social links.\n\n2. **Dynamic CMS & Blog Engine**:\n   - Dynamic CMS page renderer supporting `/p/:slug` with markdown/HTML rendering, breadcrumbs, and metadata.\n   - Blog index page (`/blog`) with search input, tag filtering pills, pagination, and article cards.\n   - Article reader (`/blog/:slug`) with typography optimization, table of contents, reading time, and related articles.\n   - Graceful 404/Empty states for nonexistent slugs.\n\n3. **Public Job Board & Regional SEO Hubs**:\n   - Job search bar with live text search and location autocomplete using configured sources.\n   - Multi-category filter pills and experience/salary filters.\n   - Job listing cards with badges (Remote, Full-time, Salary, Urgent) and instant link to job details.\n   - **Regional SEO Job Hubs**: Preserve full programmatic SEO routing for cities (`/jobs/city/:slug`) and states (`/jobs/in/:slug`) via `RegionalJobsPage.jsx`.\n\n4. **Full Billing, Payment Checkout & Invoicing Engine**:\n   - Preserve and modernize the complete 196 KB `Checkout.jsx` and 81 KB `Plans.jsx` (`/billing/plans`, `/pricing`).\n   - **CRITICAL FIX**: Pricing plan CTA buttons MUST wire to the real checkout modal/payment intent flow. They must NEVER be raw links to `/login?tab=register`.\n   - Multi-gateway support: Stripe, Razorpay, and Paytm integration with write-only secrets handling.\n   - Plan toggles (Monthly/Annual), coupon code validation, VAT/GST calculation, order summaries, and payment success verification.\n   - Real invoice generation and receipt downloads.\n\n5. **Headless PDF Export Route Guard Fix**:\n   - **CRITICAL FIX**: Export routes in `router.tsx` (`/export/Cv1..51/...` and `/export/Cover1..4/...`) must NOT use `<RequireAuth>`. They MUST use `RequireExportAccess` to allow headless Chromium PDF rendering via `#renderToken=...` URL fragment authentication.\n\n6. **Contact & Inquiries**:\n   - Validated contact form (Name, Email, Category, Message, Honeypot spam protection).\n   - Live submission against the real backend inquiry endpoint with feedback toast and duplicate prevention.\n\n7. **Public Resume, Portfolio & Community Gallery (CRITICAL FIXES)**:\n   - **Public Shared Resume Contract**: `/shared/:resumeId` MUST call `GET /api/resumes/public/:resumeId`. Calling private `/api/resumes/:id` or falling back to synthetic mock data (`SAMPLE_RESUME` / Alex Vance) is strictly prohibited.\n   - **Public Portfolio Routing Contract**: `/portfolios` MUST render `PortfolioGallery`, and `/portfolio/:slug` MUST render `PublicPortfolio` (fetching from `GET /api/portfolios/public/:slug`). `/portfolio/builder` is reserved for the private studio.\n   - **Regional Job Hubs Contract**: `/jobs/city/:slug` and `/jobs/in/:slug` MUST render `RegionalJobsPage` fetching from `GET /api/public/geo/regions/:kind/:slug` (not generic `JobsPortalPage`).\n   - Privacy safeguards: private notes, phone numbers, or unverified draft data must be strictly redacted.\n\n8. **Core Global Interceptors & Compliance**:\n   - `PrivacyConsentBanner.jsx`: GDPR cookie consent with customizable preferences.\n   - Single-flight token refresh lock (`refreshApiTokenSingleFlight`) to prevent token refresh storms during active API calls.\n\n---\n\n### 2. Invariants & Quality Gates\n- ZERO CAPABILITY LOSS: All legacy public routes, regional job hubs, checkout engine, and portfolio gallery preserved.\n- PUBLIC SHARED RESUME CONTRACT: /shared/:resumeId MUST fetch from public unauthenticated endpoint GET /api/resumes/public/:resumeId. Falling back to synthetic mock data is strictly prohibited.\n- PUBLIC PORTFOLIO ROUTING: /portfolios MUST render PortfolioGallery, and /portfolio/:slug MUST render PublicPortfolio. /portfolio/builder is reserved for the private studio.\n- REGIONAL SEO HUBS: /jobs/city/:slug and /jobs/in/:slug MUST render RegionalJobsPage fetching from GET /api/public/geo/regions/:kind/:slug.\n- ZERO PHANTOM HOOKS: All React Query hooks in use-api-hooks.ts MUST bind to authentic backend routes (no phantom /api/employer/candidates, /api/enterprise/${tenantId}/members, or /api/enterprise/${tenantId}/audit-logs).\n- ZERO FABRICATED DATA: Live API binding for articles, jobs, pricing plans, and invoices.\n- SUB-100MS RENDER & SUB-4S BUILD: Performance budgets strictly enforced.\n- WCAG 2.1 AA ACCESSIBILITY & Zero console errors across viewports (320px–1920px).",
   "invariants": [
@@ -118,9 +118,26 @@
     }
   ],
   "freeze": {
-    "frozenAt": "2026-10-18T09:15:00.000Z",
-    "frozenBy": "STAFF_DEVELOPER",
-    "reason": "All acceptance criteria met. Gates verified. Ready for Gatekeeper certification."
+    "freezeHash": "6361a8db9bb5202c744b7f9639d4bd53143a1bf0",
+    "certifiedAt": "2026-10-18T10:25:17.343Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "Surface 1 (DIR-002) formally certified and frozen into production baseline.",
+    "evidenceHash": "568d3374d1d8c5eadf8238d6e3b01f9b726b0d387a686a28ce915c2d2065784d",
+    "automated": true,
+    "certificationKind": "automated",
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "non-tty",
+      "automated": true,
+      "reasons": [
+        "non-tty"
+      ],
+      "pid": 36616,
+      "parentPid": 33840,
+      "tty": false,
+      "at": "2026-10-18T10:25:16.484Z",
+      "explicitlyAllowed": true
+    }
   },
   "heartbeats": [
     {
@@ -142,7 +159,7 @@
   ],
   "lastHeartbeatAt": "2026-10-18T09:15:00.000Z",
   "continuationPending": false,
-  "lastTransitionReason": "lead review",
+  "lastTransitionReason": "gatekeeper certification",
   "revisionTarget": null,
   "planApproval": {
     "approvedAt": "2026-10-18T09:05:00.000Z",
