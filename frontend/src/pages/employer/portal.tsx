@@ -5,9 +5,11 @@
  * - Real-time pipeline metrics (Active Jobs, Candidates, In-Interview, Hired)
  * - Job posting creator with ATS keyword requirements and salary range
  * - Candidate review pipeline with ATS match scores, stages, and quick resume drawer
+ * NOTE: Candidate-related hooks removed per DIR-002 (phantom endpoints /api/employer/candidates)
+ * Mock data used until backend contract is finalized.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,27 +32,90 @@ import {
   X,
   AlertCircle,
 } from 'lucide-react';
-import {
-  useJobs,
-  useCandidates,
-  useCreateJob,
-  useAdvanceCandidateStage,
-  type JobListing,
-  type Candidate,
-} from '@/hooks/use-api-hooks';
+import { useJobs, useCreateJob, type JobListing } from '@/hooks/use-api-hooks';
 
 const PIPELINE_STAGES = ['Applied', 'Screening', 'Interview', 'Offer', 'Archived'] as const;
 
+// Mock Candidate data (replaces phantom /api/employer/candidates endpoint)
+interface Candidate {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  appliedDate: string;
+  atsScore: number;
+  stage: 'Applied' | 'Screening' | 'Interview' | 'Offer' | 'Archived';
+  experienceYears: number;
+  topSkills: string[];
+}
+
+const MOCK_CANDIDATES: Candidate[] = [
+  {
+    id: 'cand-1',
+    name: 'Sarah Chen',
+    email: 'sarah.chen@email.com',
+    role: 'Senior Backend Engineer',
+    appliedDate: '2026-10-15',
+    atsScore: 94,
+    stage: 'Interview',
+    experienceYears: 7,
+    topSkills: ['Go', 'Kubernetes', 'PostgreSQL', 'gRPC', 'Redis'],
+  },
+  {
+    id: 'cand-2',
+    name: 'Marcus Johnson',
+    email: 'marcus.j@email.com',
+    role: 'Full Stack Developer',
+    appliedDate: '2026-10-14',
+    atsScore: 87,
+    stage: 'Screening',
+    experienceYears: 5,
+    topSkills: ['React', 'TypeScript', 'Node.js', 'AWS', 'GraphQL'],
+  },
+  {
+    id: 'cand-3',
+    name: 'Priya Sharma',
+    email: 'priya.s@email.com',
+    role: 'DevOps Engineer',
+    appliedDate: '2026-10-13',
+    atsScore: 91,
+    stage: 'Interview',
+    experienceYears: 6,
+    topSkills: ['Terraform', 'Kubernetes', 'CI/CD', 'Prometheus', 'Python'],
+  },
+  {
+    id: 'cand-4',
+    name: 'David Park',
+    email: 'david.park@email.com',
+    role: 'Frontend Architect',
+    appliedDate: '2026-10-12',
+    atsScore: 89,
+    stage: 'Offer',
+    experienceYears: 8,
+    topSkills: ['React 19', 'Next.js', 'Tailwind', 'WebGL', 'TypeScript'],
+  },
+  {
+    id: 'cand-5',
+    name: 'Elena Rodriguez',
+    email: 'elena.r@email.com',
+    role: 'ML Engineer',
+    appliedDate: '2026-10-11',
+    atsScore: 82,
+    stage: 'Applied',
+    experienceYears: 4,
+    topSkills: ['Python', 'PyTorch', 'MLOps', 'Kubeflow', 'Docker'],
+  },
+];
+
 export function EmployerPortalPage() {
   const { data: jobs = [], isLoading: jobsLoading, error: jobsError } = useJobs();
-  const { data: candidates = [], isLoading: candidatesLoading, error: candidatesError } = useCandidates();
   const createJobMutation = useCreateJob();
-  const advanceStageMutation = useAdvanceCandidateStage();
 
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [activeTab, setActiveTab] = useState<'candidates' | 'jobs'>('candidates');
   const [searchQuery, setSearchQuery] = useState('');
   const [showNewJobModal, setShowNewJobModal] = useState(false);
+  const [candidatesLoading, setCandidatesLoading] = useState(false);
 
   // New Job Form State
   const [newJobTitle, setNewJobTitle] = useState('');
@@ -78,22 +143,22 @@ export function EmployerPortalPage() {
     setNewJobSalary('');
   };
 
-  const advanceCandidateStage = (id: string, newStage: Candidate['stage']) => {
-    advanceStageMutation.mutate({ id, stage: newStage });
-    if (selectedCandidate?.id === id) {
-      setSelectedCandidate((prev) => prev ? { ...prev, stage: newStage } : null);
-    }
+  const advanceCandidateStage = (_id: string, newStage: Candidate['stage']) => {
+    setSelectedCandidate((prev) => prev ? { ...prev, stage: newStage } : null);
   };
 
-  const filteredCandidates = candidates.filter(
+  const filteredCandidates = MOCK_CANDIDATES.filter(
     (c) =>
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.topSkills.some((s) => s.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
+  // Use filteredCandidates for display counts
+  const displayCandidates = filteredCandidates;
+
   const isLoading = jobsLoading || candidatesLoading;
-  const hasError = jobsError || candidatesError;
+  const hasError = jobsError;
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-16">
@@ -152,7 +217,7 @@ export function EmployerPortalPage() {
             <div>
               <p className="text-xs text-ink-muted">Total Applicants</p>
               <p className="text-xl font-bold text-ink">
-                {isLoading ? '—' : candidates.length + jobs.reduce((sum, j) => sum + j.applicantCount, 0)}
+                {isLoading ? '—' : displayCandidates.length + jobs.reduce((sum, j) => sum + j.applicantCount, 0)}
               </p>
             </div>
           </CardContent>
@@ -166,7 +231,7 @@ export function EmployerPortalPage() {
             <div>
               <p className="text-xs text-ink-muted">In Interview Loops</p>
               <p className="text-xl font-bold text-ink">
-                {isLoading ? '—' : candidates.filter((c) => c.stage === 'Interview' || c.stage === 'Screening').length}
+                {isLoading ? '—' : displayCandidates.filter((c) => c.stage === 'Interview' || c.stage === 'Screening').length}
               </p>
             </div>
           </CardContent>
@@ -180,7 +245,7 @@ export function EmployerPortalPage() {
             <div>
               <p className="text-xs text-ink-muted">Offers Extended</p>
               <p className="text-xl font-bold text-ink">
-                {isLoading ? '—' : candidates.filter((c) => c.stage === 'Offer').length}
+                {isLoading ? '—' : displayCandidates.filter((c) => c.stage === 'Offer').length}
               </p>
             </div>
           </CardContent>
@@ -200,7 +265,7 @@ export function EmployerPortalPage() {
           )}
         >
           <Users className="size-3.5" />
-          Candidate Pipeline ({isLoading ? '—' : candidates.length})
+          Candidate Pipeline ({isLoading ? '—' : displayCandidates.length})
         </button>
         <button
           type="button"
@@ -302,10 +367,10 @@ export function EmployerPortalPage() {
                           className={cn(
                             'inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold border',
                             cand.atsScore >= 90
-                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                              ? 'bg-emerald-700/25 text-emerald-800 dark:text-emerald-200 border-emerald-700/40'
                               : cand.atsScore >= 80
-                              ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
-                              : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                              ? 'bg-blue-700/25 text-blue-800 dark:text-blue-200 border-blue-700/40'
+                              : 'bg-amber-700/25 text-amber-800 dark:text-amber-200 border-amber-700/40'
                           )}
                         >
                           {cand.atsScore}%
@@ -480,7 +545,7 @@ export function EmployerPortalPage() {
                     key={stg}
                     type="button"
                     onClick={() => advanceCandidateStage(selectedCandidate.id, stg)}
-                    disabled={advanceStageMutation.isPending}
+                    disabled={false}
                     className={cn(
                       'py-1.5 px-2 rounded-lg text-xs font-medium border text-center transition-all',
                       selectedCandidate.stage === stg

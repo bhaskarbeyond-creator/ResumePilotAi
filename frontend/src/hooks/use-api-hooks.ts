@@ -1,9 +1,10 @@
 /**
  * Typed API Client Hooks
  *
- * Zod-validated React Query hooks for all mock data sources.
+ * Zod-validated React Query hooks for all backend data sources.
  * Bound to backend contracts: /api/employer, /api/admin, /api/enterprise, /api/auth
  * All hooks include auth headers via useAuth, input sanitization via zod, CSRF tokens for mutations.
+ * PHANTOM HOOKS REMOVED: No hooks for /api/employer/candidates, /api/enterprise/${tenantId}/members, or /api/enterprise/${tenantId}/audit-logs
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -27,42 +28,6 @@ export const JobListingSchema = z.object({
   postedAt: z.string(),
 });
 export type JobListing = z.infer<typeof JobListingSchema>;
-
-/** Employer Portal: Candidate */
-export const CandidateSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  email: z.string().email(),
-  role: z.string(),
-  appliedDate: z.string(),
-  atsScore: z.number().int().min(0).max(100),
-  stage: z.enum(['Applied', 'Screening', 'Interview', 'Offer', 'Archived']),
-  experienceYears: z.number().int().nonnegative(),
-  topSkills: z.array(z.string()),
-});
-export type Candidate = z.infer<typeof CandidateSchema>;
-
-/** Enterprise Console: Org Member */
-export const OrgMemberSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  email: z.string().email(),
-  role: z.enum(['Owner', 'Admin', 'Reviewer', 'Member']),
-  twoFactorEnabled: z.boolean(),
-  lastActive: z.string(),
-});
-export type OrgMember = z.infer<typeof OrgMemberSchema>;
-
-/** Enterprise Console: Audit Event */
-export const AuditEventSchema = z.object({
-  id: z.string(),
-  actor: z.string(),
-  action: z.string(),
-  target: z.string(),
-  ip: z.string(),
-  timestamp: z.string(),
-});
-export type AuditEvent = z.infer<typeof AuditEventSchema>;
 
 /** Admin Console: Platform Stats */
 export const PlatformStatsSchema = z.object({
@@ -177,11 +142,9 @@ export type FavouriteItem = z.infer<typeof FavouriteItemSchema>;
 export const queryKeys = {
   employer: {
     jobs: ['employer', 'jobs'] as const,
-    candidates: ['employer', 'candidates'] as const,
   },
   enterprise: {
-    members: (tenantId: string) => ['enterprise', 'members', tenantId] as const,
-    auditLogs: (tenantId: string) => ['enterprise', 'auditLogs', tenantId] as const,
+    // PHANTOM KEYS REMOVED: members and auditLogs hooks removed per DIR-002
   },
   admin: {
     stats: ['admin', 'stats'] as const,
@@ -213,16 +176,7 @@ export function useJobs() {
   });
 }
 
-export function useCandidates() {
-  return useQuery({
-    queryKey: queryKeys.employer.candidates,
-    queryFn: async () => {
-      const data = await get<{ candidates: Candidate[] }>('/employer/candidates');
-      return z.array(CandidateSchema).parse(data.candidates ?? []);
-    },
-    staleTime: 30_000,
-  });
-}
+// PHANTOM HOOK REMOVED: useCandidates() - was bound to /api/employer/candidates (non-existent endpoint)
 
 export function useCreateJob() {
   const queryClient = useQueryClient();
@@ -250,79 +204,13 @@ export function useUpdateJob() {
   });
 }
 
-export function useAdvanceCandidateStage() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, stage }: { id: string; stage: Candidate['stage'] }) => {
-      const data = await patch<{ candidate: Candidate }>(`/employer/candidates/${id}`, { stage });
-      return CandidateSchema.parse(data.candidate);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.employer.candidates });
-    },
-  });
-}
+// PHANTOM HOOK REMOVED: useAdvanceCandidateStage() - was bound to /api/employer/candidates (non-existent endpoint)
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Enterprise Console Hooks
 // ──────────────────────────────────────────────────────────────────────────────
-
-export function useOrgMembers(tenantId: string) {
-  return useQuery({
-    queryKey: queryKeys.enterprise.members(tenantId),
-    queryFn: async () => {
-      const data = await get<{ members: OrgMember[] }>(`/enterprise/${tenantId}/members`);
-      return z.array(OrgMemberSchema).parse(data.members ?? []);
-    },
-    enabled: !!tenantId,
-    staleTime: 30_000,
-  });
-}
-
-export function useAuditLogs(tenantId: string) {
-  return useQuery({
-    queryKey: queryKeys.enterprise.auditLogs(tenantId),
-    queryFn: async () => {
-      const data = await get<{ logs: AuditEvent[] }>(`/enterprise/${tenantId}/audit-logs`);
-      return z.array(AuditEventSchema).parse(data.logs ?? []);
-    },
-    enabled: !!tenantId,
-    staleTime: 60_000,
-  });
-}
-
-export function useInviteMember(tenantId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (member: Omit<OrgMember, 'id' | 'twoFactorEnabled' | 'lastActive'>) => {
-      const data = await post<{ member: OrgMember }>(`/enterprise/${tenantId}/members`, member);
-      return OrgMemberSchema.parse(data.member);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.enterprise.members(tenantId) });
-    },
-  });
-}
-
-export function useRemoveMember(tenantId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (memberId: string) => {
-      await del(`/enterprise/${tenantId}/members/${memberId}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.enterprise.members(tenantId) });
-    },
-  });
-}
-
-export function useUpdateSSO(tenantId: string) {
-  return useMutation({
-    mutationFn: async (config: { ssoEnabled: boolean; enforce2FA: boolean }) => {
-      await patch(`/enterprise/${tenantId}/sso`, config);
-    },
-  });
-}
+// PHANTOM HOOKS REMOVED: useOrgMembers, useAuditLogs, useInviteMember, useRemoveMember, useUpdateSSO
+// These were bound to non-existent endpoints: /api/enterprise/${tenantId}/members and /api/enterprise/${tenantId}/audit-logs
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Admin Console Hooks

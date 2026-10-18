@@ -1,16 +1,16 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-18T07:37:51.454Z",
-  "eventCount": 3875,
+  "updatedAt": "2026-10-18T09:51:06.429Z",
+  "eventCount": 3904,
   "activeDirectiveId": "DIR-002",
-  "activeDirectiveTitle": "UI/UX Dashboards Parity Audit and Autonomous Modernization: 4 Dashboards + Public Website",
-  "activeDirectiveStatus": "IN_PROGRESS",
+  "activeDirectiveTitle": "Surface 1 Modernization: Public Website, Dynamic CMS, SEO, Regional Hubs, Full Billing Checkout & Public Sharing Parity",
+  "activeDirectiveStatus": "CHANGES_REQUESTED",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
   "stallDeadline": "2026-10-18T06:36:27.129Z",
-  "unreadForLead": 26,
-  "unreadForDev": 111,
+  "unreadForLead": 31,
+  "unreadForDev": 135,
   "pendingBlockers": 0,
   "latestHeartbeat": {
     "timestamp": "2026-10-18T06:36:27.129Z",
@@ -18,9 +18,9 @@
     "percent": 85
   },
   "integrity": {
-    "ok": true,
-    "checked": 3875,
-    "legacy": 0,
-    "bad": 0
+    "ok": false,
+    "checked": 3904,
+    "legacy": 1,
+    "bad": 1
   }
 }

@@ -4,6 +4,8 @@
  * Route: /shared/:resumeId
  * Allows external hiring managers, recruiters, and clients to view,
  * print, and download a shared candidate resume with high fidelity.
+ * CRITICAL CONTRACT: MUST call GET /api/resumes/public/:resumeId only.
+ * NO fallback to synthetic mock data (SAMPLE_RESUME / Alex Vance).
  */
 
 import { useState, useEffect } from 'react';
@@ -94,109 +96,30 @@ interface ResumeData {
   }>;
 }
 
-const SAMPLE_RESUME: ResumeData = {
-  title: 'Senior Software Engineer & Distributed Systems Lead',
-  heading: {
-    firstName: 'Alex',
-    lastName: 'Vance',
-    email: 'alex.vance@example.com',
-    phone: '+1 (555) 234-5678',
-    location: 'San Francisco, CA',
-    title: 'Staff Fullstack Architect & Systems Engineer',
-    website: 'https://alexvance.dev',
-    linkedin: 'linkedin.com/in/alexvance',
-    github: 'github.com/alexvance',
-  },
-  summary:
-    'Distinguished Software Architect with 8+ years of experience engineering high-throughput, fault-tolerant web applications and enterprise platforms. Deep expertise in distributed event-driven systems, React 19, TypeScript, Go, and cloud-native Kubernetes infrastructure. Proven history of scaling core payment APIs from 2,000 to 45,000 requests/sec with zero downtime.',
-  experience: [
-    {
-      company: 'Apex Cloud Systems',
-      title: 'Principal Software Architect',
-      location: 'San Francisco, CA',
-      startDate: '2022',
-      current: true,
-      bullets: [
-        'Spearheaded the migration of monolithic billing pipeline into microservices, reducing p99 latency by 68%.',
-        'Architected real-time WebSocket messaging layer handling 1.2M concurrent client connections across 4 global regions.',
-        'Mentored 14 senior engineers in clean architecture, AST-driven linting, and high-coverage automated integration testing.',
-      ],
-    },
-    {
-      company: 'OmniData Technologies',
-      title: 'Senior Fullstack Engineer',
-      location: 'Austin, TX',
-      startDate: '2019',
-      endDate: '2022',
-      bullets: [
-        'Designed and deployed responsive React/TypeScript enterprise analytics dashboard adopted by 85 enterprise tenants.',
-        'Engineered caching tier utilizing Redis cluster that lowered database read load by 82% during peak seasonal traffic.',
-        'Implemented end-to-end telemetry and OpenTelemetry tracing across 24 containerized microservices.',
-      ],
-    },
-    {
-      company: 'Nexis Digital Labs',
-      title: 'Software Engineer',
-      location: 'Seattle, WA',
-      startDate: '2017',
-      endDate: '2019',
-      bullets: [
-        'Developed RESTful API endpoints and PostgreSQL data layers for SaaS customer portal with strict sub-150ms latency budget.',
-        'Authored comprehensive test suites achieving 94% code coverage using Jest and Cypress.',
-      ],
-    },
-  ],
-  education: [
-    {
-      institution: 'University of Washington',
-      degree: 'B.S. in Computer Science & Engineering',
-      graduationDate: '2017',
-      gpa: '3.88 / 4.00',
-    },
-  ],
-  skills: [
-    {
-      category: 'Languages & Core',
-      items: ['TypeScript', 'JavaScript (ESNext)', 'Go', 'Python', 'SQL (PostgreSQL)', 'GraphQL', 'Rust'],
-    },
-    {
-      category: 'Frontend & UI',
-      items: ['React 19', 'Next.js', 'Vite', 'Tailwind CSS', 'shadcn/ui', 'WebSockets', 'HTML5/CSS3 Canvas'],
-    },
-    {
-      category: 'Cloud & Infrastructure',
-      items: ['Docker', 'Kubernetes', 'AWS (ECS, S3, RDS)', 'Redis', 'Kafka', 'CI/CD Pipelines', 'Terraform'],
-    },
-  ],
-  projects: [
-    {
-      name: 'FlowMesh — Distributed Workflow Engine',
-      description: 'Open-source distributed state machine orchestrator built in Go and TypeScript with visual DAG pipeline editor.',
-      link: 'https://github.com/alexvance/flowmesh',
-      highlights: ['Over 1.8k GitHub stars', 'Benchmarked at 50,000 tasks/second on modest 4-node cluster'],
-    },
-  ],
-};
-
 export function SharedResumePage() {
   const { resumeId } = useParams<{ resumeId: string }>();
-  const [resume, setResume] = useState<ResumeData>(SAMPLE_RESUME);
+  const [resume, setResume] = useState<ResumeData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     async function loadResume() {
       if (!resumeId) {
+        setError('Invalid resume ID');
         setLoading(false);
         return;
       }
       try {
-        const data = await get<ResumeData>(`/resumes/${resumeId}`);
+        // CRITICAL CONTRACT: MUST call public unauthenticated endpoint
+        const data = await get<ResumeData>(`/api/resumes/public/${resumeId}`);
         if (data && data.heading) {
           setResume(data);
+        } else {
+          setError('Resume not found or not publicly shared');
         }
-      } catch {
-        // Fall back to sample data for preview/demo
+      } catch (err) {
+        setError(normalizeError(err).message);
       } finally {
         setLoading(false);
       }
@@ -216,8 +139,27 @@ export function SharedResumePage() {
 
   if (loading) return <PageSpinner />;
 
-  const heading = resume.heading || SAMPLE_RESUME.heading!;
-  const fullName = `${heading.firstName || ''} ${heading.lastName || ''}`.trim() || 'Alex Vance';
+  if (error || !resume) {
+    return (
+      <div className="min-h-screen bg-neutral-100 dark:bg-neutral-950 text-ink py-8 px-4 sm:px-6 lg:px-8 print:p-0 print:bg-white print:text-black">
+        <div className="max-w-4xl mx-auto rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl overflow-hidden print:shadow-none print:border-none print:m-0 print:max-w-full">
+          <div className="p-8 sm:p-12 text-center">
+            <h1 className="text-2xl font-bold text-ink">Resume Not Found</h1>
+            <p className="mt-4 text-ink-muted">
+              {error ? `Error: ${error}` : 'This resume does not exist or has not been publicly shared.'}
+            </p>
+            <Link to="/" className="mt-6 inline-flex items-center gap-2 text-brand-600 hover:underline">
+              <ChevronLeft className="size-4" />
+              Back to IME365
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const heading = resume.heading!;
+  const fullName = `${heading.firstName || ''} ${heading.lastName || ''}`.trim() || 'Candidate';
 
   return (
     <div className="min-h-screen bg-neutral-100 dark:bg-neutral-950 text-ink py-8 px-4 sm:px-6 lg:px-8 print:p-0 print:bg-white print:text-black">

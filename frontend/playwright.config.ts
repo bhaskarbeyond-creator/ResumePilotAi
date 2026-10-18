@@ -20,11 +20,25 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium-mobile',
-      use: { ...devices['iPhone 13'], viewport: { width: 375, height: 667 } },
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 375, height: 667 },
+        userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Mobile/15E148 Safari/604.1',
+        isMobile: true,
+        hasTouch: true,
+        deviceScaleFactor: 3,
+      },
     },
     {
       name: 'chromium-tablet',
-      use: { ...devices['iPad Pro'], viewport: { width: 768, height: 1024 } },
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 768, height: 1024 },
+        userAgent: 'Mozilla/5.0 (iPad; CPU OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Mobile/15E148 Safari/604.1',
+        isMobile: true,
+        hasTouch: true,
+        deviceScaleFactor: 2,
+      },
     },
     {
       name: 'chromium-desktop',

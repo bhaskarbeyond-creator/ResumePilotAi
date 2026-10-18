@@ -1,0 +1,52 @@
+{
+  "id": "DIR-005",
+  "title": "Surface 4 Modernization: Complete 17-Component Enterprise Suite, Bulk Resumes, AI Quotas, RBAC, SSO & Audit Parity",
+  "priority": "P0",
+  "status": "ISSUED",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-18T08:55:00.000Z",
+  "updatedAt": "2026-10-18T09:08:00.000Z",
+  "projectRoot": "d:\\xampp\\htdocs\\IME365",
+  "spec": "# IME365 DIR-005 — SURFACE 4 MASTER ENGINEERING DIRECTIVE\n## Surface 4 Modernization: Complete 17-Component Enterprise Suite, Bulk Resumes, AI Quotas, RBAC, SSO & Audit Parity\n\n**Directive ID:** DIR-005  \n**Priority:** P0 — Critical  \n**Surface:** Surface 4 of 5 (Enterprise Console & Multi-Tenant Platform)  \n**Depends On:** DIR-004 (Unlocks automatically when DIR-004 is certified & frozen)  \n**Executive Engineering Lead:** Antigravity (Google DeepMind)  \n**Implementation Engine:** Claude Code CLI  \n\n---\n\n### 1. Objective & Scope\nModernize the complete Enterprise Console in React 19 / TypeScript / Vite / Tailwind CSS v4 with Cuba M3 executive glassmorphic styling, ensuring 100% functional parity with legacy implementations in `src/enterprise/`:\n\n1. **Complete 17-Component Enterprise Suite Parity (NO SKELETON SHORTCUTS)**:\n   - **CRITICAL ANTI-TRUNCATION INVARIANT**: The developer MUST NOT reduce the enterprise console to a basic workspace card. All 17 legacy components from `src/enterprise/components/` must be modernized and preserved:\n     1. **`EnterpriseOverviewTab.jsx`** (27 KB): Executive KPI cards, Hiring Velocity, Time to Hire, Department Spend, and Volume metrics.\n     2. **`EnterpriseResumesTab.jsx`** (58 KB): Bulk candidate resume management, multi-candidate scoring, filtering, and talent pool tags.\n     3. **`EnterpriseAiTab.jsx` & `AiQuotaRing.jsx`** (15 KB): Departmental AI quota allocation rings, token consumption telemetry, and model limits.\n     4. **`EnterpriseUsersTab.jsx`** (50 KB): Bulk user invitations, CSV user imports, account status toggles, and seat allocation.\n     5. **`EnterpriseRolesTab.jsx`** (38 KB): Fine-grained RBAC permission matrix (Admin, Recruiter, Viewer, Member) enforced on server.\n     6. **`EnterpriseSecurityTab.jsx`** (35 KB): SAML 2.0 / OIDC SSO configuration, IP whitelisting, session timeouts, and domain challenge verification.\n     7. **`EnterpriseWorkspacesTab.jsx`** (27 KB): Multi-tenant workspace switcher with logo, branding, and billing profile.\n     8. **`EnterpriseTeamsTab.jsx`** (29 KB): Departmental hierarchy, team assignment, and hiring manager ownership.\n     9. **`EnterpriseUsageTab.jsx`** (24 KB): Seat usage meter, API consumption telemetry, and contractual license thresholds.\n     10. **`EnterpriseAuditTab.jsx`** (28 KB): Real-time tamper-evident audit event log with actor, IP, timestamp, and full CSV export.\n     11. **`EnterpriseEmailTab.jsx`** (27 KB): Enterprise notification templates, candidate email branding, and automated status alerts.\n     12. **`EnterpriseSupportTab.jsx`** (19 KB): Enterprise SLA priority support ticket submission and tracking.\n     13. **`EnterprisePlatformTab.jsx`** (16 KB): Webhook and external ATS integration endpoints.\n     14. **`EnterpriseSettingsTab.jsx`** (17 KB): Tenant-level organization settings.\n     15. **`EnterpriseConfirmModal.jsx`** (7 KB): Destructive action confirmation modals.\n     16. **`EnterpriseResumePdfModal.jsx`** (20 KB): In-console multi-resume PDF evaluation drawer.\n     17. **`HelpTooltip.jsx`**: Contextual enterprise field help tooltips.\n\n2. **Strict Multi-Tenant Isolation Invariant**:\n   - Tenant boundary invariants enforced on all client requests and backend queries.\n   - Zero cross-tenant data leakage in API payloads or DOM.\n\n---\n\n### 2. Invariants\n- ZERO CAPABILITY LOSS: Full preservation of all 17 enterprise modules (>450 KB of logic).\n- STRICT TENANT ISOLATION: Zero cross-tenant data leakage.\n- WCAG 2.1 AA ACCESSIBILITY & Sub-4s build.",
+  "invariants": [
+    "ZERO CAPABILITY LOSS: Full preservation of all 17 components from src/enterprise/components/ (no skeleton shortcut permitted).",
+    "TENANT RESOLUTION CONTRACT: Tenant context MUST be supplied via X-Tenant-Id header (or enterprise subdomain). URL path parameters such as /enterprise/${tenantId}/members or /enterprise/${tenantId}/audit-logs DO NOT EXIST and return 404.",
+    "ENTERPRISE ENDPOINT CONTRACTS: Memberships MUST bind to GET /api/enterprise/memberships. Audit events MUST bind to GET /api/enterprise/audit. Workspaces MUST bind to GET/POST /api/enterprise/workspaces. Roles matrix MUST bind to GET /api/enterprise/roles-matrix.",
+    "LEGACY TENANT HEADER ISOLATION: Passing X-Tenant-Id to legacy non-enterprise routes returns HTTP 400 (TENANT_CONTEXT_UNSUPPORTED_FOR_LEGACY_ROUTE). Tenant headers must only be attached to /api/enterprise/* and allowed AI paths.",
+    "EMAIL VERIFICATION INVARIANT: Human access to all enterprise endpoints requires req.user.emailVerified === true. The frontend must gracefully handle HTTP 403 EMAIL_VERIFICATION_REQUIRED by presenting a re-send verification link banner.",
+    "ZERO PHANTOM HOOK REFERENCES: Enterprise console (console.tsx) must not import removed phantom hooks (useOrgMembers, useAuditLogs, useInviteMember, useRemoveMember, useUpdateSSO) and must bind to authentic enterprise routes with X-Tenant-Id header.",
+    "TENANT ISOLATION: Enforce tenant boundary invariants across all enterprise routes.",
+    "RBAC ENFORCEMENT: Server-side authorization verification for Admin, Recruiter, Viewer, and Member roles.",
+    "ZERO FABRICATED PRODUCTION DATA: Live API binding for organization records, audit logs, and AI quota rings.",
+    "WCAG 2.1 AA ACCESSIBILITY: Full keyboard navigation and color contrast."
+  ],
+  "acceptanceCriteria": [
+    "Enterprise console renders within CubaAppShell with organization switcher and tenant metrics.",
+    "All 17 enterprise sub-components verified and functional.",
+    "Enterprise memberships bind to GET /api/enterprise/memberships with X-Tenant-Id header (no 404 errors).",
+    "Audit log viewer binds to GET /api/enterprise/audit with X-Tenant-Id header and CSV export verified.",
+    "Workspaces management binds to GET/POST /api/enterprise/workspaces.",
+    "Bulk Resumes tab verified with multi-resume scoring and tag filtering.",
+    "AI Quotas and department allocation rings verified.",
+    "RBAC permissions verified: restricted actions hidden or disabled for non-admin roles.",
+    "SSO and custom domain verification flows tested with real configuration states.",
+    "Email verification gate verified: graceful UI banner when req.user.emailVerified is false.",
+    "TypeScript check passes with zero errors (tsc -b) with zero phantom hook references in console.tsx.",
+    "Playwright crawl of enterprise routes passes with zero console errors."
+  ],
+  "dependsOn": [
+    "DIR-004"
+  ],
+  "sourceEventId": null,
+  "plan": null,
+  "evidence": null,
+  "reviews": [],
+  "freeze": null,
+  "heartbeats": [],
+  "lastHeartbeatAt": null,
+  "continuationPending": false,
+  "lastTransitionReason": "surface 4 updated: all 17 enterprise sub-components explicitly mandated",
+  "revisionTarget": null,
+  "planApproval": null
+}

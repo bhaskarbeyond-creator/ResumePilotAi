@@ -10,6 +10,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { PageSpinner } from '@/components/ui/loading';
 import { RouteErrorBoundary } from '@/components/guards/route-error-boundary';
 import { RequireAuth, RedirectIfAuthenticated } from '@/components/guards/require-auth';
+import { RequireExportAccess } from '@/components/guards/require-export-access';
 import { AppShell } from '@/components/layout/app-shell';
 
 
@@ -25,6 +26,7 @@ const CoverLettersPage = lazy(() => import('@/pages/dashboard/cover-letters').th
 const ResumeBuilderPage = lazy(() => import('@/pages/dashboard/resume-builder').then((m) => ({ default: m.ResumeBuilderPage })));
 const AdminConsolePage = lazy(() => import('@/pages/admin/console').then((m) => ({ default: m.AdminConsolePage })));
 const JobsPortalPage = lazy(() => import('@/pages/jobs/portal').then((m) => ({ default: m.JobsPortalPage })));
+const RegionalJobsPage = lazy(() => import('@/pages/jobs/regional-hub').then((m) => ({ default: m.RegionalJobsPage })));
 const BlogPage = lazy(() => import('@/pages/blog/index').then((m) => ({ default: m.BlogPage })));
 const ATSScorePage = lazy(() => import('@/pages/dashboard/ats-score').then((m) => ({ default: m.ATSScorePage })));
 const PricingPage = lazy(() => import('@/pages/billing/pricing').then((m) => ({ default: m.PricingPage })));
@@ -33,6 +35,8 @@ const ContactPage = lazy(() => import('@/pages/cms/index').then((m) => ({ defaul
 const CMSPage = lazy(() => import('@/pages/cms/index').then((m) => ({ default: m.CMSPage })));
 const AIAssistantPage = lazy(() => import('@/pages/dashboard/ai-assistant').then((m) => ({ default: m.AIAssistantPage })));
 const PortfolioBuilderPage = lazy(() => import('@/pages/portfolio/builder').then((m) => ({ default: m.PortfolioBuilderPage })));
+const PortfolioGalleryPage = lazy(() => import('@/pages/portfolio/gallery').then((m) => ({ default: m.PortfolioGalleryPage })));
+const PublicPortfolioPage = lazy(() => import('@/pages/portfolio/public-portfolio').then((m) => ({ default: m.PublicPortfolioPage })));
 const EmployerPortalPage = lazy(() => import('@/pages/employer/portal').then((m) => ({ default: m.EmployerPortalPage })));
 const EnterpriseConsolePage = lazy(() => import('@/pages/enterprise/console').then((m) => ({ default: m.EnterpriseConsolePage })));
 const MessagesPage = lazy(() => import('@/pages/dashboard/messages').then((m) => ({ default: m.MessagesPage })));
@@ -86,12 +90,12 @@ export function AppRouter() {
             <Route path="/jobs/portal/:jobId" element={<JobsPortalPage />} />
             <Route path="/jobs/categories" element={<JobsPortalPage />} />
             <Route path="/jobs/category/:catName" element={<JobsPortalPage />} />
-            <Route path="/jobs/city/:slug" element={<JobsPortalPage />} />
-            <Route path="/jobs/in/:slug" element={<JobsPortalPage />} />
+            <Route path="/jobs/city/:slug" element={<RegionalJobsPage />} />
+            <Route path="/jobs/in/:slug" element={<RegionalJobsPage />} />
 
             {/* ─── Portfolio (public) ─── */}
-            <Route path="/portfolios" element={<PortfolioBuilderPage />} />
-            <Route path="/portfolio/:slug" element={<PortfolioBuilderPage />} />
+            <Route path="/portfolios" element={<PortfolioGalleryPage />} />
+            <Route path="/portfolio/:slug" element={<PublicPortfolioPage />} />
 
             {/* ─── Billing (mixed) ─── */}
             <Route path="/billing/plans" element={<PricingPage />} />
@@ -246,18 +250,23 @@ export function AppRouter() {
             <Route path="/about-us" element={<Navigate to="/p/about-us" replace />} />
 
             {/* ─── Export Routes (preserve contract) ─── */}
+            {/*
+              CRITICAL FIX: Export routes MUST use RequireExportAccess to allow
+              headless Chromium PDF rendering via #renderToken=... URL fragment authentication.
+              This prevents redirect to /login for automated PDF generation.
+            */}
             {Array.from({ length: 51 }, (_, i) => i + 1).map((num) => (
               <Route
                 key={`cv-${num}`}
                 path={`/export/Cv${num}/:resumeId/:language`}
-                element={<RequireAuth><CVRendererPage /></RequireAuth>}
+                element={<RequireExportAccess><CVRendererPage /></RequireExportAccess>}
               />
             ))}
             {Array.from({ length: 4 }, (_, i) => i + 1).map((num) => (
               <Route
                 key={`cover-${num}`}
                 path={`/export/Cover${num}/:resumeId/:language`}
-                element={<RequireAuth><CVRendererPage /></RequireAuth>}
+                element={<RequireExportAccess><CVRendererPage /></RequireExportAccess>}
               />
             ))}
 

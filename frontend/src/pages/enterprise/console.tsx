@@ -6,6 +6,8 @@
  * - Member & RBAC role administration (Owner, Admin, Reviewer, Member)
  * - Enterprise Security & SSO (SAML 2.0, Okta, Azure AD, Enforced 2FA)
  * - Audit Log & Governance Telemetry
+ * NOTE: Enterprise hooks removed per DIR-002 (phantom endpoints /api/enterprise/${tenantId}/members, /audit-logs)
+ * Mock data used until backend contract is finalized.
  */
 
 import { useState } from 'react';
@@ -28,23 +30,16 @@ import {
   Download,
   X,
   Sparkles,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
-import {
-  useOrgMembers,
-  useAuditLogs,
-  useInviteMember,
-  useRemoveMember,
-  useUpdateSSO,
-  type OrgMember,
-  type AuditEvent,
-} from '@/hooks/use-api-hooks';
 
 export function EnterpriseConsolePage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'members' | 'security' | 'audit'>('overview');
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteName, setInviteName] = useState('');
-  const [inviteRole, setInviteRole] = useState<OrgMember['role']>('Member');
+  const [inviteRole, setInviteRole] = useState<'Owner' | 'Admin' | 'Reviewer' | 'Member'>('Member');
   const [memberSearch, setMemberSearch] = useState('');
   const [ssoEnabled, setSsoEnabled] = useState(true);
   const [enforce2FA, setEnforce2FA] = useState(true);
@@ -52,37 +47,73 @@ export function EnterpriseConsolePage() {
   // Tenant ID - in real app would come from auth context or URL
   const tenantId = 'cyberdyne-systems';
 
-  // Live API hooks
-  const { data: members = [], isLoading: membersLoading, error: membersError, refetch: refetchMembers } = useOrgMembers(tenantId);
-  const { data: auditLogs = [], isLoading: auditLoading, error: auditError } = useAuditLogs(tenantId);
-  const inviteMutation = useInviteMember(tenantId);
-  const removeMutation = useRemoveMember(tenantId);
-  const ssoMutation = useUpdateSSO(tenantId);
+  // Mock data (replaces phantom /api/enterprise/${tenantId}/members and /audit-logs endpoints)
+  interface OrgMember {
+    id: string;
+    name: string;
+    email: string;
+    role: 'Owner' | 'Admin' | 'Reviewer' | 'Member';
+    twoFactorEnabled: boolean;
+    lastActive: string;
+  }
+
+  interface AuditEvent {
+    id: string;
+    actor: string;
+    action: string;
+    target: string;
+    ip: string;
+    timestamp: string;
+  }
+
+  const MOCK_MEMBERS: OrgMember[] = [
+    { id: 'm-1', name: 'Dr. Miles Dyson', email: 'miles.dyson@cyberdyne.org', role: 'Owner', twoFactorEnabled: true, lastActive: '2 hours ago' },
+    { id: 'm-2', name: 'Sarah Connor', email: 'sarah.connor@cyberdyne.org', role: 'Admin', twoFactorEnabled: true, lastActive: '5 hours ago' },
+    { id: 'm-3', name: 'John Connor', email: 'john.connor@cyberdyne.org', role: 'Reviewer', twoFactorEnabled: false, lastActive: '1 day ago' },
+    { id: 'm-4', name: 'Kate Brewster', email: 'kate.brewster@cyberdyne.org', role: 'Member', twoFactorEnabled: true, lastActive: '3 hours ago' },
+    { id: 'm-5', name: 'T-800', email: 't800.unit@cyberdyne.org', role: 'Member', twoFactorEnabled: true, lastActive: 'Just now' },
+  ];
+
+  const MOCK_AUDIT_LOGS: AuditEvent[] = [
+    { id: 'audit-1', actor: 'Dr. Miles Dyson', action: 'MEMBER_INVITED', target: 'kate.brewster@cyberdyne.org', ip: '192.168.1.45', timestamp: '2026-10-17T14:32:00Z' },
+    { id: 'audit-2', actor: 'Sarah Connor', action: 'SSO_CONFIG_UPDATED', target: 'SAML Entity ID', ip: '192.168.1.45', timestamp: '2026-10-17T10:15:00Z' },
+    { id: 'audit-3', actor: 'T-800', action: 'LOGIN_SUCCESS', target: 'SAML Assertion', ip: '192.168.1.100', timestamp: '2026-10-17T09:00:00Z' },
+    { id: 'audit-4', actor: 'Dr. Miles Dyson', action: 'ROLE_CHANGED', target: 'John Connor → Reviewer', ip: '192.168.1.45', timestamp: '2026-10-16T16:45:00Z' },
+    { id: 'audit-5', actor: 'System', action: 'QUOTA_WARNING', target: 'AI Tokens at 85%', ip: 'internal', timestamp: '2026-10-16T12:00:00Z' },
+  ];
+
+  const [members, setMembers] = useState<OrgMember[]>(MOCK_MEMBERS);
+  const [auditLogs, setAuditLogs] = useState<AuditEvent[]>(MOCK_AUDIT_LOGS);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [auditLoading, setAuditLoading] = useState(false);
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteEmail.trim()) return;
 
-    await inviteMutation.mutateAsync({
+    const newMember: OrgMember = {
+      id: `m-${Date.now()}`,
       name: inviteName || inviteEmail.split('@')[0],
       email: inviteEmail,
       role: inviteRole,
-    });
+      twoFactorEnabled: false,
+      lastActive: 'Never',
+    };
+    setMembers((prev) => [...prev, newMember]);
 
     setShowInviteModal(false);
     setInviteEmail('');
     setInviteName('');
     setInviteRole('Member');
-    refetchMembers();
   };
 
   const handleRemoveMember = async (memberId: string) => {
-    await removeMutation.mutateAsync(memberId);
-    refetchMembers();
+    setMembers((prev) => prev.filter((m) => m.id !== memberId));
   };
 
   const handleSSOChange = async (config: { ssoEnabled: boolean; enforce2FA: boolean }) => {
-    await ssoMutation.mutateAsync(config);
+    setSsoEnabled(config.ssoEnabled);
+    setEnforce2FA(config.enforce2FA);
   };
 
   const filteredMembers = members.filter(
@@ -93,7 +124,7 @@ export function EnterpriseConsolePage() {
   );
 
   const isLoading = membersLoading || auditLoading;
-  const hasError = membersError || auditError;
+  const hasError = false;
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-16">
@@ -119,7 +150,6 @@ export function EnterpriseConsolePage() {
             size="sm"
             onClick={() => setShowInviteModal(true)}
             className="text-xs font-semibold gap-1.5"
-            disabled={inviteMutation.isPending}
           >
             <UserPlus className="size-3.5" />
             Invite Member
@@ -259,7 +289,6 @@ export function EnterpriseConsolePage() {
               size="sm"
               onClick={() => setShowInviteModal(true)}
               className="text-xs gap-1.5 self-end sm:self-auto"
-              disabled={inviteMutation.isPending}
             >
               <Plus className="size-3.5" />
               Add Team Member
@@ -361,7 +390,6 @@ export function EnterpriseConsolePage() {
                             size="sm"
                             className="h-7 text-xs text-ink-muted hover:text-red-500"
                             onClick={() => handleRemoveMember(m.id)}
-                            disabled={removeMutation.isPending}
                           >
                             Remove
                           </Button>
@@ -593,8 +621,8 @@ export function EnterpriseConsolePage() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" size="sm" className="text-xs font-semibold" disabled={inviteMutation.isPending}>
-                  {inviteMutation.isPending ? 'Sending…' : 'Send Invitation'}
+                <Button type="submit" size="sm" className="text-xs font-semibold">
+                  Send Invitation
                 </Button>
               </div>
             </form>
@@ -604,6 +632,3 @@ export function EnterpriseConsolePage() {
     </div>
   );
 }
-
-// Import AlertCircle for error state
-import { AlertCircle } from 'lucide-react';

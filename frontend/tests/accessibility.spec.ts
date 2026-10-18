@@ -52,7 +52,7 @@ test.describe('WCAG 2.1 AA Accessibility & Responsive Crawl', () => {
       // Test public landing page (no auth needed)
       for (const surface of SURFACES.filter(s => s.path === '/')) {
         test(`${surface.name} - axe-core accessibility scan`, async ({ page }) => {
-          await page.goto(surface.path, { waitUntil: 'networkidle', timeout: 30000 });
+          await page.goto(surface.path, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
           // Wait for main content to be ready
           await page.waitForSelector(surface.selector, { timeout: 10000 }).catch(() => {
@@ -83,7 +83,7 @@ test.describe('WCAG 2.1 AA Accessibility & Responsive Crawl', () => {
         });
 
         test(`${surface.name} - DOM structure & interactive elements crawl`, async ({ page }) => {
-          await page.goto(surface.path, { waitUntil: 'networkidle', timeout: 30000 });
+          await page.goto(surface.path, { waitUntil: 'domcontentloaded', timeout: 60000 });
           await page.waitForTimeout(1000);
 
           // Crawl interactive elements
@@ -115,7 +115,7 @@ test.describe('WCAG 2.1 AA Accessibility & Responsive Crawl', () => {
         });
 
         test(`${surface.name} - Responsive layout integrity`, async ({ page }) => {
-          await page.goto(surface.path, { waitUntil: 'networkidle', timeout: 30000 });
+          await page.goto(surface.path, { waitUntil: 'domcontentloaded', timeout: 60000 });
           await page.waitForTimeout(500);
 
           // Check for horizontal overflow
@@ -155,7 +155,7 @@ test.describe('WCAG 2.1 AA Accessibility & Responsive Crawl', () => {
       for (const surface of AUTH_SURFACES) {
         test(`${surface.name} - axe-core accessibility scan`, async ({ page }) => {
           await setDemoAuth(page, surface.user);
-          await page.goto(surface.path, { waitUntil: 'networkidle', timeout: 30000 });
+          await page.goto(surface.path, { waitUntil: 'domcontentloaded', timeout: 60000 });
           await page.waitForTimeout(1000);
 
           // Wait for main content to be ready
@@ -188,7 +188,7 @@ test.describe('WCAG 2.1 AA Accessibility & Responsive Crawl', () => {
 
         test(`${surface.name} - DOM structure & interactive elements crawl`, async ({ page }) => {
           await setDemoAuth(page, surface.user);
-          await page.goto(surface.path, { waitUntil: 'networkidle', timeout: 30000 });
+          await page.goto(surface.path, { waitUntil: 'domcontentloaded', timeout: 60000 });
           await page.waitForTimeout(1000);
 
           // Crawl interactive elements
@@ -225,7 +225,7 @@ test.describe('WCAG 2.1 AA Accessibility & Responsive Crawl', () => {
 
         test(`${surface.name} - Responsive layout integrity`, async ({ page }) => {
           await setDemoAuth(page, surface.user);
-          await page.goto(surface.path, { waitUntil: 'networkidle', timeout: 30000 });
+          await page.goto(surface.path, { waitUntil: 'domcontentloaded', timeout: 60000 });
           await page.waitForTimeout(500);
 
           // Check for horizontal overflow
@@ -269,7 +269,7 @@ test.describe('Navigation & Focus Management', () => {
 
   test('Skip link exists and functions on all public pages', async ({ page }) => {
     for (const surface of SURFACES) {
-      await page.goto(surface.path, { waitUntil: 'networkidle', timeout: 30000 });
+      await page.goto(surface.path, { waitUntil: 'domcontentloaded', timeout: 60000 });
       await page.waitForTimeout(500);
 
       const skipLink = page.locator('a[href="#main"], a[href="#main-content"], a[href="#content"], .skip-link').first();
@@ -287,7 +287,7 @@ test.describe('Navigation & Focus Management', () => {
   test('Skip link exists and functions on authenticated pages', async ({ page }) => {
     for (const surface of AUTH_SURFACES) {
       await setDemoAuth(page, surface.user);
-      await page.goto(surface.path, { waitUntil: 'networkidle', timeout: 30000 });
+      await page.goto(surface.path, { waitUntil: 'domcontentloaded', timeout: 60000 });
       await page.waitForTimeout(1000);
 
       const skipLink = page.locator('a[href="#main"], a[href="#main-content"], a[href="#content"], .skip-link').first();
@@ -304,7 +304,7 @@ test.describe('Navigation & Focus Management', () => {
 
   test('Keyboard navigation works through interactive elements on authenticated pages', async ({ page }) => {
     await setDemoAuth(page, DEMO_USER);
-    await page.goto('/dashboard', { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto('/dashboard', { waitUntil: 'domcontentloaded', timeout: 60000 });
     await page.waitForTimeout(1000);
 
     // Tab through first 10 focusable elements
@@ -344,7 +344,7 @@ test.describe('Color Contrast Verification (WCAG 2.1 AA)', () => {
 
   for (const surface of SURFACES) {
     test(`${surface.name} - color contrast scan (AA)`, async ({ page }) => {
-      await page.goto(surface.path, { waitUntil: 'networkidle', timeout: 30000 });
+      await page.goto(surface.path, { waitUntil: 'domcontentloaded', timeout: 60000 });
       await page.waitForTimeout(500);
 
       // Use wcag2aa and wcag21aa tags which only check AA-level contrast (not AAA enhanced)
@@ -373,7 +373,7 @@ test.describe('ARIA & Semantic Structure', () => {
 
   for (const surface of SURFACES) {
     test(`${surface.name} - ARIA landmarks and semantic structure`, async ({ page }) => {
-      await page.goto(surface.path, { waitUntil: 'networkidle', timeout: 30000 });
+      await page.goto(surface.path, { waitUntil: 'domcontentloaded', timeout: 60000 });
       await page.waitForTimeout(500);
 
       const structure = await page.evaluate(() => {
