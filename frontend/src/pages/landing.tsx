@@ -68,10 +68,15 @@ export function LandingPage() {
 
   return (
     <div className="min-h-screen bg-canvas">
+      {/* Skip Link */}
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-surface focus:text-brand-600 focus:border-b focus:border-brand-200">
+        Skip to main content
+      </a>
+
       {/* Navigation */}
       <header className="sticky top-0 z-[var(--z-sticky)] border-b border-border/60 bg-surface/80 backdrop-blur-xl">
         <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8" aria-label="Primary navigation">
-          <Link to="/" className="flex items-center gap-2.5 no-underline">
+          <Link to="/" className="flex items-center gap-2.5 no-underline" aria-label="IME365 Home">
             <div className="flex size-9 items-center justify-center rounded-xl bg-brand-600 font-bold text-white text-sm shadow-sm">
               IM
             </div>
@@ -106,9 +111,9 @@ export function LandingPage() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
+      <main id="main-content" className="relative overflow-hidden">
         {/* Background gradient */}
-        <div className="absolute inset-0 -z-10">
+        <div className="absolute inset-0 -z-10" aria-hidden="true">
           <div className="absolute left-1/2 top-0 h-[600px] w-[800px] -translate-x-1/2 rounded-full bg-brand-100/50 blur-3xl" />
           <div className="absolute right-0 top-1/3 h-[400px] w-[600px] rounded-full bg-info-100/30 blur-3xl" />
         </div>
@@ -148,31 +153,32 @@ export function LandingPage() {
 
             {/* Trust indicators */}
             <div className="mt-12 flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
-              <div className="flex items-center gap-1.5 text-sm text-ink-muted">
-                <CheckCircle2 className="size-4 text-success-500" />
+              <div className="flex items-center gap-1.5 text-sm text-ink-secondary">
+                <CheckCircle2 className="size-4 text-success-500" aria-hidden="true" />
                 No credit card required
               </div>
-              <div className="flex items-center gap-1.5 text-sm text-ink-muted">
-                <Shield className="size-4 text-success-500" />
+              <div className="flex items-center gap-1.5 text-sm text-ink-secondary">
+                <Shield className="size-4 text-success-500" aria-hidden="true" />
                 Enterprise security
               </div>
-              <div className="flex items-center gap-1.5 text-sm text-ink-muted">
-                <Globe className="size-4 text-success-500" />
+              <div className="flex items-center gap-1.5 text-sm text-ink-secondary">
+                <Globe className="size-4 text-success-500" aria-hidden="true" />
                 Used in 50+ countries
               </div>
             </div>
           </div>
         </div>
-      </section>
+      </main>
 
       {/* Stats */}
-      <section className="border-y border-border bg-surface">
+      <section className="border-y border-border bg-surface" aria-labelledby="stats-heading">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+          <h2 id="stats-heading" className="sr-only">Platform Statistics</h2>
           <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
             {stats.map((stat) => (
               <div key={stat.label} className="text-center">
                 <div className="text-3xl font-bold text-ink lg:text-4xl">{stat.value}</div>
-                <div className="mt-1 text-sm text-ink-muted">{stat.label}</div>
+                <div className="mt-1 text-sm text-ink-secondary">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -180,10 +186,10 @@ export function LandingPage() {
       </section>
 
       {/* Features Grid */}
-      <section className="py-20 lg:py-28">
+      <section className="py-20 lg:py-28" aria-labelledby="features-heading">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">
+            <h2 id="features-heading" className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">
               Everything you need to succeed
             </h2>
             <p className="mt-4 text-lg text-ink-secondary">
@@ -195,16 +201,16 @@ export function LandingPage() {
             {features.map((feature) => {
               const Icon = feature.icon;
               return (
-                <div
+                <article
                   key={feature.title}
                   className="group rounded-2xl border border-border bg-surface p-6 transition-all duration-300 hover:border-brand-200 hover:shadow-lg"
                 >
-                  <div className="mb-4 inline-flex rounded-xl bg-brand-50 p-3 transition-colors group-hover:bg-brand-100">
+                  <div className="mb-4 inline-flex rounded-xl bg-brand-50 p-3 transition-colors group-hover:bg-brand-100" aria-hidden="true">
                     <Icon className="size-6 text-brand-600" />
                   </div>
                   <h3 className="text-lg font-semibold text-ink">{feature.title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-ink-secondary">{feature.description}</p>
-                </div>
+                </article>
               );
             })}
           </div>
@@ -212,10 +218,10 @@ export function LandingPage() {
       </section>
 
       {/* Social Proof */}
-      <section className="border-t border-border bg-surface py-20">
+      <section className="border-t border-border bg-surface py-20" aria-labelledby="testimonials-heading">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-ink">
+            <h2 id="testimonials-heading" className="text-3xl font-bold tracking-tight text-ink">
               Loved by professionals
             </h2>
             <p className="mt-4 text-lg text-ink-secondary">
@@ -229,8 +235,8 @@ export function LandingPage() {
               { name: 'Michael R.', role: 'Product Manager', text: 'Built a professional resume in minutes. The ATS scoring feature helped me understand what recruiters look for.' },
               { name: 'Priya S.', role: 'UX Designer', text: 'The portfolio builder and resume templates are stunning. I received more callbacks after switching to IME365.' },
             ].map((testimonial) => (
-              <div key={testimonial.name} className="rounded-2xl border border-border p-6">
-                <div className="flex gap-1 text-warning-500">
+              <article key={testimonial.name} className="rounded-2xl border border-border p-6">
+                <div className="flex gap-1 text-warning-500" aria-label="5 star rating">
                   {Array.from({ length: 5 }, (_, i) => (
                     <Star key={i} className="size-4 fill-current" />
                   ))}
@@ -242,25 +248,25 @@ export function LandingPage() {
                   </div>
                   <div>
                     <div className="text-sm font-medium text-ink">{testimonial.name}</div>
-                    <div className="text-xs text-ink-muted">{testimonial.role}</div>
+                    <div className="text-xs text-ink-secondary">{testimonial.role}</div>
                   </div>
                 </div>
-              </div>
+              </article>
             ))}
           </div>
         </div>
       </section>
 
       {/* CTA */}
-      <section className="py-20">
+      <section className="py-20" aria-labelledby="cta-heading">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 to-brand-800 px-8 py-16 text-center shadow-2xl sm:px-16">
-            <div className="absolute left-0 top-0 -z-0 h-full w-full">
+            <div className="absolute left-0 top-0 -z-0 h-full w-full" aria-hidden="true">
               <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
               <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
             </div>
             <div className="relative z-10">
-              <h2 className="text-3xl font-bold text-white sm:text-4xl">Ready to advance your career?</h2>
+              <h2 id="cta-heading" className="text-3xl font-bold text-white sm:text-4xl">Ready to advance your career?</h2>
               <p className="mx-auto mt-4 max-w-xl text-lg text-brand-100">
                 Join thousands of professionals using IME365 to build better resumes, prepare for interviews, and land their dream jobs.
               </p>
@@ -283,34 +289,34 @@ export function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border bg-surface">
+      <footer className="border-t border-border bg-surface" role="contentinfo">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <div className="grid gap-8 md:grid-cols-4">
             <div>
-              <Link to="/" className="flex items-center gap-2 no-underline">
+              <Link to="/" className="flex items-center gap-2 no-underline" aria-label="IME365 Home">
                 <div className="flex size-8 items-center justify-center rounded-lg bg-brand-600 font-bold text-white text-sm">
                   IM
                 </div>
                 <span className="font-bold text-ink">IME365</span>
               </Link>
-              <p className="mt-3 text-sm text-ink-muted">
+              <p className="mt-3 text-sm text-ink-secondary">
                 AI-powered career platform helping professionals build resumes, prepare for interviews, and find jobs.
               </p>
             </div>
-            <div>
-              <h4 className="font-semibold text-ink text-sm">Product</h4>
+            <nav aria-label="Product links">
+              <h2 className="sr-only">Product</h2>
               <ul className="mt-3 space-y-2">
                 {['Features', 'Pricing', 'Templates', 'Blog'].map((item) => (
                   <li key={item}>
-                    <Link to={`/${item.toLowerCase()}`} className="text-sm text-ink-muted hover:text-ink transition-colors no-underline">
+                    <Link to={`/${item.toLowerCase()}`} className="text-sm text-ink-secondary hover:text-ink transition-colors no-underline">
                       {item}
                     </Link>
                   </li>
                 ))}
               </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-ink text-sm">Resources</h4>
+            </nav>
+            <nav aria-label="Resource links">
+              <h2 className="sr-only">Resources</h2>
               <ul className="mt-3 space-y-2">
                 {[
                   { label: 'Jobs', href: '/jobs' },
@@ -318,15 +324,15 @@ export function LandingPage() {
                   { label: 'Portfolios', href: '/portfolios' },
                 ].map((item) => (
                   <li key={item.label}>
-                    <Link to={item.href} className="text-sm text-ink-muted hover:text-ink transition-colors no-underline">
+                    <Link to={item.href} className="text-sm text-ink-secondary hover:text-ink transition-colors no-underline">
                       {item.label}
                     </Link>
                   </li>
                 ))}
               </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-ink text-sm">Legal</h4>
+            </nav>
+            <nav aria-label="Legal links">
+              <h2 className="sr-only">Legal</h2>
               <ul className="mt-3 space-y-2">
                 {[
                   { label: 'Privacy Policy', href: '/p/privacy-policy' },
@@ -334,15 +340,15 @@ export function LandingPage() {
                   { label: 'Cookie Policy', href: '/p/cookie-policy' },
                 ].map((item) => (
                   <li key={item.label}>
-                    <Link to={item.href} className="text-sm text-ink-muted hover:text-ink transition-colors no-underline">
+                    <Link to={item.href} className="text-sm text-ink-secondary hover:text-ink transition-colors no-underline">
                       {item.label}
                     </Link>
                   </li>
                 ))}
               </ul>
-            </div>
+            </nav>
           </div>
-          <div className="mt-10 border-t border-border pt-6 text-center text-xs text-ink-muted">
+          <div className="mt-10 border-t border-border pt-6 text-center text-xs text-ink-secondary">
             © {new Date().getFullYear()} IME365 — Interview Made Easy. All rights reserved.
           </div>
         </div>

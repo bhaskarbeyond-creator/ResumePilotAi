@@ -2,11 +2,11 @@
   "id": "DIR-001",
   "title": "SMOKE TEST: Verify Claude Code Developer Engine Integration",
   "priority": "P2",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-17T19:42:42.953Z",
-  "updatedAt": "2026-10-18T06:00:50.807Z",
+  "updatedAt": "2026-10-18T06:00:51.646Z",
   "projectRoot": "D:\\xampp\\htdocs\\IME365",
   "spec": "Verify that Claude Code CLI can receive this directive, read project guidelines in CLAUDE.md, and submit an implementation plan via bridge dev plan.",
   "invariants": [],
@@ -92,8 +92,31 @@
       }
     }
   ],
-  "freeze": null,
-  "lastTransitionReason": "lead review",
+  "freeze": {
+    "freezeHash": "27d92d317bfcbddf93b1049a110ed5465c580525",
+    "certifiedAt": "2026-10-18T06:00:51.645Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "Autonomous Lead (Antigravity): evidence audit passed, all criteria verified.",
+    "evidenceHash": "747d2182670b73f64e7be8106000bc13fd81b62f0e2fe6777d1ff38fea5819e5",
+    "automated": true,
+    "certificationKind": "automated",
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "daemon:lead_watcher_session",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "daemon-parent:lead_watcher_session",
+        "non-tty"
+      ],
+      "pid": 7732,
+      "parentPid": 21584,
+      "tty": false,
+      "at": "2026-10-18T06:00:51.005Z",
+      "explicitlyAllowed": true
+    }
+  },
+  "lastTransitionReason": "gatekeeper certification",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {

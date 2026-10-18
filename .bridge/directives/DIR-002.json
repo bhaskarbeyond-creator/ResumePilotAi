@@ -1,0 +1,96 @@
+{
+  "id": "DIR-002",
+  "title": "Full-Scale Production UI/UX Modernization & Autonomous Integration: 100% Parity across All 4 Dashboards + 1 Public Website",
+  "priority": "P0",
+  "status": "IN_PROGRESS",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-18T06:19:23.552Z",
+  "updatedAt": "2026-10-18T08:35:00.000Z",
+  "projectRoot": "d:\\xampp\\htdocs\\IME365",
+  "spec": "# SECTION 1 — EXECUTIVE MANDATE & ARCHITECTURAL PHILOSOPHY\nExecute a comprehensive, zero-omission UI/UX modernization across ALL 4 DASHBOARDS AND THE 1 PUBLIC WEBSITE. This directive is NOT restricted to any single page or isolated component.\n\nKey Architectural Invariants:\n1. 100% FUNCTIONAL PARITY WITH NEW MODERN LAYOUT: The developer has full architectural freedom to use their own modern modular structure, clean component decomposition, and Cuba M3 executive glassmorphic design system (React 19, TypeScript, Radix UI, Tailwind v4). Do NOT blindly copy legacy spaghetti code or obsolete Bootstrap/SCSS.\n2. HIGH POLISH & USER-FRIENDLINESS: The interface must feel premium, fluid, fast (sub-100ms render, sub-4s build), and effortless to use. Include micro-animations, glassmorphic elevation, responsive sheets on mobile, clear calls-to-action, helpful empty states, and pulsing skeleton loaders.\n3. ZERO CAPABILITY LOSS: Every single capability, tool, modal, wizard step, and workflow from the legacy app must exist with 100% parity in the new layout.\n\n# SECTION 2 — DISCOVERY & INTEGRATION AUDIT OF UNINTEGRATED FEATURES\nThe developer must systematically inspect all backend routes (`backend/routes/`), services (`backend/services/`), and legacy service bindings (`src/services/`) to identify features that were developed but are currently missing, unintegrated, or only partially wired in `frontend/src/`:\n• Live Face-to-Face Interview WebRTC/Audio Session APIs (`/api/live-interview/sessions`, `/turns`, `/complete`, `/guide`)\n• ATS scoring and keyword match engines (`/api/ats`, `/api/generate-content`)\n• PDF and DOCX resume import parsers and auto-extractors\n• In-modal AI Quick Pitch / Cover Letter generation during job application\n• Dual-Database platform sync telemetry and health probes\n• Background queues and durable outbox status\n• Candidate profile sync from LinkedIn / database\nAll identified features must be completely wired to the frontend with typed hooks, honest empty states, and intuitive UI controls.\n\n# SECTION 3 — MASTER 5-SURFACE FEATURE PARITY REGISTRY\n\n### SURFACE 1: PUBLIC WEBSITE (Landing, Features, Pricing, Blog, Contact, Public Jobs, Vanity URLs)\n• Landing Page: Hero, live metrics counter, feature showcase, testimonials, trusted by, pricing, CTA\n• Features Matrix: Interactive feature comparison and capabilities breakdown\n• Blog & CMS: Article listing, full blog reader, tag filtering, search, and dynamic CMS pages (/p/:slug)\n• Contact & Inquiries: Interactive contact form with category routing\n• Public Job Board: Search bar, location autocomplete, regional job hubs, category filters\n• Public Shared Resume (/shared/:id) & Public Portfolio (/portfolio/:slug)\n\n### SURFACE 2: CANDIDATE DASHBOARD (Studio Suites & Career Hub)\n• AI Interview Coach: Dual-mode [Text CBT Drills] vs [Live Face-to-Face Studio (LiveInterviewSession.jsx, 1695 lines) with webcam feed, AI talking avatar, audio waveform, real-time speech-to-text, closed captions, and floating resume drawer]\n• Resume Builder (12 Steps): Heading, Work History, Education, Skills (with deduplication & AI suggestions), Summary (with AI Executive Bio grounded synthesis), Certifications (with deduplication), Achievements, Projects, Languages, References, Custom Sections, and Review\n• Resume Modals: ResumeImportModal.jsx (PDF/DOCX auto-extractor), SyncProfileModal.jsx (LinkedIn sync), AtsScoreMeter.jsx (Interactive compliance breakdown)\n• 51 CV Templates & Exporter: High-fidelity print styles and vector PDF export (cv-renderer.tsx)\n• Job Application Modal (111 KB): Resume selector, live ATS score match, in-modal AI Quick Pitch Cover Letter generator, screening questions\n• Job Tracker: Multi-stage pipeline (Applied, Interviewing, Offered, Rejected)\n• Auxiliary Pages: Messages, Favourites, Notifications, Support, Settings (TOTP 2FA, account deletion)\n\n### SURFACE 3: EMPLOYER PORTAL (Recruiter Operations Suite)\n• CreateJobModal.jsx (53 KB): Full multi-field job posting form with salary range, benefits, remote/hybrid, experience level, custom screening questions\n• Candidate Review Drawer: Live resume preview, ATS score match, candidate notes, and rating\n• Applicant Tracking Pipeline: Applied -> Reviewing -> Shortlisted -> Interview -> Hired -> Rejected\n• Company Profile & Branding: Logo, banner, description, website, team culture\n• Direct Messaging with Applicants & Team seats/permissions\n\n### SURFACE 4: ENTERPRISE CONSOLE (Institutional Governance)\n• Multi-tenant Organization Workspace\n• Member Roster & Role RBAC: Admin, Recruiter, Viewer, Member\n• Single Sign-On (SSO) & Custom Domain Verification\n• Department / Batch Candidate Grouping & Analytics\n• Tamper-Evident Audit Logs with CSV export\n\n### SURFACE 5: ADMIN CONSOLE (Platform Command Center — 24 Sub-Modules)\n• System Health & Live Telemetry (Apache, MariaDB, AI Router port 31415, memory)\n• User Management & Suspension/Impersonation\n• Employer & Company Verification Approval Workflow\n• Global Job Moderation & Spam/Scam Flagging\n• AI Provider Orchestration Benchmarks (NVIDIA NIM, Gemini, Groq, custom models)\n• Background Job Queues & Durable Outbox Monitor\n• ATS Phrase Dictionary & HelpDesk Support Resolution Center\n\n# SECTION 9 — TEST STRATEGY & ACCEPTANCE CRITERIA\n1. Static Analysis: npx tsc --noEmit && npx eslint with 0 unresolved errors.\n2. Build Gate: npm run build exits 0 in <4.0s.\n3. Unintegrated Features Discovery Report: Document every discovered backend feature and its new frontend integration point.\n4. Complete 100% Functional Parity across all 5 surfaces with modern, fast, and accessible Cuba M3 UX.\n5. Playwright E2E Crawl: DOM interactive census across ALL 5 SURFACES.",
+  "invariants": [
+    "ZERO CAPABILITY LOSS: No legacy tool, modal, or wizard step may be dropped or simplified across any of the 5 surfaces.",
+    "NEW ARCHITECTURE FREEDOM: Use modern modular React 19 / TypeScript / Radix / Tailwind v4 structure with high polish and fast performance.",
+    "USER MANDATE: ZERO HARDCODED DATA IN ANY PRODUCTION VIEW.",
+    "WCAG 2.1 AA ACCESSIBILITY and PERFORMANCE BUDGET: sub-4.0s build."
+  ],
+  "acceptanceCriteria": [
+    "Static Analysis Gate: tsc --noEmit passes with 0 unresolved errors.",
+    "Build Gate: vite build exits 0 in sub-4.0s.",
+    "Discovery & Integration Report: Identification and complete frontend integration of all developed backend/engine capabilities that were previously unintegrated or partial.",
+    "Surface 1: Public Website verified with all legacy marketing, blog, and job listing pages.",
+    "Surface 2: Candidate Dashboard verified with Live Face-to-Face Studio, 12-Step Resume Builder, PDF Import, and 111KB JobApplicationModal.",
+    "Surface 3: Employer Portal verified with 53KB CreateJobModal and Candidate Review Drawer.",
+    "Surface 4: Enterprise Console verified with Member RBAC, SSO/Domain, and Audit export.",
+    "Surface 5: Admin Console verified with complete operational parity.",
+    "Playwright E2E Crawl: DOM interactive census across ALL 5 SURFACES."
+  ],
+  "dependsOn": [],
+  "sourceEventId": null,
+  "plan": {
+    "submittedAt": "2026-10-18T06:25:18.643Z",
+    "summary": "Master 5-Surface Parity Plan: (1) Discovery & audit of all developed backend/engine features; (2) Candidate Studio Suites (Face-to-Face studio, 12 Resume steps, PDF import, 111KB JobApplicationModal); (3) Employer 53KB CreateJobModal & review drawer; (4) Enterprise SSO/Audit; (5) Admin 24-module parity; (6) Public site completeness; (7) Playwright crawl across all 5 surfaces.",
+    "steps": [
+      "Conduct discovery audit across backend/routes/ and src/services/ to catalog all developed capabilities that lack frontend integration",
+      "Port Candidate Studio Suites: Live Face-to-Face Studio + Resume Builder 12 steps + PDF Import + AtsScoreMeter + 111KB JobApplicationModal",
+      "Port Employer Portal: 53KB CreateJobModal + Candidate Review Drawer + Applicant Pipeline",
+      "Port Enterprise Console: Member RBAC + SSO/Domain verification + Audit export",
+      "Port Admin Console: 24 sub-modules (Health, Users, Queues, Phrases, HelpDesk, Moderation)",
+      "Port Public Website: Landing, Features, Blog, Contact, Jobs Portal parity",
+      "Run validation gates: tsc --noEmit, vite build <4s, Playwright crawl across all 5 surfaces"
+    ],
+    "planHash": "master_5_surface_parity_hash_20261018"
+  },
+  "evidence": null,
+  "reviews": [],
+  "freeze": null,
+  "heartbeats": [
+    {
+      "at": "2026-10-18T06:19:48.543Z",
+      "status": "Starting Wave 1: Investigating legacy src/ vs frontend/src/ across 5 surfaces",
+      "percent": 10,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    },
+    {
+      "at": "2026-10-18T06:23:29.906Z",
+      "status": "Completed Wave 1 gap analysis across all 5 surfaces. Identified mock data violations.",
+      "percent": 40,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    },
+    {
+      "at": "2026-10-18T06:36:27.184Z",
+      "status": "Completed Wave 2 mock data replacement and new pages. Build passes in 1.32s.",
+      "percent": 65,
+      "currentFile": null,
+      "by": "STAFF_DEVELOPER",
+      "continuationPending": false
+    },
+    {
+      "at": "2026-10-18T08:35:00.000Z",
+      "status": "LEAD SUPERVISOR RCA AUDIT: Mandate expanded to ALL 4 DASHBOARDS AND 1 PUBLIC WEBSITE. Mandated discovery audit of all developed backend/engine features not yet integrated. Full architectural freedom to use modern layout and structure with high polish, speed, and user-friendliness. True progress set to 50% until all 5 surfaces achieve full feature parity.",
+      "percent": 50,
+      "currentFile": null,
+      "by": "LEAD_SUPERVISOR",
+      "continuationPending": false
+    }
+  ],
+  "lastHeartbeatAt": "2026-10-18T08:35:00.000Z",
+  "continuationPending": false,
+  "lastTransitionReason": "lead updated directive with full 5-surface discovery and modernization mandate",
+  "revisionTarget": null,
+  "planApproval": {
+    "approvedAt": "2026-10-18T08:35:00.000Z",
+    "automated": false,
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "interactive:master_5_surface_modernization",
+      "at": "2026-10-18T08:35:00.000Z"
+    },
+    "feedback": "Directive bindingly updated: 100% parity across all 4 dashboards + 1 public website with modern structure, high polish, and full discovery/integration of previously developed backend features."
+  }
+}

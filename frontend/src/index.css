@@ -80,8 +80,8 @@
   /* ─── Text Roles ─── */
   --color-ink: #1a1b21;
   --color-ink-secondary: #515562;
-  --color-ink-muted: #7c8293;
-  --color-ink-subtle: #a1a6b4;
+  --color-ink-muted: #636878;
+  --color-ink-subtle: #8e95aa;
   --color-ink-on-brand: #ffffff;
 
   /* ─── Typography ─── */
@@ -286,8 +286,8 @@
 
   --color-ink: #f3f4f8;
   --color-ink-secondary: #c0c6d6;
-  --color-ink-muted: #8e95aa;
-  --color-ink-subtle: #62697e;
+  --color-ink-muted: #a3abbf;
+  --color-ink-subtle: #8e95aa;
 
   --color-neutral-25: #0e1017;
   --color-neutral-50: #141722;

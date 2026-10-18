@@ -10,7 +10,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/loading';
-import { get, normalizeError } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 import {
   Users,
@@ -35,37 +34,22 @@ import {
   Send,
   Play,
 } from 'lucide-react';
+import {
+  usePlatformStats,
+  useAdminUsers,
+  useAIProviders,
+  useAdminSupportTickets,
+  useAdminAuditLogs,
+  useSystemHealth,
+  useReplyToTicket,
+  useUpdateTicketStatus,
+  type PlatformStats,
+  type AdminUser,
+  type AIProviderStatus,
+  type SupportTicket,
+} from '@/hooks/use-api-hooks';
 
 type AdminTab = 'overview' | 'users' | 'ai-settings' | 'support' | 'audit' | 'database' | 'system';
-
-interface PlatformStats {
-  totalUsers: number;
-  activeUsers: number;
-  totalResumes: number;
-  totalJobApplications: number;
-  aiGenerations: number;
-  storageUsed: string;
-}
-
-interface AdminUser {
-  id: string;
-  email: string;
-  displayName: string;
-  role: string;
-  status: 'active' | 'suspended' | 'pending';
-  lastLogin: string;
-  createdAt: string;
-  resumeCount: number;
-}
-
-interface AIProviderStatus {
-  name: string;
-  status: 'healthy' | 'degraded' | 'down';
-  model: string;
-  latencyMs: number;
-  requestsToday: number;
-  errorsToday: number;
-}
 
 export function AdminConsolePage() {
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
@@ -130,29 +114,7 @@ export function AdminConsolePage() {
 /* ─── Overview Tab ─── */
 
 function AdminOverview() {
-  const [stats, setStats] = useState<PlatformStats | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      try {
-        const data = await get<{ stats: PlatformStats }>('/admin/stats');
-        if (!cancelled) setStats(data.stats);
-      } catch {
-        if (!cancelled) {
-          setStats({
-            totalUsers: 0, activeUsers: 0, totalResumes: 0,
-            totalJobApplications: 0, aiGenerations: 0, storageUsed: '0 MB',
-          });
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    void load();
-    return () => { cancelled = true; };
-  }, []);
+  const { data: stats, isLoading, error } = usePlatformStats();
 
   const statCards = stats ? [
     { label: 'Total Users', value: stats.totalUsers, icon: Users, color: 'bg-brand-50 text-brand-600' },
@@ -167,11 +129,16 @@ function AdminOverview() {
     <div>
       <h2 className="text-lg font-semibold text-ink mb-4">Platform Overview</h2>
 
-      {loading ? (
+      {isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton key={i} className="h-24" />
           ))}
+        </div>
+      ) : error ? (
+        <div className="flex items-center gap-2 rounded-lg border border-error-200 bg-error-50 p-3 text-sm text-error-700">
+          <AlertCircle className="size-4 shrink-0" />
+          Failed to load platform statistics.
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -227,26 +194,8 @@ function AdminOverview() {
 /* ─── Users Tab ─── */
 
 function AdminUsers() {
-  const [users, setUsers] = useState<AdminUser[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: users = [], isLoading, error, refetch } = useAdminUsers();
   const [searchQuery, setSearchQuery] = useState('');
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      try {
-        const data = await get<{ users: AdminUser[] }>('/admin/users');
-        if (!cancelled) setUsers(data.users ?? []);
-      } catch (err) {
-        if (!cancelled) setError(normalizeError(err).message);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    void load();
-    return () => { cancelled = true; };
-  }, []);
 
   const filteredUsers = users.filter((u) => {
     if (!searchQuery) return true;
@@ -260,7 +209,7 @@ function AdminUsers() {
     pending: 'bg-warning-100 text-warning-700',
   };
 
-  if (loading) return <div className="space-y-3">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-16" />)}</div>;
+  if (isLoading) return <div className="space-y-3">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-16" />)}</div>;
 
   return (
     <div>
@@ -272,7 +221,7 @@ function AdminUsers() {
       {error && (
         <div className="mb-4 flex items-center gap-2 rounded-lg border border-error-200 bg-error-50 p-3 text-sm text-error-700">
           <AlertCircle className="size-4 shrink-0" />
-          {error}
+          {error instanceof Error ? error.message : String(error)}
         </div>
       )}
 
@@ -361,32 +310,7 @@ function AdminUsers() {
 /* ─── AI Settings Tab ─── */
 
 function AdminAISettings() {
-  const [providers, setProviders] = useState<AIProviderStatus[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      try {
-        const data = await get<{ providers: AIProviderStatus[] }>('/admin/ai-settings');
-        if (!cancelled) setProviders(data.providers ?? []);
-      } catch {
-        if (!cancelled) {
-          // Fallback sample providers
-          setProviders([
-            { name: 'NVIDIA NIM', status: 'healthy', model: 'meta/llama-3.2-11b-vision-instruct', latencyMs: 245, requestsToday: 1420, errorsToday: 3 },
-            { name: 'Google Gemini', status: 'healthy', model: 'gemini-1.5-flash', latencyMs: 180, requestsToday: 890, errorsToday: 0 },
-            { name: 'OpenAI', status: 'degraded', model: 'gpt-4o-mini', latencyMs: 520, requestsToday: 340, errorsToday: 12 },
-            { name: 'Groq', status: 'healthy', model: 'llama-3.1-70b-versatile', latencyMs: 95, requestsToday: 2100, errorsToday: 1 },
-          ]);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    void load();
-    return () => { cancelled = true; };
-  }, []);
+  const { data: providers = [], isLoading, refetch } = useAIProviders();
 
   const statusConfig = {
     healthy: { label: 'Healthy', color: 'bg-success-100 text-success-700', icon: CheckCircle2 },
@@ -394,13 +318,13 @@ function AdminAISettings() {
     down: { label: 'Down', color: 'bg-error-100 text-error-700', icon: XCircle },
   };
 
-  if (loading) return <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)}</div>;
+  if (isLoading) return <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)}</div>;
 
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-ink">AI Provider Status</h2>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" onClick={() => refetch()}>
           <RefreshCw className="size-3.5" /> Refresh
         </Button>
       </div>
@@ -470,14 +394,7 @@ function AdminAISettings() {
 /* ─── System Tab ─── */
 
 function AdminSystem() {
-  const systemChecks = [
-    { name: 'Database (MariaDB)', status: 'healthy' as const, detail: 'Connected, 23ms latency' },
-    { name: 'Firebase Auth', status: 'healthy' as const, detail: 'Identity provider active' },
-    { name: 'File Storage', status: 'healthy' as const, detail: '2.3 GB used of 50 GB' },
-    { name: 'Email Service', status: 'healthy' as const, detail: 'SMTP configured and active' },
-    { name: 'Background Workers', status: 'healthy' as const, detail: '4 workers running' },
-    { name: 'Redis Cache', status: 'degraded' as const, detail: 'High memory usage (87%)' },
-  ];
+  const { data: systemChecks = [], isLoading } = useSystemHealth();
 
   const statusIcon = {
     healthy: <CheckCircle2 className="size-4 text-success-600" />,
@@ -489,30 +406,38 @@ function AdminSystem() {
     <div>
       <h2 className="text-lg font-semibold text-ink mb-4">System Health</h2>
 
-      <div className="space-y-2">
-        {systemChecks.map((check) => (
-          <div
-            key={check.name}
-            className="flex items-center justify-between rounded-xl border border-border bg-surface p-4"
-          >
-            <div className="flex items-center gap-3">
-              {statusIcon[check.status]}
-              <div>
-                <div className="text-sm font-medium text-ink">{check.name}</div>
-                <div className="text-xs text-ink-muted">{check.detail}</div>
+      {isLoading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-14" />
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {systemChecks.map((check) => (
+            <div
+              key={check.name}
+              className="flex items-center justify-between rounded-xl border border-border bg-surface p-4"
+            >
+              <div className="flex items-center gap-3">
+                {statusIcon[check.status as keyof typeof statusIcon] || statusIcon.healthy}
+                <div>
+                  <div className="text-sm font-medium text-ink">{check.name}</div>
+                  <div className="text-xs text-ink-muted">{check.detail}</div>
+                </div>
               </div>
+              <span className={cn(
+                'rounded-full px-2 py-0.5 text-xs font-medium',
+                check.status === 'healthy' ? 'bg-success-100 text-success-700' :
+                check.status === 'degraded' ? 'bg-warning-100 text-warning-700' :
+                'bg-error-100 text-error-700',
+              )}>
+                {check.status}
+              </span>
             </div>
-            <span className={cn(
-              'rounded-full px-2 py-0.5 text-xs font-medium',
-              check.status === 'healthy' ? 'bg-success-100 text-success-700' :
-              check.status === 'degraded' ? 'bg-warning-100 text-warning-700' :
-              'bg-error-100 text-error-700',
-            )}>
-              {check.status}
-            </span>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Server info */}
       <Card className="mt-6">
@@ -543,98 +468,39 @@ function AdminSystem() {
 
 /* ─── Support Desk Tab ─── */
 
-interface SupportTicket {
-  id: string;
-  email: string;
-  subject: string;
-  priority: 'low' | 'normal' | 'urgent';
-  status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
-  createdAt: string;
-  messages?: Array<{ id: string; role: string; body: string; createdAt: string }>;
-}
-
-const SAMPLE_TICKETS: SupportTicket[] = [
-  {
-    id: 't-101',
-    email: 'marcus.vance@acme.corp',
-    subject: 'Assistance with custom domain CNAME verification',
-    priority: 'urgent',
-    status: 'OPEN',
-    createdAt: '15 mins ago',
-    messages: [
-      { id: 'm-1', role: 'USER', body: 'We added the DNS TXT record for verification 2 hours ago, but the console still reports pending status. Could you inspect our tenant domain?', createdAt: '15 mins ago' },
-    ],
-  },
-  {
-    id: 't-102',
-    email: 'helena.t@solis.tech',
-    subject: 'Question regarding DOCX export styling customization',
-    priority: 'normal',
-    status: 'IN_PROGRESS',
-    createdAt: '3 hours ago',
-    messages: [
-      { id: 'm-2', role: 'USER', body: 'Is there a way to set custom header font colors when exporting to DOCX format?', createdAt: '3 hours ago' },
-      { id: 'm-3', role: 'STAFF', body: 'Yes! Under Resume Builder > Design Tokens, you can select the primary accent color which maps directly to Word styles.', createdAt: '2 hours ago' },
-    ],
-  },
-  {
-    id: 't-103',
-    email: 'david.k@enterprise.io',
-    subject: 'AI Token quota reset confirmation',
-    priority: 'low',
-    status: 'RESOLVED',
-    createdAt: 'Yesterday',
-    messages: [
-      { id: 'm-4', role: 'USER', body: 'We would like to request an additional 100k test tokens for our interview prep squad.', createdAt: 'Yesterday' },
-      { id: 'm-5', role: 'STAFF', body: 'Your quota has been refreshed with an additional 100k allocation.', createdAt: 'Yesterday' },
-    ],
-  },
-];
-
 function AdminSupport() {
-  const [tickets, setTickets] = useState<SupportTicket[]>(SAMPLE_TICKETS);
-  const [selectedTicketId, setSelectedTicketId] = useState<string>(SAMPLE_TICKETS[0]?.id ?? '');
+  const { data: tickets = [], isLoading, refetch } = useAdminSupportTickets();
+  const [selectedTicketId, setSelectedTicketId] = useState<string>(tickets[0]?.id ?? '');
   const [replyText, setReplyText] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'OPEN' | 'RESOLVED'>('ALL');
+  const replyMutation = useReplyToTicket();
+  const statusMutation = useUpdateTicketStatus();
 
   const selectedTicket = tickets.find((t) => t.id === selectedTicketId) || tickets[0];
 
-  const handleSendReply = (e: React.FormEvent) => {
+  const handleSendReply = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!replyText.trim() || !selectedTicket) return;
 
-    const newMessage = {
-      id: `m-${Date.now()}`,
-      role: 'STAFF',
-      body: replyText,
-      createdAt: 'Just now',
-    };
-
-    setTickets((prev) =>
-      prev.map((t) =>
-        t.id === selectedTicket.id
-          ? {
-              ...t,
-              status: 'IN_PROGRESS',
-              messages: [...(t.messages || []), newMessage],
-            }
-          : t,
-      ),
-    );
+    await replyMutation.mutateAsync({ ticketId: selectedTicket.id, body: replyText });
     setReplyText('');
+    refetch();
   };
 
-  const handleStatusChange = (status: SupportTicket['status']) => {
+  const handleStatusChange = async (status: SupportTicket['status']) => {
     if (!selectedTicket) return;
-    setTickets((prev) =>
-      prev.map((t) => (t.id === selectedTicket.id ? { ...t, status } : t)),
-    );
+    await statusMutation.mutateAsync({ ticketId: selectedTicket.id, status });
+    refetch();
   };
 
   const filteredTickets = tickets.filter((t) => {
     if (statusFilter === 'ALL') return true;
     return t.status === statusFilter;
   });
+
+  if (isLoading && tickets.length === 0) {
+    return <div className="space-y-3">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-16" />)}</div>;
+  }
 
   return (
     <div className="space-y-4">
@@ -700,6 +566,9 @@ function AdminSupport() {
               </div>
             );
           })}
+          {filteredTickets.length === 0 && (
+            <div className="p-8 text-center text-xs text-ink-muted">No tickets match your filter.</div>
+          )}
         </div>
 
         {/* Ticket Thread & Reply (7 cols) */}
@@ -755,8 +624,8 @@ function AdminSupport() {
                   placeholder="Type official staff response..."
                   className="text-xs flex-1"
                 />
-                <Button type="submit" size="sm" disabled={!replyText.trim()}>
-                  <Send className="size-3.5 mr-1" />
+                <Button type="submit" size="sm" disabled={!replyText.trim()} loading={replyMutation.isPending}>
+                  <Send className="size-3.5 mr-1.5" />
                   Reply
                 </Button>
               </form>
@@ -772,62 +641,8 @@ function AdminSupport() {
 
 /* ─── Audit Logs Tab ─── */
 
-interface AuditRecord {
-  id: string;
-  actor: string;
-  action: string;
-  resource: string;
-  outcome: 'SUCCESS' | 'FAILURE';
-  severity: 'INFO' | 'WARNING' | 'CRITICAL';
-  timestamp: string;
-  ip: string;
-}
-
-const SAMPLE_AUDIT_LOGS: AuditRecord[] = [
-  {
-    id: 'log-1',
-    actor: 'admin@ime365.ai',
-    action: 'ai.provider.model_updated',
-    resource: 'NVIDIA NIM (meta/llama-3.2-11b)',
-    outcome: 'SUCCESS',
-    severity: 'INFO',
-    timestamp: '10 mins ago',
-    ip: '192.168.1.5',
-  },
-  {
-    id: 'log-2',
-    actor: 'system.worker',
-    action: 'database.schema.migration_applied',
-    resource: '0032_dual_database_sync.sql',
-    outcome: 'SUCCESS',
-    severity: 'INFO',
-    timestamp: '1 hour ago',
-    ip: '127.0.0.1',
-  },
-  {
-    id: 'log-3',
-    actor: 'unknown_client',
-    action: 'auth.failed_attempt',
-    resource: '/api/admin/users',
-    outcome: 'FAILURE',
-    severity: 'WARNING',
-    timestamp: '4 hours ago',
-    ip: '203.0.113.19',
-  },
-  {
-    id: 'log-4',
-    actor: 'admin@ime365.ai',
-    action: 'user.quota_reset',
-    resource: 'Candidate #4091',
-    outcome: 'SUCCESS',
-    severity: 'INFO',
-    timestamp: 'Yesterday',
-    ip: '192.168.1.5',
-  },
-];
-
 function AdminAudit() {
-  const [logs] = useState<AuditRecord[]>(SAMPLE_AUDIT_LOGS);
+  const { data: logs = [], isLoading } = useAdminAuditLogs();
   const [filterQuery, setFilterQuery] = useState('');
 
   const filteredLogs = logs.filter((l) => {
@@ -835,6 +650,10 @@ function AdminAudit() {
     const q = filterQuery.toLowerCase();
     return l.actor.toLowerCase().includes(q) || l.action.toLowerCase().includes(q) || l.resource.toLowerCase().includes(q);
   });
+
+  if (isLoading && logs.length === 0) {
+    return <div className="space-y-3">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12" />)}</div>;
+  }
 
   return (
     <div className="space-y-4">
@@ -887,6 +706,11 @@ function AdminAudit() {
                 <td className="px-4 py-3 font-mono text-[11px] text-ink-muted">{log.ip}</td>
               </tr>
             ))}
+            {filteredLogs.length === 0 && (
+              <tr>
+                <td colSpan={6} className="px-4 py-12 text-center text-xs text-ink-muted">No audit logs found.</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

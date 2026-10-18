@@ -40,19 +40,50 @@ async function getChatId() {
 }
 
 /**
- * Send an alert message to Telegram
- * @param {string} text
+ * Sanitize text to ensure only Telegram-supported HTML tags are present
  */
-async function sendTelegramAlert(text) {
-  const chatId = await getChatId();
-  if (!chatId) return false;
+function sanitizeTelegramHtml(text) {
+  if (!text) return '';
+  let str = String(text);
+  // Convert list tags to simple bullet points and newlines
+  str = str.replace(/<ul[^>]*>/gi, '\n');
+  str = str.replace(/<\/ul>/gi, '\n');
+  str = str.replace(/<ol[^>]*>/gi, '\n');
+  str = str.replace(/<\/ol>/gi, '\n');
+  str = str.replace(/<li[^>]*>/gi, '• ');
+  str = str.replace(/<\/li>/gi, '\n');
+  str = str.replace(/<p[^>]*>/gi, '\n');
+  str = str.replace(/<\/p>/gi, '\n');
+  str = str.replace(/<br\s*\/?>/gi, '\n');
+  str = str.replace(/<h[1-6][^>]*>/gi, '\n<b>');
+  str = str.replace(/<\/h[1-6]>/gi, '</b>\n');
 
+  // Strip all disallowed HTML tags (keep only b, strong, i, em, u, ins, s, strike, del, code, pre, a)
+  str = str.replace(/<\/?(?!b\b|strong\b|i\b|em\b|u\b|ins\b|s\b|strike\b|del\b|code\b|pre\b|a\b)[a-z0-9_-]+(?:\s+[^>]*)?>/gi, '');
+
+  return str.replace(/\n{3,}/g, '\n\n').trim();
+}
+
+/**
+ * Strip all HTML tags completely for guaranteed plain-text delivery
+ */
+function stripAllHtml(text) {
+  if (!text) return '';
+  return String(text).replace(/<[^>]+>/g, '').trim();
+}
+
+/**
+ * Low-level post message helper
+ */
+function postTelegramMessage(chatId, text, parseMode = null) {
   return new Promise((resolve) => {
-    const payload = JSON.stringify({
+    /** @type {any} */
+    const payloadObj = {
       chat_id: chatId,
-      text: text,
-      parse_mode: 'HTML'
-    });
+      text: text
+    };
+    if (parseMode) payloadObj.parse_mode = parseMode;
+    const payload = JSON.stringify(payloadObj);
 
     const req = https.request(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: 'POST',
@@ -82,22 +113,38 @@ async function sendTelegramAlert(text) {
 }
 
 /**
- * Send a photo to Telegram with caption
- * @param {string} filePath
- * @param {string} caption
+ * Send an alert message to Telegram with automatic plain-text fallback on entity error
+ * @param {string} text
  */
-async function sendTelegramPhoto(filePath, caption = '') {
+async function sendTelegramAlert(text) {
   const chatId = await getChatId();
-  if (!chatId || !fs.existsSync(filePath)) return false;
+  if (!chatId || !text) return false;
 
+  const sanitized = sanitizeTelegramHtml(text);
+
+  // 1. First attempt: with sanitized HTML
+  const ok = await postTelegramMessage(chatId, sanitized, 'HTML');
+  if (ok) return true;
+
+  // 2. Guaranteed Fallback: strip HTML entirely and send as plain text
+  const plain = stripAllHtml(text);
+  return await postTelegramMessage(chatId, plain, null);
+}
+
+/**
+ * Low-level post photo helper
+ */
+function postTelegramPhoto(chatId, filePath, caption = '', parseMode = null) {
   return new Promise((resolve) => {
     const boundary = '----TelegramBoundary' + Date.now();
     const fileData = fs.readFileSync(filePath);
 
     let prefix = `--${boundary}\r\n`;
     prefix += `Content-Disposition: form-data; name="chat_id"\r\n\r\n${chatId}\r\n`;
-    prefix += `--${boundary}\r\n`;
-    prefix += `Content-Disposition: form-data; name="parse_mode"\r\n\r\nHTML\r\n`;
+    if (parseMode) {
+      prefix += `--${boundary}\r\n`;
+      prefix += `Content-Disposition: form-data; name="parse_mode"\r\n\r\n${parseMode}\r\n`;
+    }
     if (caption) {
       const safeCaption = caption.length > 950 ? caption.slice(0, 940) + '...' : caption;
       prefix += `--${boundary}\r\n`;
@@ -142,10 +189,67 @@ async function sendTelegramPhoto(filePath, caption = '') {
   });
 }
 
+/**
+ * Send a photo to Telegram with caption and robust fallbacks
+ * @param {string} filePath
+ * @param {string} caption
+ */
+async function sendTelegramPhoto(filePath, caption = '') {
+  const chatId = await getChatId();
+  if (!chatId || !fs.existsSync(filePath)) return false;
+
+  const sanitizedCaption = sanitizeTelegramHtml(caption);
+
+  // 1. Try sending photo with sanitized HTML caption
+  const ok = await postTelegramPhoto(chatId, filePath, sanitizedCaption, 'HTML');
+  if (ok) return true;
+
+  // 2. Try sending photo with plain-text caption (stripped HTML)
+  const plainCaption = stripAllHtml(caption);
+  const plainOk = await postTelegramPhoto(chatId, filePath, plainCaption, null);
+  if (plainOk) return true;
+
+  // 3. Fallback: send photo with no caption, then send plain caption via alert
+  const photoNoCaption = await postTelegramPhoto(chatId, filePath, '', null);
+  if (photoNoCaption && plainCaption) {
+    await sendTelegramAlert(plainCaption);
+    return true;
+  }
+  return photoNoCaption;
+}
+
+
+/**
+ * Send chat action indicator (e.g. 'typing', 'upload_photo')
+ */
+async function sendChatAction(action = 'typing') {
+  const chatId = await getChatId();
+  if (!chatId) return false;
+  return new Promise((resolve) => {
+    const payload = JSON.stringify({ chat_id: chatId, action });
+    const req = https.request(`https://api.telegram.org/bot${BOT_TOKEN}/sendChatAction`, {
+      method: 'POST',
+      timeout: 5000,
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload)
+      }
+    }, (res) => {
+      res.resume();
+      resolve(res.statusCode === 200);
+    });
+    req.on('error', () => resolve(false));
+    req.on('timeout', () => { req.destroy(); resolve(false); });
+    req.write(payload);
+    req.end();
+  });
+}
+
 module.exports = {
   getChatId,
   sendTelegramAlert,
   sendTelegramPhoto,
+  sendChatAction,
   BOT_TOKEN
 };
 

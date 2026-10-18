@@ -99,6 +99,14 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="flex h-screen overflow-hidden bg-canvas">
+      {/* Skip Link - must be first focusable element */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-[var(--z-tooltip)] focus:p-4 focus:bg-surface focus:text-brand-600 focus:border-b focus:border-brand-200"
+      >
+        Skip to main content
+      </a>
+
       {/* Mobile overlay */}
       {mobileMenuOpen && (
         <div

@@ -28,131 +28,25 @@ import {
   MapPin,
   DollarSign,
   X,
+  AlertCircle,
 } from 'lucide-react';
-
-interface JobListing {
-  id: string;
-  title: string;
-  department: string;
-  location: string;
-  type: string;
-  salary: string;
-  applicantCount: number;
-  status: 'active' | 'paused' | 'closed';
-  postedAt: string;
-}
-
-interface Candidate {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  appliedDate: string;
-  atsScore: number;
-  stage: 'Applied' | 'Screening' | 'Interview' | 'Offer' | 'Archived';
-  experienceYears: number;
-  topSkills: string[];
-}
-
-const INITIAL_JOBS: JobListing[] = [
-  {
-    id: 'job-101',
-    title: 'Senior Cloud Systems Architect',
-    department: 'Infrastructure',
-    location: 'Remote (US)',
-    type: 'Full-time',
-    salary: '$180,000 - $220,000',
-    applicantCount: 38,
-    status: 'active',
-    postedAt: '3 days ago',
-  },
-  {
-    id: 'job-102',
-    title: 'Lead Frontend Engineer (React/TypeScript)',
-    department: 'Engineering',
-    location: 'San Francisco, CA',
-    type: 'Full-time',
-    salary: '$165,000 - $195,000',
-    applicantCount: 64,
-    status: 'active',
-    postedAt: '1 week ago',
-  },
-  {
-    id: 'job-103',
-    title: 'Product Manager — AI Tools',
-    department: 'Product',
-    location: 'New York, NY / Hybrid',
-    type: 'Full-time',
-    salary: '$150,000 - $185,000',
-    applicantCount: 29,
-    status: 'active',
-    postedAt: '2 weeks ago',
-  },
-];
-
-const INITIAL_CANDIDATES: Candidate[] = [
-  {
-    id: 'cand-1',
-    name: 'David Vance',
-    email: 'david.vance@example.com',
-    role: 'Senior Cloud Systems Architect',
-    appliedDate: 'Oct 16, 2026',
-    atsScore: 94,
-    stage: 'Interview',
-    experienceYears: 8,
-    topSkills: ['Kubernetes', 'Go', 'AWS', 'Terraform', 'CI/CD'],
-  },
-  {
-    id: 'cand-2',
-    name: 'Elena Rostova',
-    email: 'elena.rostova@example.com',
-    role: 'Lead Frontend Engineer',
-    appliedDate: 'Oct 15, 2026',
-    atsScore: 91,
-    stage: 'Screening',
-    experienceYears: 6,
-    topSkills: ['React 19', 'TypeScript', 'Next.js', 'Tailwind', 'Web Vitals'],
-  },
-  {
-    id: 'cand-3',
-    name: 'Marcus Brody',
-    email: 'marcus.brody@example.com',
-    role: 'Product Manager — AI Tools',
-    appliedDate: 'Oct 14, 2026',
-    atsScore: 88,
-    stage: 'Applied',
-    experienceYears: 7,
-    topSkills: ['Agile Roadmap', 'LLM Prompting', 'Data Analytics', 'Figma'],
-  },
-  {
-    id: 'cand-4',
-    name: 'Sophia Chen',
-    email: 'sophia.chen@example.com',
-    role: 'Lead Frontend Engineer',
-    appliedDate: 'Oct 12, 2026',
-    atsScore: 96,
-    stage: 'Offer',
-    experienceYears: 9,
-    topSkills: ['Design Systems', 'Microfrontends', 'TypeScript', 'Performance'],
-  },
-  {
-    id: 'cand-5',
-    name: 'Jordan Miller',
-    email: 'jordan.miller@example.com',
-    role: 'Senior Cloud Systems Architect',
-    appliedDate: 'Oct 10, 2026',
-    atsScore: 72,
-    stage: 'Archived',
-    experienceYears: 3,
-    topSkills: ['Docker', 'Linux', 'Python'],
-  },
-];
+import {
+  useJobs,
+  useCandidates,
+  useCreateJob,
+  useAdvanceCandidateStage,
+  type JobListing,
+  type Candidate,
+} from '@/hooks/use-api-hooks';
 
 const PIPELINE_STAGES = ['Applied', 'Screening', 'Interview', 'Offer', 'Archived'] as const;
 
 export function EmployerPortalPage() {
-  const [jobs, setJobs] = useState<JobListing[]>(INITIAL_JOBS);
-  const [candidates, setCandidates] = useState<Candidate[]>(INITIAL_CANDIDATES);
+  const { data: jobs = [], isLoading: jobsLoading, error: jobsError } = useJobs();
+  const { data: candidates = [], isLoading: candidatesLoading, error: candidatesError } = useCandidates();
+  const createJobMutation = useCreateJob();
+  const advanceStageMutation = useAdvanceCandidateStage();
+
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [activeTab, setActiveTab] = useState<'candidates' | 'jobs'>('candidates');
   const [searchQuery, setSearchQuery] = useState('');
@@ -168,19 +62,15 @@ export function EmployerPortalPage() {
     e.preventDefault();
     if (!newJobTitle.trim()) return;
 
-    const newJob: JobListing = {
-      id: `job-${Date.now()}`,
+    createJobMutation.mutate({
       title: newJobTitle,
       department: newJobDept || 'Engineering',
       location: newJobLocation || 'Remote',
       type: 'Full-time',
       salary: newJobSalary || '$140k - $170k',
-      applicantCount: 0,
       status: 'active',
-      postedAt: 'Just now',
-    };
+    });
 
-    setJobs([newJob, ...jobs]);
     setShowNewJobModal(false);
     setNewJobTitle('');
     setNewJobDept('');
@@ -189,9 +79,7 @@ export function EmployerPortalPage() {
   };
 
   const advanceCandidateStage = (id: string, newStage: Candidate['stage']) => {
-    setCandidates((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, stage: newStage } : c))
-    );
+    advanceStageMutation.mutate({ id, stage: newStage });
     if (selectedCandidate?.id === id) {
       setSelectedCandidate((prev) => prev ? { ...prev, stage: newStage } : null);
     }
@@ -203,6 +91,9 @@ export function EmployerPortalPage() {
       c.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.topSkills.some((s) => s.toLowerCase().includes(searchQuery.toLowerCase()))
   );
+
+  const isLoading = jobsLoading || candidatesLoading;
+  const hasError = jobsError || candidatesError;
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-16">
@@ -223,12 +114,21 @@ export function EmployerPortalPage() {
             size="sm"
             onClick={() => setShowNewJobModal(true)}
             className="text-xs font-semibold gap-1.5"
+            disabled={createJobMutation.isPending}
           >
             <Plus className="size-3.5" />
             Post New Job Requisition
           </Button>
         </div>
       </div>
+
+      {/* ─── Error State ─── */}
+      {hasError && (
+        <div className="flex items-center gap-2 rounded-lg border border-error-200 bg-error-50 p-3 text-sm text-error-700" role="alert">
+          <AlertCircle className="size-4 shrink-0" />
+          Failed to load data. Please check your connection and try again.
+        </div>
+      )}
 
       {/* ─── High-Level Hiring Metrics ─── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -239,7 +139,7 @@ export function EmployerPortalPage() {
             </div>
             <div>
               <p className="text-xs text-ink-muted">Active Requisitions</p>
-              <p className="text-xl font-bold text-ink">{jobs.length}</p>
+              <p className="text-xl font-bold text-ink">{isLoading ? '—' : jobs.length}</p>
             </div>
           </CardContent>
         </Card>
@@ -252,7 +152,7 @@ export function EmployerPortalPage() {
             <div>
               <p className="text-xs text-ink-muted">Total Applicants</p>
               <p className="text-xl font-bold text-ink">
-                {candidates.length + jobs.reduce((sum, j) => sum + j.applicantCount, 0)}
+                {isLoading ? '—' : candidates.length + jobs.reduce((sum, j) => sum + j.applicantCount, 0)}
               </p>
             </div>
           </CardContent>
@@ -266,7 +166,7 @@ export function EmployerPortalPage() {
             <div>
               <p className="text-xs text-ink-muted">In Interview Loops</p>
               <p className="text-xl font-bold text-ink">
-                {candidates.filter((c) => c.stage === 'Interview' || c.stage === 'Screening').length}
+                {isLoading ? '—' : candidates.filter((c) => c.stage === 'Interview' || c.stage === 'Screening').length}
               </p>
             </div>
           </CardContent>
@@ -280,7 +180,7 @@ export function EmployerPortalPage() {
             <div>
               <p className="text-xs text-ink-muted">Offers Extended</p>
               <p className="text-xl font-bold text-ink">
-                {candidates.filter((c) => c.stage === 'Offer').length}
+                {isLoading ? '—' : candidates.filter((c) => c.stage === 'Offer').length}
               </p>
             </div>
           </CardContent>
@@ -300,7 +200,7 @@ export function EmployerPortalPage() {
           )}
         >
           <Users className="size-3.5" />
-          Candidate Pipeline ({candidates.length})
+          Candidate Pipeline ({isLoading ? '—' : candidates.length})
         </button>
         <button
           type="button"
@@ -313,7 +213,7 @@ export function EmployerPortalPage() {
           )}
         >
           <Briefcase className="size-3.5" />
-          Job Requisitions ({jobs.length})
+          Job Requisitions ({isLoading ? '—' : jobs.length})
         </button>
       </div>
 
@@ -335,133 +235,201 @@ export function EmployerPortalPage() {
             </span>
           </div>
 
-          <div className="border border-edge rounded-xl bg-surface overflow-hidden shadow-sm">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="border-b border-edge bg-canvas-soft/70">
-                  <th className="p-3.5 font-semibold text-ink">Candidate</th>
-                  <th className="p-3.5 font-semibold text-ink">Role</th>
-                  <th className="p-3.5 font-semibold text-ink text-center">ATS Match</th>
-                  <th className="p-3.5 font-semibold text-ink">Stage</th>
-                  <th className="p-3.5 font-semibold text-ink">Skills Highlight</th>
-                  <th className="p-3.5 font-semibold text-ink text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-edge/60">
-                {filteredCandidates.map((cand) => (
-                  <tr
-                    key={cand.id}
-                    className="hover:bg-canvas-soft/30 transition-colors cursor-pointer"
-                    onClick={() => setSelectedCandidate(cand)}
-                  >
-                    <td className="p-3.5">
-                      <div className="font-bold text-ink">{cand.name}</div>
-                      <div className="text-[11px] text-ink-muted">{cand.email}</div>
-                    </td>
-                    <td className="p-3.5">
-                      <div className="font-medium text-ink">{cand.role}</div>
-                      <div className="text-[10px] text-ink-muted">{cand.experienceYears}y exp • {cand.appliedDate}</div>
-                    </td>
-                    <td className="p-3.5 text-center">
-                      <span
-                        className={cn(
-                          'inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold border',
-                          cand.atsScore >= 90
-                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                            : cand.atsScore >= 80
-                            ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
-                            : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
-                        )}
-                      >
-                        {cand.atsScore}%
-                      </span>
-                    </td>
-                    <td className="p-3.5">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-canvas-soft border border-edge text-ink">
-                        {cand.stage}
-                      </span>
-                    </td>
-                    <td className="p-3.5">
-                      <div className="flex flex-wrap gap-1 max-w-xs">
-                        {cand.topSkills.slice(0, 3).map((s) => (
-                          <span key={s} className="px-1.5 py-0.5 rounded text-[10px] bg-canvas border border-edge text-ink-muted">
-                            {s}
-                          </span>
-                        ))}
-                        {cand.topSkills.length > 3 && (
-                          <span className="text-[10px] text-ink-muted">+{cand.topSkills.length - 3}</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-3.5 text-right">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 text-xs px-2 gap-1"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedCandidate(cand);
-                        }}
-                      >
-                        Review
-                        <ChevronRight className="size-3" />
-                      </Button>
-                    </td>
+          {isLoading ? (
+            <div className="border border-edge rounded-xl bg-surface overflow-hidden shadow-sm">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-edge bg-canvas-soft/70">
+                    <th className="p-3.5 font-semibold text-ink">Candidate</th>
+                    <th className="p-3.5 font-semibold text-ink">Role</th>
+                    <th className="p-3.5 font-semibold text-ink text-center">ATS Match</th>
+                    <th className="p-3.5 font-semibold text-ink">Stage</th>
+                    <th className="p-3.5 font-semibold text-ink">Skills Highlight</th>
+                    <th className="p-3.5 font-semibold text-ink text-right">Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <tr key={i} className="border-b border-edge/60">
+                      <td className="p-3.5"><div className="h-4 bg-neutral-200 rounded w-3/4 animate-pulse" /></td>
+                      <td className="p-3.5"><div className="h-4 bg-neutral-200 rounded w-1/2 animate-pulse" /></td>
+                      <td className="p-3.5 text-center"><div className="h-4 bg-neutral-200 rounded w-1/3 animate-pulse mx-auto" /></td>
+                      <td className="p-3.5"><div className="h-4 bg-neutral-200 rounded w-1/3 animate-pulse" /></td>
+                      <td className="p-3.5"><div className="h-4 bg-neutral-200 rounded w-1/2 animate-pulse" /></td>
+                      <td className="p-3.5 text-right"><div className="h-4 bg-neutral-200 rounded w-1/4 animate-pulse ml-auto" /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : filteredCandidates.length === 0 ? (
+            <div className="border border-edge rounded-xl bg-surface p-8 text-center">
+              <Users className="size-12 text-ink-muted mx-auto mb-3" />
+              <p className="text-sm text-ink-muted">
+                {searchQuery ? 'No candidates match your search.' : 'No candidates found. Post a job requisition to start receiving applications.'}
+              </p>
+            </div>
+          ) : (
+            <div className="border border-edge rounded-xl bg-surface overflow-hidden shadow-sm">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-edge bg-canvas-soft/70">
+                    <th className="p-3.5 font-semibold text-ink">Candidate</th>
+                    <th className="p-3.5 font-semibold text-ink">Role</th>
+                    <th className="p-3.5 font-semibold text-ink text-center">ATS Match</th>
+                    <th className="p-3.5 font-semibold text-ink">Stage</th>
+                    <th className="p-3.5 font-semibold text-ink">Skills Highlight</th>
+                    <th className="p-3.5 font-semibold text-ink text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-edge/60">
+                  {filteredCandidates.map((cand) => (
+                    <tr
+                      key={cand.id}
+                      className="hover:bg-canvas-soft/30 transition-colors cursor-pointer"
+                      onClick={() => setSelectedCandidate(cand)}
+                    >
+                      <td className="p-3.5">
+                        <div className="font-bold text-ink">{cand.name}</div>
+                        <div className="text-[11px] text-ink-muted">{cand.email}</div>
+                      </td>
+                      <td className="p-3.5">
+                        <div className="font-medium text-ink">{cand.role}</div>
+                        <div className="text-[10px] text-ink-muted">{cand.experienceYears}y exp • {cand.appliedDate}</div>
+                      </td>
+                      <td className="p-3.5 text-center">
+                        <span
+                          className={cn(
+                            'inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold border',
+                            cand.atsScore >= 90
+                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                              : cand.atsScore >= 80
+                              ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
+                              : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                          )}
+                        >
+                          {cand.atsScore}%
+                        </span>
+                      </td>
+                      <td className="p-3.5">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-canvas-soft border border-edge text-ink">
+                          {cand.stage}
+                        </span>
+                      </td>
+                      <td className="p-3.5">
+                        <div className="flex flex-wrap gap-1 max-w-xs">
+                          {cand.topSkills.slice(0, 3).map((s) => (
+                            <span key={s} className="px-1.5 py-0.5 rounded text-[10px] bg-canvas border border-edge text-ink-muted">
+                              {s}
+                            </span>
+                          ))}
+                          {cand.topSkills.length > 3 && (
+                            <span className="text-[10px] text-ink-muted">+{cand.topSkills.length - 3}</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-3.5 text-right">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs px-2 gap-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedCandidate(cand);
+                          }}
+                        >
+                          Review
+                          <ChevronRight className="size-3" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
       {/* ─── TAB 2: Jobs Requisitions ─── */}
       {activeTab === 'jobs' && (
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {jobs.map((job) => (
-              <Card key={job.id} className="border-edge shadow-sm flex flex-col justify-between">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-accent bg-accent-soft px-2 py-0.5 rounded">
-                      {job.department}
-                    </span>
-                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 capitalize">
-                      ● {job.status}
-                    </span>
-                  </div>
-                  <CardTitle className="text-sm font-bold text-ink">{job.title}</CardTitle>
-                  <CardDescription className="text-xs flex items-center gap-3 pt-1 text-ink-muted">
-                    <span className="flex items-center gap-1">
-                      <MapPin className="size-3" /> {job.location}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <DollarSign className="size-3" /> {job.salary}
-                    </span>
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="border-t border-edge pt-3 flex items-center justify-between text-xs">
-                    <span className="text-ink-muted">
-                      <strong className="text-ink font-semibold">{job.applicantCount}</strong> Applicants
-                    </span>
-                    <span className="text-[11px] text-ink-muted">{job.postedAt}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Card key={i} className="border-edge shadow-sm animate-pulse">
+                  <CardHeader className="pb-3">
+                    <div className="h-4 bg-neutral-200 rounded w-1/4 mb-2 animate-pulse" />
+                    <div className="h-5 bg-neutral-200 rounded w-3/4 animate-pulse" />
+                    <div className="h-4 bg-neutral-200 rounded w-1/2 animate-pulse mt-2" />
+                    <div className="h-4 bg-neutral-200 rounded w-1/3 animate-pulse mt-1" />
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="h-4 bg-neutral-200 rounded w-1/3 animate-pulse mt-3" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : jobs.length === 0 ? (
+            <div className="border border-edge rounded-xl bg-surface p-8 text-center">
+              <Briefcase className="size-12 text-ink-muted mx-auto mb-3" />
+              <p className="text-sm text-ink-muted">No job requisitions posted yet.</p>
+              <Button
+                size="sm"
+                onClick={() => setShowNewJobModal(true)}
+                className="mt-3 text-xs font-semibold gap-1.5"
+              >
+                <Plus className="size-3.5" />
+                Post New Job Requisition
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {jobs.map((job) => (
+                <Card key={job.id} className="border-edge shadow-sm flex flex-col justify-between">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-accent bg-accent-soft px-2 py-0.5 rounded">
+                        {job.department}
+                      </span>
+                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 capitalize">
+                        ● {job.status}
+                      </span>
+                    </div>
+                    <CardTitle className="text-sm font-bold text-ink">{job.title}</CardTitle>
+                    <CardDescription className="text-xs flex items-center gap-3 pt-1 text-ink-muted">
+                      <span className="flex items-center gap-1">
+                        <MapPin className="size-3" /> {job.location}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <DollarSign className="size-3" /> {job.salary}
+                      </span>
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="border-t border-edge pt-3 flex items-center justify-between text-xs">
+                      <span className="text-ink-muted">
+                        <strong className="text-ink font-semibold">{job.applicantCount}</strong> Applicants
+                      </span>
+                      <span className="text-[11px] text-ink-muted">{job.postedAt}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
       {/* ─── Candidate Review Drawer Modal ─── */}
       {selectedCandidate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs" role="dialog" aria-modal="true" aria-labelledby="candidate-review-title">
           <div className="bg-surface border border-edge rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-6 relative animate-in fade-in zoom-in-95">
             <button
               type="button"
               onClick={() => setSelectedCandidate(null)}
               className="absolute top-4 right-4 text-ink-muted hover:text-ink transition-colors"
+              aria-label="Close candidate review"
             >
               <X className="size-5" />
             </button>
@@ -471,7 +439,7 @@ export function EmployerPortalPage() {
                 {selectedCandidate.name.charAt(0)}
               </div>
               <div>
-                <h3 className="text-lg font-bold text-ink">{selectedCandidate.name}</h3>
+                <h3 id="candidate-review-title" className="text-lg font-bold text-ink">{selectedCandidate.name}</h3>
                 <p className="text-xs text-accent font-medium">{selectedCandidate.role}</p>
                 <p className="text-xs text-ink-muted mt-0.5">{selectedCandidate.email} • {selectedCandidate.experienceYears} Years Exp</p>
               </div>
@@ -512,6 +480,7 @@ export function EmployerPortalPage() {
                     key={stg}
                     type="button"
                     onClick={() => advanceCandidateStage(selectedCandidate.id, stg)}
+                    disabled={advanceStageMutation.isPending}
                     className={cn(
                       'py-1.5 px-2 rounded-lg text-xs font-medium border text-center transition-all',
                       selectedCandidate.stage === stg
@@ -541,18 +510,19 @@ export function EmployerPortalPage() {
 
       {/* ─── Post New Job Modal ─── */}
       {showNewJobModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs" role="dialog" aria-modal="true" aria-labelledby="new-job-title">
           <div className="bg-surface border border-edge rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 relative animate-in fade-in zoom-in-95">
             <button
               type="button"
               onClick={() => setShowNewJobModal(false)}
               className="absolute top-4 right-4 text-ink-muted hover:text-ink transition-colors"
+              aria-label="Close new job modal"
             >
               <X className="size-5" />
             </button>
 
             <div>
-              <h3 className="text-base font-bold text-ink">Post New Job Requisition</h3>
+              <h3 id="new-job-title" className="text-base font-bold text-ink">Post New Job Requisition</h3>
               <p className="text-xs text-ink-muted">Create an open role to begin receiving ATS-ranked resumes.</p>
             </div>
 
@@ -609,8 +579,8 @@ export function EmployerPortalPage() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" size="sm" className="text-xs font-semibold">
-                  Publish Job
+                <Button type="submit" size="sm" className="text-xs font-semibold" disabled={createJobMutation.isPending}>
+                  {createJobMutation.isPending ? 'Publishing...' : 'Publish Job'}
                 </Button>
               </div>
             </form>

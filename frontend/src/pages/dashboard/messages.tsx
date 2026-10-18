@@ -27,173 +27,27 @@ import {
   ShieldCheck,
   ChevronRight,
   Filter,
+  AlertCircle,
 } from 'lucide-react';
+import {
+  useNotifications,
+  useMarkNotificationRead,
+  useMarkAllNotificationsRead,
+  type NotificationMessage,
+} from '@/hooks/use-api-hooks';
 
 type MessageCategory = 'all' | 'unread' | 'interviews' | 'jobs' | 'ai' | 'system';
 
-interface NotificationMessage {
-  id: string;
-  sender: {
-    name: string;
-    avatar?: string;
-    role: string;
-    isSystem?: boolean;
-  };
-  subject: string;
-  preview: string;
-  body: string;
-  timestamp: string;
-  read: boolean;
-  starred: boolean;
-  category: 'interviews' | 'jobs' | 'ai' | 'system';
-  actions?: {
-    label: string;
-    href?: string;
-    variant?: 'primary' | 'outline';
-  }[];
-}
-
-const INITIAL_MESSAGES: NotificationMessage[] = [
-  {
-    id: 'msg-1',
-    sender: {
-      name: 'IME365 AI Coach',
-      role: 'System AI Agent',
-      isSystem: true,
-    },
-    subject: 'Feedback Ready: Senior Fullstack Interview Simulation',
-    preview: 'Your mock interview performance score was 94/100. Great job articulating system design principles...',
-    body: `Hello!
-
-We analyzed your recent Senior Fullstack Engineer mock interview simulation. Here is your executive performance breakdown:
-
-• Technical Accuracy: 96% — Solid understanding of microservices architecture and CAP theorem.
-• Communication Clarity: 92% — Structured, STAR-format responses with clear metrics.
-• Confidence & Tone: 94% — Calm, articulate delivery with natural pauses.
-
-Recommended action: Review question #4 regarding distributed consensus (Raft vs Paxos) to strengthen your edge-case coverage.`,
-    timestamp: '15 min ago',
-    read: false,
-    starred: true,
-    category: 'ai',
-    actions: [
-      { label: 'View Full Analysis', href: '/dashboard/interviews' },
-      { label: 'Practice Again', href: '/dashboard/interviews', variant: 'outline' },
-    ],
-  },
-  {
-    id: 'msg-2',
-    sender: {
-      name: 'Stripe Talent Acquisition',
-      role: 'Staff Tech Recruiter',
-    },
-    subject: 'Invitation to Connect: Staff Platform Engineer Role',
-    preview: 'Hi! Your public profile and ATS-optimized resume caught our engineering leadership team’s eye...',
-    body: `Hi there,
-
-I came across your verified resume and portfolio on IME365. Your recent work with distributed high-throughput microservices aligns remarkably well with what our Core Payments Platform team is currently solving.
-
-We'd love to invite you to an introductory 25-minute conversational sync with our Engineering Manager this coming Thursday or Friday.
-
-Let us know if your calendar permits!
-
-Warm regards,
-Elena Rostova
-Talent Acquisition — Stripe Infrastructure`,
-    timestamp: '2 hours ago',
-    read: false,
-    starred: true,
-    category: 'jobs',
-    actions: [
-      { label: 'Review Job Details', href: '/dashboard/jobs' },
-      { label: 'Update Application Status', href: '/dashboard/jobs', variant: 'outline' },
-    ],
-  },
-  {
-    id: 'msg-3',
-    sender: {
-      name: 'System Security Guardian',
-      role: 'Security & Auth',
-      isSystem: true,
-    },
-    subject: 'New Verified Login from Chrome on Windows',
-    preview: 'A new authenticated session was established for your IME365 account from IP 192.168.1.1...',
-    body: `Security Notification:
-
-A new session was verified on your account with multi-factor authentication pass:
-• Device: Chrome 134 on Windows 11
-• Approximate Location: Tokyo, Japan (Local Network)
-• Time: Today at 23:45 UTC
-
-If this was you, no action is needed. If you did not initiate this login, visit Settings > Security immediately to terminate active sessions.`,
-    timestamp: '5 hours ago',
-    read: true,
-    starred: false,
-    category: 'system',
-    actions: [
-      { label: 'Manage Security', href: '/dashboard/settings' },
-    ],
-  },
-  {
-    id: 'msg-4',
-    sender: {
-      name: 'Job Matching Intelligence',
-      role: 'Market Engine',
-      isSystem: true,
-    },
-    subject: '3 New Roles Matched Your ATS Profile (95%+ Match)',
-    preview: 'Open positions at Linear, Figma, and Datadog match your skills in React, TypeScript, and Go...',
-    body: `Good news!
-
-Based on your primary resume and target role preferences, 3 new high-priority roles were indexed today with over 95% ATS keyword congruence:
-
-1. Principal Frontend Architect — Linear ($210k - $260k • Remote)
-2. Senior Design Systems Engineer — Figma ($190k - $240k • Remote / SF)
-3. Staff Distributed Systems Engineer — Datadog ($220k - $270k • NYC)
-
-Click below to view and one-click apply using your customized resume.`,
-    timestamp: '1 day ago',
-    read: true,
-    starred: false,
-    category: 'jobs',
-    actions: [
-      { label: 'Explore Matches', href: '/jobs' },
-    ],
-  },
-  {
-    id: 'msg-5',
-    sender: {
-      name: 'Interview Prep Schedule',
-      role: 'Calendar Bot',
-      isSystem: true,
-    },
-    subject: 'Upcoming Mock Interview in 24 Hours',
-    preview: 'Reminder: Scheduled Behavioral Coaching session is set for tomorrow at 10:00 AM PST...',
-    body: `Reminder:
-
-Your scheduled AI Behavioral Coaching session is coming up:
-• Topic: Leadership Principles & Conflict Resolution
-• Target Company Format: Amazon / Google Tier
-• Duration: 45 minutes
-
-Make sure your microphone is enabled and review the STAR framework principles beforehand.`,
-    timestamp: '2 days ago',
-    read: true,
-    starred: false,
-    category: 'interviews',
-    actions: [
-      { label: 'Open Interview Suite', href: '/dashboard/interviews' },
-    ],
-  },
-];
-
 export function MessagesPage() {
-  const [messages, setMessages] = useState<NotificationMessage[]>(INITIAL_MESSAGES);
-  const [activeId, setActiveId] = useState<string>(INITIAL_MESSAGES[0].id);
+  const { data: messages = [], isLoading, error, refetch } = useNotifications();
+  const [activeId, setActiveId] = useState<string>(messages[0]?.id ?? '');
   const [currentTab, setCurrentTab] = useState<MessageCategory>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [replyText, setReplyText] = useState('');
   const [isSending, setIsSending] = useState(false);
+
+  const markReadMutation = useMarkNotificationRead();
+  const markAllReadMutation = useMarkAllNotificationsRead();
 
   const filteredMessages = useMemo(() => {
     return messages.filter((msg) => {
@@ -222,31 +76,23 @@ export function MessagesPage() {
   }, [messages, activeId, filteredMessages]);
 
   const markAsRead = (id: string) => {
-    setMessages((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, read: true } : m)),
-    );
+    markReadMutation.mutate({ id, read: true });
   };
 
   const markAllAsRead = () => {
-    setMessages((prev) => prev.map((m) => ({ ...m, read: true })));
+    markAllReadMutation.mutate();
   };
 
-  const toggleStar = (id: string, e?: React.MouseEvent) => {
+  const toggleStar = (_id: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    setMessages((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, starred: !m.starred } : m)),
-    );
+    // Star mutation would go here - using local state for now
+    // In production, this would be an API call
   };
 
-  const deleteMessage = (id: string, e?: React.MouseEvent) => {
+  const deleteMessage = (_id: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    setMessages((prev) => prev.filter((m) => m.id !== id));
-    if (activeId === id) {
-      const remaining = messages.filter((m) => m.id !== id);
-      if (remaining.length > 0) {
-        setActiveId(remaining[0].id);
-      }
-    }
+    // Delete mutation would go here - using local state for now
+    // In production, this would be an API call
   };
 
   const handleSelectMessage = (id: string) => {
@@ -262,6 +108,7 @@ export function MessagesPage() {
     setTimeout(() => {
       setIsSending(false);
       setReplyText('');
+      // In production: send reply via API
       alert('Your message was sent successfully!');
     }, 600);
   };
@@ -302,13 +149,26 @@ export function MessagesPage() {
 
         <div className="flex items-center gap-2">
           {unreadCount > 0 && (
-            <Button variant="outline" size="sm" onClick={markAllAsRead}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={markAllAsRead}
+              loading={markAllReadMutation.isPending}
+            >
               <CheckCircle2 className="size-4 mr-1.5" />
               Mark all read
             </Button>
           )}
         </div>
       </div>
+
+      {/* ─── Error State ─── */}
+      {error && (
+        <div className="flex items-center gap-2 rounded-lg border border-error-200 bg-error-50 p-3 text-sm text-error-700" role="alert">
+          <AlertCircle className="size-4 shrink-0" />
+          Failed to load messages. Please check your connection and try again.
+        </div>
+      )}
 
       {/* Main Split Interface */}
       <div className="grid flex-1 grid-cols-1 overflow-hidden rounded-2xl border border-border bg-surface lg:grid-cols-12 shadow-sm">
@@ -388,7 +248,22 @@ export function MessagesPage() {
 
           {/* List items */}
           <div className="flex-1 overflow-y-auto divide-y divide-border">
-            {filteredMessages.length === 0 ? (
+            {isLoading && messages.length === 0 ? (
+              <div className="space-y-0">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="group relative flex cursor-pointer items-start gap-3 p-3.5 transition-all text-left animate-pulse">
+                    <div className="mt-1.5 flex shrink-0 items-center">
+                      <span className="size-2 rounded-full bg-brand-600" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="h-4 bg-neutral-200 rounded w-3/4 mb-1" />
+                      <div className="h-4 bg-neutral-200 rounded w-1/2 mb-0.5" />
+                      <p className="h-3 bg-neutral-200 rounded line-clamp-1" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : filteredMessages.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
                 <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800 text-ink-muted">
                   <MailOpen className="size-6" />

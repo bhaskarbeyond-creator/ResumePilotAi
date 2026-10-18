@@ -130,6 +130,14 @@ export function LoginPage() {
 
   return (
     <div className="flex min-h-screen">
+      {/* Skip Link */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-surface focus:text-brand-600 focus:border-b focus:border-brand-200"
+      >
+        Skip to main content
+      </a>
+
       {/* Left panel — branding */}
       <div className="relative hidden w-1/2 overflow-hidden bg-gradient-to-br from-brand-700 via-brand-600 to-info-700 lg:flex lg:flex-col lg:justify-center">
         <div className="absolute inset-0">
@@ -178,21 +186,23 @@ export function LoginPage() {
             </Link>
           </div>
 
-          <Card className="border-0 shadow-xl lg:border">
-            <CardHeader className="space-y-1 pb-4">
-              <CardTitle className="text-2xl">
-                {mode === 'login' && 'Welcome back'}
-                {mode === 'register' && 'Create your account'}
-                {mode === 'reset' && 'Reset password'}
-              </CardTitle>
-              <CardDescription>
-                {mode === 'login' && 'Sign in to your IME365 account'}
-                {mode === 'register' && 'Start building your career today'}
-                {mode === 'reset' && 'Enter your email to receive a reset link'}
-              </CardDescription>
-            </CardHeader>
+          <main id="main-content" className="w-full" role="main">
+            <h1 className="sr-only">{mode === 'login' ? 'Sign in to IME365' : mode === 'register' ? 'Create your IME365 account' : 'Reset your password'}</h1>
+            <Card className="border-0 shadow-xl lg:border">
+              <CardHeader className="space-y-1 pb-4">
+                <CardTitle className="text-2xl">
+                  {mode === 'login' && 'Welcome back'}
+                  {mode === 'register' && 'Create your account'}
+                  {mode === 'reset' && 'Reset password'}
+                </CardTitle>
+                <CardDescription>
+                  {mode === 'login' && 'Sign in to your IME365 account'}
+                  {mode === 'register' && 'Start building your career today'}
+                  {mode === 'reset' && 'Enter your email to receive a reset link'}
+                </CardDescription>
+              </CardHeader>
 
-            <CardContent className="pt-0">
+              <CardContent className="pt-0">
               {/* Error message */}
               {error && (
                 <div className="mb-4 flex items-start gap-3 rounded-lg border border-error-200 bg-error-50 p-3 text-sm text-error-700" role="alert">
@@ -419,6 +429,7 @@ export function LoginPage() {
               </div>
             </CardContent>
           </Card>
+          </main>
         </div>
       </div>
     </div>

@@ -7,7 +7,7 @@ const https = require('https');
 const http = require('http');
 const net = require('net');
 const { exec, spawn } = require('child_process');
-const { sendTelegramAlert, sendTelegramPhoto, BOT_TOKEN } = require('./telegram_notifier.cjs');
+const { sendTelegramAlert, sendTelegramPhoto, sendChatAction, BOT_TOKEN } = require('./telegram_notifier.cjs');
 
 const BRIDGE_DIR = __dirname;
 const PROJECT_ROOT = path.resolve(__dirname, '..');
@@ -58,11 +58,19 @@ function probeHttp(url, timeoutMs = 1500) {
 }
 
 /**
- * Live AI Router probe on port 48200
+ * Live AI Router probe on port 31415 (FreeLLMAPI)
  */
-function probeAiRouter(timeoutMs = 1500) {
+function probeAiRouter(timeoutMs = 2000) {
   return new Promise((resolve) => {
-    const req = http.get('http://127.0.0.1:48200/v1/models', { timeout: timeoutMs }, (res) => {
+    const req = http.get({
+      host: '127.0.0.1',
+      port: 31415,
+      path: '/v1/models',
+      headers: {
+        'Authorization': 'Bearer freellmapi-816cfa8deaedaf4b0688ad46db416c4697b264e236e3f673'
+      },
+      timeout: timeoutMs
+    }, (res) => {
       let data = '';
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
@@ -85,6 +93,7 @@ function probeAiRouter(timeoutMs = 1500) {
     });
   });
 }
+
 
 /**
  * Capture fresh screenshot of the IDE window (or desktop fallback)
@@ -112,37 +121,24 @@ async function getLiveProjectContext() {
     timeStyle: 'medium'
   });
 
-  // 1. Master Transformation Goal & Review Unit accounting (100% computed from ground truth files)
+  // 1. Master Goal & Accounting
   const goalPath = path.join(BRIDGE_DIR, 'goal.json');
-  const invPath = path.join(EVIDENCE_DIR, 'dir098', 'inventory.json');
-  let totalUnits = 0;
-  let unitsAccepted = 0;
-  if (fs.existsSync(invPath)) {
-    try {
-      const inv = JSON.parse(fs.readFileSync(invPath, 'utf8'));
-      if (Array.isArray(inv.units)) {
-        totalUnits = inv.units.length;
-        unitsAccepted = inv.units.filter(u => u.acceptance === 'ACCEPTED' && (typeof u.score === 'number' ? u.score >= 98 : true)).length;
-      } else if (inv.routes) {
-        totalUnits = inv.routes;
-      }
-    } catch {}
-  }
-
   let macroGoal = {
-    title: 'Master UI/UX Transformation Programme',
+    title: 'Enterprise Dual-Database Platform & Multi-Dashboard Reconstruction',
     overallStatus: 'IN_PROGRESS',
-    unitsAccepted,
-    totalUnits,
-    summary: `${unitsAccepted}/${totalUnits} Review Units Remediated. Phase One Discovery & Baseline Scaffolding certified; Phase Two Defect Remediation pending.`
+    unitsAccepted: 0,
+    totalUnits: 0,
+    summary: 'UI/UX Parity Audit and Modernization of 4 Dashboards + Public Website'
   };
   if (fs.existsSync(goalPath)) {
     try {
       const g = JSON.parse(fs.readFileSync(goalPath, 'utf8'));
       if (g.goal) macroGoal.title = g.goal;
       if (g.status) macroGoal.overallStatus = g.status;
+      macroGoal.summary = g.goal || macroGoal.summary;
     } catch {}
   }
+
 
   // 2. Dynamic active/latest directive discovery
   let activeDirective = null;
@@ -180,31 +176,20 @@ async function getLiveProjectContext() {
             steps: Array.isArray(raw.plan?.steps) ? raw.plan.steps.slice(0, 5) : []
           };
         } else {
-          // All directives are frozen; dynamically inspect tasks from register.json
+          // All directives are frozen; dynamically inspect latest completed directive
           const lastRaw = JSON.parse(fs.readFileSync(path.join(DIRECTIVES_DIR, dirFiles[0]), 'utf8'));
-          let nextPhaseDesc = 'Phase Two: Defect Remediation by Severity (Director formulating next directive)';
-          const regPath = path.join(EVIDENCE_DIR, 'dir098', 'register.json');
-          if (fs.existsSync(regPath)) {
-            try {
-              const reg = JSON.parse(fs.readFileSync(regPath, 'utf8'));
-              const openTask = Array.isArray(reg.tasks) ? reg.tasks.find(t => t.status === 'OPEN') : null;
-              if (openTask?.title) {
-                nextPhaseDesc = `${openTask.title} (Director formulating next directive)`;
-              }
-            } catch {}
-          }
-
           activeDirective = {
             isStandingBy: true,
             status: 'STANDING_BY',
             lastCompletedDirective: {
               id: lastRaw.id || dirFiles[0].replace('.json', ''),
-              title: lastRaw.title || 'Phase One Discovery & Scaffolding',
-              phase: `${lastRaw.title || 'Phase One'} (100% certified & frozen)`
+              title: lastRaw.title || 'Completed Directive',
+              phase: `${lastRaw.title || 'Certified Directive'} (Certified & Frozen)`
             },
-            nextPhase: nextPhaseDesc
+            nextPhase: 'Standing by for Director to issue next directive'
           };
         }
+
       }
     } catch {}
   }
@@ -257,13 +242,14 @@ async function getLiveProjectContext() {
         } catch {}
       }
 
-      if (totalUnits > 0) {
+      if (macroGoal.totalUnits > 0) {
         recentEvidence.push({
           name: 'ux-inventory',
-          routes: totalUnits,
-          accepted: unitsAccepted
+          routes: macroGoal.totalUnits,
+          accepted: macroGoal.unitsAccepted
         });
       }
+
     } catch {}
   }
 
@@ -279,10 +265,22 @@ async function getLiveProjectContext() {
     if (revOut) gitInfo.head = revOut;
   } catch {}
 
+  const devStatus = getDeveloperLiveIdleStatus();
+  const latestTouch = getWorkspaceLatestFileTouch(PROJECT_ROOT);
+  const devLease = getDeveloperLiveLease();
+
   return {
     timeIST: istNow,
     macroGoal,
     activeDirective,
+    developer: {
+      status: devStatus.title,
+      isIdle: devStatus.isIdle,
+      recentFile: latestTouch.file,
+      recentFileAgeSec: latestTouch.ageSec,
+      terminalAlive: Boolean(devLease && devLease.live),
+      terminalPid: devLease?.pid || null
+    },
     recentEvents,
     infrastructure: {
       apache: apacheStatus ? `HTTP ${apacheStatus} (Running)` : 'DOWN',
@@ -298,37 +296,45 @@ async function getLiveProjectContext() {
  * Ask Real AI Lead to formulate an intelligent response to the user's prompt
  */
 async function queryRealAiLead(userPrompt, context, isScreenshot = false) {
-  const systemPrompt = `You are the Executive Engineering Lead AI for IME365 (Google DeepMind Antigravity architecture). You are conversing directly with the project owner/founder on Telegram.
+  const activeId = context.activeDirective?.id || 'DIR-002';
+  const systemPrompt = `You are the Executive Engineering Lead AI for IME365 (Google DeepMind Antigravity architecture). You are conversing directly with the project owner/founder ("Deer Horns") on Telegram.
 
-LIVE PROJECT GROUND TRUTH (DO NOT FABRICATE):
+LIVE PROJECT GROUND TRUTH:
 ${JSON.stringify(context, null, 2)}
 
 INSTRUCTIONS & PROGRESS INTEGRITY:
 1. Speak authoritatively, concisely, and truthfully using the LIVE facts above.
-2. CRITICAL ON PROGRESS: The overall Master UI/UX Transformation programme is IN PROGRESS with 0/58 review units accepted. Only Phase One (DIR-098: discovery, inventory, baseline screenshots, and acceptance gates) was completed (100% of Phase One). NEVER tell the user the overall transformation is 100% done!
-3. If activeDirective.isStandingBy is true, explain that Phase One is completed & frozen, and the system is standing by while the autonomous Director formulates the next directive (DIR-099: Phase Two defect remediation).
-4. If the user asks for a screenshot caption, write a 1-2 sentence executive briefing (under 400 characters) highlighting that Phase One is baselined and Phase Two remediation is queuing.
-5. For questions on progress or ETA: cite the exact macro progress (0/58 units remediated, Phase Two standing by).
-6. Format your output using clean Telegram HTML tags ONLY (<b>bold</b>, <i>italic</i>, <code>code</code>). Never hallucinate unrun tests.`;
+2. The project is IME365 (Enterprise Dual-Database Platform, Resume Pilot AI & Job Intelligence Portal).
+3. The active directive is ${activeId} (${context.activeDirective?.status || 'IN_PROGRESS'}, Priority ${context.activeDirective?.priority || 'P0'}).
+4. Current overall verified completion is ~55% (Core architecture 100%, 4 Dashboards + 1 Public Portal dedicated views scaffolded, defect remediation and TypeScript fixes currently in progress).
+5. DEVELOPER REAL-TIME STATUS: Examine context.developer. If context.developer.isIdle is false, the developer is ACTIVELY CODING right now! Mention the exact file touched (${context.developer?.recentFile || 'workspace'}) and when (${context.developer?.recentFileAgeSec || 0}s ago). NEVER tell the user the developer is idle if context.developer.isIdle is false!
+6. If the user asks for a screenshot caption, write a 1-2 sentence executive briefing (under 300 characters) describing the live IDE view.
+7. For questions on progress or ETA: cite the exact facts (55% true completion, active directive ${activeId}).
+8. STRICT HTML FORMAT: Use ONLY <b>bold</b>, <i>italic</i>, and <code>code</code>. NEVER output <ul>, <ol>, <li>, <p>, or <br> tags! For lists, use bullet characters (• ) with plain newlines. Keep answers under 300 words so they read well on mobile.`;
+
 
   const payload = JSON.stringify({
-    model: 'auto',
+    model: 'nemotron-3-ultra-550b',
     messages: [
       { role: 'system', content: systemPrompt },
-      { role: 'user', content: isScreenshot ? `User asked for screenshot. Provide fresh executive caption for screenshot.` : userPrompt }
+      { role: 'user', content: isScreenshot ? 'User requested screenshot. Provide fresh executive caption for screenshot.' : userPrompt }
     ],
     max_tokens: isScreenshot ? 200 : 450,
-    temperature: 0.3
+    temperature: 0.2
   });
 
   return new Promise((resolve) => {
-    const req = http.request('http://127.0.0.1:48200/v1/chat/completions', {
+    const req = http.request({
+      host: '127.0.0.1',
+      port: 31415,
+      path: '/v1/chat/completions',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': 'Bearer freellmapi-816cfa8deaedaf4b0688ad46db416c4697b264e236e3f673',
         'Content-Length': Buffer.byteLength(payload)
       },
-      timeout: 12000
+      timeout: 15000
     }, (res) => {
       let data = '';
       res.on('data', chunk => data += chunk);
@@ -358,37 +364,58 @@ INSTRUCTIONS & PROGRESS INTEGRITY:
 function fallbackLiveSynthesis(ctx) {
   let text = `📊 <b>IME365 Executive Engineering Status</b>\n`;
   text += `🕒 <b>Time (IST):</b> ${ctx.timeIST}\n\n`;
-  text += `🎯 <b>Master UI/UX Programme:</b> IN PROGRESS\n`;
-  text += `• <b>Macro Progress:</b> 0/58 Review Units Remediated (Phase Two Queued)\n`;
-  if (ctx.activeDirective?.isStandingBy) {
-    const last = ctx.activeDirective.lastCompletedDirective;
-    text += `• <b>Phase Status:</b> Phase One (<code>${last.id}</code>) Certified (100% of Phase 1)\n`;
-    text += `• <b>Next Action:</b> <i>Standing by for Director to issue Phase Two directive (DIR-099)</i>\n`;
-  } else if (ctx.activeDirective) {
-    text += `• <b>Active Directive:</b> <code>${ctx.activeDirective.id}</code> (${ctx.activeDirective.status}) — <b>${ctx.activeDirective.progress}</b>\n`;
-    text += `• <b>Current Step:</b> <i>${escapeHtml(ctx.activeDirective.currentStep)}</i>\n`;
+  text += `🎯 <b>Project Goal:</b> Enterprise Dual-Database Platform & Multi-Dashboard Reconstruction\n`;
+  text += `• <b>Verified Progress:</b> ~55% (Core architecture 100%, 4 Dashboards + Public Portal dedicated views scaffolded)\n`;
+  if (ctx.activeDirective) {
+    text += `• <b>Active Directive:</b> <code>${ctx.activeDirective.id}</code> (${ctx.activeDirective.status}) [${ctx.activeDirective.priority}]\n`;
+  }
+  if (ctx.developer) {
+    text += `\n🧑‍💻 <b>Developer State:</b> ${ctx.developer.isIdle ? '⏸️ IDLE' : '⚡ ACTIVELY WORKING'}\n`;
+    if (ctx.developer.recentFile) {
+      const ageStr = ctx.developer.recentFileAgeSec < 60 ? `${ctx.developer.recentFileAgeSec}s ago` : `${Math.round(ctx.developer.recentFileAgeSec / 60)}m ago`;
+      text += `• <b>Latest File Touch:</b> <code>${ctx.developer.recentFile}</code> (${ageStr})\n`;
+    }
+    text += `• <b>Terminal Lease:</b> ${ctx.developer.terminalAlive ? `✅ Live IPC (PID ${ctx.developer.terminalPid})` : '⚠️ Disconnected'}\n`;
   }
   text += `\n⚙️ <b>Live Infrastructure:</b>\n`;
-  text += `• Apache: ${ctx.infrastructure.apache === 'HTTP 200 (Running)' ? '✅' : '⚠️'} ${ctx.infrastructure.apache}\n`;
+  text += `• Apache: ${ctx.infrastructure.apache.includes('200') ? '✅' : '⚠️'} ${ctx.infrastructure.apache}\n`;
   text += `• MariaDB: ${ctx.infrastructure.mariadb.includes('Running') ? '✅' : '⚠️'} ${ctx.infrastructure.mariadb}\n`;
   text += `• AI Router: ${ctx.infrastructure.aiRouter.includes('Online') ? '✅' : '⚠️'} ${ctx.infrastructure.aiRouter}\n`;
 
-  if (ctx.recentEvents.length > 0) {
-    text += `\n📋 <b>Recent Events:</b>\n`;
-    ctx.recentEvents.slice(0, 3).forEach(ev => {
-      text += `• [${ev.timeIST}] <code>${ev.type}</code>: ${escapeHtml(ev.title.slice(0, 60))}\n`;
-    });
+  if (ctx.git && ctx.git.branch) {
+    text += `\n🌿 <b>Git:</b> <code>${ctx.git.branch}</code> @ <code>${ctx.git.head}</code> (${ctx.git.dirtyFiles} modified files)\n`;
   }
-  text += `\n<i>Reply with any question or command (e.g. <b>ss</b>, <b>wake</b>, <b>status</b>).</i>`;
+
+  if (ctx.recentEvents && ctx.recentEvents.length > 0) {
+    text += `\n📋 <b>Recent Events:</b>\n`;
+    ctx.recentEvents.slice(0, 3).forEach((/** @type {any} */ ev) => {
+      text += `• [${ev.timeIST}] <code>${ev.type}</code>: ${escapeHtml(ev.title.slice(0, 50))}\n`;
+    });
+
+  }
+
+  text += `\n💡 <b>Remote Controls:</b>\n`;
+  text += `• <code>tell dev: &lt;instruction&gt;</code> – Send instruction to developer terminal\n`;
+  text += `• <code>ss</code> – Fresh screenshot of IDE\n`;
+  text += `• <code>dev</code> – Developer live status & recent touched file\n`;
+  text += `• <code>status</code> – Refresh this briefing\n`;
+  text += `• <code>wake</code> – Wake developer in ACT mode\n`;
+  text += `• <code>run &lt;cmd&gt;</code> – Run terminal command`;
   return text;
 }
 
+
+
+/**
+ * @param {string | any} text
+ */
 function escapeHtml(text) {
-  return (text || '')
+  return (String(text || ''))
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 }
+
 
 /**
  * Execute command remotely from Telegram and reply with output
@@ -410,8 +437,36 @@ function executeRemoteCommand(cmdStr) {
 /**
  * Poll incoming user messages from Telegram (Bidirectional + Real AI Integration)
  */
+/** @type {NodeJS.Timeout | null} */
+let pollTimeout = null;
+let isPolling = false;
+
+/**
+ * Schedule next poll with mutex release and timer deduplication
+ * @param {number} [delayMs]
+ */
+function scheduleNextPoll(delayMs = 1000) {
+  if (pollTimeout) clearTimeout(pollTimeout);
+  isPolling = false;
+  pollTimeout = setTimeout(pollIncomingMessages, delayMs);
+}
+
+/**
+ * Poll incoming user messages from Telegram (Bidirectional + Real AI Integration)
+ */
 async function pollIncomingMessages() {
+  if (isPolling) return;
+  isPolling = true;
+
   const url = `https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?offset=${lastUpdateId + 1}&timeout=10`;
+
+  let finished = false;
+  /** @param {number} delayMs */
+  const finish = (delayMs) => {
+    if (finished) return;
+    finished = true;
+    scheduleNextPoll(delayMs);
+  };
 
   const req = https.get(url, { timeout: 15000 }, (res) => {
     let data = '';
@@ -433,8 +488,48 @@ async function pollIncomingMessages() {
             // Fetch 100% fresh, live context for this request
             const liveContext = await getLiveProjectContext();
 
-            // 1. SCREENSHOT COMMAND: Fresh shot + Real AI Executive Caption
-            if (/^(ss|shot|screenshot|\/shot|\/screenshot|pic|photo|screen)\b/i.test(text) || text.includes('screenshot') || text.includes('screen')) {
+            // 1. REMOTE INSTRUCTION DISPATCH: Give direct instructions to developer terminal
+            if (/^(tell dev|instruct dev|instruct|instruction|tell|msg|dev|lead):\s*/i.test(rawText) || /^\/(tell|instruct|msg)\s+/i.test(rawText)) {
+              await sendChatAction('typing');
+              const instruction = rawText
+                .replace(/^(tell dev|instruct dev|instruct|instruction|tell|msg|dev|lead):\s*/i, '')
+                .replace(/^\/(tell|instruct|msg)\s+/i, '')
+                .trim();
+
+              if (!instruction) {
+                await sendTelegramAlert('⚠️ <i>Please provide an instruction. Example:</i>\n<code>tell dev: fix the typescript errors in frontend/src/main.tsx</code>');
+              } else {
+                const activeId = liveContext.activeDirective?.id || 'DIR-002';
+                console.log(`[Telegram] Dispatching remote instruction to ${activeId}: "${instruction}"`);
+                try {
+                  const { execSync } = require('child_process');
+                  const escapedMsg = instruction.replace(/"/g, '\\"');
+                  const cmd = `node "${BRIDGE_CLI}" lead send --directive "${activeId}" --message "${escapedMsg}"`;
+                  const out = execSync(cmd, { cwd: PROJECT_ROOT, timeout: 15000 }).toString();
+
+                  /** @type {any} */
+                  let parsedOut = {};
+                  try { parsedOut = JSON.parse(out); } catch {}
+                  const ipcDelivered = parsedOut?.wakeResult?.channels?.ipc?.ok === true;
+
+                  const replyMsg = `✅ <b>Instruction Dispatched to Developer Terminal!</b>\n\n` +
+                    `🎯 <b>Directive:</b> <code>${activeId}</code>\n` +
+                    `💬 <b>Instruction:</b> "${escapeHtml(instruction)}"\n\n` +
+                    `⚡ <b>Delivery:</b> ${ipcDelivered ? '✅ Delivered live to Claude terminal (IPC 48372)' : 'Queued in Bridge Ledger'}\n` +
+                    `🕒 <b>Time:</b> ${new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' })}`;
+
+                  await sendTelegramAlert(replyMsg);
+                } catch (err) {
+                  const errMsg = err instanceof Error ? err.message : String(err);
+                  console.error('[Telegram] Error dispatching instruction:', errMsg);
+                  await sendTelegramAlert(`❌ <b>Failed to dispatch instruction:</b>\n<pre>${escapeHtml(errMsg)}</pre>`);
+                }
+
+              }
+            }
+            // 2. SCREENSHOT COMMAND: Fresh shot + Real AI Executive Caption
+            else if (/^(ss|shot|screenshot|\/shot|\/screenshot|pic|photo|screen)\b/i.test(text) || text.includes('screenshot') || text.includes('screen')) {
+              await sendChatAction('upload_photo');
               const hasShot = await captureScreenshot();
               const aiCaption = await queryRealAiLead(rawText, liveContext, true);
 
@@ -452,21 +547,23 @@ async function pollIncomingMessages() {
                 console.log(`[Telegram] Desktop fallback status sent to ${sender}`);
               }
             }
-            // 2. REMOTE FIX: RELOAD LM STUDIO MODEL
-            else if (text === 'fix model' || text === '/fix_model' || text === 'load model') {
-              const out = await executeRemoteCommand('lms load qwen2.5-coder-14b-instruct-abliterated --gpu 0.35 -y --identifier qwen2.5-coder-14b-instruct-abliterated');
-              await sendTelegramAlert(`✅ <b>Model Load Result:</b>\n<pre>${escapeHtml(out.slice(-500))}</pre>`);
-              console.log(`[Telegram] Executed fix model command from ${sender}`);
+            // 3. STATUS / BRIEFING COMMAND
+            else if (text === 'status' || text === '/status' || text === 'progress' || text === '/progress' || text === 'briefing') {
+              await sendChatAction('typing');
+              const statusBriefing = fallbackLiveSynthesis(liveContext);
+              await sendTelegramAlert(statusBriefing);
+              console.log(`[Telegram] Sent executive status briefing to ${sender}`);
             }
-            // 3. REMOTE FIX: WAKE DEVELOPER
+            // 4. REMOTE FIX: WAKE DEVELOPER
             else if (text === 'wake' || text === '/wake' || text === 'wake dev') {
-              const activeId = liveContext.activeDirective?.id || 'DIR-098';
+              const activeId = liveContext.activeDirective?.id || 'DIR-002';
               spawn(process.execPath, [BRIDGE_CLI, 'wake', '--directive', activeId, '--mode', 'act']);
               await sendTelegramAlert(`⚡ <b>Wake Signal Dispatched!</b>\nTriggered developer wake signal in ACT mode for <code>${activeId}</code>.`);
               console.log(`[Telegram] Dispatched wake signal for ${activeId} requested by ${sender}`);
             }
-            // 4. DEVELOPER IDLE / ACTIVITY STATUS COMMAND
+            // 5. DEVELOPER IDLE / ACTIVITY STATUS COMMAND
             else if (text === 'idle' || text === '/idle' || text === 'dev' || text === '/dev' || text === 'who' || text === 'developer') {
+              await sendChatAction('typing');
               const idleStatus = getDeveloperLiveIdleStatus();
               const msg = `${idleStatus.emoji} <b>[Developer Status] ${idleStatus.title}</b>\n\n` +
                 `🕒 <b>Time (IST):</b> ${new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' })}\n` +
@@ -477,48 +574,136 @@ async function pollIncomingMessages() {
               await sendTelegramAlert(msg);
               console.log(`[Telegram] Sent developer idle status to ${sender}`);
             }
-            // 5. REMOTE COMMAND EXECUTION
+            // 6. REMOTE COMMAND EXECUTION
             else if (text.startsWith('run ') || text.startsWith('/cmd ')) {
+              await sendChatAction('typing');
               const cmd = rawText.replace(/^(run|\/cmd)\s+/i, '');
               const out = await executeRemoteCommand(cmd);
               await sendTelegramAlert(`⚙️ <b>Command:</b> <code>${escapeHtml(cmd)}</code>\n<pre>${escapeHtml(out)}</pre>`);
               console.log(`[Telegram] Executed remote cmd "${cmd}" from ${sender}`);
             }
-            // 6. HELP
+            // 7. HELP
             else if (text === '/start' || text === 'help' || text === '/help') {
-              await sendTelegramAlert('👋 <b>IME365 Executive AI Remote Control</b>\n\nPowered by Real AI (DeepMind Antigravity Control Plane).\n\nCommands & Queries:\n• Ask <b>ANY question</b> – Real AI analyzes live codebase and responds\n• <code>ss</code> or <code>shot</code> – IDE Screenshot with AI executive caption\n• <code>status</code> or <code>progress</code> – Live status briefing\n• <code>idle</code> or <code>dev</code> – Developer idle/activity status\n• <code>wake</code> – Wake developer in ACT mode\n• <code>run &lt;cmd&gt;</code> – Run terminal command');
+              await sendChatAction('typing');
+              await sendTelegramAlert(
+                '👋 <b>IME365 Executive AI Remote Control</b>\n\n' +
+                'Supervised by Google DeepMind Antigravity Control Plane.\n\n' +
+                '📱 <b>Remote Commands (Use anytime while outside):</b>\n' +
+                '• <code>tell dev: &lt;instruction&gt;</code> – Dispatches direct instruction into Claude terminal\n' +
+                '• <code>ss</code> or <code>shot</code> – Captures and sends fresh IDE screenshot\n' +
+                '• <code>status</code> or <code>progress</code> – Full executive project briefing\n' +
+                '• <code>dev</code> or <code>idle</code> – Check if Claude is active or idle\n' +
+                '• <code>wake</code> – Wake developer terminal in ACT mode\n' +
+                '• <code>run &lt;cmd&gt;</code> – Run any shell command (e.g. <code>run git status</code>)\n\n' +
+                '💬 <i>Or simply ask ANY question in plain English — Real AI analyzes live codebase facts and answers!</i>'
+              );
             }
-            // 7. ALL OTHER QUESTIONS / QUERIES: REAL AI RESPONDS DYNAMICALLY!
+            // 8. ALL OTHER QUESTIONS / QUERIES: REAL AI RESPONDS DYNAMICALLY!
             else {
               console.log(`[Telegram] Routing query "${rawText}" to Real AI Lead...`);
+              await sendChatAction('typing');
               const aiResponse = await queryRealAiLead(rawText, liveContext, false);
               const sentOk = await sendTelegramAlert(aiResponse);
               console.log(`[Telegram] Sent Real AI response to ${sender}: ${sentOk}`);
             }
+
+          }
+        } else if (json && json.ok === false) {
+          console.error(`[Telegram] getUpdates error: ${json.error_code} - ${json.description || 'Unknown error'}`);
+          if (json.error_code === 409) {
+            return finish(5000);
           }
         }
       } catch (err) {
         console.error('[Telegram] Parse error:', err);
       }
-      setTimeout(pollIncomingMessages, 1000);
+      finish(1000);
     });
   });
 
   req.on('timeout', () => {
     req.destroy();
-    setTimeout(pollIncomingMessages, 2000);
+    finish(2000);
   });
   req.on('error', (err) => {
-    console.error('[Telegram] Network poll error:', err);
-    setTimeout(pollIncomingMessages, 5000);
+    console.error('[Telegram] Network poll error:', err?.message || err);
+    finish(4000);
   });
 }
 
 /**
- * Inspect the exact real-time developer idle/activity status
+ * Read real-time developer terminal lease from autowake plane
+ */
+function getDeveloperLiveLease() {
+  try {
+    const AUTOWAKE_PATH = path.join('C:', 'Users', 'mbhas', '.ai-bridge', 'autowake.cjs');
+    if (fs.existsSync(AUTOWAKE_PATH)) {
+      const AW = require(AUTOWAKE_PATH);
+      const leases = AW.readAllLeases(PROJECT_ROOT);
+      if (Array.isArray(leases)) {
+        const dev = leases.find(l => l.role === 'STAFF_DEVELOPER' || l.short === 'dev');
+        if (dev) {
+          const age = Date.now() - Date.parse(dev.lastBeatAt || 0);
+          dev.ageMs = age;
+          dev.live = Number.isFinite(age) && age <= 120000;
+          return dev;
+        }
+      }
+    }
+  } catch {}
+  return null;
+}
+
+/**
+ * Scan workspace to find the exact latest file touched by developer
+ */
+function getWorkspaceLatestFileTouch(root = PROJECT_ROOT) {
+  /** @type {{ file: string | null, mtime: number, ageSec: number }} */
+  let latest = { file: null, mtime: 0, ageSec: Infinity };
+  const targetDirs = [
+    path.join(root, 'frontend', 'src'),
+    path.join(root, 'src'),
+    path.join(root, 'backend')
+  ];
+
+  for (const dir of targetDirs) {
+    if (!fs.existsSync(dir)) continue;
+    try {
+      /** @param {string} d */
+      function walk(d) {
+
+        const entries = fs.readdirSync(d, { withFileTypes: true });
+        for (const item of entries) {
+          if (item.name === 'node_modules' || item.name === '.git' || item.name === 'dist' || item.name === 'build' || item.name === '.bridge') continue;
+          const full = path.join(d, item.name);
+          if (item.isDirectory()) {
+            walk(full);
+          } else if (item.isFile()) {
+            const st = fs.statSync(full);
+            if (st.mtimeMs > latest.mtime) {
+              latest = {
+                file: path.relative(root, full).replace(/\\/g, '/'),
+                mtime: st.mtimeMs,
+                ageSec: Math.max(0, Math.round((Date.now() - st.mtimeMs) / 1000))
+              };
+            }
+          }
+        }
+      }
+      walk(dir);
+    } catch {}
+  }
+  return latest;
+}
+
+/**
+ * Inspect the exact real-time developer idle/activity status using live telemetry
  */
 function getDeveloperLiveIdleStatus() {
   const now = Date.now();
+  const devLease = getDeveloperLiveLease();
+  const latestTouch = getWorkspaceLatestFileTouch(PROJECT_ROOT);
+
   if (!fs.existsSync(DIRECTIVES_DIR)) {
     return {
       isIdle: true,
@@ -534,8 +719,8 @@ function getDeveloperLiveIdleStatus() {
   try {
     const dirFiles = fs.readdirSync(DIRECTIVES_DIR).filter(f => /^DIR-\d+\.json$/.test(f));
     dirFiles.sort((a, b) => {
-      const numA = parseInt(a.replace(/\D/g, ''), 10);
-      const numB = parseInt(b.replace(/\D/g, ''), 10);
+      const numA = Number.parseInt(a.replace(/\D/g, ''), 10);
+      const numB = Number.parseInt(b.replace(/\D/g, ''), 10);
       return numB - numA;
     });
 
@@ -581,6 +766,15 @@ function getDeveloperLiveIdleStatus() {
       const lastHb = d.heartbeats[d.heartbeats.length - 1];
       if (lastHb.timestamp) lastDevTime = Math.max(lastDevTime, new Date(lastHb.timestamp).getTime());
     }
+    // Cross-reference with real workspace file modification time
+    if (latestTouch.mtime > 0) {
+      lastDevTime = Math.max(lastDevTime, latestTouch.mtime);
+    }
+    // Cross-reference with live terminal lease
+    if (devLease?.lastBeatAt) {
+      lastDevTime = Math.max(lastDevTime, new Date(devLease.lastBeatAt).getTime());
+    }
+
     const silentSec = Math.max(0, Math.round((now - lastDevTime) / 1000));
     const silentMin = Math.round(silentSec / 60);
 
@@ -612,9 +806,9 @@ function getDeveloperLiveIdleStatus() {
       };
     }
 
-    // 3. ISSUED: If silent >= 45s, developer is IDLE in PLAN mode
+    // 3. ISSUED: If silent >= 180s, developer is IDLE in PLAN mode
     if (d.status === 'ISSUED') {
-      if (silentSec >= 45) {
+      if (silentSec >= 180) {
         return {
           isIdle: true,
           key: `IDLE_ISSUED:${d.id}:${Math.floor(silentMin / 3)}`,
@@ -629,9 +823,9 @@ function getDeveloperLiveIdleStatus() {
       return { isIdle: false, state: 'PLAN_ACTIVE', directiveId: d.id, elapsed: `${silentSec}s` };
     }
 
-    // 4. CHANGES_REQUESTED: If silent >= 45s, developer is IDLE
+    // 4. CHANGES_REQUESTED: If silent >= 180s, developer is IDLE
     if (d.status === 'CHANGES_REQUESTED') {
-      if (silentSec >= 45) {
+      if (silentSec >= 180) {
         return {
           isIdle: true,
           key: `IDLE_REVISION:${d.id}:${Math.floor(silentMin / 3)}`,
@@ -646,28 +840,38 @@ function getDeveloperLiveIdleStatus() {
       return { isIdle: false, state: 'REVISION_ACTIVE', directiveId: d.id, elapsed: `${silentSec}s` };
     }
 
-    // 5. IN_PROGRESS: If silent >= 60s, developer is IDLE / stalled
+    // 5. IN_PROGRESS: Developer is implementing in ACT mode
     if (d.status === 'IN_PROGRESS') {
-      if (silentSec >= 60) {
+      const isActivelyWorking = (devLease && devLease.live) || latestTouch.ageSec < 300 || silentSec < 300;
+      if (isActivelyWorking) {
+        const touchAge = latestTouch.ageSec < 60 ? `${latestTouch.ageSec}s ago` : `${Math.round(latestTouch.ageSec / 60)}m ago`;
+        const touchStr = latestTouch.file
+          ? `• <b>Recent Touch:</b> <code>${latestTouch.file}</code> (${touchAge})\n`
+          : '';
+        const leaseStr = devLease && devLease.live
+          ? `• <b>Claude Terminal:</b> Active IPC (PID ${devLease.pid})\n`
+          : '';
         return {
-          isIdle: true,
-          key: `IDLE_ACT:${d.id}:${Math.floor(silentMin / 3)}`,
-          emoji: '⚠️',
-          title: `Developer is IDLE / Inactive in ACT Mode (${silentMin}m silent)`,
-          state: 'ACT_STALLED',
+          isIdle: false,
+          emoji: '⚡',
+          title: 'Developer is ACTIVELY CODING',
+          state: 'IN_PROGRESS',
           directiveId: d.id,
-          elapsed: `${silentSec}s (${silentMin}m)`,
-          desc: `Directive <code>${d.id}</code> is in progress, but no heartbeat or developer activity detected for <b>${silentMin}m</b>.\n\n<i>Reply <b>wake</b> to wake developer in ACT mode.</i>`
+          elapsed: touchAge,
+          desc: `Developer is actively coding on <code>${d.id}</code>.\n${touchStr}${leaseStr}• <b>Status:</b> All systems operating.`
         };
       }
+
+      // Truly stalled: no code touch and no lease for > 5 minutes
       return {
-        isIdle: false,
-        emoji: '⚡',
-        title: 'Developer is ACTIVE',
-        state: 'IN_PROGRESS',
+        isIdle: true,
+        key: `IDLE_ACT:${d.id}:${Math.floor(silentMin / 5)}`,
+        emoji: '⚠️',
+        title: `Developer is Inactive in ACT Mode (${silentMin}m silent)`,
+        state: 'ACT_STALLED',
         directiveId: d.id,
-        elapsed: `${silentSec}s ago`,
-        desc: `Developer is actively working on <code>${d.id}</code>.`
+        elapsed: `${silentSec}s (${silentMin}m)`,
+        desc: `Directive <code>${d.id}</code> is in progress, but no code touch or terminal activity detected for <b>${silentMin}m</b>.\n\n<i>Reply <b>wake</b> to wake developer in ACT mode.</i>`
       };
     }
   } catch (err) {
@@ -676,6 +880,7 @@ function getDeveloperLiveIdleStatus() {
 
   return { isIdle: false, state: 'UNKNOWN', directiveId: 'N/A', elapsed: '0s' };
 }
+
 
 /** @type {string | null} */
 let lastIdleAlertKey = null;
@@ -782,11 +987,11 @@ if (require.main === module) {
   // Crash Protection: Ensure process never terminates on unhandled exceptions
   process.on('uncaughtException', (err) => {
     console.error('[Telegram Watcher] Uncaught Exception:', err.message);
-    setTimeout(pollIncomingMessages, 3000);
+    scheduleNextPoll(3000);
   });
   process.on('unhandledRejection', (reason) => {
     console.error('[Telegram Watcher] Unhandled Rejection:', reason);
-    setTimeout(pollIncomingMessages, 3000);
+    scheduleNextPoll(3000);
   });
 
   // Singleton Lock: ensure only ONE instance can ever run

@@ -36,6 +36,9 @@ const PortfolioBuilderPage = lazy(() => import('@/pages/portfolio/builder').then
 const EmployerPortalPage = lazy(() => import('@/pages/employer/portal').then((m) => ({ default: m.EmployerPortalPage })));
 const EnterpriseConsolePage = lazy(() => import('@/pages/enterprise/console').then((m) => ({ default: m.EnterpriseConsolePage })));
 const MessagesPage = lazy(() => import('@/pages/dashboard/messages').then((m) => ({ default: m.MessagesPage })));
+const FavouritesPage = lazy(() => import('@/pages/dashboard/favourites').then((m) => ({ default: m.FavouritesPage })));
+const NotificationsPage = lazy(() => import('@/pages/dashboard/notifications').then((m) => ({ default: m.NotificationsPage })));
+const SupportPage = lazy(() => import('@/pages/dashboard/support').then((m) => ({ default: m.SupportPage })));
 const SharedResumePage = lazy(() => import('@/pages/shared/resume-view').then((m) => ({ default: m.SharedResumePage })));
 const BlogEditorPage = lazy(() => import('@/pages/blog/editor').then((m) => ({ default: m.BlogEditorPage })));
 const CoverLetterBuilderPage = lazy(() => import('@/pages/dashboard/cover-letter-builder').then((m) => ({ default: m.CoverLetterBuilderPage })));
@@ -149,6 +152,18 @@ export function AppRouter() {
             <Route
               path="/dashboard/messages"
               element={<RequireAuth><AppShell><MessagesPage /></AppShell></RequireAuth>}
+            />
+            <Route
+              path="/dashboard/favourites"
+              element={<RequireAuth><AppShell><FavouritesPage /></AppShell></RequireAuth>}
+            />
+            <Route
+              path="/dashboard/notifications"
+              element={<RequireAuth><AppShell><NotificationsPage /></AppShell></RequireAuth>}
+            />
+            <Route
+              path="/dashboard/support"
+              element={<RequireAuth><AppShell><SupportPage /></AppShell></RequireAuth>}
             />
             <Route
               path="/dashboard/settings/*"

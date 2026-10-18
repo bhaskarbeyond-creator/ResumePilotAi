@@ -29,128 +29,60 @@ import {
   X,
   Sparkles,
 } from 'lucide-react';
-
-interface OrgMember {
-  id: string;
-  name: string;
-  email: string;
-  role: 'Owner' | 'Admin' | 'Reviewer' | 'Member';
-  twoFactorEnabled: boolean;
-  lastActive: string;
-}
-
-interface AuditEvent {
-  id: string;
-  actor: string;
-  action: string;
-  target: string;
-  ip: string;
-  timestamp: string;
-}
-
-const INITIAL_MEMBERS: OrgMember[] = [
-  {
-    id: 'mem-1',
-    name: 'Sarah Connor',
-    email: 's.connor@cyberdyne.org',
-    role: 'Owner',
-    twoFactorEnabled: true,
-    lastActive: 'Just now',
-  },
-  {
-    id: 'mem-2',
-    name: 'Miles Dyson',
-    email: 'm.dyson@cyberdyne.org',
-    role: 'Admin',
-    twoFactorEnabled: true,
-    lastActive: '25 mins ago',
-  },
-  {
-    id: 'mem-3',
-    name: 'Kyle Reese',
-    email: 'k.reese@cyberdyne.org',
-    role: 'Reviewer',
-    twoFactorEnabled: true,
-    lastActive: '3 hours ago',
-  },
-  {
-    id: 'mem-4',
-    name: 'John Connor',
-    email: 'j.connor@cyberdyne.org',
-    role: 'Member',
-    twoFactorEnabled: false,
-    lastActive: 'Yesterday',
-  },
-];
-
-const INITIAL_AUDIT_LOGS: AuditEvent[] = [
-  {
-    id: 'aud-1',
-    actor: 'Sarah Connor',
-    action: 'sso.configured',
-    target: 'Okta SAML 2.0 Identity Provider',
-    ip: '192.0.2.45',
-    timestamp: 'Oct 17, 2026 21:40',
-  },
-  {
-    id: 'aud-2',
-    actor: 'Miles Dyson',
-    action: 'member.role_updated',
-    target: 'Kyle Reese → Reviewer',
-    ip: '198.51.100.12',
-    timestamp: 'Oct 17, 2026 19:15',
-  },
-  {
-    id: 'aud-3',
-    actor: 'Kyle Reese',
-    action: 'candidate.exported_dox',
-    target: 'Resume Candidate ID #8491',
-    ip: '203.0.113.88',
-    timestamp: 'Oct 17, 2026 18:02',
-  },
-  {
-    id: 'aud-4',
-    actor: 'Sarah Connor',
-    action: 'ai_governance.quota_expanded',
-    target: '+250,000 AI Tokens',
-    ip: '192.0.2.45',
-    timestamp: 'Oct 16, 2026 14:30',
-  },
-];
+import {
+  useOrgMembers,
+  useAuditLogs,
+  useInviteMember,
+  useRemoveMember,
+  useUpdateSSO,
+  type OrgMember,
+  type AuditEvent,
+} from '@/hooks/use-api-hooks';
 
 export function EnterpriseConsolePage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'members' | 'security' | 'audit'>('overview');
-  const [members, setMembers] = useState<OrgMember[]>(INITIAL_MEMBERS);
-  const [auditLogs] = useState<AuditEvent[]>(INITIAL_AUDIT_LOGS);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteName, setInviteName] = useState('');
   const [inviteRole, setInviteRole] = useState<OrgMember['role']>('Member');
   const [memberSearch, setMemberSearch] = useState('');
-
-  // SSO Settings State
   const [ssoEnabled, setSsoEnabled] = useState(true);
   const [enforce2FA, setEnforce2FA] = useState(true);
-  const [domainVerified] = useState(true);
 
-  const handleInvite = (e: React.FormEvent) => {
+  // Tenant ID - in real app would come from auth context or URL
+  const tenantId = 'cyberdyne-systems';
+
+  // Live API hooks
+  const { data: members = [], isLoading: membersLoading, error: membersError, refetch: refetchMembers } = useOrgMembers(tenantId);
+  const { data: auditLogs = [], isLoading: auditLoading, error: auditError } = useAuditLogs(tenantId);
+  const inviteMutation = useInviteMember(tenantId);
+  const removeMutation = useRemoveMember(tenantId);
+  const ssoMutation = useUpdateSSO(tenantId);
+
+  const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteEmail.trim()) return;
 
-    const newMember: OrgMember = {
-      id: `mem-${Date.now()}`,
+    await inviteMutation.mutateAsync({
       name: inviteName || inviteEmail.split('@')[0],
       email: inviteEmail,
       role: inviteRole,
-      twoFactorEnabled: false,
-      lastActive: 'Invited (Pending)',
-    };
+    });
 
-    setMembers([...members, newMember]);
     setShowInviteModal(false);
     setInviteEmail('');
     setInviteName('');
     setInviteRole('Member');
+    refetchMembers();
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    await removeMutation.mutateAsync(memberId);
+    refetchMembers();
+  };
+
+  const handleSSOChange = async (config: { ssoEnabled: boolean; enforce2FA: boolean }) => {
+    await ssoMutation.mutateAsync(config);
   };
 
   const filteredMembers = members.filter(
@@ -159,6 +91,9 @@ export function EnterpriseConsolePage() {
       m.email.toLowerCase().includes(memberSearch.toLowerCase()) ||
       m.role.toLowerCase().includes(memberSearch.toLowerCase())
   );
+
+  const isLoading = membersLoading || auditLoading;
+  const hasError = membersError || auditError;
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-16">
@@ -184,6 +119,7 @@ export function EnterpriseConsolePage() {
             size="sm"
             onClick={() => setShowInviteModal(true)}
             className="text-xs font-semibold gap-1.5"
+            disabled={inviteMutation.isPending}
           >
             <UserPlus className="size-3.5" />
             Invite Member
@@ -191,11 +127,19 @@ export function EnterpriseConsolePage() {
         </div>
       </div>
 
+      {/* ─── Error State ─── */}
+      {hasError && (
+        <div className="flex items-center gap-2 rounded-lg border border-error-200 bg-error-50 p-3 text-sm text-error-700" role="alert">
+          <AlertCircle className="size-4 shrink-0" />
+          Failed to load enterprise data. Please check your connection and try again.
+        </div>
+      )}
+
       {/* ─── Tabs ─── */}
       <div className="flex items-center gap-1 border-b border-edge overflow-x-auto pb-px">
         {[
           { id: 'overview', label: 'Organization Overview', icon: Building2 },
-          { id: 'members', label: `Team Members (${members.length})`, icon: Users },
+          { id: 'members', label: `Team Members (${isLoading ? '—' : members.length})`, icon: Users },
           { id: 'security', label: 'SSO & Security', icon: ShieldCheck },
           { id: 'audit', label: 'Audit Log & Governance', icon: Activity },
         ].map((tab) => {
@@ -222,7 +166,8 @@ export function EnterpriseConsolePage() {
 
       {/* ─── TAB 1: Overview ─── */}
       {activeTab === 'overview' && (
-        <div className="space-y-6">
+        <div className="space-y-6" role="region" aria-labelledby="overview-heading">
+          <h2 id="overview-heading" className="sr-only">Organization Overview</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Card className="border-edge shadow-sm">
               <CardContent className="p-4 space-y-2">
@@ -230,14 +175,14 @@ export function EnterpriseConsolePage() {
                   <span className="text-xs text-ink-muted">Seats Allocated</span>
                   <Users className="size-4 text-accent" />
                 </div>
-                <div className="text-2xl font-bold text-ink">{members.length} / 50</div>
+                <div className="text-2xl font-bold text-ink">{isLoading ? '—' : members.length} / 50</div>
                 <div className="w-full bg-canvas-soft rounded-full h-1.5 overflow-hidden">
                   <div
                     className="bg-accent h-1.5 rounded-full"
-                    style={{ width: `${(members.length / 50) * 100}%` }}
+                    style={{ width: isLoading ? 0 : `${(members.length / 50) * 100}%` }}
                   />
                 </div>
-                <p className="text-[11px] text-ink-muted">46 seats remaining in active pool</p>
+                <p className="text-[11px] text-ink-muted">{isLoading ? 'Loading…' : `${50 - members.length} seats remaining in active pool`}</p>
               </CardContent>
             </Card>
 
@@ -286,7 +231,7 @@ export function EnterpriseConsolePage() {
                     <div className="text-[11px] text-ink-muted">DNS TXT record verified on Oct 10, 2026</div>
                   </div>
                 </div>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700">
                   <CheckCircle2 className="size-3" />
                   Verified
                 </span>
@@ -298,7 +243,8 @@ export function EnterpriseConsolePage() {
 
       {/* ─── TAB 2: Team Members & RBAC ─── */}
       {activeTab === 'members' && (
-        <div className="space-y-4">
+        <div className="space-y-4" role="region" aria-labelledby="members-heading">
+          <h2 id="members-heading" className="sr-only">Team Members & RBAC</h2>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="relative max-w-sm w-full">
               <Search className="size-4 text-ink-muted absolute left-3 top-1/2 -translate-y-1/2" />
@@ -313,80 +259,127 @@ export function EnterpriseConsolePage() {
               size="sm"
               onClick={() => setShowInviteModal(true)}
               className="text-xs gap-1.5 self-end sm:self-auto"
+              disabled={inviteMutation.isPending}
             >
               <Plus className="size-3.5" />
               Add Team Member
             </Button>
           </div>
 
-          <div className="border border-edge rounded-xl bg-surface overflow-hidden shadow-sm">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="border-b border-edge bg-canvas-soft/70">
-                  <th className="p-3.5 font-semibold text-ink">Member</th>
-                  <th className="p-3.5 font-semibold text-ink">Role</th>
-                  <th className="p-3.5 font-semibold text-ink text-center">2FA Status</th>
-                  <th className="p-3.5 font-semibold text-ink">Last Active</th>
-                  <th className="p-3.5 font-semibold text-ink text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-edge/60">
-                {filteredMembers.map((m) => (
-                  <tr key={m.id} className="hover:bg-canvas-soft/20 transition-colors">
-                    <td className="p-3.5">
-                      <div className="font-bold text-ink">{m.name}</div>
-                      <div className="text-[11px] text-ink-muted">{m.email}</div>
-                    </td>
-                    <td className="p-3.5">
-                      <span
-                        className={cn(
-                          'inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border',
-                          m.role === 'Owner'
-                            ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
-                            : m.role === 'Admin'
-                            ? 'bg-accent-soft text-accent border-accent/20'
-                            : 'bg-canvas-soft text-ink border-edge'
-                        )}
-                      >
-                        {m.role}
-                      </span>
-                    </td>
-                    <td className="p-3.5 text-center">
-                      {m.twoFactorEnabled ? (
-                        <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium text-[11px]">
-                          <ShieldCheck className="size-3.5" />
-                          Enforced
-                        </span>
-                      ) : (
-                        <span className="text-amber-600 dark:text-amber-400 font-medium text-[11px]">
-                          Pending Setup
-                        </span>
-                      )}
-                    </td>
-                    <td className="p-3.5 text-ink-muted text-[11px]">{m.lastActive}</td>
-                    <td className="p-3.5 text-right">
-                      {m.role !== 'Owner' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 text-xs text-ink-muted hover:text-red-500"
-                          onClick={() => setMembers(members.filter((x) => x.id !== m.id))}
-                        >
-                          Remove
-                        </Button>
-                      )}
-                    </td>
+          {isLoading && members.length === 0 ? (
+            <div className="border border-edge rounded-xl bg-surface overflow-hidden shadow-sm">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-edge bg-canvas-soft/70">
+                    <th className="p-3.5 font-semibold text-ink">Member</th>
+                    <th className="p-3.5 font-semibold text-ink">Role</th>
+                    <th className="p-3.5 font-semibold text-ink text-center">2FA Status</th>
+                    <th className="p-3.5 font-semibold text-ink">Last Active</th>
+                    <th className="p-3.5 font-semibold text-ink text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <tr key={i} className="border-b border-edge/60">
+                      <td className="p-3.5"><div className="h-4 bg-neutral-200 rounded w-3/4 animate-pulse" /></td>
+                      <td className="p-3.5"><div className="h-4 bg-neutral-200 rounded w-1/2 animate-pulse" /></td>
+                      <td className="p-3.5 text-center"><div className="h-4 bg-neutral-200 rounded w-1/3 animate-pulse mx-auto" /></td>
+                      <td className="p-3.5"><div className="h-4 bg-neutral-200 rounded w-1/3 animate-pulse" /></td>
+                      <td className="p-3.5 text-right"><div className="h-4 bg-neutral-200 rounded w-1/4 animate-pulse ml-auto" /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : filteredMembers.length === 0 ? (
+            <div className="border border-edge rounded-xl bg-surface p-8 text-center">
+              <Users className="size-12 text-ink-muted mx-auto mb-3" />
+              <p className="text-sm text-ink-muted">
+                {memberSearch ? 'No members match your search.' : 'No team members found. Invite members to start building your organization.'}
+              </p>
+              {!memberSearch && (
+                <Button
+                  size="sm"
+                  onClick={() => setShowInviteModal(true)}
+                  className="mt-3 text-xs gap-1.5"
+                >
+                  <UserPlus className="size-3.5" />
+                  Invite First Member
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="border border-edge rounded-xl bg-surface overflow-hidden shadow-sm">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-edge bg-canvas-soft/70">
+                    <th className="p-3.5 font-semibold text-ink">Member</th>
+                    <th className="p-3.5 font-semibold text-ink">Role</th>
+                    <th className="p-3.5 font-semibold text-ink text-center">2FA Status</th>
+                    <th className="p-3.5 font-semibold text-ink">Last Active</th>
+                    <th className="p-3.5 font-semibold text-ink text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-edge/60">
+                  {filteredMembers.map((m) => (
+                    <tr key={m.id} className="hover:bg-canvas-soft/20 transition-colors">
+                      <td className="p-3.5">
+                        <div className="font-bold text-ink">{m.name}</div>
+                        <div className="text-[11px] text-ink-muted">{m.email}</div>
+                      </td>
+                      <td className="p-3.5">
+                        <span
+                          className={cn(
+                            'inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border',
+                            m.role === 'Owner'
+                              ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
+                              : m.role === 'Admin'
+                              ? 'bg-accent-soft text-accent border-accent/20'
+                              : 'bg-canvas-soft text-ink border-edge'
+                          )}
+                        >
+                          {m.role}
+                        </span>
+                      </td>
+                      <td className="p-3.5 text-center">
+                        {m.twoFactorEnabled ? (
+                          <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium text-[11px]">
+                            <ShieldCheck className="size-3.5" />
+                            Enforced
+                          </span>
+                        ) : (
+                          <span className="text-amber-600 dark:text-amber-400 font-medium text-[11px]">
+                            Pending Setup
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-3.5 text-ink-muted text-[11px]">{m.lastActive}</td>
+                      <td className="p-3.5 text-right">
+                        {m.role !== 'Owner' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs text-ink-muted hover:text-red-500"
+                            onClick={() => handleRemoveMember(m.id)}
+                            disabled={removeMutation.isPending}
+                          >
+                            Remove
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
       {/* ─── TAB 3: SSO & Security ─── */}
       {activeTab === 'security' && (
-        <div className="space-y-6">
+        <div className="space-y-6" role="region" aria-labelledby="security-heading">
+          <h2 id="security-heading" className="sr-only">SSO & Security</h2>
           <Card className="border-edge shadow-sm">
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
@@ -406,7 +399,7 @@ export function EnterpriseConsolePage() {
                 <input
                   type="checkbox"
                   checked={ssoEnabled}
-                  onChange={(e) => setSsoEnabled(e.target.checked)}
+                  onChange={(e) => handleSSOChange({ ssoEnabled: e.target.checked, enforce2FA })}
                   className="size-4 text-accent rounded focus:ring-accent"
                 />
               </div>
@@ -448,7 +441,7 @@ export function EnterpriseConsolePage() {
                 <input
                   type="checkbox"
                   checked={enforce2FA}
-                  onChange={(e) => setEnforce2FA(e.target.checked)}
+                  onChange={(e) => handleSSOChange({ ssoEnabled, enforce2FA: e.target.checked })}
                   className="size-4 text-accent rounded focus:ring-accent"
                 />
               </div>
@@ -459,7 +452,8 @@ export function EnterpriseConsolePage() {
 
       {/* ─── TAB 4: Audit Log ─── */}
       {activeTab === 'audit' && (
-        <div className="space-y-4">
+        <div className="space-y-4" role="region" aria-labelledby="audit-heading">
+          <h2 id="audit-heading" className="sr-only">Audit Log & Governance</h2>
           <div className="flex items-center justify-between">
             <p className="text-xs text-ink-muted">
               Tamper-evident log of all administrative actions and security events.
@@ -470,51 +464,84 @@ export function EnterpriseConsolePage() {
             </Button>
           </div>
 
-          <div className="border border-edge rounded-xl bg-surface overflow-hidden shadow-sm">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="border-b border-edge bg-canvas-soft/70">
-                  <th className="p-3.5 font-semibold text-ink">Timestamp</th>
-                  <th className="p-3.5 font-semibold text-ink">Actor</th>
-                  <th className="p-3.5 font-semibold text-ink">Action</th>
-                  <th className="p-3.5 font-semibold text-ink">Target / Resource</th>
-                  <th className="p-3.5 font-semibold text-ink text-right">Origin IP</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-edge/60">
-                {auditLogs.map((log) => (
-                  <tr key={log.id} className="hover:bg-canvas-soft/20 transition-colors">
-                    <td className="p-3.5 font-mono text-ink-muted text-[11px]">{log.timestamp}</td>
-                    <td className="p-3.5 font-bold text-ink">{log.actor}</td>
-                    <td className="p-3.5">
-                      <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-canvas-soft border border-edge text-ink">
-                        {log.action}
-                      </span>
-                    </td>
-                    <td className="p-3.5 text-ink-muted">{log.target}</td>
-                    <td className="p-3.5 text-right font-mono text-ink-muted text-[11px]">{log.ip}</td>
+          {isLoading && auditLogs.length === 0 ? (
+            <div className="border border-edge rounded-xl bg-surface overflow-hidden shadow-sm">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-edge bg-canvas-soft/70">
+                    <th className="p-3.5 font-semibold text-ink">Timestamp</th>
+                    <th className="p-3.5 font-semibold text-ink">Actor</th>
+                    <th className="p-3.5 font-semibold text-ink">Action</th>
+                    <th className="p-3.5 font-semibold text-ink">Target / Resource</th>
+                    <th className="p-3.5 font-semibold text-ink text-right">Origin IP</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <tr key={i} className="border-b border-edge/60">
+                      <td className="p-3.5"><div className="h-4 bg-neutral-200 rounded w-1/2 animate-pulse" /></td>
+                      <td className="p-3.5"><div className="h-4 bg-neutral-200 rounded w-1/3 animate-pulse" /></td>
+                      <td className="p-3.5"><div className="h-4 bg-neutral-200 rounded w-1/2 animate-pulse" /></td>
+                      <td className="p-3.5"><div className="h-4 bg-neutral-200 rounded w-2/3 animate-pulse" /></td>
+                      <td className="p-3.5 text-right"><div className="h-4 bg-neutral-200 rounded w-1/3 animate-pulse ml-auto" /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : auditLogs.length === 0 ? (
+            <div className="border border-edge rounded-xl bg-surface p-8 text-center">
+              <Activity className="size-12 text-ink-muted mx-auto mb-3" />
+              <p className="text-sm text-ink-muted">No audit events recorded yet.</p>
+            </div>
+          ) : (
+            <div className="border border-edge rounded-xl bg-surface overflow-hidden shadow-sm">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-edge bg-canvas-soft/70">
+                    <th className="p-3.5 font-semibold text-ink">Timestamp</th>
+                    <th className="p-3.5 font-semibold text-ink">Actor</th>
+                    <th className="p-3.5 font-semibold text-ink">Action</th>
+                    <th className="p-3.5 font-semibold text-ink">Target / Resource</th>
+                    <th className="p-3.5 font-semibold text-ink text-right">Origin IP</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-edge/60">
+                  {auditLogs.map((log) => (
+                    <tr key={log.id} className="hover:bg-canvas-soft/20 transition-colors">
+                      <td className="p-3.5 font-mono text-ink-muted text-[11px]">{log.timestamp}</td>
+                      <td className="p-3.5 font-bold text-ink">{log.actor}</td>
+                      <td className="p-3.5">
+                        <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-canvas-soft border border-edge text-ink">
+                          {log.action}
+                        </span>
+                      </td>
+                      <td className="p-3.5 text-ink-muted">{log.target}</td>
+                      <td className="p-3.5 text-right font-mono text-ink-muted text-[11px]">{log.ip}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
       {/* ─── Invite Member Modal ─── */}
       {showInviteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs" role="dialog" aria-modal="true" aria-labelledby="invite-member-title">
           <div className="bg-surface border border-edge rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 relative animate-in fade-in zoom-in-95">
             <button
               type="button"
               onClick={() => setShowInviteModal(false)}
               className="absolute top-4 right-4 text-ink-muted hover:text-ink transition-colors"
+              aria-label="Close invite modal"
             >
               <X className="size-5" />
             </button>
 
             <div>
-              <h3 className="text-base font-bold text-ink">Invite Team Member</h3>
+              <h3 id="invite-member-title" className="text-base font-bold text-ink">Invite Team Member</h3>
               <p className="text-xs text-ink-muted">
                 Send an invitation to join your enterprise organization workspace.
               </p>
@@ -566,8 +593,8 @@ export function EnterpriseConsolePage() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" size="sm" className="text-xs font-semibold">
-                  Send Invitation
+                <Button type="submit" size="sm" className="text-xs font-semibold" disabled={inviteMutation.isPending}>
+                  {inviteMutation.isPending ? 'Sending…' : 'Send Invitation'}
                 </Button>
               </div>
             </form>
@@ -577,3 +604,6 @@ export function EnterpriseConsolePage() {
     </div>
   );
 }
+
+// Import AlertCircle for error state
+import { AlertCircle } from 'lucide-react';

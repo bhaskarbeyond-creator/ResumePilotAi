@@ -1,0 +1,20 @@
+{
+  "goal": "100% Autonomous UI/UX Parity and Modernization of 4 Dashboards and Public Website with Zero Mock Data and SWOT Verification",
+  "definitionOfDone": [
+    {
+      "id": "frontend_build",
+      "kind": "command_exit_zero",
+      "command": "npm --prefix frontend run build"
+    },
+    {
+      "id": "all_directives_frozen",
+      "kind": "all_directives_frozen"
+    }
+  ],
+  "status": "IN_PROGRESS",
+  "createdAt": "2026-10-18T06:20:44.029Z",
+  "updatedAt": "2026-10-18T06:20:44.029Z",
+  "lastDirectorDecisionAt": null,
+  "lastDirectorDirectiveTitles": [],
+  "consecutiveDirectorFailures": 0
+}
