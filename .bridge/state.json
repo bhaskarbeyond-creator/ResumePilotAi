@@ -1,16 +1,16 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-18T21:03:58.965Z",
-  "eventCount": 4030,
+  "updatedAt": "2026-10-18T21:04:27.591Z",
+  "eventCount": 4037,
   "activeDirectiveId": "DIR-006",
   "activeDirectiveTitle": "Surface 5 Modernization: Complete 24-Module Admin Console, In-App Blog Editor, Maintenance Controller & AI Provider Orchestration",
-  "activeDirectiveStatus": "PLAN_SUBMITTED",
-  "awaitingHuman": true,
-  "awaitingHumanReason": "Awaiting Lead plan review (human gate)",
-  "awaitingHumanSince": "2026-10-18T21:03:58.277Z",
-  "stallDeadline": null,
-  "unreadForLead": 18,
-  "unreadForDev": 81,
+  "activeDirectiveStatus": "CHANGES_REQUESTED",
+  "awaitingHuman": false,
+  "awaitingHumanReason": null,
+  "awaitingHumanSince": null,
+  "stallDeadline": "2026-10-18T20:31:44.876Z",
+  "unreadForLead": 19,
+  "unreadForDev": 87,
   "pendingBlockers": 0,
   "latestHeartbeat": {
     "timestamp": "2026-10-18T20:31:44.876Z",
@@ -19,7 +19,7 @@
   },
   "integrity": {
     "ok": true,
-    "checked": 4030,
+    "checked": 4037,
     "legacy": 0,
     "bad": 0
   }
