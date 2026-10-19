@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-19T04:58:05.498Z",
-  "seq": 4061,
-  "id": "evt_mvesa0hz_065a168a84f0",
-  "type": "WAKE_LEAD_REQUESTED",
-  "title": "[WAKE LEAD] DIR-007 [Status: PLAN_SUBMITTED]",
+  "timestamp": "2026-10-19T05:13:16.051Z",
+  "seq": 4066,
+  "id": "evt_mvestj2h_c0c8e0ddf94e",
+  "type": "EVIDENCE_SUBMITTED",
+  "title": "[Evidence] DIR-007: Surface 2 Candidate Parity: Restore Visual Template Previews, Interactive PreviewModal, ShareModal, Rich Text Formatting and ATS Resume Selection",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-007",
-  "summary": "Plan approved. Starting ACT implementation: Phase 2 - Cuba PreviewModal creation and wiring."
+  "summary": "DIR-007 Surface 2 Candidate Parity Complete: (1) Fixed dead Preview button in resume-builder.tsx and mounted full-fidelity Cuba A4 PreviewModal with zoom and export triggers. (2) Ported all 51 template preview JPGs to /templates/ and built rich visual template gallery in Step 6 with category filtering and search. (3) Enhanced /dashboard/resumes with live template thumbnails, Cuba cards, PreviewModal, and accessible ShareModal with social sharing. (4) Added rich text and bullet formatting toolbar with power action verbs to experience and summary inputs. (5) Integrated candidate saved resume selector and deterministic ATS scoring in ats-score.tsx. (6) Passed tsc -b with 0 TypeScript errors and compiled Vite build in 1.11s (<3.0s budget). (7) Verified live on https://ime365.local/ via Playwright."
 }

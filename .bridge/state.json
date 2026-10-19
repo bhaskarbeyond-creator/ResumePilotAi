@@ -1,16 +1,16 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-19T05:01:52.170Z",
-  "eventCount": 4064,
+  "updatedAt": "2026-10-19T05:13:23.324Z",
+  "eventCount": 4066,
   "activeDirectiveId": "DIR-007",
   "activeDirectiveTitle": "Surface 2 Candidate Parity: Restore Visual Template Previews, Interactive PreviewModal, ShareModal, Rich Text Formatting and ATS Resume Selection",
-  "activeDirectiveStatus": "CHANGES_REQUESTED",
-  "awaitingHuman": false,
-  "awaitingHumanReason": null,
-  "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-18T20:31:44.876Z",
-  "unreadForLead": 26,
-  "unreadForDev": 107,
+  "activeDirectiveStatus": "EVIDENCE_SUBMITTED",
+  "awaitingHuman": true,
+  "awaitingHumanReason": "Awaiting Gatekeeper evidence certification (human gate)",
+  "awaitingHumanSince": "2026-10-19T05:13:15.895Z",
+  "stallDeadline": null,
+  "unreadForLead": 27,
+  "unreadForDev": 108,
   "pendingBlockers": 0,
   "latestHeartbeat": {
     "timestamp": "2026-10-18T20:31:44.876Z",
@@ -19,7 +19,7 @@
   },
   "integrity": {
     "ok": true,
-    "checked": 4064,
+    "checked": 4066,
     "legacy": 0,
     "bad": 0
   }
