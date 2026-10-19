@@ -857,10 +857,11 @@ function AcademicFamily(props: FamilyPageProps) {
     <div className="flex min-h-0 flex-1 flex-col px-10">
       <IdentityBlock heading={resume.heading} fullName={fullName} meta={meta} palette={palette} layout={layout} />
       <main className="mx-auto flex w-full max-w-[620px] min-h-0 flex-1 flex-col py-4">
-        <div className="mb-3 flex items-center justify-between text-[9px] uppercase tracking-[0.2em] text-neutral-500">
-          <span>{resume.heading?.location || 'Curriculum Vitae'}</span>
-          <span>{meta.name}</span>
-        </div>
+        {resume.heading?.location ? (
+          <div className="mb-3 text-[9px] uppercase tracking-[0.2em] text-neutral-500">
+            <span>{resume.heading.location}</span>
+          </div>
+        ) : null}
         <div className={DENSITY_GAP[layout.density]}>
           {page.flowItems.map((item) => (
             <FlowItemRenderer key={item.id} item={item} meta={meta} palette={palette} layout={layout} />
@@ -1104,9 +1105,7 @@ function ExecutiveFamily(props: FamilyPageProps) {
       <main className="mx-auto flex w-full max-w-[680px] min-h-0 flex-1 flex-col py-3">
         <FlowList items={page.flowItems} meta={meta} palette={palette} layout={layout} />
       </main>
-      <footer className="shrink-0 border-t border-neutral-200 py-2 text-center text-[8px] uppercase tracking-[0.3em] text-neutral-400">
-        {meta.name}
-      </footer>
+
     </div>
   );
 }

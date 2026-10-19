@@ -946,7 +946,7 @@ export function ResumeBuilderPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={handleSyncProfile}
+            onClick={() => void handleSyncProfile()}
             loading={syncingProfile}
             className="gap-1.5 text-xs text-brand-700 border-brand-200 bg-brand-50/50 hover:bg-brand-100"
             title="Pre-fill with Master Profile data"
@@ -1161,7 +1161,7 @@ export function ResumeBuilderPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleSyncProfile}
+                  onClick={() => void handleSyncProfile()}
                   className="gap-1.5 text-xs text-brand-700 border-brand-200 bg-brand-50/50 hover:bg-brand-100"
                 >
                   <Sparkles className="size-3.5 text-brand-600" />

@@ -145,7 +145,7 @@ export function SmartResumeDocument({
           {/* Master Page Footer */}
           <footer className="page-footer border-t border-neutral-200/60 pt-2 px-8 pb-3 text-[10px] text-neutral-400 flex justify-between items-center shrink-0">
             <span>
-              {fullName} · {meta.name} ({meta.id})
+              {fullName}
             </span>
             <span className="font-medium text-neutral-500">
               Page {page.pageNumber} of {partitionResult.totalPages}
