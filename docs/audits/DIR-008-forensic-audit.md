@@ -308,3 +308,36 @@ Backend suite runs against the in-memory repository (`.env` points at MySQL 127.
 
 * The share dialog is exercised through its extracted state machine and static contracts; **browser interaction evidence is BLOCKED** (no browser binary).
 * Visual verification of the anonymous viewer (print pagination, watermark placement) is likewise BLOCKED; DOM structure and print CSS are asserted statically.
+
+## 7. M4 remediation record — Master CV initialisation, ATS metrics, accessible preview
+
+### 7.1 What changed
+
+| Defect | Resolution |
+| --- | --- |
+| D-03 `handleSyncProfile` read `data.firstname` from a `{ success, user }` payload, so nothing was ever copied | New `frontend/src/lib/master-profile.ts` resolves the revisioned `user.profile` projection (flat row only as a legacy fallback) and maps contact, summary, experience, education, skills, certifications, languages, projects, achievements, references, custom sections and interests into the builder's canonical entry shapes. |
+| D-03 stale/incorrect field names inside mappings | Mappings now match the builder's editor contracts exactly (`language`/`proficiency`, `sectionTitle`, `title`/`relationship`, `issueDate`/`expiryDate`/`credentialUrl`, `githubUrl`/`startDate`/`endDate`, `date`). A field-name drift is what made sections appear saved but render blank. |
+| R-15 overwrite risk | Sync is fill-blank by default and reports `applied`/`preserved`; `preserveExisting: false` is the explicit replace path. An empty Master CV or an already-complete resume never produces a success toast. |
+| D-06 dashboard scored list rows with no draft content under the in-memory repository | `InMemoryRepository.getResumes` now returns the full row (draft content, occupation, timestamps) with ownership metadata stripped, matching the MySQL `SELECT *` projection. The dashboard reports a resume as `Unscored` rather than zero when content is unavailable. |
+| D-07 ATS thresholds and stat strip disagreed with the mandate | New `frontend/src/lib/resume-metrics.ts` with the 80/60 contract (`ready ≥80`, `developing 60–79`, `starting <60`, `unscored`), used by the stat strip, the score pills and the ATS filter. Stat strip is Total / Ready to Apply / Developing / Starting / Unique Templates. |
+| D-08 hard-coded `Alex Morgan` fallback on the dashboard and demo names on the login page | Dashboard reads the authenticated display name and degrades to neutral copy; the QA demo block is compiled out of production builds and carries no fabricated person. |
+| D-10 preview modal accessibility and export semantics | Added `DialogDescription` + `aria-describedby`, labelled zoom controls with a live readout and 50/150 clamps, `role="alert"` errors instead of `alert()`, disabled export/share actions for unsaved drafts, an explicit unsupported-template state, and print/PDF hand-off to the dedicated A4 export route. |
+| D-06-adjacent: `normalizeError` dropped the backend's string `error` message, so 409s surfaced as axios noise | The client now reads `error` as either object or string, and Settings adopts `remoteRevision` on `PROFILE_CONFLICT` while keeping the user's unsaved edits. |
+
+### 7.2 Verification (executed)
+
+| Suite | Command | Result |
+| --- | --- | --- |
+| Master CV mapping/completeness (16 tests) | `node --test tests/dir008-master-profile.test.mjs` | 16/16 PASS |
+| Dashboard metrics + list projection (8 tests) | `node --test tests/dir008-dashboard-metrics.test.mjs` | 8/8 PASS |
+| Preview modal a11y/export contract (7 tests) | `node --test tests/dir008-preview-modal-a11y.test.mjs` | 7/7 PASS |
+| Sharing contract | `node --test tests/dir008-sharing-contract.test.mjs` | 13/13 PASS |
+| Layout engine | `node --test tests/dir008-layout-engine.test.mjs` | 9/9 PASS |
+| Template evidence | `node --test tests/dir008-template-evidence.test.mjs` | 6/6 PASS |
+| Backend share lifecycle | `node --test backend/test/dir008-public-share.test.js` | 7/7 PASS |
+| Backend routes integration | `node --test backend/test/routes.integration.test.js` | 24 pass / 0 fail / 6 skip |
+| Resumes hub UX / export client | `node --test tests/dir110-resumes-hub-ux.test.mjs`, `tests/export-client.test.mjs` | 7/7, 10/10 PASS |
+| TypeScript / production build | `npx tsc --noEmit`, `npx vite build` | exit 0 / built in 1.50 s |
+
+Browser-rendered evidence remains **BLOCKED** (no browser binary in the sandbox). The M4 claims above are
+source-level and unit-level; the preview modal's DOM behaviour is asserted statically, not clicked.

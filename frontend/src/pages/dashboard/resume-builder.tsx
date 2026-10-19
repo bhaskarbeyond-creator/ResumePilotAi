@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { PageSpinner } from '@/components/ui/loading';
 import { get, post, normalizeError } from '@/lib/api-client';
+import { applyMasterProfile, describeMasterSync } from '@/lib/master-profile';
 import { cn } from '@/lib/utils';
 import { PreviewModal } from '@/components/ui/preview-modal';
 import { ShareModal } from '@/components/ui/share-modal';
@@ -648,38 +649,31 @@ export function ResumeBuilderPage() {
     }
   };
 
-  // 1-Click Sync from Master Profile
-  const handleSyncProfile = async () => {
+  // 1-Click Sync from Master CV.
+  //
+  // Reads the canonical, revisioned `profile` projection (not the flat user
+  // row) and maps every section — contact, summary, experience, education,
+  // skills, certifications, languages, projects, achievements, references,
+  // custom sections and interests. Existing answers are preserved unless the
+  // candidate explicitly chooses replace; the status message reports exactly
+  // what happened, including the source revision.
+  const handleSyncProfile = async (options: { replaceExisting?: boolean } = {}) => {
     setSyncingProfile(true);
     try {
       const data = await get<{ user: any }>('/users-data/profile');
-      if (data?.user) {
-        const u = data.user;
-        const nameParts = (u.displayName || u.firstname || '').split(' ');
-        const fName = u.firstname || nameParts[0] || '';
-        const lName = u.lastname || nameParts.slice(1).join(' ') || '';
-
-        setResume((prev) => ({
-          ...prev,
-          heading: {
-            ...prev.heading,
-            firstName: prev.heading.firstName || fName,
-            lastName: prev.heading.lastName || lName,
-            email: prev.heading.email || u.email || '',
-            phone: prev.heading.phone || u.phone || '',
-            location: prev.heading.location || [u.city, u.country].filter(Boolean).join(', ') || '',
-            title: prev.heading.title || u.jobTitle || u.occupation || '',
-            website: prev.heading.website || u.website || '',
-            photo: prev.heading.photo || u.photoUrl || u.avatarUrl || '',
-          },
-          summary: prev.summary || u.bio || '',
-        }));
-        setSyncToast('Master Profile data successfully synced into this resume!');
-        setTimeout(() => setSyncToast(null), 4000);
+      if (!data?.user) {
+        setSyncToast('Your Master CV could not be loaded. Add details in Settings → Master Profile, then retry.');
+        setTimeout(() => setSyncToast(null), 6000);
+        return;
       }
-    } catch {
-      setSyncToast('Could not fetch Master Profile data. Please try again.');
-      setTimeout(() => setSyncToast(null), 4000);
+      const result = applyMasterProfile(data, resume, { preserveExisting: !options.replaceExisting });
+      setResume((prev) => ({ ...prev, ...result.draft, heading: { ...prev.heading, ...result.draft.heading } }));
+      setSyncToast(describeMasterSync(result));
+      setTimeout(() => setSyncToast(null), 7000);
+    } catch (err) {
+      const message = normalizeError(err).message;
+      setSyncToast(`Could not fetch your Master CV: ${message}`);
+      setTimeout(() => setSyncToast(null), 7000);
     } finally {
       setSyncingProfile(false);
     }

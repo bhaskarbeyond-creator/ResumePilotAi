@@ -193,9 +193,27 @@ class InMemoryRepository {
     // Resumes
     // ---------------------------------------------------------------------
     async getResumes(userId) {
-        return Array.from(this._resumes.values()).filter(r => r.userId === userId).map(r => ({
-            id: r.id, title: r.title || '', template: r.template || '', updatedAt: r.updatedAt, revision: r.revision || 1,
-        }));
+        // Projection parity with MySQL `SELECT *` + JSON parsing: the list
+        // surface feeds the dashboard ATS metrics, so it must include the draft
+        // content and the occupation/timestamps the UI reads. Ownership
+        // metadata (userId) is stripped — list rows are per-owner responses.
+        return Array.from(this._resumes.values())
+            .filter(r => r.userId === userId)
+            .sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')))
+            .map(r => {
+                const { userId: _owner, ...rest } = r;
+                return {
+                    ...rest,
+                    id: r.id,
+                    title: r.title || rest.name || 'Untitled Resume',
+                    name: rest.name || r.title || '',
+                    template: r.template || 'Cv1',
+                    occupation: rest.occupation || rest.heading?.title || '',
+                    updatedAt: r.updatedAt || r.updated_at || null,
+                    createdAt: r.createdAt || r.created_at || null,
+                    revision: r.revision || 1,
+                };
+            });
     }
     async getResume(userId, resumeId) {
         const r = this._resumes.get(resumeId);

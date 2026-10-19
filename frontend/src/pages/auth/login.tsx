@@ -534,7 +534,9 @@ export function LoginPage() {
                     )}
                   </div>
 
-                  {/* Quick Demo Access (for preview & QA testing) */}
+                  {/* Quick Demo Access (preview & QA builds only — the server
+                      endpoint 404s in production, so never advertise it there) */}
+                  {!import.meta.env.PROD && (
                   <div className="mt-6 pt-5 border-t border-border">
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted text-center mb-2.5">
                       Instant Demo Access (Local / QA)
@@ -553,7 +555,6 @@ export function LoginPage() {
                               body: JSON.stringify({
                                 email: 'candidate@ime365.com',
                                 password: 'password123',
-                                name: 'Alex Morgan',
                               }),
                             });
                             if (res.ok) {
@@ -564,7 +565,7 @@ export function LoginPage() {
                                 JSON.stringify({
                                   uid: data.uid,
                                   email: data.email,
-                                  displayName: data.displayName || 'Alex Morgan',
+                                  displayName: data.displayName || data.email?.split('@')[0] || 'Candidate',
                                   role: data.role || 'CANDIDATE',
                                   token: data.token,
                                 })
@@ -578,7 +579,7 @@ export function LoginPage() {
                           const demoUser = {
                             uid: 'demo-candidate-1',
                             email: 'candidate@ime365.com',
-                            displayName: 'Alex Morgan',
+                            displayName: 'candidate',
                             role: 'CANDIDATE',
                           };
                           localStorage.setItem('ime_dev_user', JSON.stringify(demoUser));
@@ -600,7 +601,6 @@ export function LoginPage() {
                               body: JSON.stringify({
                                 email: 'admin@ime365.com',
                                 password: 'password123',
-                                name: 'Sarah Administrator',
                               }),
                             });
                             if (res.ok) {
@@ -611,7 +611,7 @@ export function LoginPage() {
                                 JSON.stringify({
                                   uid: data.uid,
                                   email: data.email,
-                                  displayName: data.displayName || 'Sarah Administrator',
+                                  displayName: data.displayName || data.email?.split('@')[0] || 'Administrator',
                                   role: data.role || 'ADMIN',
                                   token: data.token,
                                 })
@@ -625,7 +625,7 @@ export function LoginPage() {
                           const demoAdmin = {
                             uid: 'demo-admin-1',
                             email: 'admin@ime365.com',
-                            displayName: 'Sarah Administrator',
+                            displayName: 'admin',
                             role: 'ADMIN',
                           };
                           localStorage.setItem('ime_dev_user', JSON.stringify(demoAdmin));
@@ -636,6 +636,7 @@ export function LoginPage() {
                       </Button>
                     </div>
                   </div>
+                  )}
                 </>
               )}
             </CardContent>

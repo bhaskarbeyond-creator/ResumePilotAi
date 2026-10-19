@@ -151,7 +151,22 @@ export function SettingsPage() {
       setMessage({ type: 'success', text: 'Profile updated successfully.' });
     } catch (err) {
       const apiErr = normalizeError(err);
-      setMessage({ type: 'error', text: apiErr.message });
+      const details = (apiErr.details || {}) as {
+        remoteRevision?: number;
+        remoteProfile?: UserProfile | null;
+      };
+      // 409 PROFILE_CONFLICT: another tab/device saved first. Keep the user's
+      // in-form edits (never discard typed answers), adopt the authoritative
+      // revision so the next save is accepted, and say exactly what happened.
+      if (apiErr.status === 409 && details.remoteRevision !== undefined) {
+        setRevision(Number(details.remoteRevision));
+        setMessage({
+          type: 'error',
+          text: 'Your Master Profile was changed in another tab or device. Your edits are still in this form — review them and press Save again to apply on top of the latest version.',
+        });
+      } else {
+        setMessage({ type: 'error', text: apiErr.message });
+      }
     } finally {
       setSaving(false);
     }

@@ -15,6 +15,14 @@ import { Input } from '@/components/ui/input';
 import { PageSpinner } from '@/components/ui/loading';
 import { get, post, del, normalizeError } from '@/lib/api-client';
 import { getTemplateMeta } from '@/lib/template-catalog';
+import { describeMasterCompleteness, type MasterProfileCompleteness } from '@/lib/master-profile';
+import {
+  computeResumeMetrics,
+  bucketForScore,
+  bucketTone,
+  ATS_READY_THRESHOLD,
+  ATS_DEVELOPING_THRESHOLD,
+} from '@/lib/resume-metrics';
 import { calculateAtsScore } from '@/lib/atsScore';
 import { PreviewModal } from '@/components/ui/preview-modal';
 import { ShareModal } from '@/components/ui/share-modal';
@@ -55,6 +63,7 @@ import {
   X,
   FileEdit,
   TrendingUp,
+  Gauge,
   Layers,
   ArrowRight,
   ChevronLeft,
@@ -86,6 +95,7 @@ const PAGE_SIZE = 8;
 export function ResumesPage() {
   const navigate = useNavigate();
   const [resumes, setResumes] = useState<Resume[]>([]);
+  const [masterCv, setMasterCv] = useState<MasterProfileCompleteness | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -114,18 +124,22 @@ export function ResumesPage() {
   const [newResumeTitle, setNewResumeTitle] = useState('Senior Software Architect');
   const [newResumeMode, setNewResumeMode] = useState<'profile' | 'blank' | 'template'>('profile');
 
-  // User display name from session
+  // Display name from the session. When it is unknown we say so instead of
+  // inventing a person (the dashboard must never show demo PII).
   const candidateName = useMemo(() => {
     try {
       const stored = localStorage.getItem('ime_dev_user');
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (parsed?.displayName) return parsed.displayName;
+        const display = parsed?.displayName
+          || [parsed?.firstname, parsed?.lastname].filter(Boolean).join(' ')
+          || parsed?.email;
+        if (display) return String(display);
       }
     } catch {
-      // ignore
+      // ignore malformed local session data
     }
-    return 'Alex Morgan';
+    return '';
   }, []);
 
   // Load real resumes from backend
@@ -147,12 +161,30 @@ export function ResumesPage() {
     fetchResumes();
   }, [fetchResumes]);
 
-  // Compute ATS quality score for a given resume
+  // Master CV completeness is read from the same revisioned projection the
+  // builder initialises from. A failure leaves the banner's neutral copy in
+  // place — the dashboard never invents a progress number.
+  useEffect(() => {
+    let cancelled = false;
+    get<{ user?: any }>('/users-data/profile')
+      .then((data) => {
+        if (!cancelled && data?.user) setMasterCv(describeMasterCompleteness(data));
+      })
+      .catch(() => {
+        if (!cancelled) setMasterCv(null);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Compute the real ATS quality score for a resume. List rows include the
+  // draft; if a deployment ever omits it, the resume is reported unscored
+  // rather than scored as zero.
   const getResumeScore = useCallback((resume: Resume): number | null => {
     try {
-      const parsedData = typeof resume.data === 'string'
-        ? JSON.parse(resume.data)
-        : (resume.data || resume);
+      const raw = resume.data !== undefined && resume.data !== null ? resume.data : null;
+      if (raw === null) return null;
+      const parsedData = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (!parsedData || typeof parsedData !== 'object') return null;
       const res = calculateAtsScore(parsedData);
       const score = res?.qualityScore;
       return typeof score === 'number' && Number.isFinite(score) ? Math.round(score) : null;
@@ -161,35 +193,19 @@ export function ResumesPage() {
     }
   }, []);
 
-  // Compute executive metrics for stat cards
+  // Executive metrics derived from real ATS scores (80 / 60 thresholds).
   const stats = useMemo(() => {
-    let scoreSum = 0;
-    let scoredCount = 0;
+    const metrics = computeResumeMetrics(resumes as any, (resume: any) => getResumeScore(resume as Resume));
     let latestDate: Date | null = null;
-
     resumes.forEach((r) => {
-      const s = getResumeScore(r);
-      if (s !== null) {
-        scoreSum += s;
-        scoredCount++;
-      }
       const dateVal = r.updatedAt || r.updated_at || r.createdAt || r.created_at;
-      if (dateVal) {
-        const d = new Date(dateVal);
-        if (!isNaN(d.getTime())) {
-          if (!latestDate || d > latestDate) latestDate = d;
-        }
-      }
+      if (!dateVal) return;
+      const d = new Date(dateVal);
+      if (!Number.isNaN(d.getTime()) && (!latestDate || d > latestDate)) latestDate = d;
     });
-
-    const averageScore = scoredCount > 0 ? Math.round(scoreSum / scoredCount) : 0;
-    const uniqueTemplates = new Set(resumes.map((r) => r.template || 'Cv1')).size;
-
     return {
-      total: resumes.length,
-      averageScore,
-      latestDate: latestDate ? formatDate(latestDate.toISOString()) : 'Today',
-      uniqueTemplates,
+      ...metrics,
+      latestDate: latestDate ? formatDate(latestDate.toISOString()) : '—',
     };
   }, [resumes, getResumeScore]);
 
@@ -223,12 +239,13 @@ export function ResumesPage() {
       const templateMatch = templateFilter === 'all' || r.template === templateFilter;
 
       const score = getResumeScore(r);
+      const bucket = bucketForScore(score);
       const atsMatch =
         atsFilter === 'all' ||
-        (atsFilter === 'ready' && score !== null && score >= 70) ||
-        (atsFilter === 'developing' && score !== null && score >= 40 && score < 70) ||
-        (atsFilter === 'starting' && score !== null && score < 40) ||
-        (atsFilter === 'unscored' && score === null);
+        (atsFilter === 'ready' && bucket === 'ready') ||
+        (atsFilter === 'developing' && bucket === 'developing') ||
+        (atsFilter === 'starting' && bucket === 'starting') ||
+        (atsFilter === 'unscored' && bucket === 'unscored');
 
       return searchMatch && templateMatch && atsMatch;
     });
@@ -641,56 +658,61 @@ export function ResumesPage() {
         </div>
       </div>
 
-      {/* 2. Executive 4-Metric Glassmorphic Stat Strip */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 min-w-0">
-        {/* Metric 1: Total Resumes */}
+      {/* 2. Executive metric strip — real ATS buckets (80 / 60 thresholds) */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 min-w-0">
         <div className="flex flex-col rounded-2xl border border-border bg-surface p-4 shadow-sm transition-all hover:border-brand-300">
           <div className="flex items-center justify-between">
             <div className="flex size-9 items-center justify-center rounded-xl bg-brand-50 border border-brand-200 text-brand-600">
               <FileText className="size-4.5" />
             </div>
-            <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider">TOTAL RESUMES</span>
+            <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider">TOTAL</span>
           </div>
-          <div className="mt-3 text-2xl font-bold tracking-tight text-ink sm:text-3xl">{stats.total}</div>
-          <span className="mt-0.5 text-xs text-ink-muted">Saved in your workspace</span>
+          <div className="mt-3 text-2xl font-bold tracking-tight text-ink sm:text-3xl" data-testid="metric-total">{stats.total}</div>
+          <span className="mt-0.5 text-xs text-ink-muted">Resumes in your workspace</span>
         </div>
 
-        {/* Metric 2: Average ATS Readiness */}
-        <div className="flex flex-col rounded-2xl border border-border bg-surface p-4 shadow-sm transition-all hover:border-emerald-300">
+        <div className="flex flex-col rounded-2xl border border-emerald-200 bg-surface p-4 shadow-sm transition-all hover:border-emerald-300">
           <div className="flex items-center justify-between">
             <div className="flex size-9 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600">
               <TrendingUp className="size-4.5" />
             </div>
-            <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">AVG ATS SCORE</span>
+            <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">READY TO APPLY</span>
           </div>
-          <div className="mt-3 text-2xl font-bold tracking-tight text-emerald-800 sm:text-3xl">
-            {stats.averageScore}/100
-          </div>
-          <span className="mt-0.5 text-xs text-emerald-600/80">Deterministic engine score</span>
+          <div className="mt-3 text-2xl font-bold tracking-tight text-emerald-800 sm:text-3xl" data-testid="metric-ready">{stats.ready}</div>
+          <span className="mt-0.5 text-xs text-emerald-700/80">ATS score {ATS_READY_THRESHOLD}–100</span>
         </div>
 
-        {/* Metric 3: Last Updated */}
-        <div className="flex flex-col rounded-2xl border border-border bg-surface p-4 shadow-sm transition-all hover:border-blue-300">
-          <div className="flex items-center justify-between">
-            <div className="flex size-9 items-center justify-center rounded-xl bg-blue-50 border border-blue-200 text-blue-600">
-              <Clock className="size-4.5" />
-            </div>
-            <span className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">LAST UPDATED</span>
-          </div>
-          <div className="mt-3 text-2xl font-bold tracking-tight text-ink sm:text-3xl">{stats.latestDate}</div>
-          <span className="mt-0.5 text-xs text-ink-muted">Newest resume change</span>
-        </div>
-
-        {/* Metric 4: Template Styles */}
-        <div className="flex flex-col rounded-2xl border border-border bg-surface p-4 shadow-sm transition-all hover:border-amber-300">
+        <div className="flex flex-col rounded-2xl border border-amber-200 bg-surface p-4 shadow-sm transition-all hover:border-amber-300">
           <div className="flex items-center justify-between">
             <div className="flex size-9 items-center justify-center rounded-xl bg-amber-50 border border-amber-200 text-amber-600">
+              <Gauge className="size-4.5" />
+            </div>
+            <span className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">DEVELOPING</span>
+          </div>
+          <div className="mt-3 text-2xl font-bold tracking-tight text-amber-800 sm:text-3xl" data-testid="metric-developing">{stats.developing}</div>
+          <span className="mt-0.5 text-xs text-amber-700/80">ATS score {ATS_DEVELOPING_THRESHOLD}–{ATS_READY_THRESHOLD - 1}</span>
+        </div>
+
+        <div className="flex flex-col rounded-2xl border border-slate-200 bg-surface p-4 shadow-sm transition-all hover:border-slate-300">
+          <div className="flex items-center justify-between">
+            <div className="flex size-9 items-center justify-center rounded-xl bg-slate-50 border border-slate-200 text-slate-600">
+              <Clock className="size-4.5" />
+            </div>
+            <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">STARTING</span>
+          </div>
+          <div className="mt-3 text-2xl font-bold tracking-tight text-slate-700 sm:text-3xl" data-testid="metric-starting">{stats.starting}</div>
+          <span className="mt-0.5 text-xs text-slate-500">ATS score below {ATS_DEVELOPING_THRESHOLD}{stats.unscored > 0 ? ` · ${stats.unscored} unscored` : ''}</span>
+        </div>
+
+        <div className="flex flex-col rounded-2xl border border-border bg-surface p-4 shadow-sm transition-all hover:border-indigo-300">
+          <div className="flex items-center justify-between">
+            <div className="flex size-9 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-600">
               <Layers className="size-4.5" />
             </div>
-            <span className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">TEMPLATE STYLES</span>
+            <span className="text-[11px] font-bold text-indigo-700 uppercase tracking-wider">UNIQUE TEMPLATES</span>
           </div>
-          <div className="mt-3 text-2xl font-bold tracking-tight text-amber-800 sm:text-3xl">{stats.uniqueTemplates}</div>
-          <span className="mt-0.5 text-xs text-amber-600/80">Distinct designs in use</span>
+          <div className="mt-3 text-2xl font-bold tracking-tight text-indigo-800 sm:text-3xl" data-testid="metric-templates">{stats.uniqueTemplates}</div>
+          <span className="mt-0.5 text-xs text-indigo-700/80">Distinct designs in use</span>
         </div>
       </div>
 
@@ -701,10 +723,39 @@ export function ResumesPage() {
             <User className="size-5" />
           </div>
           <div className="min-w-0">
-            <h2 className="text-base font-bold text-ink">Master CV — Master Profile Data</h2>
+            <h2 className="text-base font-bold text-ink flex flex-wrap items-center gap-2">
+              Master CV — Master Profile Data
+              {masterCv && (
+                <span
+                  className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${
+                    masterCv.percent === 100
+                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                      : 'border-amber-200 bg-amber-50 text-amber-800'
+                  }`}
+                  data-testid="master-cv-completeness"
+                >
+                  {masterCv.filled} of {masterCv.total} sections complete
+                </span>
+              )}
+            </h2>
             <p className="mt-0.5 text-xs text-ink-muted">
-              Your resumes are built on the Master Profile Data of <span className="font-semibold text-ink">{candidateName}</span>. Keep it current and every new resume starts complete.
+              {masterCv && masterCv.empty
+                ? <>Your Master CV is empty. Add your details once and every new resume can start complete.</>
+                : candidateName
+                  ? <>Your resumes are built on the Master Profile Data of <span className="font-semibold text-ink">{candidateName}</span>. Keep it current and every new resume starts complete.</>
+                  : <>Your Master Profile Data seeds every new resume. Add your details once and each new resume starts complete.</>}
             </p>
+            {masterCv?.updatedAt && (
+              <p className="mt-0.5 text-[11px] text-ink-muted">
+                Last updated {formatDate(masterCv.updatedAt)}
+                {masterCv.revision !== null ? ` · revision ${masterCv.revision}` : ''}
+              </p>
+            )}
+            {masterCv && !masterCv.empty && masterCv.missing.length > 0 && (
+              <p className="mt-0.5 text-[11px] text-amber-700">
+                Missing: {masterCv.missing.slice(0, 4).join(', ')}{masterCv.missing.length > 4 ? ` +${masterCv.missing.length - 4} more` : ''}
+              </p>
+            )}
           </div>
         </div>
 
@@ -825,8 +876,8 @@ export function ResumesPage() {
                   aria-label="Filter by ATS readiness"
                 >
                   <option value="all">All ATS Scores</option>
-                  <option value="ready">High · 70–100%</option>
-                  <option value="developing">Building · 40–69%</option>
+                  <option value="ready">Ready · {ATS_READY_THRESHOLD}–100</option>
+                  <option value="developing">Developing · {ATS_DEVELOPING_THRESHOLD}–{ATS_READY_THRESHOLD - 1}</option>
                   <option value="starting">Starting · 0–39%</option>
                   <option value="unscored">Unscored</option>
                 </select>
@@ -1057,15 +1108,10 @@ export function ResumesPage() {
                   <span>{dateStr}</span>
                   <span
                     className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border ${
-                      score === null
-                        ? 'border-slate-200 bg-slate-50 text-slate-600'
-                        : score >= 70
-                        ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-                        : score >= 40
-                        ? 'border-amber-300 bg-amber-50 text-amber-700'
-                        : 'border-orange-300 bg-orange-50 text-orange-700'
-                    }`}
-                    title="ATS readiness score"
+                      bucketTone(bucketForScore(score)).border
+                    } ${bucketTone(bucketForScore(score)).bg} ${bucketTone(bucketForScore(score)).text}`}
+                    title={`ATS readiness score — ${bucketTone(bucketForScore(score)).label}`}
+                    data-ats-bucket={bucketForScore(score)}
                   >
                     ATS: {score === null ? '—' : `${score}/100`}
                   </span>
@@ -1239,17 +1285,12 @@ export function ResumesPage() {
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         <span
                           className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold border ${
-                            score === null
-                              ? 'bg-slate-100 text-slate-700 border-slate-200'
-                              : score >= 70
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              : score >= 40
-                              ? 'bg-amber-50 text-amber-700 border-amber-200'
-                              : 'bg-orange-50 text-orange-700 border-orange-200'
-                          }`}
+                            bucketTone(bucketForScore(score)).bg
+                          } ${bucketTone(bucketForScore(score)).text} ${bucketTone(bucketForScore(score)).border}`}
+                          data-ats-bucket={bucketForScore(score)}
                         >
                           <Sparkles className="size-3" />
-                          {score === null ? 'Unscored' : `${score}% ATS Ready`}
+                          {score === null ? 'Unscored' : `${score} · ${bucketTone(bucketForScore(score)).label}`}
                         </span>
                       </td>
 

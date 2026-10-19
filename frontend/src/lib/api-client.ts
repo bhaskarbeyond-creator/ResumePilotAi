@@ -23,12 +23,14 @@ export interface ApiError {
 /** Wrap an unknown error into a consistent ApiError */
 export function normalizeError(error: unknown): ApiError {
   if (axios.isAxiosError(error)) {
-    const axiosError = error as AxiosError<{ error?: { code?: string; message?: string }; message?: string }>;
+    const axiosError = error as AxiosError<{ error?: string | { code?: string; message?: string }; code?: string; message?: string }>;
     const data = axiosError.response?.data;
+    const nested = data?.error && typeof data.error === 'object' ? data.error : undefined;
+    const flatMessage = typeof data?.error === 'string' ? data.error : undefined;
     return {
       status: axiosError.response?.status ?? 0,
-      code: data?.error?.code ?? 'NETWORK_ERROR',
-      message: data?.error?.message ?? data?.message ?? axiosError.message,
+      code: nested?.code ?? data?.code ?? 'NETWORK_ERROR',
+      message: nested?.message ?? flatMessage ?? data?.message ?? axiosError.message,
       details: data,
     };
   }

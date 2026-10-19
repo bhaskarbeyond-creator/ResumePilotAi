@@ -6,10 +6,11 @@
  * Built on Radix UI Dialog with Cuba M3 Executive Glassmorphic styling.
  */
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -31,7 +32,7 @@ import {
   Printer,
   Sparkles,
 } from 'lucide-react';
-import { TEMPLATES, getTemplateMeta } from '@/lib/template-catalog';
+import { TEMPLATES, tryGetTemplateMeta } from '@/lib/template-catalog';
 import { SmartResumeDocument } from '@/components/resume/smart-resume-document';
 import { ShareModal } from './share-modal';
 
@@ -120,21 +121,39 @@ export function PreviewModal({
   const [shareOpen, setShareOpen] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [downloadingDocx, setDownloadingDocx] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const descriptionId = useId();
 
   const currentTemplateId = resume.template || 'Cv1';
-  const meta = getTemplateMeta(currentTemplateId);
+  // Unknown template ids are an explicit unsupported state, never a silent
+  // downgrade to a different resume design.
+  const meta = tryGetTemplateMeta(currentTemplateId);
+  const isSaved = Boolean(resume.id);
+  const unsavedHint = 'Save this resume before exporting or sharing it.';
 
   const fullName = `${resume.heading.firstName || ''} ${resume.heading.lastName || ''}`.trim() || resume.name || 'Candidate Name';
 
   const handleDownloadPdf = () => {
+    if (!resume.id) {
+      setExportError(unsavedHint);
+      return;
+    }
+    setExportError(null);
     setDownloadingPdf(true);
-    const resumeId = resume.id || 'draft';
-    const exportUrl = `/export/${currentTemplateId}/${resumeId}/en`;
-    window.open(exportUrl, '_blank');
+    // The export route renders the same production document with A4 print CSS
+    // and the browser's "Save as PDF"; the server-side PDF path stays available
+    // through the API for automated exports.
+    const exportUrl = `/export/${encodeURIComponent(currentTemplateId)}/${encodeURIComponent(resume.id)}/en`;
+    window.open(exportUrl, '_blank', 'noopener,noreferrer');
     setTimeout(() => setDownloadingPdf(false), 1500);
   };
 
   const handleDownloadDocx = async () => {
+    if (!resume.id) {
+      setExportError(unsavedHint);
+      return;
+    }
+    setExportError(null);
     setDownloadingDocx(true);
     try {
       const devUser = localStorage.getItem('ime_dev_user');
@@ -148,7 +167,6 @@ export function PreviewModal({
         }
       }
 
-      const targetId = resume.id || 'res-alex-001';
       const res = await fetch('/api/export-docx', {
         method: 'POST',
         headers: {
@@ -156,7 +174,7 @@ export function PreviewModal({
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
-          resumeId: targetId,
+          resumeId: resume.id,
           resumeName: currentTemplateId,
           language: 'en',
         }),
@@ -176,20 +194,28 @@ export function PreviewModal({
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch (err: any) {
-      alert(`Could not download Word document: ${err.message || 'Export error'}`);
+      setExportError(`Could not download the Word document: ${err.message || 'export failed'}`);
     } finally {
       setDownloadingDocx(false);
     }
   };
 
   const handlePrint = () => {
-    window.print();
+    if (!resume.id) {
+      setExportError(unsavedHint);
+      return;
+    }
+    setExportError(null);
+    // Print the dedicated export document (A4 page sheets, no app chrome)
+    // rather than the dashboard behind this modal.
+    window.open(`/export/${encodeURIComponent(currentTemplateId)}/${encodeURIComponent(resume.id)}/en`, '_blank', 'noopener,noreferrer');
   };
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
+          aria-describedby={descriptionId}
           className="max-w-5xl h-[92vh] flex flex-col p-0 overflow-hidden border-border bg-neutral-900/40 backdrop-blur-2xl"
           data-testid="cuba-preview-modal"
         >
@@ -198,7 +224,7 @@ export function PreviewModal({
             <div className="flex items-center gap-3">
               <div
                 className="flex size-9 items-center justify-center rounded-xl text-white shadow-sm"
-                style={{ backgroundColor: meta.primary }}
+                style={{ backgroundColor: meta?.primary || '#334155' }}
               >
                 <FileText className="size-4" />
               </div>
@@ -206,9 +232,10 @@ export function PreviewModal({
                 <DialogTitle className="text-sm font-bold text-ink truncate max-w-xs sm:max-w-sm">
                   {fullName}
                 </DialogTitle>
-                <p className="text-xs text-ink-muted">
-                  {meta.name} · {meta.category.toUpperCase()}
-                </p>
+                <DialogDescription id={descriptionId} className="text-xs text-ink-muted">
+                  {meta ? `${meta.name} · ${meta.category.toUpperCase()}` : 'Unsupported template layout'}
+                  {' · '}Preview at {zoom}% zoom
+                </DialogDescription>
               </div>
             </div>
 
@@ -239,28 +266,37 @@ export function PreviewModal({
                   variant="ghost"
                   size="icon-sm"
                   onClick={() => setZoom((prev) => Math.max(50, prev - 15))}
-                  title="Zoom Out"
+                  disabled={zoom <= 50}
+                  aria-label="Zoom out"
+                  title="Zoom out"
                 >
-                  <ZoomOut className="size-3.5" />
+                  <ZoomOut className="size-3.5" aria-hidden="true" />
                 </Button>
-                <span className="w-10 text-center text-[11px] font-mono text-ink-secondary">
+                <span
+                  className="w-10 text-center text-[11px] font-mono text-ink-secondary"
+                  aria-live="polite"
+                  aria-label={`Preview zoom ${zoom} percent`}
+                >
                   {zoom}%
                 </span>
                 <Button
                   variant="ghost"
                   size="icon-sm"
                   onClick={() => setZoom((prev) => Math.min(150, prev + 15))}
-                  title="Zoom In"
+                  disabled={zoom >= 150}
+                  aria-label="Zoom in"
+                  title="Zoom in"
                 >
-                  <ZoomIn className="size-3.5" />
+                  <ZoomIn className="size-3.5" aria-hidden="true" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon-sm"
                   onClick={() => setZoom(100)}
-                  title="Reset Zoom (100%)"
+                  aria-label="Reset zoom to 100 percent"
+                  title="Reset zoom (100%)"
                 >
-                  <Maximize2 className="size-3" />
+                  <Maximize2 className="size-3" aria-hidden="true" />
                 </Button>
               </div>
             </div>
@@ -271,6 +307,9 @@ export function PreviewModal({
                 variant="outline"
                 size="sm"
                 onClick={handlePrint}
+                disabled={!isSaved}
+                aria-label={isSaved ? 'Print preview' : unsavedHint}
+                title={isSaved ? 'Print preview' : unsavedHint}
                 className="hidden md:flex gap-1.5 text-xs"
               >
                 <Printer className="size-3.5" />
@@ -280,6 +319,9 @@ export function PreviewModal({
                 variant="outline"
                 size="sm"
                 onClick={() => setShareOpen(true)}
+                disabled={!isSaved}
+                aria-label={isSaved ? 'Share resume' : unsavedHint}
+                title={isSaved ? 'Share resume' : unsavedHint}
                 className="gap-1.5 text-xs text-brand-600 hover:text-brand-700"
               >
                 <Share2 className="size-3.5" />
@@ -290,6 +332,8 @@ export function PreviewModal({
                 size="sm"
                 onClick={handleDownloadDocx}
                 loading={downloadingDocx}
+                disabled={!isSaved}
+                aria-label={isSaved ? 'Download Word document' : unsavedHint}
                 className="hidden sm:flex gap-1.5 text-xs text-emerald-600 hover:text-emerald-700"
               >
                 <Download className="size-3.5" />
@@ -299,6 +343,8 @@ export function PreviewModal({
                 size="sm"
                 onClick={handleDownloadPdf}
                 loading={downloadingPdf}
+                disabled={!isSaved}
+                aria-label={isSaved ? 'Open print-ready PDF view' : unsavedHint}
                 className="gap-1.5 text-xs shadow-md"
               >
                 <Download className="size-3.5" />
@@ -307,8 +353,26 @@ export function PreviewModal({
             </div>
           </div>
 
+          {exportError && (
+            <div
+              role="alert"
+              className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs font-medium text-amber-800 sm:px-6"
+            >
+              {exportError}
+            </div>
+          )}
+
           {/* Document Canvas Area */}
           <div className="flex-1 overflow-auto bg-neutral-100/90 p-4 sm:p-8 flex justify-center items-start">
+            {!meta ? (
+              <div role="alert" className="m-auto max-w-sm rounded-xl border border-rose-200 bg-white p-6 text-center">
+                <p className="text-sm font-semibold text-rose-700">Unsupported template layout</p>
+                <p className="mt-1 text-xs text-ink-muted">
+                  This resume references a template that is not in the catalogue. Choose a supported
+                  template to preview and export it.
+                </p>
+              </div>
+            ) : (
             <div
               className="transition-transform duration-150 origin-top flex flex-col items-center"
               style={{
@@ -325,15 +389,16 @@ export function PreviewModal({
                 }}
               />
             </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Share Modal Triggered from Preview */}
       <ShareModal
-        open={shareOpen}
+        open={shareOpen && isSaved}
         onOpenChange={setShareOpen}
-        resumeId={resume.id || 'draft'}
+        resumeId={resume.id || ''}
         resumeName={resume.name || fullName}
         templateId={currentTemplateId}
       />
