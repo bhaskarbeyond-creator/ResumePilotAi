@@ -272,15 +272,14 @@ function IdentityText({
 function IdentityBlock({
   heading,
   fullName,
-  meta,
   palette,
   layout,
 }: {
   heading: any;
   fullName: string;
-  meta: TemplateMeta;
   palette: ResumePalette;
   layout: TemplateLayoutSpec;
+  meta?: TemplateMeta;
 }) {
   const photo = <Photo heading={heading} fullName={fullName} layout={layout} size="size-[74px]" />;
   const accentRule = { backgroundColor: palette.primary };
@@ -296,10 +295,6 @@ function IdentityBlock({
               <div className="mt-2">
                 <ContactRow heading={heading} layout={layout} />
               </div>
-            </div>
-            <div className="hidden shrink-0 text-right text-[9px] font-semibold uppercase tracking-[0.22em] text-white/70 sm:block">
-              {meta.category}
-              <div className="mt-1 text-[13px] font-bold tracking-normal text-white">{meta.id}</div>
             </div>
           </div>
         </header>
@@ -666,9 +661,6 @@ function AsideRail({
           ))}
         </div>
       </div>
-      <div className={cn('px-5 pb-4 text-[8px] uppercase tracking-[0.18em]', isDark ? 'text-white/40' : 'text-neutral-400')}>
-        {meta.id} · Verified ATS
-      </div>
     </aside>
   );
 }
@@ -804,7 +796,6 @@ function BannerFamily(props: FamilyPageProps) {
           <span className="text-[9px] font-bold uppercase tracking-[0.24em] text-neutral-400">
             {resume.heading?.title || 'Professional Profile'}
           </span>
-          <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-neutral-400">{meta.id}</span>
         </div>
         {/* Single reading column: a banner layout must never fork the reading
             order, or ATS text extraction and screen-reader order diverge. */}
@@ -1016,7 +1007,7 @@ function EuropassFamily(props: FamilyPageProps) {
           <div className="min-w-0">
             <IdentityText heading={heading} fullName={fullName} layout={layout} />
             <div className="mt-1 text-[9px] font-semibold uppercase tracking-[0.24em]" style={{ color: palette.primary }}>
-              Curriculum Vitae · Europass
+              Curriculum Vitae
             </div>
           </div>
           <Photo heading={heading} fullName={fullName} layout={layout} size="size-[88px]" />
@@ -1077,9 +1068,6 @@ function TechnicalFamily(props: FamilyPageProps) {
               </li>
             ))}
           </ul>
-          <div className="mt-4 border-t border-neutral-800 pt-2 font-mono text-[8px] text-neutral-500">
-            {meta.id} :: v1.0
-          </div>
         </nav>
         <main className="flex min-h-0 flex-1 flex-col px-6 py-4">
           <FlowList items={page.flowItems} meta={meta} palette={palette} layout={layout} />
@@ -1197,8 +1185,7 @@ function MagazineFamily(props: FamilyPageProps) {
         </div>
         <div className="flex items-end justify-between gap-5 border-b-2 border-neutral-900 pb-2 pt-3">
           <div className="min-w-0">
-            <div className="text-[8.5px] font-bold uppercase tracking-[0.36em] text-neutral-500">{meta.category} edition</div>
-            <h1 className={cn('mt-1 font-black uppercase leading-none tracking-tight text-neutral-900', NAME_SCALE[layout.nameScale])}>
+            <h1 className={cn('font-black uppercase leading-none tracking-tight text-neutral-900', NAME_SCALE[layout.nameScale])}>
               {fullName}
             </h1>
           </div>
@@ -1206,7 +1193,6 @@ function MagazineFamily(props: FamilyPageProps) {
         </div>
         <div className="flex items-center justify-between gap-4 py-1.5 text-[9px] uppercase tracking-wider text-neutral-500">
           <ContactRow heading={resume.heading} layout={{ ...layout, contactLayout: 'minimal' }} />
-          <span className="shrink-0">{meta.id}</span>
         </div>
       </header>
       <main className="flex min-h-0 flex-1 flex-col px-8 py-3">
@@ -1710,7 +1696,6 @@ function Cv34Family(props: FamilyPageProps) {
             )}
             <RailSection section="languages" resume={resume} meta={meta} palette={palette} isDark={false} />
           </div>
-          <div className="text-[8px] uppercase tracking-[0.2em] text-neutral-400">{meta.id} · Fintech</div>
         </aside>
       </div>
     </div>
