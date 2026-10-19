@@ -1,6 +1,6 @@
 # DIR-008 — Template inventory (100 CV templates)
 
-Generated: 2026-10-19T23:00:54.820Z
+Generated: 2026-10-19T23:43:50.564Z
 
 Every catalog entry maps to an explicit typed layout spec (family, identity block, rail,
 reading order, title treatment, density). The inventory below is generated from the same
