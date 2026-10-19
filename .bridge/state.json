@@ -1,16 +1,16 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-19T05:14:16.797Z",
-  "eventCount": 4070,
-  "activeDirectiveId": null,
-  "activeDirectiveTitle": null,
-  "activeDirectiveStatus": null,
+  "updatedAt": "2026-10-19T21:41:42.909Z",
+  "eventCount": 4072,
+  "activeDirectiveId": "DIR-008",
+  "activeDirectiveTitle": "DIR-008: 51 Template Architectural Parity & Full-Fidelity Real-Data Rendering Engine",
+  "activeDirectiveStatus": "ISSUED",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
   "stallDeadline": "2026-10-18T20:31:44.876Z",
   "unreadForLead": 27,
-  "unreadForDev": 112,
+  "unreadForDev": 114,
   "pendingBlockers": 0,
   "latestHeartbeat": {
     "timestamp": "2026-10-18T20:31:44.876Z",
@@ -19,7 +19,7 @@
   },
   "integrity": {
     "ok": true,
-    "checked": 4070,
+    "checked": 4072,
     "legacy": 0,
     "bad": 0
   }

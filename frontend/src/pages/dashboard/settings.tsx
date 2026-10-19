@@ -10,6 +10,7 @@
  */
 
 import { useState, useEffect, type FormEvent } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/providers/auth-provider';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -54,7 +55,30 @@ type SettingsTab = 'profile' | 'security' | 'notifications' | 'appearance' | 'su
 export function SettingsPage() {
   const { user } = useAuth();
   const { theme: currentTheme, setTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rawTab = searchParams.get('tab')?.toLowerCase();
+  const initialTab: SettingsTab =
+    rawTab === 'security' ? 'security' :
+    rawTab === 'notifications' ? 'notifications' :
+    rawTab === 'appearance' ? 'appearance' :
+    rawTab === 'support' ? 'support' :
+    'profile';
+  const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
+
+  useEffect(() => {
+    const currentTab = searchParams.get('tab')?.toLowerCase();
+    if (currentTab === 'security') setActiveTab('security');
+    else if (currentTab === 'notifications') setActiveTab('notifications');
+    else if (currentTab === 'appearance') setActiveTab('appearance');
+    else if (currentTab === 'support') setActiveTab('support');
+    else if (currentTab === 'profile' || currentTab === 'account') setActiveTab('profile');
+  }, [searchParams]);
+
+  const handleTabChange = (tabId: SettingsTab) => {
+    setActiveTab(tabId);
+    setMessage(null);
+    setSearchParams({ tab: tabId });
+  };
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [revision, setRevision] = useState<number>(0);
   const [loading, setLoading] = useState(true);
@@ -236,10 +260,7 @@ export function SettingsPage() {
             return (
               <button
                 key={tab.id}
-                onClick={() => {
-                  setActiveTab(tab.id);
-                  setMessage(null);
-                }}
+                onClick={() => handleTabChange(tab.id)}
                 className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
                   active
                     ? 'bg-brand-50 text-brand-700'

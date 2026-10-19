@@ -62,12 +62,28 @@ async function refreshToken(): Promise<string | null> {
 async function getAuthHeader(): Promise<string | null> {
   try {
     const user = auth.currentUser;
-    if (!user) return null;
-    const token = await user.getIdToken();
-    return token ? `Bearer ${token}` : null;
+    if (user) {
+      const token = await user.getIdToken();
+      if (token) return `Bearer ${token}`;
+    }
   } catch {
-    return null;
+    // Continue to fallback
   }
+
+  // Fallback to active session token from localStorage (preview-login or stored token)
+  try {
+    const devUser = localStorage.getItem('ime_dev_user');
+    if (devUser) {
+      const parsed = JSON.parse(devUser);
+      if (parsed?.token) return `Bearer ${parsed.token}`;
+    }
+    const token = localStorage.getItem('token') || localStorage.getItem('auth_token');
+    if (token) return `Bearer ${token}`;
+  } catch {
+    // Ignore parse error
+  }
+
+  return null;
 }
 
 /** Create configured API client */

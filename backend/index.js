@@ -2392,10 +2392,10 @@ app.get('/api/export-render-data', async (req, res) => {
 
 let activeExports = 0;
 const MAX_CONCURRENT_EXPORTS = 5;
-// Every template the router can render must be exportable. The Cv range tracks the 51
+// Every template the router can render must be exportable. The Cv range tracks all 100
 // CV templates and the Cover range tracks the 4 cover-letter templates; both are
 // rendered by /export/:template/:resumeId/:language.
-const EXPORTABLE_TEMPLATE = /^(?:Cv(?:[1-9]|[1-4][0-9]|5[0-1])|Cover[1-4])$/;
+const EXPORTABLE_TEMPLATE = /^(?:Cv(?:[1-9]|[1-9][0-9]|100)|Cover[1-4])$/;
 
 /**
  * DIR-071 — the server-verified recruiter employer claim.

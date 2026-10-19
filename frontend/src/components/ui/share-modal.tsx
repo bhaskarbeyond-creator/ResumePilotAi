@@ -83,7 +83,10 @@ export function ShareModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md border-border bg-surface shadow-2xl sm:rounded-2xl">
+      <DialogContent
+        className="max-w-md border-border bg-surface shadow-2xl sm:rounded-2xl"
+        data-testid="cuba-share-modal"
+      >
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600">

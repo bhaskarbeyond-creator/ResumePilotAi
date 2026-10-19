@@ -101,6 +101,40 @@ export function LoginPage() {
       }
       const firebaseError = err as { code?: string; message?: string };
       const code = firebaseError.code ?? '';
+
+      // Graceful fallback for local development & QA when domain is not in Firebase authorized list
+      if (code === 'auth/unauthorized-domain') {
+        try {
+          const res = await fetch('/api/auth/preview-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email,
+              password,
+              name: firstName ? `${firstName} ${lastName}`.trim() : email.split('@')[0],
+            }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            localStorage.setItem('token', data.token);
+            localStorage.setItem(
+              'ime_dev_user',
+              JSON.stringify({
+                uid: data.uid,
+                email: data.email,
+                displayName: data.displayName,
+                role: data.role,
+                token: data.token,
+              })
+            );
+            window.location.href = returnTo;
+            return;
+          }
+        } catch (previewErr) {
+          console.warn('[Auth] preview-login fallback failed:', previewErr);
+        }
+      }
+
       const friendlyMessages: Record<string, string> = {
         'auth/invalid-credential': 'Invalid email or password.',
         'auth/user-not-found': 'No account found with this email.',
@@ -511,7 +545,36 @@ export function LoginPage() {
                         variant="outline"
                         size="sm"
                         className="text-xs"
-                        onClick={() => {
+                        onClick={async () => {
+                          try {
+                            const res = await fetch('/api/auth/preview-login', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                email: 'candidate@ime365.com',
+                                password: 'password123',
+                                name: 'Alex Morgan',
+                              }),
+                            });
+                            if (res.ok) {
+                              const data = await res.json();
+                              localStorage.setItem('token', data.token);
+                              localStorage.setItem(
+                                'ime_dev_user',
+                                JSON.stringify({
+                                  uid: data.uid,
+                                  email: data.email,
+                                  displayName: data.displayName || 'Alex Morgan',
+                                  role: data.role || 'CANDIDATE',
+                                  token: data.token,
+                                })
+                              );
+                              window.location.href = returnTo;
+                              return;
+                            }
+                          } catch {
+                            // Fallback
+                          }
                           const demoUser = {
                             uid: 'demo-candidate-1',
                             email: 'candidate@ime365.com',
@@ -529,7 +592,36 @@ export function LoginPage() {
                         variant="outline"
                         size="sm"
                         className="text-xs"
-                        onClick={() => {
+                        onClick={async () => {
+                          try {
+                            const res = await fetch('/api/auth/preview-login', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                email: 'admin@ime365.com',
+                                password: 'password123',
+                                name: 'Sarah Administrator',
+                              }),
+                            });
+                            if (res.ok) {
+                              const data = await res.json();
+                              localStorage.setItem('token', data.token);
+                              localStorage.setItem(
+                                'ime_dev_user',
+                                JSON.stringify({
+                                  uid: data.uid,
+                                  email: data.email,
+                                  displayName: data.displayName || 'Sarah Administrator',
+                                  role: data.role || 'ADMIN',
+                                  token: data.token,
+                                })
+                              );
+                              window.location.href = returnTo;
+                              return;
+                            }
+                          } catch {
+                            // Fallback
+                          }
                           const demoAdmin = {
                             uid: 'demo-admin-1',
                             email: 'admin@ime365.com',

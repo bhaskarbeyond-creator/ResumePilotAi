@@ -157,15 +157,16 @@ const THEMES = Object.freeze({
   Cv51: theme({ name: "Standard Europass Modern", archetype: A.MODERN_SPLIT, primary: '#0f4c81', secondary: '#f59e0b', sidebarBg: '#eff6ff', sidebarText: '#1e3a8a', font: "'Inter', sans-serif", skillVariant: S.DOTS, sidebarWidth: '33%', headerStyle: 'sidebar', dividerStyle: 'left-bar', timelineStyle: 'date-rail', density: 'standard' }),
 });
 
-const EXPORTABLE_TEMPLATE = /^(?:Cv(?:[1-9]|[1-4][0-9]|5[0-1])|Cover[1-4])$/;
+const EXPORTABLE_TEMPLATE = /^(?:Cv(?:[1-9]|[1-9][0-9]|100)|Cover[1-4])$/;
 
 function normalizeTemplateId(templateName) {
   const name = String(templateName || '').trim();
   if (THEMES[name]) return name;
-  const cv = name.match(/^cv\s*(\d{1,2})$/i);
+  const cv = name.match(/^cv\s*(\d{1,3})$/i);
   if (cv) {
     const key = `Cv${parseInt(cv[1], 10)}`;
     if (THEMES[key]) return key;
+    if (parseInt(cv[1], 10) >= 1 && parseInt(cv[1], 10) <= 100) return key;
   }
   const cover = name.match(/^cover\s*([1-4])$/i);
   if (cover) return `Cover${cover[1]}`;
@@ -174,7 +175,31 @@ function normalizeTemplateId(templateName) {
 
 function getTemplateStyle(templateName, customColors = null) {
   const key = normalizeTemplateId(templateName);
-  const base = THEMES[key] || THEMES.Cv1;
+  let base = THEMES[key];
+  if (!base) {
+    const num = parseInt(key.replace(/^Cv/i, ''), 10);
+    if (!isNaN(num) && num >= 1 && num <= 100) {
+      const archs = [ARCHETYPES.MODERN_SPLIT, ARCHETYPES.EXECUTIVE_BANNER, ARCHETYPES.MINIMAL_ATS, ARCHETYPES.TECH_GRID, ARCHETYPES.COMPACT_EURO];
+      const arch = archs[num % archs.length];
+      base = theme({
+        name: `ATS Template ${key}`,
+        archetype: arch,
+        primary: '#1e3a8a',
+        secondary: '#3b82f6',
+        sidebarBg: '#f8fafc',
+        sidebarText: '#1e293b',
+        font: "'Plus Jakarta Sans', sans-serif",
+        skillVariant: SKILL_VARIANTS.PILLS,
+        sidebarWidth: '34%',
+        headerStyle: 'left-bold',
+        dividerStyle: 'solid-thin',
+        timelineStyle: 'modern-node',
+        density: 'standard'
+      });
+    } else {
+      base = THEMES.Cv1;
+    }
+  }
   const overlay = sanitizeColorMap(customColors);
   if (!overlay) return base;
   return Object.freeze({

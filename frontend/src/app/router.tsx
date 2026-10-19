@@ -129,8 +129,32 @@ export function AppRouter() {
               element={<RequireAuth><CubaAppShell><ATSScorePage /></CubaAppShell></RequireAuth>}
             />
             <Route
-              path="/dashboard/jobs/*"
+              path="/dashboard/job-tracker/*"
               element={<RequireAuth><CubaAppShell><JobTrackerPage /></CubaAppShell></RequireAuth>}
+            />
+            <Route
+              path="/dashboard/job-tracker"
+              element={<RequireAuth><CubaAppShell><JobTrackerPage /></CubaAppShell></RequireAuth>}
+            />
+            <Route
+              path="/dashboard/jobs/*"
+              element={<RequireAuth><CubaAppShell><JobsPortalPage /></CubaAppShell></RequireAuth>}
+            />
+            <Route
+              path="/dashboard/jobs"
+              element={<RequireAuth><CubaAppShell><JobsPortalPage /></CubaAppShell></RequireAuth>}
+            />
+            <Route
+              path="/dashboard/applied-jobs"
+              element={<RequireAuth><CubaAppShell><JobTrackerPage /></CubaAppShell></RequireAuth>}
+            />
+            <Route
+              path="/dashboard/interview/*"
+              element={<Navigate to="/dashboard/interviews" replace />}
+            />
+            <Route
+              path="/dashboard/interview"
+              element={<Navigate to="/dashboard/interviews" replace />}
             />
             <Route
               path="/dashboard/interviews/*"
@@ -165,6 +189,14 @@ export function AppRouter() {
               element={<RequireAuth><CubaAppShell><FavouritesPage /></CubaAppShell></RequireAuth>}
             />
             <Route
+              path="/dashboard/favorites"
+              element={<Navigate to="/dashboard/favourites" replace />}
+            />
+            <Route
+              path="/dashboard/plans"
+              element={<Navigate to="/pricing" replace />}
+            />
+            <Route
               path="/dashboard/notifications"
               element={<RequireAuth><CubaAppShell><NotificationsPage /></CubaAppShell></RequireAuth>}
             />
@@ -179,11 +211,11 @@ export function AppRouter() {
 
             {/* ─── Resume Builder ─── */}
             <Route
-              path="/build-resume"
+              path="/build-resume/*"
               element={<RequireAuth><CubaAppShell><ResumeBuilderPage /></CubaAppShell></RequireAuth>}
             />
             <Route
-              path="/build-resume/:resumeId"
+              path="/build-resume"
               element={<RequireAuth><CubaAppShell><ResumeBuilderPage /></CubaAppShell></RequireAuth>}
             />
             <Route
@@ -262,13 +294,19 @@ export function AppRouter() {
             <Route path="/about" element={<Navigate to="/p/about-us" replace />} />
             <Route path="/about-us" element={<Navigate to="/p/about-us" replace />} />
 
+            {/* Direct Full-Screen Preview Deep Link */}
+            <Route
+              path="/preview/:resumeId"
+              element={<RequireExportAccess><CVRendererPage /></RequireExportAccess>}
+            />
+
             {/* ─── Export Routes (preserve contract) ─── */}
             {/*
               CRITICAL FIX: Export routes MUST use RequireExportAccess to allow
               headless Chromium PDF rendering via #renderToken=... URL fragment authentication.
               This prevents redirect to /login for automated PDF generation.
             */}
-            {Array.from({ length: 51 }, (_, i) => i + 1).map((num) => (
+            {Array.from({ length: 100 }, (_, i) => i + 1).map((num) => (
               <Route
                 key={`cv-${num}`}
                 path={`/export/Cv${num}/:resumeId/:language`}
@@ -282,6 +320,10 @@ export function AppRouter() {
                 element={<RequireExportAccess><CVRendererPage /></RequireExportAccess>}
               />
             ))}
+            <Route
+              path="/export/:templateId/:resumeId/:language"
+              element={<RequireExportAccess><CVRendererPage /></RequireExportAccess>}
+            />
 
             {/* ─── Catch-all ─── */}
             <Route path="*" element={<NotFoundPage />} />

@@ -2,11 +2,13 @@
  * CubaAppShell — Executive Glassmorphic Application Shell for Candidate Dashboard
  *
  * Provides:
- * - 4-level breadcrumb navigation (Dashboard > Resumes & Master CV > Build Resume > [Name])
- * - Reactive header with green 'Saved' pill, circular ATS score gauge
+ * - 3-Group Categorical Sidebar (Workspace, Job Intelligence, Account & Security)
+ * - 4-Level breadcrumb navigation (Dashboard > Resumes & Master CV > Build Resume > [Name])
+ * - Reactive header with Saved pill, circular ATS score gauge
  * - Preview and Download dropdown buttons
+ * - Live unread notification bell with interactive popover
+ * - M3 Executive User Identity dropdown menu with direct profile/security deep-links
  * - Cuba M3 executive glassmorphic styling with design tokens
- * - Collapsible sidebar with Resumes, Cover Letters, Web CV, Interview Coach, Job Tracker, Settings
  * - WCAG 2.1 AA accessible
  */
 
@@ -41,32 +43,76 @@ import {
   Save,
   ChevronDown,
   Code2,
+  Star,
+  HelpCircle,
+  CreditCard,
+  User,
+  Shield,
+  Clock,
+  ExternalLink,
 } from 'lucide-react';
 import { useTheme } from '@/providers/theme-provider';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import { useNotifications } from '@/hooks/use-api-hooks';
 
-interface NavItem {
+export interface NavItem {
+  id: string;
   label: string;
   href: string;
   icon: typeof LayoutDashboard;
-  badge?: number;
+  badge?: number | string;
   matchPaths?: string[];
 }
 
-const candidateNavItems: NavItem[] = [
-  { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, matchPaths: ['/dashboard'] },
-  { label: 'Resumes & Master CV', href: '/dashboard/resumes', icon: FileText, matchPaths: ['/dashboard/resumes', '/build-resume'] },
-  { label: 'Cover Letters', href: '/dashboard/cover-letters', icon: FolderOpen, matchPaths: ['/dashboard/cover-letters', '/coverletter', '/cover-letter'] },
-  { label: 'Web CV Portfolio', href: '/dashboard/portfolio', icon: Award, matchPaths: ['/dashboard/portfolio', '/portfolio/builder'] },
-  { label: 'Interview Coach', href: '/dashboard/interviews', icon: GraduationCap, matchPaths: ['/dashboard/interviews'] },
-  { label: 'Job Tracker', href: '/dashboard/jobs', icon: Briefcase, matchPaths: ['/dashboard/jobs'] },
-  { label: 'AI Assistant', href: '/dashboard/ai', icon: Sparkles, matchPaths: ['/dashboard/ai'] },
-  { label: 'Messages', href: '/dashboard/messages', icon: MessageSquare, matchPaths: ['/dashboard/messages'] },
-];
+export interface NavGroup {
+  id: string;
+  label: string;
+  items: NavItem[];
+}
 
-const bottomNavItems: NavItem[] = [
-  { label: 'Settings', href: '/dashboard/settings', icon: Settings, matchPaths: ['/dashboard/settings'] },
+const candidateNavGroups: NavGroup[] = [
+  {
+    id: 'workspace',
+    label: 'Workspace',
+    items: [
+      { id: 'overview', label: 'Overview', href: '/dashboard', icon: LayoutDashboard, matchPaths: ['/dashboard'] },
+      { id: 'resumes', label: 'Resumes & Master CV', href: '/dashboard/resumes', icon: FileText, matchPaths: ['/dashboard/resumes', '/build-resume'] },
+      { id: 'cover-letters', label: 'Cover Letters', href: '/dashboard/cover-letters', icon: FolderOpen, matchPaths: ['/dashboard/cover-letters', '/coverletter', '/cover-letter'] },
+      { id: 'portfolio', label: 'Portfolios & Web CV', href: '/dashboard/portfolio', icon: Award, matchPaths: ['/dashboard/portfolio', '/portfolio/builder'] },
+      { id: 'ats', label: 'ATS Score Analytics', href: '/dashboard/ats-score', icon: BarChart3, matchPaths: ['/dashboard/ats-score', '/dashboard/ats'] },
+      { id: 'favourites', label: 'Saved Favorites', href: '/dashboard/favourites', icon: Star, matchPaths: ['/dashboard/favourites', '/dashboard/favorites'] },
+      { id: 'notifications', label: 'Notifications', href: '/dashboard/notifications', icon: Bell, matchPaths: ['/dashboard/notifications'] },
+    ],
+  },
+  {
+    id: 'intelligence',
+    label: 'Job Intelligence',
+    items: [
+      { id: 'jobs', label: 'Browse Job Portal', href: '/dashboard/jobs', icon: Search, matchPaths: ['/dashboard/jobs', '/jobs'] },
+      { id: 'tracker', label: 'Job Tracker', href: '/dashboard/job-tracker', icon: Briefcase, matchPaths: ['/dashboard/job-tracker'] },
+      { id: 'interview', label: 'AI Interview Coach', href: '/dashboard/interviews', icon: GraduationCap, matchPaths: ['/dashboard/interviews', '/dashboard/interview'] },
+      { id: 'messages', label: 'Messages & Chat', href: '/dashboard/messages', icon: MessageSquare, matchPaths: ['/dashboard/messages'] },
+      { id: 'ai', label: 'AI Career Assistant', href: '/dashboard/ai', icon: Sparkles, matchPaths: ['/dashboard/ai'] },
+    ],
+  },
+  {
+    id: 'account',
+    label: 'Account & Security',
+    items: [
+      { id: 'plans', label: 'Subscription & Plans', href: '/pricing', icon: CreditCard, matchPaths: ['/pricing', '/billing'] },
+      { id: 'profile', label: 'Master Profile', href: '/dashboard/settings?tab=profile', icon: User, matchPaths: ['/dashboard/settings?tab=profile'] },
+      { id: 'security', label: 'Security & 2FA Hub', href: '/dashboard/settings?tab=security', icon: Shield, matchPaths: ['/dashboard/settings?tab=security'] },
+      { id: 'support', label: 'Help Desk & Support', href: '/dashboard/support', icon: HelpCircle, matchPaths: ['/dashboard/support'] },
+      { id: 'settings', label: 'Settings & Preferences', href: '/dashboard/settings', icon: Settings, matchPaths: ['/dashboard/settings'] },
+    ],
+  },
 ];
 
 interface CubaAppShellProps {
@@ -82,11 +128,11 @@ export function CubaAppShell({
   children,
   breadcrumbOverride,
   atsScore,
-  savedStatus = 'saved',
+  savedStatus,
   onPreview,
   onDownload,
 }: CubaAppShellProps) {
-  const { user, signOut, isAdmin } = useAuth();
+  const { user, claims, signOut, isAdmin } = useAuth();
   const { theme, resolvedTheme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
@@ -94,19 +140,53 @@ export function CubaAppShell({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Live notifications count from backend API
+  const { data: notifications = [] } = useNotifications();
+  const unreadNotifCount = useMemo(
+    () => notifications.filter((n) => !n.read).length,
+    [notifications],
+  );
+
   const isActiveRoute = useCallback(
     (item: NavItem) => {
+      const [itemPath, itemQuery] = item.href.split('?');
+      if (itemQuery) {
+        const currentParams = new URLSearchParams(location.search);
+        const targetParams = new URLSearchParams(itemQuery);
+        const queryMatches = Array.from(targetParams.entries()).every(
+          ([k, v]) => currentParams.get(k)?.toLowerCase() === v.toLowerCase()
+        );
+        return location.pathname === itemPath && queryMatches;
+      }
+
       if (item.matchPaths) {
         return item.matchPaths.some((p) => {
-          if (p === '/dashboard') {
-            return location.pathname === '/dashboard' || location.pathname === '/dashboard/';
+          const [pPath, pQuery] = p.split('?');
+          if (pQuery) {
+            const currentParams = new URLSearchParams(location.search);
+            const targetParams = new URLSearchParams(pQuery);
+            return (
+              location.pathname === pPath &&
+              Array.from(targetParams.entries()).every(
+                ([k, v]) => currentParams.get(k)?.toLowerCase() === v.toLowerCase()
+              )
+            );
           }
-          return location.pathname.startsWith(p);
+          if (pPath === '/dashboard') {
+            return (
+              (location.pathname === '/dashboard' || location.pathname === '/dashboard/') &&
+              !location.search
+            );
+          }
+          if (pPath === '/dashboard/settings') {
+            return location.pathname === '/dashboard/settings' && !location.search;
+          }
+          return location.pathname.startsWith(pPath);
         });
       }
       return location.pathname.startsWith(item.href);
     },
-    [location.pathname],
+    [location.pathname, location.search],
   );
 
   const handleSignOut = async () => {
@@ -115,12 +195,14 @@ export function CubaAppShell({
   };
 
   const displayName = user?.displayName || user?.email?.split('@')[0] || 'User';
+  const roleLabel = claims?.role || (isAdmin ? 'Admin' : 'Candidate');
   const initials = displayName
     .split(' ')
+    .filter(Boolean)
     .map((n: string) => n[0])
     .join('')
     .toUpperCase()
-    .slice(0, 2);
+    .slice(0, 2) || '?';
 
   // Build breadcrumbs based on current route
   const breadcrumbs = useMemo(() => {
@@ -132,37 +214,48 @@ export function CubaAppShell({
       }));
     }
 
-    // Auto-generate breadcrumbs from route
     const segments = location.pathname.split('/').filter(Boolean);
     const crumbs = [
-      { label: 'Dashboard', href: '/dashboard', isLast: false },
+      { label: 'Dashboard', href: '/dashboard', isLast: segments.length === 1 && segments[0] === 'dashboard' },
     ];
 
-    if (segments[1] === 'dashboard') {
-      if (segments[2] === 'resumes') {
-        crumbs.push({ label: 'Resumes & Master CV', href: '/dashboard/resumes', isLast: false });
-        if (segments[3]) {
-          crumbs.push({ label: segments[3], href: '#', isLast: true });
+    if (segments[0] === 'dashboard') {
+      if (segments[1] === 'resumes') {
+        crumbs.push({ label: 'Resumes & Master CV', href: '/dashboard/resumes', isLast: segments.length <= 2 });
+        if (segments[2]) {
+          crumbs.push({ label: segments[2], href: '#', isLast: true });
         }
-      } else if (segments[2] === 'cover-letters') {
-        crumbs.push({ label: 'Cover Letters', href: '/dashboard/cover-letters', isLast: false });
-        if (segments[3]) {
+      } else if (segments[1] === 'cover-letters') {
+        crumbs.push({ label: 'Cover Letters', href: '/dashboard/cover-letters', isLast: segments.length <= 2 });
+        if (segments[2]) {
           crumbs.push({ label: 'Build Cover Letter', href: '#', isLast: true });
         }
-      } else if (segments[2] === 'portfolio') {
-        crumbs.push({ label: 'Web CV Portfolio', href: '/dashboard/portfolio', isLast: false });
-        if (segments[3]) {
+      } else if (segments[1] === 'portfolio') {
+        crumbs.push({ label: 'Portfolios & Web CV', href: '/dashboard/portfolio', isLast: segments.length <= 2 });
+        if (segments[2]) {
           crumbs.push({ label: 'Builder', href: '#', isLast: true });
         }
-      } else if (segments[2] === 'interviews') {
+      } else if (segments[1] === 'interviews' || segments[1] === 'interview') {
         crumbs.push({ label: 'Interview Coach', href: '/dashboard/interviews', isLast: true });
-      } else if (segments[2] === 'jobs') {
-        crumbs.push({ label: 'Job Tracker', href: '/dashboard/jobs', isLast: true });
-      } else if (segments[2] === 'settings') {
-        crumbs.push({ label: 'Settings', href: '/dashboard/settings', isLast: true });
-      } else if (segments[2] === 'ai') {
+      } else if (segments[1] === 'job-tracker') {
+        crumbs.push({ label: 'Job Tracker', href: '/dashboard/job-tracker', isLast: true });
+      } else if (segments[1] === 'jobs') {
+        crumbs.push({ label: 'Browse Jobs', href: '/dashboard/jobs', isLast: true });
+      } else if (segments[1] === 'ats-score' || segments[1] === 'ats') {
+        crumbs.push({ label: 'ATS Score Analytics', href: '/dashboard/ats-score', isLast: true });
+      } else if (segments[1] === 'favourites' || segments[1] === 'favorites') {
+        crumbs.push({ label: 'Saved Favorites', href: '/dashboard/favourites', isLast: true });
+      } else if (segments[1] === 'notifications') {
+        crumbs.push({ label: 'Notifications', href: '/dashboard/notifications', isLast: true });
+      } else if (segments[1] === 'support') {
+        crumbs.push({ label: 'Help Desk & Support', href: '/dashboard/support', isLast: true });
+      } else if (segments[1] === 'settings') {
+        const tab = new URLSearchParams(location.search).get('tab');
+        const tabLabel = tab ? `${tab.charAt(0).toUpperCase() + tab.slice(1)} Settings` : 'Settings';
+        crumbs.push({ label: tabLabel, href: '/dashboard/settings', isLast: true });
+      } else if (segments[1] === 'ai') {
         crumbs.push({ label: 'AI Assistant', href: '/dashboard/ai', isLast: true });
-      } else if (segments[2] === 'messages') {
+      } else if (segments[1] === 'messages') {
         crumbs.push({ label: 'Messages', href: '/dashboard/messages', isLast: true });
       }
     } else if (segments[0] === 'build-resume') {
@@ -174,12 +267,12 @@ export function CubaAppShell({
       crumbs.push({ label: 'Cover Letter Studio', href: segments[0], isLast: false });
       crumbs.push({ label: 'Editing', href: '#', isLast: true });
     } else if (segments[0] === 'portfolio' && segments[1] === 'builder') {
-      crumbs.push({ label: 'Web CV Portfolio', href: '/dashboard/portfolio', isLast: false });
+      crumbs.push({ label: 'Portfolios & Web CV', href: '/dashboard/portfolio', isLast: false });
       crumbs.push({ label: 'Portfolio Builder', href: '#', isLast: true });
     }
 
     return crumbs;
-  }, [location.pathname, breadcrumbOverride, params.resumeId]);
+  }, [location.pathname, location.search, breadcrumbOverride, params.resumeId]);
 
   return (
     <div className="flex h-screen overflow-hidden bg-canvas">
@@ -205,27 +298,51 @@ export function CubaAppShell({
         className={cn(
           'fixed inset-y-0 left-0 z-[var(--z-overlay)] flex flex-col border-r border-border bg-surface transition-all duration-300',
           'lg:relative lg:z-auto',
-          sidebarCollapsed ? 'w-16' : 'w-64',
+          sidebarCollapsed ? 'w-16' : 'w-[85vw] max-w-[320px] lg:w-64',
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
         )}
-        aria-label="Main navigation"
+        aria-label="Candidate workspace navigation"
       >
         {/* Logo area */}
         <div className={cn(
           'flex h-14 items-center border-b border-border px-4',
-          sidebarCollapsed ? 'justify-center' : 'gap-3',
+          sidebarCollapsed ? 'justify-center px-2' : 'gap-3',
         )}>
           {!sidebarCollapsed && (
-            <Link to="/dashboard" className="flex items-center gap-2.5 no-underline">
-              <div className="flex size-8 items-center justify-center rounded-lg bg-brand-600 font-bold text-white text-sm">
-                IM
+            <Link to="/dashboard" className="flex items-center gap-2.5 no-underline min-w-0" title="IME365 Home">
+              <img
+                src="/logo.png"
+                alt="IME365"
+                className="h-8 md:h-9 w-auto max-w-[170px] object-contain shrink-0 dark:brightness-0 dark:invert transition-opacity"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  const fallback = e.currentTarget.nextElementSibling;
+                  if (fallback) (fallback as HTMLElement).style.display = 'flex';
+                }}
+              />
+              <div className="hidden items-center gap-2.5">
+                <div className="flex size-8 items-center justify-center rounded-lg bg-brand-600 font-bold text-white text-sm shadow-xs">
+                  IM
+                </div>
+                <span className="text-sm font-semibold text-ink tracking-tight">IME365</span>
               </div>
-              <span className="text-sm font-semibold text-ink tracking-tight">IME365</span>
             </Link>
           )}
           {sidebarCollapsed && (
-            <Link to="/dashboard" className="flex size-8 items-center justify-center rounded-lg bg-brand-600 font-bold text-white text-xs no-underline">
-              IM
+            <Link to="/dashboard" className="flex size-9 items-center justify-center no-underline overflow-hidden" title="IME365 Home">
+              <img
+                src="/logo.png"
+                alt="IME365"
+                className="size-8 object-contain object-left shrink-0 dark:brightness-0 dark:invert"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  const fallback = e.currentTarget.nextElementSibling;
+                  if (fallback) (fallback as HTMLElement).style.display = 'flex';
+                }}
+              />
+              <div className="hidden size-8 items-center justify-center rounded-lg bg-brand-600 font-bold text-white text-xs shadow-xs">
+                IM
+              </div>
             </Link>
           )}
           <button
@@ -244,108 +361,108 @@ export function CubaAppShell({
           </button>
         </div>
 
-        {/* Navigation items */}
-        <nav className="flex-1 overflow-y-auto px-2 py-3">
-          <ul className="space-y-0.5" role="list">
-            {candidateNavItems.map((item) => {
-              const active = isActiveRoute(item);
-              const Icon = item.icon;
-              return (
-                <li key={item.href}>
-                  <Link
-                    to={item.href}
-                    className={cn(
-                      'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium no-underline transition-colors duration-150',
-                      active
-                        ? 'bg-brand-50 text-brand-700'
-                        : 'text-ink-secondary hover:bg-neutral-100 hover:text-ink',
-                      sidebarCollapsed && 'justify-center px-2',
-                    )}
-                    onClick={() => setMobileMenuOpen(false)}
-                    aria-current={active ? 'page' : undefined}
-                    title={sidebarCollapsed ? item.label : undefined}
-                  >
-                    <Icon className={cn('size-[18px] shrink-0', active ? 'text-brand-600' : 'text-ink-muted')} />
-                    {!sidebarCollapsed && (
-                      <>
-                        <span>{item.label}</span>
-                        {item.badge !== undefined && item.badge > 0 && (
-                          <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-600 px-1.5 text-[10px] font-bold text-white">
-                            {item.badge > 99 ? '99+' : item.badge}
-                          </span>
+        {/* Navigation items by Cuba Groups */}
+        <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-4" aria-label="Main navigation">
+          {candidateNavGroups.map((group) => (
+            <div key={group.id} className="space-y-1">
+              {!sidebarCollapsed && (
+                <h2 className="px-3 text-[11px] font-bold uppercase tracking-wider text-ink-muted mb-1">
+                  {group.label}
+                </h2>
+              )}
+              <ul className="space-y-0.5" role="list">
+                {group.items.map((item) => {
+                  const active = isActiveRoute(item);
+                  const Icon = item.icon;
+                  return (
+                    <li key={item.id}>
+                      <Link
+                        to={item.href}
+                        className={cn(
+                          'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium no-underline transition-colors duration-150',
+                          active
+                            ? 'bg-brand-50 text-brand-700 font-semibold'
+                            : 'text-ink-secondary hover:bg-neutral-100 hover:text-ink',
+                          sidebarCollapsed && 'justify-center px-2',
                         )}
-                      </>
-                    )}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+                        onClick={() => setMobileMenuOpen(false)}
+                        aria-current={active ? 'page' : undefined}
+                        title={sidebarCollapsed ? item.label : undefined}
+                      >
+                        <Icon className={cn('size-[18px] shrink-0', active ? 'text-brand-600' : 'text-ink-muted')} />
+                        {!sidebarCollapsed && (
+                          <>
+                            <span className="truncate">{item.label}</span>
+                            {item.id === 'notifications' && unreadNotifCount > 0 && (
+                              <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-600 px-1.5 text-[10px] font-bold text-white">
+                                {unreadNotifCount > 99 ? '99+' : unreadNotifCount}
+                              </span>
+                            )}
+                            {item.badge !== undefined && (
+                              <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-600 px-1.5 text-[10px] font-bold text-white">
+                                {item.badge}
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
         </nav>
 
         {/* Bottom section */}
         <div className="border-t border-border px-2 py-3">
-          <ul className="space-y-0.5" role="list">
-            {isAdmin && (
+          {isAdmin && (
+            <ul className="space-y-0.5 mb-2" role="list">
               <li>
                 <Link
                   to="/admin"
                   className={cn(
                     'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium no-underline transition-colors',
                     location.pathname.startsWith('/admin')
-                      ? 'bg-brand-50 text-brand-700'
+                      ? 'bg-brand-50 text-brand-700 font-semibold'
                       : 'text-ink-secondary hover:bg-neutral-100 hover:text-ink',
                     sidebarCollapsed && 'justify-center px-2',
                   )}
                   title={sidebarCollapsed ? 'Admin Console' : undefined}
                 >
-                  <Building2 className="size-[18px] shrink-0 text-ink-muted" />
+                  <Building2 className="size-[18px] shrink-0 text-brand-600" />
                   {!sidebarCollapsed && <span>Admin Console</span>}
                 </Link>
               </li>
-            )}
-            {bottomNavItems.map((item) => {
-              const active = isActiveRoute(item);
-              const Icon = item.icon;
-              return (
-                <li key={item.href}>
-                  <Link
-                    to={item.href}
-                    className={cn(
-                      'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium no-underline transition-colors',
-                      active
-                        ? 'bg-brand-50 text-brand-700'
-                        : 'text-ink-secondary hover:bg-neutral-100 hover:text-ink',
-                      sidebarCollapsed && 'justify-center px-2',
-                    )}
-                    title={sidebarCollapsed ? item.label : undefined}
-                  >
-                    <Icon className={cn('size-[18px] shrink-0', active ? 'text-brand-600' : 'text-ink-muted')} />
-                    {!sidebarCollapsed && <span>{item.label}</span>}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+            </ul>
+          )}
 
-          {/* User profile */}
-          <div className={cn(
-            'mt-3 flex items-center gap-3 rounded-lg border border-border-subtle px-3 py-2',
-            sidebarCollapsed && 'justify-center px-2',
-          )}>
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-700">
-              {initials}
-            </div>
-            {!sidebarCollapsed && (
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-ink">{displayName}</p>
-                <p className="truncate text-xs text-ink-muted">{user?.email}</p>
-              </div>
+          {/* User profile footer card */}
+          <div
+            className={cn(
+              'flex items-center gap-3 rounded-lg border border-border-subtle bg-surface-secondary/40 px-3 py-2',
+              sidebarCollapsed && 'justify-center px-2',
             )}
+          >
+            <Link
+              to="/dashboard/settings?tab=profile"
+              className="flex items-center gap-3 min-w-0 flex-1 no-underline"
+              title="View Profile Settings"
+            >
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-700">
+                {initials}
+              </div>
+              {!sidebarCollapsed && (
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-ink">{displayName}</p>
+                  <p className="truncate text-xs text-ink-muted">{user?.email}</p>
+                </div>
+              )}
+            </Link>
             {!sidebarCollapsed && (
               <button
                 onClick={handleSignOut}
-                className="rounded-md p-1 text-ink-muted hover:bg-neutral-100 hover:text-error-600 transition-colors"
+                className="rounded-md p-1 text-ink-muted hover:bg-neutral-100 hover:text-rose-600 transition-colors"
                 aria-label="Sign out"
                 title="Sign out"
               >
@@ -358,7 +475,7 @@ export function CubaAppShell({
 
       {/* Main content area */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Top bar with Breadcrumbs and Reactive Header */}
+        {/* Top bar with Breadcrumbs, Actions, and User Menu */}
         <header className="h-14 flex-shrink-0 border-b border-border bg-surface/80 backdrop-blur-sm px-4 lg:px-6">
           <div className="flex h-full items-center justify-between gap-3">
             {/* Mobile menu toggle + Breadcrumbs */}
@@ -384,7 +501,7 @@ export function CubaAppShell({
                           to={crumb.href}
                           className={cn(
                             'text-sm font-medium transition-colors',
-                            crumb.isLast ? 'text-ink' : 'text-ink-secondary hover:text-brand-600'
+                            crumb.isLast ? 'text-ink font-semibold' : 'text-ink-secondary hover:text-brand-600'
                           )}
                           aria-current={crumb.isLast ? 'page' : undefined}
                         >
@@ -394,7 +511,7 @@ export function CubaAppShell({
                         <span
                           className={cn(
                             'text-sm font-medium',
-                            crumb.isLast ? 'text-ink' : 'text-ink-secondary'
+                            crumb.isLast ? 'text-ink font-semibold' : 'text-ink-secondary'
                           )}
                           aria-current={crumb.isLast ? 'page' : undefined}
                         >
@@ -407,8 +524,8 @@ export function CubaAppShell({
               </nav>
             </div>
 
-            {/* Right side: ATS Score Gauge, Saved Status, Actions */}
-            <div className="flex items-center gap-3 shrink-0">
+            {/* Right side: ATS Gauge, Saved Status, Actions, Notifications, User Menu */}
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               {/* ATS Score Circular Gauge */}
               {atsScore !== undefined && atsScore !== null && (
                 <div className="relative flex items-center justify-center" title={`ATS Score: ${atsScore}%`}>
@@ -459,99 +576,260 @@ export function CubaAppShell({
                 </div>
               )}
 
-              {/* Saved Status Pill */}
-              <div className="hidden sm:flex">
-                <span className={cn(
-                  'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors',
-                  savedStatus === 'saved'
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                    : savedStatus === 'saving'
-                    ? 'bg-amber-50 text-amber-700 border border-amber-200 animate-pulse'
-                    : 'bg-rose-50 text-rose-700 border border-rose-200'
-                )}>
-                  {savedStatus === 'saved' && <CheckCircle2 className="size-3.5" />}
-                  {savedStatus === 'saving' && <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />}
-                  {savedStatus === 'unsaved' && <span className="w-1.5 h-1.5 rounded-full bg-current" />}
-                  {savedStatus === 'saved' ? 'Saved' : savedStatus === 'saving' ? 'Saving…' : 'Unsaved'}
-                </span>
-              </div>
+              {/* Saved Status Pill - only rendered if explicitly provided */}
+              {savedStatus && (
+                <div className="hidden sm:flex">
+                  <span className={cn(
+                    'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors',
+                    savedStatus === 'saved'
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      : savedStatus === 'saving'
+                      ? 'bg-amber-50 text-amber-700 border border-amber-200 animate-pulse'
+                      : 'bg-rose-50 text-rose-700 border border-rose-200'
+                  )}>
+                    {savedStatus === 'saved' && <CheckCircle2 className="size-3.5" />}
+                    {savedStatus === 'saving' && <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />}
+                    {savedStatus === 'unsaved' && <span className="w-1.5 h-1.5 rounded-full bg-current" />}
+                    {savedStatus === 'saved' ? 'Saved' : savedStatus === 'saving' ? 'Saving…' : 'Unsaved'}
+                  </span>
+                </div>
+              )}
 
-              {/* Preview & Download Actions */}
-              <div className="flex items-center gap-1.5">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-1.5">
-                      <Eye className="size-3.5" />
-                      <span className="hidden sm:inline">Preview</span>
-                      <ChevronDown className="size-3.5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onPreview?.(); }} className="flex items-center gap-2">
-                      <Eye className="size-4" />
-                      <span>Preview Resume</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={(e) => { e.preventDefault(); window.open(`/export/Cv1/${params.resumeId || 'demo'}/en`, '_blank'); }} className="flex items-center gap-2">
-                      <LayoutDashboard className="size-4" />
-                      <span>Full Template Preview</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={(e) => { e.preventDefault(); window.open(`/shared/${params.resumeId}`, '_blank'); }} className="flex items-center gap-2">
-                      <MessageSquare className="size-4" />
-                      <span>Public Share Link</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="primary" size="sm" className="gap-1.5">
-                      <Download className="size-3.5" />
-                      <span className="hidden sm:inline">Download</span>
-                      <ChevronDown className="size-3.5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-52">
-                    <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onDownload?.('pdf'); }} className="flex items-center gap-2">
-                      <FileText className="size-4" />
-                      <span>Download as PDF</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onDownload?.('docx'); }} className="flex items-center gap-2">
-                      <FileText className="size-4" />
-                      <span>Download as DOCX</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onDownload?.('txt'); }} className="flex items-center gap-2">
-                      <FileText className="size-4" />
-                      <span>Download as Plain Text</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onDownload?.('latex'); }} className="flex items-center gap-2">
-                      <Code2 className="size-4" />
-                      <span>Download as LaTeX</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-
-              {/* Theme + Notifications (compact) */}
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={toggleTheme}
-                  className="rounded-md p-1.5 text-ink-muted hover:bg-neutral-100 hover:text-ink transition-colors"
-                  aria-label="Toggle theme"
-                  title={`Current theme: ${theme}. Click to switch.`}
-                >
-                  {resolvedTheme === 'dark' ? (
-                    <Sun className="size-5 text-warning-500" />
-                  ) : (
-                    <Moon className="size-5" />
+              {/* Preview & Download Actions - only rendered if action handlers provided */}
+              {(onPreview || onDownload) && (
+                <div className="hidden sm:flex items-center gap-1.5">
+                  {onPreview && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="gap-1.5">
+                          <Eye className="size-3.5" />
+                          <span className="hidden sm:inline">Preview</span>
+                          <ChevronDown className="size-3.5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onPreview?.(); }} className="flex items-center gap-2 cursor-pointer">
+                          <Eye className="size-4" />
+                          <span>Preview Resume</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={(e) => { e.preventDefault(); window.open(`/export/Cv1/${params.resumeId || 'demo'}/en`, '_blank'); }} className="flex items-center gap-2 cursor-pointer">
+                          <LayoutDashboard className="size-4" />
+                          <span>Full Template Preview</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={(e) => { e.preventDefault(); window.open(`/shared/${params.resumeId}`, '_blank'); }} className="flex items-center gap-2 cursor-pointer">
+                          <MessageSquare className="size-4" />
+                          <span>Public Share Link</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   )}
-                </button>
-                <button
-                  className="relative rounded-md p-1.5 text-ink-muted hover:bg-neutral-100 transition-colors"
-                  aria-label="Notifications"
-                >
-                  <Bell className="size-5" />
-                </button>
-              </div>
+
+                  {onDownload && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="primary" size="sm" className="gap-1.5">
+                          <Download className="size-3.5" />
+                          <span className="hidden sm:inline">Download</span>
+                          <ChevronDown className="size-3.5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-52">
+                        <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onDownload?.('pdf'); }} className="flex items-center gap-2 cursor-pointer">
+                          <FileText className="size-4" />
+                          <span>Download as PDF</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onDownload?.('docx'); }} className="flex items-center gap-2 cursor-pointer">
+                          <FileText className="size-4" />
+                          <span>Download as DOCX</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onDownload?.('txt'); }} className="flex items-center gap-2 cursor-pointer">
+                          <FileText className="size-4" />
+                          <span>Download as Plain Text</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onDownload?.('latex'); }} className="flex items-center gap-2 cursor-pointer">
+                          <Code2 className="size-4" />
+                          <span>Download as LaTeX</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
+              )}
+
+              {/* Interactive Notifications Popover */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className="relative rounded-md p-1.5 text-ink-muted hover:bg-neutral-100 hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                    aria-label={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : 'Notifications'}
+                    title="Notifications"
+                  >
+                    <Bell className="size-5" />
+                    {unreadNotifCount > 0 && (
+                      <span className="absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-600 px-1 text-[10px] font-bold text-white shadow-xs">
+                        {unreadNotifCount > 99 ? '99+' : unreadNotifCount}
+                      </span>
+                    )}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-80 p-2">
+                  <div className="flex items-center justify-between px-2 py-1.5 border-b border-border">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-sm text-ink">Notifications</span>
+                      {unreadNotifCount > 0 && (
+                        <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-bold text-brand-700">
+                          {unreadNotifCount} new
+                        </span>
+                      )}
+                    </div>
+                    <Link
+                      to="/dashboard/notifications"
+                      className="text-xs font-medium text-brand-600 hover:text-brand-700 no-underline"
+                    >
+                      View all
+                    </Link>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto py-1">
+                    {notifications.length === 0 ? (
+                      <div className="py-6 text-center text-xs text-ink-muted">
+                        No notifications at this time.
+                      </div>
+                    ) : (
+                      notifications.slice(0, 4).map((notif) => (
+                        <DropdownMenuItem
+                          key={notif.id}
+                          onSelect={() => navigate('/dashboard/notifications')}
+                          className="flex flex-col items-start gap-1 p-2 cursor-pointer"
+                        >
+                          <div className="flex items-center gap-1.5 w-full">
+                            {!notif.read && (
+                              <span className="size-1.5 rounded-full bg-brand-600 shrink-0" />
+                            )}
+                            <span className={cn('text-xs truncate font-medium', !notif.read ? 'text-ink font-semibold' : 'text-ink-secondary')}>
+                              {notif.subject || 'Notification'}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-ink-muted line-clamp-1 pl-3">
+                            {notif.preview || notif.sender?.name || ''}
+                          </p>
+                        </DropdownMenuItem>
+                      ))
+                    )}
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onSelect={() => navigate('/dashboard/notifications')}
+                    className="justify-center text-xs font-semibold text-brand-600 cursor-pointer"
+                  >
+                    Open Notification Center
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Theme Toggle */}
+              <button
+                onClick={toggleTheme}
+                className="rounded-md p-1.5 text-ink-muted hover:bg-neutral-100 hover:text-ink transition-colors"
+                aria-label="Toggle theme"
+                title={`Current theme: ${theme}. Click to switch.`}
+              >
+                {resolvedTheme === 'dark' ? (
+                  <Sun className="size-5 text-warning-500" />
+                ) : (
+                  <Moon className="size-5" />
+                )}
+              </button>
+
+              {/* Executive M3 User Dropdown Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label={`Account menu for ${displayName}`}
+                    className="flex items-center gap-2 rounded-full py-0.5 pl-1 pr-1.5 hover:bg-neutral-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                  >
+                    <div className="relative flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-600 to-indigo-600 font-bold text-white text-xs shadow-xs">
+                      {initials}
+                      <span
+                        className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-surface bg-emerald-500"
+                        aria-hidden="true"
+                      />
+                    </div>
+                    <div className="hidden sm:flex flex-col items-start text-left leading-tight">
+                      <span className="max-w-[120px] truncate text-xs font-semibold text-ink">
+                        {displayName}
+                      </span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-brand-600">
+                        {roleLabel}
+                      </span>
+                    </div>
+                    <ChevronDown className="hidden sm:block size-3.5 text-ink-muted" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64 p-1.5">
+                  <div className="flex items-center gap-3 px-3 py-2.5">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-600 to-indigo-600 font-bold text-white text-sm">
+                      {initials}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-ink">{displayName}</p>
+                      <p className="truncate text-xs text-ink-muted">{user?.email}</p>
+                      <span className="mt-1 inline-block rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-brand-700">
+                        {roleLabel}
+                      </span>
+                    </div>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onSelect={() => navigate('/dashboard/settings?tab=profile')}
+                    className="gap-2.5 py-2 cursor-pointer"
+                  >
+                    <User className="size-4 text-ink-muted" />
+                    <span>Your Profile</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => navigate('/dashboard/settings?tab=account')}
+                    className="gap-2.5 py-2 cursor-pointer"
+                  >
+                    <Settings className="size-4 text-ink-muted" />
+                    <span>Account Settings</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => navigate('/dashboard/settings?tab=security')}
+                    className="gap-2.5 py-2 cursor-pointer"
+                  >
+                    <Shield className="size-4 text-ink-muted" />
+                    <span>Security & 2FA Hub</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => navigate('/dashboard/support')}
+                    className="gap-2.5 py-2 cursor-pointer"
+                  >
+                    <HelpCircle className="size-4 text-ink-muted" />
+                    <span>Help Desk & Support</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onSelect={toggleTheme}
+                    className="gap-2.5 py-2 cursor-pointer"
+                  >
+                    {resolvedTheme === 'dark' ? (
+                      <Sun className="size-4 text-warning-500" />
+                    ) : (
+                      <Moon className="size-4 text-ink-muted" />
+                    )}
+                    <span>{resolvedTheme === 'dark' ? 'Light theme' : 'Dark theme'}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onSelect={handleSignOut}
+                    className="gap-2.5 py-2 font-medium text-rose-600 hover:text-rose-700 hover:bg-rose-50 cursor-pointer"
+                  >
+                    <LogOut className="size-4" />
+                    <span>Sign Out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </header>
@@ -568,4 +846,3 @@ export function CubaAppShell({
     </div>
   );
 }
-
