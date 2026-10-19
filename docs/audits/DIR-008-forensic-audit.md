@@ -268,3 +268,43 @@ Guarantees enforced at module load and in CI:
 **Screenshot status remains BLOCKED**: no browser binary is installable in this sandbox
 (Playwright CDN unreachable, `libnss3`/`libnspr4` unavailable, apt non-root). No screenshot is
 claimed anywhere; wireframes are explicitly labelled structural proofs.
+
+---
+
+## 6. M3 remediation record — tokenized public sharing and honest export data
+
+Commit scope: `backend/security/shareTokens.js`, `backend/routes/resumes.js`,
+`backend/repositories/InMemoryRepository.js`, `backend/index.js`,
+`frontend/src/components/ui/share-modal.tsx`, `frontend/src/pages/shared/resume-view.tsx`,
+`frontend/src/pages/export/cv-renderer.tsx`, `frontend/src/components/guards/require-export-access.tsx`,
+`frontend/src/lib/share-publication.ts`, `frontend/src/lib/resume-view-model.ts`.
+
+### 6.1 What changed
+
+| Defect | Resolution |
+| --- | --- |
+| D-03-adjacent: `publishResume` in the in-memory repository destructured client options as its third argument, so a body-less publish threw a 500 | Signature now matches MySQL (`(userId, resumeId, _clientData, options)`), options default to `{}`, and a body-less publish is covered by tests. |
+| D-04 local-only share toggle | Share dialog now reads `/resumes/:id/publication`, publishes and unpublishes through the API, shows the link only after the server returns a token, and surfaces 409/503/404/429 honestly. |
+| Guessable public links (raw resume id) | New stateless HMAC share tokens (`v1.<base64url id>.<22-char HMAC>`), issued at publish time, verified with timing-safe comparison. Production fails closed without `RESUME_SHARE_SECRET`. |
+| D-05 public response leakage | Anonymous responses are projected through an allowlist; owner ids, `user_id`, publication bookkeeping and internal flags are dropped before leaving the server. |
+| D-11 `/api/api/` double prefix + wrong response shape in the shared viewer | Viewer uses `resolvePublicResumeEndpoint()` (single `/api` prefix), reads `{ resume }`, and renders through the production `SmartResumeDocument` with the persisted template. |
+| D-08 `Alex Morgan` demo fallback in the export page (plus a second, dead set of per-template renderers) | Both demo datasets and the dead legacy renderers were deleted. Unknown ids and failed reads render honest error states; no fabricated person can reach preview, print or PDF. |
+| D-12 export guard granted access on any `renderToken` value | The guard now accepts only a 43-character base64url token shape, and the export page redeems the single-use token at `/api/export-render-data` before any content renders; a spent token is stripped from the URL. |
+| Export page ignored the render token entirely (headless PDF could not authenticate) | The page now handles `renderToken` (owner export), `publicToken` (anonymous preview) and authenticated draft reads, in that order. |
+
+### 6.2 Verification (executed)
+
+| Suite | Command | Result |
+| --- | --- | --- |
+| Backend share lifecycle (7 tests) | `node --test backend/test/dir008-public-share.test.js` | 7/7 PASS |
+| Frontend sharing contract (13 tests) | `node --test tests/dir008-sharing-contract.test.mjs` | 13/13 PASS |
+| Resumes hub UX | `node --test tests/dir110-resumes-hub-ux.test.mjs` | 7/7 PASS |
+| Export client | `node --test tests/export-client.test.mjs` | 10/10 PASS |
+| TypeScript / production build | `npx tsc --noEmit`, `npm run build` | exit 0 / built |
+
+Backend suite runs against the in-memory repository (`.env` points at MySQL 127.0.0.1:3306, which is absent); this is stated explicitly rather than implying a MariaDB run.
+
+### 6.3 Remaining for sharing
+
+* The share dialog is exercised through its extracted state machine and static contracts; **browser interaction evidence is BLOCKED** (no browser binary).
+* Visual verification of the anonymous viewer (print pagination, watermark placement) is likewise BLOCKED; DOM structure and print CSS are asserted statically.

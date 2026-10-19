@@ -442,6 +442,9 @@ function isPublicApiPath(pathname) {
     if (pathname.startsWith('/jobs-data/tracker')) return false;
     return publicApiPaths.has(pathname)
         || /^\/resumes\/public\/[a-zA-Z0-9_-]+$/i.test(pathname)
+        // DIR-008 — tokenized anonymous share reads. The HMAC token is the
+        // authorization proof; the route still enforces published-only state.
+        || /^\/resumes\/public\/token\/v1\.[A-Za-z0-9_-]{1,160}\.[A-Za-z0-9_-]{22}$/.test(pathname)
         || /^\/blog-data\/slug\/[a-z0-9](?:[a-z0-9-]{0,178}[a-z0-9])?$/i.test(pathname)
         || /^\/jobs-data\/[a-z0-9](?:[a-z0-9_-]{0,127})$/i.test(pathname)
         || /^\/phrases\/[a-z0-9](?:[a-z0-9_-]{0,127})$/i.test(pathname)

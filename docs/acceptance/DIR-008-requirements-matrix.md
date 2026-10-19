@@ -22,19 +22,19 @@ Valid outcomes: `PASS`, `PARTIAL`, `BLOCKED`, `FAIL`, `NOT STARTED`
 | R-14 | New resume initializes from Master CV | `resume-builder.tsx` | integration test | FAIL (wrong response shape) | audit §3.2 |
 | R-15 | Sync never overwrites edited resume content | builder sync | unit test | PASS (blank-only fill) | audit §3.2 |
 | R-16 | Honest sync status/timestamp and completeness | dashboard/settings | DOM test | NOT STARTED | pending |
-| R-17 | Resume create/edit/rename/duplicate/delete persisted | dashboard/builder/API | integration tests | PARTIAL | audit §3.1 |
+| R-17 | Resume create/edit/rename/duplicate/delete persisted | dashboard/builder/API | integration tests | PARTIAL (API covered; dashboard duplicate/rename pending M3b) | audit §3.1 |
 | R-18 | Delete requires destructive confirmation; owner isolation | dashboard/API | API tests | PARTIAL | audit §3.1 |
 | R-19 | Duplicate has independent identity/content | dashboard/API | integration test | PARTIAL | audit §3.1 |
-| R-20 | Public sharing uses explicit publish + unguessable token | share modal/backend | security tests | FAIL (local toggle only) | audit §3.4 |
-| R-21 | Anonymous share renders the selected template | shared view/export | integration test | FAIL (static layout, auth gate) | audit §3.4 |
-| R-22 | Revoked/unpublished shares stop working | backend | integration test | PARTIAL (backend state exists) | audit §3.4 |
-| R-23 | Public response excludes owner/internal/private fields | backend projection | security test | PARTIAL | audit §3.4 |
+| R-20 | Public sharing uses explicit publish + unguessable token | `share-modal.tsx`, `shareTokens.js` | backend + contract tests | PASS | `dir008-public-share` 7/7, `dir008-sharing-contract` 13/13 |
+| R-21 | Anonymous share renders the selected template | `shared/resume-view.tsx` → `SmartResumeDocument` | contract test + static checks | PASS (browser evidence BLOCKED) | `dir008-sharing-contract` |
+| R-22 | Revoked/unpublished shares stop working | backend publish/unpublish | backend test | PASS | `dir008-public-share` test 4 |
+| R-23 | Public response excludes owner/internal/private fields | `projectPublicResume` allowlist | backend + unit tests | PASS | `dir008-public-share` tests 3–4 |
 | R-24 | Preview renders discrete centered A4 sheets | preview/renderer | DOM/CSS test | PASS (structure) | audit §3.7 |
 | R-25 | Zoom 50–150 preserves proportions and does not mutate content | preview modal | static/DOM test | PARTIAL (range correct, a11y gaps) | audit §3.8 |
-| R-26 | Preview loading/error/empty states | preview/export | tests | PARTIAL | audit §3.7 |
+| R-26 | Preview loading/error/empty states | preview/export/shared viewer | contract tests | PASS | `dir008-sharing-contract` |
 | R-27 | Partitioner handles heading orphans and long sections | `smart-partitioner.ts` (orphan guard + chunked continuations) | unit tests | PASS | `dir008-layout-engine` test 7 |
 | R-28 | Print CSS A4, no chrome, no blank pages | `index.css` / export page | static test | PARTIAL | audit §3.7 |
-| R-29 | PDF export implemented/tested | backend export | integration/blocked browser | PARTIAL (server route; browser render blocked) | audit §2 |
+| R-29 | PDF export implemented/tested | backend export + render-token redemption | node tests; browser BLOCKED | PARTIAL (token path now wired; headless render untestable here) | audit §6 |
 | R-30 | DOCX export implemented/tested | backend docx | node test | PARTIAL | audit §2 |
 | R-31 | Rich text sanitized everywhere | `RichTextContent` | XSS tests | PARTIAL (DOMPurify, no protocol pin) | audit §3.7 |
 | R-32 | Dates right-aligned without overflow | renderer | DOM/static test | PARTIAL | audit §3.7 |
@@ -42,7 +42,7 @@ Valid outcomes: `PASS`, `PARTIAL`, `BLOCKED`, `FAIL`, `NOT STARTED`
 | R-34 | WCAG 2.1 AA relevant checks | UI | axe/static (browser blocked) | BLOCKED (automated browser), static partial | audit §2 |
 | R-35 | ATS scores use real content and documented weights | `atsScore.js` | unit tests | PASS | audit §3.6 |
 | R-36 | Dashboard metrics: Total/Ready/Developing/Unique Templates with 80/60 thresholds | `resumes.tsx` | unit/DOM tests | FAIL | audit §3.6 |
-| R-37 | No hard-coded demo identity in production surfaces | dashboard/shared/export | grep/static test | FAIL (`Alex Morgan`) | audit §4 D-08 |
+| R-37 | No hard-coded demo identity in production surfaces | dashboard/shared/export | static test | PARTIAL (export/shared cleared; dashboard fallback remains for M4) | `dir008-sharing-contract` test 11 |
 | R-38 | No silent generic template fallback | `getTemplateMeta`/`getLayoutSpec` throw; dispatcher has explicit unsupported state | coverage test | PASS | `dir008-layout-engine` tests 1/4 |
 | R-39 | Build/typecheck pass; performance measured honestly | build | `tsc --noEmit`, `npm run build` | PASS (tsc 0; Vite 1.57 s; wall 18.9 s) | audit §2 |
 | R-40 | Unit/integration/static tests and 100-row report | tests/docs | test runner | NOT STARTED | pending |
@@ -50,11 +50,11 @@ Valid outcomes: `PASS`, `PARTIAL`, `BLOCKED`, `FAIL`, `NOT STARTED`
 | R-42 | Incremental commits/pushes through M1–M9 | git | `git log`, remote verify | NOT STARTED | pending |
 | R-43 | Rich text renders as styled elements, never literal markup | `RichTextContent` | fixture render test | PARTIAL | audit §3.7 |
 | R-44 | Contact/date/skill content not clipped | renderer CSS | DOM/static checks | PARTIAL | audit §3.7 |
-| R-45 | Public/private authorization boundaries | guards/backend | API tests | PARTIAL | audit §3.4 |
+| R-45 | Public/private authorization boundaries | guards/backend | API tests | PASS (share token + published-only + owner isolation) | `dir008-public-share` test 6 |
 | R-46 | Preview/print/export consistency for a template | renderer | traceability report | NOT STARTED | pending |
 | R-47 | Cover letters counted separately | catalog | registry test | PASS (4 separate) | audit §3.3 |
 | R-48 | No secrets/PII in committed evidence | evidence bundle | secret scan | NOT STARTED | pending |
-| R-49 | Error states honest; no fabricated success | UI/API | tests | PARTIAL | audit §3.1 |
+| R-49 | Error states honest; no fabricated success | share dialog/export/viewer | unit + contract tests | PASS (share/export surfaces) | `dir008-sharing-contract` |
 | R-50 | Documentation and release certification | docs/release | review | NOT STARTED | pending |
 | R-51 | DIR-008 legacy 51-template parity + 3 s budget | layout engine | build/render tests | PARTIAL (legacy suites green; Cv1/Cv25/Cv34 parity open) | `template-production-render`, audit §1 |
 
@@ -72,12 +72,14 @@ Each row records: id, name, layout family, header, aside/rail width, rail sectio
 order, title style, density, thumbnail path + origin, fingerprint, rendered page count,
 rendered section headings, evidence hash, and screenshot status (`BLOCKED`, never fabricated).
 
-## Release gate summary (M2)
+## Release gate summary (M3)
 
 * Closed at M2: D-01 (no per-template geometry), D-02 (missing Cv52–Cv100 assets), D-13 (silent
   generic fallback), D-09 (orphaned headings / dropped sections).
-* Still open: D-03 (Master CV projection), D-04 (share publish), D-05 (public render auth),
-  D-06 (repository projection), D-07 (ATS thresholds), D-08 (`Alex Morgan` demo fallback),
-  D-10/D-11/D-12 (a11y + `/api/api` + render token), D-14/D-15.
+* Closed at M3: D-04 (share publish/unpublish), D-05 (tokenized public render + projection),
+  D-11 (`/api/api` + response shape), D-12 (render-token validation), export demo data (D-08 export
+  half).
+* Still open: D-03 (Master CV projection), D-06 (repository projection), D-07 (ATS thresholds),
+  D-08 dashboard fallback, D-10 (a11y), D-14/D-15.
 * Browser evidence blocked by environment: see audit §2 (recorded as BLOCKED, not passed).
 * Certification before remediation: **NOT CERTIFIED** (expected through M8; final status at M9)

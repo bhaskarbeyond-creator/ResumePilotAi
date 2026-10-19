@@ -6,14 +6,22 @@
  *
  * This guard checks for:
  * 1. Standard authentication (for regular browser access)
- * 2. Render token in URL fragment (for headless Chromium access)
- * 3. Render token in query parameter (alternative headless access)
+ * 2. A render token in the URL fragment or query string.
+ *
+ * DIR-008 hardening: the token must be *shaped* like a server-issued token
+ * (43 base64url characters). Presence alone is not authorization, and the
+ * export page still has to redeem the single-use token server-side before any
+ * resume content is available, so a hand-typed `#renderToken=x` grants nothing
+ * but an empty shell that renders an honest error.
  */
 
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/providers/auth-provider';
 import { PageSpinner } from '@/components/ui/loading';
 import { useEffect, useState } from 'react';
+
+/** Server-issued export tokens are 32 random bytes, base64url encoded. */
+const RENDER_TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 
 interface RequireExportAccessProps {
   children: React.ReactNode;
@@ -38,12 +46,8 @@ export function RequireExportAccess({ children, roles }: RequireExportAccessProp
       const queryParams = new URLSearchParams(location.search);
       const queryToken = queryParams.get('renderToken');
 
-      const hasToken = !!(fragmentToken || queryToken);
-      setHasRenderToken(hasToken);
-
-      if (hasToken) {
-        console.log('[RequireExportAccess] Render token detected, granting headless access');
-      }
+      const candidate = fragmentToken || queryToken;
+      setHasRenderToken(Boolean(candidate && RENDER_TOKEN_PATTERN.test(candidate)));
     };
 
     checkRenderToken();

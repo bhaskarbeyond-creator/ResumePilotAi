@@ -1,440 +1,211 @@
 /**
- * Public Shared Resume Viewer
+ * Public Shared Resume Viewer — DIR-008
  *
- * Route: /shared/:resumeId
- * Allows external hiring managers, recruiters, and clients to view,
- * print, and download a shared candidate resume with high fidelity.
- * CRITICAL CONTRACT: MUST call GET /api/resumes/public/:resumeId only.
- * NO fallback to synthetic mock data (SAMPLE_RESUME / Alex Vance).
+ * Route: /shared/:token (tokenized, anonymous) with legacy /shared/:resumeId
+ * support for links created before tokens existed.
+ *
+ * Contract:
+ *  - one unauthenticated read: `/api/resumes/public/token/:token` (or
+ *    `/api/resumes/public/:id` for a legacy id);
+ *  - the published resume renders through the SAME engine as preview and PDF,
+ *    using the template persisted on the resume;
+ *  - unpublished / revoked / forged links render an honest not-found state;
+ *  - no demo profile, no synthetic fallback, no owner/internal fields;
+ *  - print CSS produces A4 sheets with the toolbar hidden.
  */
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { PageSpinner } from '@/components/ui/loading';
 import { get, normalizeError } from '@/lib/api-client';
-import {
-  Download,
-  Printer,
-  Share2,
-  Copy,
-  Check,
-  Mail,
-  Phone,
-  MapPin,
-  Globe,
-  Briefcase,
-  GraduationCap,
-  Sparkles,
-  ExternalLink,
-  ChevronLeft,
-} from 'lucide-react';
+import { resolvePublicResumeEndpoint } from '@/lib/share-publication';
+import { normalizeResumeToDocument, type ResumeDocumentModel } from '@/lib/resume-view-model';
+import { getTemplateMeta, type TemplateMeta } from '@/lib/template-catalog';
+import { SmartResumeDocument } from '@/components/resume/smart-resume-document';
+import { ChevronLeft, Copy, Check, Printer, Download, Share2, AlertTriangle } from 'lucide-react';
 
-function LinkedinIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
-      <rect x="2" y="9" width="4" height="12" />
-      <circle cx="4" cy="4" r="2" />
-    </svg>
-  );
+interface WatermarkConfig {
+  enableFreeWatermark?: boolean;
+  watermarkText?: string;
+  opacity?: number;
+  position?: string;
 }
 
-function GithubIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
-      <path d="M9 18c-4.51 2-5-2-7-2" />
-    </svg>
-  );
-}
-
-interface ResumeData {
-  id?: string;
-  title?: string;
-  heading?: {
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    phone?: string;
-    location?: string;
-    title?: string;
-    website?: string;
-    linkedin?: string;
-    github?: string;
-  };
-  summary?: string;
-  experience?: Array<{
-    id?: string;
-    company: string;
-    title: string;
-    location?: string;
-    startDate: string;
-    endDate?: string;
-    current?: boolean;
-    bullets?: string[];
-  }>;
-  education?: Array<{
-    id?: string;
-    institution: string;
-    degree: string;
-    field?: string;
-    graduationDate?: string;
-    gpa?: string;
-  }>;
-  skills?: Array<{
-    category?: string;
-    items: string[];
-  }>;
-  projects?: Array<{
-    id?: string;
-    name: string;
-    description: string;
-    link?: string;
-    highlights?: string[];
-  }>;
+interface PublicResumeResponse {
+  success?: boolean;
+  resume?: any;
+  watermark?: WatermarkConfig | null;
+  publication?: { isPublished?: boolean; publishedAt?: string };
 }
 
 export function SharedResumePage() {
   const { resumeId } = useParams<{ resumeId: string }>();
-  const [resume, setResume] = useState<ResumeData | null>(null);
+  const [resume, setResume] = useState<ResumeDocumentModel | null>(null);
+  const [meta, setMeta] = useState<TemplateMeta | null>(null);
+  const [watermark, setWatermark] = useState<WatermarkConfig | null>(null);
+  const [publishedAt, setPublishedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    async function loadResume() {
+    let cancelled = false;
+    async function load() {
       if (!resumeId) {
-        setError('Invalid resume ID');
+        setError('This shared resume was not found or is no longer published.');
         setLoading(false);
         return;
       }
+      setLoading(true);
+      setError(null);
       try {
-        // CRITICAL CONTRACT: MUST call public unauthenticated endpoint
-        const data = await get<ResumeData>(`/api/resumes/public/${resumeId}`);
-        if (data && data.heading) {
-          setResume(data);
-        } else {
-          setError('Resume not found or not publicly shared');
+        const endpoint = resolvePublicResumeEndpoint(resumeId);
+        const payload = await get<PublicResumeResponse>(endpoint);
+        if (cancelled) return;
+        const publishedResume = payload?.resume;
+        if (!publishedResume || (payload?.publication && payload.publication.isPublished === false)) {
+          setError('This shared resume was not found or is no longer published.');
+          setLoading(false);
+          return;
         }
+        const normalized = normalizeResumeToDocument(publishedResume);
+        const templateId = normalized.template || publishedResume?.template || 'Cv1';
+        let templateMeta: TemplateMeta;
+        try {
+          templateMeta = getTemplateMeta(templateId);
+        } catch {
+          setError(`This resume uses a template this viewer does not support (${String(templateId)}).`);
+          setLoading(false);
+          return;
+        }
+        if (!templateMeta.id.startsWith('Cv')) {
+          setError('This shared resume points at a cover-letter template and cannot be shown here.');
+          setLoading(false);
+          return;
+        }
+        setResume(normalized);
+        setMeta(templateMeta);
+        setWatermark(publishedResume?._watermark || payload?.watermark || null);
+        setPublishedAt(payload?.publication?.publishedAt || null);
       } catch (err) {
-        setError(normalizeError(err).message);
+        if (cancelled) return;
+        const normalized = normalizeError(err);
+        setError(
+          normalized.status === 404
+            ? 'This shared resume was not found or is no longer published.'
+            : normalized.status === 429
+              ? 'Too many requests for this link. Please wait a moment and reload.'
+              : 'This shared resume could not be loaded right now. Please try again.'
+        );
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
-    loadResume();
+    void load();
+    return () => { cancelled = true; };
   }, [resumeId]);
 
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handlePrint = () => window.print();
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
   };
 
   if (loading) return <PageSpinner />;
 
-  if (error || !resume) {
+  if (error || !resume || !meta) {
     return (
-      <div className="min-h-screen bg-neutral-100 dark:bg-neutral-950 text-ink py-8 px-4 sm:px-6 lg:px-8 print:p-0 print:bg-white print:text-black">
-        <div className="max-w-4xl mx-auto rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl overflow-hidden print:shadow-none print:border-none print:m-0 print:max-w-full">
-          <div className="p-8 sm:p-12 text-center">
-            <h1 className="text-2xl font-bold text-ink">Resume Not Found</h1>
-            <p className="mt-4 text-ink-muted">
-              {error ? `Error: ${error}` : 'This resume does not exist or has not been publicly shared.'}
-            </p>
-            <Link to="/" className="mt-6 inline-flex items-center gap-2 text-brand-600 hover:underline">
-              <ChevronLeft className="size-4" />
-              Back to IME365
+      <main className="flex min-h-screen items-center justify-center bg-neutral-100 px-4 py-12 print:bg-white">
+        <div className="w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-8 text-center shadow-lg">
+          <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+            <AlertTriangle className="size-6" aria-hidden="true" />
+          </div>
+          <h1 className="text-xl font-bold text-neutral-900">Resume Not Available</h1>
+          <p className="mt-3 text-sm leading-relaxed text-neutral-600" data-testid="shared-error">
+            {error || 'This shared resume was not found or is no longer published.'}
+          </p>
+          <p className="mt-2 text-xs text-neutral-500">
+            If the owner unshared the resume or replaced the link, ask them for a new one.
+          </p>
+          <div className="mt-6 flex flex-wrap justify-center gap-2">
+            <Link to="/">
+              <Button variant="outline" size="sm">
+                <ChevronLeft className="mr-1 size-4" /> Go to homepage
+              </Button>
             </Link>
+            <Button size="sm" onClick={() => window.location.reload()}>Try again</Button>
           </div>
         </div>
-      </div>
+      </main>
     );
   }
 
-  const heading = resume.heading!;
-  const fullName = `${heading.firstName || ''} ${heading.lastName || ''}`.trim() || 'Candidate';
-
   return (
-    <div className="min-h-screen bg-neutral-100 dark:bg-neutral-950 text-ink py-8 px-4 sm:px-6 lg:px-8 print:p-0 print:bg-white print:text-black">
-      {/* Top Floating Control Bar (hidden during print) */}
-      <div className="max-w-4xl mx-auto mb-6 flex flex-wrap items-center justify-between gap-4 print:hidden">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-ink transition-colors"
-        >
-          <ChevronLeft className="size-4" />
-          <span>Back to IME365</span>
-        </Link>
+    <main className="min-h-screen bg-neutral-100 py-6 text-ink print:bg-white print:p-0">
+      <div className="mx-auto mb-5 flex max-w-[900px] flex-wrap items-center justify-between gap-3 px-4 print:hidden">
+        <div className="flex items-center gap-3">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-muted transition-colors hover:text-ink"
+          >
+            <ChevronLeft className="size-4" aria-hidden="true" />
+            <span>Go to homepage</span>
+          </Link>
+          <span className="hidden text-xs text-neutral-400 sm:inline" aria-hidden="true">|</span>
+          <span className="hidden text-xs text-neutral-500 sm:inline">
+            {meta.id} · {meta.name}
+            {publishedAt ? ` · shared ${new Date(publishedAt).toLocaleDateString()}` : ''}
+          </span>
+        </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleCopyLink}>
-            {copied ? (
-              <>
-                <Check className="size-4 text-emerald-600 mr-1.5" />
-                Copied Link
-              </>
-            ) : (
-              <>
-                <Share2 className="size-4 mr-1.5" />
-                Share Link
-              </>
-            )}
+          <Button variant="outline" size="sm" onClick={() => void handleCopyLink()}>
+            {copied ? <Check className="mr-1.5 size-4 text-emerald-600" /> : <Share2 className="mr-1.5 size-4" />}
+            {copied ? 'Copied Link' : 'Share Link'}
           </Button>
-
           <Button variant="outline" size="sm" onClick={handlePrint}>
-            <Printer className="size-4 mr-1.5" />
+            <Printer className="mr-1.5 size-4" aria-hidden="true" />
             Print
           </Button>
-
           <Button size="sm" onClick={handlePrint}>
-            <Download className="size-4 mr-1.5" />
+            <Download className="mr-1.5 size-4" aria-hidden="true" />
             Download PDF
           </Button>
         </div>
       </div>
 
-      {/* Main Resume Sheet */}
-      <div className="max-w-4xl mx-auto rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl overflow-hidden print:shadow-none print:border-none print:m-0 print:max-w-full">
-        {/* Top Accent Strip */}
-        <div className="h-2.5 bg-gradient-to-r from-brand-600 via-indigo-600 to-purple-600" />
-
-        <div className="p-8 sm:p-12 space-y-8">
-          {/* Header Block */}
-          <div className="border-b border-neutral-200 dark:border-neutral-800 pb-8">
-            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-neutral-900 dark:text-neutral-50">
-              {fullName}
-            </h1>
-            <p className="mt-1.5 text-lg font-medium text-brand-600 dark:text-brand-400">
-              {heading.title || resume.title}
-            </p>
-
-            {/* Contact Details */}
-            <div className="mt-4 flex flex-wrap items-center gap-y-2 gap-x-6 text-sm text-neutral-600 dark:text-neutral-400">
-              {heading.email && (
-                <a
-                  href={`mailto:${heading.email}`}
-                  className="flex items-center gap-1.5 hover:text-brand-600 transition-colors"
-                >
-                  <Mail className="size-4 text-neutral-400" />
-                  <span>{heading.email}</span>
-                </a>
-              )}
-              {heading.phone && (
-                <span className="flex items-center gap-1.5">
-                  <Phone className="size-4 text-neutral-400" />
-                  <span>{heading.phone}</span>
-                </span>
-              )}
-              {heading.location && (
-                <span className="flex items-center gap-1.5">
-                  <MapPin className="size-4 text-neutral-400" />
-                  <span>{heading.location}</span>
-                </span>
-              )}
-              {heading.website && (
-                <a
-                  href={heading.website}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-1.5 hover:text-brand-600 transition-colors"
-                >
-                  <Globe className="size-4 text-neutral-400" />
-                  <span>{heading.website.replace(/^https?:\/\//, '')}</span>
-                </a>
-              )}
-              {heading.linkedin && (
-                <a
-                  href={`https://${heading.linkedin.replace(/^https?:\/\//, '')}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-1.5 hover:text-brand-600 transition-colors"
-                >
-                  <LinkedinIcon className="size-4 text-neutral-400" />
-                  <span>{heading.linkedin.replace(/^https?:\/\//, '')}</span>
-                </a>
-              )}
-              {heading.github && (
-                <a
-                  href={`https://${heading.github.replace(/^https?:\/\//, '')}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-1.5 hover:text-brand-600 transition-colors"
-                >
-                  <GithubIcon className="size-4 text-neutral-400" />
-                  <span>{heading.github.replace(/^https?:\/\//, '')}</span>
-                </a>
-              )}
-            </div>
-          </div>
-
-          {/* Executive Summary */}
-          {resume.summary && (
-            <div>
-              <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 mb-2">
-                Executive Profile
-              </h2>
-              <p className="text-sm sm:text-base leading-relaxed text-neutral-700 dark:text-neutral-300">
-                {resume.summary}
-              </p>
-            </div>
-          )}
-
-          {/* Experience */}
-          {resume.experience && resume.experience.length > 0 && (
-            <div>
-              <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 mb-4">
-                Work Experience
-              </h2>
-              <div className="space-y-6">
-                {resume.experience.map((exp, idx) => (
-                  <div key={idx} className="space-y-2">
-                    <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
-                      <div>
-                        <span className="text-base font-bold text-neutral-900 dark:text-neutral-100">
-                          {exp.title}
-                        </span>
-                        <span className="mx-2 text-neutral-400">·</span>
-                        <span className="text-base font-semibold text-brand-600 dark:text-brand-400">
-                          {exp.company}
-                        </span>
-                      </div>
-                      <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
-                        {exp.startDate} – {exp.current ? 'Present' : exp.endDate || ''}
-                        {exp.location && ` | ${exp.location}`}
-                      </span>
-                    </div>
-
-                    {exp.bullets && exp.bullets.length > 0 && (
-                      <ul className="list-disc pl-5 space-y-1 text-sm text-neutral-700 dark:text-neutral-300">
-                        {exp.bullets.map((bullet, bIdx) => (
-                          <li key={bIdx} className="leading-relaxed">
-                            {bullet}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Skills */}
-          {resume.skills && resume.skills.length > 0 && (
-            <div>
-              <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 mb-3">
-                Core Competencies & Technologies
-              </h2>
-              <div className="space-y-2.5">
-                {resume.skills.map((skillGroup, sIdx) => (
-                  <div key={sIdx} className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3 text-sm">
-                    {skillGroup.category && (
-                      <span className="w-40 shrink-0 font-semibold text-neutral-900 dark:text-neutral-200">
-                        {skillGroup.category}:
-                      </span>
-                    )}
-                    <div className="flex flex-wrap gap-1.5">
-                      {skillGroup.items.map((item, iIdx) => (
-                        <span
-                          key={iIdx}
-                          className="rounded-md bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 text-xs font-medium text-neutral-700 dark:text-neutral-300"
-                        >
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Education */}
-          {resume.education && resume.education.length > 0 && (
-            <div>
-              <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 mb-3">
-                Education
-              </h2>
-              <div className="space-y-3">
-                {resume.education.map((edu, eIdx) => (
-                  <div key={eIdx} className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between">
-                    <div>
-                      <span className="font-bold text-neutral-900 dark:text-neutral-100">
-                        {edu.institution}
-                      </span>
-                      <span className="mx-2 text-neutral-400">·</span>
-                      <span className="text-sm text-neutral-700 dark:text-neutral-300">
-                        {edu.degree} {edu.field ? `in ${edu.field}` : ''}
-                      </span>
-                    </div>
-                    <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                      {edu.graduationDate} {edu.gpa ? `(GPA: ${edu.gpa})` : ''}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Projects */}
-          {resume.projects && resume.projects.length > 0 && (
-            <div>
-              <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 mb-3">
-                Key Projects & Contributions
-              </h2>
-              <div className="space-y-4">
-                {resume.projects.map((proj, pIdx) => (
-                  <div key={pIdx} className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-neutral-900 dark:text-neutral-100">
-                        {proj.name}
-                      </span>
-                      {proj.link && (
-                        <a
-                          href={proj.link}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-brand-600 hover:text-brand-700 inline-flex items-center text-xs"
-                        >
-                          <ExternalLink className="size-3 ml-0.5" />
-                        </a>
-                      )}
-                    </div>
-                    <p className="text-sm text-neutral-700 dark:text-neutral-300">
-                      {proj.description}
-                    </p>
-                    {proj.highlights && (
-                      <ul className="list-disc pl-5 space-y-0.5 text-xs text-neutral-600 dark:text-neutral-400">
-                        {proj.highlights.map((h, hIdx) => (
-                          <li key={hIdx}>{h}</li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+      <div className="relative mx-auto w-fit" data-testid="shared-document">
+        <div className="shadow-xl print:shadow-none">
+          <SmartResumeDocument resume={resume} meta={meta} />
         </div>
-
-        {/* Footer Brand */}
-        <div className="border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50 px-8 py-4 flex items-center justify-between text-xs text-neutral-500 print:hidden">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-brand-600">IME365</span>
-            <span>· Verified Professional Candidate Profile</span>
+        {watermark?.enableFreeWatermark && (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden print:block"
+          >
+            <span
+              className="select-none whitespace-nowrap text-[38px] font-black uppercase tracking-[0.2em]"
+              style={{
+                color: '#0f172a',
+                opacity: Math.min(Math.max(Number(watermark.opacity) || 0.18, 0.05), 0.4),
+                transform: `rotate(${watermark.position === 'diagonal' ? -32 : 0}deg)`,
+              }}
+            >
+              {watermark.watermarkText || 'Created with IME365 (Free Plan)'}
+            </span>
           </div>
-          <Link to="/" className="text-brand-600 hover:underline">
-            Create your ATS-optimized resume
-          </Link>
-        </div>
+        )}
       </div>
-    </div>
+
+      <p className="mx-auto mt-4 max-w-[900px] px-4 text-center text-[11px] text-neutral-500 print:hidden">
+        This is a read-only shared resume. The owner can revoke this link at any time.
+      </p>
+    </main>
   );
 }

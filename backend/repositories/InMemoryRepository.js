@@ -745,7 +745,10 @@ class InMemoryRepository {
             jobs: Array.from(this._trackedJobs.values()).filter(j => j.userId === userId).length,
         };
     }
-    async publishResume(userId, resumeId, { pbId, expectedRevision, expectedPublicationRevision }) {
+    async publishResume(userId, resumeId, _clientData, { expectedRevision = null, expectedPublicationRevision = null } = {}) {
+        // Signature parity with MySQLRepository: the publication is always the
+        // locked saved draft, never client-substituted data, and the options
+        // object is optional so a body-less publish cannot 500.
         const r = this._resumes.get(resumeId);
         if (!r || r.userId !== userId) this._reject('Resume not found', 'NOT_FOUND', 404);
         const curRev = r.revision || 1;
@@ -755,7 +758,8 @@ class InMemoryRepository {
             this._reject('Publication revision conflict', 'STALE_WRITE', 409);
         }
         r.isPublished = true;
-        r.pbId = pbId || r.pbId || `pb_${resumeId}`;
+        r.publicationMode = 'explicit';
+        r.pbId = r.pbId || `pb_${resumeId}`;
         r.publicationRevision = pubRev;
         r.publishedAt = new Date().toISOString();
         return { publicationRevision: pubRev, pbId: r.pbId };

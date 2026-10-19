@@ -1,6 +1,11 @@
 const express = require('express');
 const { getRepository } = require('../repositories');
 const { replyRepoError } = require('./errorResponder');
+const {
+    issueShareToken,
+    verifyShareToken,
+    projectPublicResume,
+} = require('../security/shareTokens');
 const router = express.Router();
 
 router.use((req, res, next) => {
@@ -24,12 +29,51 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/resumes/public/:id - Get publicly published resume
+//
+// Gated read: only an explicitly published resume is served, the payload is
+// projected through an allowlist, and the owner/internal flags never leave the
+// server. Share links in the product use the tokenized route below.
 router.get('/public/:id', async (req, res) => {
     try {
         const published = await req.repository.getPublicResume(req.params.id);
         if (!published || published.isPublished !== true || published.publicationMode !== 'explicit') {
             return res.status(404).json({ success: false, error: 'Resume not found or no longer published' });
         }
+        res.setHeader('Cache-Control', 'no-store');
+        res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+        return respondWithPublicResume(req, res, published);
+    } catch (err) {
+        console.error('[Resumes API] getPublicResume error:', err.message);
+        return replyRepoError(res, err, 'Failed to fetch public resume');
+    }
+});
+
+// GET /api/resumes/public/token/:token - tokenized anonymous share read
+//
+// The HMAC token is the only way a product share link addresses a resume. A
+// forged, truncated or rotated token is indistinguishable from an unpublished
+// resume: 404, never a different document.
+router.get('/public/token/:token', async (req, res) => {
+    try {
+        const resumeId = verifyShareToken(req.params.token);
+        if (!resumeId) {
+            return res.status(404).json({ success: false, error: 'Resume not found or no longer published' });
+        }
+        const published = await req.repository.getPublicResume(resumeId);
+        if (!published || published.isPublished !== true || published.publicationMode !== 'explicit') {
+            return res.status(404).json({ success: false, error: 'Resume not found or no longer published' });
+        }
+        res.setHeader('Cache-Control', 'no-store');
+        res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+        return respondWithPublicResume(req, res, published);
+    } catch (err) {
+        console.error('[Resumes API] getPublicResume(token) error:', err.message);
+        return replyRepoError(res, err, 'Failed to fetch public resume');
+    }
+});
+
+async function respondWithPublicResume(req, res, published) {
+    try {
         let watermark = null;
         try {
             if (published.ownerUid && typeof req.repository.getUser === 'function') {
@@ -54,7 +98,7 @@ router.get('/public/:id', async (req, res) => {
             // Graceful non-fatal fallback
         }
 
-        const resumeData = { ...(published.data || {}) };
+        const resumeData = projectPublicResume(published.data || {});
         if (watermark) {
             resumeData._watermark = watermark;
         }
@@ -71,10 +115,10 @@ router.get('/public/:id', async (req, res) => {
             }
         });
     } catch (err) {
-        console.error('[Resumes API] getPublicResume error:', err.message);
+        console.error('[Resumes API] public projection error:', err.message);
         return replyRepoError(res, err, 'Failed to fetch public resume');
     }
-});
+}
 
 // GET /api/resumes/:id - Get single resume
 router.get('/:id', async (req, res) => {
@@ -128,12 +172,15 @@ router.delete('/:id', async (req, res) => {
 // POST /api/resumes/:id/publish - Publish resume to public web link
 router.post('/:id/publish', express.json({ limit: '5mb' }), async (req, res) => {
     try {
-        const { expectedRevision, expectedPublicationRevision, resumeData } = req.body;
+        const { expectedRevision, expectedPublicationRevision, resumeData } = req.body || {};
         const result = await req.repository.publishResume(req.user.uid, req.params.id, resumeData, {
             expectedRevision,
             expectedPublicationRevision,
         });
-        return res.json({ success: true, ...result });
+        // The share token is issued only after the repository committed the
+        // publication, and is derived from the resume id — never from client data.
+        const shareToken = issueShareToken(req.params.id);
+        return res.json({ success: true, ...result, shareToken, sharePath: `/shared/${shareToken}` });
     } catch (err) {
         if (err.code === 'RESUME_CONFLICT' || err.code === 'RESUME_PUBLICATION_CONFLICT') {
             return res.status(409).json({
@@ -142,6 +189,13 @@ router.post('/:id/publish', express.json({ limit: '5mb' }), async (req, res) => 
                 code: err.code,
                 remoteRevision: err.remoteRevision,
                 remoteData: err.remoteData,
+            });
+        }
+        if (err.code === 'SHARE_SECRET_UNAVAILABLE') {
+            return res.status(503).json({
+                success: false,
+                code: err.code,
+                error: 'Public share links are not configured on this deployment. No link was created.',
             });
         }
         return replyRepoError(res, err, 'Failed to publish resume');
@@ -165,7 +219,11 @@ router.post('/:id/unpublish', async (req, res) => {
 router.get('/:id/publication', async (req, res) => {
     try {
         const result = await req.repository.getResumePublication(req.user.uid, req.params.id);
-        return res.json({ success: true, ...result });
+        if (!result || result.isPublished !== true) {
+            return res.json({ success: true, ...(result || { isPublished: false }) });
+        }
+        const shareToken = issueShareToken(req.params.id);
+        return res.json({ success: true, ...result, shareToken, sharePath: `/shared/${shareToken}` });
     } catch (err) {
         return replyRepoError(res, err, 'Failed to get publication status');
     }
