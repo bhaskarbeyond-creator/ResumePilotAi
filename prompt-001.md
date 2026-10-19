@@ -6,14 +6,14 @@
 **Priority:** P0 (Critical Production Fidelity & Candidate Experience)  
 **Target Workspace:** `d:\xampp\htdocs\IME365`  
 **Governing Directive:** DIR-008 (`.bridge/directives/DIR-008.json`)  
-**Designated Branch:** `arena/f4651d36-resumepilotai`  
-**Designated Master Commit SHA:** `5b72cba80f813f1ca5f309c31fa87a338ef707f0` (short: `5b72cba8`)  
+**Designated Branch:** `main` (or `arena/f4651d36-resumepilotai`)  
+**Designated Baseline Commit:** `5b72cba8` (Code Engine Baseline) / `HEAD`  
 
 ---
 
 ### 🚨 STEP 0: MANDATORY GIT SYNCHRONIZATION GATE (DO NOT SKIP)
 
-In the previous development cycle, work was performed on a divergent/uncoordinated commit, causing merge collisions and orphaned progress. **You are strictly forbidden from writing a single line of code until you have verified your branch and commit SHA.**
+In the previous development cycle, work was performed on a divergent/uncoordinated commit, causing merge collisions and orphaned progress. **You are strictly forbidden from writing a single line of code until you have verified your branch and commit status.**
 
 Run the following commands in your shell and verify the exact output:
 
@@ -21,25 +21,22 @@ Run the following commands in your shell and verify the exact output:
 # 1. Fetch latest changes from remote
 git fetch origin
 
-# 2. Checkout the designated arena branch
-git checkout arena/f4651d36-resumepilotai
+# 2. Checkout the synchronized branch (main or arena)
+git checkout main
+git pull origin main
 
-# 3. Pull and hard-reset to the verified master commit
-git pull origin arena/f4651d36-resumepilotai
-git reset --hard 5b72cba80f813f1ca5f309c31fa87a338ef707f0
-
-# 4. PRE-FLIGHT VERIFICATION ASSERTION:
-git rev-parse HEAD
-# MUST output EXACTLY: 5b72cba80f813f1ca5f309c31fa87a338ef707f0
+# 3. PRE-FLIGHT VERIFICATION ASSERTION:
+git log -1 --oneline
+# Must show the latest verified commit (includes prompt-001.md & 5b72cba8 code engine)
 
 git status -uno
 # MUST output:
-# On branch arena/f4651d36-resumepilotai
-# Your branch is up to date with 'origin/arena/f4651d36-resumepilotai'.
+# On branch main
+# Your branch is up to date with 'origin/main'.
 # nothing to commit, working tree clean
 ```
 
-> ⚠️ **Verification Gate:** If `git rev-parse HEAD` does not output `5b72cba80f813f1ca5f309c31fa87a338ef707f0`, STOP immediately and report the discrepancy. Do not proceed with any implementation.
+> ⚠️ **Verification Gate:** Verify that your working tree is clean and points to the synchronized commit. Do not proceed with any implementation until confirmed.
 
 ---
 
