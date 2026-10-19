@@ -417,3 +417,61 @@ the evidence is sanitizer output and SSR markup, not a clicked exploit.
 
 Server-side PDF rendering (headless Chromium) is still **BLOCKED** in this sandbox: the browser binary cannot be
 installed (network policy). The print-to-PDF route is exercised at the CSS/document level, not by producing a PDF.
+
+## 11. M8 remediation record — legacy template parity, measured instead of assumed
+
+### 11.1 What the investigation found
+
+The three templates the directive names for a deep dive (Cv34, Cv1, Cv25) were **not** restorations of the
+legacy artwork. They were family compositions that happened to carry the legacy id:
+
+| Template | Legacy art (`src/cv-templates/`) | Smart renderer before M8 | Catalog palette before M8 |
+| --- | --- | --- | --- |
+| Cv34 | White header, 5px `#6c5ce7 → #0f766e → #fd79a8` rule, 32px purple name, 100px circular avatar with a 3px `#0f766e` border, percentage skill meters | Full-bleed `primary` banner with white text and an invented circular "Edition" badge | `#0b0f19` / `#00e5ff` — matched neither |
+| Cv1 | `#1e40af` tinted banner (5 % fill, 20 % hairline), 2.5px circular photo ring, labelled information rail, skill pills | Invented 33 % dark slate rail | `#1e3a8a` / `#3b82f6` |
+| Cv25 | `#274472` navy band, 4px `#3d6485` avatar frame, 2:1 split with a `#f5f7fa` rail, five-box skill scales | White header + invented slate/teal palette | `#0f172a` / `#10b981` |
+
+A catalog-wide sweep confirmed the pattern was not limited to the deep dives: of the 51 legacy templates, only
+three catalogue palettes were traceable to their own stylesheet colours.
+
+### 11.2 What changed
+
+| Change | Detail |
+| --- | --- |
+| Cv34 restored | White header, exact three-stop rule driven by a new optional `TemplateMeta.accent` token (`#fd79a8`), 3px teal avatar ring, percentage meters that omit a bar when no rating exists, invented "Edition" badge removed. |
+| Cv1 restored | Legacy tinted banner (`primary` at `0d`/`33` alpha), 2.5px `#1e40af` ring with an initials fallback when no photo is published, 34 % information rail (labelled icon rows, skill pills, languages), light main column. |
+| Cv25 restored | `#274472` navy header, 4px `#3d6485` avatar frame, 2:1 split with the `#f5f7fa` rail, five-box skill scales and CEFR language dots, all with accessibility labels. |
+| Catalog corrected | Cv1 `#1e40af`/`#475569`, Cv25 `#274472`/`#3d6485`, Cv34 `#6c5ce7`/`#0f766e` + `accent`. The catalog now publishes the palette the legacy art actually uses. |
+| Photo atom | Accepts an explicit ring style so a template can express its own legacy ring without hard-coding colours in JSX. |
+| Parity ledger | `scripts/dir008-legacy-parity.mjs` writes `docs/templates/legacy-parity.json` and `.md`: one verdict per canonical template. Only the three restored ids may report `RESTORED`, and each must name its evidence test. |
+
+### 11.3 Honest coverage statement
+
+| Verdict | Count | Meaning |
+| --- | --- | --- |
+| RESTORED | 3 | Geometry rebuilt from legacy art and protected by automated structural assertions. |
+| PALETTE_DIVERGENT | 41 | Catalog palette cannot be traced to the legacy stylesheet; geometry remains family-composed. |
+| CATALOG_ONLY | 7 | No dedicated legacy stylesheet exists to compare against. |
+| PALETTE_LINKED | 0 | — |
+
+**48 of the 51 canonical templates are therefore not legacy parity.** They render through distinct typed
+layout families and satisfy the 100-template distinctness gate, but no 1:1 restoration is claimed. R-51 remains
+PARTIAL until each of those templates has its own restoration evidence.
+
+### 11.4 Verification (executed)
+
+| Suite | Command | Result |
+| --- | --- | --- |
+| Deep-dive parity (7 tests) | `node --test tests/dir008-template-deep-dives.test.mjs` | 7/7 PASS |
+| Parity ledger integrity (5 tests) | `node --test tests/dir008-legacy-parity.test.mjs` | 5/5 PASS |
+| Layout engine (9 tests) | `node --test tests/dir008-layout-engine.test.mjs` | 9/9 PASS |
+| Template evidence (6 tests) | `node --test tests/dir008-template-evidence.test.mjs` | 6/6 PASS |
+| Field robustness (5 tests) | `node --test tests/dir008-field-robustness.test.mjs` | 5/5 PASS |
+| Print + DOCX parity (6 tests) | `node --test tests/dir008-print-and-docx.test.mjs` | 6/6 PASS |
+| TypeScript / production build | `npx tsc --noEmit`, `npx vite build` | exit 0 / built in 1.70 s |
+
+The template evidence package (`docs/templates/evidence/*.html`, wireframes, inventory and contact sheet) was
+regenerated from the current renderer after the palette changes so the committed evidence matches the code.
+
+Browser screenshots for these three templates remain **BLOCKED** (no browser binary); the evidence is
+server-rendered production markup plus structural assertions, never a fabricated image.

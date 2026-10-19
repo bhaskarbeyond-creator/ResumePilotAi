@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-19T22:24:56.306Z",
+  "generatedAt": "2026-10-19T22:57:47.454Z",
   "kind": "spec-derived-layout-proof",
   "note": "Rendered app screenshots are BLOCKED in this environment (no browser binary). These rows describe the exact geometry consumed by the renderer.",
   "total": 100,
@@ -52,12 +52,12 @@
         "references"
       ],
       "titleStyle": "underline",
-      "photoShape": "rounded",
+      "photoShape": "circle",
       "density": "standard",
       "nameScale": "xl",
       "contactLayout": "stack",
       "accentBar": false,
-      "fingerprint": "cv1|cv1|left|28|contact+skills+languages|summary>experience>education>projects>certifications>achievements>hobbies>references|underline|rounded|standard|xl|stack|flat|cv1",
+      "fingerprint": "cv1|cv1|left|28|contact+skills+languages|summary>experience>education>projects>certifications>achievements>hobbies>references|underline|circle|standard|xl|stack|flat|cv1",
       "thumbnail": "/templates/Cv1.JPG",
       "thumbnailOrigin": "legacy-artifact",
       "wireframe": "docs/templates/wireframes/Cv1.svg",
@@ -76,9 +76,9 @@
           "Interests & Hobbies",
           "References"
         ],
-        "firstPageCharacters": 889,
-        "htmlSha256": "8352acb08b73ecd28083275cef52295bdeb980101cdf5265d4b82cff04b5a9c2",
-        "htmlBytes": 12389
+        "firstPageCharacters": 887,
+        "htmlSha256": "63d6614b21b17bcf13d3b52a06c96381f38fc0096fc0ffa9226b1ff84069a99f",
+        "htmlBytes": 15180
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -130,8 +130,8 @@
           "Interests & Hobbies"
         ],
         "firstPageCharacters": 961,
-        "htmlSha256": "e8b7be3ce9a2670e99ec0bfa91ad876d1d8e9624717603d9eb97e59846a47926",
-        "htmlBytes": 15875
+        "htmlSha256": "15c089ef1b8869972200d26b3124ca42260d9183f7eeacc285c14300669b2f4c",
+        "htmlBytes": 16034
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -182,8 +182,8 @@
           "Languages"
         ],
         "firstPageCharacters": 775,
-        "htmlSha256": "65fa3fa6e6602a7996736ae752da4105a5169f40a403962d1c38d17e06859a60",
-        "htmlBytes": 11109
+        "htmlSha256": "340fb6aba4b606ef2539876ceffa46b4282f205dbb7c48b6c2c8d861f35c17e5",
+        "htmlBytes": 11393
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -235,8 +235,8 @@
           "References"
         ],
         "firstPageCharacters": 849,
-        "htmlSha256": "05df74ef0fdedc46f1632092296ae9da38bda9fbbadf77b5ff4092d8694e9222",
-        "htmlBytes": 11098
+        "htmlSha256": "56f1b453a4b2e3fe1f7038d1c009086e9500cd603757ac2b0494bb1d9845c362",
+        "htmlBytes": 11330
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -287,8 +287,8 @@
           "Languages"
         ],
         "firstPageCharacters": 832,
-        "htmlSha256": "1d2d9f1273a538fe98d301000ecbdbbb06e0be0f4667bfab00df1b7b45d11143",
-        "htmlBytes": 13454
+        "htmlSha256": "a234ead822425660a2c14d66945109ea3dc7736b97f286902c004f99c828178e",
+        "htmlBytes": 13545
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -339,8 +339,8 @@
           "Languages"
         ],
         "firstPageCharacters": 816,
-        "htmlSha256": "473c38649295e9d17e9b4ba2c7f7d85401acdfa64deaf80f52f3ce305d3f1a9b",
-        "htmlBytes": 15000
+        "htmlSha256": "cff15cddc7be916fc5c5afb5ffa70204d5108129aa58a0b85077dab56c993076",
+        "htmlBytes": 15091
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -382,8 +382,8 @@
         "railFamily": null,
         "mainSectionHeadings": [],
         "firstPageCharacters": 853,
-        "htmlSha256": "0ec84aca161e84843465c9d5790fa2679ae764f9e3189f4a90d501f9b961e910",
-        "htmlBytes": 15921
+        "htmlSha256": "5b2f86ba81e6838269863a0dc13f248e1d03c43a9893b9ec4cebd6e7ed4a91af",
+        "htmlBytes": 16104
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -434,8 +434,8 @@
           "Languages"
         ],
         "firstPageCharacters": 820,
-        "htmlSha256": "3838bdd33c2050d6bce84b34b37ca735b9682cd9aa705047383381a816c1d752",
-        "htmlBytes": 10674
+        "htmlSha256": "904b53fcefdd0bb3084abbbae9b243e8018622a359af366cd607c5bf40a382cd",
+        "htmlBytes": 11007
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -487,8 +487,8 @@
           "References"
         ],
         "firstPageCharacters": 1094,
-        "htmlSha256": "fa725ea24fa1e0e346e49c3b67808e93f8351e96c221e2ef5cf44fea0a31ccbc",
-        "htmlBytes": 20045
+        "htmlSha256": "386d78c63b021317a4d1ef73a60c0c222ecd27db27b294a515e5b768cf9354dd",
+        "htmlBytes": 20204
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -540,8 +540,8 @@
           "Interests & Hobbies"
         ],
         "firstPageCharacters": 995,
-        "htmlSha256": "fb34f9f69d6b3e046f73d8308c336d53c0daa7e07215f6383241b2b814548e09",
-        "htmlBytes": 16197
+        "htmlSha256": "58b302ad51c76bb9a57aaa9a134e5acfa3e07b52034510f7a58f888c942e3ffc",
+        "htmlBytes": 16407
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -591,8 +591,8 @@
           "Languages"
         ],
         "firstPageCharacters": 826,
-        "htmlSha256": "52181cb224fe08ed8514a443328398602618a9803b2b16c906e80698b4cb522e",
-        "htmlBytes": 16026
+        "htmlSha256": "9ec5efba72a83a4bfe589f3061b51625ca6596196dc253f1171e432f1ef60304",
+        "htmlBytes": 16209
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -644,8 +644,8 @@
           "References"
         ],
         "firstPageCharacters": 850,
-        "htmlSha256": "76e3a20ec9eb62993e09129329be0e13bda0cfc60d0dec726bb2f16ce00ae772",
-        "htmlBytes": 9787
+        "htmlSha256": "e6b9083caca44bfba91e0441185f2593f4175248f99c0aecc01434f7ac52ec35",
+        "htmlBytes": 10019
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -696,8 +696,8 @@
           "Languages"
         ],
         "firstPageCharacters": 800,
-        "htmlSha256": "c255295556647a87b199807b9646b66b7f49ff2d5c227c2bb0aa8f725f2b5ef1",
-        "htmlBytes": 14613
+        "htmlSha256": "26a90b76214ff6eec59f3be75b65d266113f645f97515d7cffb1add7c0f027a4",
+        "htmlBytes": 14796
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -739,8 +739,8 @@
         "railFamily": null,
         "mainSectionHeadings": [],
         "firstPageCharacters": 813,
-        "htmlSha256": "c6c88b167ea368bf801a705d8b0afc258592931f08edb23ff91f35298dbef958",
-        "htmlBytes": 15812
+        "htmlSha256": "13afdd91bc03e3f2e6fa2af4b56b781fda5a7a0aa43851d7a0f47182ee9164c2",
+        "htmlBytes": 15995
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -792,8 +792,8 @@
           "Interests & Hobbies"
         ],
         "firstPageCharacters": 821,
-        "htmlSha256": "bcc65af118760c2392c09b26e79a6b154c17beda7155e1bf4280b4b55a6b1632",
-        "htmlBytes": 10346
+        "htmlSha256": "e503d0ad87f5a538b5bd2f5c90593d57a886229c47b8c5201f8245b49b2a5c33",
+        "htmlBytes": 10679
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -844,8 +844,8 @@
           "Languages"
         ],
         "firstPageCharacters": 801,
-        "htmlSha256": "628b731cba9a6adc27e392f7694ff6fc5aab1b3a4d873868e374e74ceb766044",
-        "htmlBytes": 10386
+        "htmlSha256": "ce8910055dad9c129d6fb1ffc6ef024ffa5efa827f61f16064d69070b322fc1c",
+        "htmlBytes": 10719
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -897,8 +897,8 @@
           "Interests & Hobbies"
         ],
         "firstPageCharacters": 814,
-        "htmlSha256": "3dd8a90fa28dc8f17b26d8d9bc7c7598ed1a5f5a2f6713729821d21d0f65376a",
-        "htmlBytes": 14111
+        "htmlSha256": "f10dd0ec9f7000d5f10ae5b767b4e133cadb2e62e26384ed5d575ecb593a8868",
+        "htmlBytes": 14294
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -949,8 +949,8 @@
           "Languages"
         ],
         "firstPageCharacters": 823,
-        "htmlSha256": "d812b68dbefaae21846b55d774acb8b889fa1a8b4b8d3525d48740e905bd979a",
-        "htmlBytes": 14770
+        "htmlSha256": "df2f1158395fb0865364413a609048ee33e8ad5a8c32a9a01ea8e07f7ccabdf1",
+        "htmlBytes": 14861
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -1002,8 +1002,8 @@
           "References"
         ],
         "firstPageCharacters": 886,
-        "htmlSha256": "e89bed0cd182e243f9c07e607b8e9528a56b86eb9b59aad9f5a582f8e9f60e68",
-        "htmlBytes": 11832
+        "htmlSha256": "7acbdb0f4f010ed2468a2660873af9227854000db6c3e0ee7657b4a90bdb7d89",
+        "htmlBytes": 12073
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -1055,8 +1055,8 @@
           "References"
         ],
         "firstPageCharacters": 844,
-        "htmlSha256": "5ee60057096ca94cb1305cebd9ee383d9201ea7b1d00cdc75ca9d81c6d4f29b0",
-        "htmlBytes": 14490
+        "htmlSha256": "5f24270af037e21e9e526adef86d75802cceb0c313cf4ed68501f68fbf337864",
+        "htmlBytes": 14572
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -1107,8 +1107,8 @@
           "Languages"
         ],
         "firstPageCharacters": 833,
-        "htmlSha256": "76891bc3adafdb8512b10e73135d9ed72e6a19bf6d26facdad76266c4e78a452",
-        "htmlBytes": 13507
+        "htmlSha256": "be0647604dae8613846c56b4508998ebc16b91aa5aa6b28a6fd4026c84f09ca7",
+        "htmlBytes": 13717
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -1160,8 +1160,8 @@
           "References"
         ],
         "firstPageCharacters": 851,
-        "htmlSha256": "5a479b065126425ba5ffc8899ce99110ee3383532e18ee46352c5eebcebcd62f",
-        "htmlBytes": 10028
+        "htmlSha256": "fc5608fbd202ecadde4b970149bf42dbe9425d73deec4292123285324391c776",
+        "htmlBytes": 10260
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -1213,8 +1213,8 @@
           "References"
         ],
         "firstPageCharacters": 973,
-        "htmlSha256": "62194edc4a5c91d97c50b473dd6601a67d06a3994e17c958b2fd1c408cba6869",
-        "htmlBytes": 16257
+        "htmlSha256": "3696a032688e3ebbb57c1c4056dfefe8098da03a9acea4349e6c12eaa1c42d59",
+        "htmlBytes": 16415
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -1266,8 +1266,8 @@
           "References"
         ],
         "firstPageCharacters": 883,
-        "htmlSha256": "3c352798514470f98aeb8be10597b6db74b57167c9873bca038f22866dcd6f33",
-        "htmlBytes": 12275
+        "htmlSha256": "4c9243255ac880ad918fce2a3971b832a364a6844ffc024dfcd24f8defd6e2cc",
+        "htmlBytes": 12458
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -1294,12 +1294,12 @@
         "references"
       ],
       "titleStyle": "micro",
-      "photoShape": "rounded",
+      "photoShape": "circle",
       "density": "compact",
       "nameScale": "lg",
       "contactLayout": "inline",
       "accentBar": false,
-      "fingerprint": "cv25|cv25|right|36|summary+skills+languages|experience>education>projects>achievements>certifications>hobbies>references|micro|rounded|compact|lg|inline|flat|cv25",
+      "fingerprint": "cv25|cv25|right|36|summary+skills+languages|experience>education>projects>achievements>certifications>hobbies>references|micro|circle|compact|lg|inline|flat|cv25",
       "thumbnail": "/templates/Cv25.JPG",
       "thumbnailOrigin": "legacy-artifact",
       "wireframe": "docs/templates/wireframes/Cv25.svg",
@@ -1317,9 +1317,9 @@
           "Interests & Hobbies",
           "References"
         ],
-        "firstPageCharacters": 876,
-        "htmlSha256": "54ba2a70138dd2bd70909dcbc8a4ffc10905742cc507b9fc5ffa3af4d6207a1e",
-        "htmlBytes": 13263
+        "firstPageCharacters": 782,
+        "htmlSha256": "929fd8c35b76736a376497fe06ffdbb6eb6152d335feed714c878f0f09e903d9",
+        "htmlBytes": 14841
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -1372,8 +1372,8 @@
           "References"
         ],
         "firstPageCharacters": 991,
-        "htmlSha256": "c1ca30b3b69e75a048550408d56b949528a6e5f2478387a8436c130da93e7522",
-        "htmlBytes": 17247
+        "htmlSha256": "f52341bab44f5267e560bed78c68c604a600b3f0359374e9783683a693ed5298",
+        "htmlBytes": 17457
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -1425,8 +1425,8 @@
           "References"
         ],
         "firstPageCharacters": 845,
-        "htmlSha256": "e4f001730b23daee3eab6425c6497e3e9a28db78ae4ed3c87ec63f27d5e548fb",
-        "htmlBytes": 10801
+        "htmlSha256": "946194d81f89f1f7fa4202d43d155c1fed24056bcb1e3e91d01c543b38b69e0d",
+        "htmlBytes": 11085
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -1478,8 +1478,8 @@
           "References"
         ],
         "firstPageCharacters": 858,
-        "htmlSha256": "0fbe9f711b30d5b4cecaae04cbc95814e990b473fba8d3ac67d0d61668cbdb09",
-        "htmlBytes": 12444
+        "htmlSha256": "61fbc76be8c1bb2bdf3144b9caccdc50ce55ac5c31a9810941a9adbe70518817",
+        "htmlBytes": 12777
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -1521,8 +1521,8 @@
         "railFamily": null,
         "mainSectionHeadings": [],
         "firstPageCharacters": 815,
-        "htmlSha256": "08607f7a9fe66269302ad5adb17d44b94a1019ce6e7447623e458171d24e4831",
-        "htmlBytes": 14489
+        "htmlSha256": "1c1dae0cb95dca364b374ff6006f5be080a6c6c7b499bd77116278f4a37bb3d9",
+        "htmlBytes": 14620
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -1573,8 +1573,8 @@
           "References"
         ],
         "firstPageCharacters": 905,
-        "htmlSha256": "eac426b8d51cca04d52b1afb78187af68751e1e0618e591163d0864ad6162b38",
-        "htmlBytes": 15401
+        "htmlSha256": "62a41db56508e5f1878ea09d83a8edd8d734e14c14dbbb0ec1325bec36eeb39b",
+        "htmlBytes": 15611
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -1625,8 +1625,8 @@
           "References"
         ],
         "firstPageCharacters": 849,
-        "htmlSha256": "fa98f226ed4c3701c86b8f4866db056079d18055b57c08a46239d5df261159c7",
-        "htmlBytes": 13601
+        "htmlSha256": "0c07b48d70074abd1e5d63315117e487937a4e730c827d54a415209e2531d834",
+        "htmlBytes": 13784
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -1678,8 +1678,8 @@
           "Interests & Hobbies"
         ],
         "firstPageCharacters": 815,
-        "htmlSha256": "2ed7a81c5b30c0190bd307ec10a3790ca11ced245c33aad18286820d82d05e60",
-        "htmlBytes": 13651
+        "htmlSha256": "d4055bc935a7270b1dafb185aefae31b6732ed8ddaad9efdb16031df17e3556c",
+        "htmlBytes": 13733
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -1730,9 +1730,9 @@
           "Languages",
           "Interests & Hobbies"
         ],
-        "firstPageCharacters": 845,
-        "htmlSha256": "f6fc188bef75c7b9d30f91ea2bafe96ec8e610edc15945ec2a39d4b531fe4949",
-        "htmlBytes": 13777
+        "firstPageCharacters": 862,
+        "htmlSha256": "993c7e5313de3ae65a187ef0c26d50ee72da3a104726ddce59526d5738cc42f7",
+        "htmlBytes": 13981
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -1783,9 +1783,9 @@
           "Interests & Hobbies",
           "References"
         ],
-        "firstPageCharacters": 862,
-        "htmlSha256": "d4363f523b8c31def8e6bb1e86df49c2669685c4f5061a86743b7d587436d2c8",
-        "htmlBytes": 15008
+        "firstPageCharacters": 855,
+        "htmlSha256": "51eb69cfd1441873b4987ccbbbba44ee05980af6e8f4cd3f96811d60aab58702",
+        "htmlBytes": 13201
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -1837,8 +1837,8 @@
           "References"
         ],
         "firstPageCharacters": 1018,
-        "htmlSha256": "2d5aee75514b4307a6a60cb9d97ca61508ae9667285d7d2e472c9b25474ca300",
-        "htmlBytes": 11838
+        "htmlSha256": "1c5720b24f8f8d25c07215086cfb6d8a5eb380cf71dbbe97136774d277cd274d",
+        "htmlBytes": 12125
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -1890,8 +1890,8 @@
           "Interests & Hobbies"
         ],
         "firstPageCharacters": 813,
-        "htmlSha256": "4c713974d9b61d3b77f2b93dce54f5e04c6b7dec5268227654860797f6078ee8",
-        "htmlBytes": 13990
+        "htmlSha256": "8a95214c4250ea4d9f81f403a186ef3125ac4fb0eaf8e906a8438bb7b0f4436b",
+        "htmlBytes": 14173
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -1943,8 +1943,8 @@
           "Interests & Hobbies"
         ],
         "firstPageCharacters": 814,
-        "htmlSha256": "d43c149a0079ff677e677d2dd77532caaa24a428d49aeacd507bfeaaa21e4bb8",
-        "htmlBytes": 14383
+        "htmlSha256": "653096077a3958d205cfced369398b998c704ccf6d24fc532ce2ec2693cd7bcd",
+        "htmlBytes": 14566
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -1996,8 +1996,8 @@
           "References"
         ],
         "firstPageCharacters": 858,
-        "htmlSha256": "6b55f6e5fb5215d9c59b24169acd6c2d6d312d33fc7544bf4977ddda5c731672",
-        "htmlBytes": 13161
+        "htmlSha256": "fcb4d78203ea9380d665cd244dd14cfd45ba893af090fb9eccfe6c686c559d89",
+        "htmlBytes": 13344
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -2049,8 +2049,8 @@
           "References"
         ],
         "firstPageCharacters": 1103,
-        "htmlSha256": "674465f8362b851fadc46099985d4faa97240d75bb6e62a7c2eff874df94dd31",
-        "htmlBytes": 18008
+        "htmlSha256": "85a5cc46bb9fb05d0bbff574225d60483ec93dbc54f31de0b329648390dcb816",
+        "htmlBytes": 18341
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -2103,8 +2103,8 @@
           "References"
         ],
         "firstPageCharacters": 974,
-        "htmlSha256": "cb64ab3b23bd77d83a25effecd44f297f6193476dcbb6a42266719067d7ce9e6",
-        "htmlBytes": 13226
+        "htmlSha256": "38980b59bcc3ec844860e5f9199d116d3b4cdc57933b17a3d57a2fd60b7f87fb",
+        "htmlBytes": 13317
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -2155,9 +2155,9 @@
           "Languages",
           "Interests & Hobbies"
         ],
-        "firstPageCharacters": 847,
-        "htmlSha256": "090f8dd4bc728bbf739f778433fb4bbf68f92f167859605b37040f42d08489b5",
-        "htmlBytes": 15582
+        "firstPageCharacters": 864,
+        "htmlSha256": "62bc8a0f7c2ab37fecf0b16e356fa8e66a3db6d45076dfff2af0fd18f2950f02",
+        "htmlBytes": 15786
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -2209,8 +2209,8 @@
           "References"
         ],
         "firstPageCharacters": 851,
-        "htmlSha256": "60c99cb23c4addb2c632378a7c2ffd9e1ff0dbbff59655dd9a2c0a675c09ea12",
-        "htmlBytes": 14012
+        "htmlSha256": "0a3034895251953752eb75636c4cff40596507a9f86d9e478725292169aaea97",
+        "htmlBytes": 14094
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -2262,8 +2262,8 @@
           "Interests & Hobbies"
         ],
         "firstPageCharacters": 822,
-        "htmlSha256": "bfe9f2b83ec0bfaaf0b328f92889c5e164e9815ea91a5c3a028832cc32a27101",
-        "htmlBytes": 10063
+        "htmlSha256": "039b2a25f347c5857f0b770e05038e5527ad4df6d01d74f5f108e6169b3f09e3",
+        "htmlBytes": 10295
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -2305,8 +2305,8 @@
         "railFamily": null,
         "mainSectionHeadings": [],
         "firstPageCharacters": 820,
-        "htmlSha256": "c685fe9b23d9b8ada69b2cf6c774ce64707403a53ad2cd10f658b75f4641964a",
-        "htmlBytes": 15150
+        "htmlSha256": "54a796ae6f16f6809c179ee5fe46a148aa59d7ed9d656b230d72422ea00eb8a9",
+        "htmlBytes": 15281
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -2357,8 +2357,8 @@
           "Languages"
         ],
         "firstPageCharacters": 821,
-        "htmlSha256": "11d404b186002d48470ad39bd99d3f2162e6494f319ee612b0d4de8a95582f4c",
-        "htmlBytes": 13688
+        "htmlSha256": "18e90dc349cfddece999df8d0e97f86b3641f5c07147c6b232ff6845589a6be4",
+        "htmlBytes": 13779
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -2411,8 +2411,8 @@
           "Interests & Hobbies"
         ],
         "firstPageCharacters": 975,
-        "htmlSha256": "32bdd0ebb011df55bfa44512a7dbb1d9665044dc2b89e12c63f0732eb5c84e9b",
-        "htmlBytes": 14549
+        "htmlSha256": "bbbb7bb42952d6fe2eafc87227b3cc56ac778e813343735ee344585b5d3e8d76",
+        "htmlBytes": 14640
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -2464,8 +2464,8 @@
           "Interests & Hobbies"
         ],
         "firstPageCharacters": 816,
-        "htmlSha256": "6a3393e6a569b3972a4887ae831d0c2ab79905c6adfda08d75d3f08104849911",
-        "htmlBytes": 14010
+        "htmlSha256": "8603f254f2f058523b3ac1abd871c9905f8de4714d3077ecfbb3bb7cdfa170f3",
+        "htmlBytes": 14092
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -2518,8 +2518,8 @@
           "Interests & Hobbies"
         ],
         "firstPageCharacters": 971,
-        "htmlSha256": "4c455c9a22351ac50339c4d34056c862798b902b1ef11b8562b34c4f2f675a24",
-        "htmlBytes": 18876
+        "htmlSha256": "377f560fb4848fede0076a69833915c77ef30d7bd3211ce9c67628ab12b5d454",
+        "htmlBytes": 19086
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -2570,9 +2570,9 @@
           "Languages",
           "References"
         ],
-        "firstPageCharacters": 876,
-        "htmlSha256": "1c56abb4543945a55f6ec2e7c7d1204978cfb1791c81169b52dccff05d7cac9a",
-        "htmlBytes": 14188
+        "firstPageCharacters": 893,
+        "htmlSha256": "7e7d9c606915c65e3685b9fc7548d63291eb71dfcbd5231b74cce2a3992875ae",
+        "htmlBytes": 14392
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -2625,8 +2625,8 @@
           "Interests & Hobbies"
         ],
         "firstPageCharacters": 988,
-        "htmlSha256": "6c21066659dd469701548e0c17da520d0311b15eb99fb6f30455fd42293a5cfb",
-        "htmlBytes": 12814
+        "htmlSha256": "4562a4967f205e70edb3c5b40e3550efd161799af402949e73f2e39dc3c187a9",
+        "htmlBytes": 13159
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -2678,8 +2678,8 @@
           "References"
         ],
         "firstPageCharacters": 965,
-        "htmlSha256": "0117e1abf5b7fa276b1a9d07040863f8bafcd2a577e287bbb55b7c9f1d527f49",
-        "htmlBytes": 15489
+        "htmlSha256": "5d9f7e9db880a499baeb4e93cedf0c26ab1247729701f9cbf9a41f6100709a70",
+        "htmlBytes": 15580
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -2712,7 +2712,7 @@
       "accentBar": false,
       "fingerprint": "classic|letterhead|none|34|none|summary>experience>projects>achievements>skills>education>certifications>languages>hobbies>references|micro|none|spacious|lg|stack|flat|standard",
       "thumbnail": "/templates/Cv52.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv52.svg",
       "evidenceHtml": "docs/templates/evidence/Cv52.html",
       "rendered": {
@@ -2731,8 +2731,8 @@
           "Interests & Hobbies"
         ],
         "firstPageCharacters": 835,
-        "htmlSha256": "b90bbcbb59334b53a2d015c4afe55b9ec17488c03a22864a7f6bbe1e3f7d1ad5",
-        "htmlBytes": 14305
+        "htmlSha256": "82041c0cfe0524253b3298c3a345912e3b66faca40ea0c43fe2311375cdba54a",
+        "htmlBytes": 14436
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -2765,7 +2765,7 @@
       "accentBar": true,
       "fingerprint": "banner|banner|none|36|none|summary>experience>education>skills>certifications>projects>achievements>languages>references>hobbies|underline|square|compact|lg|grid|accent|standard",
       "thumbnail": "/templates/Cv53.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv53.svg",
       "evidenceHtml": "docs/templates/evidence/Cv53.html",
       "rendered": {
@@ -2784,8 +2784,8 @@
           "References"
         ],
         "firstPageCharacters": 894,
-        "htmlSha256": "859d8f67c4dab9bb71575c3a8a8bde5d125fdab91880031b483f959ccdb7da41",
-        "htmlBytes": 13749
+        "htmlSha256": "c01fd9f80032755da0d8874c2492c85b354199834d7e502645a388e8d97d9ea5",
+        "htmlBytes": 13959
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -2818,7 +2818,7 @@
       "accentBar": true,
       "fingerprint": "portfolio|monogram|none|36|none|summary>experience>education>skills>certifications>projects>achievements>languages>references>hobbies|micro|circle|compact|md|grid|accent|standard",
       "thumbnail": "/templates/Cv54.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv54.svg",
       "evidenceHtml": "docs/templates/evidence/Cv54.html",
       "rendered": {
@@ -2836,8 +2836,8 @@
           "References"
         ],
         "firstPageCharacters": 858,
-        "htmlSha256": "6ee4ab0c02a750a1b3c93920dd260ab93e090c561ff4ba9721dde8eda1f7c5f0",
-        "htmlBytes": 14611
+        "htmlSha256": "c4263582a0226091d1cbe05f9161414c120090e7d7a56efdc7dc1dd4edad6531",
+        "htmlBytes": 14794
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -2870,7 +2870,7 @@
       "accentBar": false,
       "fingerprint": "split-header|minimal|none|30|none|summary>experience>education>projects>achievements>skills>certifications>languages>hobbies>references|double|rounded|spacious|lg|inline|flat|standard",
       "thumbnail": "/templates/Cv55.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv55.svg",
       "evidenceHtml": "docs/templates/evidence/Cv55.html",
       "rendered": {
@@ -2879,8 +2879,8 @@
         "railFamily": null,
         "mainSectionHeadings": [],
         "firstPageCharacters": 821,
-        "htmlSha256": "218b996164898c9e10299fa40d006b883cd6cdcce647f91cf2845665a42e2b8d",
-        "htmlBytes": 14740
+        "htmlSha256": "c5a3846f051bde61fad8baeff8cce5d6e42d77fed1cee1465ca2f46205858ee6",
+        "htmlBytes": 14923
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -2913,7 +2913,7 @@
       "accentBar": false,
       "fingerprint": "academic|centered|none|32|none|summary>skills>experience>projects>education>achievements>certifications>languages>references>hobbies|pill|circle|compact|lg|stack|flat|standard",
       "thumbnail": "/templates/Cv56.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv56.svg",
       "evidenceHtml": "docs/templates/evidence/Cv56.html",
       "rendered": {
@@ -2932,8 +2932,8 @@
           "References"
         ],
         "firstPageCharacters": 881,
-        "htmlSha256": "ec7cf733ca6f3d250f8d8253b3d58846cec8a76b779ebf7955feb1a81c72eda5",
-        "htmlBytes": 13895
+        "htmlSha256": "9bac248db582a486f401050ce366247f45b368dc921bfe3ca440af3505fea41f",
+        "htmlBytes": 13986
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -2968,7 +2968,7 @@
       "accentBar": false,
       "fingerprint": "tri-column|band|left|34|contact+skills+projects|experience>summary>achievements>education>certifications>languages>hobbies>references|plain|circle|standard|md|grid|flat|standard",
       "thumbnail": "/templates/Cv57.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv57.svg",
       "evidenceHtml": "docs/templates/evidence/Cv57.html",
       "rendered": {
@@ -2986,8 +2986,8 @@
           "References"
         ],
         "firstPageCharacters": 1099,
-        "htmlSha256": "54e0dfdf9abb2f223c8af2bb4c362c26b2403c9846dfaa78cff0722c56d04c21",
-        "htmlBytes": 19726
+        "htmlSha256": "8a85f47b1c02a4bd57adb7fd935b1816ef1fd608b8abf830b5664f92082346a3",
+        "htmlBytes": 19909
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -3022,7 +3022,7 @@
       "accentBar": true,
       "fingerprint": "banner-sidebar|photo-band|left|36|contact+skills+languages+certifications|summary>education>experience>projects>achievements>references>hobbies|bracket|circle|spacious|xl|minimal|accent|standard",
       "thumbnail": "/templates/Cv58.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv58.svg",
       "evidenceHtml": "docs/templates/evidence/Cv58.html",
       "rendered": {
@@ -3039,8 +3039,8 @@
           "Interests & Hobbies"
         ],
         "firstPageCharacters": 970,
-        "htmlSha256": "4e03678cf5f53385e8ac6a8cc1cea54114b3c0921638aa4cf06ce3c1957f7e12",
-        "htmlBytes": 19624
+        "htmlSha256": "ed36f7152c532ceb14e5c354514d396c5ecab65fdb5d6e7431eae69093881a3c",
+        "htmlBytes": 19834
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -3073,7 +3073,7 @@
       "accentBar": false,
       "fingerprint": "compact|band|none|36|none|summary>education>experience>certifications>projects>skills>achievements>languages>references>hobbies|plain|rounded|spacious|lg|minimal|flat|standard",
       "thumbnail": "/templates/Cv59.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv59.svg",
       "evidenceHtml": "docs/templates/evidence/Cv59.html",
       "rendered": {
@@ -3092,8 +3092,8 @@
           "References"
         ],
         "firstPageCharacters": 848,
-        "htmlSha256": "1ccca5d9e734af8de0bdef8b8df7d9d0c938c073bfc15ccbc05ac186353beb4d",
-        "htmlBytes": 12861
+        "htmlSha256": "8fdeaf8e064eabd87b9ef355de787fcb292e2a65332e37137f211d94a2f79631",
+        "htmlBytes": 12943
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -3126,7 +3126,7 @@
       "accentBar": false,
       "fingerprint": "compact|minimal|none|28|none|experience>projects>skills>education>summary>achievements>certifications>languages>hobbies>references|bracket|none|compact|2xl|inline|flat|standard",
       "thumbnail": "/templates/Cv60.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv60.svg",
       "evidenceHtml": "docs/templates/evidence/Cv60.html",
       "rendered": {
@@ -3145,8 +3145,8 @@
           "Interests & Hobbies"
         ],
         "firstPageCharacters": 813,
-        "htmlSha256": "bea333071f0548826258e95c79a5b5faaf44c4410f84a57ccd0efde949968cef",
-        "htmlBytes": 14477
+        "htmlSha256": "212da74c3a645fc25a4357b71e2822c643c07d78a2795cbdb1b59fbfa653a9a0",
+        "htmlBytes": 14559
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -3179,7 +3179,7 @@
       "accentBar": false,
       "fingerprint": "timeline|centered|none|30|none|summary>experience>projects>achievements>skills>education>certifications>languages>hobbies>references|micro|rounded|standard|md|stack|flat|standard",
       "thumbnail": "/templates/Cv61.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv61.svg",
       "evidenceHtml": "docs/templates/evidence/Cv61.html",
       "rendered": {
@@ -3197,9 +3197,9 @@
           "Languages",
           "Interests & Hobbies"
         ],
-        "firstPageCharacters": 851,
-        "htmlSha256": "0101e67aa53bb8c997036fcd57fe2985db90aca987022ab570f97847dd6429c4",
-        "htmlBytes": 15214
+        "firstPageCharacters": 868,
+        "htmlSha256": "4debd0e4ad7207ebc7a175bb5eaa38ddac97dcd65f5998932044625e86f6ad71",
+        "htmlBytes": 15418
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -3232,7 +3232,7 @@
       "accentBar": false,
       "fingerprint": "editorial|letterhead|none|34|none|experience>achievements>summary>projects>education>skills>certifications>languages>hobbies>references|double|none|compact|md|minimal|flat|standard",
       "thumbnail": "/templates/Cv62.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv62.svg",
       "evidenceHtml": "docs/templates/evidence/Cv62.html",
       "rendered": {
@@ -3250,8 +3250,8 @@
           "Languages"
         ],
         "firstPageCharacters": 829,
-        "htmlSha256": "f65ba0f2fde5fa7701706bb0eefa2c86ea37d214f4deeac1ea68c80ff40b29fe",
-        "htmlBytes": 10753
+        "htmlSha256": "d90286e57fef23c572f94aab216e5e9bea6598c6783563550dc76336d15fc7b9",
+        "htmlBytes": 10994
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -3284,7 +3284,7 @@
       "accentBar": false,
       "fingerprint": "compact|left|none|36|none|summary>experience>education>projects>achievements>skills>certifications>languages>hobbies>references|pill|none|standard|xl|inline|flat|standard",
       "thumbnail": "/templates/Cv63.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv63.svg",
       "evidenceHtml": "docs/templates/evidence/Cv63.html",
       "rendered": {
@@ -3303,8 +3303,8 @@
           "Interests & Hobbies"
         ],
         "firstPageCharacters": 813,
-        "htmlSha256": "4858b624bfa2591f77320f4b910bf65c036a80fbdc187d51f17fbd3c2bede068",
-        "htmlBytes": 13641
+        "htmlSha256": "a245c8705f2fdd587f50664ce3636e30387c3b3f27bd6816e0ba3b9854dd4956",
+        "htmlBytes": 13723
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -3339,7 +3339,7 @@
       "accentBar": false,
       "fingerprint": "profile-sidebar|sidebar|left|30|contact+skills+projects|experience>summary>achievements>education>certifications>languages>hobbies>references|micro|rounded|compact|md|grid|flat|standard",
       "thumbnail": "/templates/Cv64.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv64.svg",
       "evidenceHtml": "docs/templates/evidence/Cv64.html",
       "rendered": {
@@ -3357,8 +3357,8 @@
           "References"
         ],
         "firstPageCharacters": 864,
-        "htmlSha256": "5ae1e03446600af71c1a28f1286affdb58ea87d99f406376664dd2beb5ee68a0",
-        "htmlBytes": 13163
+        "htmlSha256": "9e0c0e99b9323373c6477e50bf19e0f592d71acfec6fb45438061211f1a4ce62",
+        "htmlBytes": 13346
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -3391,7 +3391,7 @@
       "accentBar": true,
       "fingerprint": "infographic|banner|none|30|none|experience>summary>achievements>education>projects>skills>certifications>languages>hobbies>references|bracket|circle|compact|xl|grid|accent|standard",
       "thumbnail": "/templates/Cv65.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv65.svg",
       "evidenceHtml": "docs/templates/evidence/Cv65.html",
       "rendered": {
@@ -3408,8 +3408,8 @@
           "Languages"
         ],
         "firstPageCharacters": 843,
-        "htmlSha256": "99354e843d7d76445dd495a9d105bdca050475a0e2936bde680762ca202ff664",
-        "htmlBytes": 16800
+        "htmlSha256": "32e5778916ceceeeeeeea4579d97d19b22378b6dc329bf539b6a4682436cfd40",
+        "htmlBytes": 17010
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -3442,7 +3442,7 @@
       "accentBar": true,
       "fingerprint": "technical|grid|none|32|none|summary>education>experience>certifications>projects>skills>achievements>languages>references>hobbies|micro|none|standard|xl|minimal|accent|standard",
       "thumbnail": "/templates/Cv66.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv66.svg",
       "evidenceHtml": "docs/templates/evidence/Cv66.html",
       "rendered": {
@@ -3461,8 +3461,8 @@
           "References"
         ],
         "firstPageCharacters": 1021,
-        "htmlSha256": "2fe66efed45323d14fe081e0e096f8c791ad0f0d0281f80246a8e0841161e85b",
-        "htmlBytes": 12935
+        "htmlSha256": "b7bad9d303e33e3c41ca6cd68a367ab64e541af14f2bf43ff184ae108e456a00",
+        "htmlBytes": 13222
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -3495,7 +3495,7 @@
       "accentBar": true,
       "fingerprint": "executive|minimal|none|34|none|experience>projects>skills>education>summary>achievements>certifications>languages>hobbies>references|underline|none|spacious|md|inline|accent|standard",
       "thumbnail": "/templates/Cv67.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv67.svg",
       "evidenceHtml": "docs/templates/evidence/Cv67.html",
       "rendered": {
@@ -3513,8 +3513,8 @@
           "Languages"
         ],
         "firstPageCharacters": 814,
-        "htmlSha256": "6bc6c30d19947c931d919fa828e531e1e0fd09e6e10ae799efb845b86f1d095d",
-        "htmlBytes": 13350
+        "htmlSha256": "36ac09b26d708f16f2f8ef8383f56cf83a22f04e570ca02aa008d7ca7c75694e",
+        "htmlBytes": 13533
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -3549,7 +3549,7 @@
       "accentBar": true,
       "fingerprint": "banner-sidebar|band|left|28|contact+skills+projects+certifications|summary>experience>education>achievements>languages>references>hobbies|pill|square|standard|md|grid|accent|standard",
       "thumbnail": "/templates/Cv68.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv68.svg",
       "evidenceHtml": "docs/templates/evidence/Cv68.html",
       "rendered": {
@@ -3566,8 +3566,8 @@
           "Interests & Hobbies"
         ],
         "firstPageCharacters": 971,
-        "htmlSha256": "2ce9220b335a25f71425e1e01fa7a5781269a6f66512cc141d773cdff5268230",
-        "htmlBytes": 16451
+        "htmlSha256": "fa9be9a4e6b003505c38773032279ffead7b1ab5c4dc060786deb95bd93b9de8",
+        "htmlBytes": 16634
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -3600,7 +3600,7 @@
       "accentBar": false,
       "fingerprint": "card-grid|grid|none|28|none|summary>experience>education>skills>certifications>projects>achievements>languages>references>hobbies|double|none|standard|lg|grid|flat|standard",
       "thumbnail": "/templates/Cv69.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv69.svg",
       "evidenceHtml": "docs/templates/evidence/Cv69.html",
       "rendered": {
@@ -3619,8 +3619,8 @@
           "References"
         ],
         "firstPageCharacters": 858,
-        "htmlSha256": "20458276e07a377bf38bef389a9e314d5ff775ae6417e13acb45af031ffb49dd",
-        "htmlBytes": 14301
+        "htmlSha256": "64f234d88ee58f7ecd545c458b6537a6fdb8c27e9529fd0fb98ed50d7aa89e1b",
+        "htmlBytes": 14484
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -3653,7 +3653,7 @@
       "accentBar": false,
       "fingerprint": "minimal|left|none|28|none|summary>experience>education>skills>certifications>projects>achievements>languages>references>hobbies|bar|rounded|standard|lg|grid|flat|standard",
       "thumbnail": "/templates/Cv70.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv70.svg",
       "evidenceHtml": "docs/templates/evidence/Cv70.html",
       "rendered": {
@@ -3672,8 +3672,8 @@
           "References"
         ],
         "firstPageCharacters": 859,
-        "htmlSha256": "28c8caae35562d4d929d3513a259b3a996dfde519bce58aa4bca2f55a819123a",
-        "htmlBytes": 10035
+        "htmlSha256": "1e8ccb975e0ddd35160673a084a1e44c887138d39971231c89ff55e95d4e476f",
+        "htmlBytes": 10267
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -3706,7 +3706,7 @@
       "accentBar": false,
       "fingerprint": "boxed|band|none|32|none|summary>experience>education>projects>achievements>skills>certifications>languages>hobbies>references|bar|circle|compact|md|inline|flat|standard",
       "thumbnail": "/templates/Cv71.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv71.svg",
       "evidenceHtml": "docs/templates/evidence/Cv71.html",
       "rendered": {
@@ -3725,8 +3725,8 @@
           "Interests & Hobbies"
         ],
         "firstPageCharacters": 822,
-        "htmlSha256": "fe3cf631e570f3eafd1146336139977d0e303f1694f237cbb90e18e51c5f92ac",
-        "htmlBytes": 14003
+        "htmlSha256": "30e563fd4fe6a9a5cf18dd93f282f6180583c567f61202d03117b359a9358407",
+        "htmlBytes": 14186
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -3759,7 +3759,7 @@
       "accentBar": true,
       "fingerprint": "portfolio|bracket|none|34|none|summary>skills>experience>projects>education>achievements>certifications>languages>references>hobbies|bracket|none|standard|lg|stack|accent|standard",
       "thumbnail": "/templates/Cv72.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv72.svg",
       "evidenceHtml": "docs/templates/evidence/Cv72.html",
       "rendered": {
@@ -3777,8 +3777,8 @@
           "References"
         ],
         "firstPageCharacters": 861,
-        "htmlSha256": "a31824e8ef4265b55eea9225765a2683ea30d9372aab1527f4e806b69037543d",
-        "htmlBytes": 15112
+        "htmlSha256": "ab8fdc1e6687063a35eb211d946981b48c1b07865474072a7a1bcf63cba17570",
+        "htmlBytes": 15295
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -3811,7 +3811,7 @@
       "accentBar": false,
       "fingerprint": "editorial|split|none|34|none|summary>skills>experience>projects>education>achievements>certifications>languages>references>hobbies|plain|rounded|standard|md|stack|flat|standard",
       "thumbnail": "/templates/Cv73.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv73.svg",
       "evidenceHtml": "docs/templates/evidence/Cv73.html",
       "rendered": {
@@ -3830,8 +3830,8 @@
           "References"
         ],
         "firstPageCharacters": 883,
-        "htmlSha256": "2d837453d00d5b85a5137527d4a6f4dc993b78dd361fee822c750b48d563d374",
-        "htmlBytes": 13465
+        "htmlSha256": "6f8cc7ec7648ec3021835f9275cd82f14cf309bde05cfd08677dab8b804b0f9d",
+        "htmlBytes": 13556
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -3864,7 +3864,7 @@
       "accentBar": false,
       "fingerprint": "minimal|minimal|none|28|none|summary>education>experience>certifications>projects>skills>achievements>languages>references>hobbies|underline|circle|compact|md|minimal|flat|standard",
       "thumbnail": "/templates/Cv74.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv74.svg",
       "evidenceHtml": "docs/templates/evidence/Cv74.html",
       "rendered": {
@@ -3883,8 +3883,8 @@
           "References"
         ],
         "firstPageCharacters": 849,
-        "htmlSha256": "4db1f79a6ea7480bdada089277b8deaf670ac433892f2e2cfb158d177b7c2d72",
-        "htmlBytes": 10037
+        "htmlSha256": "ed7bbc646a31ea031e2d6e26a2f454665c71a794e421c76b49294960f9c49bb2",
+        "htmlBytes": 10269
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -3917,7 +3917,7 @@
       "accentBar": false,
       "fingerprint": "compact|left|none|30|none|experience>projects>skills>education>summary>achievements>certifications>languages>hobbies>references|bar|none|standard|md|inline|flat|standard",
       "thumbnail": "/templates/Cv75.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv75.svg",
       "evidenceHtml": "docs/templates/evidence/Cv75.html",
       "rendered": {
@@ -3936,8 +3936,8 @@
           "Interests & Hobbies"
         ],
         "firstPageCharacters": 823,
-        "htmlSha256": "c63b72ccca9fa9058d235a3f5f9aa1f7615dfa48fa5e954bb2db8dbdfeb5047c",
-        "htmlBytes": 13109
+        "htmlSha256": "ac20fca2eaba13275552832ae3bccc0c9e2f37f46be63b3db27c01824bcf1f92",
+        "htmlBytes": 13191
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -3970,7 +3970,7 @@
       "accentBar": true,
       "fingerprint": "magazine|letterhead|none|34|none|summary>experience>education>skills>certifications>projects>achievements>languages>references>hobbies|plain|none|compact|lg|grid|accent|standard",
       "thumbnail": "/templates/Cv76.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv76.svg",
       "evidenceHtml": "docs/templates/evidence/Cv76.html",
       "rendered": {
@@ -3989,8 +3989,8 @@
           "References"
         ],
         "firstPageCharacters": 853,
-        "htmlSha256": "20085b9481f7ee2ebe0a69e7a9d46dc754a2717e9f4380ccd2f9c938887fdc0b",
-        "htmlBytes": 10704
+        "htmlSha256": "82d3be6c00c499a0d7bd819323166c2403c297b10457b371490524805d70518d",
+        "htmlBytes": 10988
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -4023,7 +4023,7 @@
       "accentBar": true,
       "fingerprint": "executive|letterhead|none|34|none|summary>experience>education>skills>certifications>projects>achievements>languages>references>hobbies|pill|circle|compact|md|grid|accent|standard",
       "thumbnail": "/templates/Cv77.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv77.svg",
       "evidenceHtml": "docs/templates/evidence/Cv77.html",
       "rendered": {
@@ -4042,8 +4042,8 @@
           "References"
         ],
         "firstPageCharacters": 874,
-        "htmlSha256": "e5ff8ac92ad60fb76877e53bedfb6b769719db6e56b5dfd62806770cf2be0cd4",
-        "htmlBytes": 14007
+        "htmlSha256": "3084a6bef3a90e3fdc713ab8ad1a6bfdbdf8f6f3f2ca5fa1d00be3eb5126d3ad",
+        "htmlBytes": 14190
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -4076,7 +4076,7 @@
       "accentBar": false,
       "fingerprint": "split-header|minimal|none|28|none|summary>experience>education>projects>achievements>skills>certifications>languages>hobbies>references|micro|square|spacious|2xl|inline|flat|standard",
       "thumbnail": "/templates/Cv78.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv78.svg",
       "evidenceHtml": "docs/templates/evidence/Cv78.html",
       "rendered": {
@@ -4085,8 +4085,8 @@
         "railFamily": null,
         "mainSectionHeadings": [],
         "firstPageCharacters": 819,
-        "htmlSha256": "4eed0fa5b0028f5863ee86de5ba6c15440faa71198ac5efaffb11b9927dcfc66",
-        "htmlBytes": 15602
+        "htmlSha256": "22e127ca2e179a2f537f5a43ff791b23485d7767b3967d5359f0c791023ff749",
+        "htmlBytes": 15785
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -4119,7 +4119,7 @@
       "accentBar": true,
       "fingerprint": "banner|banner|none|30|none|summary>skills>experience>projects>education>achievements>certifications>languages>references>hobbies|underline|rounded|compact|lg|stack|accent|standard",
       "thumbnail": "/templates/Cv79.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv79.svg",
       "evidenceHtml": "docs/templates/evidence/Cv79.html",
       "rendered": {
@@ -4138,8 +4138,8 @@
           "References"
         ],
         "firstPageCharacters": 897,
-        "htmlSha256": "cda2711f6b22a20f4c89af145660d5eb692c91a5a2936e0ef71774a0a13e8b56",
-        "htmlBytes": 13485
+        "htmlSha256": "2cbd1783207c47f5ec8d4b4d6b769b76bc1dc5398257d8f3f0a1fee5e7906481",
+        "htmlBytes": 13695
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -4174,7 +4174,7 @@
       "accentBar": false,
       "fingerprint": "tri-column|band|left|32|contact+skills+projects|experience>summary>achievements>education>certifications>languages>hobbies>references|bar|rounded|standard|xl|grid|flat|standard",
       "thumbnail": "/templates/Cv80.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv80.svg",
       "evidenceHtml": "docs/templates/evidence/Cv80.html",
       "rendered": {
@@ -4192,8 +4192,8 @@
           "References"
         ],
         "firstPageCharacters": 1101,
-        "htmlSha256": "994cbbf28464ea1056a72f205bb12642766cea579469f9caab374ffb33dbf59c",
-        "htmlBytes": 20084
+        "htmlSha256": "a1301cd948b284830c17e731dd8bb55322d82a6596cdebd5cc6282c332a434a7",
+        "htmlBytes": 20267
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -4226,7 +4226,7 @@
       "accentBar": false,
       "fingerprint": "timeline|centered|none|32|none|experience>summary>achievements>education>projects>skills>certifications>languages>hobbies>references|underline|square|standard|2xl|grid|flat|standard",
       "thumbnail": "/templates/Cv81.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv81.svg",
       "evidenceHtml": "docs/templates/evidence/Cv81.html",
       "rendered": {
@@ -4244,9 +4244,9 @@
           "Languages",
           "Interests & Hobbies"
         ],
-        "firstPageCharacters": 852,
-        "htmlSha256": "3746085a91388703e9d2892e001646d666ef306926eb47d6a8523e0f7667a5b8",
-        "htmlBytes": 14102
+        "firstPageCharacters": 869,
+        "htmlSha256": "498facb48c1a93a8d5557fa36fe8665df89d1a1c35522402df829119ba22c8f4",
+        "htmlBytes": 14306
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -4281,7 +4281,7 @@
       "accentBar": true,
       "fingerprint": "banner-sidebar|banner|left|36|contact+skills+languages+certifications|experience>projects>education>summary>achievements>hobbies>references|pill|rounded|compact|lg|inline|accent|standard",
       "thumbnail": "/templates/Cv82.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv82.svg",
       "evidenceHtml": "docs/templates/evidence/Cv82.html",
       "rendered": {
@@ -4298,8 +4298,8 @@
           "References"
         ],
         "firstPageCharacters": 999,
-        "htmlSha256": "6ad3e0f4be105959840d08723ddfb898907ebb9093caf5e2fcb4b337348bd13e",
-        "htmlBytes": 16964
+        "htmlSha256": "c82b915167a55ec9d652c58c709a9ac50b2e4a0d829e23769d186708bca28a1a",
+        "htmlBytes": 17174
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -4334,7 +4334,7 @@
       "accentBar": false,
       "fingerprint": "europass|photo-band|right|36|contact+skills+projects|experience>education>summary>achievements>certifications>languages>hobbies>references|double|circle|compact|2xl|inline|flat|standard",
       "thumbnail": "/templates/Cv83.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv83.svg",
       "evidenceHtml": "docs/templates/evidence/Cv83.html",
       "rendered": {
@@ -4352,8 +4352,8 @@
           "References"
         ],
         "firstPageCharacters": 962,
-        "htmlSha256": "68c213094a5881f90e562433a5a5307e775be2237211d6befeb23406c7f49b39",
-        "htmlBytes": 14445
+        "htmlSha256": "e5e2606427d0caea821badb24ce1500b3c1761c6cb853eef8aebeb5e9b3acde1",
+        "htmlBytes": 14536
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -4386,7 +4386,7 @@
       "accentBar": false,
       "fingerprint": "compact|band|none|30|none|summary>experience>education>skills>certifications>projects>achievements>languages>references>hobbies|bracket|square|spacious|xl|grid|flat|standard",
       "thumbnail": "/templates/Cv84.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv84.svg",
       "evidenceHtml": "docs/templates/evidence/Cv84.html",
       "rendered": {
@@ -4405,8 +4405,8 @@
           "References"
         ],
         "firstPageCharacters": 849,
-        "htmlSha256": "8a668867363a2b79009ef5e1563f6d9b84b84ac4f3fc3bfcf62d6c0fdd042e96",
-        "htmlBytes": 14467
+        "htmlSha256": "9608e6f8359e9c71906c9e526eee3094bdf7d7c289cedcdcfbc4cd635058cbee",
+        "htmlBytes": 14549
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -4439,7 +4439,7 @@
       "accentBar": false,
       "fingerprint": "split-header|minimal|none|30|none|summary>experience>education>skills>certifications>projects>achievements>languages>references>hobbies|plain|rounded|spacious|md|grid|flat|standard",
       "thumbnail": "/templates/Cv85.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv85.svg",
       "evidenceHtml": "docs/templates/evidence/Cv85.html",
       "rendered": {
@@ -4448,8 +4448,8 @@
         "railFamily": null,
         "mainSectionHeadings": [],
         "firstPageCharacters": 851,
-        "htmlSha256": "11492e3d547edaa4594dc84954cc0372a749f02a7504b91ab16bb315fb104f90",
-        "htmlBytes": 14253
+        "htmlSha256": "ed469db6ef631a8e4279e0fcf2730dd1bad6af6b91bebc5fa365ed2f19da1275",
+        "htmlBytes": 14384
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -4482,7 +4482,7 @@
       "accentBar": true,
       "fingerprint": "technical|grid|none|34|none|summary>experience>education>projects>achievements>skills>certifications>languages>hobbies>references|underline|circle|standard|md|inline|accent|standard",
       "thumbnail": "/templates/Cv86.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv86.svg",
       "evidenceHtml": "docs/templates/evidence/Cv86.html",
       "rendered": {
@@ -4500,8 +4500,8 @@
           "Languages"
         ],
         "firstPageCharacters": 950,
-        "htmlSha256": "05d3a48e4c8f42e6b432dade066ccbb20cda83b3b5280c38771b17e1ad25caf5",
-        "htmlBytes": 11918
+        "htmlSha256": "04e8325bf083dd4413afe0c145f570337670f70b80e6b31c382935ed778820b6",
+        "htmlBytes": 12205
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -4534,7 +4534,7 @@
       "accentBar": false,
       "fingerprint": "timeline|centered|none|34|none|summary>experience>education>projects>achievements>skills>certifications>languages>hobbies>references|underline|circle|compact|md|inline|flat|standard",
       "thumbnail": "/templates/Cv87.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv87.svg",
       "evidenceHtml": "docs/templates/evidence/Cv87.html",
       "rendered": {
@@ -4552,9 +4552,9 @@
           "Languages",
           "Interests & Hobbies"
         ],
-        "firstPageCharacters": 849,
-        "htmlSha256": "468520ce374aac09a03e8dc35eb4816bfac372e6caa36d3ba785fad9a2282b55",
-        "htmlBytes": 14110
+        "firstPageCharacters": 866,
+        "htmlSha256": "daae65a493dff1f765e83ca5e6c46188b97d0a1fcebbe4bf3efdb5d77f8cb3a0",
+        "htmlBytes": 14314
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -4587,7 +4587,7 @@
       "accentBar": false,
       "fingerprint": "classic|left|none|28|none|experience>summary>achievements>education>projects>skills>certifications>languages>hobbies>references|double|rounded|compact|md|grid|flat|standard",
       "thumbnail": "/templates/Cv88.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv88.svg",
       "evidenceHtml": "docs/templates/evidence/Cv88.html",
       "rendered": {
@@ -4606,8 +4606,8 @@
           "Interests & Hobbies"
         ],
         "firstPageCharacters": 820,
-        "htmlSha256": "537d3ac54d25f2670d486d3e90e1706ba67e240ecab774bc0002bcdcc21fe6be",
-        "htmlBytes": 13015
+        "htmlSha256": "48ff17a473580c7baa3ca19166ed7a6dd0deada1d0083a4346d252e9b57ac695",
+        "htmlBytes": 13146
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -4640,7 +4640,7 @@
       "accentBar": false,
       "fingerprint": "card-grid|grid|none|30|none|summary>education>experience>certifications>projects>skills>achievements>languages>references>hobbies|pill|circle|standard|md|minimal|flat|standard",
       "thumbnail": "/templates/Cv89.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv89.svg",
       "evidenceHtml": "docs/templates/evidence/Cv89.html",
       "rendered": {
@@ -4659,8 +4659,8 @@
           "References"
         ],
         "firstPageCharacters": 852,
-        "htmlSha256": "60d6432dfdcedcf2b39db9dba17a1d071d1e2e760cb095b8260aebc34980a8e0",
-        "htmlBytes": 14973
+        "htmlSha256": "a7b717e81a35360bdddd1fd02e8578df2c95057691aa068488215d4516a92ab7",
+        "htmlBytes": 15156
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -4695,7 +4695,7 @@
       "accentBar": false,
       "fingerprint": "profile-sidebar|sidebar|right|34|contact+summary+education+skills|experience>projects>achievements>certifications>languages>hobbies>references|micro|rounded|compact|lg|stack|flat|standard",
       "thumbnail": "/templates/Cv90.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv90.svg",
       "evidenceHtml": "docs/templates/evidence/Cv90.html",
       "rendered": {
@@ -4712,8 +4712,8 @@
           "References"
         ],
         "firstPageCharacters": 869,
-        "htmlSha256": "e5147baba513c0a10e85cdf83a3ef439752f0717743b0a0544eff3cf01078d01",
-        "htmlBytes": 12994
+        "htmlSha256": "6e77e77685d4ce05fa3afb34b0ccb7a70f76299f9faa3ea44144c55699d98ca0",
+        "htmlBytes": 13153
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -4746,7 +4746,7 @@
       "accentBar": true,
       "fingerprint": "infographic|banner|none|34|none|summary>experience>projects>achievements>skills>education>certifications>languages>hobbies>references|bracket|none|compact|xl|stack|accent|standard",
       "thumbnail": "/templates/Cv91.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv91.svg",
       "evidenceHtml": "docs/templates/evidence/Cv91.html",
       "rendered": {
@@ -4763,8 +4763,8 @@
           "Languages"
         ],
         "firstPageCharacters": 837,
-        "htmlSha256": "b2ed04aef7a7ff6b7173f838cf81d6765d52e31aa8c6ea9dd0c6b1e5c735ce5f",
-        "htmlBytes": 16988
+        "htmlSha256": "f2339ec24195604eada74a9e1471feded1808b4727eac55af90fc55b43a72cd8",
+        "htmlBytes": 17198
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -4797,7 +4797,7 @@
       "accentBar": true,
       "fingerprint": "portfolio|bracket|none|36|none|summary>experience>education>skills>certifications>projects>achievements>languages>references>hobbies|underline|rounded|compact|md|inline|accent|standard",
       "thumbnail": "/templates/Cv92.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv92.svg",
       "evidenceHtml": "docs/templates/evidence/Cv92.html",
       "rendered": {
@@ -4815,8 +4815,8 @@
           "References"
         ],
         "firstPageCharacters": 859,
-        "htmlSha256": "a3e6c1c0266746cc38dd17aa007f570a7a76e2b1775fcbb3315b909f8b93407b",
-        "htmlBytes": 13497
+        "htmlSha256": "647887f77e51e60fd358666f2a3b9f17edea263847704cd5b2e487f909ba9a10",
+        "htmlBytes": 13680
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -4849,7 +4849,7 @@
       "accentBar": false,
       "fingerprint": "academic|minimal|none|28|none|experience>achievements>summary>projects>education>skills>certifications>languages>hobbies>references|underline|none|spacious|lg|minimal|flat|standard",
       "thumbnail": "/templates/Cv93.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv93.svg",
       "evidenceHtml": "docs/templates/evidence/Cv93.html",
       "rendered": {
@@ -4867,8 +4867,8 @@
           "Languages"
         ],
         "firstPageCharacters": 822,
-        "htmlSha256": "67dbd67a1bc3531ddf8273645f0fb9e9ab581fe0231d4159b930f65d163e5e4b",
-        "htmlBytes": 10234
+        "htmlSha256": "f2734c17fb256966a4391e60b587b483a09df5bba2a1ef467425cd04e0159f1e",
+        "htmlBytes": 10475
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -4901,7 +4901,7 @@
       "accentBar": true,
       "fingerprint": "executive|letterhead|none|30|none|summary>experience>education>projects>achievements>skills>certifications>languages>hobbies>references|bar|none|compact|xl|inline|accent|standard",
       "thumbnail": "/templates/Cv94.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv94.svg",
       "evidenceHtml": "docs/templates/evidence/Cv94.html",
       "rendered": {
@@ -4919,8 +4919,8 @@
           "Languages"
         ],
         "firstPageCharacters": 822,
-        "htmlSha256": "46a4d3664f02f676ad696024153e2742e08ba5cb2beae45a49120744c43d0312",
-        "htmlBytes": 13364
+        "htmlSha256": "a7e8b04ff978739128b9d2a3471fb9f123b521e5295ad10f6567a006b2295655",
+        "htmlBytes": 13547
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -4953,7 +4953,7 @@
       "accentBar": false,
       "fingerprint": "compact|left|none|32|none|summary>skills>experience>projects>education>achievements>certifications>languages>references>hobbies|double|circle|standard|2xl|stack|flat|standard",
       "thumbnail": "/templates/Cv95.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv95.svg",
       "evidenceHtml": "docs/templates/evidence/Cv95.html",
       "rendered": {
@@ -4972,8 +4972,8 @@
           "References"
         ],
         "firstPageCharacters": 847,
-        "htmlSha256": "4701b808ad1157cb988f75aa6ad60904a58b7e7f5eb256e05e15c3ecd48631c8",
-        "htmlBytes": 13113
+        "htmlSha256": "f3e5ede808a86805ffb9ba731219020218e2a1ed260cb2b22c45125bc20a0ed4",
+        "htmlBytes": 13195
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -5008,7 +5008,7 @@
       "accentBar": true,
       "fingerprint": "banner-sidebar|banner|right|36|contact+skills+projects|summary>education>experience>certifications>achievements>languages>references>hobbies|bracket|circle|compact|2xl|minimal|accent|standard",
       "thumbnail": "/templates/Cv96.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv96.svg",
       "evidenceHtml": "docs/templates/evidence/Cv96.html",
       "rendered": {
@@ -5026,8 +5026,8 @@
           "Interests & Hobbies"
         ],
         "firstPageCharacters": 994,
-        "htmlSha256": "39af006a2dc1fa8b4d459cf3ccf8a16b0ce79082108221476c88a0209ede8fe1",
-        "htmlBytes": 14500
+        "htmlSha256": "581064cf9c7a60e383b401ad53a55a66ea00140be8e53b03d6988c1f1527f7b3",
+        "htmlBytes": 14845
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -5060,7 +5060,7 @@
       "accentBar": false,
       "fingerprint": "editorial|letterhead|none|36|none|summary>education>experience>certifications>projects>skills>achievements>languages>references>hobbies|underline|circle|compact|md|inline|flat|standard",
       "thumbnail": "/templates/Cv97.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv97.svg",
       "evidenceHtml": "docs/templates/evidence/Cv97.html",
       "rendered": {
@@ -5079,8 +5079,8 @@
           "References"
         ],
         "firstPageCharacters": 886,
-        "htmlSha256": "79a337f2204a74ec17394f3d6a952e1c211e2566342a18723d6c5af9462969c4",
-        "htmlBytes": 13704
+        "htmlSha256": "8aa10fbca2ba725062538f59472f9803cf09cc38033124472b2d92050727e221",
+        "htmlBytes": 13795
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -5113,7 +5113,7 @@
       "accentBar": false,
       "fingerprint": "compact|minimal|none|36|none|summary>education>experience>certifications>projects>skills>achievements>languages>references>hobbies|pill|rounded|compact|2xl|minimal|flat|standard",
       "thumbnail": "/templates/Cv98.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv98.svg",
       "evidenceHtml": "docs/templates/evidence/Cv98.html",
       "rendered": {
@@ -5132,8 +5132,8 @@
           "References"
         ],
         "firstPageCharacters": 852,
-        "htmlSha256": "a0ff7e5ebab44f5b11cada902971b1bfb2440a1d7d6147e8840bb0973ac3a27b",
-        "htmlBytes": 13645
+        "htmlSha256": "afdbec21095e03b524066269bf6106b9632443efad322a7f0398abbb3a18eb7c",
+        "htmlBytes": 13727
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -5166,7 +5166,7 @@
       "accentBar": false,
       "fingerprint": "timeline|minimal|none|30|none|summary>experience>projects>achievements>skills>education>certifications>languages>hobbies>references|bar|circle|compact|md|inline|flat|standard",
       "thumbnail": "/templates/Cv99.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv99.svg",
       "evidenceHtml": "docs/templates/evidence/Cv99.html",
       "rendered": {
@@ -5184,9 +5184,9 @@
           "Languages",
           "Interests & Hobbies"
         ],
-        "firstPageCharacters": 854,
-        "htmlSha256": "4e502187a933c2e4f1798c805d8164de102ef3f300292ebfbf1920b476f97184",
-        "htmlBytes": 14029
+        "firstPageCharacters": 871,
+        "htmlSha256": "c57e251e6888437ecc98dd5895772148a8fcd3f817d7715a809abad36db938e5",
+        "htmlBytes": 14233
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"
@@ -5219,7 +5219,7 @@
       "accentBar": false,
       "fingerprint": "boxed|band|none|32|none|summary>experience>education>skills>certifications>projects>achievements>languages>references>hobbies|underline|square|spacious|md|grid|flat|standard",
       "thumbnail": "/templates/Cv100.JPG",
-      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailOrigin": "regenerated-from-spec",
       "wireframe": "docs/templates/wireframes/Cv100.svg",
       "evidenceHtml": "docs/templates/evidence/Cv100.html",
       "rendered": {
@@ -5238,8 +5238,8 @@
           "References"
         ],
         "firstPageCharacters": 857,
-        "htmlSha256": "8fdb437ff83b652c0b9f462b9b85b38b27a53140782ca6389683a28a9f308774",
-        "htmlBytes": 14028
+        "htmlSha256": "575c7b9ca392b5dbc44d43a83c1b3d034668a1846427f5028be6b71985be5167",
+        "htmlBytes": 14211
       },
       "renderedScreenshot": null,
       "screenshotStatus": "BLOCKED: no browser binary available in the sandbox"

@@ -1,20 +1,20 @@
 # DIR-008 — Requirements to Evidence Matrix
 
-Status: **M2** — layout engine + 100-template evidence landed (implementation continues at M3)
+Status: **M8** — three deep dives restored and the legacy parity ledger published (implementation continues at M9)
 Evidence root: `docs/audits/`, `docs/templates/`, `docs/test-reports/`
 Valid outcomes: `PASS`, `PARTIAL`, `BLOCKED`, `FAIL`, `NOT STARTED`
 
-| Req ID | Requirement | Primary implementation | Verification | Status (M1) | Evidence |
+| Req ID | Requirement | Primary implementation | Verification | Status (M8) | Evidence |
 |---|---|---|---|---|---|
 | R-01 | Independent workspace and verified baseline | — | git inspection + build/typecheck | PASS | audit §1–2 |
 | R-02 | 100 CV template catalog entries, unique IDs | `frontend/src/lib/template-catalog.ts` | registry test | PASS (inventory) | audit §3.3 |
 | R-03 | Every template has a valid renderer mapping | `template-layouts.ts` + `smart-layout-families.tsx` | SSR render test ×100 | PASS | `tests/dir008-layout-engine.test.mjs` test 2/5 |
 | R-04 | Every template is structurally distinct | `template-layouts.ts` (23 families, distance ≥4) | pairwise distance + thumbnail greyscale test | PASS | `dir008-layout-engine` test 3, `dir008-template-evidence` test 5 |
 | R-05 | Every template has a thumbnail asset | `frontend/public/templates` (55 legacy + 49 generated) | asset coverage test | PASS | `dir008-template-evidence` test 2 |
-| R-06 | Deep dive Cv34 fidelity (white header, 5px triple gradient, circular avatar, teal border, % skill bars) | `Cv34Family` | SSR/DOM assertions | PARTIAL (structure in place; triple-gradient/percent-bar parity pending) | `evidence/Cv34.html` |
-| R-07 | Deep dive Cv1 executive bordered profile card | `Cv1Family` | SSR/DOM assertions | PARTIAL (dedicated family; bordered profile card parity pending) | `evidence/Cv1.html` |
+| R-06 | Deep dive Cv34 fidelity (white header, 5px triple gradient, circular avatar, teal border, % skill bars) | `Cv34Family` + catalog palette | SSR/DOM assertions | PASS (white header, exact 3-stop #6c5ce7→#0f766e→#fd79a8 rule, 3px #0f766e ring, honest % meters) | `dir008-template-deep-dives` tests 1–3 |
+| R-07 | Deep dive Cv1 executive bordered profile card | `Cv1Family` + catalog palette | SSR/DOM assertions | PASS (5 % tinted banner, 2.5px #1e40af ring, initials fallback, labelled information rail, skill pills) | `dir008-template-deep-dives` tests 4–5 |
 | R-08 | Deep dive Cv4 Harvard centered academic layout | `Cv4Family` | SSR/DOM assertions | PASS (centred serif identity + inline contact) | `evidence/Cv4.html` |
-| R-09 | Deep dive Cv25 documented legacy structure | `Cv25Family` | structural assertions | PARTIAL (right rail restored; legacy parity review pending) | `evidence/Cv25.html` |
+| R-09 | Deep dive Cv25 documented legacy structure | `Cv25Family` + catalog palette | structural assertions | PASS (#274472 navy header, 4px #3d6485 ring, #f5f7fa rail, 5-box scales, CEFR dots) | `dir008-template-deep-dives` test 6 |
 | R-10 | Realistic fixtures incl. long names, multilingual, links, long bullets | `tests/dir008-field-robustness.test.mjs` | fixture render ×100 | PASS (SSR; browser evidence BLOCKED) | `dir008-field-robustness` test 1 |
 | R-11 | Missing optional fields do not break layout | renderers | optional-field matrix | PASS | `dir008-field-robustness` tests 3–4 |
 | R-12 | Multi-page A4 documents render without clipping | `smart-partitioner.ts` | page-count/height tests | PASS (empty-page and overflow assertions) | `dir008-layout-engine` tests 7–8 |
@@ -56,7 +56,7 @@ Valid outcomes: `PASS`, `PARTIAL`, `BLOCKED`, `FAIL`, `NOT STARTED`
 | R-48 | No secrets/PII in committed evidence | evidence bundle | secret scan | NOT STARTED | pending |
 | R-49 | Error states honest; no fabricated success | share dialog/export/viewer | unit + contract tests | PASS (share/export surfaces) | `dir008-sharing-contract` |
 | R-50 | Documentation and release certification | docs/release | review | NOT STARTED | pending |
-| R-51 | DIR-008 legacy 51-template parity + 3 s budget | layout engine | build/render tests | PARTIAL (legacy suites green; Cv1/Cv25/Cv34 parity open) | `template-production-render`, audit §1 |
+| R-51 | DIR-008 legacy 51-template parity + 3 s budget | layout engine + parity ledger | build/render tests | PARTIAL (3/51 restored and structure-verified: Cv1/Cv25/Cv34; 41/51 catalog palettes traceable to no legacy colour; 48/51 family-composed, not claimed as parity; build 1.70 s < 3 s) | `docs/templates/legacy-parity.md`, audit §11 |
 
 ## Template evidence rows
 
@@ -83,6 +83,16 @@ rendered section headings, evidence hash, and screenshot status (`BLOCKED`, neve
   D-08 dashboard fallback, D-10 (a11y), D-14/D-15.
 * Browser evidence blocked by environment: see audit §2 (recorded as BLOCKED, not passed).
 * Certification before remediation: **NOT CERTIFIED** (expected through M8; final status at M9)
+
+## M8 gate summary
+
+* Closed at M8: R-06, R-07, R-09 (three deep dives rebuilt from their legacy stylesheets and locked by
+  `tests/dir008-template-deep-dives.test.mjs`, 7/7).
+* New evidence: `docs/templates/legacy-parity.{json,md}` — per-template verdicts for Cv1…Cv51, generated by
+  `scripts/dir008-legacy-parity.mjs` and integrity-tested by `tests/dir008-legacy-parity.test.mjs` (5/5).
+* R-51 stays PARTIAL and quantified: 3 RESTORED, 7 CATALOG_ONLY, 41 PALETTE_DIVERGENT, 0 PALETTE_LINKED.
+  The 48 non-restored templates render through distinct typed families but are **not** claimed as legacy parity.
+* Still blocked: R-29 server PDF (headless Chromium unavailable), R-34/R-41 browser evidence.
 
 ## M7 gate summary
 

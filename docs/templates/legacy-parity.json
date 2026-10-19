@@ -1,0 +1,1606 @@
+{
+  "generatedBy": "scripts/dir008-legacy-parity.mjs",
+  "scope": "Cv1…Cv51 (canonical legacy set)",
+  "catalogSize": 100,
+  "restoredIds": [
+    "Cv1",
+    "Cv25",
+    "Cv34"
+  ],
+  "summary": {
+    "RESTORED": 3,
+    "CATALOG_ONLY": 7,
+    "PALETTE_DIVERGENT": 41
+  },
+  "note": "A RESTORED row means the page geometry was rebuilt from the legacy art and is protected by an automated structural test. PALETTE_LINKED / PALETTE_DIVERGENT / CATALOG_ONLY rows render through a distinct typed family composer but have not been verified 1:1 against the legacy artwork; they must not be reported as legacy parity.",
+  "rows": [
+    {
+      "id": "Cv1",
+      "name": "Metropolitan Navy",
+      "legacySource": "src/cv-templates/cv1/Cv1.jsx",
+      "legacyStylesheet": "src/cv-templates/cv1/Cv1.scss",
+      "legacyIdentityColors": [
+        "1e40af"
+      ],
+      "catalogPrimary": "#1e40af",
+      "catalogSecondary": "#475569",
+      "catalogAccent": null,
+      "family": "cv1",
+      "aside": "left",
+      "asideSections": [
+        "contact",
+        "skills",
+        "languages"
+      ],
+      "mainOrder": [
+        "summary",
+        "experience",
+        "education",
+        "projects",
+        "certifications",
+        "achievements",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "RESTORED",
+      "evidence": "tests/dir008-template-deep-dives.test.mjs — tinted banner, 2.5px #1e40af ring, labelled information rail, skill pills"
+    },
+    {
+      "id": "Cv2",
+      "name": "Nordic Slate",
+      "legacySource": "src/cv-templates/cv2/Cv2.jsx",
+      "legacyStylesheet": "src/cv-templates/cv2/Cv2.scss",
+      "legacyIdentityColors": [],
+      "catalogPrimary": "#0f172a",
+      "catalogSecondary": "#0ea5e9",
+      "catalogAccent": null,
+      "family": "banner-sidebar",
+      "aside": "left",
+      "asideSections": [
+        "contact",
+        "education",
+        "skills",
+        "certifications"
+      ],
+      "mainOrder": [
+        "summary",
+        "experience",
+        "projects",
+        "achievements",
+        "languages",
+        "references",
+        "hobbies"
+      ],
+      "verdict": "CATALOG_ONLY",
+      "evidence": null
+    },
+    {
+      "id": "Cv3",
+      "name": "Emerald Executive",
+      "legacySource": "src/cv-templates/cv3/Cv3.jsx",
+      "legacyStylesheet": "src/cv-templates/cv3/Cv3.scss",
+      "legacyIdentityColors": [],
+      "catalogPrimary": "#065f46",
+      "catalogSecondary": "#10b981",
+      "catalogAccent": null,
+      "family": "magazine",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "experience",
+        "summary",
+        "achievements",
+        "education",
+        "projects",
+        "skills",
+        "certifications",
+        "languages",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "CATALOG_ONLY",
+      "evidence": null
+    },
+    {
+      "id": "Cv4",
+      "name": "Harvard Classic ATS",
+      "legacySource": "src/cv-templates/cv4/Cv4.jsx",
+      "legacyStylesheet": "src/cv-templates/cv4/Cv4.scss",
+      "legacyIdentityColors": [],
+      "catalogPrimary": "#111827",
+      "catalogSecondary": "#4b5563",
+      "catalogAccent": null,
+      "family": "cv4",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "summary",
+        "education",
+        "experience",
+        "projects",
+        "skills",
+        "certifications",
+        "achievements",
+        "languages",
+        "references",
+        "hobbies"
+      ],
+      "verdict": "CATALOG_ONLY",
+      "evidence": null
+    },
+    {
+      "id": "Cv5",
+      "name": "Stanford Clean ATS",
+      "legacySource": "src/cv-templates/cv5/Cv5.jsx",
+      "legacyStylesheet": "src/cv-templates/cv5/Cv5.scss",
+      "legacyIdentityColors": [],
+      "catalogPrimary": "#1e293b",
+      "catalogSecondary": "#0ea5e9",
+      "catalogAccent": null,
+      "family": "academic",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "experience",
+        "projects",
+        "skills",
+        "education",
+        "summary",
+        "achievements",
+        "certifications",
+        "languages",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "CATALOG_ONLY",
+      "evidence": null
+    },
+    {
+      "id": "Cv6",
+      "name": "Wall Street Modern",
+      "legacySource": "src/cv-templates/cv6/Cv6.jsx",
+      "legacyStylesheet": "src/cv-templates/cv6/Cv6.scss",
+      "legacyIdentityColors": [],
+      "catalogPrimary": "#0f172a",
+      "catalogSecondary": "#2563eb",
+      "catalogAccent": null,
+      "family": "editorial",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "summary",
+        "experience",
+        "projects",
+        "achievements",
+        "skills",
+        "education",
+        "certifications",
+        "languages",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "CATALOG_ONLY",
+      "evidence": null
+    },
+    {
+      "id": "Cv7",
+      "name": "Sapphire Modern Split",
+      "legacySource": "src/cv-templates/cv7/Cv7.jsx",
+      "legacyStylesheet": "src/cv-templates/cv7/Cv7.scss",
+      "legacyIdentityColors": [],
+      "catalogPrimary": "#1d4ed8",
+      "catalogSecondary": "#60a5fa",
+      "catalogAccent": null,
+      "family": "split-header",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "summary",
+        "experience",
+        "education",
+        "skills",
+        "certifications",
+        "projects",
+        "achievements",
+        "languages",
+        "references",
+        "hobbies"
+      ],
+      "verdict": "CATALOG_ONLY",
+      "evidence": null
+    },
+    {
+      "id": "Cv8",
+      "name": "Crown Executive Banner",
+      "legacySource": "src/cv-templates/cv8/Cv8.jsx",
+      "legacyStylesheet": "src/cv-templates/cv8/Cv8.scss",
+      "legacyIdentityColors": [
+        "3d3e42",
+        "353f58"
+      ],
+      "catalogPrimary": "#1e293b",
+      "catalogSecondary": "#3b82f6",
+      "catalogAccent": null,
+      "family": "banner",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "experience",
+        "achievements",
+        "summary",
+        "projects",
+        "education",
+        "skills",
+        "certifications",
+        "languages",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv9",
+      "name": "Cobalt Pro Split",
+      "legacySource": "src/cv-templates/cv9/Cv9.jsx",
+      "legacyStylesheet": "src/cv-templates/cv9/Cv9.scss",
+      "legacyIdentityColors": [],
+      "catalogPrimary": "#2563eb",
+      "catalogSecondary": "#38bdf8",
+      "catalogAccent": null,
+      "family": "tri-column",
+      "aside": "left",
+      "asideSections": [
+        "contact",
+        "education",
+        "skills",
+        "certifications"
+      ],
+      "mainOrder": [
+        "summary",
+        "experience",
+        "projects",
+        "achievements",
+        "languages",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "CATALOG_ONLY",
+      "evidence": null
+    },
+    {
+      "id": "Cv10",
+      "name": "Titanium Executive",
+      "legacySource": "src/cv-templates/cv10/Cv10.jsx",
+      "legacyStylesheet": "src/cv-templates/cv10/Cv10.scss",
+      "legacyIdentityColors": [
+        "0369c4"
+      ],
+      "catalogPrimary": "#334155",
+      "catalogSecondary": "#64748b",
+      "catalogAccent": null,
+      "family": "banner-sidebar",
+      "aside": "left",
+      "asideSections": [
+        "contact",
+        "skills",
+        "languages",
+        "certifications"
+      ],
+      "mainOrder": [
+        "summary",
+        "experience",
+        "projects",
+        "education",
+        "achievements",
+        "references",
+        "hobbies"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv11",
+      "name": "Prism Executive Banner",
+      "legacySource": "src/cv-templates/cv11/Cv11.jsx",
+      "legacyStylesheet": "src/cv-templates/cv11/Cv11.scss",
+      "legacyIdentityColors": [
+        "0369c4"
+      ],
+      "catalogPrimary": "#4338ca",
+      "catalogSecondary": "#818cf8",
+      "catalogAccent": null,
+      "family": "infographic",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "experience",
+        "summary",
+        "achievements",
+        "education",
+        "projects",
+        "skills",
+        "certifications",
+        "languages",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv12",
+      "name": "Oxford Academic ATS",
+      "legacySource": "src/cv-templates/cv12/Cv12.jsx",
+      "legacyStylesheet": "src/cv-templates/cv12/Cv12.scss",
+      "legacyIdentityColors": [
+        "0d3a71"
+      ],
+      "catalogPrimary": "#1e1b4b",
+      "catalogSecondary": "#4338ca",
+      "catalogAccent": null,
+      "family": "minimal",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "summary",
+        "education",
+        "experience",
+        "certifications",
+        "projects",
+        "skills",
+        "achievements",
+        "languages",
+        "references",
+        "hobbies"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv13",
+      "name": "Cambridge Research",
+      "legacySource": "src/cv-templates/cv13/Cv13.jsx",
+      "legacyStylesheet": "src/cv-templates/cv13/Cv13.scss",
+      "legacyIdentityColors": [
+        "0d3a71",
+        "3498db"
+      ],
+      "catalogPrimary": "#09090b",
+      "catalogSecondary": "#52525b",
+      "catalogAccent": null,
+      "family": "executive",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "experience",
+        "projects",
+        "skills",
+        "education",
+        "summary",
+        "achievements",
+        "certifications",
+        "languages",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv14",
+      "name": "Yale Corporate ATS",
+      "legacySource": "src/cv-templates/cv14/Cv14.jsx",
+      "legacyStylesheet": "src/cv-templates/cv14/Cv14.scss",
+      "legacyIdentityColors": [
+        "46706f",
+        "e6f0ef",
+        "ebcbbb",
+        "6c999a"
+      ],
+      "catalogPrimary": "#0c2340",
+      "catalogSecondary": "#c59b27",
+      "catalogAccent": null,
+      "family": "split-header",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "summary",
+        "experience",
+        "projects",
+        "achievements",
+        "skills",
+        "education",
+        "certifications",
+        "languages",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv15",
+      "name": "MIT Technical ATS",
+      "legacySource": "src/cv-templates/cv15/Cv15.jsx",
+      "legacyStylesheet": "src/cv-templates/cv15/Cv15.scss",
+      "legacyIdentityColors": [
+        "292c2b",
+        "e7eaf5",
+        "6c999a"
+      ],
+      "catalogPrimary": "#8b0000",
+      "catalogSecondary": "#475569",
+      "catalogAccent": null,
+      "family": "classic",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "experience",
+        "achievements",
+        "summary",
+        "projects",
+        "education",
+        "skills",
+        "certifications",
+        "languages",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv16",
+      "name": "Apex Navy Banner",
+      "legacySource": "src/cv-templates/cv16/Cv16.jsx",
+      "legacyStylesheet": "src/cv-templates/cv16/Cv16.scss",
+      "legacyIdentityColors": [
+        "0f766e",
+        "3a6073",
+        "e9e9e9",
+        "16222a"
+      ],
+      "catalogPrimary": "#1e3a8a",
+      "catalogSecondary": "#38bdf8",
+      "catalogAccent": null,
+      "family": "executive",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "experience",
+        "achievements",
+        "summary",
+        "projects",
+        "education",
+        "skills",
+        "certifications",
+        "languages",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv17",
+      "name": "Teal Horizon Banner",
+      "legacySource": "src/cv-templates/cv17/Cv17.jsx",
+      "legacyStylesheet": "src/cv-templates/cv17/Cv17.scss",
+      "legacyIdentityColors": [
+        "5d62b5",
+        "ff6b6b"
+      ],
+      "catalogPrimary": "#0f766e",
+      "catalogSecondary": "#14b8a6",
+      "catalogAccent": null,
+      "family": "boxed",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "summary",
+        "experience",
+        "education",
+        "projects",
+        "achievements",
+        "skills",
+        "certifications",
+        "languages",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv18",
+      "name": "Princeton Minimal ATS",
+      "legacySource": "src/cv-templates/cv18/Cv18.jsx",
+      "legacyStylesheet": "src/cv-templates/cv18/cv18.scss",
+      "legacyIdentityColors": [
+        "2c7a7b",
+        "f6ad55"
+      ],
+      "catalogPrimary": "#c2410c",
+      "catalogSecondary": "#ea580c",
+      "catalogAccent": null,
+      "family": "academic",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "experience",
+        "summary",
+        "achievements",
+        "education",
+        "projects",
+        "skills",
+        "certifications",
+        "languages",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv19",
+      "name": "Zurich Financial ATS",
+      "legacySource": "src/cv-templates/cv19/Cv19.jsx",
+      "legacyStylesheet": "src/cv-templates/cv19/Cv19.scss",
+      "legacyIdentityColors": [
+        "383e50",
+        "f7c873",
+        "e5e8f0",
+        "f8f9fc"
+      ],
+      "catalogPrimary": "#004b49",
+      "catalogSecondary": "#d97706",
+      "catalogAccent": null,
+      "family": "editorial",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "summary",
+        "education",
+        "experience",
+        "certifications",
+        "projects",
+        "skills",
+        "achievements",
+        "languages",
+        "references",
+        "hobbies"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv20",
+      "name": "Pacific Blue Split",
+      "legacySource": "src/cv-templates/cv20/Cv20.jsx",
+      "legacyStylesheet": "src/cv-templates/cv20/Cv20.scss",
+      "legacyIdentityColors": [
+        "1f6d7c",
+        "edf3f5"
+      ],
+      "catalogPrimary": "#0284c7",
+      "catalogSecondary": "#38bdf8",
+      "catalogAccent": null,
+      "family": "compact",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "summary",
+        "education",
+        "experience",
+        "certifications",
+        "projects",
+        "skills",
+        "achievements",
+        "languages",
+        "references",
+        "hobbies"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv21",
+      "name": "Imperial Indigo Banner",
+      "legacySource": "src/cv-templates/cv21/Cv21.jsx",
+      "legacyStylesheet": "src/cv-templates/cv21/Cv21.scss",
+      "legacyIdentityColors": [
+        "5352ed",
+        "ff6b6b",
+        "7b78ff"
+      ],
+      "catalogPrimary": "#3730a3",
+      "catalogSecondary": "#6366f1",
+      "catalogAccent": null,
+      "family": "banner",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "summary",
+        "experience",
+        "projects",
+        "achievements",
+        "skills",
+        "education",
+        "certifications",
+        "languages",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv22",
+      "name": "Geneva Executive ATS",
+      "legacySource": "src/cv-templates/cv22/Cv22.jsx",
+      "legacyStylesheet": "src/cv-templates/cv22/Cv22.scss",
+      "legacyIdentityColors": [
+        "0047ab",
+        "00c6ff",
+        "f0f5ff"
+      ],
+      "catalogPrimary": "#18181b",
+      "catalogSecondary": "#dc2626",
+      "catalogAccent": null,
+      "family": "minimal",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "summary",
+        "experience",
+        "education",
+        "skills",
+        "certifications",
+        "projects",
+        "achievements",
+        "languages",
+        "references",
+        "hobbies"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv23",
+      "name": "Burgundy Prestige Banner",
+      "legacySource": "src/cv-templates/cv23/Cv23.jsx",
+      "legacyStylesheet": "src/cv-templates/cv23/Cv23.scss",
+      "legacyIdentityColors": [
+        "0e7490",
+        "023047",
+        "f8f9fa"
+      ],
+      "catalogPrimary": "#881337",
+      "catalogSecondary": "#f43f5e",
+      "catalogAccent": null,
+      "family": "banner-sidebar",
+      "aside": "right",
+      "asideSections": [
+        "contact",
+        "skills",
+        "projects",
+        "certifications"
+      ],
+      "mainOrder": [
+        "experience",
+        "achievements",
+        "summary",
+        "education",
+        "languages",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv24",
+      "name": "Cyberpunk Modern Split",
+      "legacySource": "src/cv-templates/cv24/Cv24.jsx",
+      "legacyStylesheet": "src/cv-templates/cv24/Cv24.scss",
+      "legacyIdentityColors": [
+        "3454c2",
+        "3451b2"
+      ],
+      "catalogPrimary": "#4f46e5",
+      "catalogSecondary": "#ec4899",
+      "catalogAccent": null,
+      "family": "profile-sidebar",
+      "aside": "right",
+      "asideSections": [
+        "contact",
+        "skills",
+        "languages",
+        "certifications"
+      ],
+      "mainOrder": [
+        "summary",
+        "experience",
+        "education",
+        "projects",
+        "achievements",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv25",
+      "name": "DevOps Terminal Tech",
+      "legacySource": "src/cv-templates/cv25/Cv25.jsx",
+      "legacyStylesheet": "src/cv-templates/cv25/Cv25.scss",
+      "legacyIdentityColors": [
+        "274472",
+        "3d6485",
+        "b7c8ee"
+      ],
+      "catalogPrimary": "#274472",
+      "catalogSecondary": "#3d6485",
+      "catalogAccent": null,
+      "family": "cv25",
+      "aside": "right",
+      "asideSections": [
+        "summary",
+        "skills",
+        "languages"
+      ],
+      "mainOrder": [
+        "experience",
+        "education",
+        "projects",
+        "achievements",
+        "certifications",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "RESTORED",
+      "evidence": "tests/dir008-template-deep-dives.test.mjs — navy header, 4px #3d6485 ring, #f5f7fa rail, box/dot scales"
+    },
+    {
+      "id": "Cv26",
+      "name": "FullStack Dark Split",
+      "legacySource": "src/cv-templates/cv26/Cv26.jsx",
+      "legacyStylesheet": "src/cv-templates/cv26/Cv26.scss",
+      "legacyIdentityColors": [
+        "0f766e"
+      ],
+      "catalogPrimary": "#0891b2",
+      "catalogSecondary": "#06b6d4",
+      "catalogAccent": null,
+      "family": "banner-sidebar",
+      "aside": "right",
+      "asideSections": [
+        "contact",
+        "summary",
+        "skills"
+      ],
+      "mainOrder": [
+        "experience",
+        "achievements",
+        "education",
+        "projects",
+        "certifications",
+        "languages",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv27",
+      "name": "Creative Studio Split",
+      "legacySource": "src/cv-templates/cv27/Cv27.jsx",
+      "legacyStylesheet": "src/cv-templates/cv27/Cv27.scss",
+      "legacyIdentityColors": [
+        "ffd952",
+        "3a1c71",
+        "4c2885",
+        "f7f7fa",
+        "673cb7"
+      ],
+      "catalogPrimary": "#d97706",
+      "catalogSecondary": "#fbbf24",
+      "catalogAccent": null,
+      "family": "magazine",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "summary",
+        "education",
+        "experience",
+        "certifications",
+        "projects",
+        "skills",
+        "achievements",
+        "languages",
+        "references",
+        "hobbies"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv28",
+      "name": "Silicon Valley Engineer",
+      "legacySource": "src/cv-templates/cv28/Cv28.jsx",
+      "legacyStylesheet": "src/cv-templates/cv28/Cv28.scss",
+      "legacyIdentityColors": [
+        "00695c",
+        "c2410c"
+      ],
+      "catalogPrimary": "#2563eb",
+      "catalogSecondary": "#60a5fa",
+      "catalogAccent": null,
+      "family": "card-grid",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "summary",
+        "education",
+        "experience",
+        "certifications",
+        "projects",
+        "skills",
+        "achievements",
+        "languages",
+        "references",
+        "hobbies"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv29",
+      "name": "Minimal Nordic Slate",
+      "legacySource": "src/cv-templates/cv29/Cv29.jsx",
+      "legacyStylesheet": "src/cv-templates/cv29/Cv29.scss",
+      "legacyIdentityColors": [
+        "7b4397",
+        "5ee7df",
+        "9159bd"
+      ],
+      "catalogPrimary": "#334155",
+      "catalogSecondary": "#64748b",
+      "catalogAccent": null,
+      "family": "split-header",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "summary",
+        "experience",
+        "projects",
+        "achievements",
+        "skills",
+        "education",
+        "certifications",
+        "languages",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv30",
+      "name": "Corporate Summit Banner",
+      "legacySource": "src/cv-templates/cv30/Cv30.jsx",
+      "legacyStylesheet": "src/cv-templates/cv30/Cv30.scss",
+      "legacyIdentityColors": [
+        "ffd166",
+        "023047",
+        "0f4c5c",
+        "f8f9fa"
+      ],
+      "catalogPrimary": "#b45309",
+      "catalogSecondary": "#f59e0b",
+      "catalogAccent": null,
+      "family": "infographic",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "summary",
+        "experience",
+        "education",
+        "skills",
+        "certifications",
+        "projects",
+        "achievements",
+        "languages",
+        "references",
+        "hobbies"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv31",
+      "name": "Cloud Native Tech",
+      "legacySource": "src/cv-templates/cv31/Cv31.jsx",
+      "legacyStylesheet": "src/cv-templates/cv31/Cv31.scss",
+      "legacyIdentityColors": [
+        "ff8474",
+        "ffd7d2"
+      ],
+      "catalogPrimary": "#0891b2",
+      "catalogSecondary": "#0ea5e9",
+      "catalogAccent": null,
+      "family": "portfolio",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "summary",
+        "experience",
+        "education",
+        "skills",
+        "certifications",
+        "projects",
+        "achievements",
+        "languages",
+        "references",
+        "hobbies"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv32",
+      "name": "Kubernetes Developer",
+      "legacySource": "src/cv-templates/cv32/Cv32.jsx",
+      "legacyStylesheet": "src/cv-templates/cv32/Cv32.scss",
+      "legacyIdentityColors": [
+        "15803d",
+        "27ae60",
+        "0f766e"
+      ],
+      "catalogPrimary": "#326ce5",
+      "catalogSecondary": "#60a5fa",
+      "catalogAccent": null,
+      "family": "compact",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "experience",
+        "achievements",
+        "summary",
+        "projects",
+        "education",
+        "skills",
+        "certifications",
+        "languages",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv33",
+      "name": "Data Science Matrix",
+      "legacySource": "src/cv-templates/cv33/Cv33.jsx",
+      "legacyStylesheet": "src/cv-templates/cv33/Cv33.scss",
+      "legacyIdentityColors": [
+        "1d6fa5",
+        "1abc9c",
+        "ecf0f1"
+      ],
+      "catalogPrimary": "#059669",
+      "catalogSecondary": "#34d399",
+      "catalogAccent": null,
+      "family": "timeline",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "summary",
+        "experience",
+        "education",
+        "projects",
+        "achievements",
+        "skills",
+        "certifications",
+        "languages",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv34",
+      "name": "Fintech Executive",
+      "legacySource": "src/cv-templates/cv34/Cv34.jsx",
+      "legacyStylesheet": "src/cv-templates/cv34/Cv34.scss",
+      "legacyIdentityColors": [
+        "2d3436",
+        "6c5ce7",
+        "0f766e",
+        "fd79a8",
+        "636e72"
+      ],
+      "catalogPrimary": "#6c5ce7",
+      "catalogSecondary": "#0f766e",
+      "catalogAccent": "#fd79a8",
+      "family": "cv34",
+      "aside": "right",
+      "asideSections": [
+        "skills",
+        "languages"
+      ],
+      "mainOrder": [
+        "summary",
+        "experience",
+        "education",
+        "projects",
+        "certifications",
+        "achievements",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "RESTORED",
+      "evidence": "tests/dir008-template-deep-dives.test.mjs — white header, 3-stop rule, 3px teal ring, percent meters"
+    },
+    {
+      "id": "Cv35",
+      "name": "AI & ML Researcher",
+      "legacySource": "src/cv-templates/cv35/Cv35.jsx",
+      "legacyStylesheet": "src/cv-templates/cv35/Cv35.scss",
+      "legacyIdentityColors": [
+        "00787a",
+        "c2410c",
+        "e5e8ed",
+        "d5d8dc"
+      ],
+      "catalogPrimary": "#7c3aed",
+      "catalogSecondary": "#a78bfa",
+      "catalogAccent": null,
+      "family": "technical",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "summary",
+        "education",
+        "experience",
+        "certifications",
+        "projects",
+        "skills",
+        "achievements",
+        "languages",
+        "references",
+        "hobbies"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv36",
+      "name": "BioTech Specialist",
+      "legacySource": "src/cv-templates/cv36/Cv36.jsx",
+      "legacyStylesheet": "src/cv-templates/cv36/Cv36.scss",
+      "legacyIdentityColors": [
+        "1e3a8a",
+        "d4af37"
+      ],
+      "catalogPrimary": "#0d9488",
+      "catalogSecondary": "#2dd4bf",
+      "catalogAccent": null,
+      "family": "boxed",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "experience",
+        "projects",
+        "skills",
+        "education",
+        "summary",
+        "achievements",
+        "certifications",
+        "languages",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv37",
+      "name": "Solutions Architect",
+      "legacySource": "src/cv-templates/cv37/Cv37.jsx",
+      "legacyStylesheet": "src/cv-templates/cv37/Cv37.scss",
+      "legacyIdentityColors": [
+        "6b46c1",
+        "0f766e"
+      ],
+      "catalogPrimary": "#ea580c",
+      "catalogSecondary": "#fb923c",
+      "catalogAccent": null,
+      "family": "card-grid",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "summary",
+        "experience",
+        "projects",
+        "achievements",
+        "skills",
+        "education",
+        "certifications",
+        "languages",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv38",
+      "name": "Global Legal ATS",
+      "legacySource": "src/cv-templates/cv38/Cv38.jsx",
+      "legacyStylesheet": "src/cv-templates/cv38/Cv38.scss",
+      "legacyIdentityColors": [
+        "0b6b63",
+        "f97066"
+      ],
+      "catalogPrimary": "#0f172a",
+      "catalogSecondary": "#0284c7",
+      "catalogAccent": null,
+      "family": "executive",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "summary",
+        "experience",
+        "education",
+        "skills",
+        "certifications",
+        "projects",
+        "achievements",
+        "languages",
+        "references",
+        "hobbies"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv39",
+      "name": "Product Manager Pro",
+      "legacySource": "src/cv-templates/cv39/Cv39.jsx",
+      "legacyStylesheet": "src/cv-templates/cv39/Cv39.scss",
+      "legacyIdentityColors": [
+        "1e3a8a",
+        "b42318"
+      ],
+      "catalogPrimary": "#4338ca",
+      "catalogSecondary": "#f59e0b",
+      "catalogAccent": null,
+      "family": "tri-column",
+      "aside": "right",
+      "asideSections": [
+        "contact",
+        "skills",
+        "projects",
+        "certifications"
+      ],
+      "mainOrder": [
+        "experience",
+        "achievements",
+        "summary",
+        "education",
+        "languages",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv40",
+      "name": "Europass Classic Grid",
+      "legacySource": "src/cv-templates/cv40/Cv40.jsx",
+      "legacyStylesheet": "src/cv-templates/cv40/Cv40.scss",
+      "legacyIdentityColors": [
+        "2d6a4f",
+        "d4a017",
+        "1b4332",
+        "52796f",
+        "84a98c"
+      ],
+      "catalogPrimary": "#003399",
+      "catalogSecondary": "#4169e1",
+      "catalogAccent": null,
+      "family": "europass",
+      "aside": "left",
+      "asideSections": [
+        "contact",
+        "languages",
+        "skills"
+      ],
+      "mainOrder": [
+        "experience",
+        "achievements",
+        "summary",
+        "projects",
+        "education",
+        "certifications",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv41",
+      "name": "Europass Modern Slate",
+      "legacySource": "src/cv-templates/cv41/Cv41.jsx",
+      "legacyStylesheet": "src/cv-templates/cv41/Cv41.scss",
+      "legacyIdentityColors": [
+        "7a243a",
+        "9e3e55",
+        "5e1c2c",
+        "777777"
+      ],
+      "catalogPrimary": "#1e293b",
+      "catalogSecondary": "#3b82f6",
+      "catalogAccent": null,
+      "family": "timeline",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "summary",
+        "experience",
+        "education",
+        "projects",
+        "achievements",
+        "skills",
+        "certifications",
+        "languages",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv42",
+      "name": "European Academic Compact",
+      "legacySource": "src/cv-templates/cv42/Cv42.jsx",
+      "legacyStylesheet": "src/cv-templates/cv42/Cv42.scss",
+      "legacyIdentityColors": [
+        "0c5e63",
+        "12868e",
+        "094548",
+        "ffa01b",
+        "ffb951"
+      ],
+      "catalogPrimary": "#1e3a8a",
+      "catalogSecondary": "#60a5fa",
+      "catalogAccent": null,
+      "family": "compact",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "summary",
+        "skills",
+        "experience",
+        "projects",
+        "education",
+        "achievements",
+        "certifications",
+        "languages",
+        "references",
+        "hobbies"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv43",
+      "name": "Brussels International",
+      "legacySource": "src/cv-templates/cv43/Cv43.jsx",
+      "legacyStylesheet": "src/cv-templates/cv43/Cv43.scss",
+      "legacyIdentityColors": [
+        "4a2c82",
+        "6b46a9",
+        "33174f",
+        "f0b859",
+        "f7d195"
+      ],
+      "catalogPrimary": "#0f766e",
+      "catalogSecondary": "#14b8a6",
+      "catalogAccent": null,
+      "family": "minimal",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "experience",
+        "summary",
+        "achievements",
+        "education",
+        "projects",
+        "skills",
+        "certifications",
+        "languages",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv44",
+      "name": "Scandinavia Clean Compact",
+      "legacySource": "src/cv-templates/cv44/Cv44.jsx",
+      "legacyStylesheet": "src/cv-templates/cv44/Cv44.scss",
+      "legacyIdentityColors": [
+        "25818e",
+        "4fafbc",
+        "156069",
+        "f28b32",
+        "f7a95e"
+      ],
+      "catalogPrimary": "#334155",
+      "catalogSecondary": "#10b981",
+      "catalogAccent": null,
+      "family": "split-header",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "experience",
+        "projects",
+        "skills",
+        "education",
+        "summary",
+        "achievements",
+        "certifications",
+        "languages",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv45",
+      "name": "Vienna Diplomatic Euro",
+      "legacySource": "src/cv-templates/cv45/Cv45.jsx",
+      "legacyStylesheet": "src/cv-templates/cv45/Cv45.scss",
+      "legacyIdentityColors": [
+        "1abc9c",
+        "2ecc71",
+        "16a085",
+        "f39c12",
+        "2d3436"
+      ],
+      "catalogPrimary": "#881337",
+      "catalogSecondary": "#e11d48",
+      "catalogAccent": null,
+      "family": "editorial",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "experience",
+        "projects",
+        "skills",
+        "education",
+        "summary",
+        "achievements",
+        "certifications",
+        "languages",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv46",
+      "name": "Frankfurt Finance Euro",
+      "legacySource": "src/cv-templates/cv46/Cv46.jsx",
+      "legacyStylesheet": "src/cv-templates/cv46/Cv46.scss",
+      "legacyIdentityColors": [
+        "2563eb",
+        "94a3b8",
+        "60a5fa",
+        "c2410c",
+        "fb923c"
+      ],
+      "catalogPrimary": "#1e3a8a",
+      "catalogSecondary": "#0284c7",
+      "catalogAccent": null,
+      "family": "europass",
+      "aside": "left",
+      "asideSections": [
+        "contact",
+        "skills",
+        "languages"
+      ],
+      "mainOrder": [
+        "summary",
+        "experience",
+        "education",
+        "certifications",
+        "projects",
+        "achievements",
+        "references",
+        "hobbies"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv47",
+      "name": "Metro Dual Column Pro",
+      "legacySource": "src/cv-templates/cv47/Cv47.jsx",
+      "legacyStylesheet": "src/cv-templates/cv47/Cv47.scss",
+      "legacyIdentityColors": [
+        "0e7490",
+        "0891b2",
+        "22d3ee",
+        "e5e7eb",
+        "059669"
+      ],
+      "catalogPrimary": "#0369a1",
+      "catalogSecondary": "#38bdf8",
+      "catalogAccent": null,
+      "family": "compact",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "experience",
+        "achievements",
+        "summary",
+        "projects",
+        "education",
+        "skills",
+        "certifications",
+        "languages",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv48",
+      "name": "Modern Gradient Aurora",
+      "legacySource": "src/cv-templates/cv48/Cv48.jsx",
+      "legacyStylesheet": "src/cv-templates/cv48/Cv48.scss",
+      "legacyIdentityColors": [
+        "5a67d8",
+        "434190",
+        "7f9cf5",
+        "ed64a6",
+        "f687b3"
+      ],
+      "catalogPrimary": "#6366f1",
+      "catalogSecondary": "#ec4899",
+      "catalogAccent": null,
+      "family": "profile-sidebar",
+      "aside": "left",
+      "asideSections": [
+        "contact",
+        "skills",
+        "languages"
+      ],
+      "mainOrder": [
+        "summary",
+        "experience",
+        "projects",
+        "education",
+        "achievements",
+        "certifications",
+        "references",
+        "hobbies"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv49",
+      "name": "Berlin Tech Compact",
+      "legacySource": "src/cv-templates/cv49/Cv49.jsx",
+      "legacyStylesheet": "src/cv-templates/cv49/Cv49.scss",
+      "legacyIdentityColors": [
+        "fb923c",
+        "ff7043",
+        "e64a19",
+        "cfd8dc",
+        "c2410c"
+      ],
+      "catalogPrimary": "#18181b",
+      "catalogSecondary": "#3b82f6",
+      "catalogAccent": null,
+      "family": "timeline",
+      "aside": null,
+      "asideSections": [],
+      "mainOrder": [
+        "summary",
+        "skills",
+        "experience",
+        "projects",
+        "education",
+        "achievements",
+        "certifications",
+        "languages",
+        "references",
+        "hobbies"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv50",
+      "name": "Executive Platinum Split",
+      "legacySource": "src/cv-templates/cv50/Cv50.jsx",
+      "legacyStylesheet": "src/cv-templates/cv50/Cv50.scss",
+      "legacyIdentityColors": [
+        "34d399",
+        "6ee7b7",
+        "047857"
+      ],
+      "catalogPrimary": "#0f172a",
+      "catalogSecondary": "#475569",
+      "catalogAccent": null,
+      "family": "banner-sidebar",
+      "aside": "left",
+      "asideSections": [
+        "contact",
+        "skills",
+        "projects"
+      ],
+      "mainOrder": [
+        "summary",
+        "education",
+        "experience",
+        "certifications",
+        "achievements",
+        "languages",
+        "references",
+        "hobbies"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    },
+    {
+      "id": "Cv51",
+      "name": "Standard Europass Modern",
+      "legacySource": "src/cv-templates/cv51/Cv51.jsx",
+      "legacyStylesheet": "src/cv-templates/cv51/Cv51.scss",
+      "legacyIdentityColors": [
+        "086d97",
+        "114395",
+        "0066cc",
+        "1f3f6e"
+      ],
+      "catalogPrimary": "#0f4c81",
+      "catalogSecondary": "#f59e0b",
+      "catalogAccent": null,
+      "family": "europass",
+      "aside": "right",
+      "asideSections": [
+        "contact",
+        "languages",
+        "skills",
+        "certifications"
+      ],
+      "mainOrder": [
+        "experience",
+        "summary",
+        "achievements",
+        "education",
+        "projects",
+        "hobbies",
+        "references"
+      ],
+      "verdict": "PALETTE_DIVERGENT",
+      "evidence": null
+    }
+  ]
+}

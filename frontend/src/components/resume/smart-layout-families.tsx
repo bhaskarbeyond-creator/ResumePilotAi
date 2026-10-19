@@ -114,6 +114,8 @@ function Photo({
   size = 'size-20',
   className,
   ring = true,
+  ringClassName,
+  style,
 }: {
   heading: any;
   fullName: string;
@@ -121,6 +123,8 @@ function Photo({
   size?: string;
   className?: string;
   ring?: boolean;
+  ringClassName?: string;
+  style?: React.CSSProperties;
 }) {
   if (!hasPhoto(heading) || layout.photoShape === 'none') return null;
   return (
@@ -131,9 +135,10 @@ function Photo({
         'shrink-0 object-cover',
         size,
         PHOTO_RADIUS[layout.photoShape],
-        ring && 'ring-2 ring-white/40',
+        ring && (ringClassName || 'ring-2 ring-white/40'),
         className
       )}
+      style={style}
     />
   );
 }
@@ -1322,39 +1327,144 @@ function MinimalFamily(props: FamilyPageProps) {
 
 function Cv1Family(props: FamilyPageProps) {
   const { resume, meta, palette, page, fullName, layout } = props;
+  const heading = resume.heading || {};
+  const contact = contactValues(heading);
+  const categories = skillCategories(resume);
+  const languages = Array.isArray(resume.languages) ? resume.languages : [];
+
+  const infoRows = [
+    { label: 'Address', value: contact.location, Icon: MapPin },
+    { label: 'Phone', value: contact.phone, Icon: Phone },
+    { label: 'Email', value: contact.email, Icon: Mail },
+    { label: 'LinkedIn', value: contact.linkedin, Icon: LinkedinIcon },
+    { label: 'GitHub', value: contact.github, Icon: GithubIcon },
+    { label: 'Website', value: contact.website, Icon: Globe },
+  ].filter((row) => Boolean(row.value));
+
   return (
-    <div className="flex min-h-0 flex-1">
-      <aside className="flex w-[33%] shrink-0 flex-col justify-between bg-slate-900 px-5 py-6 text-white" data-layout-rail="cv1">
-        <div>
-          <Photo heading={resume.heading} fullName={fullName} layout={layout} size="size-[92px]" className="mb-4 rounded-lg" />
-          <h1 className="text-[26px] font-extrabold leading-tight tracking-tight">{fullName}</h1>
-          <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-300">{resume.heading?.title}</p>
-          <div className="mt-4 space-y-1 border-t border-white/15 pt-3">
-            <ContactRow heading={resume.heading} layout={{ ...layout, contactLayout: 'stack' }} />
+    <div className="flex min-h-0 flex-1 flex-col bg-white" data-cv1-layout="legacy-card">
+      {/* Legacy Cv1: tinted banner at 5% primary over a 20% primary hairline. */}
+      <header
+        className="flex shrink-0 items-center gap-5 border-b px-8 py-5"
+        style={{ backgroundColor: `${palette.primary}0d`, borderColor: `${palette.primary}33` }}
+      >
+        {hasPhoto(heading) ? (
+          <img
+            src={heading.photo}
+            alt={fullName}
+            className="size-[92px] shrink-0 rounded-full object-cover"
+            style={{ border: `2.5px solid ${palette.primary}` }}
+          />
+        ) : (
+          <div
+            className="flex size-[92px] shrink-0 items-center justify-center rounded-full text-[26px] font-bold text-white"
+            style={{ backgroundColor: palette.primary }}
+            aria-hidden="true"
+          >
+            {initialsOf(fullName)}
           </div>
-          <div className="mt-4 space-y-3">
-            {layout.asideSections.filter((section) => section !== 'contact').map((section) => (
-              <RailSection
-                key={section}
-                section={section}
-                resume={resume}
-                meta={meta}
-                palette={palette}
-                isDark
-              />
-            ))}
-          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <h1
+            className={cn('break-words [overflow-wrap:anywhere] font-bold leading-tight tracking-tight', NAME_SCALE[layout.nameScale])}
+            style={{ color: palette.primary }}
+          >
+            {fullName}
+          </h1>
+          {heading.title && (
+            <p className="mt-1 text-[12px] font-medium uppercase tracking-[0.14em] text-neutral-500">{heading.title}</p>
+          )}
         </div>
-        <div className="text-[8px] uppercase tracking-[0.2em] text-white/40">{meta.id} · Classic</div>
-      </aside>
-      <main className="flex min-h-0 flex-1 flex-col bg-white px-7 py-6">
-        <div className="mb-3 border-b-2 pb-1.5" style={{ borderColor: palette.primary }}>
-          <span className="text-[9px] font-bold uppercase tracking-[0.28em]" style={{ color: palette.primary }}>
-            Professional Curriculum Vitae
-          </span>
-        </div>
-        <FlowList items={page.flowItems} meta={meta} palette={palette} layout={layout} />
-      </main>
+      </header>
+      <div className="flex min-h-0 flex-1">
+        <aside
+          className="flex w-[34%] shrink-0 flex-col gap-4 border-r border-[#e2e8f0] px-6 py-5"
+          data-layout-rail="cv1"
+          style={{ backgroundColor: meta.sidebarBg || '#f8fafc' }}
+        >
+          {infoRows.length > 0 && (
+            <section>
+              <h2
+                className="mb-2 border-b-2 pb-1 text-[9px] font-bold uppercase tracking-[0.2em]"
+                style={{ color: palette.primary, borderColor: palette.primary }}
+              >
+                Information
+              </h2>
+              <ul className="space-y-2">
+                {infoRows.map(({ label, value, Icon }) => (
+                  <li key={label} className="flex items-start gap-2">
+                    <span
+                      className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full"
+                      style={{ backgroundColor: `${palette.primary}18`, color: palette.primary }}
+                      aria-hidden="true"
+                    >
+                      <Icon className="size-2.5" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-[7.5px] font-semibold uppercase tracking-[0.14em] text-neutral-400">{label}</span>
+                      <span className="block break-words [overflow-wrap:anywhere] text-[10px] font-medium text-neutral-700">{value}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {categories.length > 0 && (
+            <section>
+              <h2
+                className="mb-2 border-b-2 pb-1 text-[9px] font-bold uppercase tracking-[0.2em]"
+                style={{ color: palette.primary, borderColor: palette.primary }}
+              >
+                Skills
+              </h2>
+              <div className="flex flex-wrap gap-1.5">
+                {categories.flatMap((category: any, categoryIndex: number) =>
+                  (Array.isArray(category?.skills) ? category.skills : []).map((skill: any, skillIndex: number) => {
+                    const label = typeof skill === 'string' ? skill : String(skill?.name || skill?.skillName || '');
+                    if (!label) return null;
+                    return (
+                      <span
+                        key={`${categoryIndex}-${skillIndex}`}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-2 py-0.5 text-[9.5px] font-medium text-neutral-700"
+                      >
+                        <span className="size-1.5 rounded-full" style={{ backgroundColor: palette.primary }} aria-hidden="true" />
+                        {label}
+                      </span>
+                    );
+                  })
+                )}
+              </div>
+            </section>
+          )}
+          {languages.length > 0 && (
+            <section>
+              <h2
+                className="mb-2 border-b-2 pb-1 text-[9px] font-bold uppercase tracking-[0.2em]"
+                style={{ color: palette.primary, borderColor: palette.primary }}
+              >
+                Languages
+              </h2>
+              <ul className="space-y-1">
+                {languages.map((language: any, index: number) => {
+                  const name = language?.language || language?.name || '';
+                  if (!name) return null;
+                  return (
+                    <li key={language?.id || index} className="flex items-baseline justify-between gap-2 text-[10px]">
+                      <span className="break-words font-medium text-neutral-700">{name}</span>
+                      {language?.proficiency && (
+                        <span className="shrink-0 text-[9px] font-semibold uppercase text-neutral-500">{language.proficiency}</span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
+        </aside>
+        <main className="flex min-h-0 flex-1 flex-col px-7 py-5">
+          <FlowList items={page.flowItems} meta={meta} palette={palette} layout={layout} />
+        </main>
+      </div>
     </div>
   );
 }
@@ -1381,90 +1491,229 @@ function Cv4Family(props: FamilyPageProps) {
   );
 }
 
+const CEFR_DOTS: Record<string, number> = {
+  A1: 1, A2: 2, B1: 3, B2: 3, C1: 4, C2: 5, NATIVE: 5,
+};
+
+function LevelScale({
+  filled,
+  total = 5,
+  color,
+  shape,
+  label,
+}: {
+  filled: number;
+  total?: number;
+  color: string;
+  shape: 'box' | 'dot';
+  label: string;
+}) {
+  return (
+    <span className="inline-flex items-center gap-1" role="img" aria-label={label}>
+      {Array.from({ length: total }, (_, index) => (
+        <span
+          key={index}
+          className={shape === 'dot' ? 'size-1.5 rounded-full' : 'h-1.5 w-3 rounded-[1px]'}
+          style={{ backgroundColor: index < filled ? color : '#d4d4d8' }}
+        />
+      ))}
+    </span>
+  );
+}
+
 function Cv25Family(props: FamilyPageProps) {
   const { resume, meta, palette, page, fullName, layout } = props;
+  const categories = skillCategories(resume);
+  const languages = Array.isArray(resume.languages) ? resume.languages : [];
   return (
-    <div className="flex min-h-0 flex-1 flex-row-reverse">
-      <aside className="flex w-[31%] shrink-0 flex-col justify-between border-l border-neutral-200 bg-neutral-50 px-5 py-6" data-layout-rail="cv25">
-        <div>
-          <Photo heading={resume.heading} fullName={fullName} layout={layout} size="size-[80px]" className="mb-4" ring={false} />
-          <div className="mb-3 border-b border-neutral-300 pb-2">
-            <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-neutral-500">Contact</div>
-            <div className="mt-1">
-              <ContactRow heading={resume.heading} layout={{ ...layout, contactLayout: 'stack' }} />
+    <div className="flex min-h-0 flex-1 flex-col bg-white" data-cv25-structure="navy-header-main-rail">
+      {/* Legacy Cv25: #274472 band, white name, 4px #3d6485 avatar ring. */}
+      <header className="shrink-0 px-8 py-5 text-white" style={{ backgroundColor: palette.primary }}>
+        <div className="flex items-center gap-5">
+          <div className="min-w-0 flex-1">
+            <h1 className={cn('break-words [overflow-wrap:anywhere] font-bold leading-tight tracking-tight', NAME_SCALE[layout.nameScale])}>
+              {fullName}
+            </h1>
+            {resume.heading?.title && (
+              <p className="mt-0.5 text-[12px] font-normal text-white/70">{resume.heading.title}</p>
+            )}
+            <div className="mt-2 border-t border-white/20 pt-2">
+              <ContactRow heading={resume.heading} layout={{ ...layout, contactLayout: 'inline' }} tone="dark" />
             </div>
           </div>
-          <div className="space-y-3">
-            {layout.asideSections.filter((section) => section !== 'contact').map((section) => (
-              <RailSection
-                key={section}
-                section={section}
-                resume={resume}
-                meta={meta}
-                palette={palette}
-                isDark={false}
-              />
-            ))}
-          </div>
+          {hasPhoto(resume.heading) && (
+            <img
+              src={resume.heading.photo}
+              alt={fullName}
+              className="size-[104px] shrink-0 rounded-full object-cover"
+              style={{ border: `4px solid ${palette.secondary}` }}
+            />
+          )}
         </div>
-        <div className="text-[8px] uppercase tracking-[0.2em] text-neutral-400">{meta.id} · Minimal</div>
-      </aside>
-      <main className="flex min-h-0 flex-1 flex-col px-7 py-6">
-        <header className="mb-3 shrink-0">
-          <h1 className={cn('font-bold tracking-tight text-neutral-900', NAME_SCALE[layout.nameScale])}>{fullName}</h1>
-          <p className="mt-0.5 text-[11px] font-medium text-neutral-500">{resume.heading?.title}</p>
-          <div className="mt-2 h-[2px] w-16" style={{ backgroundColor: palette.primary }} />
-        </header>
-        <FlowList items={page.flowItems} meta={meta} palette={palette} layout={layout} />
-      </main>
+      </header>
+      <div className="flex min-h-0 flex-1">
+        <main className="flex min-h-0 flex-1 flex-col border-r border-[#e0e0e0] px-7 py-5" data-cv25-main="experience-first">
+          <FlowList items={page.flowItems} meta={meta} palette={palette} layout={layout} />
+        </main>
+        <aside
+          className="flex w-[34%] shrink-0 flex-col gap-4 px-6 py-5"
+          style={{ backgroundColor: '#f5f7fa' }}
+          data-layout-rail="cv25"
+        >
+          {categories.length > 0 && (
+            <section>
+              <h2
+                className="mb-2 border-b-2 pb-1 text-[10px] font-bold"
+                style={{ color: palette.primary, borderColor: palette.secondary }}
+              >
+                Skills
+              </h2>
+              <div className="space-y-2">
+                {categories.flatMap((category: any, categoryIndex: number) =>
+                  (Array.isArray(category?.skills) ? category.skills : []).map((skill: any, skillIndex: number) => {
+                    const name = typeof skill === 'string' ? skill : String(skill?.name || skill?.skillName || '');
+                    const rating = typeof skill === 'object' ? Number(skill?.rating) : NaN;
+                    if (!name) return null;
+                    const filled = Number.isFinite(rating) ? Math.round(Math.min(100, Math.max(0, rating)) / 20) : 0;
+                    return (
+                      <div key={`${categoryIndex}-${skillIndex}`} className="flex items-center justify-between gap-2 text-[10px]">
+                        <span className="min-w-0 break-words font-medium text-neutral-700">{name}</span>
+                        {Number.isFinite(rating) && (
+                          <LevelScale filled={filled} color={palette.secondary} shape="box" label={`${name}: ${filled} of 5`} />
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </section>
+          )}
+          {languages.length > 0 && (
+            <section>
+              <h2
+                className="mb-2 border-b-2 pb-1 text-[10px] font-bold"
+                style={{ color: palette.primary, borderColor: palette.secondary }}
+              >
+                Languages
+              </h2>
+              <div className="space-y-1.5">
+                {languages.map((language: any, index: number) => {
+                  const name = language?.language || language?.name || '';
+                  const code = String(language?.proficiency || language?.level || '').toUpperCase();
+                  const filled = CEFR_DOTS[code] ?? 0;
+                  if (!name) return null;
+                  return (
+                    <div key={language?.id || index} className="flex items-center justify-between gap-2 text-[10px]">
+                      <span className="min-w-0 break-words font-medium text-neutral-700">{name}</span>
+                      {filled > 0 && (
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="text-[9px] font-semibold uppercase text-neutral-500">{code}</span>
+                          <LevelScale filled={filled} color={palette.secondary} shape="dot" label={`${name}: ${code}`} />
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+          {layout.asideSections
+            .filter((section) => section !== 'contact' && section !== 'skills' && section !== 'summary')
+            .map((section) => (
+              <RailSection key={section} section={section} resume={resume} meta={meta} palette={palette} isDark={false} />
+            ))}
+        </aside>
+      </div>
     </div>
   );
 }
 
 function Cv34Family(props: FamilyPageProps) {
   const { resume, meta, palette, page, fullName, layout } = props;
+  // Legacy Cv34 paints a 5px three-stop rule under a white header using the
+  // purple/teal/pink trio from its original stylesheet, published on the
+  // catalog entry so no palette is hard-coded in the renderer.
+  const accentStop = meta.accent || `color-mix(in srgb, ${palette.secondary} 55%, ${palette.primary})`;
+  const categories = skillCategories(resume);
+
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <header className="shrink-0 px-8 py-6" style={{ backgroundColor: palette.primary }}>
-        <div className="flex items-center gap-5 text-white">
-          <Photo heading={resume.heading} fullName={fullName} layout={layout} size="size-[88px]" />
+    <div className="flex min-h-0 flex-1 flex-col bg-white" data-cv34-header="white">
+      <header className="shrink-0 bg-white px-8 pt-6">
+        <div className="flex items-center gap-5">
           <div className="min-w-0 flex-1">
-            <h1 className={cn('font-black leading-none tracking-tight', NAME_SCALE[layout.nameScale])}>{fullName}</h1>
-            <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.22em] text-white/80">{resume.heading?.title}</p>
-            <div className="mt-2 border-t border-white/25 pt-2">
-              <ContactRow heading={resume.heading} layout={{ ...layout, contactLayout: 'inline' }} />
-            </div>
+            <h1
+              className={cn('break-words [overflow-wrap:anywhere] font-bold leading-tight tracking-tight', NAME_SCALE[layout.nameScale])}
+              style={{ color: palette.primary }}
+            >
+              {fullName}
+            </h1>
+            {resume.heading?.title && (
+              <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.16em] text-neutral-500">{resume.heading.title}</p>
+            )}
           </div>
-          <div
-            className="flex size-14 shrink-0 flex-col items-center justify-center rounded-full border-2 border-white/50 text-center"
-            aria-hidden="true"
-          >
-            <span className="text-[13px] font-black leading-none text-white">{meta.id.replace('Cv', '')}</span>
-            <span className="mt-0.5 text-[6.5px] font-bold uppercase tracking-wider text-white/70">Edition</span>
-          </div>
+          <Photo
+            heading={resume.heading}
+            fullName={fullName}
+            layout={{ ...layout, photoShape: 'circle' }}
+            size="size-[100px]"
+            ring={false}
+            className="rounded-full bg-neutral-100 object-cover shadow-sm"
+            style={{ border: `3px solid ${palette.secondary}` }}
+          />
+        </div>
+        <div
+          className="mt-4 h-[5px] w-full"
+          data-cv34-gradient="triple"
+          style={{ background: `linear-gradient(to right, ${palette.primary}, ${palette.secondary}, ${accentStop})` }}
+          aria-hidden="true"
+        />
+        <div className="py-3">
+          <ContactRow heading={resume.heading} layout={{ ...layout, contactLayout: 'grid' }} />
         </div>
       </header>
       <div className="flex min-h-0 flex-1">
         <main className="flex min-h-0 flex-1 flex-col px-7 py-4">
           <FlowList items={page.flowItems} meta={meta} palette={palette} layout={layout} />
         </main>
-        <aside className="flex w-[29%] shrink-0 flex-col justify-between bg-neutral-50 px-5 py-4" data-layout-rail="cv34">
-          <div className="space-y-3">
-            {layout.asideSections.filter((section) => section !== 'contact').map((section) => (
-              <RailSection
-                key={section}
-                section={section}
-                resume={resume}
-                meta={meta}
-                palette={palette}
-                isDark={false}
-              />
-            ))}
+        <aside
+          className="flex w-[29%] shrink-0 flex-col justify-between border-l-[3px] bg-neutral-50 px-5 py-4"
+          style={{ borderColor: palette.secondary }}
+          data-layout-rail="cv34"
+        >
+          <div className="space-y-4">
+            {categories.length > 0 && (
+              <section data-cv34-skills="percent-bars">
+                <div className="mb-2 text-[9px] font-bold uppercase tracking-[0.18em] text-neutral-500">Skills</div>
+                <div className="space-y-2">
+                  {categories.flatMap((category: any, categoryIndex: number) =>
+                    (Array.isArray(category?.skills) ? category.skills : []).map((skill: any, skillIndex: number) => {
+                      const name = typeof skill === 'string' ? skill : String(skill?.name || skill?.skillName || '');
+                      const rawRating = typeof skill === 'object' ? Number(skill?.rating ?? skill?.level) : NaN;
+                      const rating = Number.isFinite(rawRating) ? Math.min(100, Math.max(0, Math.round(rawRating))) : null;
+                      if (!name) return null;
+                      return (
+                        <div key={`${categoryIndex}-${skillIndex}`} className="text-[10px]">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <span className="min-w-0 break-words font-medium text-neutral-700">{name}</span>
+                            {rating !== null && <span className="shrink-0 font-semibold text-neutral-500">{rating}%</span>}
+                          </div>
+                          {rating !== null && (
+                            <div className="mt-1 h-[4px] w-full overflow-hidden rounded-full bg-neutral-200">
+                              <div className="h-full rounded-full" style={{ width: `${rating}%`, backgroundColor: palette.secondary }} />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </section>
+            )}
+            <RailSection section="languages" resume={resume} meta={meta} palette={palette} isDark={false} />
           </div>
-          <div className="text-[8px] uppercase tracking-[0.2em] text-neutral-400">{meta.name}</div>
+          <div className="text-[8px] uppercase tracking-[0.2em] text-neutral-400">{meta.id} · Fintech</div>
         </aside>
       </div>
-      <footer className="h-1.5 shrink-0" style={{ backgroundColor: palette.secondary }} />
     </div>
   );
 }
