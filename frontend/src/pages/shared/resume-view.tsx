@@ -175,7 +175,7 @@ export function SharedResumePage() {
           </Button>
           <Button size="sm" onClick={handlePrint}>
             <Download className="mr-1.5 size-4" aria-hidden="true" />
-            Download PDF
+            Print / Save as PDF
           </Button>
         </div>
       </div>

@@ -30,7 +30,17 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { normalizeResumeToDocument } from '@/lib/resume-view-model';
+import { tryGetTemplateMeta } from '@/lib/template-catalog';
+import { SmartResumeDocument } from '@/components/resume/smart-resume-document';
 import {
   useApplicationResume,
   useUpdateApplicationStatus,
@@ -64,6 +74,7 @@ export function CandidateReviewDrawer({
     description: string;
   } | null>(null);
   const [actionError, setActionError] = useState('');
+  const [documentOpen, setDocumentOpen] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   // Sync internal state when application changes
@@ -164,6 +175,26 @@ export function CandidateReviewDrawer({
     } catch (err: any) {
       setActionError(err.message || 'Status transition failed.');
     }
+  };
+
+  const renderFullDocument = () => {
+    if (!resumeData?.resume) {
+      return <p className="p-8 text-center text-sm text-ink-muted">The candidate resume could not be loaded.</p>;
+    }
+    const normalized = normalizeResumeToDocument(resumeData.resume);
+    const meta = tryGetTemplateMeta(normalized.template || 'Cv1');
+    if (!meta || !meta.id.startsWith('Cv')) {
+      return (
+        <p className="p-8 text-center text-sm text-ink-muted">
+          This resume uses a template this viewer cannot render.
+        </p>
+      );
+    }
+    return (
+      <div className="mx-auto w-fit bg-white shadow-xl" data-testid="employer-resume-document">
+        <SmartResumeDocument resume={normalized} meta={meta} />
+      </div>
+    );
   };
 
   return (
@@ -324,15 +355,14 @@ export function CandidateReviewDrawer({
                 <FileText className="size-3.5 text-accent" />
                 <span>Verified Candidate Resume</span>
               </div>
-              {application.resumeId && (
-                <a
-                  href={`/shared/${application.resumeId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+              {application.resumeId && resumeData?.resume && (
+                <button
+                  type="button"
+                  onClick={() => setDocumentOpen(true)}
                   className="text-[11px] text-accent hover:underline flex items-center gap-1 font-semibold"
                 >
-                  Open in New Tab <ExternalLink className="size-3" />
-                </a>
+                  View Full Document <ExternalLink className="size-3" />
+                </button>
               )}
             </div>
 
@@ -365,7 +395,7 @@ export function CandidateReviewDrawer({
                       variant="outline"
                       size="sm"
                       className="h-7 text-xs px-2 gap-1"
-                      onClick={() => window.open(`/shared/${application.resumeId}`, '_blank')}
+                      onClick={() => setDocumentOpen(true)}
                     >
                       Inspect Full Document
                       <ChevronRight className="size-3" />
@@ -384,7 +414,9 @@ export function CandidateReviewDrawer({
                     variant="outline"
                     size="sm"
                     className="h-7 text-xs px-2.5"
-                    onClick={() => window.open(`/shared/${application.resumeId}`, '_blank')}
+                    onClick={() => setDocumentOpen(true)}
+                    disabled={!resumeData?.resume}
+                    title={resumeData?.resume ? 'View full document' : 'The candidate resume is still loading'}
                   >
                     View Document
                   </Button>
@@ -452,6 +484,25 @@ export function CandidateReviewDrawer({
           </div>
         </div>
       </div>
+
+      {/* Authorized full-document viewer. The employer reads the candidate's
+          resume through the permission-checked employer endpoint — never a
+          public share link, which would require the candidate to publish it. */}
+      <Dialog open={documentOpen} onOpenChange={setDocumentOpen}>
+        <DialogContent className="max-w-4xl h-[92vh] flex flex-col p-0 overflow-hidden">
+          <DialogHeader className="border-b border-edge px-5 py-3">
+            <DialogTitle className="text-sm font-bold text-ink">
+              {resumeData?.resume?.title || 'Candidate resume'}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-ink-muted">
+              Read-only view, authorised through this application. The candidate does not need to publish a public link.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto bg-neutral-100 p-4">
+            {renderFullDocument()}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Confirmation Modal */}
       {confirmModal && (

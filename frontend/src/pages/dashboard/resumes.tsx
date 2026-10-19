@@ -16,6 +16,7 @@ import { PageSpinner } from '@/components/ui/loading';
 import { get, post, del, normalizeError } from '@/lib/api-client';
 import { getTemplateMeta } from '@/lib/template-catalog';
 import { describeMasterCompleteness, type MasterProfileCompleteness } from '@/lib/master-profile';
+import { resumeContentPayload } from '@/lib/resume-payload';
 import {
   computeResumeMetrics,
   bucketForScore,
@@ -94,8 +95,10 @@ const PAGE_SIZE = 8;
 
 export function ResumesPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [masterCv, setMasterCv] = useState<MasterProfileCompleteness | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -160,6 +163,25 @@ export function ResumesPage() {
   useEffect(() => {
     fetchResumes();
   }, [fetchResumes]);
+
+  // Deep link from the builder shell: /dashboard/resumes?share=<id> opens the
+  // Share dialog for that resume once the list has loaded. The query string is
+  // consumed so a later refresh does not reopen the dialog.
+  useEffect(() => {
+    const shareId = searchParams.get('share');
+    if (!shareId || resumes.length === 0) return;
+    const match = resumes.find((r) => r.id === shareId);
+    if (match) {
+      setShareResume({
+        id: match.id,
+        name: match.title || match.name || 'Untitled Resume',
+        template: match.template || 'Cv1',
+      });
+    }
+    const next = new URLSearchParams(searchParams);
+    next.delete('share');
+    setSearchParams(next, { replace: true });
+  }, [resumes, searchParams, setSearchParams]);
 
   // Master CV completeness is read from the same revisioned projection the
   // builder initialises from. A failure leaves the banner's neutral copy in
@@ -469,6 +491,7 @@ export function ResumesPage() {
   };
 
   const handleDownloadDocx = async (resume: Resume) => {
+    setActionError(null);
     setDownloadingDocxId(resume.id);
     try {
       const templateId = resume.template || 'Cv1';
@@ -510,7 +533,7 @@ export function ResumesPage() {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch (err: any) {
-      alert(`Could not download Word document: ${err.message || 'Server error'}`);
+      setActionError(`Could not download the Word document: ${err?.message || 'export failed'}`);
     } finally {
       setDownloadingDocxId(null);
     }
@@ -518,26 +541,27 @@ export function ResumesPage() {
 
   const handleDuplicate = async (resume: Resume) => {
     setDuplicatingId(resume.id);
+    setActionError(null);
     try {
       const newId = `resume_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       const full = await get<{ resume: any }>(`/resumes/${resume.id}`);
       const source = full.resume || resume;
       const originalTitle = source.title || source.name || 'Untitled Resume';
 
+      // A duplicate is a new document: fresh id, no publication state, and a
+      // null expected revision so the server creates it rather than updating.
       const payload = {
-        ...source,
-        id: newId,
+        ...resumeContentPayload(source),
         title: `${originalTitle} (Copy)`,
         name: `${originalTitle} (Copy)`,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        expectedRevision: null,
       };
 
       await post(`/resumes/${newId}`, payload);
       await fetchResumes();
     } catch (err) {
       const apiErr = normalizeError(err);
-      alert(`Failed to duplicate: ${apiErr.message}`);
+      setActionError(`Could not duplicate "${resume.title || resume.name || 'resume'}": ${apiErr.message}`);
     } finally {
       setDuplicatingId(null);
     }
@@ -551,21 +575,28 @@ export function ResumesPage() {
   const handleSaveRename = async () => {
     if (!renameTarget || !renameValue.trim()) return;
     setRenaming(true);
+    setActionError(null);
     try {
       const full = await get<{ resume: any }>(`/resumes/${renameTarget.id}`);
       const source = full.resume || renameTarget;
       const payload = {
-        ...source,
+        ...resumeContentPayload(source),
         title: renameValue.trim(),
         name: renameValue.trim(),
-        updated_at: new Date().toISOString(),
+        // Optimistic concurrency: a tab holding a stale revision gets a 409
+        // instead of silently overwriting newer content.
+        expectedRevision: typeof source.revision === 'number' ? source.revision : null,
       };
       await post(`/resumes/${renameTarget.id}`, payload);
       await fetchResumes();
       setRenameTarget(null);
     } catch (err) {
       const apiErr = normalizeError(err);
-      alert(`Failed to rename: ${apiErr.message}`);
+      setActionError(
+        apiErr.status === 409
+          ? 'This resume changed in another tab. Reopen it, then rename again.'
+          : `Could not rename the resume: ${apiErr.message}`
+      );
     } finally {
       setRenaming(false);
     }
@@ -574,13 +605,14 @@ export function ResumesPage() {
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
     setDeleting(true);
+    setActionError(null);
     try {
       await del(`/resumes/${deleteTarget.id}`);
       setResumes((prev) => prev.filter((r) => r.id !== deleteTarget.id));
       setDeleteTarget(null);
     } catch (err) {
       const apiErr = normalizeError(err);
-      alert(`Failed to delete: ${apiErr.message}`);
+      setActionError(`Could not delete the resume: ${apiErr.message}`);
     } finally {
       setDeleting(false);
     }
@@ -771,6 +803,18 @@ export function ResumesPage() {
           </Link>
         </Button>
       </div>
+
+      {/* Action Error (duplicate/rename/delete/export) */}
+      {actionError && (
+        <div role="alert" className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 min-w-0">
+          <AlertCircle className="size-5 shrink-0" />
+          <span className="flex-1 min-w-0">{actionError}</span>
+          <Button variant="ghost" size="sm" onClick={() => setActionError(null)} className="shrink-0 gap-1.5">
+            <X className="size-3.5" />
+            Dismiss
+          </Button>
+        </div>
+      )}
 
       {/* Error State */}
       {error && (

@@ -341,3 +341,31 @@ Backend suite runs against the in-memory repository (`.env` points at MySQL 127.
 
 Browser-rendered evidence remains **BLOCKED** (no browser binary in the sandbox). The M4 claims above are
 source-level and unit-level; the preview modal's DOM behaviour is asserted statically, not clicked.
+
+## 8. M5 remediation record — persisted CRUD, employer access, export honesty
+
+### 8.1 What changed
+
+| Defect | Resolution |
+| --- | --- |
+| A save payload could carry server-owned metadata (`revision`, `isPublished`, ownership) back into the repository | `POST /api/resumes/:id` now strips server-owned keys, returns the persisted row, and both repositories enforce ownership/revision last. `frontend/src/lib/resume-payload.ts` strips the same keys client-side for rename/duplicate. |
+| In-memory `saveResume` let `...data` override `revision`, so optimistic concurrency could be rewound | Revision is assigned after the payload merge; conflicts report `remoteRevision`; the route maps both `RESUME_CONFLICT` and `STALE_WRITE` to a structured 409. |
+| Rename/duplicate/delete/export failures used `alert()` | Inline `role="alert"` banners in the dashboard and export page; duplicate builds a fresh document with `expectedRevision: null`; rename sends the fetched revision and explains 409s. |
+| Employer review drawer opened `/shared/<resumeId>` | The drawer renders the permission-checked employer payload through `SmartResumeDocument` in an accessible dialog. No public link, no publication requirement, no bypass of the employer endpoint. |
+| Builder shell offered "Public Share Link" and `/export/Cv1/<id>` with a `'demo'` fallback | Share now navigates to `/dashboard/resumes?share=<id>`, which opens the real Share dialog; the export action is disabled without a resume id and the page re-derives the persisted template. |
+| Anonymous viewer labelled a browser print as "Download PDF" | Relabelled "Print / Save as PDF"; the contract test now rejects the misleading label. |
+
+### 8.2 Verification (executed)
+
+| Suite | Command | Result |
+| --- | --- | --- |
+| Resume CRUD lifecycle (5 tests) | `node --test backend/test/dir008-resume-crud.test.js` | 5/5 PASS |
+| Dashboard CRUD payload/UX (5 tests) | `node --test tests/dir008-resume-crud-ui.test.mjs` | 5/5 PASS |
+| Employer resume access (5 tests) | `node --test tests/dir008-employer-resume-access.test.mjs` | 5/5 PASS |
+| Public sharing contract | `node --test tests/dir008-sharing-contract.test.mjs` | 13/13 PASS |
+| Backend share lifecycle | `node --test backend/test/dir008-public-share.test.js` | 7/7 PASS |
+| Backend routes integration | `node --test backend/test/routes.integration.test.js` | 24 pass / 0 fail / 6 skip |
+| TypeScript / production build | `npx tsc --noEmit`, `npx vite build` | exit 0 / built in 1.56 s |
+
+Note: an intermediate edit briefly made `CandidateReviewDrawer.tsx` unbuildable; the build gate caught it
+(`Unexpected token`), the `return (` wrapper was restored, and the final build above is the one recorded.

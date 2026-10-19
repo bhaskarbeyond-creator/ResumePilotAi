@@ -132,16 +132,40 @@ router.get('/:id', async (req, res) => {
     }
 });
 
+// Fields the client may never set: ownership, publication bookkeeping and the
+// primary key all belong to the server. Dropping them here keeps the in-memory
+// and MySQL paths aligned (MySQL builds an explicit column whitelist; the
+// in-memory repository merges the payload, so it needs this guard).
+const SERVER_OWNED_RESUME_FIELDS = new Set([
+    'id', 'userId', 'user_id', 'ownerUid', 'owner_uid',
+    'revision',
+    'isPublished', 'is_published', 'publicationRevision', 'publication_revision',
+    'publishedAt', 'published_at', 'pbId', 'pb_id', 'publicationMode',
+]);
+
+function sanitizeResumePayload(body) {
+    const clean = {};
+    for (const [key, value] of Object.entries(body || {})) {
+        if (key === 'expectedRevision' || SERVER_OWNED_RESUME_FIELDS.has(key)) continue;
+        clean[key] = value;
+    }
+    return clean;
+}
+
 // POST /api/resumes/:id - Save or update resume draft
 router.post('/:id', express.json({ limit: '5mb' }), async (req, res) => {
     try {
-        const { expectedRevision, ...resumeData } = req.body;
+        const { expectedRevision } = req.body || {};
+        const resumeData = sanitizeResumePayload(req.body);
         const saved = await req.repository.saveResume(req.user.uid, req.params.id, resumeData, {
-            expectedRevision: expectedRevision !== undefined ? expectedRevision : null
+            expectedRevision: expectedRevision !== undefined && expectedRevision !== null ? expectedRevision : null
         });
-        return res.json({ success: true, resume: saved });
+        // Return the persisted row so clients can render the result without a
+        // second round trip (and can read the authoritative revision).
+        const stored = await req.repository.getResume(req.user.uid, req.params.id).catch(() => null);
+        return res.json({ success: true, resume: stored || saved });
     } catch (err) {
-        if (err.code === 'RESUME_CONFLICT') {
+        if (err.code === 'RESUME_CONFLICT' || err.code === 'STALE_WRITE') {
             return res.status(409).json({
                 success: false,
                 error: err.message,
@@ -182,7 +206,7 @@ router.post('/:id/publish', express.json({ limit: '5mb' }), async (req, res) => 
         const shareToken = issueShareToken(req.params.id);
         return res.json({ success: true, ...result, shareToken, sharePath: `/shared/${shareToken}` });
     } catch (err) {
-        if (err.code === 'RESUME_CONFLICT' || err.code === 'RESUME_PUBLICATION_CONFLICT') {
+        if (err.code === 'RESUME_CONFLICT' || err.code === 'RESUME_PUBLICATION_CONFLICT' || err.code === 'STALE_WRITE') {
             return res.status(409).json({
                 success: false,
                 error: err.message,

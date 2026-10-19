@@ -22,9 +22,9 @@ Valid outcomes: `PASS`, `PARTIAL`, `BLOCKED`, `FAIL`, `NOT STARTED`
 | R-14 | New resume initializes from Master CV | `master-profile.ts` + builder | unit test | PASS (revisioned projection; all sections mapped) | `dir008-master-profile` 16/16 |
 | R-15 | Sync never overwrites edited resume content | `master-profile.ts` | unit test | PASS (fill-blank default, explicit replace) | `dir008-master-profile` tests 3–4 |
 | R-16 | Honest sync status/timestamp and completeness | `master-profile.ts`, dashboard, settings | unit/static test | PASS (toast names copied/preserved + revision; 409 keeps edits) | audit §7 |
-| R-17 | Resume create/edit/rename/duplicate/delete persisted | dashboard/builder/API | integration tests | PARTIAL (API covered; dashboard duplicate/rename pending M3b) | audit §3.1 |
-| R-18 | Delete requires destructive confirmation; owner isolation | dashboard/API | API tests | PARTIAL | audit §3.1 |
-| R-19 | Duplicate has independent identity/content | dashboard/API | integration test | PARTIAL | audit §3.1 |
+| R-17 | Resume create/edit/rename/duplicate/delete persisted | API + dashboard | backend lifecycle + UI contract | PASS | `dir008-resume-crud` 5/5, `dir008-resume-crud-ui` 5/5 |
+| R-18 | Delete requires destructive confirmation; owner isolation | dashboard/API | API + static tests | PASS (cross-owner 404; confirm dialog) | `dir008-resume-crud` test 4 |
+| R-19 | Duplicate has independent identity/content | dashboard/API | integration test | PASS | `dir008-resume-crud` test 2 |
 | R-20 | Public sharing uses explicit publish + unguessable token | `share-modal.tsx`, `shareTokens.js` | backend + contract tests | PASS | `dir008-public-share` 7/7, `dir008-sharing-contract` 13/13 |
 | R-21 | Anonymous share renders the selected template | `shared/resume-view.tsx` → `SmartResumeDocument` | contract test + static checks | PASS (browser evidence BLOCKED) | `dir008-sharing-contract` |
 | R-22 | Revoked/unpublished shares stop working | backend publish/unpublish | backend test | PASS | `dir008-public-share` test 4 |
@@ -50,7 +50,7 @@ Valid outcomes: `PASS`, `PARTIAL`, `BLOCKED`, `FAIL`, `NOT STARTED`
 | R-42 | Incremental commits/pushes through M1–M9 | git | `git log`, remote verify | NOT STARTED | pending |
 | R-43 | Rich text renders as styled elements, never literal markup | `RichTextContent` | fixture render test | PARTIAL | audit §3.7 |
 | R-44 | Contact/date/skill content not clipped | renderer CSS | DOM/static checks | PARTIAL | audit §3.7 |
-| R-45 | Public/private authorization boundaries | guards/backend | API tests | PASS (share token + published-only + owner isolation) | `dir008-public-share` test 6 |
+| R-45 | Public/private authorization boundaries | guards/backend/employer | API tests | PASS (+ employer reads stay authorized, never public links) | `dir008-public-share`, `dir008-employer-resume-access` |
 | R-46 | Preview/print/export consistency for a template | renderer | traceability report | NOT STARTED | pending |
 | R-47 | Cover letters counted separately | catalog | registry test | PASS (4 separate) | audit §3.3 |
 | R-48 | No secrets/PII in committed evidence | evidence bundle | secret scan | NOT STARTED | pending |
@@ -83,6 +83,12 @@ rendered section headings, evidence hash, and screenshot status (`BLOCKED`, neve
   D-08 dashboard fallback, D-10 (a11y), D-14/D-15.
 * Browser evidence blocked by environment: see audit §2 (recorded as BLOCKED, not passed).
 * Certification before remediation: **NOT CERTIFIED** (expected through M8; final status at M9)
+
+## M5 gate summary
+
+* Closed at M5: R-17…R-19 CRUD depth and payload hygiene, employer resume access, shell share/preview entry points.
+* Open: R-06/R-07/R-09 deep-dive parity, R-10/R-11 fixtures, R-28…R-32 print/rich-text/dates, R-34/R-41
+  browser evidence (BLOCKED), R-46/R-48/R-50 certification artifacts.
 
 ## M4 gate summary
 

@@ -142,7 +142,8 @@ test('public viewer uses the token endpoint and the production renderer', () => 
   assert.match(source, /SmartResumeDocument/);
   assert.match(source, /normalizeResumeToDocument/);
   assert.match(source, /This shared resume was not found or is no longer published\./);
-  assert.match(source, /Download PDF/);
+  assert.match(source, /Print \/ Save as PDF/);
+  assert.doesNotMatch(source, /Download PDF/, 'the viewer must not claim a server PDF download');
   assert.match(source, /print:hidden/);
   assert.doesNotMatch(source, /Alex Morgan|Alex Vance|SAMPLE_RESUME|FALLBACK_RESUME/, 'viewer must not contain demo profiles');
   assert.doesNotMatch(source, /heading!\./, 'viewer must not assert non-null on unvalidated data');

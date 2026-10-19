@@ -89,6 +89,7 @@ export function CVRendererPage() {
   const [templateNum, setTemplateNum] = useState<number>(initialTemplateNum);
   const [paletteIndex, setPaletteIndex] = useState<number>(0);
   const [zoomLevel, setZoomLevel] = useState<number>(100);
+  const [exportMessage, setExportMessage] = useState<string | null>(null);
   const [density, setDensity] = useState<'compact' | 'standard' | 'spacious'>('standard');
   const [downloadingDocx, setDownloadingDocx] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -220,6 +221,7 @@ export function CVRendererPage() {
 
   const handleDownloadDocx = async () => {
     setDownloadingDocx(true);
+    setExportMessage(null);
     try {
       const devUser = localStorage.getItem('ime_dev_user');
       let token = localStorage.getItem('token') || localStorage.getItem('auth_token') || '';
@@ -262,7 +264,7 @@ export function CVRendererPage() {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch (err: any) {
-      alert(`Could not download Word document: ${err.message || 'Export error'}`);
+      setExportMessage(`Could not download the Word document: ${err?.message || 'export failed'}`);
     } finally {
       setDownloadingDocx(false);
     }
@@ -500,6 +502,22 @@ export function CVRendererPage() {
           </Button>
         </div>
       </header>
+
+      {exportMessage && (
+        <div
+          role="alert"
+          className="no-print mx-auto mt-3 flex w-full max-w-3xl items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-medium text-amber-900"
+        >
+          <span className="flex-1">{exportMessage}</span>
+          <button
+            type="button"
+            onClick={() => setExportMessage(null)}
+            className="rounded px-2 py-0.5 font-semibold underline"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* ─── Printable Document Container ─── */}
       <main className="flex justify-center p-4 sm:p-8 lg:p-12 overflow-x-auto">

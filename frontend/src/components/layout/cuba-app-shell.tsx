@@ -612,13 +612,34 @@ export function CubaAppShell({
                           <Eye className="size-4" />
                           <span>Preview Resume</span>
                         </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={(e) => { e.preventDefault(); window.open(`/export/Cv1/${params.resumeId || 'demo'}/en`, '_blank'); }} className="flex items-center gap-2 cursor-pointer">
+                        <DropdownMenuItem
+                          disabled={!params.resumeId}
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            if (!params.resumeId) return;
+                            // Cv1 is only the initial paint hint; the export page
+                            // re-derives the persisted template from the resume
+                            // payload before rendering the document.
+                            window.open(`/export/Cv1/${encodeURIComponent(params.resumeId)}/en`, '_blank', 'noopener,noreferrer');
+                          }}
+                          className="flex items-center gap-2 cursor-pointer"
+                        >
                           <LayoutDashboard className="size-4" />
                           <span>Full Template Preview</span>
                         </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={(e) => { e.preventDefault(); window.open(`/shared/${params.resumeId}`, '_blank'); }} className="flex items-center gap-2 cursor-pointer">
+                        <DropdownMenuItem
+                          disabled={!params.resumeId}
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            if (!params.resumeId) return;
+                            // Sharing is an explicit publish action owned by the
+                            // Share dialog; this never opens an unpublished URL.
+                            navigate(`/dashboard/resumes?share=${encodeURIComponent(params.resumeId)}`);
+                          }}
+                          className="flex items-center gap-2 cursor-pointer"
+                        >
                           <MessageSquare className="size-4" />
-                          <span>Public Share Link</span>
+                          <span>Share resume…</span>
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

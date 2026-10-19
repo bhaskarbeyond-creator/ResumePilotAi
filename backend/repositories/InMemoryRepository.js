@@ -225,7 +225,9 @@ class InMemoryRepository {
         if (existing && existing.userId !== userId) this._reject('Resume not found', 'NOT_FOUND', 404);
         const currentRev = existing?.revision || 0;
         if (expectedRevision !== null && Number(currentRev) !== Number(expectedRevision)) {
-            this._reject('Revision conflict', 'STALE_WRITE', 409);
+            throw Object.assign(new Error('Revision conflict'), {
+                code: 'STALE_WRITE', status: 409, remoteRevision: currentRev,
+            });
         }
         const now = new Date().toISOString();
         const saved = {
@@ -241,7 +243,11 @@ class InMemoryRepository {
             pbId: existing?.pbId || null,
             ...existing,
             ...data,
-            userId, // enforced: owner cannot be changed via save
+            // Server-owned fields are enforced last: ownership and revision can
+            // never be set or rewound by a client payload.
+            id: resumeId,
+            userId,
+            revision: currentRev + 1,
         };
         this._resumes.set(resumeId, saved);
         return { id: resumeId, revision: saved.revision };
