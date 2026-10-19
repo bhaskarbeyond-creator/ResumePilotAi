@@ -99,6 +99,7 @@ export function LoginPage() {
         'auth/too-many-requests': 'Too many attempts. Please try again later.',
         'auth/network-request-failed': 'Network error. Please check your connection.',
         'auth/not-configured': 'Authentication is not configured in this environment.',
+        'auth/unauthorized-domain': `The current domain (${typeof window !== 'undefined' ? window.location.hostname : 'domain'}) is not authorized in Firebase. Please add it to Authorized domains in Firebase Console.`,
       };
       setError(friendlyMessages[code] ?? firebaseError.message ?? 'Authentication failed.');
     } finally {
@@ -121,7 +122,11 @@ export function LoginPage() {
     } catch (err: unknown) {
       const firebaseError = err as { code?: string; message?: string };
       if (firebaseError.code !== 'auth/popup-closed-by-user') {
-        setError(firebaseError.message ?? 'Google sign-in failed.');
+        if (firebaseError.code === 'auth/unauthorized-domain') {
+          setError(`Sign-in domain (${typeof window !== 'undefined' ? window.location.hostname : 'domain'}) is not authorized in Firebase. Please add it to Firebase Console > Authentication > Settings > Authorized domains.`);
+        } else {
+          setError(firebaseError.message ?? 'Google sign-in failed.');
+        }
       }
     } finally {
       setLoading(false);
