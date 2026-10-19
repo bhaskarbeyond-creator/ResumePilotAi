@@ -1,7 +1,7 @@
 # DIR-008 — evidence secret & PII scan (R-48)
 
-Generated: 2026-10-19T23:03:27.620Z
-Scanned: 211 files across 5 evidence directories.
+Generated: 2026-10-19T23:03:55.686Z
+Scanned: 213 files across 5 evidence directories.
 
 **Blocking findings:** 0  •  **Review findings:** 0
 

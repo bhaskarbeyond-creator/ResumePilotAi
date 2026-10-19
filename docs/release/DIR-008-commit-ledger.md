@@ -1,11 +1,11 @@
 # DIR-008 — milestone commit ledger (R-42)
 
-Generated: 2026-10-19T23:03:44.072Z
+Generated: 2026-10-19T23:03:55.479Z
 Branch: `arena/8a774228-resumepilotai`
-HEAD: `d531c30b7a1d17caa515d5636469c189bdd5129d`
-Remote: `origin/arena/8a774228-resumepilotai` @ `d531c30b7a1d17caa515d5636469c189bdd5129d`
-Verification run: 2026-10-19T23:03:44.072Z against remote `d531c30b7a1d17caa515d5636469c189bdd5129d` (ok).
-HEAD at generation: `d531c30b7a1d17caa515d5636469c189bdd5129d`.
+HEAD: `57a0f1dba23813620c8fa37c038e522449c11dd5`
+Remote: `origin/arena/8a774228-resumepilotai` @ `57a0f1dba23813620c8fa37c038e522449c11dd5`
+Verification run: 2026-10-19T23:03:55.479Z against remote `57a0f1dba23813620c8fa37c038e522449c11dd5` (ok).
+HEAD at generation: `57a0f1dba23813620c8fa37c038e522449c11dd5`.
 
 | Milestone | Commit | Date | Subject | Remote |
 | --- | --- | --- | --- | --- |
@@ -18,6 +18,7 @@ HEAD at generation: `d531c30b7a1d17caa515d5636469c189bdd5129d`.
 | M6 | `a0be551` | 2026-10-19T22:51:18+00:00 | feat(render): harden rich text, date alignment and optional-field rendering (M6) | contained |
 | M7 | `3cfcb1f` | 2026-10-19T22:52:47+00:00 | fix(export): align DOCX catalog range, public projection and print parity (M7) | contained |
 | M8 | `d531c30` | 2026-10-19T22:58:36+00:00 | feat(templates): restore Cv1/Cv25/Cv34 legacy parity and publish the 51-template parity ledger (M8) | contained |
+| M9 | `57a0f1d` | 2026-10-19T23:03:51+00:00 | feat(release): add DIR-008 release gates, evidence scan and certification (M9) | contained |
 
 Each milestone row is read from git history and checked with `git merge-base --is-ancestor <sha> origin/<branch>` after a fresh fetch. A row that is not contained in the remote is reported as UNVERIFIED.
 
@@ -32,3 +33,4 @@ Full SHAs:
 * M6 — `a0be5519727c3ebd2bcb2d05a5adf8aca6052ce5`
 * M7 — `3cfcb1f5e1f13dcf742e31f4305d580ff47f8603`
 * M8 — `d531c30b7a1d17caa515d5636469c189bdd5129d`
+* M9 — `57a0f1dba23813620c8fa37c038e522449c11dd5`

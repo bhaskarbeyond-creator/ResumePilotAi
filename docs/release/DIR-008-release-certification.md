@@ -53,8 +53,8 @@ and the evidence that is missing.
 | Workspace | `/home/user/ResumePilotAi` |
 | Reference-only source application | `D:\xampp\htdocs\IME365` (never modified) |
 | Branch | `arena/8a774228-resumepilotai` |
-| Milestones | M0 `bef5428` → M9 (full SHAs and remote containment in `DIR-008-commit-ledger.md`) |
-| Working tree | clean at release-record commit |
+| Milestones | M0 `bef5428` → M9 `57a0f1d` (all contained in the remote; full SHAs in `DIR-008-commit-ledger.md`) |
+| Working tree | clean at the release-record commit (`57a0f1d` plus this record commit) |
 | Runtime | Node 22, Linux x64, no browser binary |
 | ATS algorithm | unchanged from the documented weights in `backend/services/atsScore.js`; no silent retune |
 
@@ -102,6 +102,10 @@ Until these are closed, no statement of "100 legacy-parity templates" or "PDF ve
 ---
 
 ## 7. Sign-off
+
+Release commit: `57a0f1d` (M9), pushed and fetch-verified against
+`origin/arena/8a774228-resumepilotai`. This record commit updates only the ledger timestamp,
+the scan counts and the certification identity — no product code changes.
 
 Prepared by: Agent Mode implementation run on Arena.ai
 Certification basis: the executed commands and their recorded output listed in §2 — no result in this

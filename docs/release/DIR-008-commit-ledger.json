@@ -1,13 +1,13 @@
 {
   "directive": "DIR-008",
   "requirement": "R-42",
-  "generatedAt": "2026-10-19T23:03:44.072Z",
+  "generatedAt": "2026-10-19T23:03:55.479Z",
   "branch": "arena/8a774228-resumepilotai",
-  "head": "d531c30b7a1d17caa515d5636469c189bdd5129d",
+  "head": "57a0f1dba23813620c8fa37c038e522449c11dd5",
   "remoteRef": "origin/arena/8a774228-resumepilotai",
-  "remoteSha": "d531c30b7a1d17caa515d5636469c189bdd5129d",
-  "remoteShaAtVerification": "d531c30b7a1d17caa515d5636469c189bdd5129d",
-  "headAtGeneration": "d531c30b7a1d17caa515d5636469c189bdd5129d",
+  "remoteSha": "57a0f1dba23813620c8fa37c038e522449c11dd5",
+  "remoteShaAtVerification": "57a0f1dba23813620c8fa37c038e522449c11dd5",
+  "headAtGeneration": "57a0f1dba23813620c8fa37c038e522449c11dd5",
   "commitsAheadOfRemoteAtGeneration": 0,
   "fetchStatus": "ok",
   "milestones": [
@@ -98,6 +98,16 @@
       "subject": "feat(templates): restore Cv1/Cv25/Cv34 legacy parity and publish the 51-template parity ledger (M8)",
       "source": "subject-tag",
       "shortSha": "d531c30",
+      "pushedToRemote": true,
+      "remoteRef": "origin/arena/8a774228-resumepilotai"
+    },
+    {
+      "milestone": "M9",
+      "sha": "57a0f1dba23813620c8fa37c038e522449c11dd5",
+      "date": "2026-10-19T23:03:51+00:00",
+      "subject": "feat(release): add DIR-008 release gates, evidence scan and certification (M9)",
+      "source": "subject-tag",
+      "shortSha": "57a0f1d",
       "pushedToRemote": true,
       "remoteRef": "origin/arena/8a774228-resumepilotai"
     }
