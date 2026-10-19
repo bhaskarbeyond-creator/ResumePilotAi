@@ -127,6 +127,12 @@ const PUBLIC_RESUME_FIELDS = Object.freeze([
   'heading', 'summary', 'experience', 'education', 'skillCategories', 'skills',
   'certifications', 'languages', 'projects', 'achievements', 'hobbies',
   'references', 'customSections',
+  // Legacy / flattened draft columns. A resume created through the older API
+  // stores identity here, and a published snapshot must keep the document
+  // readable. Owner and publication bookkeeping remain excluded below.
+  'firstname', 'lastname', 'email', 'phone', 'occupation', 'targetRole',
+  'city', 'country', 'address', 'postalcode', 'website', 'linkedin', 'github',
+  'photo', 'showPhoto', 'employments', 'educations',
 ]);
 
 function projectPublicResume(data) {

@@ -394,3 +394,26 @@ Note: an intermediate edit briefly made `CandidateReviewDrawer.tsx` unbuildable;
 The sanitizer vectors cover script tags, inline handlers, iframes, SVG, inline styles, `javascript:`,
 `data:` and `vbscript:` links. Browser-rendered XSS execution remains **BLOCKED** (no browser binary);
 the evidence is sanitizer output and SSR markup, not a clicked exploit.
+
+## 10. M7 remediation record — print geometry and DOCX parity
+
+### 10.1 What changed
+
+| Defect | Resolution |
+| --- | --- |
+| DOCX template validation rejected the expanded catalog (`Cv99` treated as invalid) | `resolveExportTemplate` accepts `Cv1…Cv100`; the stale assertion was corrected and now also proves `Cv100` round-trips and `Cv101` is rejected. |
+| Published snapshots could lose a legacy flat identity | The public projection now also allows the flattened draft columns (`firstname`, `lastname`, contact, `employments`, `educations`). Owner ids, publication bookkeeping and internal flags remain excluded. |
+| R-28/R-30/R-46 had no executable parity evidence | New suite asserts true A4 print geometry, toolbar hiding, one shared renderer across preview/shared/employer/export surfaces, a real OOXML DOCX containing the resume, no HTML leakage into Word, and no phantom headings from empty rich text. |
+
+### 10.2 Verification (executed)
+
+| Suite | Command | Result |
+| --- | --- | --- |
+| Print + DOCX parity (6 tests) | `node --test tests/dir008-print-and-docx.test.mjs` | 6/6 PASS |
+| DOCX export (19 tests) | `node --test backend/test/docx-export.test.js` | 19/19 PASS |
+| DOCX parity (6 tests) | `node --test backend/test/docx-parity.test.js` | 6/6 PASS |
+| Cross-app download/share audit | `node --test backend/test/cross-app-download-share-audit.test.js` | 10/10 PASS |
+| Public share lifecycle | `node --test backend/test/dir008-public-share.test.js` | 7/7 PASS |
+
+Server-side PDF rendering (headless Chromium) is still **BLOCKED** in this sandbox: the browser binary cannot be
+installed (network policy). The print-to-PDF route is exercised at the CSS/document level, not by producing a PDF.

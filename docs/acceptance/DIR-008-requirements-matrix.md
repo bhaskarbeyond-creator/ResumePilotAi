@@ -33,9 +33,9 @@ Valid outcomes: `PASS`, `PARTIAL`, `BLOCKED`, `FAIL`, `NOT STARTED`
 | R-25 | Zoom 50–150 preserves proportions and does not mutate content | `preview-modal.tsx` | static test | PASS (clamped, labelled, live readout; browser evidence BLOCKED) | `dir008-preview-modal-a11y` |
 | R-26 | Preview loading/error/empty states | preview/export/shared viewer | contract tests | PASS | `dir008-sharing-contract` |
 | R-27 | Partitioner handles heading orphans and long sections | `smart-partitioner.ts` (orphan guard + chunked continuations) | unit tests | PASS | `dir008-layout-engine` test 7 |
-| R-28 | Print CSS A4, no chrome, no blank pages | `index.css` / export page | static test | PARTIAL | audit §3.7 |
+| R-28 | Print CSS A4, no chrome, no blank pages | `index.css` / export page | static test | PASS (A4, chrome hidden, break rules) | `dir008-print-and-docx` tests 1–3 |
 | R-29 | PDF export implemented/tested | backend export + render-token redemption | node tests; browser BLOCKED | PARTIAL (token path now wired; headless render untestable here) | audit §6 |
-| R-30 | DOCX export implemented/tested | backend docx | node test | PARTIAL | audit §2 |
+| R-30 | DOCX export implemented/tested | `backend/services/docxExport.js` | OOXML package test | PASS | `dir008-print-and-docx` test 4, `docx-export` 19/19 |
 | R-31 | Rich text sanitized everywhere | `rich-text.ts` + `RichTextContent` | XSS vectors | PASS (allowlist + protocol pin + rel) | `dir008-rich-text-and-dates` tests 1–3 |
 | R-32 | Dates right-aligned without overflow | `formatDateRange` + renderers | SSR/static test | PASS | `dir008-rich-text-and-dates` test 5–6 |
 | R-33 | Modals: Escape, focus trap/return, names, titles/descriptions | Radix + `preview-modal.tsx` | static test | PASS (description wired; Escape/focus from Radix; browser evidence BLOCKED) | `dir008-preview-modal-a11y` |
@@ -51,7 +51,7 @@ Valid outcomes: `PASS`, `PARTIAL`, `BLOCKED`, `FAIL`, `NOT STARTED`
 | R-43 | Rich text renders as styled elements, never literal markup | `RichTextContent` | fixture render test | PASS (Lexical markup → elements; escaped text) | `dir008-field-robustness` test 1 |
 | R-44 | Contact/date/skill content not clipped | renderer CSS | SSR/static checks | PASS (wrap policy + nowrap dates) | `dir008-field-robustness` test 2 |
 | R-45 | Public/private authorization boundaries | guards/backend/employer | API tests | PASS (+ employer reads stay authorized, never public links) | `dir008-public-share`, `dir008-employer-resume-access` |
-| R-46 | Preview/print/export consistency for a template | renderer | traceability report | NOT STARTED | pending |
+| R-46 | Preview/print/export consistency for a template | one `SmartResumeDocument` engine | traceability test | PASS | `dir008-print-and-docx` test 2 |
 | R-47 | Cover letters counted separately | catalog | registry test | PASS (4 separate) | audit §3.3 |
 | R-48 | No secrets/PII in committed evidence | evidence bundle | secret scan | NOT STARTED | pending |
 | R-49 | Error states honest; no fabricated success | share dialog/export/viewer | unit + contract tests | PASS (share/export surfaces) | `dir008-sharing-contract` |
@@ -83,6 +83,12 @@ rendered section headings, evidence hash, and screenshot status (`BLOCKED`, neve
   D-08 dashboard fallback, D-10 (a11y), D-14/D-15.
 * Browser evidence blocked by environment: see audit §2 (recorded as BLOCKED, not passed).
 * Certification before remediation: **NOT CERTIFIED** (expected through M8; final status at M9)
+
+## M7 gate summary
+
+* Closed at M7: R-28 print geometry, R-30 DOCX, R-46 single-renderer parity.
+* Still blocked: R-29 server PDF (headless Chromium unavailable), R-34/R-41 browser evidence.
+* Open: R-06/R-07/R-09 deep-dive parity, R-48/R-50 certification artifacts.
 
 ## M6 gate summary
 
