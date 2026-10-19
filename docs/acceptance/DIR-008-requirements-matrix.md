@@ -1,6 +1,6 @@
 # DIR-008 — Requirements to Evidence Matrix
 
-Status: **M1 baseline** (implementation pending at time of this commit)
+Status: **M2** — layout engine + 100-template evidence landed (implementation continues at M3)
 Evidence root: `docs/audits/`, `docs/templates/`, `docs/test-reports/`
 Valid outcomes: `PASS`, `PARTIAL`, `BLOCKED`, `FAIL`, `NOT STARTED`
 
@@ -8,16 +8,16 @@ Valid outcomes: `PASS`, `PARTIAL`, `BLOCKED`, `FAIL`, `NOT STARTED`
 |---|---|---|---|---|---|
 | R-01 | Independent workspace and verified baseline | — | git inspection + build/typecheck | PASS | audit §1–2 |
 | R-02 | 100 CV template catalog entries, unique IDs | `frontend/src/lib/template-catalog.ts` | registry test | PASS (inventory) | audit §3.3 |
-| R-03 | Every template has a valid renderer mapping | `smart-resume-document.tsx` + layout specs | SSR render test ×100 | PARTIAL (generic fallback possible) | pending |
-| R-04 | Every template is structurally distinct | layout spec engine | distinctness report | NOT STARTED | pending |
-| R-05 | Every template has a thumbnail asset | `frontend/public/templates` | asset coverage test | FAIL (55/100) | audit §2 |
-| R-06 | Deep dive Cv34 fidelity (white header, 5px triple gradient, circular avatar, teal border, % skill bars) | renderer | SSR/DOM assertions | NOT STARTED | pending |
-| R-07 | Deep dive Cv1 executive bordered profile card | renderer | SSR/DOM assertions | NOT STARTED | pending |
-| R-08 | Deep dive Cv4 Harvard centered academic layout | renderer | SSR/DOM assertions | NOT STARTED | pending |
-| R-09 | Deep dive Cv25 documented legacy structure | renderer + audit | structural assertions | NOT STARTED | pending |
+| R-03 | Every template has a valid renderer mapping | `template-layouts.ts` + `smart-layout-families.tsx` | SSR render test ×100 | PASS | `tests/dir008-layout-engine.test.mjs` test 2/5 |
+| R-04 | Every template is structurally distinct | `template-layouts.ts` (23 families, distance ≥4) | pairwise distance + thumbnail greyscale test | PASS | `dir008-layout-engine` test 3, `dir008-template-evidence` test 5 |
+| R-05 | Every template has a thumbnail asset | `frontend/public/templates` (55 legacy + 49 generated) | asset coverage test | PASS | `dir008-template-evidence` test 2 |
+| R-06 | Deep dive Cv34 fidelity (white header, 5px triple gradient, circular avatar, teal border, % skill bars) | `Cv34Family` | SSR/DOM assertions | PARTIAL (structure in place; triple-gradient/percent-bar parity pending) | `evidence/Cv34.html` |
+| R-07 | Deep dive Cv1 executive bordered profile card | `Cv1Family` | SSR/DOM assertions | PARTIAL (dedicated family; bordered profile card parity pending) | `evidence/Cv1.html` |
+| R-08 | Deep dive Cv4 Harvard centered academic layout | `Cv4Family` | SSR/DOM assertions | PASS (centred serif identity + inline contact) | `evidence/Cv4.html` |
+| R-09 | Deep dive Cv25 documented legacy structure | `Cv25Family` | structural assertions | PARTIAL (right rail restored; legacy parity review pending) | `evidence/Cv25.html` |
 | R-10 | Realistic fixtures incl. long names, multilingual, links, long bullets | test fixtures | fixture validation | NOT STARTED | pending |
 | R-11 | Missing optional fields do not break layout | renderer/partitioner | empty-section tests | NOT STARTED | pending |
-| R-12 | Multi-page A4 documents render without clipping | partitioner/renderer | page-count/height tests | PARTIAL | audit §3.7 |
+| R-12 | Multi-page A4 documents render without clipping | `smart-partitioner.ts` | page-count/height tests | PASS (empty-page and overflow assertions) | `dir008-layout-engine` tests 7–8 |
 | R-13 | Master CV is visible and distinguished from resumes | `resumes.tsx` | DOM/static test | PARTIAL (banner exists, no completeness/timestamp) | audit §3.2 |
 | R-14 | New resume initializes from Master CV | `resume-builder.tsx` | integration test | FAIL (wrong response shape) | audit §3.2 |
 | R-15 | Sync never overwrites edited resume content | builder sync | unit test | PASS (blank-only fill) | audit §3.2 |
@@ -32,7 +32,7 @@ Valid outcomes: `PASS`, `PARTIAL`, `BLOCKED`, `FAIL`, `NOT STARTED`
 | R-24 | Preview renders discrete centered A4 sheets | preview/renderer | DOM/CSS test | PASS (structure) | audit §3.7 |
 | R-25 | Zoom 50–150 preserves proportions and does not mutate content | preview modal | static/DOM test | PARTIAL (range correct, a11y gaps) | audit §3.8 |
 | R-26 | Preview loading/error/empty states | preview/export | tests | PARTIAL | audit §3.7 |
-| R-27 | Partitioner handles heading orphans and long sections | partitioner | unit tests | FAIL | audit §3.7 |
+| R-27 | Partitioner handles heading orphans and long sections | `smart-partitioner.ts` (orphan guard + chunked continuations) | unit tests | PASS | `dir008-layout-engine` test 7 |
 | R-28 | Print CSS A4, no chrome, no blank pages | `index.css` / export page | static test | PARTIAL | audit §3.7 |
 | R-29 | PDF export implemented/tested | backend export | integration/blocked browser | PARTIAL (server route; browser render blocked) | audit §2 |
 | R-30 | DOCX export implemented/tested | backend docx | node test | PARTIAL | audit §2 |
@@ -43,7 +43,7 @@ Valid outcomes: `PASS`, `PARTIAL`, `BLOCKED`, `FAIL`, `NOT STARTED`
 | R-35 | ATS scores use real content and documented weights | `atsScore.js` | unit tests | PASS | audit §3.6 |
 | R-36 | Dashboard metrics: Total/Ready/Developing/Unique Templates with 80/60 thresholds | `resumes.tsx` | unit/DOM tests | FAIL | audit §3.6 |
 | R-37 | No hard-coded demo identity in production surfaces | dashboard/shared/export | grep/static test | FAIL (`Alex Morgan`) | audit §4 D-08 |
-| R-38 | No silent generic template fallback | catalog/renderer | coverage test | PARTIAL | audit §4 D-13 |
+| R-38 | No silent generic template fallback | `getTemplateMeta`/`getLayoutSpec` throw; dispatcher has explicit unsupported state | coverage test | PASS | `dir008-layout-engine` tests 1/4 |
 | R-39 | Build/typecheck pass; performance measured honestly | build | `tsc --noEmit`, `npm run build` | PASS (tsc 0; Vite 1.57 s; wall 18.9 s) | audit §2 |
 | R-40 | Unit/integration/static tests and 100-row report | tests/docs | test runner | NOT STARTED | pending |
 | R-41 | Browser/visual screenshot evidence | Playwright | `playwright install` | BLOCKED (CDN ECONNRESET) | audit §2 |
@@ -56,18 +56,28 @@ Valid outcomes: `PASS`, `PARTIAL`, `BLOCKED`, `FAIL`, `NOT STARTED`
 | R-48 | No secrets/PII in committed evidence | evidence bundle | secret scan | NOT STARTED | pending |
 | R-49 | Error states honest; no fabricated success | UI/API | tests | PARTIAL | audit §3.1 |
 | R-50 | Documentation and release certification | docs/release | review | NOT STARTED | pending |
-| R-51 | DIR-008 legacy 51-template parity + 3 s budget | layout engine | build/render tests | PARTIAL | audit §1 |
+| R-51 | DIR-008 legacy 51-template parity + 3 s budget | layout engine | build/render tests | PARTIAL (legacy suites green; Cv1/Cv25/Cv34 parity open) | `template-production-render`, audit §1 |
 
 ## Template evidence rows
 
-The 100-row template report is generated at `docs/templates/DIR-008-template-inventory.json`
-and `docs/templates/DIR-008-template-inventory.md` by `scripts/dir008-template-audit.mjs`.
-Each row records: id, name, category, layout family, header, aside, section order, title style,
-thumbnail path/existence, renderer fingerprint, preview/export compatibility, fixture test result,
-distinctness result and known limitation.
+The 100-row template report is generated by `scripts/dir008-generate-template-evidence.mjs` at:
 
-## Release gate summary (M1)
+* `docs/templates/DIR-008-template-inventory.md` (human-readable, one row per template)
+* `docs/templates/dir008-template-inventory.json` (machine-readable, incl. DOM-derived structure)
+* `docs/templates/wireframes/CvNN.svg` (structural page-one proof per template)
+* `docs/templates/evidence/CvNN.html` (server-rendered production markup per template)
+* `docs/templates/dir008-contact-sheet.jpg` (10×10 sheet covering all 100 templates)
 
-* Mandatory P0 defects open: D-01, D-02, D-03, D-04, D-05
-* Browser evidence blocked by environment: see audit §2
-* Certification before remediation: **NOT CERTIFIED** (expected at M1)
+Each row records: id, name, layout family, header, aside/rail width, rail sections, reading
+order, title style, density, thumbnail path + origin, fingerprint, rendered page count,
+rendered section headings, evidence hash, and screenshot status (`BLOCKED`, never fabricated).
+
+## Release gate summary (M2)
+
+* Closed at M2: D-01 (no per-template geometry), D-02 (missing Cv52–Cv100 assets), D-13 (silent
+  generic fallback), D-09 (orphaned headings / dropped sections).
+* Still open: D-03 (Master CV projection), D-04 (share publish), D-05 (public render auth),
+  D-06 (repository projection), D-07 (ATS thresholds), D-08 (`Alex Morgan` demo fallback),
+  D-10/D-11/D-12 (a11y + `/api/api` + render token), D-14/D-15.
+* Browser evidence blocked by environment: see audit §2 (recorded as BLOCKED, not passed).
+* Certification before remediation: **NOT CERTIFIED** (expected through M8; final status at M9)

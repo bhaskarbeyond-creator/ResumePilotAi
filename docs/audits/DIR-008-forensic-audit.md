@@ -215,3 +215,56 @@ evidence gap.
   final certification.
 * Production data is never replaced by synthetic fallback when a real resume ID resolves.
   Fixtures live only in clearly named test/demo modules.
+
+---
+
+## 5. M2 remediation record — per-template layout engine
+
+Commit scope: `frontend/src/lib/template-layouts.ts`,
+`frontend/src/components/resume/smart-render-primitives.tsx`,
+`frontend/src/components/resume/smart-layout-families.tsx`,
+`frontend/src/lib/smart-partitioner.ts`, `frontend/src/lib/template-catalog.ts`,
+`scripts/dir008-generate-template-evidence.mjs`, evidence under `docs/templates/`.
+
+### 5.1 What changed
+
+| Defect | Resolution |
+| --- | --- |
+| D-01 renderer ceiling (4 archetype branches, styling-only variation) | Replaced by a typed `TemplateLayoutSpec` per catalog id and **24 page-one composers** (23 in use across Cv1–Cv100). Geometry — header block, physical rail, rail contents, reading order, title treatment, density, name scale, contact layout — is now data, not a colour token. |
+| D-02 missing thumbnails for Cv52–Cv100 | 49 thumbnails generated from the same spec (`frontend/public/templates/Cv52…Cv100.JPG`). Legacy corpus `src/assets/resumesNew` untouched (still exactly 51 files). |
+| D-13 silent generic fallback | `getTemplateMeta` and `getLayoutSpec` now throw for unknown ids; `tryGet*` variants exist for UI probing. The family dispatcher renders an explicit “Unsupported template layout” state instead of a different resume. |
+| D-09 section dropped / heading orphaned | Partitioner is section-block aware: oversize items are chunked into continuations with a `(continued)` label, headings are never separated from their first item, and every populated section is guaranteed to be in either the rail or the main flow. |
+
+Guarantees enforced at module load and in CI:
+
+* 100 unique fingerprints; every catalog id resolves to an implemented family.
+* Pairwise structural distance ≥ 4 independent composition dimensions.
+* A rail is only assigned to families that physically render one (`RAIL_FAMILIES`);
+  a section can never appear in both the rail and the main flow.
+* No demo identity (`Alex Morgan`) or `[object Object]` coercion in rendered output.
+
+### 5.2 Verification (executed)
+
+| Suite | Command | Result |
+| --- | --- | --- |
+| Layout engine contract (9 tests) | `node --test tests/dir008-layout-engine.test.mjs` | 9/9 PASS |
+| Template evidence integrity (6 tests) | `node --test tests/dir008-template-evidence.test.mjs` | 6/6 PASS |
+| Legacy production-render suite | `node --test tests/template-production-render.test.mjs` | 8/8 PASS |
+| Legacy differentiation / previews / quality gate | `node --test tests/template-differentiation.test.mjs tests/template-previews.test.mjs tests/template-quality-gate.test.mjs` | 24/24 PASS |
+| TypeScript | `npx tsc --noEmit` (frontend) | exit 0 |
+| Production build | `npm run build` (frontend) | exit 0 |
+
+### 5.3 Evidence
+
+* `docs/templates/DIR-008-template-inventory.md` — 100 rows, family, rail, reading order.
+* `docs/templates/dir008-template-inventory.json` — machine-readable + DOM-derived structure
+  (rendered page count, rail family, rendered headings, HTML hash) per template.
+* `docs/templates/evidence/Cv1.html … Cv100.html` — server-rendered markup of the production
+  `SmartResumeDocument` for a realistic fixture.
+* `docs/templates/wireframes/Cv1.svg … Cv100.svg` — structural page-one proofs (labelled as
+  spec-derived, **not** screenshots).
+* `docs/templates/dir008-contact-sheet.jpg` — 10×10 overview of all 100 thumbnails.
+
+**Screenshot status remains BLOCKED**: no browser binary is installable in this sandbox
+(Playwright CDN unreachable, `libnss3`/`libnspr4` unavailable, apt non-root). No screenshot is
+claimed anywhere; wireframes are explicitly labelled structural proofs.

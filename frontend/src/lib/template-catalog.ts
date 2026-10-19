@@ -204,11 +204,19 @@ export const COVER_TEMPLATES: TemplateMeta[] = [
 const BY_ID = new Map(TEMPLATES.map((t) => [t.id, t]));
 const COVER_BY_ID = new Map(COVER_TEMPLATES.map((t) => [t.id, t]));
 
+/**
+ * Resolve a catalog entry. Unknown ids throw: a resume must never silently
+ * render as a different template. Route handlers translate the throw into an
+ * explicit "template not found" state.
+ */
 export function getTemplateMeta(id: string): TemplateMeta {
-  if (id.startsWith('Cover')) {
-    return COVER_BY_ID.get(id) || COVER_TEMPLATES[0]!;
-  }
-  return BY_ID.get(id) || TEMPLATES[0]!;
+  const meta = id.startsWith('Cover') ? COVER_BY_ID.get(id) : BY_ID.get(id);
+  if (!meta) throw new Error(`Unknown resume template: ${id}`);
+  return meta;
+}
+
+export function tryGetTemplateMeta(id: string): TemplateMeta | null {
+  return (id.startsWith('Cover') ? COVER_BY_ID.get(id) : BY_ID.get(id)) ?? null;
 }
 
 export function getAllTemplates(): TemplateMeta[] {
