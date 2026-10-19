@@ -358,6 +358,20 @@
   margin-top: 1rem !important;
 }
 
+/* ─── Long-token wrapping inside the A4 sheet ───
+   A 70-character surname or an unbroken URL must wrap, not be clipped by the
+   sheet's overflow:hidden. Dates opt out with whitespace-nowrap. */
+.smart-resume-page h1,
+.smart-resume-page h2,
+.smart-resume-page h3,
+.smart-resume-page h4,
+.smart-resume-page p,
+.smart-resume-page li,
+.smart-resume-page .rich-text-content {
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
 /* ─── Print Media Queries & High-Fidelity Page Break Protection ─── */
 @media print {
   @page {

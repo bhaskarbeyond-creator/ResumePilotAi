@@ -15,8 +15,8 @@ Valid outcomes: `PASS`, `PARTIAL`, `BLOCKED`, `FAIL`, `NOT STARTED`
 | R-07 | Deep dive Cv1 executive bordered profile card | `Cv1Family` | SSR/DOM assertions | PARTIAL (dedicated family; bordered profile card parity pending) | `evidence/Cv1.html` |
 | R-08 | Deep dive Cv4 Harvard centered academic layout | `Cv4Family` | SSR/DOM assertions | PASS (centred serif identity + inline contact) | `evidence/Cv4.html` |
 | R-09 | Deep dive Cv25 documented legacy structure | `Cv25Family` | structural assertions | PARTIAL (right rail restored; legacy parity review pending) | `evidence/Cv25.html` |
-| R-10 | Realistic fixtures incl. long names, multilingual, links, long bullets | test fixtures | fixture validation | NOT STARTED | pending |
-| R-11 | Missing optional fields do not break layout | renderer/partitioner | empty-section tests | NOT STARTED | pending |
+| R-10 | Realistic fixtures incl. long names, multilingual, links, long bullets | `tests/dir008-field-robustness.test.mjs` | fixture render ×100 | PASS (SSR; browser evidence BLOCKED) | `dir008-field-robustness` test 1 |
+| R-11 | Missing optional fields do not break layout | renderers | optional-field matrix | PASS | `dir008-field-robustness` tests 3–4 |
 | R-12 | Multi-page A4 documents render without clipping | `smart-partitioner.ts` | page-count/height tests | PASS (empty-page and overflow assertions) | `dir008-layout-engine` tests 7–8 |
 | R-13 | Master CV is visible and distinguished from resumes | `resumes.tsx` banner | unit/static test | PASS (completeness badge, revision, last-updated; browser evidence BLOCKED) | audit §7 |
 | R-14 | New resume initializes from Master CV | `master-profile.ts` + builder | unit test | PASS (revisioned projection; all sections mapped) | `dir008-master-profile` 16/16 |
@@ -36,8 +36,8 @@ Valid outcomes: `PASS`, `PARTIAL`, `BLOCKED`, `FAIL`, `NOT STARTED`
 | R-28 | Print CSS A4, no chrome, no blank pages | `index.css` / export page | static test | PARTIAL | audit §3.7 |
 | R-29 | PDF export implemented/tested | backend export + render-token redemption | node tests; browser BLOCKED | PARTIAL (token path now wired; headless render untestable here) | audit §6 |
 | R-30 | DOCX export implemented/tested | backend docx | node test | PARTIAL | audit §2 |
-| R-31 | Rich text sanitized everywhere | `RichTextContent` | XSS tests | PARTIAL (DOMPurify, no protocol pin) | audit §3.7 |
-| R-32 | Dates right-aligned without overflow | renderer | DOM/static test | PARTIAL | audit §3.7 |
+| R-31 | Rich text sanitized everywhere | `rich-text.ts` + `RichTextContent` | XSS vectors | PASS (allowlist + protocol pin + rel) | `dir008-rich-text-and-dates` tests 1–3 |
+| R-32 | Dates right-aligned without overflow | `formatDateRange` + renderers | SSR/static test | PASS | `dir008-rich-text-and-dates` test 5–6 |
 | R-33 | Modals: Escape, focus trap/return, names, titles/descriptions | Radix + `preview-modal.tsx` | static test | PASS (description wired; Escape/focus from Radix; browser evidence BLOCKED) | `dir008-preview-modal-a11y` |
 | R-34 | WCAG 2.1 AA relevant checks | UI | axe/static (browser blocked) | BLOCKED (automated browser), static partial | audit §2 |
 | R-35 | ATS scores use real content and documented weights | `atsScore.js` | unit tests | PASS | audit §3.6 |
@@ -48,8 +48,8 @@ Valid outcomes: `PASS`, `PARTIAL`, `BLOCKED`, `FAIL`, `NOT STARTED`
 | R-40 | Unit/integration/static tests and 100-row report | tests/docs | test runner | NOT STARTED | pending |
 | R-41 | Browser/visual screenshot evidence | Playwright | `playwright install` | BLOCKED (CDN ECONNRESET) | audit §2 |
 | R-42 | Incremental commits/pushes through M1–M9 | git | `git log`, remote verify | NOT STARTED | pending |
-| R-43 | Rich text renders as styled elements, never literal markup | `RichTextContent` | fixture render test | PARTIAL | audit §3.7 |
-| R-44 | Contact/date/skill content not clipped | renderer CSS | DOM/static checks | PARTIAL | audit §3.7 |
+| R-43 | Rich text renders as styled elements, never literal markup | `RichTextContent` | fixture render test | PASS (Lexical markup → elements; escaped text) | `dir008-field-robustness` test 1 |
+| R-44 | Contact/date/skill content not clipped | renderer CSS | SSR/static checks | PASS (wrap policy + nowrap dates) | `dir008-field-robustness` test 2 |
 | R-45 | Public/private authorization boundaries | guards/backend/employer | API tests | PASS (+ employer reads stay authorized, never public links) | `dir008-public-share`, `dir008-employer-resume-access` |
 | R-46 | Preview/print/export consistency for a template | renderer | traceability report | NOT STARTED | pending |
 | R-47 | Cover letters counted separately | catalog | registry test | PASS (4 separate) | audit §3.3 |
@@ -83,6 +83,12 @@ rendered section headings, evidence hash, and screenshot status (`BLOCKED`, neve
   D-08 dashboard fallback, D-10 (a11y), D-14/D-15.
 * Browser evidence blocked by environment: see audit §2 (recorded as BLOCKED, not passed).
 * Certification before remediation: **NOT CERTIFIED** (expected through M8; final status at M9)
+
+## M6 gate summary
+
+* Closed at M6: R-10/R-11 fixtures and optional fields, R-31/R-43 rich-text safety, R-32/R-44 date alignment and clipping.
+* Open: R-06/R-07/R-09 deep-dive parity, R-28/R-29/R-30 print/PDF/DOCX depth, R-34/R-41 browser
+  evidence (BLOCKED), R-46/R-48/R-50 certification artifacts.
 
 ## M5 gate summary
 

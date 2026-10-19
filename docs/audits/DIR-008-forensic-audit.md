@@ -369,3 +369,28 @@ source-level and unit-level; the preview modal's DOM behaviour is asserted stati
 
 Note: an intermediate edit briefly made `CandidateReviewDrawer.tsx` unbuildable; the build gate caught it
 (`Unexpected token`), the `return (` wrapper was restored, and the final build above is the one recorded.
+
+## 9. M6 remediation record — rich-text safety, date alignment, field robustness
+
+### 9.1 What changed
+
+| Defect | Resolution |
+| --- | --- |
+| Rich text was sanitised with DOMPurify defaults; `class`, inline `style` and arbitrary protocols were not explicitly policed | New `frontend/src/lib/rich-text.ts`: tag/attribute allowlist, `style`/`src`/`onerror`/`onclick` forbidden, protocols limited to http(s)/mailto/tel, links forced to `target="_blank" rel="noopener noreferrer"`, and an escape-only fallback when no DOM exists. `RichTextContent` now calls it. |
+| Missing date fields rendered `undefined – undefined` | New `resume-format.ts` `formatDateRange()`; experience, education, project/certification items and timeline roles use it, and a date is only rendered when a value exists. |
+| Dates could be clipped by long titles | Date tokens are `shrink-0 ml-auto whitespace-nowrap`, titles are `min-w-0 break-words`, and the A4 sheet has an `overflow-wrap: anywhere` rule for unbreakable names/URLs (`whitespace-nowrap` still protects dates). |
+| Optional fields were only tested with one sparse fixture | New realistic fixture (77-character multilingual name, 74-character email, long unbroken URLs, Devanagari/CJK/Arabic/emoji, 600-character bullet, 12 skills) renders across all 100 templates; every optional section is removed in turn (undefined/null/''/[]/whitespace) across representative templates; a name-only resume renders in all 100. |
+
+### 9.2 Verification (executed)
+
+| Suite | Command | Result |
+| --- | --- | --- |
+| Rich text + dates (6 tests) | `node --test tests/dir008-rich-text-and-dates.test.mjs` | 6/6 PASS |
+| Field robustness (5 tests) | `node --test tests/dir008-field-robustness.test.mjs` | 5/5 PASS |
+| Layout engine regression (9 tests) | `node --test tests/dir008-layout-engine.test.mjs` | 9/9 PASS |
+| Legacy XSS suite | `node --test tests/xss.test.mjs` | 4/4 PASS |
+| TypeScript / production build | `npx tsc --noEmit`, `npx vite build` | exit 0 / built in 1.50 s |
+
+The sanitizer vectors cover script tags, inline handlers, iframes, SVG, inline styles, `javascript:`,
+`data:` and `vbscript:` links. Browser-rendered XSS execution remains **BLOCKED** (no browser binary);
+the evidence is sanitizer output and SSR markup, not a clicked exploit.

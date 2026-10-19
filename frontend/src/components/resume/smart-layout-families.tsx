@@ -12,6 +12,7 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
+import { formatDateRange } from '@/lib/resume-format';
 import type { TemplateMeta } from '@/lib/template-catalog';
 import type { FlowItem, PartitionedPage } from '@/lib/smart-partitioner';
 import { SECTION_TITLES } from '@/lib/smart-partitioner';
@@ -195,7 +196,7 @@ function ContactRow({
         {entries.map((entry, index) => (
           <React.Fragment key={entry.key}>
             {index > 0 && <span aria-hidden="true" className="opacity-40">·</span>}
-            <span className="break-words">{entry.value}</span>
+            <span className="break-words [overflow-wrap:anywhere]">{entry.value}</span>
           </React.Fragment>
         ))}
       </div>
@@ -237,7 +238,7 @@ function IdentityText({
     <div className={cn('min-w-0', align === 'center' && 'text-center')}>
       <h1
         className={cn(
-          'font-extrabold leading-[1.05] tracking-tight',
+          'break-words [overflow-wrap:anywhere] font-extrabold leading-[1.05] tracking-tight',
           NAME_SCALE[layout.nameScale],
           tone === 'dark' ? 'text-white' : 'text-neutral-900'
         )}
@@ -247,7 +248,7 @@ function IdentityText({
       {showTitle && heading?.title && (
         <p
           className={cn(
-            'mt-1 text-[11px] font-semibold uppercase tracking-[0.16em]',
+            'mt-1 break-words text-[11px] font-semibold uppercase tracking-[0.16em]',
             tone === 'dark' ? 'text-white/80' : 'text-neutral-600'
           )}
           style={tone === 'dark' ? undefined : { color: layout.accentBar ? undefined : undefined }}
@@ -532,7 +533,7 @@ function RailSection({
           <li key={edu.id || index}>
             <div className="font-semibold">{edu.degree}{edu.field ? `, ${edu.field}` : ''}</div>
             <div className={muted}>{edu.institution}</div>
-            <div className={cn('text-[9px]', muted)}>{edu.startDate} {edu.endDate ? `– ${edu.endDate}` : ''}</div>
+            <div className={cn('text-[9px] whitespace-nowrap', muted)}>{formatDateRange(edu.startDate, edu.endDate)}</div>
           </li>
         ))}
       </ul>
@@ -976,7 +977,7 @@ function TimelineFamily(props: FamilyPageProps) {
             <div key={role.id || index} className="flex flex-1 flex-col items-center text-center">
               <span className="size-2 rounded-full" style={{ backgroundColor: palette.primary }} />
               <span className="mt-1 text-[8.5px] font-bold uppercase tracking-wider text-neutral-500">
-                {role.startDate || role.begin || '—'}
+                {formatDateRange(role.startDate || role.begin, role.endDate || role.end, role.current)}
               </span>
               <span className="max-w-[92px] truncate text-[9px] font-medium text-neutral-700">{role.company}</span>
             </div>

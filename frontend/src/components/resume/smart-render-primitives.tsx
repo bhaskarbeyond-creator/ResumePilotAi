@@ -9,8 +9,9 @@
  */
 
 import React from 'react';
-import DOMPurify from 'dompurify';
 import { cn } from '@/lib/utils';
+import { containsHtml, sanitizeRichText } from '@/lib/rich-text';
+import { formatDateRange } from '@/lib/resume-format';
 import type { TemplateMeta } from '@/lib/template-catalog';
 import type { FlowItem } from '@/lib/smart-partitioner';
 import type { TemplateLayoutSpec, TitleStyle } from '@/lib/template-layouts';
@@ -30,15 +31,14 @@ export function RichTextContent({
   if (!content) return null;
   const str = String(content).trim();
   if (!str) return null;
-  const hasHtml = /<\/?[a-z][\s\S]*>/i.test(str);
-  if (!hasHtml) {
+  if (!containsHtml(str)) {
     return (
       <div className={cn("whitespace-pre-line leading-relaxed", className)} style={style}>
         {str}
       </div>
     );
   }
-  const cleanHtml = DOMPurify.sanitize(str);
+  const cleanHtml = sanitizeRichText(str);
   return (
     <div
       className={cn(
@@ -255,15 +255,17 @@ export function FlowItemRenderer({
       {/* Education */}
       {item.type === 'education' && (
         <div className="flex justify-between items-baseline text-xs mb-2">
-          <div>
+          <div className="min-w-0">
             <span className="font-bold text-neutral-900">{item.data.degree}</span>
             {item.data.field && <span> in {item.data.field}</span>}
             <span className="text-neutral-500 font-medium"> · {item.data.institution}</span>
             {item.data.gpa && <span className="text-neutral-400"> (GPA: {item.data.gpa})</span>}
           </div>
-          <span className="text-[11px] text-neutral-500 font-medium shrink-0 ml-2">
-            {item.data.startDate} – {item.data.endDate}
-          </span>
+          {formatDateRange(item.data.startDate, item.data.endDate) && (
+            <span className="text-[11px] text-neutral-500 font-medium shrink-0 ml-auto whitespace-nowrap pl-2">
+              {formatDateRange(item.data.startDate, item.data.endDate)}
+            </span>
+          )}
         </div>
       )}
 
@@ -396,7 +398,7 @@ export function ExperienceItemRenderer({
   timeline: string;
   palette: any;
 }) {
-  const dateRange = `${exp.startDate} – ${exp.current ? 'Present' : exp.endDate}`;
+  const dateRange = formatDateRange(exp.startDate, exp.endDate, exp.current);
 
   // 1. Date Rail (Europass / Executive left date column)
   if (timeline === 'date-rail') {
@@ -421,10 +423,12 @@ export function ExperienceItemRenderer({
     return (
       <div className="p-3 rounded-lg border border-neutral-200/80 bg-neutral-50/70 text-xs mb-2.5">
         <div className="flex justify-between items-baseline mb-1">
-          <span className="font-bold text-neutral-900">{exp.position}</span>
-          <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-neutral-200/80 text-neutral-700 shrink-0 ml-2">
-            {dateRange}
-          </span>
+          <span className="min-w-0 break-words font-bold text-neutral-900">{exp.position}</span>
+          {dateRange && (
+            <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-neutral-200/80 text-neutral-700 shrink-0 ml-auto whitespace-nowrap pl-2">
+              {dateRange}
+            </span>
+          )}
         </div>
         <div className="text-[11px] font-medium text-neutral-500 mb-1.5 font-mono">
           @{exp.company} {exp.location ? `// ${exp.location}` : ''}
@@ -443,8 +447,8 @@ export function ExperienceItemRenderer({
           style={{ borderColor: palette.primary }}
         />
         <div className="flex justify-between items-baseline mb-0.5">
-          <h3 className="font-bold text-neutral-900">{exp.position}</h3>
-          <span className="text-[11px] text-neutral-500 font-medium shrink-0 ml-2">{dateRange}</span>
+          <h3 className="min-w-0 break-words font-bold text-neutral-900">{exp.position}</h3>
+          {dateRange && <span className="text-[11px] text-neutral-500 font-medium shrink-0 ml-auto whitespace-nowrap pl-2">{dateRange}</span>}
         </div>
         <div className="text-neutral-600 font-medium mb-1">
           {exp.company} {exp.location ? `· ${exp.location}` : ''}
@@ -463,8 +467,8 @@ export function ExperienceItemRenderer({
           style={{ backgroundColor: palette.primary }}
         />
         <div className="flex justify-between items-baseline mb-0.5">
-          <h3 className="font-bold text-neutral-900">{exp.position}</h3>
-          <span className="text-[11px] text-neutral-500 font-medium shrink-0 ml-2">{dateRange}</span>
+          <h3 className="min-w-0 break-words font-bold text-neutral-900">{exp.position}</h3>
+          {dateRange && <span className="text-[11px] text-neutral-500 font-medium shrink-0 ml-auto whitespace-nowrap pl-2">{dateRange}</span>}
         </div>
         <div className="text-neutral-600 font-medium mb-1">
           {exp.company} {exp.location ? `· ${exp.location}` : ''}
@@ -479,8 +483,8 @@ export function ExperienceItemRenderer({
     return (
       <div className="pl-3 border-l-2 mb-3 text-xs" style={{ borderColor: palette.secondary }}>
         <div className="flex justify-between items-baseline mb-0.5">
-          <h3 className="font-bold text-neutral-900">{exp.position}</h3>
-          <span className="text-[11px] text-neutral-500 font-medium shrink-0 ml-2">{dateRange}</span>
+          <h3 className="min-w-0 break-words font-bold text-neutral-900">{exp.position}</h3>
+          {dateRange && <span className="text-[11px] text-neutral-500 font-medium shrink-0 ml-auto whitespace-nowrap pl-2">{dateRange}</span>}
         </div>
         <div className="text-neutral-600 font-medium mb-1">
           {exp.company} {exp.location ? `· ${exp.location}` : ''}
@@ -513,7 +517,7 @@ export function ExperienceItemRenderer({
   return (
     <div className="mb-3 text-xs">
       <div className="flex justify-between items-baseline mb-0.5">
-        <h3 className="font-bold text-neutral-900">
+        <h3 className="min-w-0 break-words font-bold text-neutral-900">
           {exp.position} — <span className="font-semibold text-neutral-700">{exp.company}</span>
         </h3>
         <span className="text-[11px] text-neutral-500 font-medium shrink-0 ml-2">{dateRange}</span>
