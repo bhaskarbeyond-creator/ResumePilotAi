@@ -53,48 +53,19 @@ interface PortfolioConfig {
   skills: { category: string; list: string[] }[];
 }
 
+// A portfolio starts empty. No demo persona is shipped: the page shows honest
+// empty states until the signed-in candidate saves their own content.
 const DEFAULT_PORTFOLIO: PortfolioConfig = {
-  slug: 'alex-morgan',
-  fullName: 'Alex Morgan',
-  headline: 'Staff Full-Stack Engineer & Cloud Systems Architect',
-  bio: 'Building resilient distributed web systems and delightful user experiences. Over 7 years shipping high-scale React, TypeScript, Node.js, and cloud platforms.',
-  location: 'San Francisco, CA / Remote',
-  avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=250&auto=format&fit=crop&q=80',
-  availableForHire: true,
+  slug: '',
+  fullName: '',
+  headline: '',
+  bio: '',
+  location: '',
+  avatarUrl: '',
+  availableForHire: false,
   theme: 'meridian',
-  projects: [
-    {
-      id: 'proj-1',
-      title: 'CloudMesh — Distributed Observability Platform',
-      description: 'High-throughput telemetry ingestion pipeline processing over 50M metrics/sec with sub-second dashboards.',
-      techStack: ['Go', 'Kubernetes', 'ClickHouse', 'React 19', 'Tailwind CSS'],
-      liveUrl: 'https://example.com/cloudmesh',
-      githubUrl: 'https://github.com/example/cloudmesh',
-      featured: true,
-    },
-    {
-      id: 'proj-2',
-      title: 'SynthAI — Multimodal Prompt Engineering Studio',
-      description: 'LLM playground featuring intelligent model routing, latency benchmarking, and automated prompt eval test suites.',
-      techStack: ['TypeScript', 'Next.js', 'PostgreSQL', 'OpenAI API', 'Tailwind CSS'],
-      liveUrl: 'https://example.com/synthai',
-      githubUrl: 'https://github.com/example/synthai',
-      featured: true,
-    },
-    {
-      id: 'proj-3',
-      title: 'FlowState — Offline-First Task Engine',
-      description: 'Local-first collaborative workspace with CRDT-backed real-time sync and zero data-loss resilience.',
-      techStack: ['React', 'WebSockets', 'IndexedDB', 'Node.js'],
-      liveUrl: 'https://example.com/flowstate',
-      githubUrl: 'https://github.com/example/flowstate',
-    },
-  ],
-  skills: [
-    { category: 'Frontend', list: ['React 19', 'TypeScript', 'Next.js', 'Tailwind CSS', 'Vite', 'GraphQL'] },
-    { category: 'Backend & Systems', list: ['Node.js', 'Go', 'PostgreSQL', 'Redis', 'Kafka', 'REST/gRPC'] },
-    { category: 'Cloud & Infrastructure', list: ['AWS', 'Docker', 'Kubernetes', 'Terraform', 'CI/CD Pipelines'] },
-  ],
+  projects: [],
+  skills: [],
 };
 
 const THEMES = [
@@ -637,18 +608,34 @@ export function PortfolioBuilderPage() {
           <div className="p-6 sm:p-12 max-w-4xl mx-auto space-y-12">
             {/* Hero */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-              <img
-                src={data.avatarUrl}
-                alt={data.fullName}
-                className="size-24 rounded-full object-cover border-2 border-accent shadow-md"
-              />
+              {data.avatarUrl ? (
+                <img
+                  src={data.avatarUrl}
+                  alt={data.fullName || 'Portfolio avatar'}
+                  className="size-24 rounded-full object-cover border-2 border-accent shadow-md"
+                />
+              ) : (
+                <div
+                  className="flex size-24 shrink-0 items-center justify-center rounded-full border-2 border-edge bg-canvas-soft text-xl font-bold text-ink-muted"
+                  aria-hidden="true"
+                >
+                  {(data.fullName || 'CV')
+                    .split(/\s+/)
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .map((part) => part[0]?.toUpperCase())
+                    .join('') || 'CV'}
+                </div>
+              )}
               <div className="space-y-1.5">
                 {data.availableForHire && (
                   <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                     ● Available for Opportunities
                   </span>
                 )}
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-ink">{data.fullName}</h1>
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-ink">
+                  {data.fullName || 'Your name appears here'}
+                </h1>
                 <p className="text-sm font-semibold text-accent">{data.headline}</p>
                 <p className="text-xs text-ink-muted max-w-xl">{data.bio}</p>
               </div>
@@ -687,6 +674,9 @@ export function PortfolioBuilderPage() {
                     </div>
                   </div>
                 ))}
+                {data.projects.length === 0 && (
+                  <p className="text-xs text-ink-muted">No projects yet — add one from the Projects tab.</p>
+                )}
               </div>
             </div>
 

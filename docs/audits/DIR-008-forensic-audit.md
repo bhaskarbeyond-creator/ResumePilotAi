@@ -475,3 +475,36 @@ regenerated from the current renderer after the palette changes so the committed
 
 Browser screenshots for these three templates remain **BLOCKED** (no browser binary); the evidence is
 server-rendered production markup plus structural assertions, never a fabricated image.
+
+## 12. M9 remediation record — release gates, evidence hygiene and certification
+
+### 12.1 What changed
+
+| Artifact | Purpose |
+| --- | --- |
+| `scripts/dir008-run-release-gates.mjs` | Executes 22 DIR-008 suites plus `tsc --noEmit` and `vite build`; writes observed counts, durations, exit codes and blocked-evidence reasons to `docs/test-reports/`. Fails the run if any gate fails. |
+| `scripts/dir008-scan-evidence.mjs` | Scans the committed evidence bundle for secrets and non-reserved PII, redacting every match; exported `findHits` allows the rules to be proven against canaries. |
+| `scripts/dir008-commit-ledger.mjs` | Reads the milestone commits from git and verifies each against a freshly fetched remote before writing the ledger. |
+| `tests/dir008-demo-data-guard.test.mjs` | Blocks any demo persona or stock headshot from returning to `frontend/src`; also pins the portfolio builder's empty scaffold. |
+| `tests/dir008-evidence-scan-efficacy.test.mjs` | Proves the scanner fires on AWS keys, GitHub tokens, JWTs, bearer tokens and password assignments, and that reserved fixtures are not flagged. |
+| `docs/release/DIR-008-release-certification.md` | The release decision, its evidence index, and the four conditions that prevent full certification. |
+
+The portfolio builder was the last production surface that shipped a demo persona; it now starts from an
+empty, honest scaffold with initials fallback and explicit empty states.
+
+### 12.2 Verification (executed)
+
+| Gate | Command | Result |
+| --- | --- | --- |
+| Release gates | `node scripts/dir008-run-release-gates.mjs` | 24/24 suites, 169/169 tests, tsc exit 0, build 1.6 s |
+| Evidence scan | `node scripts/dir008-scan-evidence.mjs` | 210 files, 0 blocking, 0 review |
+| Scanner efficacy | `node --test tests/dir008-evidence-scan-efficacy.test.mjs` | 4/4 PASS |
+| Demo-data guard | `node --test tests/dir008-demo-data-guard.test.mjs` | 3/3 PASS |
+| Milestone ledger | `node scripts/dir008-commit-ledger.mjs` | see `docs/release/DIR-008-commit-ledger.md` |
+
+### 12.3 Certification decision
+
+**CONDITIONALLY CERTIFIED.** Automated verification is complete and green; four evidence classes remain
+outside what this sandbox can produce: browser/visual screenshots (R-41), in-browser axe/WCAG (R-34),
+server-side PDF bytes (R-29) and 1:1 legacy parity for the 48 templates that were not restored in M8 (R-51).
+No blocked item is reported as passed, and no screenshot or PDF is simulated.

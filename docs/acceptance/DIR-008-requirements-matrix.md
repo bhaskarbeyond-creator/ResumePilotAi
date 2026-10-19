@@ -42,20 +42,20 @@ Valid outcomes: `PASS`, `PARTIAL`, `BLOCKED`, `FAIL`, `NOT STARTED`
 | R-34 | WCAG 2.1 AA relevant checks | UI | axe/static (browser blocked) | BLOCKED (automated browser), static partial | audit §2 |
 | R-35 | ATS scores use real content and documented weights | `atsScore.js` | unit tests | PASS | audit §3.6 |
 | R-36 | Dashboard metrics: Total/Ready/Developing/Unique Templates with 80/60 thresholds | `resume-metrics.ts` + `resumes.tsx` | unit test | PASS | `dir008-dashboard-metrics` 8/8 |
-| R-37 | No hard-coded demo identity in production surfaces | dashboard/login/shared/export | static test | PASS (dashboard + login cleared; portfolio builder demo remains out of scope) | `dir008-dashboard-metrics` tests 7–8 |
+| R-37 | No hard-coded demo identity in production surfaces | dashboard/login/shared/export/portfolio | static scan | PASS (dashboard, login, share, export and portfolio builder cleared; portfolio starts from an empty scaffold) | `dir008-dashboard-metrics` tests 7–8, `dir008-demo-data-guard` 3/3 |
 | R-38 | No silent generic template fallback | `getTemplateMeta`/`getLayoutSpec` throw; dispatcher has explicit unsupported state | coverage test | PASS | `dir008-layout-engine` tests 1/4 |
 | R-39 | Build/typecheck pass; performance measured honestly | build | `tsc --noEmit`, `npm run build` | PASS (tsc 0; Vite 1.57 s; wall 18.9 s) | audit §2 |
-| R-40 | Unit/integration/static tests and 100-row report | tests/docs | test runner | NOT STARTED | pending |
+| R-40 | Unit/integration/static tests and 100-row report | tests/docs | test runner | PASS (24 suites, 169 tests, 0 failures; tsc 0; build 1.6 s) | `docs/test-reports/DIR-008-release-gates.{json,md}`, `docs/templates/DIR-008-template-inventory.md` |
 | R-41 | Browser/visual screenshot evidence | Playwright | `playwright install` | BLOCKED (CDN ECONNRESET) | audit §2 |
-| R-42 | Incremental commits/pushes through M1–M9 | git | `git log`, remote verify | NOT STARTED | pending |
+| R-42 | Incremental commits/pushes through M1–M9 | git | `git log`, remote verify | PASS (each milestone SHA checked with `merge-base --is-ancestor` against a freshly fetched remote) | `docs/release/DIR-008-commit-ledger.{json,md}` |
 | R-43 | Rich text renders as styled elements, never literal markup | `RichTextContent` | fixture render test | PASS (Lexical markup → elements; escaped text) | `dir008-field-robustness` test 1 |
 | R-44 | Contact/date/skill content not clipped | renderer CSS | SSR/static checks | PASS (wrap policy + nowrap dates) | `dir008-field-robustness` test 2 |
 | R-45 | Public/private authorization boundaries | guards/backend/employer | API tests | PASS (+ employer reads stay authorized, never public links) | `dir008-public-share`, `dir008-employer-resume-access` |
 | R-46 | Preview/print/export consistency for a template | one `SmartResumeDocument` engine | traceability test | PASS | `dir008-print-and-docx` test 2 |
 | R-47 | Cover letters counted separately | catalog | registry test | PASS (4 separate) | audit §3.3 |
-| R-48 | No secrets/PII in committed evidence | evidence bundle | secret scan | NOT STARTED | pending |
+| R-48 | No secrets/PII in committed evidence | evidence bundle | secret scan | PASS (210 files, 0 blocking / 0 review; scanner canaries prove the rules fire) | `docs/test-reports/DIR-008-evidence-secret-scan.{json,md}`, `dir008-evidence-scan-efficacy` 4/4 |
 | R-49 | Error states honest; no fabricated success | share dialog/export/viewer | unit + contract tests | PASS (share/export surfaces) | `dir008-sharing-contract` |
-| R-50 | Documentation and release certification | docs/release | review | NOT STARTED | pending |
+| R-50 | Documentation and release certification | docs/release | review | PASS (**CONDITIONALLY CERTIFIED**; four documented conditions) | `docs/release/DIR-008-release-certification.md` |
 | R-51 | DIR-008 legacy 51-template parity + 3 s budget | layout engine + parity ledger | build/render tests | PARTIAL (3/51 restored and structure-verified: Cv1/Cv25/Cv34; 41/51 catalog palettes traceable to no legacy colour; 48/51 family-composed, not claimed as parity; build 1.70 s < 3 s) | `docs/templates/legacy-parity.md`, audit §11 |
 
 ## Template evidence rows
@@ -83,6 +83,15 @@ rendered section headings, evidence hash, and screenshot status (`BLOCKED`, neve
   D-08 dashboard fallback, D-10 (a11y), D-14/D-15.
 * Browser evidence blocked by environment: see audit §2 (recorded as BLOCKED, not passed).
 * Certification before remediation: **NOT CERTIFIED** (expected through M8; final status at M9)
+
+## M9 gate summary
+
+* Closed at M9: R-37 (portfolio builder cleared), R-40 (24 suites / 169 tests), R-42 (milestone ledger),
+  R-48 (evidence secret/PII scan), R-50 (release certification).
+* Release outcome: **CONDITIONALLY CERTIFIED** — see `docs/release/DIR-008-release-certification.md` §5.
+* Remaining conditions: R-41 browser/visual evidence (BLOCKED), R-34 axe in situ (BLOCKED),
+  R-29 server-side PDF bytes (PARTIAL), R-51 1:1 legacy parity for 48/51 templates (PARTIAL).
+* No requirement is marked PASS on the strength of a build alone, a catalogue entry, or a fallback render.
 
 ## M8 gate summary
 

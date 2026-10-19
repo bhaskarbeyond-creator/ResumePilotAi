@@ -1,0 +1,106 @@
+{
+  "directive": "DIR-008",
+  "requirement": "R-42",
+  "generatedAt": "2026-10-19T23:03:44.072Z",
+  "branch": "arena/8a774228-resumepilotai",
+  "head": "d531c30b7a1d17caa515d5636469c189bdd5129d",
+  "remoteRef": "origin/arena/8a774228-resumepilotai",
+  "remoteSha": "d531c30b7a1d17caa515d5636469c189bdd5129d",
+  "remoteShaAtVerification": "d531c30b7a1d17caa515d5636469c189bdd5129d",
+  "headAtGeneration": "d531c30b7a1d17caa515d5636469c189bdd5129d",
+  "commitsAheadOfRemoteAtGeneration": 0,
+  "fetchStatus": "ok",
+  "milestones": [
+    {
+      "milestone": "M0",
+      "sha": "bef5428538a0c508898d191c989b155e0f0e8512",
+      "date": "2026-10-20T03:39:03+05:30",
+      "subject": "docs: streamline prompt-001.md verification gate",
+      "source": "sha-override: baseline commit of main; subject carries no milestone tag",
+      "shortSha": "bef5428",
+      "pushedToRemote": true,
+      "remoteRef": "origin/arena/8a774228-resumepilotai"
+    },
+    {
+      "milestone": "M1",
+      "sha": "b8ca506a8d2656bd598522b49702c30b186f3a0f",
+      "date": "2026-10-19T22:16:23+00:00",
+      "subject": "docs(resumes): add DIR-008 forensic audit and acceptance matrix",
+      "source": "sha-override: audit + acceptance matrix; subject carries no milestone tag",
+      "shortSha": "b8ca506",
+      "pushedToRemote": true,
+      "remoteRef": "origin/arena/8a774228-resumepilotai"
+    },
+    {
+      "milestone": "M2",
+      "sha": "abe013611ff5473402212ac25b68a32f24b91b0b",
+      "date": "2026-10-19T22:26:43+00:00",
+      "subject": "feat(resumes): per-template layout engine for 100 CVs (M2)",
+      "source": "subject-tag",
+      "shortSha": "abe0136",
+      "pushedToRemote": true,
+      "remoteRef": "origin/arena/8a774228-resumepilotai"
+    },
+    {
+      "milestone": "M3",
+      "sha": "f3777487c1403c7474f595428c7c0e3345beb24d",
+      "date": "2026-10-19T22:40:05+00:00",
+      "subject": "feat(sharing): tokenized public resume links and honest export data (M3)",
+      "source": "subject-tag",
+      "shortSha": "f377748",
+      "pushedToRemote": true,
+      "remoteRef": "origin/arena/8a774228-resumepilotai"
+    },
+    {
+      "milestone": "M4",
+      "sha": "2eac0ab8236b8f073bb379804a5f9c73a9b0e806",
+      "date": "2026-10-19T22:45:19+00:00",
+      "subject": "feat(master-cv): initialise resumes from the revisioned Master CV and report real ATS metrics (M4)",
+      "source": "subject-tag",
+      "shortSha": "2eac0ab",
+      "pushedToRemote": true,
+      "remoteRef": "origin/arena/8a774228-resumepilotai"
+    },
+    {
+      "milestone": "M5",
+      "sha": "05594a995ad51741aef1a3b7e9364bdee2594d50",
+      "date": "2026-10-19T22:49:03+00:00",
+      "subject": "feat(resumes): harden persisted CRUD, employer access and share entry points (M5)",
+      "source": "subject-tag",
+      "shortSha": "05594a9",
+      "pushedToRemote": true,
+      "remoteRef": "origin/arena/8a774228-resumepilotai"
+    },
+    {
+      "milestone": "M6",
+      "sha": "a0be5519727c3ebd2bcb2d05a5adf8aca6052ce5",
+      "date": "2026-10-19T22:51:18+00:00",
+      "subject": "feat(render): harden rich text, date alignment and optional-field rendering (M6)",
+      "source": "subject-tag",
+      "shortSha": "a0be551",
+      "pushedToRemote": true,
+      "remoteRef": "origin/arena/8a774228-resumepilotai"
+    },
+    {
+      "milestone": "M7",
+      "sha": "3cfcb1f5e1f13dcf742e31f4305d580ff47f8603",
+      "date": "2026-10-19T22:52:47+00:00",
+      "subject": "fix(export): align DOCX catalog range, public projection and print parity (M7)",
+      "source": "subject-tag",
+      "shortSha": "3cfcb1f",
+      "pushedToRemote": true,
+      "remoteRef": "origin/arena/8a774228-resumepilotai"
+    },
+    {
+      "milestone": "M8",
+      "sha": "d531c30b7a1d17caa515d5636469c189bdd5129d",
+      "date": "2026-10-19T22:58:36+00:00",
+      "subject": "feat(templates): restore Cv1/Cv25/Cv34 legacy parity and publish the 51-template parity ledger (M8)",
+      "source": "subject-tag",
+      "shortSha": "d531c30",
+      "pushedToRemote": true,
+      "remoteRef": "origin/arena/8a774228-resumepilotai"
+    }
+  ],
+  "note": "Each milestone row is read from git history and checked with `git merge-base --is-ancestor <sha> origin/<branch>` after a fresh fetch. A row that is not contained in the remote is reported as UNVERIFIED."
+}

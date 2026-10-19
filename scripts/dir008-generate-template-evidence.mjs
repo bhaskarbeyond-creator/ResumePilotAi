@@ -356,16 +356,18 @@ async function main() {
 
     const thumbPath = path.join(PUBLIC_TEMPLATES, `${spec.id}.JPG`);
     const isLegacyAsset = Number.parseInt(spec.id.replace('Cv', ''), 10) <= 51;
-    let origin = isLegacyAsset ? 'legacy-artifact' : 'generated-from-spec';
+    // Non-legacy thumbnails are always spec-derived; a `--force` rebuild does
+    // not change their provenance, it only rewrites the pixels.
+    const origin = isLegacyAsset ? 'legacy-artifact' : 'generated-from-spec';
     let exists = true;
     try {
       await fs.access(thumbPath);
     } catch {
       exists = false;
     }
+    const regenerated = !isLegacyAsset && exists && FORCE;
     if (!exists || (FORCE && !isLegacyAsset)) {
       await sharp(Buffer.from(svg)).resize(W, H).jpeg({ quality: 88, mozjpeg: true }).toFile(thumbPath);
-      origin = exists ? 'regenerated-from-spec' : 'generated-from-spec';
     }
     const thumbBuffer = await fs.readFile(thumbPath);
     thumbnails.push({ id: spec.id, buffer: thumbBuffer });
@@ -392,6 +394,7 @@ async function main() {
       fingerprint: spec.fingerprint,
       thumbnail: `/templates/${spec.id}.JPG`,
       thumbnailOrigin: origin,
+      thumbnailRegenerated: regenerated,
       wireframe: `docs/templates/wireframes/${spec.id}.svg`,
       evidenceHtml: `docs/templates/evidence/${spec.id}.html`,
       rendered: structure,

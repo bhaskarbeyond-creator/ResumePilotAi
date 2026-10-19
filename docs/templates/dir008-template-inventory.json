@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-19T22:57:47.454Z",
+  "generatedAt": "2026-10-19T23:00:54.814Z",
   "kind": "spec-derived-layout-proof",
   "note": "Rendered app screenshots are BLOCKED in this environment (no browser binary). These rows describe the exact geometry consumed by the renderer.",
   "total": 100,
@@ -60,6 +60,7 @@
       "fingerprint": "cv1|cv1|left|28|contact+skills+languages|summary>experience>education>projects>certifications>achievements>hobbies>references|underline|circle|standard|xl|stack|flat|cv1",
       "thumbnail": "/templates/Cv1.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv1.svg",
       "evidenceHtml": "docs/templates/evidence/Cv1.html",
       "rendered": {
@@ -114,6 +115,7 @@
       "fingerprint": "banner-sidebar|band|left|30|contact+education+skills+certifications|summary>experience>projects>achievements>languages>references>hobbies|bar|square|standard|lg|stack|accent|standard",
       "thumbnail": "/templates/Cv2.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv2.svg",
       "evidenceHtml": "docs/templates/evidence/Cv2.html",
       "rendered": {
@@ -165,6 +167,7 @@
       "fingerprint": "magazine|banner|none|32|none|experience>summary>achievements>education>projects>skills>certifications>languages>hobbies>references|double|circle|standard|2xl|grid|accent|standard",
       "thumbnail": "/templates/Cv3.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv3.svg",
       "evidenceHtml": "docs/templates/evidence/Cv3.html",
       "rendered": {
@@ -217,6 +220,7 @@
       "fingerprint": "cv4|centered|none|34|none|summary>education>experience>projects>skills>certifications>achievements>languages>references>hobbies|micro|none|standard|lg|inline|flat|cv4",
       "thumbnail": "/templates/Cv4.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv4.svg",
       "evidenceHtml": "docs/templates/evidence/Cv4.html",
       "rendered": {
@@ -270,6 +274,7 @@
       "fingerprint": "academic|letterhead|none|36|none|experience>projects>skills>education>summary>achievements>certifications>languages>hobbies>references|plain|rounded|standard|md|inline|flat|standard",
       "thumbnail": "/templates/Cv5.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv5.svg",
       "evidenceHtml": "docs/templates/evidence/Cv5.html",
       "rendered": {
@@ -322,6 +327,7 @@
       "fingerprint": "editorial|minimal|none|28|none|summary>experience>projects>achievements>skills>education>certifications>languages>hobbies>references|bracket|none|compact|xl|stack|flat|standard",
       "thumbnail": "/templates/Cv6.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv6.svg",
       "evidenceHtml": "docs/templates/evidence/Cv6.html",
       "rendered": {
@@ -374,6 +380,7 @@
       "fingerprint": "split-header|split|none|30|none|summary>experience>education>skills>certifications>projects>achievements>languages>references>hobbies|micro|rounded|standard|2xl|grid|flat|standard",
       "thumbnail": "/templates/Cv7.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv7.svg",
       "evidenceHtml": "docs/templates/evidence/Cv7.html",
       "rendered": {
@@ -417,6 +424,7 @@
       "fingerprint": "banner|band|none|32|none|experience>achievements>summary>projects>education>skills>certifications>languages>hobbies>references|underline|none|spacious|2xl|minimal|accent|standard",
       "thumbnail": "/templates/Cv8.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv8.svg",
       "evidenceHtml": "docs/templates/evidence/Cv8.html",
       "rendered": {
@@ -471,6 +479,7 @@
       "fingerprint": "tri-column|grid|left|34|contact+education+skills+certifications|summary>experience>projects>achievements>languages>hobbies>references|bar|circle|standard|xl|inline|flat|standard",
       "thumbnail": "/templates/Cv9.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv9.svg",
       "evidenceHtml": "docs/templates/evidence/Cv9.html",
       "rendered": {
@@ -524,6 +533,7 @@
       "fingerprint": "banner-sidebar|banner|left|36|contact+skills+languages+certifications|summary>experience>projects>education>achievements>references>hobbies|double|square|compact|lg|stack|accent|standard",
       "thumbnail": "/templates/Cv10.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv10.svg",
       "evidenceHtml": "docs/templates/evidence/Cv10.html",
       "rendered": {
@@ -575,6 +585,7 @@
       "fingerprint": "infographic|grid|none|28|none|experience>summary>achievements>education>projects>skills>certifications>languages>hobbies>references|pill|circle|standard|2xl|grid|accent|standard",
       "thumbnail": "/templates/Cv11.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv11.svg",
       "evidenceHtml": "docs/templates/evidence/Cv11.html",
       "rendered": {
@@ -626,6 +637,7 @@
       "fingerprint": "minimal|band|none|30|none|summary>education>experience>certifications>projects>skills>achievements>languages>references>hobbies|plain|square|standard|md|minimal|flat|standard",
       "thumbnail": "/templates/Cv12.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv12.svg",
       "evidenceHtml": "docs/templates/evidence/Cv12.html",
       "rendered": {
@@ -679,6 +691,7 @@
       "fingerprint": "executive|letterhead|none|32|none|experience>projects>skills>education>summary>achievements>certifications>languages>hobbies>references|bracket|circle|standard|xl|inline|accent|standard",
       "thumbnail": "/templates/Cv13.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv13.svg",
       "evidenceHtml": "docs/templates/evidence/Cv13.html",
       "rendered": {
@@ -731,6 +744,7 @@
       "fingerprint": "split-header|grid|none|34|none|summary>experience>projects>achievements>skills>education>certifications>languages>hobbies>references|micro|square|standard|2xl|stack|flat|standard",
       "thumbnail": "/templates/Cv14.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv14.svg",
       "evidenceHtml": "docs/templates/evidence/Cv14.html",
       "rendered": {
@@ -774,6 +788,7 @@
       "fingerprint": "classic|left|none|28|none|experience>achievements>summary>projects>education>skills>certifications>languages>hobbies>references|double|circle|compact|lg|minimal|flat|standard",
       "thumbnail": "/templates/Cv15.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv15.svg",
       "evidenceHtml": "docs/templates/evidence/Cv15.html",
       "rendered": {
@@ -827,6 +842,7 @@
       "fingerprint": "executive|letterhead|none|28|none|experience>achievements>summary>projects>education>skills>certifications>languages>hobbies>references|bar|square|standard|md|minimal|accent|standard",
       "thumbnail": "/templates/Cv16.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv16.svg",
       "evidenceHtml": "docs/templates/evidence/Cv16.html",
       "rendered": {
@@ -879,6 +895,7 @@
       "fingerprint": "boxed|bracket|none|30|none|summary>experience>education>projects>achievements>skills>certifications>languages>hobbies>references|double|circle|standard|xl|inline|flat|standard",
       "thumbnail": "/templates/Cv17.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv17.svg",
       "evidenceHtml": "docs/templates/evidence/Cv17.html",
       "rendered": {
@@ -932,6 +949,7 @@
       "fingerprint": "academic|centered|none|34|none|experience>summary>achievements>education>projects>skills>certifications>languages>hobbies>references|bracket|circle|spacious|md|grid|flat|standard",
       "thumbnail": "/templates/Cv18.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv18.svg",
       "evidenceHtml": "docs/templates/evidence/Cv18.html",
       "rendered": {
@@ -984,6 +1002,7 @@
       "fingerprint": "editorial|split|none|36|none|summary>education>experience>certifications>projects>skills>achievements>languages>references>hobbies|micro|square|compact|xl|minimal|flat|standard",
       "thumbnail": "/templates/Cv19.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv19.svg",
       "evidenceHtml": "docs/templates/evidence/Cv19.html",
       "rendered": {
@@ -1037,6 +1056,7 @@
       "fingerprint": "compact|left|none|36|none|summary>education>experience>certifications>projects>skills>achievements>languages>references>hobbies|bracket|circle|standard|lg|minimal|flat|standard",
       "thumbnail": "/templates/Cv20.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv20.svg",
       "evidenceHtml": "docs/templates/evidence/Cv20.html",
       "rendered": {
@@ -1090,6 +1110,7 @@
       "fingerprint": "banner|banner|none|30|none|summary>experience>projects>achievements>skills>education>certifications>languages>hobbies>references|bar|rounded|standard|xl|stack|accent|standard",
       "thumbnail": "/templates/Cv21.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv21.svg",
       "evidenceHtml": "docs/templates/evidence/Cv21.html",
       "rendered": {
@@ -1142,6 +1163,7 @@
       "fingerprint": "minimal|left|none|32|none|summary>experience>education>skills>certifications>projects>achievements>languages>references>hobbies|double|square|compact|lg|grid|flat|standard",
       "thumbnail": "/templates/Cv22.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv22.svg",
       "evidenceHtml": "docs/templates/evidence/Cv22.html",
       "rendered": {
@@ -1197,6 +1219,7 @@
       "fingerprint": "banner-sidebar|photo-band|right|34|contact+skills+projects+certifications|experience>achievements>summary>education>languages>hobbies>references|pill|circle|spacious|lg|minimal|accent|standard",
       "thumbnail": "/templates/Cv23.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv23.svg",
       "evidenceHtml": "docs/templates/evidence/Cv23.html",
       "rendered": {
@@ -1250,6 +1273,7 @@
       "fingerprint": "profile-sidebar|sidebar|right|36|contact+skills+languages+certifications|summary>experience>education>projects>achievements>hobbies>references|plain|rounded|compact|xl|inline|flat|standard",
       "thumbnail": "/templates/Cv24.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv24.svg",
       "evidenceHtml": "docs/templates/evidence/Cv24.html",
       "rendered": {
@@ -1302,6 +1326,7 @@
       "fingerprint": "cv25|cv25|right|36|summary+skills+languages|experience>education>projects>achievements>certifications>hobbies>references|micro|circle|compact|lg|inline|flat|cv25",
       "thumbnail": "/templates/Cv25.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv25.svg",
       "evidenceHtml": "docs/templates/evidence/Cv25.html",
       "rendered": {
@@ -1355,6 +1380,7 @@
       "fingerprint": "banner-sidebar|photo-band|right|30|contact+summary+skills|experience>achievements>education>projects>certifications>languages>hobbies>references|micro|circle|compact|md|grid|accent|standard",
       "thumbnail": "/templates/Cv26.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv26.svg",
       "evidenceHtml": "docs/templates/evidence/Cv26.html",
       "rendered": {
@@ -1407,6 +1433,7 @@
       "fingerprint": "magazine|letterhead|none|32|none|summary>education>experience>certifications>projects>skills>achievements>languages>references>hobbies|underline|square|standard|xl|minimal|accent|standard",
       "thumbnail": "/templates/Cv27.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv27.svg",
       "evidenceHtml": "docs/templates/evidence/Cv27.html",
       "rendered": {
@@ -1460,6 +1487,7 @@
       "fingerprint": "card-grid|left|none|32|none|summary>education>experience>certifications>projects>skills>achievements>languages>references>hobbies|micro|circle|compact|2xl|minimal|flat|standard",
       "thumbnail": "/templates/Cv28.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv28.svg",
       "evidenceHtml": "docs/templates/evidence/Cv28.html",
       "rendered": {
@@ -1513,6 +1541,7 @@
       "fingerprint": "split-header|minimal|none|36|none|summary>experience>projects>achievements>skills>education>certifications>languages>hobbies>references|double|rounded|spacious|md|stack|flat|standard",
       "thumbnail": "/templates/Cv29.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv29.svg",
       "evidenceHtml": "docs/templates/evidence/Cv29.html",
       "rendered": {
@@ -1556,6 +1585,7 @@
       "fingerprint": "infographic|banner|none|28|none|summary>experience>education>skills>certifications>projects>achievements>languages>references>hobbies|underline|circle|compact|md|inline|accent|standard",
       "thumbnail": "/templates/Cv30.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv30.svg",
       "evidenceHtml": "docs/templates/evidence/Cv30.html",
       "rendered": {
@@ -1608,6 +1638,7 @@
       "fingerprint": "portfolio|monogram|none|28|none|summary>experience>education>skills>certifications>projects>achievements>languages>references>hobbies|double|circle|spacious|2xl|grid|accent|standard",
       "thumbnail": "/templates/Cv31.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv31.svg",
       "evidenceHtml": "docs/templates/evidence/Cv31.html",
       "rendered": {
@@ -1660,6 +1691,7 @@
       "fingerprint": "compact|left|none|30|none|experience>achievements>summary>projects>education>skills>certifications>languages>hobbies>references|pill|square|standard|md|minimal|flat|standard",
       "thumbnail": "/templates/Cv32.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv32.svg",
       "evidenceHtml": "docs/templates/evidence/Cv32.html",
       "rendered": {
@@ -1713,6 +1745,7 @@
       "fingerprint": "timeline|minimal|none|32|none|summary>experience>education>projects>achievements>skills>certifications>languages>hobbies>references|plain|circle|compact|xl|inline|flat|standard",
       "thumbnail": "/templates/Cv33.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv33.svg",
       "evidenceHtml": "docs/templates/evidence/Cv33.html",
       "rendered": {
@@ -1767,6 +1800,7 @@
       "fingerprint": "cv34|cv34|right|34|skills+languages|summary>experience>education>projects>certifications>achievements>hobbies>references|bar|circle|standard|xl|grid|accent|cv34",
       "thumbnail": "/templates/Cv34.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv34.svg",
       "evidenceHtml": "docs/templates/evidence/Cv34.html",
       "rendered": {
@@ -1819,6 +1853,7 @@
       "fingerprint": "technical|banner|none|28|none|summary>education>experience>certifications>projects>skills>achievements>languages>references>hobbies|bar|none|compact|md|minimal|accent|standard",
       "thumbnail": "/templates/Cv35.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv35.svg",
       "evidenceHtml": "docs/templates/evidence/Cv35.html",
       "rendered": {
@@ -1872,6 +1907,7 @@
       "fingerprint": "boxed|band|none|30|none|experience>projects>skills>education>summary>achievements>certifications>languages>hobbies>references|double|circle|spacious|2xl|inline|flat|standard",
       "thumbnail": "/templates/Cv36.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv36.svg",
       "evidenceHtml": "docs/templates/evidence/Cv36.html",
       "rendered": {
@@ -1925,6 +1961,7 @@
       "fingerprint": "card-grid|grid|none|32|none|summary>experience>projects>achievements>skills>education>certifications>languages>hobbies>references|underline|circle|compact|md|inline|flat|standard",
       "thumbnail": "/templates/Cv37.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv37.svg",
       "evidenceHtml": "docs/templates/evidence/Cv37.html",
       "rendered": {
@@ -1978,6 +2015,7 @@
       "fingerprint": "executive|minimal|none|34|none|summary>experience>education>skills>certifications>projects>achievements>languages>references>hobbies|plain|none|standard|xl|grid|accent|standard",
       "thumbnail": "/templates/Cv38.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv38.svg",
       "evidenceHtml": "docs/templates/evidence/Cv38.html",
       "rendered": {
@@ -2033,6 +2071,7 @@
       "fingerprint": "tri-column|minimal|right|36|contact+skills+projects+certifications|experience>achievements>summary>education>languages>hobbies>references|bracket|circle|spacious|2xl|minimal|flat|standard",
       "thumbnail": "/templates/Cv39.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv39.svg",
       "evidenceHtml": "docs/templates/evidence/Cv39.html",
       "rendered": {
@@ -2086,6 +2125,7 @@
       "fingerprint": "europass|band|left|36|contact+languages+skills|experience>achievements>summary>projects>education>certifications>hobbies>references|underline|square|compact|md|stack|flat|standard",
       "thumbnail": "/templates/Cv40.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv40.svg",
       "evidenceHtml": "docs/templates/evidence/Cv40.html",
       "rendered": {
@@ -2138,6 +2178,7 @@
       "fingerprint": "timeline|centered|none|28|none|summary>experience>education>projects>achievements>skills>certifications>languages>hobbies>references|bracket|rounded|standard|md|inline|flat|standard",
       "thumbnail": "/templates/Cv41.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv41.svg",
       "evidenceHtml": "docs/templates/evidence/Cv41.html",
       "rendered": {
@@ -2191,6 +2232,7 @@
       "fingerprint": "compact|band|none|30|none|summary>skills>experience>projects>education>achievements>certifications>languages>references>hobbies|micro|none|standard|xl|stack|flat|standard",
       "thumbnail": "/templates/Cv42.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv42.svg",
       "evidenceHtml": "docs/templates/evidence/Cv42.html",
       "rendered": {
@@ -2244,6 +2286,7 @@
       "fingerprint": "minimal|minimal|none|32|none|experience>summary>achievements>education>projects>skills>certifications>languages>hobbies>references|underline|rounded|spacious|2xl|grid|flat|standard",
       "thumbnail": "/templates/Cv43.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv43.svg",
       "evidenceHtml": "docs/templates/evidence/Cv43.html",
       "rendered": {
@@ -2297,6 +2340,7 @@
       "fingerprint": "split-header|minimal|none|36|none|experience>projects>skills>education>summary>achievements>certifications>languages>hobbies>references|pill|square|compact|md|inline|flat|standard",
       "thumbnail": "/templates/Cv44.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv44.svg",
       "evidenceHtml": "docs/templates/evidence/Cv44.html",
       "rendered": {
@@ -2340,6 +2384,7 @@
       "fingerprint": "editorial|minimal|none|36|none|experience>projects>skills>education>summary>achievements>certifications>languages>hobbies>references|double|circle|standard|xl|inline|flat|standard",
       "thumbnail": "/templates/Cv45.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv45.svg",
       "evidenceHtml": "docs/templates/evidence/Cv45.html",
       "rendered": {
@@ -2394,6 +2439,7 @@
       "fingerprint": "europass|band|left|30|contact+skills+languages|summary>experience>education>certifications>projects>achievements>references>hobbies|bracket|square|standard|2xl|grid|flat|standard",
       "thumbnail": "/templates/Cv46.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv46.svg",
       "evidenceHtml": "docs/templates/evidence/Cv46.html",
       "rendered": {
@@ -2446,6 +2492,7 @@
       "fingerprint": "compact|band|none|32|none|experience>achievements>summary>projects>education>skills>certifications>languages>hobbies>references|micro|rounded|compact|2xl|minimal|flat|standard",
       "thumbnail": "/templates/Cv47.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv47.svg",
       "evidenceHtml": "docs/templates/evidence/Cv47.html",
       "rendered": {
@@ -2501,6 +2548,7 @@
       "fingerprint": "profile-sidebar|photo-band|left|36|contact+skills+languages|summary>experience>projects>education>achievements>certifications>references>hobbies|double|none|spacious|lg|stack|flat|standard",
       "thumbnail": "/templates/Cv48.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv48.svg",
       "evidenceHtml": "docs/templates/evidence/Cv48.html",
       "rendered": {
@@ -2553,6 +2601,7 @@
       "fingerprint": "timeline|centered|none|36|none|summary>skills>experience>projects>education>achievements>certifications>languages>references>hobbies|bar|square|compact|2xl|stack|flat|standard",
       "thumbnail": "/templates/Cv49.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv49.svg",
       "evidenceHtml": "docs/templates/evidence/Cv49.html",
       "rendered": {
@@ -2608,6 +2657,7 @@
       "fingerprint": "banner-sidebar|banner|left|30|contact+skills+projects|summary>education>experience>certifications>achievements>languages>references>hobbies|plain|square|standard|2xl|minimal|accent|standard",
       "thumbnail": "/templates/Cv50.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv50.svg",
       "evidenceHtml": "docs/templates/evidence/Cv50.html",
       "rendered": {
@@ -2662,6 +2712,7 @@
       "fingerprint": "europass|photo-band|right|28|contact+languages+skills+certifications|experience>summary>achievements>education>projects>hobbies>references|bar|rounded|standard|lg|grid|flat|standard",
       "thumbnail": "/templates/Cv51.JPG",
       "thumbnailOrigin": "legacy-artifact",
+      "thumbnailRegenerated": false,
       "wireframe": "docs/templates/wireframes/Cv51.svg",
       "evidenceHtml": "docs/templates/evidence/Cv51.html",
       "rendered": {
@@ -2712,7 +2763,8 @@
       "accentBar": false,
       "fingerprint": "classic|letterhead|none|34|none|summary>experience>projects>achievements>skills>education>certifications>languages>hobbies>references|micro|none|spacious|lg|stack|flat|standard",
       "thumbnail": "/templates/Cv52.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv52.svg",
       "evidenceHtml": "docs/templates/evidence/Cv52.html",
       "rendered": {
@@ -2765,7 +2817,8 @@
       "accentBar": true,
       "fingerprint": "banner|banner|none|36|none|summary>experience>education>skills>certifications>projects>achievements>languages>references>hobbies|underline|square|compact|lg|grid|accent|standard",
       "thumbnail": "/templates/Cv53.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv53.svg",
       "evidenceHtml": "docs/templates/evidence/Cv53.html",
       "rendered": {
@@ -2818,7 +2871,8 @@
       "accentBar": true,
       "fingerprint": "portfolio|monogram|none|36|none|summary>experience>education>skills>certifications>projects>achievements>languages>references>hobbies|micro|circle|compact|md|grid|accent|standard",
       "thumbnail": "/templates/Cv54.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv54.svg",
       "evidenceHtml": "docs/templates/evidence/Cv54.html",
       "rendered": {
@@ -2870,7 +2924,8 @@
       "accentBar": false,
       "fingerprint": "split-header|minimal|none|30|none|summary>experience>education>projects>achievements>skills>certifications>languages>hobbies>references|double|rounded|spacious|lg|inline|flat|standard",
       "thumbnail": "/templates/Cv55.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv55.svg",
       "evidenceHtml": "docs/templates/evidence/Cv55.html",
       "rendered": {
@@ -2913,7 +2968,8 @@
       "accentBar": false,
       "fingerprint": "academic|centered|none|32|none|summary>skills>experience>projects>education>achievements>certifications>languages>references>hobbies|pill|circle|compact|lg|stack|flat|standard",
       "thumbnail": "/templates/Cv56.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv56.svg",
       "evidenceHtml": "docs/templates/evidence/Cv56.html",
       "rendered": {
@@ -2968,7 +3024,8 @@
       "accentBar": false,
       "fingerprint": "tri-column|band|left|34|contact+skills+projects|experience>summary>achievements>education>certifications>languages>hobbies>references|plain|circle|standard|md|grid|flat|standard",
       "thumbnail": "/templates/Cv57.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv57.svg",
       "evidenceHtml": "docs/templates/evidence/Cv57.html",
       "rendered": {
@@ -3022,7 +3079,8 @@
       "accentBar": true,
       "fingerprint": "banner-sidebar|photo-band|left|36|contact+skills+languages+certifications|summary>education>experience>projects>achievements>references>hobbies|bracket|circle|spacious|xl|minimal|accent|standard",
       "thumbnail": "/templates/Cv58.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv58.svg",
       "evidenceHtml": "docs/templates/evidence/Cv58.html",
       "rendered": {
@@ -3073,7 +3131,8 @@
       "accentBar": false,
       "fingerprint": "compact|band|none|36|none|summary>education>experience>certifications>projects>skills>achievements>languages>references>hobbies|plain|rounded|spacious|lg|minimal|flat|standard",
       "thumbnail": "/templates/Cv59.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv59.svg",
       "evidenceHtml": "docs/templates/evidence/Cv59.html",
       "rendered": {
@@ -3126,7 +3185,8 @@
       "accentBar": false,
       "fingerprint": "compact|minimal|none|28|none|experience>projects>skills>education>summary>achievements>certifications>languages>hobbies>references|bracket|none|compact|2xl|inline|flat|standard",
       "thumbnail": "/templates/Cv60.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv60.svg",
       "evidenceHtml": "docs/templates/evidence/Cv60.html",
       "rendered": {
@@ -3179,7 +3239,8 @@
       "accentBar": false,
       "fingerprint": "timeline|centered|none|30|none|summary>experience>projects>achievements>skills>education>certifications>languages>hobbies>references|micro|rounded|standard|md|stack|flat|standard",
       "thumbnail": "/templates/Cv61.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv61.svg",
       "evidenceHtml": "docs/templates/evidence/Cv61.html",
       "rendered": {
@@ -3232,7 +3293,8 @@
       "accentBar": false,
       "fingerprint": "editorial|letterhead|none|34|none|experience>achievements>summary>projects>education>skills>certifications>languages>hobbies>references|double|none|compact|md|minimal|flat|standard",
       "thumbnail": "/templates/Cv62.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv62.svg",
       "evidenceHtml": "docs/templates/evidence/Cv62.html",
       "rendered": {
@@ -3284,7 +3346,8 @@
       "accentBar": false,
       "fingerprint": "compact|left|none|36|none|summary>experience>education>projects>achievements>skills>certifications>languages>hobbies>references|pill|none|standard|xl|inline|flat|standard",
       "thumbnail": "/templates/Cv63.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv63.svg",
       "evidenceHtml": "docs/templates/evidence/Cv63.html",
       "rendered": {
@@ -3339,7 +3402,8 @@
       "accentBar": false,
       "fingerprint": "profile-sidebar|sidebar|left|30|contact+skills+projects|experience>summary>achievements>education>certifications>languages>hobbies>references|micro|rounded|compact|md|grid|flat|standard",
       "thumbnail": "/templates/Cv64.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv64.svg",
       "evidenceHtml": "docs/templates/evidence/Cv64.html",
       "rendered": {
@@ -3391,7 +3455,8 @@
       "accentBar": true,
       "fingerprint": "infographic|banner|none|30|none|experience>summary>achievements>education>projects>skills>certifications>languages>hobbies>references|bracket|circle|compact|xl|grid|accent|standard",
       "thumbnail": "/templates/Cv65.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv65.svg",
       "evidenceHtml": "docs/templates/evidence/Cv65.html",
       "rendered": {
@@ -3442,7 +3507,8 @@
       "accentBar": true,
       "fingerprint": "technical|grid|none|32|none|summary>education>experience>certifications>projects>skills>achievements>languages>references>hobbies|micro|none|standard|xl|minimal|accent|standard",
       "thumbnail": "/templates/Cv66.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv66.svg",
       "evidenceHtml": "docs/templates/evidence/Cv66.html",
       "rendered": {
@@ -3495,7 +3561,8 @@
       "accentBar": true,
       "fingerprint": "executive|minimal|none|34|none|experience>projects>skills>education>summary>achievements>certifications>languages>hobbies>references|underline|none|spacious|md|inline|accent|standard",
       "thumbnail": "/templates/Cv67.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv67.svg",
       "evidenceHtml": "docs/templates/evidence/Cv67.html",
       "rendered": {
@@ -3549,7 +3616,8 @@
       "accentBar": true,
       "fingerprint": "banner-sidebar|band|left|28|contact+skills+projects+certifications|summary>experience>education>achievements>languages>references>hobbies|pill|square|standard|md|grid|accent|standard",
       "thumbnail": "/templates/Cv68.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv68.svg",
       "evidenceHtml": "docs/templates/evidence/Cv68.html",
       "rendered": {
@@ -3600,7 +3668,8 @@
       "accentBar": false,
       "fingerprint": "card-grid|grid|none|28|none|summary>experience>education>skills>certifications>projects>achievements>languages>references>hobbies|double|none|standard|lg|grid|flat|standard",
       "thumbnail": "/templates/Cv69.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv69.svg",
       "evidenceHtml": "docs/templates/evidence/Cv69.html",
       "rendered": {
@@ -3653,7 +3722,8 @@
       "accentBar": false,
       "fingerprint": "minimal|left|none|28|none|summary>experience>education>skills>certifications>projects>achievements>languages>references>hobbies|bar|rounded|standard|lg|grid|flat|standard",
       "thumbnail": "/templates/Cv70.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv70.svg",
       "evidenceHtml": "docs/templates/evidence/Cv70.html",
       "rendered": {
@@ -3706,7 +3776,8 @@
       "accentBar": false,
       "fingerprint": "boxed|band|none|32|none|summary>experience>education>projects>achievements>skills>certifications>languages>hobbies>references|bar|circle|compact|md|inline|flat|standard",
       "thumbnail": "/templates/Cv71.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv71.svg",
       "evidenceHtml": "docs/templates/evidence/Cv71.html",
       "rendered": {
@@ -3759,7 +3830,8 @@
       "accentBar": true,
       "fingerprint": "portfolio|bracket|none|34|none|summary>skills>experience>projects>education>achievements>certifications>languages>references>hobbies|bracket|none|standard|lg|stack|accent|standard",
       "thumbnail": "/templates/Cv72.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv72.svg",
       "evidenceHtml": "docs/templates/evidence/Cv72.html",
       "rendered": {
@@ -3811,7 +3883,8 @@
       "accentBar": false,
       "fingerprint": "editorial|split|none|34|none|summary>skills>experience>projects>education>achievements>certifications>languages>references>hobbies|plain|rounded|standard|md|stack|flat|standard",
       "thumbnail": "/templates/Cv73.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv73.svg",
       "evidenceHtml": "docs/templates/evidence/Cv73.html",
       "rendered": {
@@ -3864,7 +3937,8 @@
       "accentBar": false,
       "fingerprint": "minimal|minimal|none|28|none|summary>education>experience>certifications>projects>skills>achievements>languages>references>hobbies|underline|circle|compact|md|minimal|flat|standard",
       "thumbnail": "/templates/Cv74.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv74.svg",
       "evidenceHtml": "docs/templates/evidence/Cv74.html",
       "rendered": {
@@ -3917,7 +3991,8 @@
       "accentBar": false,
       "fingerprint": "compact|left|none|30|none|experience>projects>skills>education>summary>achievements>certifications>languages>hobbies>references|bar|none|standard|md|inline|flat|standard",
       "thumbnail": "/templates/Cv75.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv75.svg",
       "evidenceHtml": "docs/templates/evidence/Cv75.html",
       "rendered": {
@@ -3970,7 +4045,8 @@
       "accentBar": true,
       "fingerprint": "magazine|letterhead|none|34|none|summary>experience>education>skills>certifications>projects>achievements>languages>references>hobbies|plain|none|compact|lg|grid|accent|standard",
       "thumbnail": "/templates/Cv76.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv76.svg",
       "evidenceHtml": "docs/templates/evidence/Cv76.html",
       "rendered": {
@@ -4023,7 +4099,8 @@
       "accentBar": true,
       "fingerprint": "executive|letterhead|none|34|none|summary>experience>education>skills>certifications>projects>achievements>languages>references>hobbies|pill|circle|compact|md|grid|accent|standard",
       "thumbnail": "/templates/Cv77.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv77.svg",
       "evidenceHtml": "docs/templates/evidence/Cv77.html",
       "rendered": {
@@ -4076,7 +4153,8 @@
       "accentBar": false,
       "fingerprint": "split-header|minimal|none|28|none|summary>experience>education>projects>achievements>skills>certifications>languages>hobbies>references|micro|square|spacious|2xl|inline|flat|standard",
       "thumbnail": "/templates/Cv78.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv78.svg",
       "evidenceHtml": "docs/templates/evidence/Cv78.html",
       "rendered": {
@@ -4119,7 +4197,8 @@
       "accentBar": true,
       "fingerprint": "banner|banner|none|30|none|summary>skills>experience>projects>education>achievements>certifications>languages>references>hobbies|underline|rounded|compact|lg|stack|accent|standard",
       "thumbnail": "/templates/Cv79.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv79.svg",
       "evidenceHtml": "docs/templates/evidence/Cv79.html",
       "rendered": {
@@ -4174,7 +4253,8 @@
       "accentBar": false,
       "fingerprint": "tri-column|band|left|32|contact+skills+projects|experience>summary>achievements>education>certifications>languages>hobbies>references|bar|rounded|standard|xl|grid|flat|standard",
       "thumbnail": "/templates/Cv80.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv80.svg",
       "evidenceHtml": "docs/templates/evidence/Cv80.html",
       "rendered": {
@@ -4226,7 +4306,8 @@
       "accentBar": false,
       "fingerprint": "timeline|centered|none|32|none|experience>summary>achievements>education>projects>skills>certifications>languages>hobbies>references|underline|square|standard|2xl|grid|flat|standard",
       "thumbnail": "/templates/Cv81.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv81.svg",
       "evidenceHtml": "docs/templates/evidence/Cv81.html",
       "rendered": {
@@ -4281,7 +4362,8 @@
       "accentBar": true,
       "fingerprint": "banner-sidebar|banner|left|36|contact+skills+languages+certifications|experience>projects>education>summary>achievements>hobbies>references|pill|rounded|compact|lg|inline|accent|standard",
       "thumbnail": "/templates/Cv82.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv82.svg",
       "evidenceHtml": "docs/templates/evidence/Cv82.html",
       "rendered": {
@@ -4334,7 +4416,8 @@
       "accentBar": false,
       "fingerprint": "europass|photo-band|right|36|contact+skills+projects|experience>education>summary>achievements>certifications>languages>hobbies>references|double|circle|compact|2xl|inline|flat|standard",
       "thumbnail": "/templates/Cv83.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv83.svg",
       "evidenceHtml": "docs/templates/evidence/Cv83.html",
       "rendered": {
@@ -4386,7 +4469,8 @@
       "accentBar": false,
       "fingerprint": "compact|band|none|30|none|summary>experience>education>skills>certifications>projects>achievements>languages>references>hobbies|bracket|square|spacious|xl|grid|flat|standard",
       "thumbnail": "/templates/Cv84.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv84.svg",
       "evidenceHtml": "docs/templates/evidence/Cv84.html",
       "rendered": {
@@ -4439,7 +4523,8 @@
       "accentBar": false,
       "fingerprint": "split-header|minimal|none|30|none|summary>experience>education>skills>certifications>projects>achievements>languages>references>hobbies|plain|rounded|spacious|md|grid|flat|standard",
       "thumbnail": "/templates/Cv85.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv85.svg",
       "evidenceHtml": "docs/templates/evidence/Cv85.html",
       "rendered": {
@@ -4482,7 +4567,8 @@
       "accentBar": true,
       "fingerprint": "technical|grid|none|34|none|summary>experience>education>projects>achievements>skills>certifications>languages>hobbies>references|underline|circle|standard|md|inline|accent|standard",
       "thumbnail": "/templates/Cv86.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv86.svg",
       "evidenceHtml": "docs/templates/evidence/Cv86.html",
       "rendered": {
@@ -4534,7 +4620,8 @@
       "accentBar": false,
       "fingerprint": "timeline|centered|none|34|none|summary>experience>education>projects>achievements>skills>certifications>languages>hobbies>references|underline|circle|compact|md|inline|flat|standard",
       "thumbnail": "/templates/Cv87.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv87.svg",
       "evidenceHtml": "docs/templates/evidence/Cv87.html",
       "rendered": {
@@ -4587,7 +4674,8 @@
       "accentBar": false,
       "fingerprint": "classic|left|none|28|none|experience>summary>achievements>education>projects>skills>certifications>languages>hobbies>references|double|rounded|compact|md|grid|flat|standard",
       "thumbnail": "/templates/Cv88.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv88.svg",
       "evidenceHtml": "docs/templates/evidence/Cv88.html",
       "rendered": {
@@ -4640,7 +4728,8 @@
       "accentBar": false,
       "fingerprint": "card-grid|grid|none|30|none|summary>education>experience>certifications>projects>skills>achievements>languages>references>hobbies|pill|circle|standard|md|minimal|flat|standard",
       "thumbnail": "/templates/Cv89.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv89.svg",
       "evidenceHtml": "docs/templates/evidence/Cv89.html",
       "rendered": {
@@ -4695,7 +4784,8 @@
       "accentBar": false,
       "fingerprint": "profile-sidebar|sidebar|right|34|contact+summary+education+skills|experience>projects>achievements>certifications>languages>hobbies>references|micro|rounded|compact|lg|stack|flat|standard",
       "thumbnail": "/templates/Cv90.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv90.svg",
       "evidenceHtml": "docs/templates/evidence/Cv90.html",
       "rendered": {
@@ -4746,7 +4836,8 @@
       "accentBar": true,
       "fingerprint": "infographic|banner|none|34|none|summary>experience>projects>achievements>skills>education>certifications>languages>hobbies>references|bracket|none|compact|xl|stack|accent|standard",
       "thumbnail": "/templates/Cv91.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv91.svg",
       "evidenceHtml": "docs/templates/evidence/Cv91.html",
       "rendered": {
@@ -4797,7 +4888,8 @@
       "accentBar": true,
       "fingerprint": "portfolio|bracket|none|36|none|summary>experience>education>skills>certifications>projects>achievements>languages>references>hobbies|underline|rounded|compact|md|inline|accent|standard",
       "thumbnail": "/templates/Cv92.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv92.svg",
       "evidenceHtml": "docs/templates/evidence/Cv92.html",
       "rendered": {
@@ -4849,7 +4941,8 @@
       "accentBar": false,
       "fingerprint": "academic|minimal|none|28|none|experience>achievements>summary>projects>education>skills>certifications>languages>hobbies>references|underline|none|spacious|lg|minimal|flat|standard",
       "thumbnail": "/templates/Cv93.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv93.svg",
       "evidenceHtml": "docs/templates/evidence/Cv93.html",
       "rendered": {
@@ -4901,7 +4994,8 @@
       "accentBar": true,
       "fingerprint": "executive|letterhead|none|30|none|summary>experience>education>projects>achievements>skills>certifications>languages>hobbies>references|bar|none|compact|xl|inline|accent|standard",
       "thumbnail": "/templates/Cv94.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv94.svg",
       "evidenceHtml": "docs/templates/evidence/Cv94.html",
       "rendered": {
@@ -4953,7 +5047,8 @@
       "accentBar": false,
       "fingerprint": "compact|left|none|32|none|summary>skills>experience>projects>education>achievements>certifications>languages>references>hobbies|double|circle|standard|2xl|stack|flat|standard",
       "thumbnail": "/templates/Cv95.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv95.svg",
       "evidenceHtml": "docs/templates/evidence/Cv95.html",
       "rendered": {
@@ -5008,7 +5103,8 @@
       "accentBar": true,
       "fingerprint": "banner-sidebar|banner|right|36|contact+skills+projects|summary>education>experience>certifications>achievements>languages>references>hobbies|bracket|circle|compact|2xl|minimal|accent|standard",
       "thumbnail": "/templates/Cv96.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv96.svg",
       "evidenceHtml": "docs/templates/evidence/Cv96.html",
       "rendered": {
@@ -5060,7 +5156,8 @@
       "accentBar": false,
       "fingerprint": "editorial|letterhead|none|36|none|summary>education>experience>certifications>projects>skills>achievements>languages>references>hobbies|underline|circle|compact|md|inline|flat|standard",
       "thumbnail": "/templates/Cv97.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv97.svg",
       "evidenceHtml": "docs/templates/evidence/Cv97.html",
       "rendered": {
@@ -5113,7 +5210,8 @@
       "accentBar": false,
       "fingerprint": "compact|minimal|none|36|none|summary>education>experience>certifications>projects>skills>achievements>languages>references>hobbies|pill|rounded|compact|2xl|minimal|flat|standard",
       "thumbnail": "/templates/Cv98.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv98.svg",
       "evidenceHtml": "docs/templates/evidence/Cv98.html",
       "rendered": {
@@ -5166,7 +5264,8 @@
       "accentBar": false,
       "fingerprint": "timeline|minimal|none|30|none|summary>experience>projects>achievements>skills>education>certifications>languages>hobbies>references|bar|circle|compact|md|inline|flat|standard",
       "thumbnail": "/templates/Cv99.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv99.svg",
       "evidenceHtml": "docs/templates/evidence/Cv99.html",
       "rendered": {
@@ -5219,7 +5318,8 @@
       "accentBar": false,
       "fingerprint": "boxed|band|none|32|none|summary>experience>education>skills>certifications>projects>achievements>languages>references>hobbies|underline|square|spacious|md|grid|flat|standard",
       "thumbnail": "/templates/Cv100.JPG",
-      "thumbnailOrigin": "regenerated-from-spec",
+      "thumbnailOrigin": "generated-from-spec",
+      "thumbnailRegenerated": true,
       "wireframe": "docs/templates/wireframes/Cv100.svg",
       "evidenceHtml": "docs/templates/evidence/Cv100.html",
       "rendered": {
