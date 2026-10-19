@@ -1,8 +1,8 @@
 {
   "directive": "DIR-008",
-  "generatedAt": "2026-10-19T23:03:27.348Z",
+  "generatedAt": "2026-10-19T23:04:41.679Z",
   "branch": "arena/8a774228-resumepilotai",
-  "commit": "d531c30b7a1d17caa515d5636469c189bdd5129d",
+  "commit": "f58b9942dfe58f1b1c5cddece612e55c27d3a5d4",
   "node": "v22.22.3",
   "platform": "linux x64",
   "totals": {
@@ -22,7 +22,7 @@
       "tests": 9,
       "failures": 0,
       "skipped": 0,
-      "durationMs": 5421,
+      "durationMs": 5266,
       "tail": null
     },
     {
@@ -34,7 +34,7 @@
       "tests": 6,
       "failures": 0,
       "skipped": 0,
-      "durationMs": 1075,
+      "durationMs": 990,
       "tail": null
     },
     {
@@ -46,7 +46,7 @@
       "tests": 5,
       "failures": 0,
       "skipped": 0,
-      "durationMs": 3084,
+      "durationMs": 2921,
       "tail": null
     },
     {
@@ -58,7 +58,7 @@
       "tests": 6,
       "failures": 0,
       "skipped": 0,
-      "durationMs": 345,
+      "durationMs": 278,
       "tail": null
     },
     {
@@ -70,7 +70,7 @@
       "tests": 7,
       "failures": 0,
       "skipped": 0,
-      "durationMs": 1545,
+      "durationMs": 1542,
       "tail": null
     },
     {
@@ -82,7 +82,7 @@
       "tests": 5,
       "failures": 0,
       "skipped": 0,
-      "durationMs": 105,
+      "durationMs": 107,
       "tail": null
     },
     {
@@ -94,7 +94,7 @@
       "tests": 3,
       "failures": 0,
       "skipped": 0,
-      "durationMs": 148,
+      "durationMs": 133,
       "tail": null
     },
     {
@@ -106,7 +106,7 @@
       "tests": 16,
       "failures": 0,
       "skipped": 0,
-      "durationMs": 1611,
+      "durationMs": 1554,
       "tail": null
     },
     {
@@ -118,7 +118,7 @@
       "tests": 8,
       "failures": 0,
       "skipped": 0,
-      "durationMs": 1592,
+      "durationMs": 1560,
       "tail": null
     },
     {
@@ -130,7 +130,7 @@
       "tests": 7,
       "failures": 0,
       "skipped": 0,
-      "durationMs": 144,
+      "durationMs": 109,
       "tail": null
     },
     {
@@ -142,7 +142,7 @@
       "tests": 13,
       "failures": 0,
       "skipped": 0,
-      "durationMs": 813,
+      "durationMs": 706,
       "tail": null
     },
     {
@@ -154,7 +154,7 @@
       "tests": 5,
       "failures": 0,
       "skipped": 0,
-      "durationMs": 1552,
+      "durationMs": 1532,
       "tail": null
     },
     {
@@ -166,7 +166,7 @@
       "tests": 6,
       "failures": 0,
       "skipped": 0,
-      "durationMs": 1147,
+      "durationMs": 1044,
       "tail": null
     },
     {
@@ -178,7 +178,7 @@
       "tests": 5,
       "failures": 0,
       "skipped": 0,
-      "durationMs": 107,
+      "durationMs": 106,
       "tail": null
     },
     {
@@ -190,7 +190,7 @@
       "tests": 7,
       "failures": 0,
       "skipped": 0,
-      "durationMs": 123,
+      "durationMs": 102,
       "tail": null
     },
     {
@@ -202,7 +202,7 @@
       "tests": 10,
       "failures": 0,
       "skipped": 0,
-      "durationMs": 132,
+      "durationMs": 126,
       "tail": null
     },
     {
@@ -214,7 +214,7 @@
       "tests": 4,
       "failures": 0,
       "skipped": 0,
-      "durationMs": 554,
+      "durationMs": 562,
       "tail": null
     },
     {
@@ -226,7 +226,7 @@
       "tests": 7,
       "failures": 0,
       "skipped": 0,
-      "durationMs": 1172,
+      "durationMs": 1164,
       "tail": null
     },
     {
@@ -238,7 +238,7 @@
       "tests": 5,
       "failures": 0,
       "skipped": 0,
-      "durationMs": 1134,
+      "durationMs": 1089,
       "tail": null
     },
     {
@@ -250,7 +250,7 @@
       "tests": 19,
       "failures": 0,
       "skipped": 0,
-      "durationMs": 1498,
+      "durationMs": 1407,
       "tail": null
     },
     {
@@ -262,7 +262,7 @@
       "tests": 6,
       "failures": 0,
       "skipped": 0,
-      "durationMs": 4406,
+      "durationMs": 4794,
       "tail": null
     },
     {
@@ -274,7 +274,7 @@
       "tests": 10,
       "failures": 0,
       "skipped": 0,
-      "durationMs": 1243,
+      "durationMs": 1179,
       "tail": null
     },
     {
@@ -286,7 +286,7 @@
       "tests": null,
       "failures": 0,
       "skipped": 0,
-      "durationMs": 359,
+      "durationMs": 378,
       "tail": null
     },
     {
@@ -298,8 +298,8 @@
       "tests": null,
       "failures": 0,
       "skipped": 0,
-      "durationMs": 2510,
-      "buildSeconds": 1.86,
+      "durationMs": 2342,
+      "buildSeconds": 1.72,
       "budgetSeconds": 3,
       "tail": null
     }

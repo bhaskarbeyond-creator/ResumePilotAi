@@ -28,7 +28,7 @@ and the evidence that is missing.
 
 | Area | Result | Evidence |
 | --- | --- | --- |
-| Release gates (24 suites, 169 tests) | **24/24 suites, 169/169 tests pass** | `docs/test-reports/DIR-008-release-gates.{json,md}` |
+| Release gates (24 suites, 169 tests) | **24/24 suites, 169/169 tests pass**, executed at `f58b994` | `docs/test-reports/DIR-008-release-gates.{json,md}` |
 | TypeScript (`tsc --noEmit`) | exit 0 | same report, row `typescript` |
 | Production build (`vite build`) | 1.6 s wall, budget 3.0 s | same report, row `production-build` |
 | 100-template catalog + explicit specs | 100 ids, 100 unique fingerprints, 23 families, no generic fallback | `dir008-layout-engine` 9/9 |
@@ -54,7 +54,7 @@ and the evidence that is missing.
 | Reference-only source application | `D:\xampp\htdocs\IME365` (never modified) |
 | Branch | `arena/8a774228-resumepilotai` |
 | Milestones | M0 `bef5428` → M9 `57a0f1d` (all contained in the remote; full SHAs in `DIR-008-commit-ledger.md`) |
-| Working tree | clean at the release-record commit (`57a0f1d` plus this record commit) |
+| Working tree | clean at `f58b994`, the commit the final gate report was executed against |
 | Runtime | Node 22, Linux x64, no browser binary |
 | ATS algorithm | unchanged from the documented weights in `backend/services/atsScore.js`; no silent retune |
 
