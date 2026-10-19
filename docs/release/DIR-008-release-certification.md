@@ -4,7 +4,7 @@
 **Repository:** `github.com/bhaskarbeyond-creator/ResumePilotAi`
 **Branch:** `arena/8a774228-resumepilotai`
 **Certification date:** 2026-10-20
-**Prepared from:** commits M1–M9 on the branch above (full SHAs in `DIR-008-commit-ledger.md`)
+**Prepared from:** commits M0–M9 on the branch above (full SHAs in `DIR-008-commit-ledger.md`)
 
 ---
 
@@ -53,7 +53,7 @@ and the evidence that is missing.
 | Workspace | `/home/user/ResumePilotAi` |
 | Reference-only source application | `D:\xampp\htdocs\IME365` (never modified) |
 | Branch | `arena/8a774228-resumepilotai` |
-| Milestones | M0 `bef5428` → M9 `57a0f1d` (all contained in the remote; full SHAs in `DIR-008-commit-ledger.md`) |
+| Milestones | M0 `bef5428` → M9 `57a0f1d`; evidence commit `f58b994` (all contained in the remote; full SHAs in `DIR-008-commit-ledger.md`) |
 | Working tree | clean at `f58b994`, the commit the final gate report was executed against |
 | Runtime | Node 22, Linux x64, no browser binary |
 | ATS algorithm | unchanged from the documented weights in `backend/services/atsScore.js`; no silent retune |
