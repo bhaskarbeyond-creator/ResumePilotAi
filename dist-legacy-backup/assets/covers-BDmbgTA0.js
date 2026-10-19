@@ -1,0 +1,1 @@
+import{r as e}from"./rolldown-runtime-C0FnF6B9.js";import{t}from"./client-D6tBQV8c.js";var n=e({getCovers:()=>r});async function r(){return(await t(`/api/covers`)).covers||[]}export{r as n,n as t};

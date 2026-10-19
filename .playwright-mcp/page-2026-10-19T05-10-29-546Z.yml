@@ -1,0 +1,251 @@
+- generic:
+  - generic [aria-hidden]:
+    - generic:
+      - link:
+        - /url: "#main-content"
+        - text: Skip to main content
+      - complementary:
+        - generic:
+          - link:
+            - /url: /dashboard
+            - generic: IM
+            - generic: IME365
+          - button
+        - navigation:
+          - list:
+            - listitem:
+              - link:
+                - /url: /dashboard
+                - generic: Dashboard
+            - listitem:
+              - link:
+                - /url: /dashboard/resumes
+                - generic: Resumes & Master CV
+            - listitem:
+              - link:
+                - /url: /dashboard/cover-letters
+                - generic: Cover Letters
+            - listitem:
+              - link:
+                - /url: /dashboard/portfolio
+                - generic: Web CV Portfolio
+            - listitem:
+              - link:
+                - /url: /dashboard/interviews
+                - generic: Interview Coach
+            - listitem:
+              - link:
+                - /url: /dashboard/jobs
+                - generic: Job Tracker
+            - listitem:
+              - link:
+                - /url: /dashboard/ai
+                - generic: AI Assistant
+            - listitem:
+              - link:
+                - /url: /dashboard/messages
+                - generic: Messages
+        - generic:
+          - list:
+            - listitem:
+              - link:
+                - /url: /dashboard/settings
+                - generic: Settings
+          - generic:
+            - generic: AM
+            - generic:
+              - paragraph: Alex Morgan
+              - paragraph: candidate@ime365.com
+            - button
+      - generic:
+        - banner:
+          - generic:
+            - generic:
+              - navigation:
+                - list:
+                  - listitem:
+                    - link:
+                      - /url: /dashboard
+                      - text: Dashboard
+                  - listitem:
+                    - generic [aria-hidden]: /
+                    - link:
+                      - /url: /dashboard/resumes
+                      - text: Resumes & Master CV
+                  - listitem:
+                    - generic [aria-hidden]: /
+                    - link:
+                      - /url: /build-resume
+                      - text: Build Resume
+                  - listitem:
+                    - generic [aria-hidden]: /
+                    - link:
+                      - /url: /build-resume
+                      - text: New Resume
+            - generic:
+              - generic: Saved
+              - generic:
+                - button:
+                  - generic: Preview
+                - button:
+                  - generic: Download
+              - generic:
+                - button
+                - button
+        - main:
+          - generic:
+            - generic:
+              - generic:
+                - button: Back
+                - textbox:
+                  - /placeholder: Resume name
+                  - text: Untitled Resume
+              - generic:
+                - button: Preview
+                - button: Save
+            - generic:
+              - navigation:
+                - button:
+                  - generic: "1"
+                  - generic: Heading
+                - button:
+                  - generic: "2"
+                  - generic: Experience
+                - button:
+                  - generic: "3"
+                  - generic: Education
+                - button:
+                  - generic: "4"
+                  - generic: Skills
+                - button:
+                  - generic: "5"
+                  - generic: Summary
+                - button:
+                  - generic: "6"
+                  - generic: Template
+                - button:
+                  - generic: "7"
+                  - generic: Certifications
+                - button:
+                  - generic: "8"
+                  - generic: Achievements
+                - button:
+                  - generic: "9"
+                  - generic: Projects
+                - button:
+                  - generic: "10"
+                  - generic: Languages
+                - button:
+                  - generic: "11"
+                  - generic: References
+                - button:
+                  - generic: "12"
+                  - generic: Custom Sections
+                - button:
+                  - generic: "13"
+                  - generic: Review
+            - generic:
+              - generic:
+                - generic:
+                  - heading [level=2]: Personal Information
+                  - paragraph: Your contact details that will appear at the top of your resume.
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: First name *
+                        - textbox:
+                          - /placeholder: John
+                      - generic:
+                        - generic: Last name *
+                        - textbox:
+                          - /placeholder: Doe
+                    - generic:
+                      - generic: Professional title
+                      - textbox:
+                        - /placeholder: Senior Software Engineer
+                    - generic:
+                      - generic:
+                        - generic: Email *
+                        - textbox:
+                          - /placeholder: john@example.com
+                      - generic:
+                        - generic: Phone
+                        - textbox:
+                          - /placeholder: +1 (555) 000-0000
+                    - generic:
+                      - generic: Location
+                      - textbox:
+                        - /placeholder: New York, NY
+                    - generic:
+                      - generic:
+                        - generic: Website
+                        - textbox:
+                          - /placeholder: https://...
+                      - generic:
+                        - generic: LinkedIn
+                        - textbox:
+                          - /placeholder: linkedin.com/in/...
+                      - generic:
+                        - generic: GitHub
+                        - textbox:
+                          - /placeholder: github.com/...
+            - generic:
+              - button [disabled]: Previous
+              - generic: Step 1 of 13
+              - button: Next
+  - dialog [aria-hidden]:
+    - generic:
+      - generic:
+        - generic:
+          - heading [level=2]: Untitled Resume
+          - paragraph: Metropolitan Navy · MODERN
+      - generic:
+        - generic:
+          - combobox:
+            - generic: Cv1Metropolitan Navy
+        - generic:
+          - button
+          - generic: 100%
+          - button
+          - button
+      - generic:
+        - button: Print
+        - button: Share
+        - button: DOCX
+        - button: PDF
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - heading [level=1]: Untitled Resume
+              - paragraph: Professional Title
+            - generic: Generated via IME365 · Cv1
+    - button:
+      - generic: Close
+  - dialog [ref=f2e267]:
+    - generic [ref=f2e277]:
+      - heading "Share Resume" [level=2] [ref=f2e278]
+      - paragraph [ref=f2e279]: Untitled Resume · Cv1
+    - generic [ref=f2e280]:
+      - generic [ref=f2e281]:
+        - generic [ref=f2e287]:
+          - paragraph [ref=f2e288]: Public Web Link
+          - paragraph [ref=f2e289]: Anyone with this link can view this resume
+        - switch [checked] [active] [ref=f2e290] [cursor=pointer]
+      - generic [ref=f2e291]:
+        - text: Shareable URL
+        - generic [ref=f2e292]:
+          - textbox [ref=f2e293]: https://ime365.local/export/Cv1/draft/en
+          - button "Copy" [ref=f2e294] [cursor=pointer]
+      - generic [ref=f2e296]:
+        - text: Quick Share
+        - generic [ref=f2e297]:
+          - button "WhatsApp" [ref=f2e298] [cursor=pointer]
+          - button "LinkedIn" [ref=f2e299] [cursor=pointer]
+          - button "Email" [ref=f2e300] [cursor=pointer]
+      - generic [ref=f2e301]:
+        - generic [ref=f2e302]: Authenticated SSL & ATS-safe view
+        - link "Open Live" [ref=f2e306] [cursor=pointer]:
+          - /url: https://ime365.local/export/Cv1/draft/en
+    - button "Close" [ref=f2e311]

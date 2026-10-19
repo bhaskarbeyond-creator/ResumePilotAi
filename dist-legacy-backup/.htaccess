@@ -1,0 +1,38 @@
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "DENY"
+  Header always set Referrer-Policy "no-referrer"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)"
+  Header always set Cross-Origin-Opener-Policy "same-origin-allow-popups"
+  Header always set Cross-Origin-Resource-Policy "same-site"
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+  Header always set X-Permitted-Cross-Domain-Policies "none"
+  Header always set Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://js.stripe.com https://static.cloudflareinsights.com https://www.paypal.com https://www.sandbox.paypal.com https://checkout.razorpay.com https://securegw.paytm.in https://securegw-stage.paytm.in https://maps.googleapis.com https://apis.google.com; style-src 'self' https://fonts.googleapis.com https://rsms.me; style-src-attr 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com https://rsms.me; font-src 'self' data: https://fonts.gstatic.com https://rsms.me; img-src 'self' data: blob: https:; connect-src 'self' https://api.stripe.com https://cloudflareinsights.com https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://www.paypal.com https://www.sandbox.paypal.com https://api.razorpay.com https://maps.googleapis.com; frame-src 'self' https://app.supademo.com https://js.stripe.com https://*.firebaseapp.com https://accounts.google.com https://www.paypal.com https://www.sandbox.paypal.com https://api.razorpay.com; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests"
+</IfModule>
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Route all /api/* requests to PHP proxy -> Node backend (port 8080)
+  RewriteRule ^api/(.*)$ api/index.php [L,QSA]
+  RewriteRule ^api$ api/index.php [L,QSA]
+
+  # Route documented public backend probes and discovery documents to the
+  # backend. These are declared in docs/PRODUCTION_RUNBOOK.md (health/readiness)
+  # and are probed by operators and monitoring. Without these rules the SPA
+  # fallback below answers them with index.html (200 text/html), which silently
+  # reports a healthy application even when the backend is down.
+  #
+  # These are proxied straight to the Node backend with [P] rather than through
+  # api/index.php: the VirtualHost's "ProxyPass /api" is evaluated before
+  # .htaccess rewriting, so a rewrite targeting api/index.php is re-proxied to
+  # the backend as /api/index.php and never executes the PHP proxy.
+  RewriteRule ^(healthz|readyz|llms\.txt|llms-full\.txt|sitemap\.xml|public/.*\.json)$ http://127.0.0.1:8080/$1 [P,L,QSA]
+
+  # Route all non-file/directory requests to SPA index.html
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^ index.html [L]
+</IfModule>
+

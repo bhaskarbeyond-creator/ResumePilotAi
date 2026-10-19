@@ -1,16 +1,16 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-18T21:04:27.591Z",
-  "eventCount": 4037,
-  "activeDirectiveId": "DIR-006",
-  "activeDirectiveTitle": "Surface 5 Modernization: Complete 24-Module Admin Console, In-App Blog Editor, Maintenance Controller & AI Provider Orchestration",
+  "updatedAt": "2026-10-19T05:01:52.170Z",
+  "eventCount": 4064,
+  "activeDirectiveId": "DIR-007",
+  "activeDirectiveTitle": "Surface 2 Candidate Parity: Restore Visual Template Previews, Interactive PreviewModal, ShareModal, Rich Text Formatting and ATS Resume Selection",
   "activeDirectiveStatus": "CHANGES_REQUESTED",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
   "stallDeadline": "2026-10-18T20:31:44.876Z",
-  "unreadForLead": 19,
-  "unreadForDev": 87,
+  "unreadForLead": 26,
+  "unreadForDev": 107,
   "pendingBlockers": 0,
   "latestHeartbeat": {
     "timestamp": "2026-10-18T20:31:44.876Z",
@@ -19,7 +19,7 @@
   },
   "integrity": {
     "ok": true,
-    "checked": 4037,
+    "checked": 4064,
     "legacy": 0,
     "bad": 0
   }

@@ -21,6 +21,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { PageSpinner } from '@/components/ui/loading';
 import { get, post, normalizeError } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
+import { PreviewModal } from '@/components/ui/preview-modal';
+import { FormattingToolbar } from '@/components/ui/formatting-toolbar';
+import { TEMPLATES, TEMPLATE_CATEGORIES, getTemplatesByCategory } from '@/lib/template-catalog';
 import {
   User,
   Briefcase,
@@ -62,6 +65,7 @@ import {
   FolderPlus,
   BarChart3,
   Globe as GlobeIcon,
+  Search,
 } from 'lucide-react';
 
 /* ─── Types ─── */
@@ -188,6 +192,7 @@ type BuilderStep =
   | 'education'
   | 'skills'
   | 'summary'
+  | 'template'
   | 'certifications'
   | 'achievements'
   | 'projects'
@@ -202,6 +207,7 @@ const STEPS: { id: BuilderStep; label: string; icon: typeof User; description?: 
   { id: 'education', label: 'Education', icon: GraduationCap, description: 'Degrees, institutions, coursework' },
   { id: 'skills', label: 'Skills', icon: Wrench, description: 'Categories, deduplication, AI suggestions' },
   { id: 'summary', label: 'Summary', icon: FileText, description: 'AI Executive Bio synthesis' },
+  { id: 'template', label: 'Template', icon: Layout, description: '51 canonical resume designs' },
   { id: 'certifications', label: 'Certifications', icon: Award, description: 'Credentials, IDs, expiration' },
   { id: 'achievements', label: 'Achievements', icon: Zap, description: 'Quantifiable accomplishments' },
   { id: 'projects', label: 'Projects', icon: Code2, description: 'Portfolio projects, URLs, tech stack' },
@@ -237,7 +243,7 @@ const EMPTY_HEADING: ResumeHeading = {
 function createEmptyResume(): ResumeData {
   return {
     name: 'Untitled Resume',
-    template: 'modern-1',
+    template: 'Cv1',
     heading: { ...EMPTY_HEADING },
     experience: [],
     education: [],
@@ -264,6 +270,7 @@ export function ResumeBuilderPage() {
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   // Load existing resume
   useEffect(() => {
@@ -368,7 +375,7 @@ export function ResumeBuilderPage() {
               {saveMessage}
             </span>
           )}
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => setShowPreview(true)}>
             <Eye className="size-3.5" />
             Preview
           </Button>
@@ -432,6 +439,13 @@ export function ResumeBuilderPage() {
           {currentStep === 'summary' && (
             <SummaryStep summary={resume.summary} heading={resume.heading} experience={resume.experience} onChange={(summary) => setResume((prev) => ({ ...prev, summary }))} />
           )}
+          {currentStep === 'template' && (
+            <TemplateStep
+              template={resume.template}
+              onChange={(template) => setResume((prev) => ({ ...prev, template }))}
+              onOpenPreview={() => setShowPreview(true)}
+            />
+          )}
           {currentStep === 'certifications' && (
             <CertificationsStep entries={resume.certifications} onChange={(certifications) => setResume((prev) => ({ ...prev, certifications }))} />
           )}
@@ -477,6 +491,26 @@ export function ResumeBuilderPage() {
           </Button>
         )}
       </div>
+
+      {/* Interactive A4 PreviewModal */}
+      <PreviewModal
+        open={showPreview}
+        onOpenChange={setShowPreview}
+        resume={{
+          id: resumeId,
+          name: resume.name,
+          template: resume.template || 'Cv1',
+          heading: resume.heading,
+          experience: resume.experience,
+          education: resume.education,
+          skillCategories: resume.skillCategories,
+          summary: resume.summary,
+          certifications: resume.certifications,
+          projects: resume.projects,
+          languages: resume.languages,
+        }}
+        onTemplateChange={(tmplId) => setResume((prev) => ({ ...prev, template: tmplId }))}
+      />
     </div>
   );
 }
@@ -998,17 +1032,21 @@ function ExperienceStep({ entries, onChange }: { entries: ExperienceEntry[]; onC
               </div>
               <div>
                 <div className="mb-1 flex items-center justify-between">
-                  <label className="text-xs font-medium text-ink">Description</label>
+                  <label className="text-xs font-medium text-ink">Description & Key Achievements</label>
                   <Button type="button" variant="ghost" size="xs" className="text-brand-600">
                     <Sparkles className="size-3" /> AI Assist
                   </Button>
                 </div>
+                <FormattingToolbar
+                  value={entry.description}
+                  onChange={(val) => updateEntry(entry.id, 'description', val)}
+                />
                 <textarea
                   value={entry.description}
                   onChange={(e) => updateEntry(entry.id, 'description', e.target.value)}
                   rows={4}
-                  className="flex w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus-visible:outline-2 focus-visible:outline-brand-500 hover:border-neutral-400"
-                  placeholder="• Led development of…&#10;• Improved performance by…&#10;• Collaborated with…"
+                  className="flex w-full rounded-b-lg border border-border bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus-visible:outline-2 focus-visible:outline-brand-500 hover:border-neutral-400"
+                  placeholder="• Led development of…&#10;• Improved performance by 35%…&#10;• Collaborated with cross-functional teams…"
                 />
               </div>
             </CardContent>
@@ -1274,11 +1312,12 @@ function SummaryStep({
       </div>
 
       <div className="mt-6">
+        <FormattingToolbar value={summary} onChange={onChange} />
         <textarea
           value={summary}
           onChange={(e) => onChange(e.target.value)}
           rows={8}
-          className="flex w-full rounded-lg border border-border bg-surface px-4 py-3 text-sm leading-relaxed text-ink placeholder:text-ink-muted focus-visible:outline-2 focus-visible:outline-brand-500 hover:border-neutral-400"
+          className="flex w-full rounded-b-lg border border-border bg-surface px-4 py-3 text-sm leading-relaxed text-ink placeholder:text-ink-muted focus-visible:outline-2 focus-visible:outline-brand-500 hover:border-neutral-400"
           placeholder="Results-driven software engineer with 5+ years of experience building scalable web applications. Passionate about clean code, performance optimization, and delivering exceptional user experiences…"
         />
         <p className="mt-2 text-xs text-ink-muted">
@@ -1305,70 +1344,133 @@ function SummaryStep({
 
 /* ─── Step 6: Template Selection ─── */
 
-const TEMPLATES = [
-  { id: 'modern-1', name: 'Modern', category: 'Professional' },
-  { id: 'classic-1', name: 'Classic', category: 'Traditional' },
-  { id: 'minimal-1', name: 'Minimal', category: 'Clean' },
-  { id: 'creative-1', name: 'Creative', category: 'Design' },
-  { id: 'executive-1', name: 'Executive', category: 'Senior' },
-  { id: 'tech-1', name: 'Tech Focus', category: 'Engineering' },
-  { id: 'bold-1', name: 'Bold', category: 'Standout' },
-  { id: 'elegant-1', name: 'Elegant', category: 'Corporate' },
-  { id: 'compact-1', name: 'Compact', category: 'Dense' },
-];
+function TemplateStep({
+  template,
+  onChange,
+  onOpenPreview,
+}: {
+  template: string;
+  onChange: (t: string) => void;
+  onOpenPreview?: () => void;
+}) {
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
-function TemplateStep({ template, onChange }: { template: string; onChange: (t: string) => void }) {
+  const filtered = useMemo(() => {
+    let list = getTemplatesByCategory(selectedCategory);
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter((t) =>
+        t.name.toLowerCase().includes(q) ||
+        t.id.toLowerCase().includes(q) ||
+        t.archetype.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [selectedCategory, searchQuery]);
+
   return (
     <div>
-      <h2 className="text-xl font-bold text-ink">Choose a Template</h2>
-      <p className="mt-1 text-sm text-ink-muted">Select a design that best represents your style. You can change it anytime.</p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-ink">Choose a Template</h2>
+          <p className="mt-1 text-sm text-ink-muted">
+            51 canonical layouts with high-fidelity A4 rendering and zero capability loss.
+          </p>
+        </div>
+        {onOpenPreview && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onOpenPreview}
+            className="gap-1.5 self-start sm:self-auto text-brand-600 hover:text-brand-700"
+          >
+            <Eye className="size-3.5" />
+            Full A4 Preview
+          </Button>
+        )}
+      </div>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {TEMPLATES.map((tmpl) => {
-          const isSelected = template === tmpl.id;
+      {/* Filter Tabs and Search Bar */}
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex gap-1.5 overflow-x-auto pb-1">
+          {TEMPLATE_CATEGORIES.map((cat) => (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => setSelectedCategory(cat.id)}
+              className={cn(
+                'rounded-lg px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors',
+                selectedCategory === cat.id
+                  ? 'bg-brand-600 text-white shadow-xs'
+                  : 'bg-surface text-ink-muted hover:bg-neutral-100 hover:text-ink border border-border'
+              )}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="relative w-full sm:w-56">
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search templates…"
+            className="h-8 text-xs pl-8"
+          />
+          <Search className="absolute left-2.5 top-2.5 size-3.5 text-ink-muted pointer-events-none" />
+        </div>
+      </div>
+
+      {/* Template Grid with real thumbnail screenshots */}
+      <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {filtered.map((tmpl) => {
+          const isSelected = (template || 'Cv1') === tmpl.id;
           return (
             <button
               key={tmpl.id}
+              type="button"
               onClick={() => onChange(tmpl.id)}
               className={cn(
-                'group relative overflow-hidden rounded-xl border-2 text-left transition-all',
+                'group relative flex flex-col overflow-hidden rounded-xl border-2 text-left transition-all duration-150',
                 isSelected
-                  ? 'border-brand-500 shadow-lg ring-2 ring-brand-200'
-                  : 'border-border hover:border-brand-300 hover:shadow-md',
+                  ? 'border-brand-600 shadow-xl ring-2 ring-brand-200'
+                  : 'border-border bg-surface hover:border-brand-300 hover:shadow-md'
               )}
             >
-              {/* Template preview placeholder */}
-              <div className="aspect-[3/4] bg-neutral-50 p-4">
-                <div className="h-full rounded-md border border-neutral-200 bg-white p-3">
-                  {/* Simulated resume layout */}
-                  <div className="mb-2 h-3 w-2/3 rounded bg-neutral-200" />
-                  <div className="mb-3 h-2 w-1/3 rounded bg-neutral-100" />
-                  <div className="mb-1 h-1.5 w-full rounded bg-neutral-100" />
-                  <div className="mb-1 h-1.5 w-5/6 rounded bg-neutral-100" />
-                  <div className="mb-3 h-1.5 w-4/6 rounded bg-neutral-100" />
-                  <div className="mb-1 h-2 w-1/3 rounded bg-neutral-200" />
-                  <div className="mb-1 h-1.5 w-full rounded bg-neutral-100" />
-                  <div className="mb-1 h-1.5 w-5/6 rounded bg-neutral-100" />
-                  <div className="mb-3 h-1.5 w-3/4 rounded bg-neutral-100" />
-                  <div className="mb-1 h-2 w-1/4 rounded bg-neutral-200" />
-                  <div className="flex gap-1">
-                    <div className="h-4 w-12 rounded bg-brand-100" />
-                    <div className="h-4 w-10 rounded bg-brand-100" />
-                    <div className="h-4 w-14 rounded bg-brand-100" />
-                  </div>
+              {/* Real Thumbnail Image */}
+              <div className="relative aspect-[3/4] w-full overflow-hidden bg-neutral-100">
+                <img
+                  src={tmpl.thumbnail}
+                  alt={`${tmpl.name} preview`}
+                  className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
+                  loading="lazy"
+                />
+
+                {/* ID pill */}
+                <div className="absolute top-2 left-2 z-10">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-0.5 text-[11px] font-bold text-neutral-800 shadow-sm backdrop-blur-md">
+                    <span className="size-2 rounded-full" style={{ backgroundColor: tmpl.primary }} />
+                    {tmpl.id}
+                  </span>
                 </div>
+
+                {isSelected && (
+                  <div className="absolute top-2 right-2 z-10 flex size-6 items-center justify-center rounded-full bg-brand-600 text-white shadow-md">
+                    <Check className="size-3.5" />
+                  </div>
+                )}
               </div>
 
-              {/* Template info */}
-              <div className="flex items-center justify-between border-t border-border p-3">
-                <div>
-                  <div className="text-sm font-semibold text-ink">{tmpl.name}</div>
-                  <div className="text-xs text-ink-muted">{tmpl.category}</div>
+              {/* Template Meta Info */}
+              <div className="border-t border-border p-3 bg-surface">
+                <div className="flex items-center justify-between">
+                  <div className="font-semibold text-xs text-ink truncate">{tmpl.name}</div>
+                  <span className="text-[10px] uppercase font-bold text-ink-muted">{tmpl.archetype.replace('-', ' ')}</span>
                 </div>
-                {isSelected && (
-                  <div className="flex size-6 items-center justify-center rounded-full bg-brand-600">
-                    <Check className="size-3.5 text-white" />
-                  </div>
+                {tmpl.description && (
+                  <p className="mt-1 text-[11px] text-ink-muted line-clamp-1">{tmpl.description}</p>
                 )}
               </div>
             </button>
@@ -1377,7 +1479,7 @@ function TemplateStep({ template, onChange }: { template: string; onChange: (t: 
       </div>
 
       <p className="mt-6 text-center text-xs text-ink-muted">
-        51 templates available · More templates coming in future updates
+        All 51 canonical templates active · Real visual previews loaded from /templates/
       </p>
     </div>
   );

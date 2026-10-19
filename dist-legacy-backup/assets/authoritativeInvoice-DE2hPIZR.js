@@ -1,0 +1,25 @@
+import{o as e}from"./sanitizeHtml-Ccfv846U.js";function t(e){return String(e??``).replaceAll(`&`,`&amp;`).replaceAll(`<`,`&lt;`).replaceAll(`>`,`&gt;`).replaceAll(`"`,`&quot;`).replaceAll(`'`,`&#39;`)}function n(e,n){let r=Number(e);return Number.isFinite(r)?`${t(n)} ${r.toFixed(2)}`:`Unavailable`}function r(e){return!!(e&&typeof e==`object`&&e.invoiceNumber&&e.paymentOrderId&&e.invoiceDate&&e.currency&&e.supplierSnapshot?.legalName&&e.customerSnapshot?.name&&Array.isArray(e.lineItems)&&Number.isFinite(Number(e.grandTotal)))}function i(e){return!!(e&&typeof e==`object`&&e.documentType===`CREDIT_NOTE`&&e.creditNoteNumber&&e.originalInvoiceNumber&&e.providerRefundId&&e.paymentOrderId&&e.creditNoteDate&&e.currency&&e.supplierSnapshot?.legalName&&e.customerSnapshot?.name&&Array.isArray(e.lineItems)&&Number.isFinite(Number(e.grandTotal)))}function a(a,o){let s=o===`credit-note`;if(s?!i(a):!r(a))throw Error(`The immutable ${s?`credit-note`:`invoice`} record is incomplete.`);let c=window.open(``,`_blank`);if(!c)throw Error(`The ${s?`credit-note`:`invoice`} window was blocked by the browser.`);c.opener=null;let l=a.supplierSnapshot,u=a.customerSnapshot,d=s?a.creditNoteNumber:a.invoiceNumber,f=s?a.creditNoteTitle||`GST Credit Note`:a.invoiceTitle,p=s?a.creditNoteDate:a.invoiceDate,m=s?`Credit note number`:`Invoice number`,h=s||a.paymentStatus===`REFUNDED`?`REFUNDED`:`PAID`,g=h===`PAID`?`#047857`:`#7e22ce`,_=a.lineItems.map(e=>`
+    <tr>
+      <td>${t(e.description)}</td>
+      <td>${t(e.sacCode)}</td>
+      <td>${t(e.quantity)}</td>
+      <td class="number">${n(e.taxableValue,a.currency)}</td>
+      <td class="number">${n(e.total,a.currency)}</td>
+    </tr>`).join(``),v=s?`<div><div class="label">Original invoice</div><strong>${t(a.originalInvoiceNumber)}</strong></div><div><div class="label">Provider refund reference</div><strong>${t(a.providerRefundId)}</strong></div>`:`<div><div class="label">Payment reference</div><strong>${t(a.paymentReference)}</strong></div>`,y=s?`<div class="box reason"><div class="label">Refund reason</div>${t(a.refundReason)}</div>`:``,b=`<!doctype html>
+<html><head><title>${s?`Credit Note`:`Invoice`} ${t(d)}</title><style>
+  body{font-family:Arial,sans-serif;color:#172033;margin:36px;line-height:1.45}
+  header{display:flex;justify-content:space-between;gap:24px;border-bottom:3px solid #4338ca;padding-bottom:18px}
+  h1{font-size:24px;margin:0;color:#312e81}.muted{color:#64748b;font-size:12px}.badge{font-weight:800;color:${g}}
+  .meta,.parties{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:24px}.box{border:1px solid #dbe2ea;border-radius:10px;padding:16px}.reason{margin-top:18px}
+  .label{font-size:10px;text-transform:uppercase;font-weight:800;color:#64748b}table{width:100%;border-collapse:collapse;margin-top:24px}
+  th,td{padding:10px;border-bottom:1px solid #e2e8f0;text-align:left;font-size:12px}th{background:#f8fafc}.number{text-align:right}
+  .totals{margin:20px 0 0 auto;width:320px}.totals div{display:flex;justify-content:space-between;padding:4px 0}.grand{font-size:16px;font-weight:800;border-top:2px solid #94a3b8;margin-top:6px;padding-top:8px!important}
+  footer{margin-top:36px;border-top:1px solid #e2e8f0;padding-top:12px;font-size:10px;color:#64748b}@media print{body{margin:18mm}}
+</style></head><body>
+<header><div><h1>${t(l.tradeName||l.legalName)}</h1><div class="muted">${t(f)}</div></div><div><div class="badge">${h}</div><div>${t(a.formattedDate||p)}</div></div></header>
+<div class="meta"><div><div class="label">${m}</div><strong>${t(d)}</strong></div>${v}</div>
+<div class="parties"><div class="box"><div class="label">Supplier</div><strong>${t(l.legalName)}</strong><br>${t(l.address)}, ${t(l.city)}, ${t(l.state)} ${t(l.pincode)}<br>GSTIN: ${t(l.gstin)} · PAN: ${t(l.pan)}<br>SAC: ${t(l.sacCode)}</div><div class="box"><div class="label">Customer</div><strong>${t(u.name)}</strong>${u.company?`<br>${t(u.company)}`:``}<br>${t(u.address)}, ${t(u.city)}, ${t(u.state)}<br>${t(u.email)}${u.gstin?`<br>GSTIN: ${t(u.gstin)}`:``}</div></div>
+${y}<table><thead><tr><th>Description</th><th>SAC</th><th>Qty</th><th class="number">Taxable value</th><th class="number">Total</th></tr></thead><tbody>${_}</tbody></table>
+<div class="totals"><div><span>Taxable value</span><span>${n(a.taxableAmount,a.currency)}</span></div><div><span>CGST</span><span>${n(a.cgstAmount,a.currency)}</span></div><div><span>SGST</span><span>${n(a.sgstAmount,a.currency)}</span></div><div><span>IGST</span><span>${n(a.igstAmount,a.currency)}</span></div><div class="grand"><span>${s?`Total credited`:`Grand total`}</span><span>${n(a.grandTotal,a.currency)}</span></div></div>
+<p><strong>Amount in words:</strong> ${t(a.amountInWords)}</p><footer>This document renders the immutable server-issued ${s?`credit note`:`invoice`} record for payment order ${t(a.paymentOrderId)}. Supplier and customer details are historical snapshots, not current profile settings.</footer>
+</body></html>`;e(c,b),c.focus(),c.print()}function o(e){return a(e,`invoice`)}function s(e){return a(e,`credit-note`)}export{o as i,r as n,s as r,i as t};

@@ -2,11 +2,11 @@
   "id": "DIR-006",
   "title": "Surface 5 Modernization: Complete 24-Module Admin Console, In-App Blog Editor, Maintenance Controller & AI Provider Orchestration",
   "priority": "P0",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-18T08:56:00.000Z",
-  "updatedAt": "2026-10-18T21:04:58.510Z",
+  "updatedAt": "2026-10-18T21:05:03.819Z",
   "projectRoot": "d:\\xampp\\htdocs\\IME365",
   "spec": "# IME365 DIR-006 — SURFACE 5 MASTER ENGINEERING DIRECTIVE\n## Surface 5 Modernization: Complete 24-Module Admin Console, In-App Blog Editor, Maintenance Controller & AI Provider Orchestration\n\n**Directive ID:** DIR-006  \n**Priority:** P0 — Critical  \n**Surface:** Surface 5 of 5 (Admin Console & Complete Platform Operations)  \n**Depends On:** DIR-005 (Unlocks automatically when DIR-005 is certified & frozen)  \n**Executive Engineering Lead:** Antigravity (Google DeepMind)  \n**Implementation Engine:** Claude Code CLI  \n\n---\n\n### 1. Objective & Scope\nModernize the complete Super Admin Console and platform control operations in React 19 / TypeScript / Vite / Tailwind CSS v4 with Cuba M3 executive glassmorphic styling, ensuring 100% functional parity with legacy implementations in `src/components/admin/`:\n\n1. **Twenty-Four Sub-Modules Parity (NO 7-TAB TRUNCATION SHORTCUT)**:\n   - **CRITICAL ANTI-TRUNCATION INVARIANT**: The developer MUST NOT reduce the admin console to 7 generic tabs. All 24 sub-directories in `src/components/admin/` must be preserved:\n     1. **`health`**: System Health, Apache server status, MariaDB connection pool, and Node.js process telemetry.\n     2. **`dashboard`**: Global analytics, MRR, active users, candidate registrations, and conversion metrics.\n     3. **`usersManager`**: User 360 directory, user search, filtering, account suspension, and account deletion.\n     4. **`userEdit`**: User profile editor, password resets, role assignment (Admin, Recruiter, Candidate), and quota overrides.\n     5. **`operators`**: Super Admin operator accounts, session management, and operator audit trail.\n     6. **`employerApplications`**: Employer account verification, company registration documents review, and approval/rejection workflows.\n     7. **`companyManagement`**: Verified company badges, domain verification claims, and company directory.\n     8. **`jobsManager`**: Global job postings moderation, editing, spam flagging, and feature status toggles.\n     9. **`settings` (AI Provider Orchestration)**: Multi-provider orchestration (NVIDIA NIM, Gemini, Groq, custom model IDs), API key configuration, and post-save secret masking.\n     10. **AI Benchmarks**: Live model latency, token throughput, error rate telemetry, and circuit breaker status.\n     11. **`queues`**: Background job queue monitor (emails, AI synthesis, PDF exports) and dead-letter queue retries.\n     12. **Durable Outbox Monitor**: Outbox event processor telemetry, failure counters, and manual event resending.\n     13. **`phrases`**: ATS phrase dictionary, industry keywords, and prohibited scam terms.\n     14. **`HelpDesk`**: Customer support ticket resolution desk, ticket assignment, and email replies.\n     15. **`audit`**: Platform security audit logs, IP logs, auth attempts, and exportable event trails.\n     16. **`attention`**: Critical system incidents, failed webhooks, and operational alert banners.\n     17. **`operations`**: Database backup triggers, cache invalidation, and dual-database sync status.\n     18. **`tenants`**: Enterprise tenant organizations list, tier overrides, and custom quota limits.\n     19. **`messages`**: Platform-wide broadcast notifications and banner announcements.\n     20. **`landingPages`**: Dynamic landing page builder, hero CTA configuration, and marketing banners.\n     21. **`blogManagement`**: CMS articles directory, categories, tags, and comment moderation.\n     22. **`reviews`**: Candidate and employer testimonials moderation and Trustpilot badges.\n     23. **`TrustedBy`**: Enterprise client trust logos management.\n     24. **`command`**: Super Admin command palette and operational quick-actions.\n\n2. **In-App CMS Blog & Article Editor (`/blog-editor` & `/blog-editor/:postId`)**:\n   - Preserve the full `BlogEditor.jsx` application for authorized authors and admins.\n   - Article creation, draft autosaving, markdown/rich-text editor, hero banner upload, category/tag assignment, SEO meta tags, and publication scheduler.\n\n3. **Platform Maintenance Mode Controller**:\n   - Global platform maintenance mode toggle stored in MariaDB (`systemHealth.maintenanceMode`).\n   - Custom maintenance message and emergency bypass for authenticated administrators.\n\n4. **Payment Gateway & Invoicing Administration**:\n   - Live configuration of payment providers (Stripe, Razorpay, Paytm) with write-only secrets handling.\n   - Global invoice audit table, refund processing, and subscription reconciler triggers.\n\n5. **Security & Secret Protection Invariants**:\n   - Zero plaintext secret leakage in API payloads, DOM, or client state.\n   - Post-save masking: clear secret inputs and display only active status badge.\n   - Enforce Super Admin authorization guard on every admin route and action.\n\n6. **Final Integrated Regression & Five-Surface Verification**:\n   - Full cross-surface regression verification.\n   - Complete Playwright crawl across all 5 modernized surfaces with zero console errors.\n   - Final Gatekeeper independent audit and release freeze.\n\n---\n\n### 2. Invariants\n- ZERO CAPABILITY LOSS: All 24 sub-modules, Blog Editor, and Maintenance Controller preserved.\n- ZERO PLAINTEXT TOKEN LEAKAGE: Server-only secret storage.\n- WCAG 2.1 AA ACCESSIBILITY & Sub-4s build.",
   "invariants": [
@@ -85,11 +85,32 @@
       }
     }
   ],
-  "freeze": null,
+  "freeze": {
+    "freezeHash": "5fbbed82b99cb4fc3ec1e231bf6cba591507c08c",
+    "certifiedAt": "2026-10-18T21:05:03.819Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "",
+    "evidenceHash": "feb4aec2ae356db116a78fada8b5ccc9c37cd2d1ab93ca90e9b127acf8500982",
+    "automated": true,
+    "certificationKind": "automated",
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "non-tty",
+      "automated": true,
+      "reasons": [
+        "non-tty"
+      ],
+      "pid": 32332,
+      "parentPid": 33912,
+      "tty": false,
+      "at": "2026-10-18T21:05:02.987Z",
+      "explicitlyAllowed": true
+    }
+  },
   "heartbeats": [],
   "lastHeartbeatAt": null,
   "continuationPending": false,
-  "lastTransitionReason": "lead review",
+  "lastTransitionReason": "gatekeeper certification",
   "revisionTarget": null,
   "planApproval": {
     "approvedAt": "2026-10-18T21:04:47.459Z",

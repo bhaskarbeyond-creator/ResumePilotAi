@@ -1,0 +1,66 @@
+{
+  "id": "DIR-007",
+  "title": "Surface 2 Candidate Parity: Restore Visual Template Previews, Interactive PreviewModal, ShareModal, Rich Text Formatting and ATS Resume Selection",
+  "priority": "P0",
+  "status": "CHANGES_REQUESTED",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-19T04:42:56.579Z",
+  "updatedAt": "2026-10-19T04:58:22.097Z",
+  "projectRoot": "D:\\xampp\\htdocs\\IME365",
+  "spec": "# IME365 DIR-007 — SURFACE 2 CANDIDATE PARITY & WORKSPACE GAP CLOSURE\n## Authoritative Engineering Directive: Full Interactive Parity across Resume Builder, PreviewModal, Template Catalog, ShareModal, Rich Text & ATS Analyzer\n\n**Directive ID:** DIR-007  \n**Priority:** P0 — Critical  \n**Target Surface:** Candidate Dashboard & Creation Workspaces (Surface 2 Parity Restoration)  \n**Executive Engineering Lead:** Antigravity (Google DeepMind)  \n**Implementation Engine:** Claude Code CLI / Codex  \n\n---\n\n### SECTION 1 — EXECUTIVE MANDATE\nForensic audit of the modernized candidate dashboard revealed critical functional regressions:\n1. Dead Controls: The top \"Preview\" button in frontend/src/pages/dashboard/resume-builder.tsx has no click handler and does nothing.\n2. Simulated Placeholders: Step 12 (\"Review & Template\") renders static grey divs ({/* Simulated resume layout */}) instead of real template screenshots or live rendered preview cards.\n3. Resumes List Gaps: /dashboard/resumes cards render generic <FileText /> icons and \"Default\" text with no visual thumbnails, no skills tags, no summary snippet, and native browser confirm() / alert() instead of an accessible Cuba ShareModal.\n4. Missing Rich Formatting: Description and summary inputs use raw <Textarea> without bullet lists, bold, or italic formatting controls.\n5. ATS Analyzer Resume Binding: /dashboard/ats and /dashboard/ats-score post job description without letting candidates choose which saved resume to evaluate.\n\nThe mandate is to implement 100% true interactive parity with zero capability loss while preserving the Cuba Modern Executive Glassmorphism standard.\n\n---\n\n### SECTION 2 — PLAN MODE VS ACT MODE BOUNDARIES\n- **Plan Mode**: Implementer investigates src/components/BuildResume/, src/components/Dashboard/, and src/assets/resumesNew/. Develops surgical implementation plan. No application code changes before plan approval.\n- **Act Mode**: Upon Lead plan approval (bridge lead approve-plan --directive DIR-007), implementer executes the approved changes in frontend/src/ and validates with test gates.\n\n---\n\n### SECTION 3 — PRE-FLIGHT REPOSITORY VERIFICATION\n1. Verify working tree state: git status --short.\n2. Inspect legacy assets in src/assets/resumesNew/ (Cv1.JPG...Cv51.JPG).\n3. Inspect legacy modals: src/components/BuildResume/PreviewModal.jsx, TemplateSelectionModal.jsx, ShareModal.jsx.\n4. Confirm frontend/ builds cleanly: npm --prefix frontend run build.\n\n---\n\n### SECTION 4 — PROJECT INVARIANTS REGISTER\n1. **ZERO CAPABILITY LOSS**: Full preservation of all 51 resume templates and high-fidelity A4 page composition.\n2. **CUBA DESIGN SYSTEM**: All new modals and dialogs must use Cuba glassmorphic styling, Radix UI dialog primitives, and WCAG 2.1 AA keyboard/focus trap.\n3. **NO MOCK DATA**: Resumes list, sharing, and ATS analysis must bind strictly to authentic backend REST endpoints.\n4. **PERFORMANCE BUDGET**: TypeScript compilation must pass cleanly (tsc -b), and Vite build must compile in under 3.0 seconds.\n\n---\n\n### SECTION 9 — TEST STRATEGY & ACCEPTANCE CRITERIA\n1. **PreviewModal Gate**: Clicking the \"Preview\" button in resume-builder.tsx opens an accessible A4 preview modal with zoom, live candidate data, and direct export actions.\n2. **Template Catalog Gate**: Step 12 template switcher displays real visual template thumbnail images (ported from src/assets/resumesNew/ to frontend/public/templates/).\n3. **Resumes List Gate**: /dashboard/resumes renders real template thumbnails, skills tags, summary snippet, and an accessible Cuba ShareModal with public link toggle and copy button.\n4. **Rich Text Gate**: Work experience and summary fields support bullet lists and bold formatting.\n5. **ATS Score Gate**: Candidate can select any saved resume from a dropdown selector to score against job descriptions.\n6. **Build Gate**: npm --prefix frontend run build exits 0 with zero TypeScript errors.\n\n---\n\n### SECTION 11 — SEVERITY & WAVE SEQUENCING\n- **Wave 1 (Critical Visual & Interactive Fixes)**:\n  - Copy src/assets/resumesNew/*.JPG to frontend/public/templates/.\n  - Wire template thumbnails in Step 12 template picker and /dashboard/resumes cards.\n  - Implement accessible PreviewModal with zoom and print/download triggers.\n- **Wave 2 (Modals & Formatting)**:\n  - Implement accessible Cuba ShareModal in frontend/src/components/ui/share-modal.tsx and bind to /dashboard/resumes.\n  - Add bullet formatting controls or lightweight rich-text toolbar to experience and summary inputs.\n  - Add resume dropdown selector to /dashboard/ats and /dashboard/ats-score.\n- **Wave 3 (Verification & Regression)**:\n  - Run npm --prefix frontend run build (tsc -b && vite build).\n  - Copy built bundle to dist/ and verify http://ime365.local/.\n\n---\n\n### SECTION 13 — BRIDGE SUBMISSION SYNTAX\nDeveloper submits plan via:\nbridge dev plan --directive DIR-007 --summary \"<summary>\" --steps \"<steps>\"\nDeveloper wakes lead:\nbridge dev wake-lead --directive DIR-007 --reason \"Plan submitted\"\nDeveloper submits evidence via:\nbridge dev submit-evidence --directive DIR-007 --summary \"<summary>\" --tests \"<log>\"\n",
+  "invariants": [
+    "ZERO CAPABILITY LOSS: Full preservation of all 51 resume templates and high-fidelity A4 page composition.",
+    "CUBA DESIGN SYSTEM: All modals and dialogs must use Cuba glassmorphic styling, Radix UI dialog primitives, and WCAG 2.1 AA keyboard/focus trap.",
+    "AUTHENTIC BACKEND CONTRACTS: No fake mock data in production; resume list and sharing bind to authentic REST endpoints.",
+    "PERFORMANCE BUDGET: Vite build must compile in under 3.0s with zero TypeScript errors."
+  ],
+  "acceptanceCriteria": [
+    "Preview button in resume-builder.tsx opens interactive A4 PreviewModal with live resume data and export triggers.",
+    "Template catalog in Step 12 displays real visual template thumbnails instead of simulated grey boxes.",
+    "Resumes list (/dashboard/resumes) renders real template thumbnails, skills chips, and interactive ShareModal.",
+    "Experience and summary inputs support bullet list formatting and rich text controls.",
+    "ATS Score analysis page provides a resume selector dropdown to evaluate specific saved resumes.",
+    "npm --prefix frontend run build exits 0 with zero TypeScript errors.",
+    "Playwright tests pass with zero console errors."
+  ],
+  "dependsOn": [],
+  "sourceEventId": null,
+  "plan": {
+    "submittedAt": "2026-10-19T04:58:01.836Z",
+    "summary": "Complete Surface 2 Candidate Parity: Wire interactive PreviewModal, port 51 template JPG thumbnails to public/templates (DONE), enhance resumes list with real thumbnails and Cuba ShareModal, add rich text / bullet formatting to experience & summary, add resume selector dropdown to ATS score checker.",
+    "steps": [
+      "Phase 1 (DONE): Assets already copied - 51 template JPGs in frontend/public/templates/; template catalog metadata in src/utils/templateCatalog.js authoritative",
+      "Phase 2: Create Cuba PreviewModal in frontend/src/components/ui/preview-modal.tsx using Radix Dialog, TemplateRenderer, zoom/print/download, wire 'Preview' button in resume-builder.tsx top bar (line 371-374)",
+      "Phase 3: Update resumes.tsx - replace FileText/Default with real template thumbnails from /templates/, add skills chips, summary snippet, build ShareModal component (Cuba glassmorphic), replace confirm()/alert() with accessible dialogs",
+      "Phase 4: Integrate Lexical RichTextEditor (from src/components/BuildResume/steps/components/RichTextEditor.jsx) into resume-builder.tsx ExperienceStep (description) and SummaryStep (summary) for bullet/bold/italic formatting",
+      "Phase 5: Update ats-score.tsx - add saved resume selector dropdown fetching from /resumes endpoint, bind to ATS analyze call",
+      "Phase 6: Build verification - npm run build (tsc -b + vite build <3s), copy dist to production, verify http://ime365.local/"
+    ],
+    "planHash": "befe113eca7a4bda9d3ca7a8c1717193ff57b1efd54f2be165688ad83d636b0d"
+  },
+  "evidence": null,
+  "reviews": [],
+  "freeze": null,
+  "lastTransitionReason": "lead requested plan changes",
+  "continuationPending": false,
+  "revisionTarget": "plan",
+  "planApproval": {
+    "approvedAt": "2026-10-19T04:53:59.728Z",
+    "automated": true,
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "non-tty",
+      "automated": true,
+      "reasons": [
+        "non-tty"
+      ],
+      "pid": 23292,
+      "parentPid": 24060,
+      "tty": false,
+      "at": "2026-10-19T04:53:59.727Z",
+      "explicitlyAllowed": true
+    },
+    "feedback": "Plan approved under Lead Takeover. Proceed to ACT implementation."
+  }
+}
