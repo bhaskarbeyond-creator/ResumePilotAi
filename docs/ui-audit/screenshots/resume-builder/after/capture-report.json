@@ -1,0 +1,118 @@
+{
+  "surface": "resume-builder",
+  "phase": "after",
+  "capturedAt": "2026-10-20T03:55:06.847Z",
+  "baseURL": "http://127.0.0.1:4000",
+  "pages": [
+    {
+      "profile": "desktop-1920",
+      "route": "/build-resume/res_audit_seed_1/summary",
+      "click": null,
+      "finalUrl": "/build-resume/res_audit_seed_1/summary",
+      "file": "desktop-1920__build_resume_res_audit_seed_1_summary.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "desktop-1920",
+      "route": "/build-resume?new=true",
+      "click": null,
+      "finalUrl": "/build-resume",
+      "file": "desktop-1920__build_resume_new_true.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/build-resume/res_audit_seed_1/summary",
+      "click": null,
+      "finalUrl": "/build-resume/res_audit_seed_1/summary",
+      "file": "laptop-1366__build_resume_res_audit_seed_1_summary.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/build-resume?new=true",
+      "click": null,
+      "finalUrl": "/build-resume",
+      "file": "laptop-1366__build_resume_new_true.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/build-resume/res_audit_seed_1/summary",
+      "click": null,
+      "finalUrl": "/build-resume/res_audit_seed_1/summary",
+      "file": "tablet-1024__build_resume_res_audit_seed_1_summary.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/build-resume?new=true",
+      "click": null,
+      "finalUrl": "/build-resume",
+      "file": "tablet-1024__build_resume_new_true.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/build-resume/res_audit_seed_1/summary",
+      "click": null,
+      "finalUrl": "/build-resume/res_audit_seed_1/summary",
+      "file": "mobile-390__build_resume_res_audit_seed_1_summary.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/build-resume?new=true",
+      "click": null,
+      "finalUrl": "/build-resume",
+      "file": "mobile-390__build_resume_new_true.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/build-resume/res_audit_seed_1/summary",
+      "click": null,
+      "finalUrl": "/build-resume/res_audit_seed_1/summary",
+      "file": "mobile-320__build_resume_res_audit_seed_1_summary.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/build-resume?new=true",
+      "click": null,
+      "finalUrl": "/build-resume",
+      "file": "mobile-320__build_resume_new_true.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    }
+  ]
+}

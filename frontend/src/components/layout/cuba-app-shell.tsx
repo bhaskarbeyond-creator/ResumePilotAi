@@ -124,6 +124,13 @@ interface CubaAppShellProps {
   onDownload?: (format: 'pdf' | 'docx' | 'txt' | 'latex') => void;
 }
 
+
+/** Step segments of the resume builder route (see `BuilderStep` in pages/dashboard/resume-builder.tsx). */
+const RESUME_BUILDER_STEPS = new Set([
+  'heading', 'experience', 'education', 'skills', 'summary', 'template', 'certifications',
+  'achievements', 'projects', 'languages', 'references', 'custom', 'review',
+]);
+
 export function CubaAppShell({
   children,
   breadcrumbOverride,
@@ -261,7 +268,9 @@ export function CubaAppShell({
     } else if (segments[0] === 'build-resume') {
       crumbs.push({ label: 'Resumes & Master CV', href: '/dashboard/resumes', isLast: false });
       crumbs.push({ label: 'Build Resume', href: '/build-resume', isLast: false });
-      crumbs.push({ label: params.resumeId || 'New Resume', href: '#', isLast: true });
+      // `/build-resume/:id?/:step?`: a second segment that is not a step name is a saved resume.
+      const editingSavedResume = Boolean(segments[1]) && !RESUME_BUILDER_STEPS.has(segments[1]);
+      crumbs.push({ label: editingSavedResume ? 'Edit Resume' : 'New Resume', href: '#', isLast: true });
     } else if (segments[0] === 'coverletter' || segments[0] === 'cover-letter') {
       crumbs.push({ label: 'Cover Letters', href: '/dashboard/cover-letters', isLast: false });
       crumbs.push({ label: 'Cover Letter Studio', href: segments[0], isLast: false });

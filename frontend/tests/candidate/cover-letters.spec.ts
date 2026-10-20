@@ -533,6 +533,8 @@ test.describe('Cover letters (account A)', () => {
     if (isCompact(page)) {
       await page.getByRole('button', { name: 'Preview', exact: true }).click();
       await expect(page.locator('#cover-letter-preview')).toBeVisible();
+      // Scan the settled colours, not the 150 ms colour transition of the toggle buttons.
+      await settleAnimations(page.getByRole('group', { name: 'Builder view' }));
       await expectNoAxeViolations(page, '#main-content');
     }
   });

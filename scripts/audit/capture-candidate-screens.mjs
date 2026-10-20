@@ -14,6 +14,8 @@
  * after the page loads, for states that need one real interaction.
  *
  * Env: E2E_BASE_URL (default http://127.0.0.1:4000),
+ *      E2E_STORAGE_STATE (signed-in state to load; default: the candidate
+ *      suite's account A state, which is scoped to the default origin),
  *      PLAYWRIGHT_CHROMIUM_EXECUTABLE (optional browser binary).
  */
 import fs from 'node:fs';
@@ -51,7 +53,7 @@ const describeUrl = (raw) => {
   const url = new URL(raw);
   return url.origin === new URL(baseURL).origin ? url.pathname : url.href;
 };
-const storageState = path.join(repoRoot, 'frontend', 'test-results', '.auth', 'candidate-a.json');
+const storageState = process.env.E2E_STORAGE_STATE || path.join(repoRoot, 'frontend', 'test-results', '.auth', 'candidate-a.json');
 const outDir = path.join(repoRoot, 'docs', 'ui-audit', 'screenshots', surface, phase);
 fs.mkdirSync(outDir, { recursive: true });
 

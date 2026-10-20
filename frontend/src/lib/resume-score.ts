@@ -37,7 +37,25 @@ export function resumeScoreInput(row: unknown): Record<string, unknown> | null {
     const value = parseMaybeJson(source[field]);
     source[field] = Array.isArray(value) ? value : [];
   }
+  source.skills = flattenSkillGroups(source.skills as unknown[]);
   return source;
+}
+
+/**
+ * Resumes saved by the builder before P002 C6 store skills as `{ category, skills: [...] }`
+ * groups, which the scorer cannot read (it expects one item per skill). Expand them so those
+ * skills are scored instead of silently counted as zero.
+ */
+function flattenSkillGroups(skills: unknown[]): unknown[] {
+  return skills.flatMap((item) => {
+    if (!item || typeof item !== 'object' || !Array.isArray((item as { skills?: unknown }).skills)) return [item];
+    const group = item as { category?: unknown; skills: unknown[] };
+    const category = typeof group.category === 'string' ? group.category : '';
+    return group.skills
+      .map((skill) => (typeof skill === 'string' ? skill : (skill as { name?: unknown } | null)?.name))
+      .filter((name): name is string => typeof name === 'string' && name.trim() !== '')
+      .map((name) => ({ name: name.trim(), category }));
+  });
 }
 
 export function scoreResume(row: unknown, options?: { jobDescription?: string }): AtsScoreResult | null {
