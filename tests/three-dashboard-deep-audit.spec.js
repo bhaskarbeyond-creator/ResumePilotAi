@@ -28,22 +28,48 @@ test.afterAll(async () => {
   }
 });
 
+import crypto from 'crypto';
+
+const TEST_SECRET = process.env.TEST_AUTH_HMAC_SECRET || 'local-test-auth-hmac-secret-super-secure-32chars';
+
+function makeToken(payload) {
+  const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const sig = crypto.createHmac('sha256', TEST_SECRET).update(body).digest('hex');
+  return `rptest.${body}.${sig}`;
+}
+
 async function bootSession(page, role = 'SUPER_ADMIN') {
-  await page.addInitScript((userRole) => {
+  const payload = {
+    uid: 'audit_super_admin_999',
+    email: 'audit-officer@ime365.ai',
+    role,
+    exp: Math.floor(Date.now() / 1000) + 86400 * 365,
+  };
+  const token = makeToken(payload);
+  const record = {
+    uid: payload.uid,
+    email: payload.email,
+    role,
+    roles: [role],
+    emailVerified: true,
+    displayName: 'Executive Security Auditor',
+    token,
+  };
+
+  await page.route('**/api/users-data/profile', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ success: true, user: { email: payload.email, role } }),
+    });
+  });
+
+  await page.addInitScript((sessionData) => {
     localStorage.clear();
     sessionStorage.clear();
-    localStorage.setItem(
-      'ime_dev_user',
-      JSON.stringify({
-        uid: 'audit_super_admin_999',
-        email: 'audit-officer@ime365.ai',
-        role: userRole,
-        roles: [userRole],
-        emailVerified: true,
-        displayName: 'Executive Security Auditor',
-      })
-    );
-  }, role);
+    localStorage.setItem('ime_dev_user', JSON.stringify(sessionData));
+    localStorage.setItem('token', sessionData.token);
+  }, record);
 
   const consoleErrors = [];
   page.on('console', (msg) => {

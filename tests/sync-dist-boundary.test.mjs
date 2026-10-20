@@ -9,6 +9,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { resolveSyncPlan, syncDist, SyncBoundaryError } from '../scripts/sync-dist.mjs';
 
@@ -94,7 +95,7 @@ test('environment files are never copied into the DocumentRoot', () => {
 });
 
 test('the real script resolves both paths inside this repository', () => {
-  const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+  const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
   const output = execFileSync(process.execPath, [path.join(repoRoot, 'scripts', 'sync-dist.mjs'), '--check'], { encoding: 'utf8' });
   const plan = JSON.parse(output);
   const realRoot = fs.realpathSync(repoRoot);
@@ -104,7 +105,7 @@ test('the real script resolves both paths inside this repository', () => {
 });
 
 test('frontend build script still chains the sync step after a successful vite build', () => {
-  const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+  const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
   const pkg = JSON.parse(fs.readFileSync(path.join(repoRoot, 'frontend', 'package.json'), 'utf8'));
   assert.match(pkg.scripts.build, /tsc -b && vite build && node \.\.\/scripts\/sync-dist\.mjs$/);
 });
