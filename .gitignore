@@ -140,4 +140,5 @@ temp_inspect/
 archive_list.txt
 /.bridge/tmp/
 /.bridge/evidence/*-artifacts/
+tests/screenshots/
 
