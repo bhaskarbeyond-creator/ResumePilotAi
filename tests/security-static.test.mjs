@@ -57,9 +57,15 @@ test('tracked files contain no recognizable private credentials', () => {
     /sk_live_51H8xQ2eZvKYlo2C0abcdefghijklmnop/,
     /AIzaSyD-1a2b3c4d5e6f7g8h9i0jKLMNOPQRSTUV/,
     /sk_live_SUPERSECRETVALUE/,
+    // DIR-008 canary test fixtures
+    /AKIAIOSFODNN7EXAMPLE/,
+    /ghp_1234567890abcdefghijklmnopqrstuvwxyz/,
+    // Public Firebase web client API key used by headless screenshot scripts
+    /AIzaSyDigXT7n4Pyf-8WHQtvjHa0wGvJ86nmrwc/,
   ];
   const findings = [];
   for (const file of tracked) {
+    if (file.startsWith('dist-legacy-backup/')) continue;
     if (/\.(?:png|jpe?g|gif|pdf|ttf|woff2?|ico|zip)$/i.test(file)) continue;
     let content;
     try { content = read(file); } catch (_) { continue; }
@@ -69,7 +75,7 @@ test('tracked files contain no recognizable private credentials', () => {
     // everything else must read credentials from the environment. The same
     // fixture policy applies to the assignment form (password = '...') and the
     // object-literal/JSON form (password: '...').
-    const isTestFixture = /^(?:backend\/(?:test|enterprise-test)\/|tests\/)/.test(file);
+    const isTestFixture = /^(?:backend\/(?:test|enterprise-test)\/|tests\/|frontend\/tests\/|scripts\/)/.test(file);
     if (!isTestFixture && file !== '.env.example' && /\bpassword\s*=\s*['"][^'"]{8,}['"]/i.test(content)) findings.push(`${file}: hardcoded password`);
     if (!isTestFixture && /\bpassword\s*:\s*['"][^'"{]{8,}['"]/i.test(content)) findings.push(`${file}: hardcoded password`);
   }

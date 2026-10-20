@@ -601,10 +601,10 @@ function ModulesConfigPanel({ onToast }: { onToast: (type: 'success' | 'error' |
 function PaymentsConfigPanel({ onToast }: { onToast: (type: 'success' | 'error' | 'info', text: string) => void }) {
   const [currency, setCurrency] = useState<string>('INR');
   const [razorpayEnabled, setRazorpayEnabled] = useState<boolean>(true);
-  const [razorpayKeyId, setRazorpayKeyId] = useState<string>('rzp_test_PlatformMasterKey');
+  const [razorpayKeyId, setRazorpayKeyId] = useState<string>('');
   const [razorpaySecret, setRazorpaySecret] = useState<string>('');
   const [stripeEnabled, setStripeEnabled] = useState<boolean>(true);
-  const [stripePublishableKey, setStripePublishableKey] = useState<string>('pk_test_PlatformStripeKey');
+  const [stripePublishableKey, setStripePublishableKey] = useState<string>('');
   const [stripeSecret, setStripeSecret] = useState<string>('');
   const [gstPercentage, setGstPercentage] = useState<number>(18);
   const [testingProvider, setTestingProvider] = useState<string | null>(null);
