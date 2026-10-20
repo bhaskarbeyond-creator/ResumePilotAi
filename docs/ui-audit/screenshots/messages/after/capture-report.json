@@ -1,0 +1,396 @@
+{
+  "surface": "messages",
+  "phase": "after",
+  "capturedAt": "2026-10-20T14:10:11.015Z",
+  "baseURL": "http://127.0.0.1:4000",
+  "pages": [
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/messages",
+      "click": null,
+      "label": "module-off",
+      "finalUrl": "/dashboard/messages",
+      "file": "desktop-1920__dashboard_messages__module-off.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 403 (Forbidden) [/api/messages/conversations]"
+      ],
+      "failedRequests": [],
+      "failedApi": [
+        "403 GET /api/messages/conversations"
+      ]
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/messages",
+      "click": null,
+      "label": "module-off",
+      "finalUrl": "/dashboard/messages",
+      "file": "laptop-1366__dashboard_messages__module-off.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 403 (Forbidden) [/api/messages/conversations]"
+      ],
+      "failedRequests": [],
+      "failedApi": [
+        "403 GET /api/messages/conversations"
+      ]
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/messages",
+      "click": null,
+      "label": "module-off",
+      "finalUrl": "/dashboard/messages",
+      "file": "tablet-1024__dashboard_messages__module-off.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 403 (Forbidden) [/api/messages/conversations]"
+      ],
+      "failedRequests": [],
+      "failedApi": [
+        "403 GET /api/messages/conversations"
+      ]
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/messages",
+      "click": null,
+      "label": "module-off",
+      "finalUrl": "/dashboard/messages",
+      "file": "mobile-390__dashboard_messages__module-off.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 403 (Forbidden) [/api/messages/conversations]"
+      ],
+      "failedRequests": [],
+      "failedApi": [
+        "403 GET /api/messages/conversations"
+      ]
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/messages",
+      "click": null,
+      "label": "module-off",
+      "finalUrl": "/dashboard/messages",
+      "file": "mobile-320__dashboard_messages__module-off.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 403 (Forbidden) [/api/messages/conversations]"
+      ],
+      "failedRequests": [],
+      "failedApi": [
+        "403 GET /api/messages/conversations"
+      ]
+    },
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/messages",
+      "click": null,
+      "label": "list-unread",
+      "finalUrl": "/dashboard/messages",
+      "file": "desktop-1920__dashboard_messages__list-unread.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/messages",
+      "click": null,
+      "label": "list-unread",
+      "finalUrl": "/dashboard/messages",
+      "file": "laptop-1366__dashboard_messages__list-unread.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/messages",
+      "click": null,
+      "label": "list-unread",
+      "finalUrl": "/dashboard/messages",
+      "file": "tablet-1024__dashboard_messages__list-unread.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/messages",
+      "click": null,
+      "label": "list-unread",
+      "finalUrl": "/dashboard/messages",
+      "file": "mobile-390__dashboard_messages__list-unread.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/messages",
+      "click": null,
+      "label": "list-unread",
+      "finalUrl": "/dashboard/messages",
+      "file": "mobile-320__dashboard_messages__list-unread.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/messages?conversationId=198e2f77e3cfb5b882fa749d239deeca26ca5f39d490782391f2b351479730ce",
+      "click": null,
+      "label": "thread",
+      "finalUrl": "/dashboard/messages",
+      "file": "desktop-1920__dashboard_messages_conversationId_198e2f77e3cfb5b882fa749d239deeca26ca5f39d490782391f2b351479730ce__thread.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/messages?conversationId=198e2f77e3cfb5b882fa749d239deeca26ca5f39d490782391f2b351479730ce",
+      "click": null,
+      "label": "thread",
+      "finalUrl": "/dashboard/messages",
+      "file": "laptop-1366__dashboard_messages_conversationId_198e2f77e3cfb5b882fa749d239deeca26ca5f39d490782391f2b351479730ce__thread.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/messages?conversationId=198e2f77e3cfb5b882fa749d239deeca26ca5f39d490782391f2b351479730ce",
+      "click": null,
+      "label": "thread",
+      "finalUrl": "/dashboard/messages",
+      "file": "tablet-1024__dashboard_messages_conversationId_198e2f77e3cfb5b882fa749d239deeca26ca5f39d490782391f2b351479730ce__thread.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/messages?conversationId=198e2f77e3cfb5b882fa749d239deeca26ca5f39d490782391f2b351479730ce",
+      "click": null,
+      "label": "thread",
+      "finalUrl": "/dashboard/messages",
+      "file": "mobile-390__dashboard_messages_conversationId_198e2f77e3cfb5b882fa749d239deeca26ca5f39d490782391f2b351479730ce__thread.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/messages?conversationId=198e2f77e3cfb5b882fa749d239deeca26ca5f39d490782391f2b351479730ce",
+      "click": null,
+      "label": "thread",
+      "finalUrl": "/dashboard/messages",
+      "file": "mobile-320__dashboard_messages_conversationId_198e2f77e3cfb5b882fa749d239deeca26ca5f39d490782391f2b351479730ce__thread.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/messages?conversationId=does-not-exist",
+      "click": null,
+      "label": "not-available",
+      "finalUrl": "/dashboard/messages",
+      "file": "desktop-1920__dashboard_messages_conversationId_does_not_exist__not-available.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/messages?conversationId=does-not-exist",
+      "click": null,
+      "label": "not-available",
+      "finalUrl": "/dashboard/messages",
+      "file": "laptop-1366__dashboard_messages_conversationId_does_not_exist__not-available.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/messages?conversationId=does-not-exist",
+      "click": null,
+      "label": "not-available",
+      "finalUrl": "/dashboard/messages",
+      "file": "tablet-1024__dashboard_messages_conversationId_does_not_exist__not-available.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/messages?conversationId=does-not-exist",
+      "click": null,
+      "label": "not-available",
+      "finalUrl": "/dashboard/messages",
+      "file": "mobile-390__dashboard_messages_conversationId_does_not_exist__not-available.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/messages?conversationId=does-not-exist",
+      "click": null,
+      "label": "not-available",
+      "finalUrl": "/dashboard/messages",
+      "file": "mobile-320__dashboard_messages_conversationId_does_not_exist__not-available.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/messages",
+      "click": null,
+      "steps": [
+        "fill:Search conversations=zzz",
+        "text:/No conversations match/"
+      ],
+      "label": "search-empty",
+      "finalUrl": "/dashboard/messages",
+      "file": "laptop-1366__dashboard_messages__search-empty.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/messages",
+      "click": null,
+      "steps": [
+        "fill:Search conversations=zzz",
+        "text:/No conversations match/"
+      ],
+      "label": "search-empty",
+      "finalUrl": "/dashboard/messages",
+      "file": "mobile-390__dashboard_messages__search-empty.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/messages?conversationId=198e2f77e3cfb5b882fa749d239deeca26ca5f39d490782391f2b351479730ce",
+      "click": null,
+      "steps": [
+        "text:Hello Avery, thanks for applying to the Platform Engineer role.",
+        "fill:Message to Riley Recruiter=Yes, Thursday works for me. Any time after 10am.",
+        "click:Send",
+        "text:/^Yes, Thursday works for me/"
+      ],
+      "label": "reply-sent",
+      "finalUrl": "/dashboard/messages",
+      "file": "laptop-1366__dashboard_messages_conversationId_198e2f77e3cfb5b882fa749d239deeca26ca5f39d490782391f2b351479730ce__reply-sent.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/messages?conversationId=198e2f77e3cfb5b882fa749d239deeca26ca5f39d490782391f2b351479730ce",
+      "click": null,
+      "steps": [
+        "text:Hello Avery, thanks for applying to the Platform Engineer role.",
+        "fill:Message to Riley Recruiter=Yes, Thursday works for me. Any time after 10am.",
+        "click:Send",
+        "text:/^Yes, Thursday works for me/"
+      ],
+      "label": "reply-sent",
+      "finalUrl": "/dashboard/messages",
+      "file": "mobile-390__dashboard_messages_conversationId_198e2f77e3cfb5b882fa749d239deeca26ca5f39d490782391f2b351479730ce__reply-sent.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/messages",
+      "click": null,
+      "label": "empty-candidate-b",
+      "finalUrl": "/dashboard/messages",
+      "file": "desktop-1920__dashboard_messages__empty-candidate-b.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/messages",
+      "click": null,
+      "label": "empty-candidate-b",
+      "finalUrl": "/dashboard/messages",
+      "file": "laptop-1366__dashboard_messages__empty-candidate-b.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/messages",
+      "click": null,
+      "label": "empty-candidate-b",
+      "finalUrl": "/dashboard/messages",
+      "file": "tablet-1024__dashboard_messages__empty-candidate-b.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/messages",
+      "click": null,
+      "label": "empty-candidate-b",
+      "finalUrl": "/dashboard/messages",
+      "file": "mobile-390__dashboard_messages__empty-candidate-b.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/messages",
+      "click": null,
+      "label": "empty-candidate-b",
+      "finalUrl": "/dashboard/messages",
+      "file": "mobile-320__dashboard_messages__empty-candidate-b.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    }
+  ]
+}

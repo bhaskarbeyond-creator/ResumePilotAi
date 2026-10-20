@@ -1,0 +1,118 @@
+{
+  "surface": "messages",
+  "phase": "before",
+  "capturedAt": "2026-10-20T12:07:31.318Z",
+  "baseURL": "http://127.0.0.1:4000",
+  "pages": [
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/messages",
+      "click": null,
+      "finalUrl": "/dashboard/messages",
+      "file": "desktop-1920__dashboard_messages.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/messages?conversationId=missing",
+      "click": null,
+      "finalUrl": "/dashboard/messages",
+      "file": "desktop-1920__dashboard_messages_conversationId_missing.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/messages",
+      "click": null,
+      "finalUrl": "/dashboard/messages",
+      "file": "laptop-1366__dashboard_messages.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/messages?conversationId=missing",
+      "click": null,
+      "finalUrl": "/dashboard/messages",
+      "file": "laptop-1366__dashboard_messages_conversationId_missing.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/messages",
+      "click": null,
+      "finalUrl": "/dashboard/messages",
+      "file": "tablet-1024__dashboard_messages.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/messages?conversationId=missing",
+      "click": null,
+      "finalUrl": "/dashboard/messages",
+      "file": "tablet-1024__dashboard_messages_conversationId_missing.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/messages",
+      "click": null,
+      "finalUrl": "/dashboard/messages",
+      "file": "mobile-390__dashboard_messages.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/messages?conversationId=missing",
+      "click": null,
+      "finalUrl": "/dashboard/messages",
+      "file": "mobile-390__dashboard_messages_conversationId_missing.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/messages",
+      "click": null,
+      "finalUrl": "/dashboard/messages",
+      "file": "mobile-320__dashboard_messages.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/messages?conversationId=missing",
+      "click": null,
+      "finalUrl": "/dashboard/messages",
+      "file": "mobile-320__dashboard_messages_conversationId_missing.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    }
+  ]
+}

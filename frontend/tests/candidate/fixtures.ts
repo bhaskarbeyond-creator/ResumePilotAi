@@ -37,6 +37,21 @@ export function tokenFor(account: AccountKey): string {
   throw new Error(`No session token stored for ${account}; did the setup project run?`);
 }
 
+/** The uid the server issued with that account's session (saved by auth.setup.ts). */
+export function uidFor(account: AccountKey): string {
+  const state = JSON.parse(fs.readFileSync(storageStatePath(account), 'utf8')) as {
+    origins: Array<{ localStorage: Array<{ name: string; value: string }> }>;
+  };
+  for (const origin of state.origins) {
+    const entry = origin.localStorage.find((item) => item.name === 'ime_dev_user');
+    if (entry) {
+      const uid = (JSON.parse(entry.value) as { uid?: string }).uid;
+      if (uid) return uid;
+    }
+  }
+  throw new Error(`No session uid stored for ${account}; did the setup project run?`);
+}
+
 export interface ApiClient {
   get<T = unknown>(path: string): Promise<{ status: number; body: T }>;
   post<T = unknown>(path: string, data?: unknown): Promise<{ status: number; body: T }>;

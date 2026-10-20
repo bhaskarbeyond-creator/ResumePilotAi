@@ -58,3 +58,28 @@ It changes one allowed key only (`enablePortfolioModule`, `enableMessagesModule`
 database whose name contains `sandbox`, `test` or `acceptance`, and it writes no
 admin audit record, so it is test-environment configuration only. The specs
 restore the shipped default (off) when they finish.
+
+## Messaging test arrangement (`arrange-messaging-job.mjs`)
+
+A conversation can only be opened for a job application, so the Messages E2E
+needs one job owned by a second test identity. The employer route that would
+create it cannot run locally: preview identities never carry the `employer`
+claim that `POST /api/employer/companies` and `POST /api/employer/jobs` require
+(both answer 403; the claim is a Firebase custom claim). The helper inserts that
+one job row and nothing else:
+
+```bash
+. ~/.cache/ime365-tools/backend.env.sh   # DB_* as for the backend
+node scripts/dev-db/arrange-messaging-job.mjs --create --job-id job_e2e_msg_example \
+  --owner-uid local_<22 hex> --title "Platform Engineer" --company "Example Test Co"
+node scripts/dev-db/arrange-messaging-job.mjs --remove
+```
+
+The owner must be a preview identity that has signed in once
+(`POST /api/auth/preview-login` creates its user row). Everything after the job
+goes through the real API: the application (`POST /api/jobs/:jobId/applications`),
+the conversation (`POST /api/messages/conversations`), the messages and the read
+cursors. `--remove` deletes what that flow leaves behind for every
+`job_e2e_msg_*` job (conversation messages, participants and rows, the
+notifications that name the job, the applications and the jobs). Security audit
+records are kept. The same loopback and database-name guards apply.

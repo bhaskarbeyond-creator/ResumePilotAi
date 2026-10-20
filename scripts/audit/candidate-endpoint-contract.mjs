@@ -66,15 +66,23 @@ function methodOf(name) {
 }
 
 const calls = [];
+// Calls whose path starts with an expression (`${base}/x`) can't be resolved
+// statically. They are reported, not skipped silently, so the audit's blind
+// spots are visible.
+const unresolved = [];
 for (const file of SCOPE.flatMap(listFiles)) {
   const source = fs.readFileSync(file, 'utf8');
   const relative = path.relative(repoRoot, file);
   const importsApiClient = /from '@\/lib\/api-client'/.test(source) || relative.endsWith('lib/api-client.ts');
   for (const match of source.matchAll(CALL)) {
     const raw = normalise(match[2]);
-    if (!raw.startsWith('/')) continue; // searchParams.get('tab') etc.
     if (!importsApiClient && !match[1].startsWith('apiClient')) continue;
     const line = source.slice(0, match.index).split('\n').length;
+    if (!raw.startsWith('/')) {
+      // searchParams.get('tab') etc. are not API calls; an expression followed by a path is.
+      if (match[2].startsWith('`${') && raw.startsWith(':param/')) unresolved.push({ file: relative, line, method: methodOf(match[1]), raw });
+      continue;
+    }
     calls.push({ file: relative, line, method: methodOf(match[1]), raw, resolved: `/api${raw}`, via: 'api-client' });
   }
   for (const match of source.matchAll(FETCH)) {
@@ -141,9 +149,11 @@ for (const result of candidate) unique.set(`${result.method} ${result.resolved}`
 console.log(`Candidate-scope calls: ${candidate.length} (${unique.size} unique method+path), backend routes: ${routes.length}`);
 console.log(`Unmatched: ${missing.length}`);
 for (const result of missing) console.log(`  ✗ ${result.method.padEnd(6)} ${result.resolved.padEnd(48)} ${result.file}:${result.line}`);
+console.log(`Unresolved (path built from an expression, not audited): ${unresolved.length}`);
+for (const result of unresolved) console.log(`  ? ${result.method.padEnd(6)} ${result.raw.padEnd(48)} ${result.file}:${result.line}`);
 
 const jsonIndex = process.argv.indexOf('--json');
-if (jsonIndex > 0) fs.writeFileSync(process.argv[jsonIndex + 1], `${JSON.stringify({ generatedAt: new Date().toISOString(), routes: routes.length, calls: candidate }, null, 2)}\n`);
+if (jsonIndex > 0) fs.writeFileSync(process.argv[jsonIndex + 1], `${JSON.stringify({ generatedAt: new Date().toISOString(), routes: routes.length, calls: candidate, unresolved }, null, 2)}\n`);
 
 // Loading backend/index.js may start timers/pools; exit explicitly.
 process.exit(missing.length ? 1 : 0);

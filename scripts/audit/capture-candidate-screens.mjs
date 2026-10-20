@@ -23,6 +23,8 @@
  * tab:<index> switches back (tab:0 is the first tab). The screenshot is taken of
  * the tab that is active after the last step.
  * Use --label <state> to name the captured state in the file name and report.
+ * Optional: --profiles laptop-1366,mobile-390 captures only those profiles
+ * (default: all five), e.g. when each capture changes server state.
  * Optional: --route-ai-to http://127.0.0.1:8081 sends ONLY the interview AI
  * endpoints (/api/generate-interview, /api/live-interview/*) to that backend,
  * e.g. the acceptance instance whose provider is scripts/dev-ai's labelled stub.
@@ -54,6 +56,7 @@ const click = arg('click');
 const steps = String(arg('steps', '')).split('|').map((step) => step.trim()).filter(Boolean);
 const label = arg('label');
 const routeAiTo = arg('route-ai-to');
+const onlyProfiles = String(arg('profiles', '')).split(',').filter(Boolean);
 const nameMatcher = (raw) => {
   const pattern = /^\/(.+)\/$/.exec(raw);
   return pattern ? new RegExp(pattern[1], 'i') : raw;
@@ -103,13 +106,19 @@ if (!surface || !['before', 'after'].includes(phase) || !routes.length) {
   process.exit(2);
 }
 
-const PROFILES = [
+const ALL_PROFILES = [
   { name: 'desktop-1920', width: 1920, height: 1080, mobile: false },
   { name: 'laptop-1366', width: 1366, height: 768, mobile: false },
   { name: 'tablet-1024', width: 1024, height: 768, mobile: false },
   { name: 'mobile-390', width: 390, height: 844, mobile: true },
   { name: 'mobile-320', width: 320, height: 568, mobile: true },
 ];
+const unknownProfiles = onlyProfiles.filter((name) => !ALL_PROFILES.some((profile) => profile.name === name));
+if (unknownProfiles.length) {
+  console.error(`unknown --profiles: ${unknownProfiles.join(', ')}`);
+  process.exit(2);
+}
+const PROFILES = onlyProfiles.length ? ALL_PROFILES.filter((profile) => onlyProfiles.includes(profile.name)) : ALL_PROFILES;
 const baseURL = process.env.E2E_BASE_URL || 'http://127.0.0.1:4000';
 const UNREACHABLE_THIRD_PARTY = /^https?:\/\/fonts\.(googleapis|gstatic)\.com\//;
 const describeUrl = (raw) => {
