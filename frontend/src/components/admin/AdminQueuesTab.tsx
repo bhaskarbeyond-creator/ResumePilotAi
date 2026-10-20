@@ -137,12 +137,30 @@ export function AdminQueuesTab() {
 
   const loadQueueStatus = async () => {
     try {
-      const res = await get<{ queues?: QueueStatus[]; jobs?: QueueJob[] }>('/admin/queues');
-      if (res?.queues && Array.isArray(res.queues)) {
-        setQueues(res.queues);
-      }
+      type QueueResponse = {
+        queues?: QueueStatus[];
+        jobs?: QueueJob[];
+        summary?: { deadLetterCount?: number; pendingCount?: number; successCount?: number };
+      };
+      const res = await get<QueueResponse>('/platform/queues').catch(() => get<QueueResponse>('/admin/queues'));
+
       if (res?.jobs && Array.isArray(res.jobs)) {
         setJobs(res.jobs);
+        if (res.summary) {
+          setQueues((prev) =>
+            prev.map((q) => {
+              if (q.name === 'dead-letter-queue') {
+                return { ...q, failed: res.summary?.deadLetterCount ?? q.failed };
+              }
+              if (q.name === 'email-outbox') {
+                return { ...q, waiting: res.summary?.pendingCount ?? q.waiting, completed: res.summary?.successCount ?? q.completed };
+              }
+              return q;
+            })
+          );
+        }
+      } else if (res?.queues && Array.isArray(res.queues)) {
+        setQueues(res.queues);
       }
     } catch {
       // Keep baseline
@@ -159,7 +177,7 @@ export function AdminQueuesTab() {
     setRetrying(queueName);
     setRetryFeedback(null);
     try {
-      await post(`/admin/queues/${queueName}/retry`, {}).catch(() => {});
+      await post('/platform/queues/retry', { queue: queueName }).catch(() => post(`/admin/queues/${queueName}/retry`, {}));
       setRetryFeedback(`Queued jobs in ${queueName} successfully re-dispatched.`);
       setTimeout(() => setRetryFeedback(null), 3000);
       loadQueueStatus();
@@ -171,7 +189,9 @@ export function AdminQueuesTab() {
   const handleRetrySingleJob = async (jobId: string) => {
     setRetrying(jobId);
     try {
-      await post('/admin/queues/dead-letter-queue/retry', { jobId }).catch(() => {});
+      await post('/platform/queues/retry', { jobId, queue: 'notification' }).catch(() =>
+        post('/admin/queues/dead-letter-queue/retry', { jobId })
+      );
       setJobs((prev) =>
         prev.map((j) => (j.id === jobId ? { ...j, state: 'QUEUED', attemptCount: 0 } : j))
       );

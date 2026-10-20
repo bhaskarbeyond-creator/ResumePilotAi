@@ -634,14 +634,6 @@ export function EmployerPortalPage() {
                 <div key={col} className="h-80 rounded-xl bg-canvas-soft border border-edge" />
               ))}
             </div>
-          ) : applications.length === 0 ? (
-            <div className="border border-edge rounded-2xl bg-surface p-12 text-center shadow-xs">
-              <Users className="size-12 text-ink-muted mx-auto mb-3" />
-              <h3 className="text-sm font-bold text-ink">No Applications Received Yet</h3>
-              <p className="text-xs text-ink-muted max-w-sm mx-auto mt-1">
-                Applicants who submit their resume for {selectedJob?.title || 'this position'} will appear here with live ATS compatibility scores.
-              </p>
-            </div>
           ) : pipelineViewMode === 'kanban' ? (
             /* Kanban Board View */
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -709,6 +701,14 @@ export function EmployerPortalPage() {
                   </div>
                 );
               })}
+            </div>
+          ) : filteredApplications.length === 0 ? (
+            <div className="border border-edge rounded-2xl bg-surface p-12 text-center shadow-xs">
+              <Users className="size-12 text-ink-muted mx-auto mb-3" />
+              <h3 className="text-sm font-bold text-ink">No Applications Received Yet</h3>
+              <p className="text-xs text-ink-muted max-w-sm mx-auto mt-1">
+                Applicants who submit their resume for {selectedJob?.title || 'this position'} will appear here with live ATS compatibility scores.
+              </p>
             </div>
           ) : (
             /* List Table View */

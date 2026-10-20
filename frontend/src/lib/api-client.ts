@@ -98,8 +98,11 @@ function createApiClient(): AxiosInstance {
     },
   });
 
-  // Request interceptor: attach Firebase Auth token
+  // Request interceptor: attach Firebase Auth token and normalize URL
   client.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
+    if (config.url) {
+      config.url = config.url.replace(/^\/?api\//, '/');
+    }
     const authorization = await getAuthHeader();
     if (authorization) {
       config.headers.Authorization = authorization;
