@@ -39,6 +39,40 @@ export interface CoverLetterRecord {
   updatedAt?: string;
 }
 
+export interface CoverLetterTemplate {
+  id: string;
+  name: string;
+  badge: string;
+  description: string;
+}
+
+export const COVER_TEMPLATES: ReadonlyArray<CoverLetterTemplate> = [
+  {
+    id: 'Cover1',
+    name: 'Executive Classic',
+    badge: 'Classic',
+    description: 'Centered executive letterhead with blue-indigo gradient accent bar.',
+  },
+  {
+    id: 'Cover2',
+    name: 'Modern Minimalist',
+    badge: 'Modern',
+    description: 'Crisp left-aligned typography with refined dark divider.',
+  },
+  {
+    id: 'Cover3',
+    name: 'Split Sidebar',
+    badge: 'Two-Column',
+    description: 'Side-by-side recipient card and sender contact pane.',
+  },
+  {
+    id: 'Cover4',
+    name: 'Creative Accent',
+    badge: 'Creative',
+    description: 'Distinctive blue header with amber job title and contact badges.',
+  },
+];
+
 export interface CoverLetterSummary {
   id: string;
   title: string;
@@ -46,6 +80,8 @@ export interface CoverLetterSummary {
   recipientName: string;
   updatedAt: string | null;
   excerpt: string;
+  templateId: string;
+  wordCount: number;
 }
 
 export const TONE_OPTIONS: ReadonlyArray<{ value: CoverLetterTone; label: string; hint: string }> = [
@@ -107,6 +143,7 @@ function toSummary(raw: Record<string, unknown>): CoverLetterSummary {
   const record = toRecord(raw, asText(raw.id));
   const title = letterTitle({ jobTitle: record.jobTitle, companyName: record.companyName, title: asText(raw.title) });
   const updatedAt = asText(raw.updated_at) || asText(raw.updatedAt) || null;
+  const wordCount = record.letterBody.trim() ? record.letterBody.trim().split(/\s+/).length : 0;
   return {
     id: record.id,
     title,
@@ -114,7 +151,35 @@ function toSummary(raw: Record<string, unknown>): CoverLetterSummary {
     recipientName: record.recipientName,
     updatedAt,
     excerpt: record.letterBody.replace(/\s+/g, ' ').trim().slice(0, 160),
+    templateId: record.templateId || 'Cover1',
+    wordCount,
   };
+}
+
+/**
+ * Track an application directly in the Job Tracker (POST /api/jobs-data/tracker),
+ * linking the cover letter excerpt and template metadata.
+ */
+export async function syncToJobTracker(
+  record: CoverLetterRecord | CoverLetterSummary
+): Promise<{ id: string; title: string; company: string }> {
+  const jobTitle = 'jobTitle' in record && record.jobTitle ? record.jobTitle : ('title' in record && record.title ? record.title : 'Target Position');
+  const title = jobTitle.trim() || 'Target Position';
+  const company = (record.companyName || '').trim() || 'Target Company';
+  const location = ('companyCity' in record && record.companyCity ? record.companyCity : '').trim() || 'Remote / Hybrid';
+  const bodyText = ('letterBody' in record && record.letterBody ? record.letterBody : '') || ('excerpt' in record && record.excerpt ? record.excerpt : '');
+  const template = record.templateId || 'Cover1';
+  const notes = `[Cover Letter Linked: ${title}]\nTemplate: ${template}\nUpdated: ${new Date().toLocaleDateString()}\n\nExcerpt:\n${bodyText.slice(0, 300)}...`;
+
+  const data = await post<{ success?: boolean; job?: { id: string; title: string; company: string } }>('/jobs-data/tracker', {
+    title,
+    company,
+    location,
+    status: 'applied',
+    notes,
+  });
+  if (!data.success || !data.job) throw new Error('Could not sync to Job Tracker.');
+  return data.job;
 }
 
 export async function listCoverLetters(): Promise<CoverLetterSummary[]> {
@@ -239,11 +304,21 @@ export async function generateCoverLetterDraft(record: CoverLetterRecord): Promi
 const STOP_WORDS = new Set(('a about above after again against all also am an and any are as at be because been before being below between both but by can could did do does doing down during each etc few for from further had has have having he her here hers him his how i if in into is it its just me more most my no nor not now of off on once only or other our ours out over own per same she should so some such than that the their theirs them then there these they this those through to too under until up us very via was we were what when where which while who whom why will with within without would you your yours ' +
   'ability able apply candidate candidates company experience including job looking must new our plus preferred required requirements responsibilities role skills strong team teams work working years year using use').split(' '));
 
+export type AtsTier = 'success' | 'warning' | 'danger';
+
+export interface KeywordCoverageResult {
+  matched: string[];
+  missing: string[];
+  percent: number;
+  tier: AtsTier;
+  tierLabel: string;
+}
+
 /**
  * Deterministic keyword coverage: which significant job-description terms the
- * letter mentions. A writing aid only, not an ATS score.
+ * letter mentions, computed into actionable ATS match tiers.
  */
-export function keywordCoverage(jobDescription: string, letterBody: string, limit = 15): { matched: string[]; missing: string[]; percent: number } | null {
+export function keywordCoverage(jobDescription: string, letterBody: string, limit = 15): KeywordCoverageResult | null {
   const tokens = jobDescription.toLowerCase().match(/[a-z][a-z0-9+#.-]{2,}/g) ?? [];
   const counts = new Map<string, number>();
   for (const raw of tokens) {
@@ -256,7 +331,10 @@ export function keywordCoverage(jobDescription: string, letterBody: string, limi
   const body = ` ${letterBody.toLowerCase()} `;
   const matched = keywords.filter((word) => new RegExp(`(^|[^a-z0-9])${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^a-z0-9]|$)`).test(body));
   const missing = keywords.filter((word) => !matched.includes(word));
-  return { matched, missing, percent: Math.round((matched.length / keywords.length) * 100) };
+  const percent = Math.round((matched.length / keywords.length) * 100);
+  const tier: AtsTier = percent >= 80 ? 'success' : percent >= 60 ? 'warning' : 'danger';
+  const tierLabel = percent >= 80 ? 'Strong ATS Match' : percent >= 60 ? 'Good ATS Match' : 'Low ATS Match';
+  return { matched, missing, percent, tier, tierLabel };
 }
 
 export function formatUpdated(value: string | null | undefined): string {

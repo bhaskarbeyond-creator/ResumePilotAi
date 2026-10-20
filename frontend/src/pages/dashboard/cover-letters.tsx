@@ -11,7 +11,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useSearchParams } from 'react-router-dom';
-import { AlertCircle, Copy, FileText, FolderOpen, Plus, RefreshCw, Search, Trash2, X } from 'lucide-react';
+import { AlertCircle, Briefcase, Copy, FileText, FolderOpen, Plus, RefreshCw, Search, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -24,10 +24,12 @@ import {
 } from '@/components/ui/dialog';
 import { normalizeError } from '@/lib/api-client';
 import {
+  COVER_TEMPLATES,
   deleteCoverLetter,
   duplicateCoverLetter,
   formatUpdated,
   listCoverLetters,
+  syncToJobTracker,
   type CoverLetterSummary,
 } from '@/lib/cover-letters';
 
@@ -53,6 +55,7 @@ export function CoverLettersPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [status, setStatus] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [syncingId, setSyncingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<CoverLetterSummary | null>(null);
   const deleteTriggerRef = useRef<HTMLElement | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -106,6 +109,25 @@ export function CoverLettersPage() {
       setStatus({ tone: 'error', text: `Could not duplicate “${letter.title}”: ${normalizeError(error).message}` });
     } finally {
       setBusyId(null);
+    }
+  };
+
+  const handleSyncTracker = async (letter: CoverLetterSummary) => {
+    setSyncingId(letter.id);
+    setStatus(null);
+    try {
+      const job = await syncToJobTracker(letter);
+      setStatus({
+        tone: 'success',
+        text: `Linked “${letter.title}” to Job Tracker as “${job.title} at ${job.company}”. View it in /dashboard/job-tracker.`,
+      });
+    } catch (error) {
+      setStatus({
+        tone: 'error',
+        text: `Could not link “${letter.title}” to Job Tracker: ${normalizeError(error).message}`,
+      });
+    } finally {
+      setSyncingId(null);
     }
   };
 
@@ -218,9 +240,14 @@ export function CoverLettersPage() {
                       <FileText className="size-5 text-brand-600" aria-hidden="true" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <Link to={`/cover-letter/${encodeURIComponent(letter.id)}`} className="block truncate text-sm font-semibold text-ink hover:text-brand-700 hover:underline">
-                        {letter.title}
-                      </Link>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Link to={`/cover-letter/${encodeURIComponent(letter.id)}`} className="truncate text-sm font-semibold text-ink hover:text-brand-700 hover:underline">
+                          {letter.title}
+                        </Link>
+                        <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                          {COVER_TEMPLATES.find((t) => t.id === letter.templateId)?.name || 'Executive Classic'}
+                        </span>
+                      </div>
                       <p className="mt-0.5 flex flex-wrap gap-x-2 text-xs text-ink-muted">
                         {letter.recipientName && <span>To {letter.recipientName}</span>}
                         <span>Updated {formatUpdated(letter.updatedAt)}</span>
@@ -231,6 +258,16 @@ export function CoverLettersPage() {
                   <div className="flex shrink-0 items-center gap-2 sm:gap-1">
                     <Button asChild variant="outline" size="sm">
                       <Link to={`/cover-letter/${encodeURIComponent(letter.id)}`} aria-label={`Open ${letter.title}`}>Open</Link>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => void handleSyncTracker(letter)}
+                      loading={syncingId === letter.id}
+                      aria-label={`Track ${letter.title} in Job Tracker`}
+                      title="Track in Job Tracker"
+                    >
+                      <Briefcase className="size-4 text-brand-600" aria-hidden="true" />
                     </Button>
                     <Button variant="ghost" size="icon-sm" onClick={() => void handleDuplicate(letter)} loading={busyId === letter.id} aria-label={`Duplicate ${letter.title}`} title="Duplicate">
                       <Copy aria-hidden="true" />
