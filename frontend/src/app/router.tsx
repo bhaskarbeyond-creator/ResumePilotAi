@@ -242,11 +242,23 @@ export function AppRouter() {
 
             {/* ─── Employer Portal ─── */}
             <Route
+              path="/employer"
+              element={<RequireAuth><CubaAppShell><EmployerPortalPage /></CubaAppShell></RequireAuth>}
+            />
+            <Route
               path="/employer/*"
               element={<RequireAuth><CubaAppShell><EmployerPortalPage /></CubaAppShell></RequireAuth>}
             />
 
             {/* ─── Enterprise Console ─── */}
+            <Route
+              path="/org"
+              element={<RequireAuth><CubaAppShell><EnterpriseConsolePage /></CubaAppShell></RequireAuth>}
+            />
+            <Route
+              path="/org/:slug"
+              element={<RequireAuth><CubaAppShell><EnterpriseConsolePage /></CubaAppShell></RequireAuth>}
+            />
             <Route
               path="/org/:slug/*"
               element={<RequireAuth><CubaAppShell><EnterpriseConsolePage /></CubaAppShell></RequireAuth>}
@@ -257,6 +269,10 @@ export function AppRouter() {
             />
 
             {/* ─── Admin Console ─── */}
+            <Route
+              path="/admin"
+              element={<RequireAuth roles={['ADMIN', 'SUPER_ADMIN']}><CubaAppShell><AdminConsolePage /></CubaAppShell></RequireAuth>}
+            />
             <Route
               path="/admin/*"
               element={<RequireAuth roles={['ADMIN', 'SUPER_ADMIN']}><CubaAppShell><AdminConsolePage /></CubaAppShell></RequireAuth>}

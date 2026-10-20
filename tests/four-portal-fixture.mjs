@@ -97,13 +97,33 @@ export function installApiFixture(page, state) {
             return json(route, { notifications: [], unreadCount: 0 });
         }
         if (pathname === '/api/system-settings' || pathname === '/api/public/system-settings') {
-            return json(route, { success: true, _settingsSource: 'remote', modules: {} });
+            return json(route, {
+                success: true,
+                _settingsSource: 'remote',
+                modules: {
+                    enableMessagesModule: true,
+                    enableAtsScoreModule: true,
+                    enablePortfolioModule: true,
+                    ...(state.modules || {}),
+                },
+            });
         }
 
-        // NOTE: /api/platform/public-config is deliberately NOT stubbed. The app
-        // reads maintenanceMode from publicConfig.systemHealth, and an empty
-        // object is treated as "unavailable", which renders the maintenance
-        // screen instead of the portal. The enterprise contract answers it.
+        if (pathname === '/api/platform/public-config') {
+            return json(route, {
+                _settingsSource: 'mariadb',
+                systemHealth: { maintenanceMode: false },
+                modules: {
+                    enableMessagesModule: true,
+                    enableAtsScoreModule: true,
+                    enablePortfolioModule: true,
+                    enableJobTrackerModule: true,
+                    enableAppliedJobsModule: true,
+                    enableCoverLetterModule: true,
+                    ...(state.modules || {}),
+                },
+            });
+        }
 
         return enterprise(route);
     });

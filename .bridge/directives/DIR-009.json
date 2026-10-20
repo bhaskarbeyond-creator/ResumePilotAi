@@ -1,0 +1,32 @@
+{
+  "id": "DIR-009",
+  "title": "DIR-009: Multi-Portal Route Synchronization, Dedicated Shell Isolation & ContextSwitcher Integration",
+  "priority": "P0",
+  "status": "ISSUED",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-20T00:23:49.089Z",
+  "updatedAt": "2026-10-20T00:23:49.089Z",
+  "projectRoot": "d:\\xampp\\htdocs\\IME365",
+  "spec": "# SECTION 1 — EXECUTIVE MANDATE\nDirective ID: DIR-009\nTitle: DIR-009: Multi-Portal Route Synchronization, Dedicated Shell Isolation & ContextSwitcher Integration\nTarget Workspace: d:\\xampp\\htdocs\\IME365\nPriority: P0 (Critical Architecture, Routing & Multi-Portal Navigation)\n\n## Objective:\n1. Eliminate the double-shell collision where Admin (/admin), Enterprise (/org), and Employer (/employer) are wrapped in CubaAppShell and display the Candidate Workspace sidebar.\n2. Implement adaptive portal shell behavior or dedicated shells so each of the 4 platform portals renders its authentic navigation rail.\n3. Restore the global ContextSwitcher (portal persona switcher) in the top header and user profile dropdown.\n4. Wire canonical sub-routes and bidirectional URL state synchronization for:\n   - Admin Console: /admin, /admin/:tab (dashboard, health, queues, operations, attention, users, support, security, moderation, blog, content, ai-settings, email)\n   - Employer Portal: /employer, /employer/jobs, /employer/applicants, /employer/messages, /employer/company, /employer/settings\n   - Enterprise Console: /org, /org/:slug, /org/:slug/:tab\n5. Implement the missing Candidate Messages view (/employer/messages) in the Employer Portal.\n\n# SECTION 2 — MANDATORY IMPLEMENTATION WORKFLOW (PLAN -> ACT)\n2.1 PLAN MODE:\n- Developer inspects frontend/src/app/router.tsx, frontend/src/components/layout/cuba-app-shell.tsx, frontend/src/pages/admin/console.tsx, frontend/src/pages/employer/portal.tsx, frontend/src/pages/enterprise/console.tsx, and legacy src/components/common/ContextSwitcher.jsx.\n- Submit structured plan via 'bridge dev plan' with summary and steps.\n2.2 ACT MODE:\n- Upon Lead plan approval, implement surgical modifications.\n- Run npm run build and Playwright tests across deep links.\n- Submit evidence via 'bridge dev submit-evidence'.",
+  "invariants": [
+    "ZERO DOUBLE-SHELLING: Admin, Enterprise, and Employer consoles must NEVER render the Candidate Workspace sidebar on their primary navigation rail.",
+    "CANONICAL DEEP-LINK INTEGRITY: Direct URLs (/admin/:tab, /employer/:section) must restore the exact target view upon reload.",
+    "STRICT RBAC & DATA ISOLATION: Admin routes require ADMIN/SUPER_ADMIN; Enterprise enforces X-Tenant-Id; Employer requires authenticated recruiter session.",
+    "WCAG 2.1 AA & CUBA M3 SYSTEM: Accessible landmarks, high contrast >= 4.5:1, and consistent glassmorphic styling tokens.",
+    "PERFORMANCE BUDGET: Frontend build compiles under 3.0s with zero compilation errors."
+  ],
+  "acceptanceCriteria": [
+    "Adaptive Portal Shell or Dedicated Shells: Refactor CubaAppShell or create dedicated shells so Admin (/admin), Employer (/employer), and Enterprise (/org) portals display their authentic navigation rails without candidate sidebar double-shelling.",
+    "Restore Global ContextSwitcher in header and user dropdown allowing eligible users to switch between Candidate, Employer, Enterprise, and Admin portals.",
+    "Bidirectional Route & URL State Synchronization in router.tsx: /admin/:tab, /employer/:section, and /org/:slug/:tab deep-links load the correct view on reload.",
+    "Employer Portal Parity: Add /employer/messages, /employer/jobs, /employer/applicants, /employer/company, and /employer/settings sub-routes with active status.",
+    "TypeScript compiler (tsc -b) passes with 0 errors and npm run build compiles cleanly within budget."
+  ],
+  "dependsOn": [],
+  "sourceEventId": null,
+  "plan": null,
+  "evidence": null,
+  "reviews": [],
+  "freeze": null
+}

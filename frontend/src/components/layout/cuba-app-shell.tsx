@@ -47,9 +47,23 @@ import {
   HelpCircle,
   CreditCard,
   User,
+  Users,
   Shield,
   Clock,
   ExternalLink,
+  Activity,
+  Server,
+  Database,
+  AlertTriangle,
+  ShieldCheck,
+  Layers,
+  Sliders,
+  Zap,
+  BarChart2,
+  Lock,
+  Mail,
+  Brain,
+  Command,
 } from 'lucide-react';
 import { useTheme } from '@/providers/theme-provider';
 import { Button } from '@/components/ui/button';
@@ -111,6 +125,116 @@ const candidateNavGroups: NavGroup[] = [
       { id: 'security', label: 'Security & 2FA Hub', href: '/dashboard/settings?tab=security', icon: Shield, matchPaths: ['/dashboard/settings?tab=security'] },
       { id: 'support', label: 'Help Desk & Support', href: '/dashboard/support', icon: HelpCircle, matchPaths: ['/dashboard/support'] },
       { id: 'settings', label: 'Settings & Preferences', href: '/dashboard/settings', icon: Settings, matchPaths: ['/dashboard/settings'] },
+    ],
+  },
+];
+
+const adminNavGroups: NavGroup[] = [
+  {
+    id: 'observability',
+    label: 'Observability & Core',
+    items: [
+      { id: 'dashboard', label: 'Command Center', href: '/admin/dashboard', icon: BarChart3, matchPaths: ['/admin', '/admin/dashboard'] },
+      { id: 'health', label: 'Platform Health', href: '/admin/health', icon: Activity, matchPaths: ['/admin/health'], badge: 'Live' },
+      { id: 'queues', label: 'Queues & Outbox DLQ', href: '/admin/queues', icon: Database, matchPaths: ['/admin/queues'] },
+      { id: 'operations', label: 'Operations & Maint.', href: '/admin/operations', icon: Server, matchPaths: ['/admin/operations'] },
+      { id: 'attention', label: 'Attention Needed', href: '/admin/attention', icon: AlertTriangle, matchPaths: ['/admin/attention'], badge: '2' },
+    ],
+  },
+  {
+    id: 'identity',
+    label: 'Identity & Support',
+    items: [
+      { id: 'users', label: 'Users Manager & 360', href: '/admin/users', icon: Users, matchPaths: ['/admin/users'] },
+      { id: 'support', label: 'Help Desk & Tickets', href: '/admin/support', icon: HelpCircle, matchPaths: ['/admin/support', '/admin/help-desk'] },
+      { id: 'security', label: 'Security & Staff RBAC', href: '/admin/security', icon: ShieldCheck, matchPaths: ['/admin/security'] },
+    ],
+  },
+  {
+    id: 'moderation',
+    label: 'Moderation Hub',
+    items: [
+      { id: 'moderation', label: 'Employers, Jobs & Tenants', href: '/admin/moderation', icon: Briefcase, matchPaths: ['/admin/moderation', '/admin/employer-applications', '/admin/jobs-manager', '/admin/company-management', '/admin/tenants'] },
+      { id: 'blog', label: 'Blog Engine', href: '/admin/blog', icon: FileText, matchPaths: ['/admin/blog', '/admin/blog-management', '/blog-editor'] },
+      { id: 'content', label: 'ATS Phrases & Reviews', href: '/admin/content', icon: Sparkles, matchPaths: ['/admin/content', '/admin/phrases', '/admin/reviews', '/admin/landing-pages', '/admin/trustedby'] },
+    ],
+  },
+  {
+    id: 'config',
+    label: 'System Configuration',
+    items: [
+      { id: 'ai-settings', label: 'AI Multi-Provider Engine', href: '/admin/ai-settings', icon: Brain, matchPaths: ['/admin/ai-settings'] },
+      { id: 'email', label: 'Email & SMTP Deliverability', href: '/admin/email', icon: Mail, matchPaths: ['/admin/email'] },
+      { id: 'settings', label: 'Platform Settings', href: '/admin/settings', icon: Settings, matchPaths: ['/admin/settings'] },
+    ],
+  },
+];
+
+const employerNavGroups: NavGroup[] = [
+  {
+    id: 'hiring-command',
+    label: 'Hiring Command',
+    items: [
+      { id: 'overview', label: 'Recruiter Overview', href: '/employer', icon: LayoutDashboard, matchPaths: ['/employer', '/employer/overview'] },
+    ],
+  },
+  {
+    id: 'requisitions-applicants',
+    label: 'Requisitions & Applicants',
+    items: [
+      { id: 'jobs', label: 'Job Postings', href: '/employer/jobs', icon: Briefcase, matchPaths: ['/employer/jobs'] },
+      { id: 'applicants', label: 'Applicant ATS Pipeline', href: '/employer/applicants', icon: Users, matchPaths: ['/employer/applicants', '/employer/pipeline'] },
+      { id: 'messages', label: 'Candidate Messages', href: '/employer/messages', icon: MessageSquare, matchPaths: ['/employer/messages'] },
+    ],
+  },
+  {
+    id: 'brand-settings',
+    label: 'Brand & Settings',
+    items: [
+      { id: 'company', label: 'Company Profile', href: '/employer/company', icon: Building2, matchPaths: ['/employer/company'] },
+      { id: 'team', label: 'Team Seats & Roles', href: '/employer/team', icon: Shield, matchPaths: ['/employer/team'] },
+      { id: 'settings', label: 'Hiring Preferences', href: '/employer/settings', icon: Settings, matchPaths: ['/employer/settings'] },
+    ],
+  },
+];
+
+const enterpriseNavGroups: NavGroup[] = [
+  {
+    id: 'home',
+    label: 'Home',
+    items: [
+      { id: 'overview', label: 'Overview', href: '/org', icon: Activity, matchPaths: ['/org', '/org/overview'] },
+    ],
+  },
+  {
+    id: 'organization',
+    label: 'Organization',
+    items: [
+      { id: 'resumes', label: 'Talent & Resumes', href: '/org/resumes', icon: FileText, matchPaths: ['/org/resumes'] },
+      { id: 'members', label: 'Users & IAM', href: '/org/members', icon: Users, matchPaths: ['/org/members'] },
+      { id: 'teams', label: 'Teams', href: '/org/teams', icon: Users, matchPaths: ['/org/teams'] },
+      { id: 'workspaces', label: 'Workspaces', href: '/org/workspaces', icon: Sliders, matchPaths: ['/org/workspaces'] },
+    ],
+  },
+  {
+    id: 'governance',
+    label: 'Governance',
+    items: [
+      { id: 'access', label: 'Roles & Permissions', href: '/org/access', icon: Shield, matchPaths: ['/org/access'] },
+      { id: 'ai', label: 'AI Workspace', href: '/org/ai', icon: Zap, matchPaths: ['/org/ai'] },
+      { id: 'security', label: 'Security & M2M', href: '/org/security', icon: Lock, matchPaths: ['/org/security'] },
+      { id: 'usage', label: 'Usage & Quotas', href: '/org/usage', icon: BarChart2, matchPaths: ['/org/usage'] },
+      { id: 'email', label: 'Email & Notifications', href: '/org/email', icon: Mail, matchPaths: ['/org/email'] },
+      { id: 'audit', label: 'Audit Logs', href: '/org/audit', icon: FileText, matchPaths: ['/org/audit'] },
+    ],
+  },
+  {
+    id: 'administration',
+    label: 'Administration',
+    items: [
+      { id: 'support', label: 'Support Access', href: '/org/support', icon: HelpCircle, matchPaths: ['/org/support'] },
+      { id: 'settings', label: 'Organization Settings', href: '/org/settings', icon: Settings, matchPaths: ['/org/settings'] },
+      { id: 'platform', label: 'Platform Administration', href: '/org/platform', icon: Command, matchPaths: ['/org/platform'] },
     ],
   },
 ];
@@ -181,10 +305,26 @@ export function CubaAppShell({
           if (pPath === '/dashboard/settings') {
             return location.pathname === '/dashboard/settings' && !location.search;
           }
-          return location.pathname.startsWith(pPath);
+          if (pPath === '/admin' || pPath === '/admin/dashboard') {
+            return (
+              location.pathname === '/admin' ||
+              location.pathname === '/admin/' ||
+              location.pathname === '/admin/dashboard'
+            );
+          }
+          if (pPath === '/employer') {
+            return location.pathname === '/employer' || location.pathname === '/employer/' || location.pathname === '/employer/overview';
+          }
+          if (pPath === '/org') {
+            return (
+              (location.pathname === '/org' || location.pathname === '/org/') &&
+              (!location.search || location.search === '?tab=overview')
+            );
+          }
+          return location.pathname === pPath || location.pathname.startsWith(`${pPath}/`);
         });
       }
-      return location.pathname.startsWith(item.href);
+      return location.pathname === item.href || location.pathname.startsWith(`${item.href}/`);
     },
     [location.pathname, location.search],
   );
@@ -203,6 +343,40 @@ export function CubaAppShell({
     .join('')
     .toUpperCase()
     .slice(0, 2) || '?';
+
+  // Multi-portal detection based on active pathname
+  const activePortal = useMemo<'candidate' | 'admin' | 'employer' | 'enterprise'>(() => {
+    if (location.pathname.startsWith('/admin')) return 'admin';
+    if (location.pathname.startsWith('/employer')) return 'employer';
+    if (location.pathname.startsWith('/org')) return 'enterprise';
+    return 'candidate';
+  }, [location.pathname]);
+
+  const currentNavGroups = useMemo(() => {
+    switch (activePortal) {
+      case 'admin':
+        return adminNavGroups;
+      case 'employer':
+        return employerNavGroups;
+      case 'enterprise':
+        return enterpriseNavGroups;
+      default:
+        return candidateNavGroups;
+    }
+  }, [activePortal]);
+
+  const portalLabel = useMemo(() => {
+    switch (activePortal) {
+      case 'admin':
+        return 'Admin Console';
+      case 'employer':
+        return 'Hiring Portal';
+      case 'enterprise':
+        return 'Enterprise Console';
+      default:
+        return 'Candidate Suite';
+    }
+  }, [activePortal]);
 
   // Build breadcrumbs based on current route
   const breadcrumbs = useMemo(() => {
@@ -269,6 +443,50 @@ export function CubaAppShell({
     } else if (segments[0] === 'portfolio' && segments[1] === 'builder') {
       crumbs.push({ label: 'Portfolios & Web CV', href: '/dashboard/portfolio', isLast: false });
       crumbs.push({ label: 'Portfolio Builder', href: '#', isLast: true });
+    } else if (segments[0] === 'admin') {
+      crumbs[0] = { label: 'Admin Console', href: '/admin', isLast: segments.length === 1 };
+      if (segments[1]) {
+        const titleMap: Record<string, string> = {
+          dashboard: 'Command Center',
+          health: 'Platform Health',
+          queues: 'Queues & Outbox DLQ',
+          operations: 'Operations & Maintenance',
+          attention: 'Attention Needed',
+          users: 'Users Manager & 360',
+          support: 'Help Desk & Tickets',
+          security: 'Security & Staff RBAC',
+          moderation: 'Moderation Hub',
+          blog: 'Blog Management',
+          content: 'ATS Phrases & Reviews',
+          'ai-settings': 'AI Multi-Provider Engine',
+          email: 'Email & SMTP Deliverability',
+          settings: 'Platform Settings',
+        };
+        crumbs.push({ label: titleMap[segments[1]] || segments[1], href: `/admin/${segments[1]}`, isLast: true });
+      }
+    } else if (segments[0] === 'employer') {
+      crumbs[0] = { label: 'Employer Portal', href: '/employer', isLast: segments.length === 1 };
+      if (segments[1]) {
+        const titleMap: Record<string, string> = {
+          overview: 'Recruiter Overview',
+          jobs: 'Job Postings',
+          applicants: 'Applicant ATS Pipeline',
+          pipeline: 'ATS Candidate Pipeline',
+          messages: 'Candidate Messages',
+          company: 'Company Profile',
+          team: 'Team Seats & Roles',
+          settings: 'Hiring Preferences',
+        };
+        crumbs.push({ label: titleMap[segments[1]] || segments[1], href: `/employer/${segments[1]}`, isLast: true });
+      }
+    } else if (segments[0] === 'org') {
+      crumbs[0] = { label: 'Enterprise Console', href: '/org', isLast: segments.length === 1 };
+      if (segments[1]) {
+        crumbs.push({ label: segments[1], href: `/org/${segments[1]}`, isLast: segments.length <= 2 });
+        if (segments[2]) {
+          crumbs.push({ label: segments[2], href: `/org/${segments[1]}/${segments[2]}`, isLast: true });
+        }
+      }
     }
 
     return crumbs;
@@ -301,7 +519,7 @@ export function CubaAppShell({
           sidebarCollapsed ? 'w-16' : 'w-[85vw] max-w-[320px] lg:w-64',
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
         )}
-        aria-label="Candidate workspace navigation"
+        aria-label={`${portalLabel} navigation`}
       >
         {/* Logo area */}
         <div className={cn(
@@ -309,7 +527,11 @@ export function CubaAppShell({
           sidebarCollapsed ? 'justify-center px-2' : 'gap-3',
         )}>
           {!sidebarCollapsed && (
-            <Link to="/dashboard" className="flex items-center gap-2.5 no-underline min-w-0" title="IME365 Home">
+            <Link
+              to={activePortal === 'admin' ? '/admin' : activePortal === 'employer' ? '/employer' : activePortal === 'enterprise' ? '/org' : '/dashboard'}
+              className="flex items-center gap-2.5 no-underline min-w-0"
+              title="IME365 Home"
+            >
               <img
                 src="/logo.png"
                 alt="IME365"
@@ -329,7 +551,11 @@ export function CubaAppShell({
             </Link>
           )}
           {sidebarCollapsed && (
-            <Link to="/dashboard" className="flex size-9 items-center justify-center no-underline overflow-hidden" title="IME365 Home">
+            <Link
+              to={activePortal === 'admin' ? '/admin' : activePortal === 'employer' ? '/employer' : activePortal === 'enterprise' ? '/org' : '/dashboard'}
+              className="flex size-9 items-center justify-center no-underline overflow-hidden"
+              title="IME365 Home"
+            >
               <img
                 src="/logo.png"
                 alt="IME365"
@@ -361,9 +587,85 @@ export function CubaAppShell({
           </button>
         </div>
 
+        {/* Global Workspace / Portal Switcher */}
+        {!sidebarCollapsed && (
+          <div className="px-3 pt-3 pb-1 border-b border-border/40">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  data-testid="portal-switcher-trigger"
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold border border-border bg-surface-raised/70 hover:bg-surface-raised hover:border-brand-300 transition-all shadow-2xs cursor-pointer"
+                  aria-label="Switch platform workspace"
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    {activePortal === 'admin' && <ShieldCheck className="size-4 text-brand-600 shrink-0" />}
+                    {activePortal === 'employer' && <Briefcase className="size-4 text-brand-600 shrink-0" />}
+                    {activePortal === 'enterprise' && <Building2 className="size-4 text-brand-600 shrink-0" />}
+                    {activePortal === 'candidate' && <User className="size-4 text-brand-600 shrink-0" />}
+                    <span className="truncate">{portalLabel}</span>
+                  </div>
+                  <ChevronDown className="size-3.5 text-ink-muted shrink-0" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56 p-1">
+                <div className="px-2 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-ink-muted">
+                  Platform Workspaces
+                </div>
+                <DropdownMenuItem
+                  onSelect={() => navigate('/dashboard')}
+                  data-testid="switch-to-candidate"
+                  className={cn('flex items-center justify-between cursor-pointer py-2', activePortal === 'candidate' && 'font-bold bg-neutral-100 dark:bg-neutral-800')}
+                >
+                  <div className="flex items-center gap-2">
+                    <User className="size-4 text-brand-600" />
+                    <span>Candidate Dashboard</span>
+                  </div>
+                  {activePortal === 'candidate' && <CheckCircle2 className="size-3.5 text-brand-600" />}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => navigate('/employer')}
+                  data-testid="switch-to-employer"
+                  className={cn('flex items-center justify-between cursor-pointer py-2', activePortal === 'employer' && 'font-bold bg-neutral-100 dark:bg-neutral-800')}
+                >
+                  <div className="flex items-center gap-2">
+                    <Briefcase className="size-4 text-brand-600" />
+                    <span>Recruiter Portal</span>
+                  </div>
+                  {activePortal === 'employer' && <CheckCircle2 className="size-3.5 text-brand-600" />}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => navigate('/org')}
+                  data-testid="switch-to-enterprise"
+                  className={cn('flex items-center justify-between cursor-pointer py-2', activePortal === 'enterprise' && 'font-bold bg-neutral-100 dark:bg-neutral-800')}
+                >
+                  <div className="flex items-center gap-2">
+                    <Building2 className="size-4 text-brand-600" />
+                    <span>Enterprise Console</span>
+                  </div>
+                  {activePortal === 'enterprise' && <CheckCircle2 className="size-3.5 text-brand-600" />}
+                </DropdownMenuItem>
+                {isAdmin && (
+                  <DropdownMenuItem
+                    onSelect={() => navigate('/admin')}
+                    data-testid="switch-to-admin"
+                    className={cn('flex items-center justify-between cursor-pointer py-2', activePortal === 'admin' && 'font-bold bg-neutral-100 dark:bg-neutral-800')}
+                  >
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="size-4 text-brand-600" />
+                      <span>Admin Control Plane</span>
+                    </div>
+                    {activePortal === 'admin' && <CheckCircle2 className="size-3.5 text-brand-600" />}
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
+
         {/* Navigation items by Cuba Groups */}
         <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-4" aria-label="Main navigation">
-          {candidateNavGroups.map((group) => (
+          {currentNavGroups.map((group) => (
             <div key={group.id} className="space-y-1">
               {!sidebarCollapsed && (
                 <h2 className="px-3 text-[11px] font-bold uppercase tracking-wider text-ink-muted mb-1">
@@ -416,7 +718,7 @@ export function CubaAppShell({
 
         {/* Bottom section */}
         <div className="border-t border-border px-2 py-3">
-          {isAdmin && (
+          {isAdmin && activePortal !== 'admin' && (
             <ul className="space-y-0.5 mb-2" role="list">
               <li>
                 <Link
@@ -526,8 +828,8 @@ export function CubaAppShell({
 
             {/* Right side: ATS Gauge, Saved Status, Actions, Notifications, User Menu */}
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-              {/* ATS Score Circular Gauge */}
-              {atsScore !== undefined && atsScore !== null && (
+              {/* ATS Score Circular Gauge - candidate portal only */}
+              {activePortal === 'candidate' && atsScore !== undefined && atsScore !== null && (
                 <div className="relative flex items-center justify-center" title={`ATS Score: ${atsScore}%`}>
                   <svg className="size-10" viewBox="0 0 40 40" role="img" aria-label={`ATS Score: ${atsScore}%`}>
                     <circle
@@ -576,8 +878,8 @@ export function CubaAppShell({
                 </div>
               )}
 
-              {/* Saved Status Pill - only rendered if explicitly provided */}
-              {savedStatus && (
+              {/* Saved Status Pill - candidate portal only and when provided */}
+              {activePortal === 'candidate' && savedStatus && (
                 <div className="hidden sm:flex">
                   <span className={cn(
                     'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors',
@@ -595,8 +897,8 @@ export function CubaAppShell({
                 </div>
               )}
 
-              {/* Preview & Download Actions - only rendered if action handlers provided */}
-              {(onPreview || onDownload) && (
+              {/* Preview & Download Actions - candidate portal only and when provided */}
+              {activePortal === 'candidate' && (onPreview || onDownload) && (
                 <div className="hidden sm:flex items-center gap-1.5">
                   {onPreview && (
                     <DropdownMenu>
@@ -829,6 +1131,40 @@ export function CubaAppShell({
                     <HelpCircle className="size-4 text-ink-muted" />
                     <span>Help Desk & Support</span>
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <div className="px-2 py-1 text-[10px] font-extrabold uppercase tracking-wider text-ink-muted">
+                    Switch Workspace
+                  </div>
+                  <DropdownMenuItem
+                    onSelect={() => navigate('/dashboard')}
+                    className="gap-2.5 py-1.5 cursor-pointer text-xs"
+                  >
+                    <User className="size-4 text-brand-600" />
+                    <span>Candidate Dashboard</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => navigate('/employer')}
+                    className="gap-2.5 py-1.5 cursor-pointer text-xs"
+                  >
+                    <Briefcase className="size-4 text-brand-600" />
+                    <span>Recruiter Portal</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => navigate('/org')}
+                    className="gap-2.5 py-1.5 cursor-pointer text-xs"
+                  >
+                    <Building2 className="size-4 text-brand-600" />
+                    <span>Enterprise Console</span>
+                  </DropdownMenuItem>
+                  {isAdmin && (
+                    <DropdownMenuItem
+                      onSelect={() => navigate('/admin')}
+                      className="gap-2.5 py-1.5 cursor-pointer text-xs"
+                    >
+                      <ShieldCheck className="size-4 text-brand-600" />
+                      <span>Admin Control Plane</span>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onSelect={toggleTheme}

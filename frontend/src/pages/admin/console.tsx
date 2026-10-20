@@ -10,8 +10,8 @@
  * - Configuration: AI Multi-Provider Orchestration, Email & SMTP Deliverability, Security & Staff RBAC
  */
 
-import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
   BarChart3,
@@ -46,7 +46,7 @@ import { AdminAiSettingsTab } from '@/components/admin/AdminAiSettingsTab';
 import { AdminEmailSmtpTab } from '@/components/admin/AdminEmailSmtpTab';
 import { AdminSecurityTab } from '@/components/admin/AdminSecurityTab';
 
-type AdminTabId =
+export type AdminTabId =
   | 'dashboard'
   | 'health'
   | 'queues'
@@ -60,6 +60,22 @@ type AdminTabId =
   | 'ai-settings'
   | 'email'
   | 'security';
+
+const VALID_TABS: AdminTabId[] = [
+  'dashboard',
+  'health',
+  'queues',
+  'operations',
+  'attention',
+  'users',
+  'support',
+  'moderation',
+  'blog',
+  'content',
+  'ai-settings',
+  'email',
+  'security',
+];
 
 interface NavGroup {
   label: string;
@@ -113,25 +129,58 @@ const NAVIGATION_GROUPS: NavGroup[] = [
 ];
 
 export function AdminConsolePage() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const requestedTab = (searchParams.get('tab') as AdminTabId) || 'dashboard';
-  
-  const [activeTab, setActiveTab] = useState<AdminTabId>(requestedTab);
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+
+  // Resolve active tab from URL path segment (/admin/:tab) or query param (?tab=...)
+  const resolveTab = useCallback((): AdminTabId => {
+    // 1. Check ?tab= query parameter
+    const tabFromQuery = searchParams.get('tab') as AdminTabId;
+    if (tabFromQuery && VALID_TABS.includes(tabFromQuery)) {
+      return tabFromQuery;
+    }
+
+    // 2. Check path segment (/admin/:section)
+    const segments = location.pathname.replace(/\/+$/, '').split('/').filter(Boolean);
+    if (segments[0] === 'admin' && segments[1]) {
+      const section = segments[1].toLowerCase();
+      // Handle historical and semantic aliases
+      if (section === 'help-desk') return 'support';
+      if (section === 'blog-management') return 'blog';
+      if (['employer-applications', 'jobs-manager', 'company-management', 'tenants'].includes(section)) return 'moderation';
+      if (['phrases', 'reviews', 'landing-pages', 'trustedby'].includes(section)) return 'content';
+      if (section === 'settings') return 'security';
+      if (section === 'command-center' || section === 'dashboard') return 'dashboard';
+      if (VALID_TABS.includes(section as AdminTabId)) {
+        return section as AdminTabId;
+      }
+    }
+
+    return 'dashboard';
+  }, [location.pathname, searchParams]);
+
+  const [activeTab, setActiveTab] = useState<AdminTabId>(resolveTab);
 
   useEffect(() => {
-    const tabFromUrl = searchParams.get('tab') as AdminTabId;
-    if (tabFromUrl && tabFromUrl !== activeTab) {
-      setActiveTab(tabFromUrl);
+    const nextTab = resolveTab();
+    if (nextTab !== activeTab) {
+      setActiveTab(nextTab);
     }
-  }, [searchParams]);
+  }, [resolveTab, activeTab]);
 
   const handleSelectTab = (tabId: AdminTabId) => {
     setActiveTab(tabId);
-    setSearchParams({ tab: tabId });
+    navigate(tabId === 'dashboard' ? '/admin' : `/admin/${tabId}`);
   };
 
+  const allNavItems = useMemo(
+    () => NAVIGATION_GROUPS.flatMap((g) => g.items),
+    []
+  );
+
   return (
-    <div className="p-4 lg:p-6 xl:p-8 space-y-6 max-w-7xl mx-auto">
+    <div className="p-4 lg:p-6 xl:p-8 space-y-6 max-w-7xl mx-auto" data-testid="admin-console-page">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
         <div>
@@ -147,71 +196,61 @@ export function AdminConsolePage() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-6 lg:flex-row">
-        {/* Sidebar Nav Rail */}
-        <aside className="lg:w-64 shrink-0 space-y-6">
-          <nav className="space-y-5" aria-label="Admin Control Plane Navigation">
-            {NAVIGATION_GROUPS.map((group) => (
-              <div key={group.label} className="space-y-1.5">
-                <h3 className="px-3 text-xs font-bold uppercase tracking-wider text-ink-muted">
-                  {group.label}
-                </h3>
-                <div className="space-y-1">
-                  {group.items.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = activeTab === item.id;
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => handleSelectTab(item.id)}
-                        className={cn(
-                          'w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition-all cursor-pointer text-left',
-                          isActive
-                            ? 'bg-brand-600 text-white shadow-xs'
-                            : 'text-ink-secondary hover:bg-neutral-100 hover:text-ink'
-                        )}
-                        aria-current={isActive ? 'page' : undefined}
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <Icon className={cn('size-4', isActive ? 'text-white' : 'text-ink-muted')} />
-                          <span>{item.label}</span>
-                        </div>
-                        {item.badge && (
-                          <span
-                            className={cn(
-                              'rounded-full px-1.5 py-0.2 text-[10px] font-extrabold',
-                              isActive ? 'bg-white/20 text-white' : 'bg-brand-50 text-brand-700'
-                            )}
-                          >
-                            {item.badge}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </nav>
-        </aside>
+      {/* Horizontal Tabs Strip for Quick Nav / Mobile & Tablet */}
+      <nav
+        className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-border/60 scrollbar-none"
+        aria-label="Admin Sub-Module Tabs"
+      >
+        {allNavItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => handleSelectTab(item.id)}
+              data-testid={`admin-tab-${item.id}`}
+              className={cn(
+                'flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer',
+                isActive
+                  ? 'bg-brand-600 text-white shadow-2xs font-extrabold'
+                  : 'text-ink-secondary hover:text-ink hover:bg-neutral-100 dark:hover:bg-neutral-800'
+              )}
+              aria-current={isActive ? 'page' : undefined}
+            >
+              <Icon className="size-3.5 shrink-0" />
+              <span>{item.label}</span>
+              {item.badge && (
+                <span
+                  className={cn(
+                    'rounded-full px-1.5 py-0.2 text-[10px] font-extrabold ml-0.5',
+                    isActive ? 'bg-white/20 text-white' : 'bg-brand-50 text-brand-700'
+                  )}
+                >
+                  {item.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </nav>
 
-        {/* Tab Content Surface */}
-        <main className="flex-1 min-w-0" aria-label="Admin Control Tab Content">
-          {activeTab === 'dashboard' && <AdminDashboardTab onNavigateTab={handleSelectTab} />}
-          {activeTab === 'health' && <AdminHealthTab />}
-          {activeTab === 'queues' && <AdminQueuesTab />}
-          {activeTab === 'operations' && <AdminOperationsTab />}
-          {activeTab === 'attention' && <AdminAttentionTab onNavigateTab={handleSelectTab} />}
-          {activeTab === 'users' && <AdminUsersTab />}
-          {activeTab === 'support' && <AdminHelpDeskTab />}
-          {activeTab === 'security' && <AdminSecurityTab />}
-          {activeTab === 'moderation' && <AdminModerationTab />}
-          {activeTab === 'blog' && <AdminBlogManagementTab />}
-          {activeTab === 'content' && <AdminContentMarketingTab />}
-          {activeTab === 'ai-settings' && <AdminAiSettingsTab />}
-          {activeTab === 'email' && <AdminEmailSmtpTab />}
-        </main>
-      </div>
+      {/* Tab Content Surface */}
+      <main className="min-w-0" aria-label="Admin Control Tab Content">
+        {activeTab === 'dashboard' && <AdminDashboardTab onNavigateTab={handleSelectTab} />}
+        {activeTab === 'health' && <AdminHealthTab />}
+        {activeTab === 'queues' && <AdminQueuesTab />}
+        {activeTab === 'operations' && <AdminOperationsTab />}
+        {activeTab === 'attention' && <AdminAttentionTab onNavigateTab={handleSelectTab} />}
+        {activeTab === 'users' && <AdminUsersTab />}
+        {activeTab === 'support' && <AdminHelpDeskTab />}
+        {activeTab === 'security' && <AdminSecurityTab />}
+        {activeTab === 'moderation' && <AdminModerationTab />}
+        {activeTab === 'blog' && <AdminBlogManagementTab />}
+        {activeTab === 'content' && <AdminContentMarketingTab />}
+        {activeTab === 'ai-settings' && <AdminAiSettingsTab />}
+        {activeTab === 'email' && <AdminEmailSmtpTab />}
+      </main>
     </div>
   );
 }

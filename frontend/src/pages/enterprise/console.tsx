@@ -10,7 +10,7 @@
  */
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Building2,
   Users,
@@ -72,6 +72,23 @@ export type EnterpriseTabId =
   | 'settings'
   | 'platform';
 
+const VALID_ENTERPRISE_TABS: EnterpriseTabId[] = [
+  'overview',
+  'resumes',
+  'members',
+  'teams',
+  'workspaces',
+  'access',
+  'ai',
+  'security',
+  'usage',
+  'email',
+  'audit',
+  'support',
+  'settings',
+  'platform',
+];
+
 interface NavItem {
   id: EnterpriseTabId;
   label: string;
@@ -106,6 +123,7 @@ const NAV_GROUPS: Array<'Home' | 'Organization' | 'Governance' | 'Administration
 ];
 
 function EnterpriseConsoleInner() {
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const {
@@ -124,9 +142,29 @@ function EnterpriseConsoleInner() {
     reload,
   } = useEnterprise();
 
-  // Tab State
-  const tabParam = (searchParams.get('tab') as EnterpriseTabId) || 'overview';
-  const [activeTab, setActiveTab] = useState<EnterpriseTabId>(tabParam);
+  // Tab State resolution from query or path
+  const resolveTab = useCallback((): EnterpriseTabId => {
+    const tabFromQuery = searchParams.get('tab') as EnterpriseTabId;
+    if (tabFromQuery && VALID_ENTERPRISE_TABS.includes(tabFromQuery)) {
+      return tabFromQuery;
+    }
+
+    const segments = location.pathname.replace(/\/+$/, '').split('/').filter(Boolean);
+    if (segments[0] === 'org') {
+      const candidate1 = segments[1]?.toLowerCase();
+      const candidate2 = segments[2]?.toLowerCase();
+      if (candidate2 && VALID_ENTERPRISE_TABS.includes(candidate2 as EnterpriseTabId)) {
+        return candidate2 as EnterpriseTabId;
+      }
+      if (candidate1 && VALID_ENTERPRISE_TABS.includes(candidate1 as EnterpriseTabId)) {
+        return candidate1 as EnterpriseTabId;
+      }
+    }
+
+    return 'overview';
+  }, [location.pathname, searchParams]);
+
+  const [activeTab, setActiveTab] = useState<EnterpriseTabId>(resolveTab);
 
   // Email verification action state
   const [verificationSent, setVerificationSent] = useState(false);
@@ -137,11 +175,11 @@ function EnterpriseConsoleInner() {
   const [tabParams, setTabParams] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    const nextTab = (searchParams.get('tab') as EnterpriseTabId) || 'overview';
+    const nextTab = resolveTab();
     if (nextTab !== activeTab) {
       setActiveTab(nextTab);
     }
-  }, [searchParams, activeTab]);
+  }, [resolveTab, activeTab]);
 
   const handleTabSelect = useCallback((tabId: EnterpriseTabId, params?: Record<string, string>) => {
     setActiveTab(tabId);

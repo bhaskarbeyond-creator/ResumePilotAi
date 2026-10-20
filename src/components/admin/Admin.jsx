@@ -31,6 +31,7 @@ import PlatformOperations from './operations/PlatformOperations';
 import PlatformAttention from './attention/PlatformAttention';
 import PlatformOperators from './operators/PlatformOperators';
 import PlatformHealth from './health/PlatformHealth';
+import AiSettings from './settings/AiSettings';
 import AdminCommandPalette from './command/AdminCommandPalette';
 import { AdminProvider } from './AdminContext';
 import { FaCircle, FaExternalLinkAlt, FaSignOutAlt, FaChevronRight, FaSyncAlt, FaCrown, FaBars, FaChevronDown, FaCheck } from 'react-icons/fa';
@@ -884,6 +885,11 @@ const AdminConsoleInner = ({ isCubaChrome = false }) => {
                         <Route path="settings" element={
                             <RequireTabPerm required="*">
                                 <Settings />
+                            </RequireTabPerm>
+                        } />
+                        <Route path="ai-settings" element={
+                            <RequireTabPerm required={['system.config.write', 'system.config.read']}>
+                                <AiSettings />
                             </RequireTabPerm>
                         } />
                         <Route path="user/ss" element={
