@@ -16,6 +16,9 @@ const INTERVIEW_FORMATS = new Set(['Video', 'In-Person', 'Phone']);
 
 function normalizeTrackerInput(input = {}, { partial = false } = {}) {
     const text = (value, maximum) => String(value || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, maximum);
+    // Notes may span lines: line breaks are kept, other control characters removed.
+    const multiline = (value, maximum) => String(value || '').replace(/\r\n?/g, '\n')
+        .replace(/\p{Cc}/gu, character => (character === '\n' ? '\n' : ' ')).trim().slice(0, maximum);
     const has = key => Object.prototype.hasOwnProperty.call(input, key);
     const statuses = new Set(['wishlist', 'applied', 'interview', 'offer', 'rejected']);
     const workModes = WORK_MODES;
@@ -26,7 +29,7 @@ function normalizeTrackerInput(input = {}, { partial = false } = {}) {
     if (!partial || has('title')) normalized.title = text(input.title, 160);
     if (!partial || has('company')) normalized.company = text(input.company, 160);
     if (!partial || has('location')) normalized.location = text(input.location, 160);
-    if (!partial || has('notes')) normalized.notes = text(input.notes, 4000);
+    if (!partial || has('notes')) normalized.notes = multiline(input.notes, 4000);
     if (!partial || has('deadline')) normalized.deadline = text(input.deadline, 10);
     if (!partial || has('status')) {
         const status = String(input.status || (partial ? '' : 'wishlist')).toLowerCase();

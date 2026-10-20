@@ -11,6 +11,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, Briefcase, Copy, FileText, FolderOpen, Plus, RefreshCw, Search, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +24,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { normalizeError } from '@/lib/api-client';
+import { TRACKER_QUERY_KEY } from '@/lib/job-tracker';
 import {
   COVER_TEMPLATES,
   deleteCoverLetter,
@@ -30,6 +32,7 @@ import {
   formatUpdated,
   listCoverLetters,
   syncToJobTracker,
+  trackerSyncMessage,
   type CoverLetterSummary,
 } from '@/lib/cover-letters';
 
@@ -56,6 +59,7 @@ export function CoverLettersPage() {
   const [status, setStatus] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [syncingId, setSyncingId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const [deleteTarget, setDeleteTarget] = useState<CoverLetterSummary | null>(null);
   const deleteTriggerRef = useRef<HTMLElement | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -116,15 +120,13 @@ export function CoverLettersPage() {
     setSyncingId(letter.id);
     setStatus(null);
     try {
-      const job = await syncToJobTracker(letter);
-      setStatus({
-        tone: 'success',
-        text: `Linked “${letter.title}” to Job Tracker as “${job.title} at ${job.company}”. View it in /dashboard/job-tracker.`,
-      });
+      const result = await syncToJobTracker(letter);
+      if (result.outcome === 'added') void queryClient.invalidateQueries({ queryKey: TRACKER_QUERY_KEY });
+      setStatus({ tone: 'success', text: trackerSyncMessage(result) });
     } catch (error) {
       setStatus({
         tone: 'error',
-        text: `Could not link “${letter.title}” to Job Tracker: ${normalizeError(error).message}`,
+        text: `“${letter.title}” wasn’t added to the Job Tracker. ${normalizeError(error).message}`,
       });
     } finally {
       setSyncingId(null);

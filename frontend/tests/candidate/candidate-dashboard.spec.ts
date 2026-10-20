@@ -11,62 +11,73 @@ import { randomUUID } from 'node:crypto';
 import { test, expect, expectNoHorizontalOverflow } from './fixtures';
 
 test.describe('Candidate Dashboard — Job Tracker Surface', () => {
+  // Rewritten in C13 for the rebuilt tracker: accessible names replace the old
+  // test ids. tests/candidate/job-tracker.spec.ts covers the surface in depth.
+  let testCompany = '';
+  test.afterEach(async ({ apiAs }) => {
+    if (!testCompany) return;
+    const api = apiAs('a');
+    const { body } = await api.get<{ jobs?: Array<{ id: string; company: string; revision: number }> }>('/jobs-data/tracker');
+    for (const job of (body.jobs ?? []).filter((item) => item.company === testCompany)) {
+      await api.del(`/jobs-data/tracker/${encodeURIComponent(job.id)}`, { expectedRevision: job.revision });
+    }
+  });
+
   test('tracks a job, verifies stage column, tests Cover Letter link, moves stage, and deletes with Radix Dialog', async ({ page }) => {
-    const testCompany = `AcmeCorp-${randomUUID().slice(0, 6)}`;
+    testCompany = `AcmeCorp-${randomUUID().slice(0, 6)}`;
     const testTitle = 'Senior Cloud Architect';
+    const job = `${testTitle} at ${testCompany}`;
 
     await page.goto('/dashboard/job-tracker');
-    await expect(page.getByRole('heading', { name: 'Job Tracker' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Job Tracker' })).toBeVisible();
     await expectNoHorizontalOverflow(page);
 
-    // 1. Open Track Job Dialog
-    await page.getByTestId('track-job-button').click();
-    const dialog = page.getByRole('dialog');
+    // 1. Open the add dialog
+    await page.getByRole('button', { name: 'Track a job', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'Track a job' });
     await expect(dialog).toBeVisible();
-    await expect(dialog.getByText('Track a Job Application')).toBeVisible();
 
-    // 2. Fill form and submit
-    await page.getByTestId('input-job-company').fill(testCompany);
-    await page.getByTestId('input-job-title').fill(testTitle);
-    await dialog.locator('#job-location').fill('Remote, US');
-    await dialog.locator('#job-salary').fill('$150k - $180k');
-    await dialog.locator('#job-status').selectOption('applied');
-
-    await page.getByTestId('submit-track-job-button').click();
+    // 2. Fill the form and submit
+    await dialog.getByLabel('Company (required)').fill(testCompany);
+    await dialog.getByLabel('Job title (required)').fill(testTitle);
+    await dialog.getByLabel('Location', { exact: true }).fill('Remote, US');
+    await dialog.getByLabel('Salary or range').fill('$150k - $180k');
+    await dialog.getByLabel('Stage', { exact: true }).selectOption('applied');
+    await dialog.getByRole('button', { name: 'Add to tracker' }).click();
     await expect(dialog).not.toBeVisible();
 
-    // 3. Verify card exists on the board
-    const jobCard = page.getByTestId('job-card').filter({ hasText: testCompany }).first();
+    // 3. The job is in the Applied column
+    const jobCard = page.getByRole('region', { name: /^Applied \(\d+ jobs?\)$/ }).getByRole('article', { name: testTitle }).filter({ hasText: testCompany });
     await expect(jobCard).toBeVisible();
-    await expect(jobCard).toContainText(testTitle);
+    await expect(jobCard).toContainText('$150k - $180k');
 
-    // 4. Test Cover Letter link in action menu
-    await jobCard.getByRole('button', { name: `Options for ${testCompany}` }).click();
-    const tailorLink = page.getByRole('link', { name: 'Tailor Cover Letter' });
+    // 4. Cover letter link in the actions menu
+    await page.getByRole('button', { name: `Actions for ${job}` }).click();
+    const tailorLink = page.getByRole('menuitem', { name: 'Write a cover letter' });
     await expect(tailorLink).toBeVisible();
     const href = await tailorLink.getAttribute('href');
     expect(href).toContain('/dashboard/cover-letters?role=');
     expect(href).toContain(encodeURIComponent(testCompany));
+    await page.keyboard.press('Escape');
 
-    // 5. Move stage to 'interview'
-    await page.getByRole('button', { name: 'Interview' }).click();
-    await expect(page.getByRole('status')).toContainText(`Moved ${testCompany} to Interview`);
+    // 5. Move the stage to Interviewing
+    await page.getByLabel(`Stage for ${job}`).selectOption('interview');
+    await expect(page.locator('#main-content').getByRole('status')).toContainText(`Moved ${job} to Interviewing.`);
 
-    // 6. Toggle to List view and verify row
-    await page.getByRole('button', { name: 'List view' }).click();
-    const listRow = page.getByTestId('job-list-row').filter({ hasText: testCompany }).first();
+    // 6. Switch to the list view and find the job
+    await page.getByRole('button', { name: 'List', exact: true }).click();
+    const listRow = page.getByRole('list', { name: 'Tracked jobs' }).getByRole('article', { name: testTitle }).filter({ hasText: testCompany });
     await expect(listRow).toBeVisible();
-    await expect(listRow.getByRole('link', { name: 'Cover Letter' })).toBeVisible();
+    await expect(listRow.getByLabel(`Stage for ${job}`)).toHaveValue('interview');
 
-    // 7. Delete job through accessible Radix confirmation Dialog
-    await listRow.getByRole('button', { name: `Delete ${testCompany} application` }).click();
-    const deleteDialog = page.getByRole('dialog');
+    // 7. Remove the job through the confirmation dialog
+    await page.getByRole('button', { name: `Actions for ${job}` }).click();
+    await page.getByRole('menuitem', { name: 'Remove from tracker…' }).click();
+    const deleteDialog = page.getByRole('dialog', { name: 'Remove this job from your tracker?' });
     await expect(deleteDialog).toBeVisible();
-    await expect(deleteDialog.getByText('Delete Tracked Job')).toBeVisible();
-
-    await page.getByTestId('confirm-delete-job-button').click();
+    await deleteDialog.getByRole('button', { name: 'Remove job' }).click();
     await expect(deleteDialog).not.toBeVisible();
-    await expect(page.getByTestId('job-list-row').filter({ hasText: testCompany })).toHaveCount(0);
+    await expect(page.getByRole('article', { name: testTitle }).filter({ hasText: testCompany })).toHaveCount(0);
   });
 
   test('applied-jobs and job-matching route aliases resolve correctly', async ({ page }) => {
