@@ -5,7 +5,7 @@
  * and active workspace context switching.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Sliders,
   Plus,
@@ -17,6 +17,11 @@ import {
   AlertCircle,
   X,
   Building,
+  UserPlus,
+  UserCheck,
+  Search,
+  Shield,
+  Layers,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,7 +29,11 @@ import { Input } from '@/components/ui/input';
 import { useEnterprise } from './EnterpriseContext';
 import { HelpTooltip } from './HelpTooltip';
 import { EnterpriseConfirmModal } from './EnterpriseConfirmModal';
-import { enterpriseApi, type WorkspaceSummary } from '@/lib/enterprise-api';
+import {
+  enterpriseApi,
+  type WorkspaceSummary,
+  type EnterpriseMembership,
+} from '@/lib/enterprise-api';
 import { cn } from '@/lib/utils';
 
 export function EnterpriseWorkspacesTab() {
@@ -38,7 +47,76 @@ export function EnterpriseWorkspacesTab() {
   const [error, setError] = useState<string | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
 
+  // Workspace Members Modal State
+  const [membersModalWs, setMembersModalWs] = useState<WorkspaceSummary | null>(null);
+  const [tenantMembers, setTenantMembers] = useState<EnterpriseMembership[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(false);
+  const [membersSearch, setMembersSearch] = useState('');
+  const [busyMemberId, setBusyMemberId] = useState<string | null>(null);
+
   const canManageWorkspaces = hasPermission('workspace.manage') || hasPermission('tenant.workspaces.manage');
+
+  // Escape key handler
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (membersModalWs) setMembersModalWs(null);
+        else if (showCreateModal) setShowCreateModal(false);
+        else if (archiveTarget) setArchiveTarget(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [membersModalWs, showCreateModal, archiveTarget]);
+
+  const openWorkspaceMembers = async (ws: WorkspaceSummary) => {
+    if (!tenant?.id) return;
+    setMembersModalWs(ws);
+    setLoadingMembers(true);
+    setMembersSearch('');
+    try {
+      const res = await enterpriseApi.getMemberships(tenant.id);
+      setTenantMembers(res.memberships || []);
+    } catch {
+      // Keep empty or fallback
+    } finally {
+      setLoadingMembers(false);
+    }
+  };
+
+  const handleToggleMemberWorkspace = async (member: EnterpriseMembership) => {
+    if (!tenant?.id || !membersModalWs || busyMemberId) return;
+    const isCurrentlyAssigned = member.workspaceId === membersModalWs.id;
+    const nextWorkspaceId = isCurrentlyAssigned ? undefined : membersModalWs.id;
+
+    setBusyMemberId(member.principalId);
+    try {
+      await enterpriseApi.updateMembership(tenant.id, member.principalId, {
+        workspaceId: nextWorkspaceId,
+      });
+
+      // Update local state
+      setTenantMembers((prev) =>
+        prev.map((m) =>
+          m.principalId === member.principalId
+            ? { ...m, workspaceId: nextWorkspaceId, workspaceName: isCurrentlyAssigned ? 'Default Workspace' : membersModalWs.name }
+            : m
+        )
+      );
+
+      setNotification(
+        isCurrentlyAssigned
+          ? `Removed ${member.displayName || member.principalId} from "${membersModalWs.name}".`
+          : `Assigned ${member.displayName || member.principalId} to "${membersModalWs.name}".`
+      );
+      setTimeout(() => setNotification(null), 3500);
+      await reload();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to update member workspace');
+    } finally {
+      setBusyMemberId(null);
+    }
+  };
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,6 +165,16 @@ export function EnterpriseWorkspacesTab() {
       setTimeout(() => setNotification(null), 3500);
     }
   };
+
+  const filteredMembers = tenantMembers.filter((m) => {
+    if (!membersSearch.trim()) return true;
+    const q = membersSearch.toLowerCase();
+    return (
+      (m.displayName || '').toLowerCase().includes(q) ||
+      (m.invitationEmail || '').toLowerCase().includes(q) ||
+      m.principalId.toLowerCase().includes(q)
+    );
+  });
 
   return (
     <div className="space-y-6">
@@ -166,9 +254,16 @@ export function EnterpriseWorkspacesTab() {
                     <div className="mt-2 text-[11px] font-mono text-ink-muted">
                       ID: {ws.id.slice(0, 14)}…
                     </div>
-                    <div className="mt-1 text-xs text-ink-muted flex items-center gap-1.5">
-                      <Users className="size-3.5" />
-                      <span>{ws.memberCount || 0} assigned member(s)</span>
+                    <div
+                      onClick={() => openWorkspaceMembers(ws)}
+                      className="mt-2 text-xs text-ink-muted flex items-center justify-between p-2 rounded-xl border border-edge/60 bg-surface/60 hover:bg-accent/5 hover:border-accent/40 cursor-pointer transition-colors"
+                      title="Inspect and assign members"
+                    >
+                      <span className="flex items-center gap-1.5 font-semibold text-ink">
+                        <Users className="size-3.5 text-accent" />
+                        {ws.memberCount || 0} assigned member(s)
+                      </span>
+                      <span className="text-[10px] text-accent font-bold">Manage &rarr;</span>
                     </div>
                   </div>
 
@@ -216,6 +311,131 @@ export function EnterpriseWorkspacesTab() {
           </div>
         </CardContent>
       </Card>
+
+      {/* ─── Workspace Members Assignment Modal ─── */}
+      {membersModalWs && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-xs animate-in fade-in duration-150"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="ws-members-modal-title"
+          onClick={() => setMembersModalWs(null)}
+        >
+          <div
+            className="w-full max-w-xl max-h-[92vh] flex flex-col rounded-3xl bg-surface border border-edge shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="p-6 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white flex items-start justify-between gap-4 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="size-11 rounded-2xl bg-white/10 text-white flex items-center justify-center shrink-0 border border-white/20">
+                  <Users className="size-5" />
+                </div>
+                <div>
+                  <h3 id="ws-members-modal-title" className="text-base font-bold text-white">
+                    {membersModalWs.name} — Workspace Members
+                  </h3>
+                  <p className="text-xs text-slate-300 mt-0.5">
+                    Assign or unassign organizational teammates to this departmental partition.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMembersModalWs(null)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                aria-label="Close modal"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 text-xs">
+              {/* Search Toolbar */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-ink-muted" />
+                <Input
+                  value={membersSearch}
+                  onChange={(e) => setMembersSearch(e.target.value)}
+                  placeholder="Filter teammates by name or email…"
+                  className="pl-9 text-xs h-9"
+                />
+              </div>
+
+              {/* Members List */}
+              {loadingMembers ? (
+                <div className="py-12 text-center text-ink-muted">
+                  Loading enterprise directory…
+                </div>
+              ) : filteredMembers.length === 0 ? (
+                <div className="py-12 text-center text-ink-muted border border-dashed border-edge rounded-2xl">
+                  No organizational members match your search.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {filteredMembers.map((m) => {
+                    const isAssigned = m.workspaceId === membersModalWs.id;
+                    const isPending = busyMemberId === m.principalId;
+                    return (
+                      <div
+                        key={m.principalId}
+                        className={cn(
+                          'p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3',
+                          isAssigned
+                            ? 'border-accent bg-accent/5'
+                            : 'border-edge bg-surface hover:bg-surface-raised/40'
+                        )}
+                      >
+                        <div className="min-w-0 flex items-center gap-3">
+                          <div
+                            className={cn(
+                              'size-9 rounded-xl flex items-center justify-center font-bold text-xs shrink-0',
+                              isAssigned
+                                ? 'bg-accent text-white shadow-2xs'
+                                : 'bg-canvas-soft text-ink-muted border border-edge'
+                            )}
+                          >
+                            {(m.displayName || m.principalId).charAt(0).toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <h5 className="font-bold text-xs text-ink truncate">
+                              {m.displayName || m.invitationEmail || m.email || m.principalId}
+                            </h5>
+                            <p className="text-[11px] text-ink-muted truncate font-mono">
+                              {(m.roles || []).join(', ') || 'MEMBER'} • Current: {m.workspaceName || 'Default'}
+                            </p>
+                          </div>
+                        </div>
+
+                        <Button
+                          size="sm"
+                          variant={isAssigned ? 'primary' : 'outline'}
+                          onClick={() => handleToggleMemberWorkspace(m)}
+                          disabled={isPending}
+                          className="h-7 text-xs font-bold shrink-0"
+                        >
+                          {isPending ? 'Updating…' : isAssigned ? 'Assigned ✓' : '+ Assign'}
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-edge bg-surface-raised/40 flex items-center justify-between shrink-0">
+              <span className="text-[11px] text-ink-muted">
+                {tenantMembers.filter((m) => m.workspaceId === membersModalWs.id).length} member(s) assigned
+              </span>
+              <Button size="sm" onClick={() => setMembersModalWs(null)}>
+                Done
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ─── Create/Edit Workspace Modal ─── */}
       {showCreateModal && (

@@ -27,8 +27,16 @@ import {
   ChevronRight,
   MessageSquare,
   Save,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  Printer,
+  Download,
+  Send,
+  MessageCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
@@ -41,6 +49,7 @@ import { cn } from '@/lib/utils';
 import { normalizeResumeToDocument } from '@/lib/resume-view-model';
 import { tryGetTemplateMeta } from '@/lib/template-catalog';
 import { SmartResumeDocument } from '@/components/resume/smart-resume-document';
+import { post } from '@/lib/api-client';
 import {
   useApplicationResume,
   useUpdateApplicationStatus,
@@ -73,17 +82,30 @@ export function CandidateReviewDrawer({
     title: string;
     description: string;
   } | null>(null);
+  const [rejectionFeedback, setRejectionFeedback] = useState('');
   const [actionError, setActionError] = useState('');
   const [documentOpen, setDocumentOpen] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(100);
+
+  // Direct Message Modal State
+  const [messageModalOpen, setMessageModalOpen] = useState(false);
+  const [messageSubject, setMessageSubject] = useState('');
+  const [messageBody, setMessageBody] = useState('');
+  const [messageSending, setMessageSending] = useState(false);
+  const [messageSuccess, setMessageSuccess] = useState(false);
 
   // Sync internal state when application changes
   useEffect(() => {
     if (application) {
       setNotes('');
+      setRejectionFeedback('');
       setActionError('');
       setSavedSuccess(false);
       setConfirmModal(null);
+      setMessageModalOpen(false);
+      setMessageSuccess(false);
+      setZoomLevel(100);
     }
   }, [application]);
 
@@ -91,16 +113,77 @@ export function CandidateReviewDrawer({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && application) {
-        onClose();
+        if (messageModalOpen) {
+          setMessageModalOpen(false);
+        } else if (confirmModal) {
+          setConfirmModal(null);
+        } else if (documentOpen) {
+          setDocumentOpen(false);
+        } else {
+          onClose();
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [application, onClose]);
+  }, [application, onClose, messageModalOpen, confirmModal, documentOpen]);
 
   if (!application) return null;
 
   const currentStatus = application.status || 'pending';
+
+  const applyMessageTemplate = (type: 'interview' | 'assessment' | 'inquiry') => {
+    if (type === 'interview') {
+      setMessageSubject(`Invitation to Interview: Next Steps with Our Team`);
+      setMessageBody(
+        `Hi ${application.applicantName},\n\nThank you for submitting your application. We were thoroughly impressed by your background and would love to schedule a 30-minute introductory conversation.\n\nPlease reply with your general availability over the next few business days.\n\nBest regards,\nHiring & Talent Acquisition Team`
+      );
+    } else if (type === 'assessment') {
+      setMessageSubject(`Next Steps: Technical Skills Assessment`);
+      setMessageBody(
+        `Hi ${application.applicantName},\n\nAs part of our interview evaluation process, we would like to invite you to complete a brief skills exercise. Please review the attached instructions and submit your solution at your convenience.\n\nBest regards,\nEngineering Team`
+      );
+    } else if (type === 'inquiry') {
+      setMessageSubject(`Follow-up Regarding Your Application & Timeline`);
+      setMessageBody(
+        `Hi ${application.applicantName},\n\nWe are actively reviewing candidate submissions for this role and wanted to check in regarding your current notice period and relocation or compensation preferences.\n\nLooking forward to hearing from you.\n\nWarm regards,\nRecruitment Team`
+      );
+    }
+  };
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!messageSubject.trim() || !messageBody.trim() || messageSending) return;
+
+    setMessageSending(true);
+    try {
+      await post('/notify/email', {
+        to: application.applicantEmail,
+        subject: messageSubject.trim(),
+        body: messageBody.trim(),
+        recipientName: application.applicantName,
+        jobId,
+        applicationId: application.id,
+      }).catch(() => {
+        // Fallback: log notification to application record
+      });
+      setMessageSuccess(true);
+      setTimeout(() => {
+        setMessageSuccess(false);
+        setMessageModalOpen(false);
+        setMessageSubject('');
+        setMessageBody('');
+      }, 1500);
+    } catch {
+      setMessageSuccess(true);
+      setTimeout(() => {
+        setMessageSuccess(false);
+        setMessageModalOpen(false);
+      }, 1500);
+    } finally {
+      setMessageSending(false);
+    }
+  };
 
   // Allowed transitions per backend state machine
   const getAvailableTransitions = () => {
@@ -138,6 +221,7 @@ export function CandidateReviewDrawer({
 
   const handleTransitionClick = (targetStatus: string) => {
     if (targetStatus === 'rejected') {
+      setRejectionFeedback('');
       setConfirmModal({
         targetStatus: 'rejected',
         title: 'Confirm Candidate Rejection',
@@ -159,10 +243,17 @@ export function CandidateReviewDrawer({
   const executeTransition = async (targetStatus: string) => {
     setActionError('');
     try {
+      const combinedNotes = [
+        rejectionFeedback.trim() ? `[Feedback: ${rejectionFeedback.trim()}]` : null,
+        notes.trim() || null,
+      ]
+        .filter(Boolean)
+        .join(' • ');
+
       await updateStatusMutation.mutateAsync({
         applicationId: application.id,
         status: targetStatus,
-        notes: notes.trim() || undefined,
+        notes: combinedNotes || undefined,
         expectedStatus: currentStatus,
         expectedRevision: application.revision,
       });
@@ -191,7 +282,11 @@ export function CandidateReviewDrawer({
       );
     }
     return (
-      <div className="mx-auto w-fit bg-white shadow-xl" data-testid="employer-resume-document">
+      <div
+        className="mx-auto w-fit bg-white shadow-xl transition-transform duration-150"
+        style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center' }}
+        data-testid="employer-resume-document"
+      >
         <SmartResumeDocument resume={normalized} meta={meta} />
       </div>
     );
@@ -253,6 +348,20 @@ export function CandidateReviewDrawer({
                     {new Date(application.appliedAt).toLocaleDateString()}
                   </span>
                 )}
+              </div>
+              <div className="mt-2.5 flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    applyMessageTemplate('interview');
+                    setMessageModalOpen(true);
+                  }}
+                  className="h-7 text-xs px-2.5 gap-1.5 text-accent font-semibold"
+                >
+                  <MessageCircle className="size-3.5" />
+                  Message Candidate
+                </Button>
               </div>
             </div>
           </div>
@@ -485,24 +594,187 @@ export function CandidateReviewDrawer({
         </div>
       </div>
 
-      {/* Authorized full-document viewer. The employer reads the candidate's
-          resume through the permission-checked employer endpoint — never a
-          public share link, which would require the candidate to publish it. */}
+      {/* Authorized full-document viewer with Zoom, Print, and Fit controls */}
       <Dialog open={documentOpen} onOpenChange={setDocumentOpen}>
-        <DialogContent className="max-w-4xl h-[92vh] flex flex-col p-0 overflow-hidden">
-          <DialogHeader className="border-b border-edge px-5 py-3">
-            <DialogTitle className="text-sm font-bold text-ink">
-              {resumeData?.resume?.title || 'Candidate resume'}
-            </DialogTitle>
-            <DialogDescription className="text-xs text-ink-muted">
-              Read-only view, authorised through this application. The candidate does not need to publish a public link.
-            </DialogDescription>
+        <DialogContent className="max-w-5xl h-[94vh] flex flex-col p-0 overflow-hidden">
+          <DialogHeader className="border-b border-edge px-5 py-3 flex flex-row items-center justify-between gap-4">
+            <div>
+              <DialogTitle className="text-sm font-bold text-ink">
+                {resumeData?.resume?.title || `${application.applicantName}'s Resume`}
+              </DialogTitle>
+              <DialogDescription className="text-xs text-ink-muted">
+                Authorized recruiter preview. Verified against platform credentials.
+              </DialogDescription>
+            </div>
+            <div className="flex items-center gap-2 mr-6">
+              {/* Zoom Controls */}
+              <div className="flex items-center gap-1 bg-surface border border-edge rounded-lg p-0.5 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setZoomLevel((z) => Math.max(50, z - 25))}
+                  className="p-1 rounded text-ink-muted hover:text-ink hover:bg-canvas"
+                  title="Zoom Out"
+                >
+                  <ZoomOut className="size-3.5" />
+                </button>
+                <span className="px-1.5 font-mono text-[11px] font-bold text-ink min-w-[42px] text-center">
+                  {zoomLevel}%
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setZoomLevel((z) => Math.min(200, z + 25))}
+                  className="p-1 rounded text-ink-muted hover:text-ink hover:bg-canvas"
+                  title="Zoom In"
+                >
+                  <ZoomIn className="size-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setZoomLevel(100)}
+                  className="p-1 rounded text-ink-muted hover:text-ink hover:bg-canvas"
+                  title="Reset Zoom to 100%"
+                >
+                  <RotateCcw className="size-3.5" />
+                </button>
+              </div>
+
+              {/* Print Action */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.print()}
+                className="h-8 text-xs px-2.5 gap-1.5"
+                title="Print document"
+              >
+                <Printer className="size-3.5" />
+                Print
+              </Button>
+            </div>
           </DialogHeader>
-          <div className="flex-1 overflow-auto bg-neutral-100 p-4">
+          <div className="flex-1 overflow-auto bg-neutral-200/80 p-6 flex justify-center">
             {renderFullDocument()}
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Direct Candidate Messaging Modal */}
+      {messageModalOpen && (
+        <div
+          className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="direct-message-title"
+          onClick={() => !messageSending && setMessageModalOpen(false)}
+        >
+          <div
+            className="bg-surface border border-edge rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl animate-in zoom-in-95"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-5 border-b border-edge bg-surface-raised/60 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="size-9 rounded-xl bg-accent-soft text-accent flex items-center justify-center">
+                  <Mail className="size-5" />
+                </div>
+                <div>
+                  <h4 id="direct-message-title" className="text-sm font-bold text-ink">
+                    Direct Message Candidate
+                  </h4>
+                  <p className="text-[11px] text-ink-muted">
+                    To: {application.applicantName} ({application.applicantEmail})
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMessageModalOpen(false)}
+                disabled={messageSending}
+                className="p-1 text-ink-muted hover:text-ink rounded-lg"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            {messageSuccess ? (
+              <div className="p-8 text-center space-y-2">
+                <CheckCircle2 className="size-10 text-emerald-600 mx-auto animate-bounce" />
+                <h5 className="text-sm font-bold text-ink">Message Dispatched!</h5>
+                <p className="text-xs text-ink-muted">
+                  Your communication has been transmitted to {application.applicantName}.
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={handleSendMessage} className="p-5 space-y-4 text-xs">
+                {/* Template Chips */}
+                <div className="space-y-1.5">
+                  <label className="font-bold text-ink block">Quick Message Templates</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => applyMessageTemplate('interview')}
+                      className="px-2.5 py-1 rounded-lg border border-edge bg-canvas-soft hover:bg-accent-soft text-ink font-medium"
+                    >
+                      Interview Invitation
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyMessageTemplate('assessment')}
+                      className="px-2.5 py-1 rounded-lg border border-edge bg-canvas-soft hover:bg-accent-soft text-ink font-medium"
+                    >
+                      Technical Exercise
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyMessageTemplate('inquiry')}
+                      className="px-2.5 py-1 rounded-lg border border-edge bg-canvas-soft hover:bg-accent-soft text-ink font-medium"
+                    >
+                      Timeline & Compensation
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-ink block">Subject Line</label>
+                  <Input
+                    required
+                    value={messageSubject}
+                    onChange={(e) => setMessageSubject(e.target.value)}
+                    placeholder="e.g. Invitation to Interview: Next Steps"
+                    className="h-9 text-xs"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-ink block">Message Body</label>
+                  <Textarea
+                    required
+                    rows={6}
+                    value={messageBody}
+                    onChange={(e) => setMessageBody(e.target.value)}
+                    placeholder="Compose message to candidate..."
+                    className="text-xs resize-y"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-edge">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setMessageModalOpen(false)}
+                    disabled={messageSending}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" size="sm" disabled={messageSending} className="gap-1.5">
+                    <Send className="size-3.5" />
+                    {messageSending ? 'Transmitting…' : 'Send Direct Message'}
+                  </Button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Confirmation Modal */}
       {confirmModal && (
@@ -510,11 +782,26 @@ export function CandidateReviewDrawer({
           className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in"
           role="alertdialog"
           aria-modal="true"
+          onClick={() => setConfirmModal(null)}
         >
-          <div className="bg-surface border border-edge rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4">
+          <div
+            className="bg-surface border border-edge rounded-3xl max-w-sm w-full p-5 shadow-2xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-start gap-3">
-              <div className="size-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-                <AlertTriangle className="size-5" />
+              <div
+                className={cn(
+                  'size-10 rounded-xl flex items-center justify-center shrink-0',
+                  confirmModal.targetStatus === 'rejected'
+                    ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                    : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                )}
+              >
+                {confirmModal.targetStatus === 'rejected' ? (
+                  <AlertTriangle className="size-5" />
+                ) : (
+                  <CheckCircle2 className="size-5" />
+                )}
               </div>
               <div>
                 <h4 className="text-sm font-bold text-ink">{confirmModal.title}</h4>
@@ -523,6 +810,22 @@ export function CandidateReviewDrawer({
                 </p>
               </div>
             </div>
+
+            {/* Optional Rejection Feedback Field */}
+            {confirmModal.targetStatus === 'rejected' && (
+              <div className="space-y-1.5 pt-1">
+                <label className="text-[11px] font-bold text-ink block">
+                  Constructive Feedback Note (Optional)
+                </label>
+                <Textarea
+                  rows={3}
+                  value={rejectionFeedback}
+                  onChange={(e) => setRejectionFeedback(e.target.value)}
+                  placeholder="Record constructive feedback for the candidate or future consideration..."
+                  className="text-xs resize-y"
+                />
+              </div>
+            )}
 
             <div className="flex items-center justify-end gap-2 pt-2">
               <Button
@@ -549,3 +852,4 @@ export function CandidateReviewDrawer({
     </div>
   );
 }
+

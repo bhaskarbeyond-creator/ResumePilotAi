@@ -27,6 +27,11 @@ import {
   Tag,
   Calendar,
   Globe,
+  Eye,
+  X,
+  Clock,
+  User,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface ArticleSummary {
@@ -38,6 +43,8 @@ interface ArticleSummary {
   status: 'published' | 'draft';
   publishedAt: string;
   readTime: string;
+  excerpt?: string;
+  content?: string;
 }
 
 const DEFAULT_ARTICLES: ArticleSummary[] = [
@@ -50,6 +57,8 @@ const DEFAULT_ARTICLES: ArticleSummary[] = [
     status: 'published',
     publishedAt: 'Oct 15, 2026',
     readTime: '6 min read',
+    excerpt: 'Navigating technical leadership, systemic impact, and strategic architecture in enterprise software.',
+    content: `Engineering leadership is no longer just about writing code in isolation. As systems scale to millions of concurrent users, the defining traits of senior and staff engineers center around architectural clarity, empathetic code review, and reducing organizational friction.\n\n### 1. Focus on System Invariants\nBefore touching a single line of production code, identify the invariants that must never break: authorization boundaries, tenant isolation, and sub-100ms API budgets.\n\n### 2. Communicate Through Architectural Decision Records (ADRs)\nDocumenting the 'why' behind architectural trade-offs allows teams to move fast without recurring regressions.`,
   },
   {
     id: 'post_002',
@@ -60,6 +69,8 @@ const DEFAULT_ARTICLES: ArticleSummary[] = [
     status: 'published',
     publishedAt: 'Oct 12, 2026',
     readTime: '4 min read',
+    excerpt: 'Deep learning parser algorithms and keyword extraction techniques used by Fortune 500 HR departments.',
+    content: `Modern Applicant Tracking Systems (ATS) have shifted from primitive regex matching to contextual semantic embeddings. Here is how candidates can ensure their experience is highlighted accurately.\n\n### The Semantic Density Metric\nAligning your project accomplishments with measurable impact (STAR format: Situation, Task, Action, Result) ensures semantic scoring models rank your application in the top 5th percentile.`,
   },
   {
     id: 'post_003',
@@ -70,6 +81,8 @@ const DEFAULT_ARTICLES: ArticleSummary[] = [
     status: 'draft',
     publishedAt: 'Draft (Unpublished)',
     readTime: '8 min read',
+    excerpt: 'Mastering conflict resolution, cross-functional prioritization, and post-incident retrospectives.',
+    content: `Behavioral evaluations assess leadership resilience under pressure. We analyze the 50 most prevalent scenarios asked across Tier 1 tech companies and how to structure compelling, authentic responses.`,
   },
 ];
 
@@ -78,6 +91,9 @@ export function AdminBlogManagementTab() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PUBLISHED' | 'DRAFT'>('ALL');
   const [loading, setLoading] = useState(true);
+  const [previewArticle, setPreviewArticle] = useState<ArticleSummary | null>(null);
+  const [deleteConfirmArticle, setDeleteConfirmArticle] = useState<ArticleSummary | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const loadArticles = async () => {
@@ -97,10 +113,25 @@ export function AdminBlogManagementTab() {
     loadArticles();
   }, []);
 
+  // Escape key handler
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (previewArticle) setPreviewArticle(null);
+        else if (deleteConfirmArticle) setDeleteConfirmArticle(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [previewArticle, deleteConfirmArticle]);
+
   const handleDelete = async (postId: string) => {
     try {
       await del(`/blog/posts/${postId}`).catch(() => {});
       setArticles((prev) => prev.filter((a) => a.id !== postId));
+      setDeleteConfirmArticle(null);
+      setFeedback(`Article ${postId} deleted successfully.`);
+      setTimeout(() => setFeedback(null), 3000);
     } catch {
       // Handled
     }
@@ -143,6 +174,13 @@ export function AdminBlogManagementTab() {
           </Button>
         </div>
       </div>
+
+      {feedback && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 flex items-center gap-2 animate-[fade-in_150ms_ease-out]">
+          <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
+          <span>{feedback}</span>
+        </div>
+      )}
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="relative max-w-sm flex-1">
@@ -217,10 +255,21 @@ export function AdminBlogManagementTab() {
                 <td className="px-4 py-3 text-right">
                   <div className="flex items-center justify-end gap-1.5">
                     <Button
+                      variant="ghost"
+                      size="xs"
+                      onClick={() => setPreviewArticle(article)}
+                      className="h-7 px-2 text-xs font-semibold text-brand-600 hover:text-brand-700"
+                      title="Live article simulation preview"
+                    >
+                      <Eye className="size-3 mr-1" />
+                      Preview
+                    </Button>
+                    <Button
                       variant="outline"
                       size="xs"
                       onClick={() => navigate(`/blog-editor/${article.id}`)}
                       title="Edit in In-App Blog Editor"
+                      className="h-7 px-2 text-xs"
                     >
                       <Edit3 className="size-3 mr-1" />
                       Edit
@@ -228,8 +277,9 @@ export function AdminBlogManagementTab() {
                     <Button
                       variant="destructive"
                       size="xs"
-                      onClick={() => handleDelete(article.id)}
+                      onClick={() => setDeleteConfirmArticle(article)}
                       title="Delete article"
+                      className="h-7 px-2 text-xs"
                     >
                       <Trash2 className="size-3" />
                     </Button>
@@ -247,6 +297,164 @@ export function AdminBlogManagementTab() {
           </tbody>
         </table>
       </div>
+
+      {/* ─── Modal 1: Live Blog Article Preview Modal ─── */}
+      {previewArticle && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/70 backdrop-blur-xs animate-[fade-in_150ms_ease-out]"
+          onClick={() => setPreviewArticle(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="blog-preview-modal-title"
+        >
+          <div
+            className="w-full max-w-3xl bg-surface rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-brand-900 to-neutral-950 px-6 py-4 text-white flex items-center justify-between shrink-0 border-b border-neutral-800">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="size-10 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold text-sm shadow-md shrink-0">
+                  <Eye className="size-5" />
+                </div>
+                <div className="min-w-0">
+                  <h3 id="blog-preview-modal-title" className="text-base font-extrabold text-white truncate">
+                    Article Reader Preview
+                  </h3>
+                  <p className="text-xs text-neutral-300 font-mono mt-0.5">
+                    /blog/{previewArticle.slug} · Status: {previewArticle.status.toUpperCase()}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewArticle(null)}
+                className="p-2 text-neutral-400 hover:text-white rounded-xl hover:bg-neutral-800 transition cursor-pointer"
+                aria-label="Close preview"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+
+            {/* Article Simulation Body */}
+            <div className="p-8 overflow-y-auto space-y-6">
+              <div className="space-y-3 border-b border-border pb-6">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-brand-100 text-brand-800 px-3 py-1 text-xs font-bold uppercase tracking-wider">
+                    {previewArticle.category}
+                  </span>
+                  <span className="text-xs text-ink-muted flex items-center gap-1">
+                    <Clock className="size-3.5 text-ink-muted" /> {previewArticle.readTime}
+                  </span>
+                  <span className="text-xs text-ink-muted">·</span>
+                  <span className="text-xs text-ink-muted flex items-center gap-1">
+                    <Calendar className="size-3.5 text-ink-muted" /> {previewArticle.publishedAt}
+                  </span>
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-ink tracking-tight leading-tight">
+                  {previewArticle.title}
+                </h1>
+                <div className="flex items-center gap-2 pt-2">
+                  <div className="size-8 rounded-full bg-brand-600 text-white flex items-center justify-center font-bold text-xs">
+                    {previewArticle.author.charAt(0)}
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-ink block">{previewArticle.author}</span>
+                    <span className="text-[10px] text-ink-muted">Verified Technical Contributor</span>
+                  </div>
+                </div>
+              </div>
+
+              {previewArticle.excerpt && (
+                <p className="text-sm font-medium text-ink-secondary italic border-l-4 border-brand-500 pl-4 py-1 bg-brand-50/30 rounded-r-lg">
+                  {previewArticle.excerpt}
+                </p>
+              )}
+
+              <div className="prose prose-sm dark:prose-invert max-w-none text-ink-secondary text-xs sm:text-sm leading-relaxed space-y-4">
+                {(previewArticle.content || previewArticle.excerpt || '')
+                  .split('\n\n')
+                  .map((paragraph, idx) => {
+                    if (paragraph.startsWith('### ')) {
+                      return (
+                        <h3 key={idx} className="text-base font-bold text-ink pt-2">
+                          {paragraph.replace('### ', '')}
+                        </h3>
+                      );
+                    }
+                    return <p key={idx}>{paragraph}</p>;
+                  })}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 bg-neutral-50 border-t border-border flex items-center justify-between">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/blog/${previewArticle.slug}`)}
+                className="text-xs"
+              >
+                <ExternalLink className="size-3 mr-1" />
+                Open Live Public URL
+              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setPreviewArticle(null)} className="text-xs">
+                  Close Preview
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => {
+                    navigate(`/blog-editor/${previewArticle.id}`);
+                  }}
+                  className="text-xs font-semibold"
+                >
+                  <Edit3 className="size-3 mr-1" />
+                  Edit in Authoring Studio
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Modal 2: Delete Article Confirmation Dialog ─── */}
+      {deleteConfirmArticle && (
+        <div
+          className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-neutral-950/70 backdrop-blur-xs animate-[fade-in_150ms_ease-out]"
+          onClick={() => setDeleteConfirmArticle(null)}
+          role="alertdialog"
+          aria-modal="true"
+        >
+          <div
+            className="w-full max-w-sm bg-surface rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-rose-100 bg-rose-50 flex items-center gap-3 text-rose-900">
+              <AlertTriangle className="size-5 text-rose-600" />
+              <h3 className="font-bold text-sm">Delete Blog Article?</h3>
+            </div>
+            <div className="p-5 text-xs text-ink-muted leading-relaxed">
+              Are you sure you want to permanently delete article &quot;{deleteConfirmArticle.title}&quot;?
+              This will remove the publication from the public career guide and cannot be undone.
+            </div>
+            <div className="p-4 pt-2 flex justify-end gap-2 bg-neutral-50/50 border-t border-border">
+              <Button variant="outline" size="sm" onClick={() => setDeleteConfirmArticle(null)} className="text-xs">
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => handleDelete(deleteConfirmArticle.id)}
+                className="text-xs font-bold"
+              >
+                Delete Article
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

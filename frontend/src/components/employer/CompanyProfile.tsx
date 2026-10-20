@@ -8,7 +8,7 @@
  * - Culture highlights and team branding
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Building2,
   Globe,
@@ -21,17 +21,182 @@ import {
   ExternalLink,
   ShieldCheck,
   Sparkles,
+  Edit2,
+  X,
+  AlertCircle,
+  Image as ImageIcon,
+  Mail,
+  Phone,
+  Briefcase,
+  FileText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { useQueryClient } from '@tanstack/react-query';
 import { useEmployerCompanies, type EmployerCompany } from '@/hooks/use-api-hooks';
+import { post, patch } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 
+const INDUSTRY_OPTIONS = [
+  'Technology',
+  'Healthcare',
+  'Finance',
+  'Education',
+  'Retail',
+  'Manufacturing',
+  'Consulting',
+  'Marketing',
+  'Real Estate',
+  'Hospitality',
+  'Transportation',
+  'Energy',
+  'Media',
+  'Government',
+  'Non-profit',
+  'Other',
+];
+
+const COMPANY_SIZE_OPTIONS = [
+  '1-10 employees',
+  '11-50 employees',
+  '51-200 employees',
+  '201-500 employees',
+  '501-1000 employees',
+  '1000+ employees',
+];
+
+interface CompanyFormData {
+  name: string;
+  website: string;
+  companyImage: string;
+  description: string;
+  industry: string;
+  size: string;
+  location: string;
+  address: string;
+  phone: string;
+  email: string;
+}
+
+const INITIAL_FORM_DATA: CompanyFormData = {
+  name: '',
+  website: '',
+  companyImage: '',
+  description: '',
+  industry: 'Technology',
+  size: '11-50 employees',
+  location: '',
+  address: '',
+  phone: '',
+  email: '',
+};
+
 export function CompanyProfile() {
+  const queryClient = useQueryClient();
   const { data: companies = [], isLoading } = useEmployerCompanies();
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
 
+  // Modal State
+  const [modalOpen, setModalOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState<CompanyFormData>(INITIAL_FORM_DATA);
+  const [formErrors, setFormErrors] = useState<Partial<Record<keyof CompanyFormData, string>>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
   const activeCompany = companies.find((c) => c.id === selectedCompanyId) || companies[0] || null;
+
+  // Escape key handler for modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && modalOpen) {
+        setModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [modalOpen]);
+
+  const openCreateModal = () => {
+    setIsEditing(false);
+    setFormData(INITIAL_FORM_DATA);
+    setFormErrors({});
+    setModalOpen(true);
+  };
+
+  const openEditModal = (comp: EmployerCompany) => {
+    setIsEditing(true);
+    setFormData({
+      name: comp.name || '',
+      website: comp.website || '',
+      companyImage: comp.logo || '',
+      description: comp.description || '',
+      industry: comp.industry || 'Technology',
+      size: comp.size || '11-50 employees',
+      location: comp.location || '',
+      address: (comp as any).address || '',
+      phone: (comp as any).phone || '',
+      email: (comp as any).email || '',
+    });
+    setFormErrors({});
+    setModalOpen(true);
+  };
+
+  const validateForm = () => {
+    const errors: Partial<Record<keyof CompanyFormData, string>> = {};
+    if (!formData.name.trim()) errors.name = 'Company name is required';
+    if (!formData.industry.trim()) errors.industry = 'Industry selection is required';
+    if (!formData.size.trim()) errors.size = 'Company size is required';
+    if (!formData.location.trim()) errors.location = 'Headquarters location is required';
+
+    if (formData.website.trim()) {
+      if (!formData.website.startsWith('https://')) {
+        errors.website = 'Website must start with https://';
+      }
+    }
+    if (formData.companyImage.trim()) {
+      if (!formData.companyImage.startsWith('https://')) {
+        errors.companyImage = 'Image URL must start with https://';
+      }
+    }
+    if (formData.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      errors.email = 'Please enter a valid email address';
+    }
+    if (formData.phone.trim() && !/^\+?[0-9 ()-]{7,30}$/.test(formData.phone.trim())) {
+      errors.phone = 'Please enter a valid phone number';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateForm() || submitting) return;
+
+    setSubmitting(true);
+    try {
+      if (isEditing && activeCompany) {
+        await patch(`/employer/companies/${activeCompany.id}`, {
+          expectedRevision: activeCompany.revision || 1,
+          data: formData,
+        });
+        setNotification({ type: 'success', message: `Company "${formData.name}" updated successfully.` });
+      } else {
+        await post('/employer/companies', { data: formData });
+        setNotification({ type: 'success', message: `Employer entity "${formData.name}" registered successfully.` });
+      }
+      setModalOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['employer', 'companies'] });
+      setTimeout(() => setNotification(null), 4000);
+    } catch (err: any) {
+      setNotification({ type: 'error', message: err.message || 'Operation failed. Please check inputs.' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -46,7 +211,35 @@ export function CompanyProfile() {
             Manage your verified hiring organization profile, branding assets, and applicant-facing culture.
           </p>
         </div>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            onClick={openCreateModal}
+            className="text-xs font-semibold gap-1.5"
+          >
+            <Plus className="size-3.5" /> Register Company Entity
+          </Button>
+        </div>
       </div>
+
+      {/* Notifications */}
+      {notification && (
+        <div
+          className={cn(
+            'p-3.5 rounded-xl border text-xs font-semibold flex items-center gap-2 animate-[fade-in_150ms_ease-out]',
+            notification.type === 'success'
+              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-300'
+              : 'bg-rose-500/10 border-rose-500/20 text-rose-700 dark:text-rose-300'
+          )}
+        >
+          {notification.type === 'success' ? (
+            <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+          ) : (
+            <AlertCircle className="size-4 shrink-0 text-rose-600" />
+          )}
+          <span>{notification.message}</span>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-pulse">
@@ -60,7 +253,7 @@ export function CompanyProfile() {
           <p className="text-xs text-ink-muted max-w-md mx-auto mt-1">
             To post jobs and evaluate candidates under your company brand, register your employer organization profile.
           </p>
-          <Button size="sm" className="mt-4 text-xs font-semibold gap-1.5">
+          <Button size="sm" onClick={openCreateModal} className="mt-4 text-xs font-semibold gap-1.5">
             <Plus className="size-3.5" /> Register Company Entity
           </Button>
         </Card>
@@ -68,9 +261,19 @@ export function CompanyProfile() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Companies List Selector */}
           <div className="col-span-1 space-y-3">
-            <p className="text-xs font-bold uppercase tracking-wider text-ink-muted">
-              Registered Organizations ({companies.length})
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-bold uppercase tracking-wider text-ink-muted">
+                Registered Organizations ({companies.length})
+              </p>
+              <Button
+                variant="ghost"
+                size="xs"
+                onClick={openCreateModal}
+                className="h-6 px-2 text-[11px] text-accent font-semibold"
+              >
+                + Add Entity
+              </Button>
+            </div>
             <div className="space-y-2">
               {companies.map((comp) => {
                 const isSelected = activeCompany?.id === comp.id;
@@ -93,17 +296,17 @@ export function CompanyProfile() {
                           comp.name.charAt(0).toUpperCase()
                         )}
                       </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-ink flex items-center gap-1.5">
+                      <div className="min-w-0">
+                        <h4 className="text-xs font-bold text-ink flex items-center gap-1.5 truncate">
                           {comp.name}
-                          {comp.featured && <Star className="size-3 text-amber-500 fill-amber-500" />}
+                          {comp.featured && <Star className="size-3 text-amber-500 fill-amber-500 shrink-0" />}
                         </h4>
                         <p className="text-[10px] text-ink-muted capitalize">
-                          {comp.status || 'Active Entity'}
+                          {comp.industry || comp.status || 'Active Entity'}
                         </p>
                       </div>
                     </div>
-                    {isSelected && <CheckCircle2 className="size-4 text-accent" />}
+                    {isSelected && <CheckCircle2 className="size-4 text-accent shrink-0" />}
                   </div>
                 );
               })}
@@ -114,7 +317,7 @@ export function CompanyProfile() {
           {activeCompany && (
             <Card className="col-span-1 md:col-span-2 border-edge shadow-sm">
               <CardHeader className="border-b border-edge pb-4">
-                <div className="flex items-start justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                   <div className="flex items-center gap-3.5">
                     <div className="size-14 rounded-xl bg-accent-soft text-accent border border-accent/20 flex items-center justify-center font-extrabold text-xl overflow-hidden shrink-0">
                       {activeCompany.logo ? (
@@ -132,7 +335,7 @@ export function CompanyProfile() {
                           <ShieldCheck className="size-3" /> Verified Employer
                         </span>
                       </div>
-                      <CardDescription className="text-xs text-ink-muted mt-1 flex items-center gap-3">
+                      <CardDescription className="text-xs text-ink-muted mt-1 flex flex-wrap items-center gap-3">
                         {activeCompany.website && (
                           <a
                             href={activeCompany.website.startsWith('http') ? activeCompany.website : `https://${activeCompany.website}`}
@@ -143,25 +346,41 @@ export function CompanyProfile() {
                             <Globe className="size-3" /> {activeCompany.website.replace(/^https?:\/\//, '')}
                           </a>
                         )}
+                        {activeCompany.location && (
+                          <span className="flex items-center gap-1">
+                            <MapPin className="size-3" /> {activeCompany.location}
+                          </span>
+                        )}
                         <span>Revision #{activeCompany.revision || 1}</span>
                       </CardDescription>
                     </div>
                   </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openEditModal(activeCompany)}
+                    className="text-xs font-semibold gap-1.5 self-start"
+                  >
+                    <Edit2 className="size-3.5" /> Edit Profile
+                  </Button>
                 </div>
               </CardHeader>
 
               <CardContent className="p-6 space-y-6">
                 {/* Brand Highlights */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="p-3 rounded-lg border border-edge bg-canvas-soft">
+                    <p className="text-[10px] text-ink-muted uppercase font-semibold">Industry</p>
+                    <p className="text-xs font-bold text-ink mt-0.5">{activeCompany.industry || 'Technology'}</p>
+                  </div>
+                  <div className="p-3 rounded-lg border border-edge bg-canvas-soft">
+                    <p className="text-[10px] text-ink-muted uppercase font-semibold">Company Size</p>
+                    <p className="text-xs font-bold text-ink mt-0.5">{activeCompany.size || '11-50 employees'}</p>
+                  </div>
                   <div className="p-3 rounded-lg border border-edge bg-canvas-soft">
                     <p className="text-[10px] text-ink-muted uppercase font-semibold">Entity Status</p>
                     <p className="text-xs font-bold text-ink mt-0.5 capitalize">{activeCompany.status || 'Approved'}</p>
-                  </div>
-                  <div className="p-3 rounded-lg border border-edge bg-canvas-soft">
-                    <p className="text-[10px] text-ink-muted uppercase font-semibold">Visibility</p>
-                    <p className="text-xs font-bold text-ink mt-0.5">
-                      {activeCompany.featured ? 'Featured Partner' : 'Standard Directory'}
-                    </p>
                   </div>
                   <div className="p-3 rounded-lg border border-edge bg-canvas-soft">
                     <p className="text-[10px] text-ink-muted uppercase font-semibold">Verified On</p>
@@ -170,6 +389,19 @@ export function CompanyProfile() {
                     </p>
                   </div>
                 </div>
+
+                {/* Company Overview Description */}
+                {activeCompany.description && (
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold text-ink flex items-center gap-1.5">
+                      <FileText className="size-3.5 text-accent" />
+                      About the Company
+                    </h4>
+                    <p className="text-xs text-ink-muted leading-relaxed whitespace-pre-wrap">
+                      {activeCompany.description}
+                    </p>
+                  </div>
+                )}
 
                 {/* Culture & Hiring Pledge */}
                 <div className="space-y-2">
@@ -186,6 +418,246 @@ export function CompanyProfile() {
           )}
         </div>
       )}
+
+      {/* ─── Add/Edit Company Entity Modal (11-Field Legacy Parity) ─── */}
+      {modalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-xs animate-in fade-in duration-150"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="company-modal-title"
+          onClick={() => !submitting && setModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-2xl max-h-[92vh] flex flex-col rounded-3xl bg-surface border border-edge shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="p-5 border-b border-edge bg-surface-raised/60 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="size-10 rounded-xl bg-accent-soft text-accent flex items-center justify-center">
+                  <Building2 className="size-5" />
+                </div>
+                <div>
+                  <h3 id="company-modal-title" className="text-base font-bold text-ink">
+                    {isEditing ? `Edit ${formData.name || 'Company Profile'}` : 'Register Employer Entity'}
+                  </h3>
+                  <p className="text-xs text-ink-muted">
+                    {isEditing
+                      ? 'Update organizational branding, verified contacts, and culture details.'
+                      : 'Create a verified company profile to post jobs and evaluate candidates.'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalOpen(false)}
+                disabled={submitting}
+                className="p-1.5 rounded-lg text-ink-muted hover:text-ink hover:bg-canvas transition-colors"
+                aria-label="Close modal"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+
+            {/* Modal Form Body */}
+            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5 text-xs">
+              {/* Logo Preview Banner */}
+              <div className="flex items-center gap-4 p-4 rounded-2xl border border-edge bg-canvas-soft">
+                <div className="size-16 rounded-xl border border-edge bg-surface flex items-center justify-center overflow-hidden shrink-0 font-extrabold text-xl text-accent">
+                  {formData.companyImage.trim() && formData.companyImage.startsWith('https://') ? (
+                    <img
+                      src={formData.companyImage}
+                      alt="Logo preview"
+                      className="size-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    formData.name.trim().charAt(0).toUpperCase() || <ImageIcon className="size-6 text-ink-muted" />
+                  )}
+                </div>
+                <div className="flex-1 space-y-1">
+                  <label className="font-bold text-ink block">Company Logo URL (HTTPS)</label>
+                  <Input
+                    value={formData.companyImage}
+                    onChange={(e) => setFormData({ ...formData, companyImage: e.target.value })}
+                    placeholder="https://example.com/logo.png"
+                    className="h-8 text-xs font-mono"
+                  />
+                  {formErrors.companyImage && (
+                    <p className="text-[11px] text-rose-500 font-semibold">{formErrors.companyImage}</p>
+                  )}
+                  <p className="text-[10px] text-ink-muted">
+                    Direct public image link (PNG, SVG, or WEBP). Must start with https://
+                  </p>
+                </div>
+              </div>
+
+              {/* Basic Facts: Name & Website */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="font-bold text-ink flex items-center gap-1">
+                    <span>Company Name</span>
+                    <span className="text-rose-500">*</span>
+                  </label>
+                  <Input
+                    required
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="e.g. Acme Innovations Corp"
+                    className="h-9 text-xs"
+                  />
+                  {formErrors.name && <p className="text-[11px] text-rose-500 font-semibold">{formErrors.name}</p>}
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-ink block">Official Website (HTTPS)</label>
+                  <Input
+                    value={formData.website}
+                    onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                    placeholder="https://company.com"
+                    className="h-9 text-xs font-mono"
+                  />
+                  {formErrors.website && (
+                    <p className="text-[11px] text-rose-500 font-semibold">{formErrors.website}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Industry & Size */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="font-bold text-ink flex items-center gap-1">
+                    <span>Industry Sector</span>
+                    <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    value={formData.industry}
+                    onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
+                    className="w-full h-9 px-3 rounded-lg bg-surface border border-edge text-xs text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+                  >
+                    {INDUSTRY_OPTIONS.map((ind) => (
+                      <option key={ind} value={ind}>
+                        {ind}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-ink flex items-center gap-1">
+                    <span>Organization Size</span>
+                    <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    value={formData.size}
+                    onChange={(e) => setFormData({ ...formData, size: e.target.value })}
+                    className="w-full h-9 px-3 rounded-lg bg-surface border border-edge text-xs text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+                  >
+                    {COMPANY_SIZE_OPTIONS.map((sz) => (
+                      <option key={sz} value={sz}>
+                        {sz}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Location & Address */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="font-bold text-ink flex items-center gap-1">
+                    <span>Headquarters Location</span>
+                    <span className="text-rose-500">*</span>
+                  </label>
+                  <Input
+                    required
+                    value={formData.location}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    placeholder="e.g. San Francisco, CA or London, UK"
+                    className="h-9 text-xs"
+                  />
+                  {formErrors.location && (
+                    <p className="text-[11px] text-rose-500 font-semibold">{formErrors.location}</p>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-ink block">Street Address / Suite</label>
+                  <Input
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    placeholder="e.g. 500 Market St, Suite 400"
+                    className="h-9 text-xs"
+                  />
+                </div>
+              </div>
+
+              {/* Contacts: Email & Phone */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="font-bold text-ink block">Recruitment Email</label>
+                  <Input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="careers@company.com"
+                    className="h-9 text-xs"
+                  />
+                  {formErrors.email && (
+                    <p className="text-[11px] text-rose-500 font-semibold">{formErrors.email}</p>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-ink block">Contact Phone Number</label>
+                  <Input
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    placeholder="+1 (555) 019-2834"
+                    className="h-9 text-xs font-mono"
+                  />
+                  {formErrors.phone && (
+                    <p className="text-[11px] text-rose-500 font-semibold">{formErrors.phone}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="space-y-1.5">
+                <label className="font-bold text-ink block">Company Overview & Culture</label>
+                <Textarea
+                  rows={4}
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Describe your organization's mission, engineering challenges, technology stack, and hiring culture..."
+                  className="text-xs resize-y"
+                />
+              </div>
+
+              {/* Modal Actions Footer */}
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-edge">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setModalOpen(false)}
+                  disabled={submitting}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" size="sm" disabled={submitting}>
+                  {submitting ? 'Saving…' : isEditing ? 'Save Changes' : 'Register Entity'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+export default CompanyProfile;
+

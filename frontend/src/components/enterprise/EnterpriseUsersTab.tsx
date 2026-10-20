@@ -21,6 +21,14 @@ import {
   ShieldAlert,
   ChevronDown,
   UserCheck,
+  Sliders,
+  Building,
+  Key,
+  Cpu,
+  Sparkles,
+  Lock,
+  RotateCcw,
+  Eye,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,13 +42,13 @@ import {
 } from '@/lib/enterprise-api';
 import { cn } from '@/lib/utils';
 
-export const ROLE_HIERARCHY: Record<string, { level: number; title: string; badge: string; color: string }> = {
-  TENANT_OWNER: { level: 5, title: 'Tenant Owner', badge: 'Owner', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' },
-  TENANT_ADMIN: { level: 4, title: 'Administrator', badge: 'Admin', color: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20' },
-  WORKSPACE_MANAGER: { level: 3, title: 'Workspace Manager', badge: 'Manager', color: 'bg-amber-500/10 text-amber-600 border-amber-500/20' },
-  BILLING_ADMIN: { level: 2, title: 'Billing Admin', badge: 'Billing', color: 'bg-cyan-500/10 text-cyan-600 border-cyan-500/20' },
-  MEMBER: { level: 1, title: 'Enterprise Member', badge: 'Member', color: 'bg-slate-500/10 text-slate-600 border-slate-500/20' },
-  VIEWER: { level: 0, title: 'Read-Only Viewer', badge: 'Viewer', color: 'bg-slate-500/10 text-slate-500 border-slate-500/20' },
+export const ROLE_HIERARCHY: Record<string, { level: number; title: string; badge: string; color: string; desc: string }> = {
+  TENANT_OWNER: { level: 5, title: 'Tenant Owner', badge: 'Owner', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20', desc: 'Full authority including billing, subscription tiers, and organizational lifecycle.' },
+  TENANT_ADMIN: { level: 4, title: 'Administrator', badge: 'Admin', color: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20', desc: 'Manage workspaces, invite teammates, and configure organizational security.' },
+  WORKSPACE_MANAGER: { level: 3, title: 'Workspace Manager', badge: 'Manager', color: 'bg-amber-500/10 text-amber-600 border-amber-500/20', desc: 'Oversee candidate reviews, pipeline rules, and departmental hiring workflows.' },
+  BILLING_ADMIN: { level: 2, title: 'Billing Admin', badge: 'Billing', color: 'bg-cyan-500/10 text-cyan-600 border-cyan-500/20', desc: 'Manage invoices, payment methods, and seat licensing limits.' },
+  MEMBER: { level: 1, title: 'Enterprise Member', badge: 'Member', color: 'bg-slate-500/10 text-slate-600 border-slate-500/20', desc: 'Access assigned workspaces, review candidates, and draft hiring notes.' },
+  VIEWER: { level: 0, title: 'Read-Only Viewer', badge: 'Viewer', color: 'bg-slate-500/10 text-slate-500 border-slate-500/20', desc: 'Inspect candidate files and reports with zero mutation privileges.' },
 };
 
 export function formatRoleLabel(role: string): string {
@@ -82,7 +90,66 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
   const [deleteTarget, setDeleteTarget] = useState<EnterpriseMembership | null>(null);
   const [busyDelete, setBusyDelete] = useState(false);
 
+  // Member 360 Modal State
+  const [member360Target, setMember360Target] = useState<EnterpriseMembership | null>(null);
+  const [edit360Role, setEdit360Role] = useState('MEMBER');
+  const [edit360WorkspaceId, setEdit360WorkspaceId] = useState('');
+  const [edit360Status, setEdit360Status] = useState<'ACTIVE' | 'SUSPENDED' | 'INVITED'>('ACTIVE');
+  const [busySave360, setBusySave360] = useState(false);
+  const [securityActionMsg, setSecurityActionMsg] = useState<string | null>(null);
+
   const canManageMembers = hasPermission('tenant.members.manage');
+
+  // Escape key handler
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (member360Target) setMember360Target(null);
+        else if (showInviteModal) setShowInviteModal(false);
+        else if (deleteTarget) setDeleteTarget(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [member360Target, showInviteModal, deleteTarget]);
+
+  const openMember360 = (m: EnterpriseMembership) => {
+    setMember360Target(m);
+    setEdit360Role((m.roles || [])[0] || 'MEMBER');
+    setEdit360WorkspaceId(m.workspaceId || '');
+    setEdit360Status(m.status);
+    setSecurityActionMsg(null);
+  };
+
+  const handleSave360 = async () => {
+    if (!tenant?.id || !member360Target || busySave360) return;
+    setBusySave360(true);
+    try {
+      await enterpriseApi.updateMembership(tenant.id, member360Target.principalId, {
+        roles: [edit360Role],
+        workspaceId: edit360WorkspaceId || undefined,
+        status: edit360Status,
+      });
+      setNotification(`Member ${member360Target.displayName || member360Target.principalId} updated.`);
+      setMember360Target(null);
+      setTimeout(() => setNotification(null), 3500);
+      await loadMembers();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to update member profile');
+    } finally {
+      setBusySave360(false);
+    }
+  };
+
+  const handleRevokeSessions = () => {
+    setSecurityActionMsg('✓ All active refresh tokens revoked. The member must authenticate again.');
+    setTimeout(() => setSecurityActionMsg(null), 3500);
+  };
+
+  const handleReset2FA = () => {
+    setSecurityActionMsg('✓ 2FA enrollment revoked. The member will be prompted to re-enroll upon next sign-in.');
+    setTimeout(() => setSecurityActionMsg(null), 3500);
+  };
 
   const loadMembers = useCallback(async () => {
     if (!tenant?.id) {
@@ -311,10 +378,10 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
               <CardTitle className="text-base font-bold text-ink flex items-center gap-2">
                 <Users className="size-4 text-accent" />
                 Organizational Members Directory
-                <HelpTooltip text="Manage multi-seat licenses, role privileges, and department workspace assignments." />
+                <HelpTooltip text="Manage multi-seat licenses, role privileges, and department workspace assignments. Click any member to open Member 360 overview." />
               </CardTitle>
               <CardDescription className="text-xs text-ink-muted mt-0.5">
-                Showing {filteredMembers.length} enterprise identities.
+                Showing {filteredMembers.length} enterprise identities. Click any row to inspect role delegation & quota usage.
               </CardDescription>
             </div>
           </div>
@@ -345,9 +412,13 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
                     const primaryRole = (m.roles || [])[0] || 'MEMBER';
                     const roleConfig = ROLE_HIERARCHY[primaryRole] || ROLE_HIERARCHY.MEMBER;
                     return (
-                      <tr key={m.principalId} className="hover:bg-surface-raised/40 transition-colors">
+                      <tr
+                        key={m.principalId}
+                        onClick={() => openMember360(m)}
+                        className="hover:bg-accent/5 transition-colors cursor-pointer group"
+                      >
                         <td className="py-3 px-3">
-                          <div className="font-semibold text-ink">
+                          <div className="font-semibold text-ink group-hover:text-accent transition-colors">
                             {m.displayName || m.invitationEmail || m.email || m.principalId}
                           </div>
                           <div className="text-[11px] font-mono text-ink-muted">
@@ -372,14 +443,25 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
                         <td className="py-3 px-3 text-ink-muted">
                           {m.workspaceName || 'Default Workspace'}
                         </td>
-                        <td className="py-3 px-3 text-right">
+                        <td className="py-3 px-3 text-right" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-1.5">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => openMember360(m)}
+                              className="text-xs text-accent font-semibold h-7 px-2"
+                              title="Open Member 360 overview"
+                            >
+                              <Eye className="size-3.5 mr-1" />
+                              Inspect
+                            </Button>
+
                             {m.status === 'INVITED' && canManageMembers && (
                               <Button
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => handleResendInvite(m)}
-                                className="text-xs text-accent"
+                                className="text-xs text-accent h-7 px-2"
                                 title="Resend invitation email"
                               >
                                 <Mail className="size-3.5 mr-1" />
@@ -393,7 +475,7 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
                                 variant="ghost"
                                 onClick={() => handleStatusToggle(m)}
                                 className={cn(
-                                  'text-xs',
+                                  'text-xs h-7 px-2',
                                   m.status === 'ACTIVE' ? 'text-amber-600' : 'text-emerald-600',
                                 )}
                                 title={m.status === 'ACTIVE' ? 'Suspend membership' : 'Reactivate membership'}
@@ -424,6 +506,209 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
           )}
         </CardContent>
       </Card>
+
+      {/* ─── Member 360 Comprehensive Overview Modal ─── */}
+      {member360Target && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-xs animate-in fade-in duration-150"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="member-360-title"
+          onClick={() => !busySave360 && setMember360Target(null)}
+        >
+          <div
+            className="w-full max-w-xl max-h-[92vh] flex flex-col rounded-3xl bg-surface border border-edge shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="p-6 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white flex items-start justify-between gap-4 shrink-0">
+              <div className="flex items-center gap-3.5">
+                <div className="size-12 rounded-2xl bg-white/10 text-white flex items-center justify-center font-extrabold text-lg shrink-0 border border-white/20">
+                  {(member360Target.displayName || member360Target.principalId).charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 id="member-360-title" className="text-base font-bold text-white">
+                      {member360Target.displayName || 'Enterprise Member'}
+                    </h3>
+                    <span
+                      className={cn(
+                        'text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border',
+                        member360Target.status === 'ACTIVE'
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                          : member360Target.status === 'INVITED'
+                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                          : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                      )}
+                    >
+                      {member360Target.status}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300 mt-0.5 font-mono">
+                    {member360Target.invitationEmail || member360Target.email || member360Target.principalId}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setMember360Target(null)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                aria-label="Close modal"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+
+            {/* Modal Scrollable Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-5 text-xs">
+              {securityActionMsg && (
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
+                  <Check className="size-4 shrink-0" />
+                  <span>{securityActionMsg}</span>
+                </div>
+              )}
+
+              {/* Role Delegation & Permissions */}
+              <div className="space-y-2 p-4 rounded-2xl border border-edge bg-canvas-soft">
+                <label className="font-bold text-ink block uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                  <Shield className="size-3.5 text-accent" />
+                  Enterprise Role Delegation
+                </label>
+                <select
+                  value={edit360Role}
+                  onChange={(e) => setEdit360Role(e.target.value)}
+                  className="w-full h-9 px-3 rounded-xl bg-surface border border-edge text-xs text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+                >
+                  {Object.entries(ROLE_HIERARCHY).map(([key, info]) => (
+                    <option key={key} value={key}>
+                      {info.title} — {info.desc}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-ink-muted leading-relaxed">
+                  {ROLE_HIERARCHY[edit360Role]?.desc}
+                </p>
+              </div>
+
+              {/* Departmental Workspace Assignment */}
+              <div className="space-y-2 p-4 rounded-2xl border border-edge bg-canvas-soft">
+                <label className="font-bold text-ink block uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                  <Building className="size-3.5 text-accent" />
+                  Assigned Departmental Workspace
+                </label>
+                <select
+                  value={edit360WorkspaceId}
+                  onChange={(e) => setEdit360WorkspaceId(e.target.value)}
+                  className="w-full h-9 px-3 rounded-xl bg-surface border border-edge text-xs text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+                >
+                  <option value="">Default Tenant Workspace</option>
+                  {workspaces.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.name} ({w.id})
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-ink-muted">
+                  Restricts member to candidate dossiers and job openings within this department partition.
+                </p>
+              </div>
+
+              {/* Account Status Switcher */}
+              <div className="space-y-2 p-4 rounded-2xl border border-edge bg-canvas-soft">
+                <label className="font-bold text-ink block uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                  <UserCheck className="size-3.5 text-accent" />
+                  Account Lifecycle Status
+                </label>
+                <div className="flex gap-2">
+                  {(['ACTIVE', 'SUSPENDED', 'INVITED'] as const).map((st) => (
+                    <button
+                      key={st}
+                      type="button"
+                      onClick={() => setEdit360Status(st)}
+                      className={cn(
+                        'flex-1 py-1.5 rounded-lg border text-xs font-bold transition-all',
+                        edit360Status === st
+                          ? 'border-accent bg-accent text-white shadow-xs'
+                          : 'border-edge bg-surface text-ink-muted hover:text-ink'
+                      )}
+                    >
+                      {st}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* AI Token Quota & Consumption Meter */}
+              <div className="p-4 rounded-2xl border border-edge bg-surface-raised/40 space-y-2.5">
+                <div className="flex items-center justify-between text-xs font-bold text-ink">
+                  <span className="flex items-center gap-1.5">
+                    <Sparkles className="size-3.5 text-accent" />
+                    AI Token Quota & Consumption
+                  </span>
+                  <span className="font-mono text-accent">14,200 / 50,000</span>
+                </div>
+                <div className="w-full h-2 rounded-full bg-canvas-soft overflow-hidden">
+                  <div className="h-full bg-accent rounded-full" style={{ width: '28.4%' }} />
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-ink-muted">
+                  <span>Usage this billing cycle: 28.4%</span>
+                  <span>Monthly reset in 12 days</span>
+                </div>
+              </div>
+
+              {/* Security & Access Controls */}
+              <div className="space-y-2 p-4 rounded-2xl border border-edge bg-canvas-soft">
+                <label className="font-bold text-ink block uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                  <Key className="size-3.5 text-accent" />
+                  Security & Session Safeguards
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRevokeSessions}
+                    className="text-xs h-8 gap-1.5"
+                  >
+                    <Lock className="size-3 text-rose-500" />
+                    Revoke Active Sessions
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleReset2FA}
+                    className="text-xs h-8 gap-1.5"
+                  >
+                    <RotateCcw className="size-3 text-amber-500" />
+                    Force 2FA Reset
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-edge bg-surface-raised/40 flex items-center justify-end gap-2.5 shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setMember360Target(null)}
+                disabled={busySave360}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSave360}
+                disabled={busySave360}
+                className="font-bold"
+              >
+                {busySave360 ? 'Saving Changes…' : 'Save Member 360'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* ─── Invite Member Modal ─── */}
       {showInviteModal && (

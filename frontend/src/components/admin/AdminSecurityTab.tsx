@@ -1,14 +1,4 @@
-/**
- * Security, Staff & System Governance Sub-Module Tab
- *
- * Encompasses:
- * 1. Security Events & Threat Monitoring (/api/platform/security-events)
- * 2. Operators & Staff RBAC (/api/platform/operators)
- * 3. Audit Trail & Formula-Neutralized CSV Export (/api/admin/audit-logs)
- * 4. System Broadcasts & Announcements (/api/platform/announcements)
- */
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +20,14 @@ import {
   Trash2,
   Clock,
   Radio,
+  Eye,
+  Shield,
+  Copy,
+  Check,
+  X,
+  Ban,
+  Globe,
+  Terminal,
 } from 'lucide-react';
 
 interface SecurityEvent {
@@ -40,6 +38,9 @@ interface SecurityEvent {
   ip: string;
   action: string;
   timestamp: string;
+  category?: string;
+  outcome?: 'SUCCESS' | 'FAILED' | 'CHALLENGED';
+  metadata?: Record<string, unknown>;
 }
 
 interface OperatorUser {
@@ -71,10 +72,71 @@ interface Announcement {
 }
 
 const INITIAL_EVENTS: SecurityEvent[] = [
-  { id: 'ev_001', type: 'FAILED_REAUTH', severity: 'WARNING', principal: 'support-agent-3@internal.corp', ip: '192.168.1.105', action: 'Administrative re-auth threshold exceeded (attempt 2)', timestamp: '2026-10-18 20:14:02' },
-  { id: 'ev_002', type: 'CROSS_TENANT_BLOCK', severity: 'CRITICAL', principal: 'anonymous_probe_ip', ip: '45.134.22.18', action: 'Attempted IDOR traversal across tenant isolation boundary', timestamp: '2026-10-18 19:42:18' },
-  { id: 'ev_003', type: 'API_KEY_ROTATED', severity: 'INFO', principal: 'superadmin@ime365.ai', ip: '10.0.0.1', action: 'NVIDIA NIM secondary provider credential updated', timestamp: '2026-10-18 18:05:44' },
-  { id: 'ev_004', type: 'SESSION_REVOKED', severity: 'INFO', principal: 'security_gatekeeper', ip: '127.0.0.1', action: 'Mass operator session revocation dispatched post-deployment', timestamp: '2026-10-18 16:30:11' },
+  {
+    id: 'ev_001',
+    type: 'FAILED_REAUTH',
+    severity: 'WARNING',
+    principal: 'support-agent-3@internal.corp',
+    ip: '192.168.1.105',
+    action: 'Administrative re-auth threshold exceeded (attempt 2)',
+    timestamp: '2026-10-18 20:14:02',
+    category: 'AUTHENTICATION_GATE',
+    outcome: 'FAILED',
+    metadata: {
+      thresholdSeconds: 600,
+      attemptNumber: 2,
+      authMethod: 'FIREBASE_ID_TOKEN',
+      clientUserAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/130.0',
+    },
+  },
+  {
+    id: 'ev_002',
+    type: 'CROSS_TENANT_BLOCK',
+    severity: 'CRITICAL',
+    principal: 'anonymous_probe_ip',
+    ip: '45.134.22.18',
+    action: 'Attempted IDOR traversal across tenant isolation boundary',
+    timestamp: '2026-10-18 19:42:18',
+    category: 'TENANT_ISOLATION_FIREWALL',
+    outcome: 'FAILED',
+    metadata: {
+      targetTenantId: 'tenant_alpha_enterprise',
+      requestPath: '/api/enterprise/tenants/tenant_alpha_enterprise/secrets',
+      blockedBy: 'TENANT_RBAC_GUARD',
+      geoCountry: 'NL',
+    },
+  },
+  {
+    id: 'ev_003',
+    type: 'API_KEY_ROTATED',
+    severity: 'INFO',
+    principal: 'superadmin@ime365.ai',
+    ip: '10.0.0.1',
+    action: 'NVIDIA NIM secondary provider credential updated',
+    timestamp: '2026-10-18 18:05:44',
+    category: 'CREDENTIAL_STORAGE',
+    outcome: 'SUCCESS',
+    metadata: {
+      provider: 'NVIDIA_NIM',
+      maskedKeyPrefix: 'nvapi-771***',
+      storageVault: 'SECURE_ENV_VAULT',
+    },
+  },
+  {
+    id: 'ev_004',
+    type: 'SESSION_REVOKED',
+    severity: 'INFO',
+    principal: 'security_gatekeeper',
+    ip: '127.0.0.1',
+    action: 'Mass operator session revocation dispatched post-deployment',
+    timestamp: '2026-10-18 16:30:11',
+    category: 'POLICY_ENFORCEMENT',
+    outcome: 'SUCCESS',
+    metadata: {
+      revocationScope: 'ALL_ACTIVE_JWT_REFRESH',
+      issuedBy: 'RELEASE_GATEKEEPER',
+    },
+  },
 ];
 
 const INITIAL_OPERATORS: OperatorUser[] = [
@@ -101,7 +163,18 @@ export function AdminSecurityTab() {
   
   // Events
   const [events] = useState<SecurityEvent[]>(INITIAL_EVENTS);
+  const [selectedEvent, setSelectedEvent] = useState<SecurityEvent | null>(null);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
   
+  // Confirmation action modal
+  const [confirmModal, setConfirmModal] = useState<{
+    title: string;
+    message: string;
+    confirmText: string;
+    danger?: boolean;
+    action: () => void;
+  } | null>(null);
+
   // Operators
   const [operators, setOperators] = useState<OperatorUser[]>(INITIAL_OPERATORS);
   const [opNotice, setOpNotice] = useState<string | null>(null);
@@ -112,19 +185,69 @@ export function AdminSecurityTab() {
 
   // Announcements
   const [announcements, setAnnouncements] = useState<Announcement[]>(INITIAL_ANNOUNCEMENTS);
+  const [showAnnModal, setShowAnnModal] = useState(false);
   const [newAnnTitle, setNewAnnTitle] = useState('');
   const [newAnnMsg, setNewAnnMsg] = useState('');
   const [newAnnAudience, setNewAnnAudience] = useState<Announcement['audience']>('ALL');
+  const [newAnnSeverity, setNewAnnSeverity] = useState<Announcement['severity']>('banner');
+
+  // Handle escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (confirmModal) setConfirmModal(null);
+        else if (selectedEvent) setSelectedEvent(null);
+        else if (showAnnModal) setShowAnnModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [confirmModal, selectedEvent, showAnnModal]);
 
   const handleRevokeSessions = (uid: string, name: string) => {
-    setOpNotice(`Active tokens & refresh tokens revoked for ${name} (${uid}). Next request will be challenged with 401.`);
-    setTimeout(() => setOpNotice(null), 4000);
+    setConfirmModal({
+      title: 'Revoke Active Sessions & Invalidate Tokens',
+      message: `Are you sure you want to forcibly revoke all active JWT tokens and refresh credentials for operator "${name}" (${uid})? Their current session will terminate immediately.`,
+      confirmText: 'Revoke All Sessions',
+      danger: true,
+      action: () => {
+        setOpNotice(`Active tokens & refresh tokens revoked for ${name} (${uid}). Next request will return 401.`);
+        setTimeout(() => setOpNotice(null), 4000);
+      },
+    });
+  };
+
+  const handleBlockIp = (ip: string) => {
+    setConfirmModal({
+      title: 'Block Client IP Address',
+      message: `Block traffic originating from ${ip} at the edge reverse proxy layer? Future requests will be rejected with HTTP 403 Forbidden.`,
+      confirmText: 'Block IP Address',
+      danger: true,
+      action: () => {
+        setOpNotice(`Edge IP block rule added for ${ip}.`);
+        setTimeout(() => setOpNotice(null), 4000);
+      },
+    });
   };
 
   const handleRoleChange = (uid: string, newRole: OperatorUser['role']) => {
-    setOperators(operators.map(op => op.uid === uid ? { ...op, role: newRole } : op));
-    setOpNotice(`RBAC role updated to ${newRole} for UID ${uid}.`);
-    setTimeout(() => setOpNotice(null), 3500);
+    setConfirmModal({
+      title: 'Reassign Operator RBAC Role',
+      message: `Are you sure you want to change this operator's RBAC role to "${newRole}"? High-privilege actions will be immediately gated by this policy.`,
+      confirmText: 'Confirm Role Change',
+      danger: false,
+      action: () => {
+        setOperators(operators.map(op => op.uid === uid ? { ...op, role: newRole } : op));
+        setOpNotice(`RBAC role updated to ${newRole} for UID ${uid}.`);
+        setTimeout(() => setOpNotice(null), 3500);
+      },
+    });
+  };
+
+  const copyToClipboard = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
   };
 
   /**
@@ -243,7 +366,11 @@ export function AdminSecurityTab() {
           <CardContent>
             <div className="divide-y divide-border rounded-lg border border-border">
               {events.map((ev) => (
-                <div key={ev.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 hover:bg-neutral-50 gap-3">
+                <div
+                  key={ev.id}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-4 hover:bg-neutral-50/80 gap-3 cursor-pointer transition-colors"
+                  onClick={() => setSelectedEvent(ev)}
+                >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <span className={cn(
@@ -260,9 +387,22 @@ export function AdminSecurityTab() {
                     <p className="text-sm text-ink-secondary">{ev.action}</p>
                     <p className="text-xs text-ink-muted">Principal: {ev.principal}</p>
                   </div>
-                  <div className="text-xs font-mono text-ink-muted shrink-0 flex items-center gap-1.5">
-                    <Clock className="size-3.5" />
-                    {ev.timestamp}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="text-xs font-mono text-ink-muted flex items-center gap-1.5">
+                      <Clock className="size-3.5" />
+                      {ev.timestamp}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedEvent(ev);
+                      }}
+                      className="text-xs font-semibold text-brand-600 hover:text-brand-700 h-7 px-2"
+                    >
+                      <Eye className="size-3.5 mr-1" /> Inspect
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -492,6 +632,301 @@ export function AdminSecurityTab() {
               </div>
             </CardContent>
           </Card>
+        </div>
+      )}
+
+      {/* ─── Centered Forensic Security Event Inspector Modal ─── */}
+      {selectedEvent && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/70 backdrop-blur-xs animate-[fade-in_150ms_ease-out]"
+          onClick={() => setSelectedEvent(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="security-event-title"
+        >
+          <div
+            className="w-full max-w-2xl bg-surface rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="bg-neutral-950 px-6 py-4 text-white flex items-center justify-between shrink-0 border-b border-neutral-800">
+              <div className="flex items-center gap-3 min-w-0">
+                <div
+                  className={cn(
+                    'size-10 rounded-xl flex items-center justify-center font-bold text-sm shadow-md shrink-0',
+                    selectedEvent.severity === 'CRITICAL' ? 'bg-rose-600 text-white' : 'bg-brand-600 text-white'
+                  )}
+                >
+                  <Shield className="size-5" />
+                </div>
+                <div className="min-w-0">
+                  <h3 id="security-event-title" className="text-base font-extrabold text-white truncate font-mono">
+                    {selectedEvent.type}
+                  </h3>
+                  <p className="text-xs text-neutral-400 font-mono mt-0.5">
+                    {selectedEvent.timestamp} · Event ID: {selectedEvent.id}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedEvent(null)}
+                className="p-2 text-neutral-400 hover:text-white rounded-xl hover:bg-neutral-800 transition cursor-pointer"
+                aria-label="Close inspector"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 overflow-y-auto space-y-4 text-xs">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-neutral-50 p-3 rounded-xl border border-border">
+                  <span className="text-[10px] font-bold uppercase text-ink-muted">Severity</span>
+                  <p className="font-extrabold text-ink mt-0.5">{selectedEvent.severity}</p>
+                </div>
+                <div className="bg-neutral-50 p-3 rounded-xl border border-border">
+                  <span className="text-[10px] font-bold uppercase text-ink-muted">Category</span>
+                  <p className="font-extrabold text-ink mt-0.5 truncate">{selectedEvent.category || 'GATEWAY'}</p>
+                </div>
+                <div className="bg-neutral-50 p-3 rounded-xl border border-border">
+                  <span className="text-[10px] font-bold uppercase text-ink-muted">Outcome</span>
+                  <p className={cn('font-extrabold mt-0.5', selectedEvent.outcome === 'FAILED' ? 'text-rose-600' : 'text-emerald-600')}>
+                    {selectedEvent.outcome || 'BLOCKED'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2 bg-neutral-50 p-3.5 rounded-xl border border-border font-mono text-[11px]">
+                <div className="flex justify-between items-center py-1 border-b border-border/60">
+                  <span className="text-ink-muted">Principal / Actor:</span>
+                  <span className="text-ink font-bold select-all">{selectedEvent.principal}</span>
+                </div>
+                <div className="flex justify-between items-center py-1 border-b border-border/60">
+                  <span className="text-ink-muted">Client IP Address:</span>
+                  <span className="text-ink font-bold select-all">{selectedEvent.ip}</span>
+                </div>
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-ink-muted">Audited Mutation:</span>
+                  <span className="text-ink font-bold select-all">{selectedEvent.action}</span>
+                </div>
+              </div>
+
+              {/* JSON Payload */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-ink uppercase tracking-wide">
+                    Forensic Payload & Environmental Metadata
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(JSON.stringify(selectedEvent.metadata || selectedEvent, null, 2), 'payload')}
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-600 hover:text-brand-800 cursor-pointer"
+                  >
+                    {copiedKey === 'payload' ? <Check className="size-3 text-emerald-600" /> : <Copy className="size-3" />}
+                    <span>{copiedKey === 'payload' ? 'Copied JSON!' : 'Copy JSON'}</span>
+                  </button>
+                </div>
+                <pre className="text-[11px] bg-neutral-950 text-emerald-400 rounded-xl p-4 overflow-x-auto font-mono max-h-52 border border-neutral-800 leading-relaxed shadow-inner">
+                  {JSON.stringify(selectedEvent.metadata || selectedEvent, null, 2)}
+                </pre>
+              </div>
+            </div>
+
+            {/* Footer with Remediation Actions */}
+            <div className="p-4 bg-neutral-50 border-t border-border flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleBlockIp(selectedEvent.ip)}
+                  className="text-xs border-rose-200 text-rose-700 hover:bg-rose-50"
+                >
+                  <Ban className="size-3 mr-1" />
+                  Block IP {selectedEvent.ip}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleRevokeSessions(selectedEvent.principal, selectedEvent.principal)}
+                  className="text-xs border-amber-200 text-amber-700 hover:bg-amber-50"
+                >
+                  <LogOut className="size-3 mr-1" />
+                  Revoke Principal Sessions
+                </Button>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setSelectedEvent(null)} className="text-xs">
+                Close Inspector
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Confirmation Modal ─── */}
+      {confirmModal && (
+        <div
+          className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-neutral-950/70 backdrop-blur-xs animate-[fade-in_150ms_ease-out]"
+          onClick={() => setConfirmModal(null)}
+          role="alertdialog"
+          aria-modal="true"
+        >
+          <div
+            className="w-full max-w-sm bg-surface rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className={cn(
+                'p-4 border-b flex items-center gap-3',
+                confirmModal.danger ? 'bg-rose-50 border-rose-100 text-rose-900' : 'bg-brand-50 border-brand-100 text-brand-900'
+              )}
+            >
+              {confirmModal.danger ? (
+                <AlertTriangle className="size-5 text-rose-600" />
+              ) : (
+                <ShieldAlert className="size-5 text-brand-600" />
+              )}
+              <h3 className="font-bold text-sm">{confirmModal.title}</h3>
+            </div>
+            <div className="p-5 text-xs text-ink-muted leading-relaxed">
+              {confirmModal.message}
+            </div>
+            <div className="p-4 pt-2 flex justify-end gap-2 bg-neutral-50/50 border-t border-border">
+              <Button variant="outline" size="sm" onClick={() => setConfirmModal(null)} className="text-xs">
+                Cancel
+              </Button>
+              <Button
+                variant={confirmModal.danger ? 'destructive' : 'primary'}
+                size="sm"
+                onClick={() => {
+                  const act = confirmModal.action;
+                  setConfirmModal(null);
+                  act();
+                }}
+                className="text-xs font-bold"
+              >
+                {confirmModal.confirmText}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── System Announcement Composer Modal ─── */}
+      {showAnnModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/70 backdrop-blur-xs animate-[fade-in_150ms_ease-out]"
+          onClick={() => setShowAnnModal(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="broadcast-composer-title"
+        >
+          <div
+            className="w-full max-w-lg bg-surface rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-5 border-b border-border flex items-center justify-between bg-neutral-50">
+              <div className="flex items-center gap-2.5">
+                <div className="size-9 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center font-bold">
+                  <Megaphone className="size-5" />
+                </div>
+                <div>
+                  <h3 id="broadcast-composer-title" className="text-sm font-bold text-ink">
+                    Compose System Broadcast
+                  </h3>
+                  <p className="text-xs text-ink-muted">Surface alert banner or notification to active sessions.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAnnModal(false)}
+                className="p-1.5 text-ink-muted hover:text-ink rounded-lg hover:bg-neutral-100"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 text-xs">
+              <div>
+                <label className="font-semibold text-ink block mb-1">Notice Title</label>
+                <Input
+                  placeholder="e.g. Scheduled Infrastructure Maintenance"
+                  value={newAnnTitle}
+                  onChange={(e) => setNewAnnTitle(e.target.value)}
+                  className="text-xs"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-semibold text-ink block mb-1">Target Audience</label>
+                  <select
+                    value={newAnnAudience}
+                    onChange={(e) => setNewAnnAudience(e.target.value as Announcement['audience'])}
+                    className="w-full rounded-lg border border-border bg-white px-3 py-2 text-xs text-ink focus:outline-none focus:ring-1 focus:ring-brand-500"
+                  >
+                    <option value="ALL">All Users</option>
+                    <option value="CANDIDATES">Candidates Only</option>
+                    <option value="EMPLOYERS">Employers & Recruiters</option>
+                    <option value="ENTERPRISE">Enterprise Organizations</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-semibold text-ink block mb-1">Display Severity</label>
+                  <select
+                    value={newAnnSeverity}
+                    onChange={(e) => setNewAnnSeverity(e.target.value as Announcement['severity'])}
+                    className="w-full rounded-lg border border-border bg-white px-3 py-2 text-xs text-ink focus:outline-none focus:ring-1 focus:ring-brand-500"
+                  >
+                    <option value="banner">Banner (Top of Page)</option>
+                    <option value="modal">Modal Dialog (Must Acknowledge)</option>
+                    <option value="info">Subtle Toast Notification</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-semibold text-ink block mb-1">Announcement Message Body</label>
+                <textarea
+                  rows={3}
+                  placeholder="Provide precise details, maintenance windows, or instructions..."
+                  value={newAnnMsg}
+                  onChange={(e) => setNewAnnMsg(e.target.value)}
+                  className="w-full rounded-lg border border-border p-3 text-xs text-ink focus:outline-none focus:ring-1 focus:ring-brand-500"
+                />
+              </div>
+
+              {/* Live Preview Card */}
+              {newAnnTitle && (
+                <div className="rounded-xl border border-brand-200 bg-brand-50/50 p-3.5 space-y-1">
+                  <span className="text-[10px] font-bold uppercase text-brand-700 tracking-wider">
+                    Live Broadcast Preview
+                  </span>
+                  <p className="font-bold text-xs text-brand-950">{newAnnTitle}</p>
+                  <p className="text-[11px] text-brand-800 leading-relaxed">{newAnnMsg || 'Message body preview...'}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 bg-neutral-50 border-t border-border flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setShowAnnModal(false)} className="text-xs">
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  handleCreateAnnouncement();
+                  setShowAnnModal(false);
+                }}
+                disabled={!newAnnTitle.trim() || !newAnnMsg.trim()}
+                className="text-xs font-semibold"
+              >
+                <Radio className="size-3 mr-1" />
+                Publish Broadcast
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

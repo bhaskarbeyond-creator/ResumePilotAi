@@ -53,6 +53,13 @@ export const EmployerCompanySchema = z.object({
   featured: z.boolean().optional().default(false),
   revision: z.number().optional().default(0),
   createdAt: z.string().optional().default(''),
+  industry: z.string().optional().default(''),
+  size: z.string().optional().default(''),
+  location: z.string().optional().default(''),
+  description: z.string().optional().default(''),
+  address: z.string().optional().default(''),
+  phone: z.string().optional().default(''),
+  email: z.string().optional().default(''),
 });
 export type EmployerCompany = z.infer<typeof EmployerCompanySchema>;
 
