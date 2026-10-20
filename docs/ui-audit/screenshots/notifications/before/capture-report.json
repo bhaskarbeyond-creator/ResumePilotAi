@@ -1,0 +1,235 @@
+{
+  "surface": "notifications",
+  "phase": "before",
+  "capturedAt": "2026-10-20T14:31:13.019Z",
+  "baseURL": "http://127.0.0.1:4000",
+  "pages": [
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/notifications",
+      "click": null,
+      "label": "real-row",
+      "finalUrl": "/dashboard/notifications",
+      "file": "desktop-1920__dashboard_notifications__real-row.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/notifications",
+      "click": null,
+      "label": "real-row",
+      "finalUrl": "/dashboard/notifications",
+      "file": "laptop-1366__dashboard_notifications__real-row.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/notifications",
+      "click": null,
+      "label": "real-row",
+      "finalUrl": "/dashboard/notifications",
+      "file": "tablet-1024__dashboard_notifications__real-row.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/notifications",
+      "click": null,
+      "label": "real-row",
+      "finalUrl": "/dashboard/notifications",
+      "file": "mobile-390__dashboard_notifications__real-row.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/notifications",
+      "click": null,
+      "label": "real-row",
+      "finalUrl": "/dashboard/notifications",
+      "file": "mobile-320__dashboard_notifications__real-row.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/notifications",
+      "click": null,
+      "steps": [
+        "click:/^Notifications$/",
+        "text:Open Notification Center"
+      ],
+      "label": "bell-popover",
+      "finalUrl": "/dashboard/notifications",
+      "file": "laptop-1366__dashboard_notifications__bell-popover.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/notifications",
+      "click": null,
+      "steps": [
+        "click:/^Notifications$/",
+        "text:Open Notification Center"
+      ],
+      "label": "bell-popover",
+      "finalUrl": "/dashboard/notifications",
+      "file": "mobile-390__dashboard_notifications__bell-popover.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/notifications",
+      "click": null,
+      "label": "empty-candidate-b",
+      "finalUrl": "/dashboard/notifications",
+      "file": "desktop-1920__dashboard_notifications__empty-candidate-b.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/notifications",
+      "click": null,
+      "label": "empty-candidate-b",
+      "finalUrl": "/dashboard/notifications",
+      "file": "laptop-1366__dashboard_notifications__empty-candidate-b.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/notifications",
+      "click": null,
+      "label": "empty-candidate-b",
+      "finalUrl": "/dashboard/notifications",
+      "file": "tablet-1024__dashboard_notifications__empty-candidate-b.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/notifications",
+      "click": null,
+      "label": "empty-candidate-b",
+      "finalUrl": "/dashboard/notifications",
+      "file": "mobile-390__dashboard_notifications__empty-candidate-b.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/notifications",
+      "click": null,
+      "label": "empty-candidate-b",
+      "finalUrl": "/dashboard/notifications",
+      "file": "mobile-320__dashboard_notifications__empty-candidate-b.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/notifications",
+      "click": null,
+      "steps": [
+        "text:Failed to load notifications"
+      ],
+      "label": "real-row-settled",
+      "finalUrl": "/dashboard/notifications",
+      "file": "desktop-1920__dashboard_notifications__real-row-settled.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/notifications",
+      "click": null,
+      "steps": [
+        "text:Failed to load notifications"
+      ],
+      "label": "real-row-settled",
+      "finalUrl": "/dashboard/notifications",
+      "file": "laptop-1366__dashboard_notifications__real-row-settled.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/notifications",
+      "click": null,
+      "steps": [
+        "text:Failed to load notifications"
+      ],
+      "label": "real-row-settled",
+      "finalUrl": "/dashboard/notifications",
+      "file": "tablet-1024__dashboard_notifications__real-row-settled.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/notifications",
+      "click": null,
+      "steps": [
+        "text:Failed to load notifications"
+      ],
+      "label": "real-row-settled",
+      "finalUrl": "/dashboard/notifications",
+      "file": "mobile-390__dashboard_notifications__real-row-settled.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/notifications",
+      "click": null,
+      "steps": [
+        "text:Failed to load notifications"
+      ],
+      "label": "real-row-settled",
+      "finalUrl": "/dashboard/notifications",
+      "file": "mobile-320__dashboard_notifications__real-row-settled.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    }
+  ]
+}

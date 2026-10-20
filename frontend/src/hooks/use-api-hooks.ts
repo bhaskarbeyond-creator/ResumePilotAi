@@ -10,6 +10,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { get, post, patch, del, normalizeError } from '@/lib/api-client';
+import {
+  fetchNotifications,
+  markAllNotificationsRead,
+  setNotificationRead,
+  type NotificationItem,
+  type NotificationsApiError,
+} from '@/lib/notifications';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Zod Schemas (Backend Contract Validation)
@@ -148,29 +155,7 @@ export const AuditRecordSchema = z.object({
 });
 export type AuditRecord = z.infer<typeof AuditRecordSchema>;
 
-/** Dashboard: Notification Message */
-export const NotificationMessageSchema = z.object({
-  id: z.string(),
-  sender: z.object({
-    name: z.string(),
-    avatar: z.string().optional(),
-    role: z.string(),
-    isSystem: z.boolean().optional(),
-  }),
-  subject: z.string(),
-  preview: z.string(),
-  body: z.string(),
-  timestamp: z.string(),
-  read: z.boolean(),
-  starred: z.boolean(),
-  category: z.enum(['interviews', 'jobs', 'ai', 'system']),
-  actions: z.array(z.object({
-    label: z.string(),
-    href: z.string().optional(),
-    variant: z.enum(['primary', 'outline']).optional(),
-  })).optional(),
-});
-export type NotificationMessage = z.infer<typeof NotificationMessageSchema>;
+/** Dashboard: notifications are typed by @/lib/notifications (NotificationItem). */
 
 /** Dashboard: Favourite Item */
 export const FavouriteItemSchema = z.object({
@@ -554,38 +539,60 @@ export function useUpdateTicketStatus() {
 // Dashboard Hooks
 // ──────────────────────────────────────────────────────────────────────────────
 
+// Notifications: rows come straight from the MariaDB `notifications` table via
+// @/lib/notifications. Read changes are applied optimistically and rolled back
+// row by row when the write fails, so the list never claims a state the
+// database does not hold; every write ends with a refetch of the server truth.
+type NotificationsCache = NotificationItem[] | undefined;
+
 export function useNotifications() {
-  return useQuery({
+  return useQuery<NotificationItem[], NotificationsApiError>({
     queryKey: queryKeys.dashboard.notifications,
-    queryFn: async () => {
-      const data = await get<{ notifications: NotificationMessage[] }>('/notifications-data');
-      return z.array(NotificationMessageSchema).parse(data.notifications ?? []);
-    },
+    queryFn: ({ signal }) => fetchNotifications(signal),
     staleTime: 30_000,
   });
 }
 
-export function useMarkNotificationRead() {
+export function useSetNotificationRead() {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, read }: { id: string; read: boolean }) => {
-      await patch(`/notifications-data/${encodeURIComponent(id)}`, { read });
+  const queryKey = queryKeys.dashboard.notifications;
+  return useMutation<void, NotificationsApiError, { id: string; read: boolean }, { previousRead?: boolean }>({
+    mutationFn: ({ id, read }) => setNotificationRead(id, read),
+    onMutate: async ({ id, read }) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previousRead = queryClient.getQueryData<NotificationItem[]>(queryKey)?.find((item) => item.id === id)?.read;
+      queryClient.setQueryData<NotificationsCache>(queryKey, (rows) => rows?.map((item) => (item.id === id ? { ...item, read } : item)));
+      return { previousRead };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.notifications });
+    onError: (_error, { id }, context) => {
+      const previousRead = context?.previousRead;
+      if (previousRead === undefined) return;
+      queryClient.setQueryData<NotificationsCache>(queryKey, (rows) => rows?.map((item) => (item.id === id ? { ...item, read: previousRead } : item)));
     },
+    // Not awaited: the control is free again once the server has confirmed the
+    // write; a later write cancels this refetch before applying its own change.
+    onSettled: () => { void queryClient.invalidateQueries({ queryKey }); },
   });
 }
 
 export function useMarkAllNotificationsRead() {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async () => {
-      await post('/notifications-data/mark-all-read', {});
+  const queryKey = queryKeys.dashboard.notifications;
+  return useMutation<number, NotificationsApiError, void, { unreadIds: string[] }>({
+    mutationFn: () => markAllNotificationsRead(),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey });
+      const unreadIds = (queryClient.getQueryData<NotificationItem[]>(queryKey) ?? []).filter((item) => !item.read).map((item) => item.id);
+      queryClient.setQueryData<NotificationsCache>(queryKey, (rows) => rows?.map((item) => (item.read ? item : { ...item, read: true })));
+      return { unreadIds };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.notifications });
+    onError: (_error, _variables, context) => {
+      const unread = new Set(context?.unreadIds ?? []);
+      queryClient.setQueryData<NotificationsCache>(queryKey, (rows) => rows?.map((item) => (unread.has(item.id) ? { ...item, read: false } : item)));
     },
+    // Not awaited: the control is free again once the server has confirmed the
+    // write; a later write cancels this refetch before applying its own change.
+    onSettled: () => { void queryClient.invalidateQueries({ queryKey }); },
   });
 }
 

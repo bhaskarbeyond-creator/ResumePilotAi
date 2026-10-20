@@ -74,6 +74,11 @@ function eventId(...parts) {
     return crypto.createHash('sha256').update(parts.join('\0')).digest('hex');
 }
 
+/** MySQLRepository.getJob returns the raw row, so the name is in `company_name`. */
+function jobCompanyName(job) {
+    return String(job.company || job.companyName || job.company_name || '').trim().slice(0, 160) || 'Company';
+}
+
 // ——— Companies ———
 
 async function createCompany({ repo, employerId, data, actorUid, requestId }) {
@@ -274,15 +279,17 @@ async function createApplication({ repo, applicationId, job, user, payload, acto
         revision: Number(job.revision || 0) + 1,
         updatedAt: nowIso(),
     });
-    const submittedEventId = eventId('job_application_submitted', applicationId);
-    await notify(r, user.uid, submittedEventId, {
+    await notify(r, user.uid, eventId('job_application_submitted', applicationId), {
         type: 'job_application',
         title: 'Application submitted',
-        message: `Your application for ${job.title || 'Job'} at ${job.company || 'Company'} was submitted.`,
+        message: `Your application for ${job.title || 'Job'} at ${jobCompanyName(job)} was submitted.`,
         data: { jobId: job.id, applicationId },
     });
     if (job.employerId) {
-        await notify(r, job.employerId, submittedEventId, {
+        // Each recipient needs its own row id: `notifications.id` is the table's
+        // only key, so reusing the applicant's id made this upsert replace the
+        // applicant's "Application submitted" row (P002 C10, finding F-2).
+        await notify(r, job.employerId, eventId('job_application_received', applicationId), {
             type: 'job_application_received',
             title: 'New job application',
             message: `${payload.fullName || payload.applicantName} applied for ${job.title || 'Job'}.`,

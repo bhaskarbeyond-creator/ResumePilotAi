@@ -1,0 +1,566 @@
+{
+  "generatedFrom": "frontend/test-results/candidate/results.json",
+  "command": "npx playwright test -c playwright.candidate.config.ts tests/candidate/notifications.spec.ts (5 profiles + setup), on the final C10 code",
+  "startTime": "2026-10-20T15:54:16.972Z",
+  "durationMs": 343685,
+  "stats": {
+    "expected": 77,
+    "unexpected": 0,
+    "flaky": 0,
+    "skipped": 0
+  },
+  "byFile": {
+    "auth.setup.ts": {
+      "passed": 2,
+      "failed": 0,
+      "other": 0
+    },
+    "notifications.spec.ts": {
+      "passed": 75,
+      "failed": 0,
+      "other": 0
+    }
+  },
+  "note": "Final-code run of the Notifications spec after the last page change (relative positioning on the page wrapper) and the added document-scroll assertion. The full candidate regression ran just before that change: P002-C10-notifications-playwright.json.",
+  "tests": [
+    {
+      "file": "auth.setup.ts",
+      "title": "register and sign in through the form as p002.candidate.a@example.test",
+      "project": "setup",
+      "status": "passed",
+      "durationMs": 3831
+    },
+    {
+      "file": "auth.setup.ts",
+      "title": "register and sign in through the form as p002.candidate.b@example.test",
+      "project": "setup",
+      "status": "passed",
+      "durationMs": 3664
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — an account with none (candidate B) › shows an honest empty state and no controls that could not do anything",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 2454
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — an account with none (candidate B) › shows an honest empty state and no controls that could not do anything",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 2412
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — an account with none (candidate B) › shows an honest empty state and no controls that could not do anything",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 2393
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — an account with none (candidate B) › shows an honest empty state and no controls that could not do anything",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 2347
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — an account with none (candidate B) › shows an honest empty state and no controls that could not do anything",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 2294
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › lists the real rows newest first, with kind, time and the unread count in the page and the bell",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 4554
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › marking one read persists after reload, and marking it unread restores it",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 6502
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › mark all as read persists after reload, then has nothing left to do",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 5099
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › a rejected read change rolls back and says why, even when the refresh fails too; the server keeps the row unread",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 6292
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › a rejected mark all rolls every row back and says why",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 3105
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › a failed load says why, the bell does not claim there is nothing, and Try again recovers",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 4262
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › the Unread filter lives in the URL, survives reload, and keeps a row in place while you work",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 6388
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › search matches title, message and kind; no match offers Clear search, which returns focus to the field",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 3044
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › the interview invitation opens Interview Coach, counts as read, and Back returns to the same view",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 3392
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › rows link only where there is an honest destination, and a broken response is reported (labelled mocks)",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 4747
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › shows 20 at a time; Show more reveals the rest and moves focus to the first new row",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 6765
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › every control works from the keyboard, and focus stays on a toggle after it changes",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 4501
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › the header bell shows the live unread count, lists the real rows, and closes with Escape",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 4212
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › another account can neither see nor change these notifications",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 1643
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › lists the real rows newest first, with kind, time and the unread count in the page and the bell",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 4452
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › marking one read persists after reload, and marking it unread restores it",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 5964
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › mark all as read persists after reload, then has nothing left to do",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 5277
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › a rejected read change rolls back and says why, even when the refresh fails too; the server keeps the row unread",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 5971
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › a rejected mark all rolls every row back and says why",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 3112
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › a failed load says why, the bell does not claim there is nothing, and Try again recovers",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 4344
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › the Unread filter lives in the URL, survives reload, and keeps a row in place while you work",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 7185
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › search matches title, message and kind; no match offers Clear search, which returns focus to the field",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 3164
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › the interview invitation opens Interview Coach, counts as read, and Back returns to the same view",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 3520
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › rows link only where there is an honest destination, and a broken response is reported (labelled mocks)",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 4621
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › shows 20 at a time; Show more reveals the rest and moves focus to the first new row",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 6749
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › every control works from the keyboard, and focus stays on a toggle after it changes",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 4462
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › the header bell shows the live unread count, lists the real rows, and closes with Escape",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 4160
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › another account can neither see nor change these notifications",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 1630
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › lists the real rows newest first, with kind, time and the unread count in the page and the bell",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 4548
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › marking one read persists after reload, and marking it unread restores it",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 6183
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › mark all as read persists after reload, then has nothing left to do",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 5097
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › a rejected read change rolls back and says why, even when the refresh fails too; the server keeps the row unread",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 5933
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › a rejected mark all rolls every row back and says why",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 3096
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › a failed load says why, the bell does not claim there is nothing, and Try again recovers",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 4621
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › the Unread filter lives in the URL, survives reload, and keeps a row in place while you work",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 6304
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › search matches title, message and kind; no match offers Clear search, which returns focus to the field",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 3217
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › the interview invitation opens Interview Coach, counts as read, and Back returns to the same view",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 3325
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › rows link only where there is an honest destination, and a broken response is reported (labelled mocks)",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 4546
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › shows 20 at a time; Show more reveals the rest and moves focus to the first new row",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 6699
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › every control works from the keyboard, and focus stays on a toggle after it changes",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 4282
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › the header bell shows the live unread count, lists the real rows, and closes with Escape",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 4092
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › another account can neither see nor change these notifications",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 1657
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › lists the real rows newest first, with kind, time and the unread count in the page and the bell",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 4493
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › marking one read persists after reload, and marking it unread restores it",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 6084
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › mark all as read persists after reload, then has nothing left to do",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 4968
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › a rejected read change rolls back and says why, even when the refresh fails too; the server keeps the row unread",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 6022
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › a rejected mark all rolls every row back and says why",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 3024
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › a failed load says why, the bell does not claim there is nothing, and Try again recovers",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 4232
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › the Unread filter lives in the URL, survives reload, and keeps a row in place while you work",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 6402
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › search matches title, message and kind; no match offers Clear search, which returns focus to the field",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 2995
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › the interview invitation opens Interview Coach, counts as read, and Back returns to the same view",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 3331
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › rows link only where there is an honest destination, and a broken response is reported (labelled mocks)",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 4549
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › shows 20 at a time; Show more reveals the rest and moves focus to the first new row",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 6865
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › every control works from the keyboard, and focus stays on a toggle after it changes",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 4364
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › the header bell shows the live unread count, lists the real rows, and closes with Escape",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 4112
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › another account can neither see nor change these notifications",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 1687
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › lists the real rows newest first, with kind, time and the unread count in the page and the bell",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 4522
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › marking one read persists after reload, and marking it unread restores it",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 5963
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › mark all as read persists after reload, then has nothing left to do",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 5034
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › a rejected read change rolls back and says why, even when the refresh fails too; the server keeps the row unread",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 5894
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › a rejected mark all rolls every row back and says why",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 3138
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › a failed load says why, the bell does not claim there is nothing, and Try again recovers",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 4361
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › the Unread filter lives in the URL, survives reload, and keeps a row in place while you work",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 6542
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › search matches title, message and kind; no match offers Clear search, which returns focus to the field",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 3072
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › the interview invitation opens Interview Coach, counts as read, and Back returns to the same view",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 3246
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › rows link only where there is an honest destination, and a broken response is reported (labelled mocks)",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 4504
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › shows 20 at a time; Show more reveals the rest and moves focus to the first new row",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 6682
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › every control works from the keyboard, and focus stays on a toggle after it changes",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 4310
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › the header bell shows the live unread count, lists the real rows, and closes with Escape",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 4057
+    },
+    {
+      "file": "notifications.spec.ts",
+      "title": "Notifications — candidate A’s real feed › another account can neither see nor change these notifications",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 1625
+    }
+  ]
+}

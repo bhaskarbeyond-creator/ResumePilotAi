@@ -2,7 +2,8 @@
 /**
  * TEST-ENVIRONMENT ARRANGEMENT ONLY. A conversation can only be opened for a job
  * application, so the candidate Messages E2E needs one job owned by a second test
- * identity. In a local sandbox the employer route that normally creates that job
+ * identity; the Notifications E2E needs jobs to apply to, because applications and
+ * their status changes are what write notification rows. In a local sandbox the employer route that normally creates that job
  * cannot run: preview identities (POST /api/auth/preview-login) never carry the
  * `employer` claim that POST /api/employer/companies and POST /api/employer/jobs
  * require (both answer 403), and that claim is only granted as a Firebase custom
@@ -11,8 +12,11 @@
  * and the read cursors.
  *
  *   node scripts/dev-db/arrange-messaging-job.mjs --create --job-id job_e2e_msg_<suffix> \
- *     --owner-uid local_<22 hex> --title "Platform Engineer" --company "Example Test Co"
+ *     --owner-uid local_<22 hex> --title "Platform Engineer" --company "Example Test Co" [--count n]
  *   node scripts/dev-db/arrange-messaging-job.mjs --remove
+ *
+ * --count n (1 to 30, default 1) inserts n jobs, <job-id>_01 … <job-id>_nn, in one
+ * run, e.g. so a test can submit more applications than one list page shows.
  *
  * --remove deletes what this flow can leave behind for every job_e2e_msg_* job:
  * the conversations opened for its applications (messages, participants, rows),
@@ -47,8 +51,13 @@ const jobId = arg('job-id');
 const ownerUid = arg('owner-uid');
 const title = text(arg('title'), 120);
 const company = text(arg('company'), 120);
-if (create === remove || (create && (!JOB_ID.test(jobId || '') || !PREVIEW_UID.test(ownerUid || '') || !title || !company))) {
-  console.error('usage: --create --job-id job_e2e_msg_<a-z0-9_> --owner-uid local_<22 hex> --title <text> --company <text>  |  --remove');
+const countArg = arg('count');
+const count = countArg === undefined ? 1 : Number(countArg);
+const jobIds = Number.isInteger(count) && count >= 1 && count <= 30
+  ? (count === 1 ? [jobId] : Array.from({ length: count }, (_, index) => `${jobId}_${String(index + 1).padStart(2, '0')}`))
+  : [];
+if (create === remove || (create && (!jobIds.length || !jobIds.every((id) => JOB_ID.test(id || '')) || !PREVIEW_UID.test(ownerUid || '') || !title || !company))) {
+  console.error('usage: --create --job-id job_e2e_msg_<a-z0-9_> --owner-uid local_<22 hex> --title <text> --company <text> [--count 1-30]  |  --remove');
   process.exit(2);
 }
 
@@ -105,17 +114,19 @@ try {
       console.error(`owner ${ownerUid} does not exist; sign it in once through POST /api/auth/preview-login first`);
       process.exitCode = 4;
     } else {
-      await connection.query(
-        `INSERT INTO jobs (id, employer_id, company_name, title, description, location, status, extra_json)
-         VALUES (?, ?, ?, ?, ?, ?, 'active', ?)`,
-        [
-          jobId, ownerUid, company, title,
-          'Test-environment job created by scripts/dev-db/arrange-messaging-job.mjs for the Messages E2E.',
-          'Remote',
-          JSON.stringify({ testArrangement: 'scripts/dev-db/arrange-messaging-job.mjs' }),
-        ],
-      );
-      console.log(JSON.stringify({ database, created: jobId, owner: ownerUid }));
+      for (const id of jobIds) {
+        await connection.query(
+          `INSERT INTO jobs (id, employer_id, company_name, title, description, location, status, extra_json)
+           VALUES (?, ?, ?, ?, ?, ?, 'active', ?)`,
+          [
+            id, ownerUid, company, title,
+            'Test-environment job created by scripts/dev-db/arrange-messaging-job.mjs for the candidate E2E suite.',
+            'Remote',
+            JSON.stringify({ testArrangement: 'scripts/dev-db/arrange-messaging-job.mjs' }),
+          ],
+        );
+      }
+      console.log(JSON.stringify({ database, created: count === 1 ? jobId : jobIds, owner: ownerUid }));
     }
   }
 } finally {

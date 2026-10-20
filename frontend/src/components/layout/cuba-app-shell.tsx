@@ -317,7 +317,7 @@ export function CubaAppShell({
   }, [user, navigate]);
 
   // Live notifications count from backend API
-  const { data: notifications = [] } = useNotifications();
+  const { data: notifications = [], isError: notificationsUnavailable } = useNotifications();
   const unreadNotifCount = useMemo(
     () => notifications.filter((n) => !n.read).length,
     [notifications],
@@ -1137,7 +1137,9 @@ export function CubaAppShell({
                   <div className="max-h-64 overflow-y-auto py-1">
                     {notifications.length === 0 ? (
                       <div className="py-6 text-center text-xs text-ink-muted">
-                        No notifications at this time.
+                        {notificationsUnavailable
+                          ? 'Notifications couldn’t be loaded. Open the Notification Center to try again.'
+                          : 'No notifications at this time.'}
                       </div>
                     ) : (
                       notifications.slice(0, 4).map((notif) => (
@@ -1148,15 +1150,18 @@ export function CubaAppShell({
                         >
                           <div className="flex items-center gap-1.5 w-full">
                             {!notif.read && (
-                              <span className="size-1.5 rounded-full bg-brand-600 shrink-0" />
+                              <span className="size-1.5 rounded-full bg-brand-600 shrink-0" aria-hidden="true" />
                             )}
                             <span className={cn('text-xs truncate font-medium', !notif.read ? 'text-ink font-semibold' : 'text-ink-secondary')}>
-                              {notif.subject || 'Notification'}
+                              {!notif.read && <span className="sr-only">Unread: </span>}
+                              {notif.title}
                             </span>
                           </div>
-                          <p className="text-[11px] text-ink-muted line-clamp-1 pl-3">
-                            {notif.preview || notif.sender?.name || ''}
-                          </p>
+                          {notif.message && (
+                            <p className="text-[11px] text-ink-muted line-clamp-1 pl-3">
+                              {notif.message}
+                            </p>
+                          )}
                         </DropdownMenuItem>
                       ))
                     )}

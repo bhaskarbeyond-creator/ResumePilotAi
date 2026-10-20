@@ -83,3 +83,18 @@ cursors. `--remove` deletes what that flow leaves behind for every
 `job_e2e_msg_*` job (conversation messages, participants and rows, the
 notifications that name the job, the applications and the jobs). Security audit
 records are kept. The same loopback and database-name guards apply.
+
+The Notifications E2E (`frontend/tests/candidate/notifications.spec.ts`) uses the
+same helper: notification rows are written by the backend when candidate A
+applies and when the job owner changes the application's status
+(`PATCH /api/job-applications/:id/status`). `--count n` (1 to 30, default 1)
+inserts `n` jobs, `<job-id>_01` … `<job-id>_nn`, in one run, so a test can submit
+more applications than one list page shows:
+
+```bash
+node scripts/dev-db/arrange-messaging-job.mjs --create --job-id job_e2e_msg_example \
+  --owner-uid local_<22 hex> --title "Platform Engineer" --company "Example Test Co" --count 21
+```
+
+A count outside 1–30, or ids longer than the `job_e2e_msg_*` pattern allows,
+exits 2 without touching the database.
