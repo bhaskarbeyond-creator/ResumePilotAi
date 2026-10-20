@@ -11,6 +11,7 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from 'axios';
 import { auth } from '@/lib/firebase';
+import { readPreviewSession } from '@/lib/preview-session';
 
 /** Standardized API error shape */
 export interface ApiError {
@@ -72,13 +73,11 @@ async function getAuthHeader(): Promise<string | null> {
     // Continue to fallback
   }
 
-  // Fallback to active session token from localStorage (preview-login or stored token)
+  // Non-production preview session (well-formed, unexpired rptest token), then
+  // the legacy stored-token keys. The backend verifies every token it receives.
   try {
-    const devUser = localStorage.getItem('ime_dev_user');
-    if (devUser) {
-      const parsed = JSON.parse(devUser);
-      if (parsed?.token) return `Bearer ${parsed.token}`;
-    }
+    const preview = readPreviewSession();
+    if (preview) return `Bearer ${preview.token}`;
     const token = localStorage.getItem('token') || localStorage.getItem('auth_token');
     if (token) return `Bearer ${token}`;
   } catch {
