@@ -13,7 +13,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/loading';
 import { get, post, del, normalizeError } from '@/lib/api-client';
-import { calculateAtsScore } from '@/lib/atsScore';
+import { resumeQualityScore } from '@/lib/resume-score';
+import { ATS_READY_THRESHOLD, computeResumeMetrics } from '@/lib/resume-metrics';
+import { getTemplateMeta } from '@/lib/template-catalog';
 import { cn } from '@/lib/utils';
 import {
   FileText,
@@ -84,7 +86,8 @@ export function DashboardOverview() {
   const [statsError, setStatsError] = useState<string | null>(null);
 
   const [resumes, setResumes] = useState<any[]>([]);
-  const [topAtsScore, setTopAtsScore] = useState<number | null>(null);
+  /** Real membership from the profile; null hides the plan badge (never a guessed plan). */
+  const [membership, setMembership] = useState<string | null>(null);
   const [recentResumesDelta, setRecentResumesDelta] = useState<number>(0);
 
   const [jobs, setJobs] = useState<JobListing[]>([]);
@@ -137,26 +140,8 @@ export function DashboardOverview() {
       }
       setRecentResumesDelta(recent);
 
-      // Compute ATS score of primary resume
-      if (list.length > 0) {
-        try {
-          const rawData = list[0].data;
-          const parsed = typeof rawData === 'string' ? JSON.parse(rawData) : (rawData || {});
-          const scoreOutput = calculateAtsScore(parsed);
-          if (scoreOutput && typeof scoreOutput.score === 'number') {
-            setTopAtsScore(scoreOutput.score);
-          } else {
-            setTopAtsScore(85); // Standard baseline for certified template
-          }
-        } catch {
-          setTopAtsScore(85);
-        }
-      } else {
-        setTopAtsScore(null);
-      }
     } catch {
       setResumes([]);
-      setTopAtsScore(null);
     }
 
     // 3. Fetch Top Jobs from MariaDB
@@ -201,6 +186,29 @@ export function DashboardOverview() {
   useEffect(() => {
     void loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    let cancelled = false;
+    get<{ user?: { membership?: unknown } }>('/users-data/profile')
+      .then((response) => {
+        const value = response?.user?.membership;
+        if (!cancelled) setMembership(typeof value === 'string' && value.trim() ? value.trim() : null);
+      })
+      .catch(() => {
+        if (!cancelled) setMembership(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // ATS scores computed from the stored resume rows with the deterministic checker
+  // (the same scorer and thresholds as the Resumes page). Unscorable resumes are skipped.
+  const atsSummary = useMemo(() => {
+    const scores = resumes.map((resume) => resumeQualityScore(resume)).filter((score): score is number => score !== null);
+    const metrics = computeResumeMetrics(resumes, (resume) => resumeQualityScore(resume));
+    return { average: metrics.averageScore, best: scores.length ? Math.max(...scores) : null };
+  }, [resumes]);
 
   // Toggle Job Bookmark Favorite
   const handleToggleFavourite = async (jobId: string, job: JobListing) => {
@@ -295,6 +303,7 @@ export function DashboardOverview() {
   const primaryResume = useMemo(() => {
     return resumes.length > 0 ? resumes[0] : null;
   }, [resumes]);
+  const primaryResumeScore = useMemo(() => (primaryResume ? resumeQualityScore(primaryResume) : null), [primaryResume]);
 
   // Synthesize Real Career Activity Stream (Newest first, strictly zero job_tracker)
   const recentActivities: CareerActivity[] = useMemo(() => {
@@ -379,20 +388,20 @@ export function DashboardOverview() {
     if (!stats || stats.resumes === 0) {
       return 'Create your first resume to unlock ATS scoring and template matching.';
     }
-    if (topAtsScore !== null && topAtsScore >= 75) {
-      return `Your top resume scores ${topAtsScore}% ATS — recruiter benchmark ready.`;
+    if (atsSummary.best !== null && atsSummary.best >= ATS_READY_THRESHOLD) {
+      return `Your best resume scores ${atsSummary.best}% on the ATS readiness check.`;
     }
-    if (topAtsScore !== null) {
-      return `Lift your top resume from ${topAtsScore}% toward the 80% recruiter target.`;
+    if (atsSummary.best !== null) {
+      return `Your best resume scores ${atsSummary.best}%. Aim for ${ATS_READY_THRESHOLD}% or higher.`;
     }
-    return 'Your resumes are ready — run an ATS check to verify keyword readiness.';
-  }, [stats, statsLoading, topAtsScore]);
+    return 'Run an ATS check to see how your resumes score.';
+  }, [stats, statsLoading, atsSummary.best]);
 
   // Next Steps Checklist (strictly excluding job_tracker)
   const nextSteps = useMemo(() => {
     const hasProfile = Boolean(stats?.profileComplete);
     const hasResumes = Boolean(stats && stats.resumes > 0);
-    const hasAtsScored = Boolean(topAtsScore !== null && topAtsScore > 0);
+    const hasAtsScored = atsSummary.best !== null && atsSummary.best > 0;
 
     return [
       {
@@ -405,14 +414,14 @@ export function DashboardOverview() {
       {
         id: 'resume',
         title: 'Build or Polish Master CV',
-        description: 'Choose from 51+ executive templates with ATS compliance',
+        description: 'Choose from 100 resume templates',
         href: '/build-resume',
         completed: hasResumes,
       },
       {
         id: 'ats',
         title: 'Analyze Resume ATS Compatibility',
-        description: 'Score your resume against industry keywords and recruiter parsers',
+        description: 'Check structure, content and job-description keywords',
         href: '/dashboard/ats-score',
         completed: hasAtsScored,
       },
@@ -424,7 +433,7 @@ export function DashboardOverview() {
         completed: false,
       },
     ];
-  }, [stats, topAtsScore]);
+  }, [stats, atsSummary.best]);
 
   const completedStepsCount = nextSteps.filter((s) => s.completed).length;
   const progressPercent = Math.round((completedStepsCount / nextSteps.length) * 100);
@@ -459,14 +468,16 @@ export function DashboardOverview() {
                 {greeting}, {firstName}! <span aria-hidden="true">👋</span>
               </h1>
 
-              {/* Membership Plan Badge */}
-              <Link
-                to="/pricing"
-                className="inline-flex items-center gap-1 rounded-full border border-brand-200 bg-brand-50/80 px-2.5 py-0.5 text-[11px] font-bold text-brand-700 hover:bg-brand-100 transition-colors"
-              >
-                <Shield className="size-3 text-brand-600" />
-                <span>Executive Candidate Plan</span>
-              </Link>
+              {/* Membership plan badge: the real plan from the profile, hidden if unknown */}
+              {membership && (
+                <Link
+                  to="/pricing"
+                  className="inline-flex items-center gap-1 rounded-full border border-brand-200 bg-brand-50/80 px-2.5 py-0.5 text-[11px] font-bold text-brand-700 hover:bg-brand-100 transition-colors"
+                >
+                  <Shield className="size-3 text-brand-600" aria-hidden="true" />
+                  <span>{membership} plan</span>
+                </Link>
+              )}
             </div>
 
             <p className="text-xs sm:text-sm font-medium text-ink-secondary flex items-center gap-1.5">
@@ -559,7 +570,7 @@ export function DashboardOverview() {
 
               <div className="mt-3 pt-2 border-t border-edge/60 flex items-center justify-between text-xs text-ink-muted">
                 {recentResumesDelta > 0 ? (
-                  <span className="inline-flex items-center gap-1 font-semibold text-emerald-600">
+                  <span className="inline-flex items-center gap-1 font-semibold text-success-700">
                     <TrendingUp className="size-3.5 shrink-0" />
                     +{recentResumesDelta} this month
                   </span>
@@ -611,19 +622,19 @@ export function DashboardOverview() {
                     Avg. ATS Score
                   </span>
                   <span className="block text-2xl font-extrabold text-ink leading-tight mt-1">
-                    {topAtsScore !== null ? `${topAtsScore}%` : 'Not scored'}
+                    {atsSummary.average !== null ? `${atsSummary.average}%` : 'Not scored'}
                   </span>
                 </div>
                 <div className="shrink-0">
-                  <AtsDonut score={topAtsScore} />
+                  <AtsDonut score={atsSummary.average} />
                 </div>
               </div>
 
               <div className="mt-3 pt-2 border-t border-edge/60 flex items-center justify-between text-xs text-ink-muted">
-                {topAtsScore !== null && topAtsScore >= 75 ? (
-                  <span className="font-semibold text-emerald-600">Recruiter ready</span>
+                {atsSummary.average !== null && atsSummary.average >= ATS_READY_THRESHOLD ? (
+                  <span className="font-semibold text-success-700">Ready to apply</span>
                 ) : (
-                  <span>Target 80%+</span>
+                  <span>Target {ATS_READY_THRESHOLD}%+</span>
                 )}
                 <ChevronRight className="size-3.5 text-ink-subtle opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
               </div>
@@ -696,9 +707,9 @@ export function DashboardOverview() {
                     {statsLoading ? (
                       <Skeleton className="h-7 w-10 my-0.5" />
                     ) : stats?.profileComplete ? (
-                      '100%'
+                      'Complete'
                     ) : (
-                      '60%'
+                      'Incomplete'
                     )}
                   </span>
                 </div>
@@ -709,9 +720,9 @@ export function DashboardOverview() {
 
               <div className="mt-3 pt-2 border-t border-edge/60 flex items-center justify-between text-xs text-ink-muted">
                 {stats?.profileComplete ? (
-                  <span className="font-semibold text-emerald-600">Fully complete</span>
+                  <span className="font-semibold text-success-700">Fully complete</span>
                 ) : (
-                  <span className="text-amber-600 font-medium">Action needed</span>
+                  <span className="text-warning-700 font-medium">Action needed</span>
                 )}
                 <ChevronRight className="size-3.5 text-ink-subtle opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
               </div>
@@ -850,15 +861,15 @@ export function DashboardOverview() {
                       </span>
                     </div>
                     <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-ink-muted">
-                      <span className="whitespace-nowrap">Template: <strong className="text-ink font-semibold">{primaryResume.template || 'Cv1'}</strong></span>
+                      <span className="whitespace-nowrap">Template: <strong className="text-ink font-semibold">{getTemplateMeta(primaryResume.template || 'Cv1').name}</strong></span>
                       <span className="text-ink-subtle">•</span>
                       <span className="whitespace-nowrap">{postedLabel(primaryResume.updated_at || primaryResume.updatedAt)}</span>
-                      {topAtsScore !== null && (
+                      {primaryResumeScore !== null && (
                         <>
                           <span className="text-ink-subtle">•</span>
-                          <span className="inline-flex items-center gap-1 font-semibold text-emerald-600 whitespace-nowrap">
-                            <Target className="size-3" />
-                            {topAtsScore}% ATS
+                          <span className="inline-flex items-center gap-1 font-semibold text-success-700 whitespace-nowrap">
+                            <Target className="size-3" aria-hidden="true" />
+                            {primaryResumeScore}% ATS
                           </span>
                         </>
                       )}
@@ -874,8 +885,8 @@ export function DashboardOverview() {
                     className="h-8 text-xs font-semibold gap-1.5 w-full sm:w-auto justify-center"
                     asChild
                   >
-                    <Link to="/dashboard/ats-score">
-                      <Target className="size-3 text-brand-600" />
+                    <Link to={`/dashboard/ats-score?resume=${encodeURIComponent(String(primaryResume.id ?? ''))}`}>
+                      <Target className="size-3 text-brand-600" aria-hidden="true" />
                       ATS Score
                     </Link>
                   </Button>
@@ -937,7 +948,7 @@ export function DashboardOverview() {
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[10px] font-semibold text-ink-subtle">
+                      <span className="text-[10px] font-semibold text-ink-muted">
                         {postedLabel(act.timestamp)}
                       </span>
                       <ChevronRight className="size-3.5 text-ink-subtle opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
@@ -1104,7 +1115,7 @@ export function DashboardOverview() {
                     className={cn(
                       'group flex items-start gap-3 rounded-xl border p-3 no-underline transition-all',
                       done
-                        ? 'border-edge bg-canvas/40 opacity-80 hover:opacity-100'
+                        ? 'border-edge bg-canvas/40'
                         : 'border-edge bg-surface hover:border-accent/40 hover:shadow-xs'
                     )}
                   >

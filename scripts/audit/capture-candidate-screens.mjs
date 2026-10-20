@@ -10,6 +10,9 @@
  *   node scripts/audit/capture-candidate-screens.mjs --surface cover-letters \
  *     --phase before --routes /dashboard/cover-letters,/cover-letter/new
  *
+ * Optional: --click "<button name>" presses that button (by accessible name)
+ * after the page loads, for states that need one real interaction.
+ *
  * Env: E2E_BASE_URL (default http://127.0.0.1:4000),
  *      PLAYWRIGHT_CHROMIUM_EXECUTABLE (optional browser binary).
  */
@@ -29,6 +32,7 @@ const arg = (name, fallback) => {
 const surface = arg('surface');
 const phase = arg('phase');
 const routes = String(arg('routes', '')).split(',').filter(Boolean);
+const click = arg('click');
 if (!surface || !['before', 'after'].includes(phase) || !routes.length) {
   console.error('usage: --surface <name> --phase before|after --routes /a,/b');
   process.exit(2);
@@ -91,17 +95,36 @@ for (const profile of PROFILES) {
     });
     await page.goto(route, { waitUntil: 'networkidle' });
     await page.waitForTimeout(400);
-    const slug = route.replace(/^\//, '').replace(/[^a-z0-9]+/gi, '_') || 'root';
+    if (click) {
+      await page.getByRole('button', { name: click }).first().click();
+      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(800);
+      // The shell scrolls inside its own container, so full-page captures stop at the
+      // viewport. Bring the element the app focused after the action to the top.
+      await page.evaluate(() => {
+        const active = document.activeElement;
+        if (active && active !== document.body) active.scrollIntoView({ block: 'start' });
+      });
+      await page.waitForTimeout(300);
+    }
+    const slug = (route.replace(/^\//, '').replace(/[^a-z0-9]+/gi, '_') || 'root') + (click ? '__after_click' : '');
     const file = `${profile.name}__${slug}.jpg`;
     await page.screenshot({ path: path.join(outDir, file), fullPage: true, type: 'jpeg', quality: 60 });
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-    report.pages.push({ profile: profile.name, route, finalUrl: new URL(page.url()).pathname, file, horizontalOverflowPx: Math.max(0, overflow), consoleErrors, failedRequests, failedApi });
+    report.pages.push({ profile: profile.name, route, click: click || null, finalUrl: new URL(page.url()).pathname, file, horizontalOverflowPx: Math.max(0, overflow), consoleErrors, failedRequests, failedApi });
     await page.close();
   }
   await context.close();
 }
 await browser.close();
-fs.writeFileSync(path.join(outDir, 'capture-report.json'), `${JSON.stringify(report, null, 2)}\n`);
+const reportFile = path.join(outDir, 'capture-report.json');
+// Several captures of one surface and phase (e.g. with and without --click) share the report.
+const previous = fs.existsSync(reportFile) ? JSON.parse(fs.readFileSync(reportFile, 'utf8')) : null;
+if (previous?.pages?.length) {
+  const replaced = new Set(report.pages.map((entry) => entry.file));
+  report.pages = [...previous.pages.filter((entry) => !replaced.has(entry.file)), ...report.pages];
+}
+fs.writeFileSync(reportFile, `${JSON.stringify(report, null, 2)}\n`);
 console.log(`captured ${report.pages.length} screens -> ${path.relative(repoRoot, outDir)}`);
 for (const entry of report.pages) {
   const issues = [entry.horizontalOverflowPx ? `overflow ${entry.horizontalOverflowPx}px` : '', entry.failedApi.length ? `api ${entry.failedApi.join(', ')}` : '', entry.failedRequests.length ? `requests ${entry.failedRequests.join(', ')}` : '', entry.consoleErrors.length ? `${entry.consoleErrors.length} console errors` : ''].filter(Boolean).join(' | ');

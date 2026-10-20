@@ -24,7 +24,7 @@ import {
   ATS_READY_THRESHOLD,
   ATS_DEVELOPING_THRESHOLD,
 } from '@/lib/resume-metrics';
-import { calculateAtsScore } from '@/lib/atsScore';
+import { resumeQualityScore } from '@/lib/resume-score';
 import { PreviewModal } from '@/components/ui/preview-modal';
 import { ShareModal } from '@/components/ui/share-modal';
 import { cn } from '@/lib/utils';
@@ -198,22 +198,10 @@ export function ResumesPage() {
     return () => { cancelled = true; };
   }, []);
 
-  // Compute the real ATS quality score for a resume. List rows include the
-  // draft; if a deployment ever omits it, the resume is reported unscored
-  // rather than scored as zero.
-  const getResumeScore = useCallback((resume: Resume): number | null => {
-    try {
-      const raw = resume.data !== undefined && resume.data !== null ? resume.data : null;
-      if (raw === null) return null;
-      const parsedData = typeof raw === 'string' ? JSON.parse(raw) : raw;
-      if (!parsedData || typeof parsedData !== 'object') return null;
-      const res = calculateAtsScore(parsedData);
-      const score = res?.qualityScore;
-      return typeof score === 'number' && Number.isFinite(score) ? Math.round(score) : null;
-    } catch {
-      return null;
-    }
-  }, []);
+  // Real ATS quality score for a resume. List rows are the stored resume (flat
+  // fields, no `data` column), which is what the scorer reads; a row that cannot
+  // be read is reported unscored rather than scored as zero.
+  const getResumeScore = useCallback((resume: Resume): number | null => resumeQualityScore(resume), []);
 
   // Executive metrics derived from real ATS scores (80 / 60 thresholds).
   const stats = useMemo(() => {
@@ -711,7 +699,7 @@ export function ResumesPage() {
             <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">READY TO APPLY</span>
           </div>
           <div className="mt-3 text-2xl font-bold tracking-tight text-emerald-800 sm:text-3xl" data-testid="metric-ready">{stats.ready}</div>
-          <span className="mt-0.5 text-xs text-emerald-700/80">ATS score {ATS_READY_THRESHOLD}–100</span>
+          <span className="mt-0.5 text-xs text-success-700">ATS score {ATS_READY_THRESHOLD}–100</span>
         </div>
 
         <div className="flex flex-col rounded-2xl border border-amber-200 bg-surface p-4 shadow-sm transition-all hover:border-amber-300">
@@ -722,7 +710,7 @@ export function ResumesPage() {
             <span className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">DEVELOPING</span>
           </div>
           <div className="mt-3 text-2xl font-bold tracking-tight text-amber-800 sm:text-3xl" data-testid="metric-developing">{stats.developing}</div>
-          <span className="mt-0.5 text-xs text-amber-700/80">ATS score {ATS_DEVELOPING_THRESHOLD}–{ATS_READY_THRESHOLD - 1}</span>
+          <span className="mt-0.5 text-xs text-warning-700">ATS score {ATS_DEVELOPING_THRESHOLD}–{ATS_READY_THRESHOLD - 1}</span>
         </div>
 
         <div className="flex flex-col rounded-2xl border border-slate-200 bg-surface p-4 shadow-sm transition-all hover:border-slate-300">
