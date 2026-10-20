@@ -12,7 +12,7 @@
  * - WCAG 2.1 AA accessible
  */
 
-import { useState, useCallback, useEffect, useMemo, type ReactNode } from 'react';
+import { useState, useCallback, useMemo, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/providers/auth-provider';
 import { cn } from '@/lib/utils';
@@ -40,7 +40,6 @@ import {
   Download,
   Eye,
   CheckCircle2,
-  Save,
   ChevronDown,
   Code2,
   Star,
@@ -49,14 +48,11 @@ import {
   User,
   Users,
   Shield,
-  Clock,
-  ExternalLink,
   Activity,
   Server,
   Database,
   AlertTriangle,
   ShieldCheck,
-  Layers,
   Sliders,
   Zap,
   BarChart2,
@@ -64,6 +60,8 @@ import {
   Mail,
   Brain,
   Command,
+  Crown,
+  Check,
 } from 'lucide-react';
 import { useTheme } from '@/providers/theme-provider';
 import { Button } from '@/components/ui/button';
@@ -165,7 +163,7 @@ const adminNavGroups: NavGroup[] = [
     items: [
       { id: 'ai-settings', label: 'AI Multi-Provider Engine', href: '/admin/ai-settings', icon: Brain, matchPaths: ['/admin/ai-settings'] },
       { id: 'email', label: 'Email & SMTP Deliverability', href: '/admin/email', icon: Mail, matchPaths: ['/admin/email'] },
-      { id: 'settings', label: 'Platform Settings', href: '/admin/settings', icon: Settings, matchPaths: ['/admin/settings'] },
+      { id: 'settings', label: 'Platform Settings & Modules', href: '/admin/settings', icon: Settings, matchPaths: ['/admin/settings', '/admin/modules'] },
     ],
   },
 ];
@@ -256,13 +254,60 @@ export function CubaAppShell({
   onPreview,
   onDownload,
 }: CubaAppShellProps) {
-  const { user, claims, signOut, isAdmin } = useAuth();
+  const { user, claims, signOut, isAdmin, isSuperAdmin } = useAuth();
   const { theme, resolvedTheme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const params = useParams<{ resumeId?: string }>();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Super Admin Role Simulation State
+  const [simulatedRole, setSimulatedRole] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('superadmin_role_view');
+    }
+    return null;
+  });
+
+  const handleSelectRoleView = useCallback(async (targetRole: string) => {
+    const normalized = targetRole === 'SUPER_ADMIN' ? null : targetRole;
+    setSimulatedRole(normalized);
+    if (typeof window !== 'undefined') {
+      if (normalized) {
+        sessionStorage.setItem('superadmin_role_view', normalized);
+      } else {
+        sessionStorage.removeItem('superadmin_role_view');
+        sessionStorage.removeItem('superadmin_enterprise_tenant');
+      }
+    }
+
+    try {
+      const token = await user?.getIdToken?.();
+      if (token) {
+        await fetch('/api/platform/role-view-audit', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ targetRole: targetRole || 'SUPER_ADMIN' }),
+        });
+      }
+    } catch (err) {
+      console.warn('[CubaAppShell] role-view-audit failed:', err);
+    }
+
+    if (targetRole === 'USER') {
+      navigate('/dashboard?superadmin_view=1');
+    } else if (targetRole === 'SUPPORT') {
+      navigate('/admin/users');
+    } else if (targetRole === 'AUDITOR') {
+      navigate('/admin/audit-logs');
+    } else {
+      navigate('/admin/dashboard');
+    }
+  }, [user, navigate]);
 
   // Live notifications count from backend API
   const { data: notifications = [] } = useNotifications();
@@ -977,6 +1022,60 @@ export function CubaAppShell({
                     </DropdownMenu>
                   )}
                 </div>
+              )}
+
+              {/* Super Admin Role Simulation Switcher */}
+              {(isSuperAdmin || isAdmin) && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      data-testid="role-simulation-trigger"
+                      className={cn(
+                        'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
+                        simulatedRole
+                          ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700 animate-pulse'
+                          : 'text-ink-secondary hover:text-ink hover:bg-neutral-100 dark:hover:bg-neutral-800 border-border'
+                      )}
+                      title="Simulate Role View (Super Admin)"
+                    >
+                      <Crown className="size-3.5 text-amber-500 shrink-0" />
+                      <span className="hidden md:inline">
+                        {simulatedRole ? `Viewing as: ${simulatedRole}` : 'View As Role'}
+                      </span>
+                      <ChevronDown className="size-3 text-ink-muted shrink-0" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56 p-1">
+                    <div className="px-2 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-ink-muted">
+                      Simulate Role View
+                    </div>
+                    {[
+                      { id: 'SUPER_ADMIN', label: 'Super Admin (Default)', desc: 'Unrestricted root control' },
+                      { id: 'ADMIN', label: 'Admin', desc: 'Standard platform manager' },
+                      { id: 'SUPPORT', label: 'Support Agent', desc: 'Read users, logs, tickets' },
+                      { id: 'AUDITOR', label: 'Auditor', desc: 'Read-only compliance audit' },
+                      { id: 'USER', label: 'End User / Candidate', desc: 'Candidate portal experience' },
+                    ].map((opt) => (
+                      <DropdownMenuItem
+                        key={opt.id}
+                        onSelect={() => handleSelectRoleView(opt.id)}
+                        className={cn(
+                          'flex items-center justify-between cursor-pointer py-2 text-xs',
+                          (simulatedRole === opt.id || (!simulatedRole && opt.id === 'SUPER_ADMIN')) && 'font-bold bg-neutral-100 dark:bg-neutral-800'
+                        )}
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-ink">{opt.label}</span>
+                          <span className="text-[10px] text-ink-muted">{opt.desc}</span>
+                        </div>
+                        {(simulatedRole === opt.id || (!simulatedRole && opt.id === 'SUPER_ADMIN')) && (
+                          <Check className="size-3.5 text-brand-600 shrink-0" />
+                        )}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
 
               {/* Interactive Notifications Popover */}

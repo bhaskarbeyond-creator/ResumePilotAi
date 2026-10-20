@@ -887,6 +887,11 @@ const AdminConsoleInner = ({ isCubaChrome = false }) => {
                                 <Settings />
                             </RequireTabPerm>
                         } />
+                        <Route path="modules" element={
+                            <RequireTabPerm required="*">
+                                <Navigate to="/admin/settings?tab=modulesSettings" replace />
+                            </RequireTabPerm>
+                        } />
                         <Route path="ai-settings" element={
                             <RequireTabPerm required={['system.config.write', 'system.config.read']}>
                                 <AiSettings />

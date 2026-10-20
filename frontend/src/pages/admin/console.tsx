@@ -45,6 +45,7 @@ import { AdminContentMarketingTab } from '@/components/admin/AdminContentMarketi
 import { AdminAiSettingsTab } from '@/components/admin/AdminAiSettingsTab';
 import { AdminEmailSmtpTab } from '@/components/admin/AdminEmailSmtpTab';
 import { AdminSecurityTab } from '@/components/admin/AdminSecurityTab';
+import { AdminSettingsTab } from '@/components/admin/AdminSettingsTab';
 
 export type AdminTabId =
   | 'dashboard'
@@ -59,7 +60,9 @@ export type AdminTabId =
   | 'content'
   | 'ai-settings'
   | 'email'
-  | 'security';
+  | 'security'
+  | 'settings'
+  | 'modules';
 
 const VALID_TABS: AdminTabId[] = [
   'dashboard',
@@ -75,6 +78,8 @@ const VALID_TABS: AdminTabId[] = [
   'ai-settings',
   'email',
   'security',
+  'settings',
+  'modules',
 ];
 
 interface NavGroup {
@@ -122,6 +127,7 @@ const NAVIGATION_GROUPS: NavGroup[] = [
   {
     label: 'System Configuration',
     items: [
+      { id: 'settings', label: 'Platform Settings & Modules', icon: Sliders },
       { id: 'ai-settings', label: 'AI Multi-Provider Engine', icon: Brain },
       { id: 'email', label: 'Email & SMTP Deliverability', icon: Mail },
     ],
@@ -150,7 +156,8 @@ export function AdminConsolePage() {
       if (section === 'blog-management') return 'blog';
       if (['employer-applications', 'jobs-manager', 'company-management', 'tenants'].includes(section)) return 'moderation';
       if (['phrases', 'reviews', 'landing-pages', 'trustedby'].includes(section)) return 'content';
-      if (section === 'settings') return 'security';
+      if (section === 'settings') return 'settings';
+      if (section === 'modules' || section === 'addon-modules') return 'modules';
       if (section === 'command-center' || section === 'dashboard') return 'dashboard';
       if (VALID_TABS.includes(section as AdminTabId)) {
         return section as AdminTabId;
@@ -250,6 +257,9 @@ export function AdminConsolePage() {
         {activeTab === 'content' && <AdminContentMarketingTab />}
         {activeTab === 'ai-settings' && <AdminAiSettingsTab />}
         {activeTab === 'email' && <AdminEmailSmtpTab />}
+        {(activeTab === 'settings' || activeTab === 'modules') && (
+          <AdminSettingsTab initialSection="modules" />
+        )}
       </main>
     </div>
   );
