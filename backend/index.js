@@ -400,7 +400,6 @@ const authHourlyLimiter = rateLimit({
     max: process.env.NODE_ENV === 'test' ? Number(process.env.AUTH_RATE_LIMIT_MAX || 10000) : Number(process.env.AUTH_RATE_LIMIT_MAX || 20),
     standardHeaders: 'draft-6',
     legacyHeaders: false,
-    skip: (req) => process.env.NODE_ENV === 'test' || String(req.body?.email || '').toLowerCase().endsWith('.test') || req.headers['x-e2e-test'] === '1',
     message: { error: { code: 'RATE_LIMITED', message: 'Too many sensitive requests from this IP, please try again after an hour', requestId: undefined } },
     validate: { trustProxy: false, keyGeneratorIpFallback: false }
 });
@@ -409,7 +408,6 @@ const authBurstLimiter = rateLimit({
     max: process.env.NODE_ENV === 'test' ? Number(process.env.AUTH_BURST_RATE_LIMIT_MAX || 10000) : Number(process.env.AUTH_BURST_RATE_LIMIT_MAX || 5),
     standardHeaders: 'draft-6',
     legacyHeaders: false,
-    skip: (req) => process.env.NODE_ENV === 'test' || String(req.body?.email || '').toLowerCase().endsWith('.test') || req.headers['x-e2e-test'] === '1',
     message: { error: { code: 'AUTH_BURST_LIMITED', message: 'Too many authentication attempts. Please wait before trying again.', requestId: undefined } },
     validate: { trustProxy: false, keyGeneratorIpFallback: false }
 });

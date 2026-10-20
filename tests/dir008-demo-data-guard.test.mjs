@@ -39,16 +39,25 @@ test('no production surface ships a demo persona or stock headshot', () => {
 });
 
 test('the portfolio builder starts from an empty, honest scaffold', () => {
-  const source = fs.readFileSync(path.join(SRC, 'pages', 'portfolio', 'builder.tsx'), 'utf8');
-  const block = source.slice(source.indexOf('const DEFAULT_PORTFOLIO'), source.indexOf('const THEMES'));
-  assert.match(block, /fullName:\s*''/, 'portfolio default still invents a name');
-  assert.match(block, /headline:\s*''/);
-  assert.match(block, /bio:\s*''/);
-  assert.match(block, /avatarUrl:\s*''/, 'portfolio default still ships a photo URL');
-  assert.match(block, /projects:\s*\[\]/, 'portfolio default still ships sample projects');
-  assert.match(block, /skills:\s*\[\]/, 'portfolio default still ships sample skills');
-  assert.match(source, /Your name appears here/, 'preview has no empty-state prompt');
-  assert.match(source, /No projects yet/, 'preview has no empty project state');
+  // P002 C8 moved the scaffold into lib/portfolio-document.ts, which the builder
+  // and the public view share; the builder starts from emptyCanonical().
+  const builder = fs.readFileSync(path.join(SRC, 'pages', 'portfolio', 'builder.tsx'), 'utf8');
+  const documentModel = fs.readFileSync(path.join(SRC, 'lib', 'portfolio-document.ts'), 'utf8');
+  const view = fs.readFileSync(path.join(SRC, 'components', 'portfolio', 'portfolio-view.tsx'), 'utf8');
+  assert.match(builder, /useState<PortfolioCanonical>\(\(\) => emptyCanonical\(\)\)/, 'the builder does not start from the empty scaffold');
+  const heading = documentModel.slice(documentModel.indexOf('export function emptyHeading'), documentModel.indexOf('export function emptyCanonical'));
+  const scaffold = documentModel.slice(documentModel.indexOf('export function emptyCanonical'), documentModel.indexOf('function headingFrom'));
+  assert.match(heading, /fullName:\s*''/, 'portfolio default still invents a name');
+  assert.match(heading, /occupation:\s*''/, 'portfolio default still invents a headline');
+  assert.match(heading, /photo:\s*''/, 'portfolio default still ships a photo URL');
+  assert.match(scaffold, /heading:\s*emptyHeading\(\)/);
+  assert.match(scaffold, /summary:\s*''/, 'portfolio default still invents a bio');
+  assert.match(scaffold, /heroImage:\s*''/, 'portfolio default still ships a hero image');
+  assert.match(scaffold, /projects:\s*\[\]/, 'portfolio default still ships sample projects');
+  assert.match(scaffold, /skills:\s*\[\]/, 'portfolio default still ships sample skills');
+  assert.match(view, /Unnamed portfolio/, 'preview has no empty-state prompt');
+  assert.match(view, /This portfolio has no content yet\./, 'preview has no empty content state');
+  assert.match(builder, /No projects added\./, 'editor has no empty project state');
 });
 
 test('the login demo shortcut is compile-time gated out of production', () => {

@@ -133,7 +133,12 @@ export function LoginPage() {
         return;
       }
 
-      if (usePreviewIdentity || email.endsWith('.test') || email.startsWith('p002.')) {
+      // Test accounts on the reserved .test domain (RFC 2606) use the preview
+      // identity even where Firebase is configured: no real address can end in
+      // .test, and the endpoint answers 404 unless the backend's non-production
+      // verifier is on. A prefix such as "p002." is not used, because a real
+      // address can start with it.
+      if (usePreviewIdentity || email.endsWith('.test')) {
         await completePreviewSignIn();
         return;
       }
