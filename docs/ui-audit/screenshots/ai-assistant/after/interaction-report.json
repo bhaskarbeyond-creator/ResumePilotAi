@@ -1,0 +1,9 @@
+{
+  "phase": "after",
+  "capturedAt": "2026-10-20T02:07:34.859Z",
+  "input": "Managed the cloud database and fixed bugs when things broke.",
+  "apiCalls": [
+    "200 POST /api/generate-content"
+  ],
+  "inventedMetricsShown": []
+}

@@ -9,7 +9,7 @@
  * Nothing is saved until the candidate presses Save; AI drafts are inserted
  * only after an explicit request and never replace text without confirmation.
  */
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   AlertCircle,
@@ -35,6 +35,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { useRestoreFocusWhenIdle } from '@/hooks/use-restore-focus-when-idle';
 import { normalizeError } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 import {
@@ -762,19 +763,4 @@ function Section({ title, description, children }: { title: string; description?
       </fieldset>
     </div>
   );
-}
-
-/**
- * Buttons are disabled while busy, which drops keyboard focus to <body>.
- * When the work finishes, put focus back on the button if nothing else took it.
- */
-function useRestoreFocusWhenIdle(busy: boolean, ref: RefObject<HTMLButtonElement | null>) {
-  const wasBusy = useRef(false);
-  useEffect(() => {
-    if (wasBusy.current && !busy) {
-      const active = document.activeElement;
-      if (!active || active === document.body) ref.current?.focus();
-    }
-    wasBusy.current = busy;
-  }, [busy, ref]);
 }
