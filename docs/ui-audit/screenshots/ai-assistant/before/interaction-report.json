@@ -1,0 +1,13 @@
+{
+  "capturedAt": "2026-10-20T01:54:24.059Z",
+  "input": "Managed the cloud database and fixed bugs when things broke.",
+  "apiCalls": [
+    "404 POST /api/api/generate-content"
+  ],
+  "fabricatedMetricsShown": [
+    "38%",
+    "$45,000",
+    "99.98%",
+    "42% to 91%"
+  ]
+}

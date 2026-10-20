@@ -543,6 +543,16 @@ function normalizeResume(input = {}) {
       resume[field] = parseJsonIfString(resume[field]);
     }
   }
+  // Before P002 C6 the candidate builder stored skills as `{ category, skills: [...] }` groups;
+  // expand them into one item per skill so those resumes export their skills.
+  if (Array.isArray(resume.skills) && resume.skills.some((item) => Array.isArray(item?.skills))) {
+    resume.skills = resume.skills.flatMap((item) => (Array.isArray(item?.skills)
+      ? item.skills
+        .map((skill) => (typeof skill === 'string' ? skill : skill?.name))
+        .filter((name) => typeof name === 'string' && name.trim())
+        .map((name) => ({ name: name.trim(), category: typeof item.category === 'string' ? item.category : '' }))
+      : [item]));
+  }
   const hidden = hiddenSet(resume);
   if (isHidden(hidden, 'heading')) {
     resume.firstname = '';

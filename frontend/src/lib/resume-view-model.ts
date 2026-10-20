@@ -103,10 +103,13 @@ export function normalizeResumeToDocument(raw: any) {
       const grouped: Record<string, string[]> = {};
       for (const s of rawSkills) {
         const cat = s.category || 'Skills';
-        const name = s.name || s.skillName || s.skill || s.value || '';
-        if (name) {
+        // Rows saved by the builder before P002 C6 hold `{ category, skills: [...] }` groups.
+        const names: string[] = Array.isArray(s.skills)
+          ? s.skills.map((skill: any) => (typeof skill === 'string' ? skill : skill?.name || '')).filter(Boolean)
+          : [s.name || s.skillName || s.skill || s.value || ''].filter(Boolean);
+        if (names.length) {
           if (!grouped[cat]) grouped[cat] = [];
-          grouped[cat].push(name);
+          grouped[cat].push(...names);
         }
       }
       skillCategories = Object.entries(grouped).map(([category, skills], i) => ({

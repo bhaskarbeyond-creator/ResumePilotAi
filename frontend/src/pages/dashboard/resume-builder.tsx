@@ -6,11 +6,12 @@
  *   Achievements, Projects, Languages, References, Custom Sections, Review
  * - Auto-save to backend with MariaDB optimistic locking
  * - AI-assisted content generation
- * - Right Rail Tabbed AI Career Assistant (Suggestions, Insights, Job Match, ATS Guidance, Bullet Strength)
+ * - Right rail resume guidance (ATS checks, writing tips, stats, job description match, bullet strength),
+ *   computed in the browser from the resume itself: it makes no AI or network calls
  * - Live template preview
  */
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useDeferredValue } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,7 +26,11 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { PageSpinner } from '@/components/ui/loading';
-import { get, post, normalizeError } from '@/lib/api-client';
+import axios from 'axios';
+import { apiClient, get, post, normalizeError } from '@/lib/api-client';
+import { runContentOperation, type AiOutcome } from '@/lib/ai-content';
+import { bucketForScore, bucketTone } from '@/lib/resume-metrics';
+import { resumeQualityScore, scoreResume } from '@/lib/resume-score';
 import { applyMasterProfile, describeMasterSync } from '@/lib/master-profile';
 import { cn } from '@/lib/utils';
 import { PreviewModal } from '@/components/ui/preview-modal';
@@ -68,10 +73,10 @@ import {
   BookOpen,
   Link as LinkIcon,
   ClipboardCheck,
+  Copy,
   Settings,
   Lightbulb,
   Target,
-  Brain,
   Zap,
   HelpCircle,
   Shield,
@@ -84,7 +89,6 @@ import {
   Share2,
   Printer,
   FileDown,
-  RotateCcw,
   Camera,
   UploadCloud,
   CheckCircle2,
@@ -288,8 +292,8 @@ const STEPS: { id: BuilderStep; label: string; icon: typeof User; description: s
   { id: 'experience', label: 'Work history', icon: Briefcase, description: 'Start with your most recent position and work backwards. Include your last 10 years of relevant experience.', requiredFields: 1 },
   { id: 'education', label: 'Education', icon: GraduationCap, description: 'Add your degrees, institutions, graduation dates and academic achievements.', requiredFields: 1 },
   { id: 'skills', label: 'Skills', icon: Wrench, description: 'Group your core competencies into logical domains with AI-powered keyword suggestions.', requiredFields: 5 },
-  { id: 'summary', label: 'Summary', icon: FileText, description: 'Written in your authentic voice — AI synthesizes your verified career history with zero hallucinations.', requiredFields: 1 },
-  { id: 'template', label: 'Template', icon: Layout, description: 'Choose from 51 canonical executive and modern designs with high-fidelity A4 rendering.' },
+  { id: 'summary', label: 'Summary', icon: FileText, description: 'Written in your own words. AI suggestions use only the details saved in this resume, and you decide whether to use them.', requiredFields: 1 },
+  { id: 'template', label: 'Template', icon: Layout, description: 'Choose from 100 templates with A4 rendering.' },
   { id: 'certifications', label: 'Certifications', icon: Award, description: 'Highlight industry credentials, verified licenses, issuing bodies, and expiration dates.' },
   { id: 'achievements', label: 'Achievements', icon: Zap, description: 'Detail quantifiable accomplishments, awards, revenue impact, and performance records.' },
   { id: 'projects', label: 'Projects', icon: Code2, description: 'Showcase portfolio projects, GitHub repositories, live URLs, and applied technologies.' },
@@ -298,6 +302,9 @@ const STEPS: { id: BuilderStep; label: string; icon: typeof User; description: s
   { id: 'custom', label: 'Custom', icon: Settings, description: 'Add bespoke sections for publications, patents, volunteering, or leadership.' },
   { id: 'review', label: 'Finalize', icon: ClipboardCheck, description: 'Run pre-flight ATS checks, verify readiness score, and export to PDF or Word.' },
 ];
+
+/** "Finalize" is a review step that is never marked complete, so progress counts the content sections only. */
+const COMPLETABLE_STEP_COUNT = STEPS.filter((step) => step.id !== 'review').length;
 
 const PROFICIENCY_OPTIONS = [
   { value: 'native', label: 'Native' },
@@ -339,6 +346,26 @@ function createEmptyResume(): ResumeData {
     references: [],
     customSections: [],
   };
+}
+
+/**
+ * List entries from older saves, the legacy builder or a Master Profile import may lack an id (or
+ * repeat one). Edits and deletes match entries by id, so id-less entries were all changed or
+ * removed together; give each a unique, deterministic id and map common legacy field names.
+ */
+function withEntryIds<T extends { id: string }>(items: unknown, prefix: string, map: (item: any) => Omit<T, 'id'> & { id?: unknown }): T[] {
+  if (!Array.isArray(items)) return [];
+  const seen = new Set<string>();
+  return items
+    .map((item) => (typeof item === 'string' ? { name: item } : item))
+    .filter((item): item is Record<string, any> => Boolean(item) && typeof item === 'object')
+    .map((item, index) => {
+      let id = typeof item.id === 'string' || typeof item.id === 'number' ? String(item.id) : '';
+      if (!id || seen.has(id)) id = `${prefix}-${index}`;
+      while (seen.has(id)) id = `${id}-${index}`;
+      seen.add(id);
+      return { ...map(item), id } as T;
+    });
 }
 
 function normalizeFromBackend(raw: any): ResumeData {
@@ -394,21 +421,7 @@ function normalizeFromBackend(raw: any): ResumeData {
   if (Array.isArray(raw.skillCategories) && raw.skillCategories.length) {
     skillCategories = raw.skillCategories;
   } else if (Array.isArray(raw.skills) && raw.skills.length) {
-    if (typeof raw.skills[0] === 'string') {
-      skillCategories = [{ id: 'general', category: 'Core Skills', skills: raw.skills }];
-    } else if (raw.skills[0]?.skills) {
-      skillCategories = raw.skills.map((s: any) => ({
-        id: s.id || crypto.randomUUID(),
-        category: s.category || s.name || 'Skills',
-        skills: Array.isArray(s.skills) ? s.skills : [],
-      }));
-    } else if (raw.skills[0]?.name) {
-      skillCategories = [{
-        id: 'skills',
-        category: 'Core Competencies',
-        skills: raw.skills.map((s: any) => s.name || String(s)),
-      }];
-    }
+    skillCategories = groupStoredSkills(raw.skills);
   }
 
   return {
@@ -420,14 +433,68 @@ function normalizeFromBackend(raw: any): ResumeData {
     education,
     skillCategories,
     summary: raw.summary || '',
-    certifications: Array.isArray(raw.certifications) ? raw.certifications : [],
-    achievements: Array.isArray(raw.achievements) ? raw.achievements : [],
-    projects: Array.isArray(raw.projects) ? raw.projects : [],
-    languages: Array.isArray(raw.languages) ? raw.languages : [],
-    references: Array.isArray(raw.references) ? raw.references : [],
-    customSections: Array.isArray(raw.customSections) ? raw.customSections : [],
+    certifications: withEntryIds<CertificationEntry>(raw.certifications, 'cert', (c) => ({
+      ...c, name: c.name || c.title || '', issuer: c.issuer || c.organization || c.institution || '',
+    })),
+    achievements: withEntryIds<AchievementEntry>(raw.achievements, 'achievement', (a) => ({ ...a, title: a.title || a.name || '' })),
+    projects: withEntryIds<ProjectEntry>(raw.projects, 'project', (pr) => ({ ...pr, title: pr.title || pr.name || pr.projectName || '' })),
+    languages: withEntryIds<LanguageEntry>(raw.languages, 'language', (l) => ({
+      ...l, language: l.language || l.name || '', proficiency: l.proficiency || l.level || '',
+    })),
+    references: withEntryIds<ReferenceEntry>(raw.references, 'reference', (r) => ({ ...r })),
+    customSections: withEntryIds<CustomSectionEntry>(raw.customSections, 'section', (cs) => ({
+      ...cs,
+      sectionTitle: cs.sectionTitle || cs.title || '',
+      items: withEntryIds<CustomSectionItem>(cs.items, 'item', (item) => ({ ...item })),
+    })),
     revision: raw.revision,
   };
+}
+
+const DEFAULT_SKILL_CATEGORY = 'Core Skills';
+
+/**
+ * Reads every stored skills shape: plain strings, flat `{ name, category }` items (the shape
+ * this builder saves, and what the legacy builder saved without a category), and the
+ * `{ category, skills: [...] }` groups this builder stored before P002 C6.
+ */
+function groupStoredSkills(stored: unknown[]): SkillCategory[] {
+  const groups = new Map<string, string[]>();
+  const add = (category: string, name: unknown) => {
+    const text = typeof name === 'string' ? name.trim() : '';
+    if (!groups.has(category)) groups.set(category, []);
+    if (text) groups.get(category)!.push(text);
+  };
+  for (const item of stored) {
+    if (typeof item === 'string') {
+      add(DEFAULT_SKILL_CATEGORY, item);
+    } else if (item && typeof item === 'object') {
+      const record = item as Record<string, any>;
+      if (Array.isArray(record.skills)) {
+        const category = String(record.category || record.name || '').trim() || DEFAULT_SKILL_CATEGORY;
+        if (!record.skills.length) add(category, '');
+        for (const skill of record.skills) add(category, typeof skill === 'string' ? skill : skill?.name);
+      } else {
+        add(String(record.category || '').trim() || DEFAULT_SKILL_CATEGORY, record.name ?? record.skillName ?? record.skill ?? record.title ?? record.value);
+      }
+    }
+  }
+  return [...groups.entries()].map(([category, skills], index) => ({ id: `skills-${index}`, category, skills }));
+}
+
+/**
+ * Skills are stored as the flat list every other reader expects (DOCX export, resume templates,
+ * the ATS scorer, the legacy builder): one `{ name, category }` item per skill. The category
+ * keeps this builder's grouping; a category without skills has nothing to store.
+ */
+function flattenSkillCategories(categories: SkillCategory[]) {
+  return categories.flatMap((group) => {
+    const category = String(group.category || '').trim() || DEFAULT_SKILL_CATEGORY;
+    return group.skills
+      .map((skill) => String(skill ?? '').trim())
+      .filter(Boolean)
+      .map((name) => ({ name, category }));
+  });
 }
 
 function serializeToBackend(resume: ResumeData) {
@@ -486,7 +553,7 @@ function serializeToBackend(resume: ResumeData) {
       gpa: ed.gpa,
       description: ed.description,
     })),
-    skills: resume.skillCategories,
+    skills: flattenSkillCategories(resume.skillCategories),
     certifications: resume.certifications,
     achievements: resume.achievements,
     projects: resume.projects,
@@ -502,6 +569,26 @@ function serializeToBackend(resume: ResumeData) {
 }
 
 /* ─── Main Component ─── */
+
+/** Comparable snapshot of the editable resume (the server-assigned revision is excluded). */
+function resumeSnapshot(value: ResumeData): string {
+  return JSON.stringify({ ...value, revision: undefined });
+}
+
+/** Readable reason for a failed blob request: the error body arrives as a Blob, not JSON. */
+async function exportErrorMessage(error: unknown): Promise<string> {
+  if (axios.isAxiosError(error) && error.response?.data instanceof Blob) {
+    const status = error.response.status;
+    try {
+      const body = JSON.parse(await error.response.data.text()) as { error?: string | { message?: string }; message?: string };
+      const nested = typeof body.error === 'object' ? body.error?.message : body.error;
+      return nested || body.message || `the server answered HTTP ${status}.`;
+    } catch {
+      return `the server answered HTTP ${status}.`;
+    }
+  }
+  return normalizeError(error).message;
+}
 
 export function ResumeBuilderPage() {
   const params = useParams<{ resumeId?: string; '*'?: string }>();
@@ -553,6 +640,26 @@ export function ResumeBuilderPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  /** Snapshot of the last version the server confirmed; null until the resume is saved once. */
+  const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
+  const isDirty = useMemo(() => savedSnapshot !== null && resumeSnapshot(resume) !== savedSnapshot, [resume, savedSnapshot]);
+  // Live ATS readiness of the current content, scored by the same deterministic checker and
+  // DIR-008 bands as the ATS Score, Resumes and Overview pages (so the numbers agree).
+  const liveAtsScore = useMemo(() => resumeQualityScore(serializeToBackend(resume)), [resume]);
+  const liveAtsTone = bucketTone(bucketForScore(liveAtsScore));
+  const saveStateLabel = saving ? 'Saving…' : !savedSnapshot ? 'Not saved yet' : isDirty ? 'Unsaved changes' : 'Saved';
+
+  // There is no autosave: warn before closing or reloading with unsaved edits.
+  useEffect(() => {
+    if (!isDirty) return;
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [isDirty]);
   const [error, setError] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [showShare, setShowShare] = useState(false);
@@ -592,7 +699,9 @@ export function ResumeBuilderPage() {
         if (targetId && !isNew) {
           const data = await get<{ resume: any }>(`/resumes/${targetId}`);
           if (!cancelled && data?.resume) {
-            setResume(normalizeFromBackend(data.resume));
+            const loaded = normalizeFromBackend(data.resume);
+            setResume(loaded);
+            setSavedSnapshot(resumeSnapshot(loaded));
             return;
           }
         }
@@ -605,6 +714,7 @@ export function ResumeBuilderPage() {
           if (customTitle) draft.name = customTitle;
           if (customTemplate) draft.template = customTemplate;
           setResume(draft);
+          setSavedSnapshot(null);
 
           if (searchParams.get('sync') === 'true') {
             void handleSyncProfile();
@@ -693,6 +803,7 @@ export function ResumeBuilderPage() {
       } else if (result.resume?.revision) {
         setResume((prev) => ({ ...prev, revision: result.resume.revision }));
       }
+      setSavedSnapshot(resumeSnapshot({ ...resume, id: resume.id || result.resume?.id || id }));
       setSaveMessage('Saved successfully');
       setTimeout(() => setSaveMessage(null), 3000);
     } catch (err: any) {
@@ -716,29 +827,21 @@ export function ResumeBuilderPage() {
 
   // Direct DOCX Download
   const handleDownloadDocx = async () => {
+    const savedId = resume.id || parsedResumeId;
+    if (!savedId || !savedSnapshot) {
+      setNotice({ tone: 'error', text: 'Save the resume before exporting it. The Word file is created from the saved version.' });
+      return;
+    }
     setExportingDocx(true);
+    setNotice(null);
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('auth_token');
-      const targetId = resume.id || parsedResumeId || 'res-alex-001';
-      const res = await fetch('/api/export-docx', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          resumeId: targetId,
-          resumeName: resume.template || 'Cv1',
-          language: 'en',
-        }),
-      });
-
-      if (!res.ok) {
-        throw new Error(`Export returned status ${res.status}`);
-      }
-
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
+      // Authenticated through the shared API client (Bearer token), never a guessed id.
+      const response = await apiClient.post<Blob>(
+        '/export-docx',
+        { resumeId: savedId, resumeName: resume.template || 'Cv1', language: 'en' },
+        { responseType: 'blob' },
+      );
+      const url = window.URL.createObjectURL(response.data);
       const a = document.createElement('a');
       a.href = url;
       a.download = `${(resume.name || 'Resume').replace(/[^\w\s-]/g, '').trim() || 'Resume'}.docx`;
@@ -746,11 +849,21 @@ export function ResumeBuilderPage() {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-    } catch (err: any) {
-      alert(`Could not download Word document: ${err.message || 'Export error'}`);
+      setNotice({ tone: 'success', text: isDirty ? 'Word file downloaded from the last saved version. Save to include your latest changes.' : 'Word file downloaded.' });
+    } catch (err) {
+      setNotice({ tone: 'error', text: `The Word file could not be exported: ${await exportErrorMessage(err)}` });
     } finally {
       setExportingDocx(false);
     }
+  };
+
+  // Sharing publishes the saved resume, so it needs a saved id (never a placeholder).
+  const openShare = () => {
+    if (!(resume.id || parsedResumeId) || !savedSnapshot) {
+      setNotice({ tone: 'error', text: 'Save the resume before sharing it.' });
+      return;
+    }
+    setShowShare(true);
   };
 
   // Section completion checks
@@ -776,7 +889,7 @@ export function ResumeBuilderPage() {
     return Object.values(stepCompletions).filter(Boolean).length;
   }, [stepCompletions]);
 
-  const completionPercent = Math.round((completedCount / (STEPS.length - 1)) * 100);
+  const completionPercent = Math.round((completedCount / COMPLETABLE_STEP_COUNT) * 100);
 
   // Dynamic ATS Readiness & Validation Analysis
   const atsAnalysis = useMemo(() => {
@@ -883,8 +996,9 @@ export function ResumeBuilderPage() {
             size="sm"
             onClick={() => navigate('/dashboard/resumes')}
             className="gap-1.5 text-xs font-semibold text-ink-muted hover:text-ink hover:bg-neutral-100"
+            aria-label="Back to Resumes"
           >
-            <ChevronLeft className="size-4" />
+            <ChevronLeft className="size-4" aria-hidden="true" />
             <span className="hidden sm:inline">Back to Resumes</span>
           </Button>
 
@@ -912,9 +1026,17 @@ export function ResumeBuilderPage() {
               )}>
                 {saveMessage}
               </span>
+            ) : !savedSnapshot ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-semibold text-ink-muted border border-border" data-testid="builder-save-state">
+                Not saved yet
+              </span>
+            ) : isDirty ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-warning-50 px-2 py-0.5 text-[11px] font-semibold text-warning-700 border border-warning-200" data-testid="builder-save-state">
+                Unsaved changes
+              </span>
             ) : (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 border border-emerald-200/60">
-                <Check className="size-3 stroke-3" /> Saved
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 border border-emerald-200/60" data-testid="builder-save-state">
+                <Check className="size-3 stroke-3" aria-hidden="true" /> Saved
               </span>
             )}
           </div>
@@ -923,13 +1045,15 @@ export function ResumeBuilderPage() {
         {/* Right: Actions, ATS Pill & Export */}
         <div className="flex items-center gap-2 mt-2 sm:mt-0">
           {/* ATS Readiness Score Pill */}
-          <div className={cn(
-            'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-bold shadow-2xs transition-colors',
-            atsAnalysis.badgeColor
-          )}>
-            <span className={cn('size-2 rounded-full animate-pulse', atsAnalysis.dotColor)} />
-            <span>ATS: {atsAnalysis.score}/100</span>
-            <span className="hidden md:inline font-normal opacity-80">| {atsAnalysis.status}</span>
+          <div
+            className={cn(
+              'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-bold shadow-2xs transition-colors',
+              liveAtsTone.bg, liveAtsTone.text, liveAtsTone.border,
+            )}
+            data-testid="builder-ats-score"
+          >
+            <span>ATS: {liveAtsScore === null ? '—' : `${liveAtsScore}/100`}</span>
+            <span className="hidden md:inline font-normal">| {liveAtsTone.label}</span>
           </div>
 
           {/* Template Switcher Pill */}
@@ -959,10 +1083,11 @@ export function ResumeBuilderPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setShowShare(true)}
+            onClick={openShare}
             className="gap-1.5 text-xs"
+            aria-label="Share"
           >
-            <Share2 className="size-3.5 text-brand-600" />
+            <Share2 className="size-3.5 text-brand-600" aria-hidden="true" />
             <span className="hidden sm:inline">Share</span>
           </Button>
 
@@ -1017,6 +1142,20 @@ export function ResumeBuilderPage() {
           {syncToast}
         </div>
       )}
+
+      <div role="status" aria-live="polite" data-testid="builder-notice">
+        {notice && (
+          <div className={cn(
+            'flex items-start gap-2 border-b px-4 py-2 text-xs font-medium',
+            notice.tone === 'error' ? 'border-error-200 bg-error-50 text-error-800' : 'border-success-200 bg-success-50 text-success-800',
+          )}>
+            <span className="min-w-0 flex-1 break-words">{notice.text}</span>
+            <button type="button" onClick={() => setNotice(null)} className="rounded p-0.5 hover:bg-black/5" aria-label="Dismiss message">
+              <X className="size-3.5" aria-hidden="true" />
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* ─── 2. Stepper Ribbon with Scroll Controls & Progress Indicator ─── */}
       <div className="border-b border-border bg-surface px-2 sm:px-6 py-1.5 flex items-center justify-between gap-2 shadow-2xs">
@@ -1085,11 +1224,13 @@ export function ResumeBuilderPage() {
           onClick={() => setShowAllStepsModal(true)}
           className="flex lg:hidden items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border bg-surface text-ink hover:bg-neutral-100 text-xs font-semibold shrink-0 shadow-2xs transition-all cursor-pointer"
           title="View all 13 sections overview"
-          aria-label="View all 13 sections overview"
           data-testid="resume-builder-13-steps-trigger-mobile"
         >
-          <LayoutGrid className="size-3.5 text-brand-600" />
-          <span className="text-[11px] font-bold">{completedCount}/13</span>
+          <LayoutGrid className="size-3.5 text-brand-600" aria-hidden="true" />
+          {/* The visible count stays part of the accessible name (WCAG 2.5.3 label in name). */}
+          <span className="sr-only">View all sections, </span>
+          <span className="text-[11px] font-bold">{completedCount}/{COMPLETABLE_STEP_COUNT}</span>
+          <span className="sr-only"> complete</span>
         </button>
 
         {/* Completion Progress Widget & Modal Trigger (Desktop) */}
@@ -1098,13 +1239,12 @@ export function ResumeBuilderPage() {
           onClick={() => setShowAllStepsModal(true)}
           className="hidden lg:flex items-center gap-2.5 pl-3 pr-2 py-1 rounded-xl border-l border-border hover:bg-neutral-100/80 text-xs font-medium text-ink-muted shrink-0 transition-all cursor-pointer group"
           title="Open 13 Steps Overview Modal"
-          aria-label="Open 13 Steps Overview Modal"
           data-testid="resume-builder-13-steps-trigger"
         >
           <div className="flex items-center gap-1.5">
             <span className="size-2 rounded-full bg-emerald-500 shadow-xs group-hover:scale-125 transition-transform" />
-            <span className="font-semibold text-ink">{completedCount} of 13</span>
-            <span className="text-[11px] text-ink-subtle">complete</span>
+            <span className="font-semibold text-ink">{completedCount} of {COMPLETABLE_STEP_COUNT}</span>
+            <span className="text-[11px] text-ink-muted">complete</span>
           </div>
           <div className="h-1.5 w-16 overflow-hidden rounded-full bg-neutral-200">
             <div
@@ -1162,10 +1302,11 @@ export function ResumeBuilderPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => void handleSyncProfile()}
+                  loading={syncingProfile}
                   className="gap-1.5 text-xs text-brand-700 border-brand-200 bg-brand-50/50 hover:bg-brand-100"
                 >
-                  <Sparkles className="size-3.5 text-brand-600" />
-                  <span>Auto Fill with AI</span>
+                  <User className="size-3.5 text-brand-600" aria-hidden="true" />
+                  <span>Fill from profile</span>
                 </Button>
                 <Button
                   variant="ghost"
@@ -1265,7 +1406,7 @@ export function ResumeBuilderPage() {
                   <ReviewStep
                     resume={resume}
                     onOpenPreview={() => setShowPreview(true)}
-                    onOpenShare={() => setShowShare(true)}
+                    onOpenShare={openShare}
                     onExportDocx={handleDownloadDocx}
                   />
                 )}
@@ -1274,7 +1415,7 @@ export function ResumeBuilderPage() {
 
             {/* Right 4 Columns: Unified AI & ATS Career Copilot (100% Viewport-Aligned) */}
             <div className="lg:col-span-4 sticky top-6">
-              <AICareerAssistant
+              <ResumeGuidancePanel
                 resume={resume}
                 currentStep={currentStep}
                 atsAnalysis={atsAnalysis}
@@ -1305,7 +1446,12 @@ export function ResumeBuilderPage() {
           <span>·</span>
           <span className="font-semibold text-ink">{activeStepMeta.label}</span>
           <span>·</span>
-          <span className="text-success-600 font-medium">Saved ✓</span>
+          <span
+            className={cn('font-medium', saveStateLabel === 'Saved' ? 'text-success-700' : saveStateLabel === 'Unsaved changes' ? 'text-warning-700' : 'text-ink-muted')}
+            data-testid="builder-footer-save-state"
+          >
+            {saveStateLabel}
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -1314,8 +1460,9 @@ export function ResumeBuilderPage() {
             size="sm"
             onClick={() => setShowPreview(true)}
             className="gap-1.5 text-xs text-brand-700 border-brand-200"
+            aria-label="Preview"
           >
-            <Eye className="size-3.5" />
+            <Eye className="size-3.5" aria-hidden="true" />
             <span className="hidden sm:inline">Preview</span>
           </Button>
 
@@ -1325,7 +1472,7 @@ export function ResumeBuilderPage() {
               <ChevronRight className="size-4" />
             </Button>
           ) : (
-            <Button size="sm" onClick={handleSave} loading={saving} className="gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs">
+            <Button size="sm" onClick={handleSave} loading={saving} className="gap-1.5 text-xs bg-emerald-700 hover:bg-emerald-800 text-white shadow-xs">
               <Download className="size-3.5" />
               <span>Save &amp; Finish</span>
             </Button>
@@ -1361,7 +1508,7 @@ export function ResumeBuilderPage() {
             <div className="flex items-center gap-2 text-xs font-bold text-brand-950">
               <span>Overall Completion:</span>
               <span className="text-brand-700 font-extrabold">
-                {completedCount} of {STEPS.length} Sections Finished
+                {completedCount} of {COMPLETABLE_STEP_COUNT} Sections Finished
               </span>
             </div>
             <div className="flex items-center gap-3 flex-1 max-w-xs min-w-[180px]">
@@ -1489,7 +1636,7 @@ export function ResumeBuilderPage() {
       <ShareModal
         open={showShare}
         onOpenChange={setShowShare}
-        resumeId={resume.id || parsedResumeId || 'res-alex-001'}
+        resumeId={resume.id || parsedResumeId || ''}
         resumeName={resume.name || 'Resume'}
         templateId={resume.template || 'Cv1'}
       />
@@ -1497,9 +1644,9 @@ export function ResumeBuilderPage() {
   );
 }
 
-/* ─── Right Rail AI Career Assistant (100% Executive Parity & 5-Device Responsive) ─── */
+/* ─── Right rail resume guidance: deterministic checks computed from the resume (no AI or network calls) ─── */
 
-interface AICareerAssistantProps {
+interface ResumeGuidancePanelProps {
   resume: ResumeData;
   currentStep?: BuilderStep;
   atsAnalysis?: {
@@ -1514,27 +1661,48 @@ interface AICareerAssistantProps {
   onUpdateResume?: React.Dispatch<React.SetStateAction<ResumeData>>;
 }
 
-export function AICareerAssistant({
+export function ResumeGuidancePanel({
   resume,
   currentStep = 'heading',
   atsAnalysis,
   isCurrentStepComplete,
   onNavigateStep,
   onUpdateResume,
-}: AICareerAssistantProps) {
+}: ResumeGuidancePanelProps) {
   const [activeTab, setActiveTab] = useState<'ats' | 'suggestions' | 'insights' | 'jobmatch' | 'bullets'>('ats');
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
   const [mobileModalOpen, setMobileModalOpen] = useState(false);
-  const [generatingSection, setGeneratingSection] = useState<string | null>(null);
-  const [targetRoleInput, setTargetRoleInput] = useState(resume.heading.targetRole || resume.heading.title || 'Senior Software Engineer');
+  const [jobDescription, setJobDescription] = useState('');
+  const deferredJobDescription = useDeferredValue(jobDescription);
+  // Same deterministic scorer as the ATS Score page, so both report the same match for the same text.
+  const jdMatch = useMemo(() => {
+    const text = deferredJobDescription.trim();
+    return text ? scoreResume(serializeToBackend(resume), { jobDescription: text })?.jdMatch ?? null : null;
+  }, [resume, deferredJobDescription]);
+  // Collapsing, expanding, hiding and showing swap the control that was pressed for another one;
+  // move focus to the replacement so keyboard users keep their place.
+  const expandButtonRef = useRef<HTMLButtonElement>(null);
+  const collapseButtonRef = useRef<HTMLButtonElement>(null);
+  const showButtonRef = useRef<HTMLButtonElement>(null);
+  const focusAfterToggle = useRef(false);
+  useEffect(() => {
+    if (!focusAfterToggle.current) return;
+    focusAfterToggle.current = false;
+    (isDismissed ? showButtonRef : isCollapsed ? expandButtonRef : collapseButtonRef).current?.focus();
+  }, [isCollapsed, isDismissed]);
+  const togglePanel = (change: { collapsed?: boolean; dismissed?: boolean }) => {
+    focusAfterToggle.current = true;
+    if (change.collapsed !== undefined) setIsCollapsed(change.collapsed);
+    if (change.dismissed !== undefined) setIsDismissed(change.dismissed);
+  };
   const [addedSkillsToast, setAddedSkillsToast] = useState<string | null>(null);
 
   const tabs = [
     { id: 'ats', label: 'ATS', fullName: 'ATS Section Guide', icon: Shield },
-    { id: 'suggestions', label: 'Tips', fullName: 'AI Suggestions', icon: Sparkles },
+    { id: 'suggestions', label: 'Tips', fullName: 'Writing tips', icon: Lightbulb },
     { id: 'insights', label: 'Stats', fullName: 'Resume Insights', icon: BarChart3 },
-    { id: 'jobmatch', label: 'Match', fullName: 'Job Match', icon: Target },
+    { id: 'jobmatch', label: 'Match', fullName: 'Job description match', icon: Target },
     { id: 'bullets', label: 'Bullets', fullName: 'Bullet Polish', icon: Zap },
   ] as const;
 
@@ -1562,29 +1730,16 @@ export function AICareerAssistant({
     onUpdateResume((prev) => {
       const categories = [...prev.skillCategories];
       if (categories.length === 0) {
-        categories.push({ id: `cat_${Date.now()}`, category: 'Core Technical Skills', skills: [keyword] });
-      } else {
-        const targetCat = categories[0];
-        if (!targetCat.skills.includes(keyword)) {
-          targetCat.skills = [...targetCat.skills, keyword];
-        }
+        categories.push({ id: `cat_${Date.now()}`, category: 'Core Skills', skills: [keyword] });
+      } else if (!categories[0].skills.includes(keyword)) {
+        categories[0] = { ...categories[0], skills: [...categories[0].skills, keyword] };
       }
       return { ...prev, skillCategories: categories };
     });
-    setAddedSkillsToast(`Added "${keyword}" to skills!`);
+    setAddedSkillsToast(`Added “${keyword}” to your skills.`);
     setTimeout(() => setAddedSkillsToast(null), 3000);
   };
 
-  const handleRunAiSectionPolish = async (section: string) => {
-    setGeneratingSection(section);
-    try {
-      await post('/api/generate-suggestions', { section, resume }).catch(() => null);
-      setAddedSkillsToast(`AI recommendations refreshed for ${section}!`);
-      setTimeout(() => setAddedSkillsToast(null), 3000);
-    } finally {
-      setGeneratingSection(null);
-    }
-  };
 
   // Helper render for Tab content (shared between desktop inline card and mobile modal)
   const renderTabContent = () => (
@@ -1759,19 +1914,6 @@ export function AICareerAssistant({
                       Jump
                     </button>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => handleRunAiSectionPolish(item.section)}
-                    disabled={generatingSection === item.section}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold shadow-2xs transition-all disabled:opacity-50"
-                  >
-                    {generatingSection === item.section ? (
-                      <span className="size-3 border border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <Sparkles className="size-3" />
-                    )}
-                    <span>Polish</span>
-                  </button>
                 </div>
               </div>
             ))}
@@ -1820,69 +1962,92 @@ export function AICareerAssistant({
         </div>
       )}
 
-      {/* Tab 3: Job Match */}
+      {/* Tab 3: Job description match (deterministic, same scorer as the ATS Score page) */}
       {activeTab === 'jobmatch' && (
         <div role="tabpanel" className="space-y-3">
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-bold text-ink uppercase tracking-wider block">Target Role</label>
-            <input
-              type="text"
-              value={targetRoleInput}
-              onChange={(e) => setTargetRoleInput(e.target.value)}
-              placeholder="e.g. Senior Software Architect"
-              className="w-full rounded-xl border border-border bg-surface px-3 py-1.5 text-xs text-ink placeholder:text-ink-muted focus-visible:outline-2 focus-visible:outline-indigo-600"
+          {/* Wrapping label: this tab also renders inside the mobile dialog, so it cannot rely on a fixed id. */}
+          <label className="block space-y-1.5">
+            <span className="block text-[11px] font-bold uppercase tracking-wider text-ink">Job description</span>
+            <textarea
+              value={jobDescription}
+              onChange={(e) => setJobDescription(e.target.value)}
+              rows={5}
+              maxLength={20000}
+              placeholder="Paste the job description you are applying for"
+              className="w-full resize-y rounded-xl border border-border bg-surface px-3 py-2 text-xs text-ink placeholder:text-ink-muted focus-visible:outline-2 focus-visible:outline-indigo-600"
             />
-          </div>
+          </label>
 
-          {/* Interactive Match Score Gauge */}
-          <div className="rounded-xl border border-indigo-200 bg-indigo-50/50 p-3">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs font-bold text-indigo-950">ATS Profile Alignment</span>
-              <span className="text-sm font-extrabold text-indigo-700">84%</span>
-            </div>
-            <div className="h-2 w-full rounded-full bg-indigo-200/80 overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-indigo-600 to-emerald-500 rounded-full transition-all duration-500" style={{ width: '84%' }} />
-            </div>
-            <p className="mt-2 text-[10px] text-indigo-900 font-medium">Strong match with {targetRoleInput || 'target profile'} criteria.</p>
-          </div>
+          {!jdMatch ? (
+            <p className="text-xs leading-relaxed text-ink-muted" data-testid="builder-jd-empty">
+              Paste a job description to see which of its keywords this resume already covers. The comparison runs in your browser; nothing is sent or saved.
+            </p>
+          ) : (
+            <div className="space-y-3" data-testid="builder-jd-result">
+              <div className="rounded-xl border border-indigo-200 bg-indigo-50/50 p-3">
+                <p className="flex items-center justify-between gap-2 text-xs font-bold text-indigo-950">
+                  <span>Job description match</span>
+                  <span className="text-sm font-extrabold text-indigo-800" data-testid="builder-jd-score">
+                    {jdMatch.score === null ? 'Not available' : `${jdMatch.score}%`}
+                  </span>
+                </p>
+                {jdMatch.score !== null && (
+                  <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-indigo-200/80" aria-hidden="true">
+                    <div className="h-full rounded-full bg-indigo-600 transition-all duration-500" style={{ width: `${jdMatch.score}%` }} />
+                  </div>
+                )}
+                <p className="mt-2 text-[11px] text-indigo-950" data-testid="builder-jd-summary">
+                  {jdMatch.total === 0
+                    ? 'No skill or tool keywords were recognised in this job description.'
+                    : `${jdMatch.matched.length} of ${jdMatch.total} keywords from the job description appear in this resume${
+                        jdMatch.partial?.length ? `; ${jdMatch.partial.length} more are partly mentioned` : ''
+                      }.`}
+                </p>
+              </div>
 
-          {/* Matched Keywords */}
-          <div>
-            <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 mb-1.5 flex items-center gap-1">
-              <Check className="size-3 text-emerald-600" />
-              <span>Matched Keywords ({Math.min(totalSkills, 6)})</span>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {['React', 'TypeScript', 'Node.js', 'REST APIs', 'Cloud Architecture', 'Testing'].slice(0, Math.max(3, totalSkills)).map((kw) => (
-                <span key={kw} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-semibold">
-                  <Check className="size-2.5 text-emerald-600" />
-                  {kw}
-                </span>
-              ))}
-            </div>
-          </div>
+              {jdMatch.matched.length > 0 && (
+                <div>
+                  <h4 className="mb-1.5 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-800">
+                    <Check className="size-3 text-emerald-700" aria-hidden="true" />
+                    <span>Found in this resume ({jdMatch.matched.length})</span>
+                  </h4>
+                  <ul className="flex flex-wrap gap-1.5" aria-label="Keywords found in this resume">
+                    {jdMatch.matched.map((kw) => (
+                      <li key={kw} className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-800">
+                        {kw}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
-          {/* Recommended In-Demand Additions */}
-          <div>
-            <div className="text-[10px] font-bold uppercase tracking-wider text-amber-800 mb-1.5 flex items-center gap-1">
-              <Plus className="size-3 text-amber-600" />
-              <span>Recommended In-Demand Keywords</span>
+              {jdMatch.missing.length > 0 && (
+                <div>
+                  <h4 className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-800">
+                    <Plus className="size-3 text-amber-700" aria-hidden="true" />
+                    <span>Not in this resume yet ({jdMatch.missing.length})</span>
+                  </h4>
+                  <p className="mb-1.5 text-[10px] text-ink-muted">Add only the skills you really have.</p>
+                  <ul className="flex flex-wrap gap-1.5" aria-label="Keywords not in this resume yet">
+                    {jdMatch.missing.map((kw) => (
+                      <li key={kw}>
+                        <button
+                          type="button"
+                          onClick={() => handleAddKeyword(kw)}
+                          disabled={!onUpdateResume}
+                          aria-label={`Add ${kw} to skills`}
+                          className="inline-flex items-center gap-1 rounded-md border border-amber-300 bg-white px-2 py-0.5 text-[10px] font-semibold text-amber-900 shadow-2xs transition-colors hover:bg-amber-50 disabled:opacity-60"
+                        >
+                          <Plus className="size-2.5 text-amber-700" aria-hidden="true" />
+                          <span>{kw}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
-            <div className="flex flex-wrap gap-1.5">
-              {['Docker', 'Kubernetes', 'GraphQL', 'CI/CD Pipelines', 'AWS ECS'].map((kw) => (
-                <button
-                  key={kw}
-                  type="button"
-                  onClick={() => handleAddKeyword(kw)}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white hover:bg-amber-50 text-amber-900 border border-amber-300 text-[10px] font-semibold transition-all hover:scale-105 active:scale-95 shadow-2xs"
-                  title={`Add ${kw} to resume`}
-                >
-                  <Plus className="size-2.5 text-amber-600" />
-                  <span>{kw}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+          )}
         </div>
       )}
 
@@ -1934,7 +2099,7 @@ export function AICareerAssistant({
             )}
           </div>
 
-          {/* AI Metric Formula Callout */}
+          {/* Bullet formula callout */}
           <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 p-2.5 text-[11px] text-indigo-950">
             <span className="font-bold">Winning Bullet Formula:</span> [Action Verb] + [Specific Responsibility] + [Quantifiable Business Impact (%)].
           </div>
@@ -1951,13 +2116,14 @@ export function AICareerAssistant({
           /* Dismissed / Hidden Mini-State */
           <div className="rounded-2xl border border-dashed border-border bg-surface p-3 flex items-center justify-between text-xs transition-all hover:bg-neutral-50/80">
             <div className="flex items-center gap-2 text-ink-muted font-medium">
-              <Sparkles className="size-3.5 text-indigo-600" />
-              <span className="text-[11px]">AI Career Assistant minimized</span>
+              <ClipboardCheck className="size-3.5 text-indigo-600" aria-hidden="true" />
+              <span className="text-[11px]">Resume guidance hidden</span>
             </div>
             <Button
+              ref={showButtonRef}
               variant="outline"
               size="sm"
-              onClick={() => setIsDismissed(false)}
+              onClick={() => togglePanel({ dismissed: false })}
               className="h-6 text-[11px] px-2.5 border-border hover:bg-neutral-100"
             >
               Show
@@ -1965,27 +2131,24 @@ export function AICareerAssistant({
           </div>
         ) : isCollapsed ? (
           /* Collapsed 1-Line State */
-          <div
-            onClick={() => setIsCollapsed(false)}
-            className="rounded-2xl border border-border bg-surface p-3.5 flex items-center justify-between shadow-2xs hover:shadow-xs hover:border-indigo-300 cursor-pointer transition-all"
-            role="button"
-            tabIndex={0}
-            title="Click to expand AI Career Assistant"
+          <button
+            ref={expandButtonRef}
+            type="button"
+            onClick={() => togglePanel({ collapsed: false })}
+            aria-expanded="false"
+            className="w-full rounded-2xl border border-border bg-surface p-3.5 flex items-center justify-between text-left shadow-2xs hover:shadow-xs hover:border-indigo-300 cursor-pointer transition-all"
           >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="flex size-7 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white shadow-2xs">
-                <Brain className="size-4" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-xs font-bold text-ink flex items-center gap-2">
-                  <span>AI Career Assistant</span>
-                  <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded-full">Active</span>
-                </div>
-                <div className="text-[10px] text-ink-muted truncate">Click to expand suggestions &amp; match analytics</div>
-              </div>
-            </div>
-            <ChevronDown className="size-4 text-ink-muted shrink-0" />
-          </div>
+            <span className="flex items-center gap-2.5 min-w-0">
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white shadow-2xs">
+                <ClipboardCheck className="size-4" aria-hidden="true" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-xs font-bold text-ink">Resume guidance</span>
+                <span className="block text-[10px] text-ink-muted truncate">Expand for checks, tips and job description match</span>
+              </span>
+            </span>
+            <ChevronDown className="size-4 text-ink-muted shrink-0" aria-hidden="true" />
+          </button>
         ) : (
           /* Full Expanded Card */
           <Card className="w-full bg-surface/90 backdrop-blur-sm border-border/80 shadow-xs hover:shadow-sm transition-all overflow-hidden rounded-2xl">
@@ -1993,37 +2156,33 @@ export function AICareerAssistant({
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div className="flex size-7 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 via-violet-600 to-purple-600 text-white shadow-2xs">
-                    <Brain className="size-4" />
+                    <ClipboardCheck className="size-4" aria-hidden="true" />
                   </div>
                   <div className="min-w-0">
-                    <CardTitle className="text-sm font-bold text-ink flex items-center gap-1.5 truncate">
-                      <span>AI Career Assistant</span>
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-extrabold">
-                        <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        Live
-                      </span>
-                    </CardTitle>
+                    <CardTitle className="text-sm font-bold text-ink truncate">Resume guidance</CardTitle>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0">
                   <button
                     type="button"
-                    onClick={() => setIsCollapsed(true)}
+                    ref={collapseButtonRef}
+                    onClick={() => togglePanel({ collapsed: true })}
+                    aria-expanded="true"
                     className="p-1 rounded-lg text-ink-muted hover:text-ink hover:bg-neutral-100 transition-colors cursor-pointer"
-                    title="Collapse assistant"
-                    aria-label="Collapse assistant"
+                    title="Collapse resume guidance"
+                    aria-label="Collapse resume guidance"
                   >
-                    <ChevronUp className="size-3.5" />
+                    <ChevronUp className="size-3.5" aria-hidden="true" />
                   </button>
                   <button
                     type="button"
-                    onClick={() => setIsDismissed(true)}
+                    onClick={() => togglePanel({ dismissed: true })}
                     className="p-1 rounded-lg text-ink-muted hover:text-ink hover:bg-neutral-100 transition-colors cursor-pointer"
-                    title="Hide assistant"
-                    aria-label="Hide assistant"
+                    title="Hide resume guidance"
+                    aria-label="Hide resume guidance"
                   >
-                    <X className="size-3.5" />
+                    <X className="size-3.5" aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -2042,13 +2201,11 @@ export function AICareerAssistant({
           type="button"
           onClick={() => setMobileModalOpen(true)}
           className="fixed bottom-20 right-4 z-40 flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 text-white font-bold text-xs shadow-lg shadow-indigo-600/30 hover:shadow-indigo-600/50 hover:scale-105 active:scale-95 transition-all border border-white/20 cursor-pointer"
-          title="Open AI Career Assistant"
-          aria-label="Open AI Career Assistant"
+          title="Open resume guidance"
           data-testid="resume-builder-ai-mobile-trigger"
         >
-          <Sparkles className="size-4 animate-pulse text-amber-300" />
-          <span>AI Assistant</span>
-          <span className="size-2 rounded-full bg-emerald-400" />
+          <ClipboardCheck className="size-4 text-amber-300" aria-hidden="true" />
+          <span>Guidance</span>
         </button>
 
         <Dialog open={mobileModalOpen} onOpenChange={setMobileModalOpen}>
@@ -2056,12 +2213,12 @@ export function AICareerAssistant({
             <DialogHeader className="pb-3 border-b border-border">
               <DialogTitle className="flex items-center gap-2 text-base font-bold text-ink">
                 <span className="flex size-7 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white shadow-2xs">
-                  <Brain className="size-4" />
+                  <ClipboardCheck className="size-4" aria-hidden="true" />
                 </span>
-                AI Career Assistant
+                Resume guidance
               </DialogTitle>
               <DialogDescription className="text-xs text-ink-muted">
-                Section suggestions, ATS keyword alignment, and bullet impact analysis.
+                Section checks, writing tips, job description match and bullet strength, worked out from this resume.
               </DialogDescription>
             </DialogHeader>
 
@@ -2183,8 +2340,8 @@ function HeadingStep({ heading, onChange }: { heading: ResumeHeading; onChange: 
             {heading.photo ? (
               <img src={heading.photo} alt="Avatar" className="size-full object-cover" />
             ) : (
-              <div className="flex flex-col items-center justify-center text-ink-subtle">
-                <Camera className="size-7 text-ink-muted" />
+              <div className="flex flex-col items-center justify-center text-ink-muted">
+                <Camera className="size-7 text-ink-muted" aria-hidden="true" />
                 <span className="text-[10px] mt-1 font-medium">Add Photo</span>
               </div>
             )}
@@ -2625,7 +2782,7 @@ function ExperienceStep({
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        onClick={() => moveEntry(index, -1)}
+                        onClick={() => moveEntry(index, -1)} aria-label={`Move ${entry.position || 'this job'} up`}
                         title="Move up"
                       >
                         <ChevronLeft className="size-4 rotate-90" />
@@ -2635,7 +2792,7 @@ function ExperienceStep({
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        onClick={() => moveEntry(index, 1)}
+                        onClick={() => moveEntry(index, 1)} aria-label={`Move ${entry.position || 'this job'} down`}
                         title="Move down"
                       >
                         <ChevronRight className="size-4 rotate-90" />
@@ -2644,15 +2801,15 @@ function ExperienceStep({
                     <Button
                       variant="ghost"
                       size="icon-sm"
-                      onClick={() => duplicateEntry(entry.id)}
+                      onClick={() => duplicateEntry(entry.id)} aria-label={`Duplicate ${entry.position || 'this job'}`}
                       title="Duplicate"
                     >
-                      <RotateCcw className="size-3.5 text-ink-muted" />
+                      <Copy className="size-3.5 text-ink-muted" aria-hidden="true" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon-sm"
-                      onClick={() => removeEntry(entry.id)}
+                      onClick={() => removeEntry(entry.id)} aria-label={`Delete ${entry.position || 'this job'}`}
                       title="Delete"
                     >
                       <Trash2 className="size-3.5 text-error-500" />
@@ -2689,7 +2846,7 @@ function ExperienceStep({
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="mb-1 block text-xs font-semibold text-ink">Location</label>
-                    <Input
+                    <Input aria-label="Location"
                       value={entry.location}
                       onChange={(e) => updateEntry(entry.id, 'location', e.target.value)}
                       placeholder="e.g. San Francisco, CA (or Remote)"
@@ -2698,7 +2855,7 @@ function ExperienceStep({
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-semibold text-ink">Start date</label>
-                    <Input
+                    <Input aria-label="Start date"
                       type="month"
                       value={entry.startDate}
                       onChange={(e) => updateEntry(entry.id, 'startDate', e.target.value)}
@@ -2720,6 +2877,7 @@ function ExperienceStep({
                     </div>
                     <Input
                       type="month"
+                      aria-label="End date"
                       value={entry.endDate}
                       onChange={(e) => updateEntry(entry.id, 'endDate', e.target.value)}
                       disabled={entry.current}
@@ -2733,20 +2891,6 @@ function ExperienceStep({
                     <label className="text-xs font-semibold text-ink">
                       Responsibilities, Accomplishments & Quantifiable Metrics
                     </label>
-                    <div className="flex items-center gap-1.5">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="xs"
-                        onClick={() => {
-                          const addition = '\n• Led cross-functional initiatives resulting in 25% efficiency gain.';
-                          updateEntry(entry.id, 'description', (entry.description || '').trim() + addition);
-                        }}
-                        className="text-brand-600 gap-1 text-[11px]"
-                      >
-                        <Sparkles className="size-3" /> + Metric Sample
-                      </Button>
-                    </div>
                   </div>
                   <FormattingToolbar
                     value={entry.description}
@@ -2815,7 +2959,7 @@ function EducationStep({ entries, onChange }: { entries: EducationEntry[]; onCha
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">Education {index + 1}</CardTitle>
-                <Button variant="ghost" size="icon-sm" onClick={() => removeEntry(entry.id)}>
+                <Button variant="ghost" size="icon-sm" onClick={() => removeEntry(entry.id)} aria-label={`Delete ${entry.institution || 'this education entry'}`}>
                   <Trash2 className="size-4 text-error-500" />
                 </Button>
               </div>
@@ -2823,35 +2967,35 @@ function EducationStep({ entries, onChange }: { entries: EducationEntry[]; onCha
             <CardContent className="space-y-3 pt-0">
               <div>
                 <label className="mb-1 block text-xs font-medium text-ink">Institution *</label>
-                <Input value={entry.institution} onChange={(e) => updateEntry(entry.id, 'institution', e.target.value)} placeholder="Massachusetts Institute of Technology" />
+                <Input aria-label="Institution" aria-required="true" value={entry.institution} onChange={(e) => updateEntry(entry.id, 'institution', e.target.value)} placeholder="Massachusetts Institute of Technology" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ink">Degree *</label>
-                  <Input value={entry.degree} onChange={(e) => updateEntry(entry.id, 'degree', e.target.value)} placeholder="Bachelor of Science" />
+                  <Input aria-label="Degree" aria-required="true" value={entry.degree} onChange={(e) => updateEntry(entry.id, 'degree', e.target.value)} placeholder="Bachelor of Science" />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ink">Field of study</label>
-                  <Input value={entry.field} onChange={(e) => updateEntry(entry.id, 'field', e.target.value)} placeholder="Computer Science" />
+                  <Input aria-label="Field of study" value={entry.field} onChange={(e) => updateEntry(entry.id, 'field', e.target.value)} placeholder="Computer Science" />
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ink">Start date</label>
-                  <Input type="month" value={entry.startDate} onChange={(e) => updateEntry(entry.id, 'startDate', e.target.value)} />
+                  <Input aria-label="Start date" type="month" value={entry.startDate} onChange={(e) => updateEntry(entry.id, 'startDate', e.target.value)} />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ink">End date</label>
-                  <Input type="month" value={entry.endDate} onChange={(e) => updateEntry(entry.id, 'endDate', e.target.value)} />
+                  <Input aria-label="End date" type="month" value={entry.endDate} onChange={(e) => updateEntry(entry.id, 'endDate', e.target.value)} />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ink">GPA</label>
-                  <Input value={entry.gpa} onChange={(e) => updateEntry(entry.id, 'gpa', e.target.value)} placeholder="3.8 / 4.0" />
+                  <Input aria-label="GPA" value={entry.gpa} onChange={(e) => updateEntry(entry.id, 'gpa', e.target.value)} placeholder="3.8 / 4.0" />
                 </div>
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-ink">Additional details</label>
-                <textarea
+                <textarea aria-label="Additional details"
                   value={entry.description}
                   onChange={(e) => updateEntry(entry.id, 'description', e.target.value)}
                   rows={2}
@@ -2907,9 +3051,6 @@ function SkillsStep({ categories, onChange }: { categories: SkillCategory[]; onC
           <p className="mt-1 text-sm text-ink-muted">Organize your skills by category.</p>
         </div>
         <div className="flex gap-2">
-          <Button type="button" variant="ghost" size="sm" className="text-brand-600">
-            <Sparkles className="size-3.5" /> AI Suggest
-          </Button>
           <Button variant="outline" onClick={addCategory}>
             <Plus className="size-4" /> Add Category
           </Button>
@@ -2933,12 +3074,13 @@ function SkillsStep({ categories, onChange }: { categories: SkillCategory[]; onC
             <CardContent className="p-4">
               <div className="flex items-center gap-3 mb-3">
                 <Input
+                  aria-label="Skill category name"
                   value={cat.category}
                   onChange={(e) => updateCategory(cat.id, e.target.value)}
                   placeholder="Category name (e.g., Programming Languages)"
                   className="flex-1 font-medium"
                 />
-                <Button variant="ghost" size="icon-sm" onClick={() => removeCategory(cat.id)}>
+                <Button variant="ghost" size="icon-sm" onClick={() => removeCategory(cat.id)} aria-label={`Delete ${cat.category || 'this'} category`}>
                   <Trash2 className="size-4 text-error-500" />
                 </Button>
               </div>
@@ -2948,8 +3090,8 @@ function SkillsStep({ categories, onChange }: { categories: SkillCategory[]; onC
                 {cat.skills.map((skill, i) => (
                   <span key={i} className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700">
                     {skill}
-                    <button onClick={() => removeSkill(cat.id, i)} className="ml-0.5 rounded-full hover:bg-brand-200 p-0.5">
-                      <X className="size-3" />
+                    <button type="button" onClick={() => removeSkill(cat.id, i)} aria-label={`Remove ${skill}`} className="ml-0.5 rounded-full hover:bg-brand-200 p-0.5">
+                      <X className="size-3" aria-hidden="true" />
                     </button>
                   </span>
                 ))}
@@ -2958,6 +3100,7 @@ function SkillsStep({ categories, onChange }: { categories: SkillCategory[]; onC
               {/* Add skill input */}
               <div className="flex gap-2">
                 <Input
+                  aria-label={`New skill for ${cat.category || 'this category'}`}
                   value={newSkill[cat.id] ?? ''}
                   onChange={(e) => setNewSkill((prev) => ({ ...prev, [cat.id]: e.target.value }))}
                   placeholder="Type a skill and press Enter…"
@@ -2987,45 +3130,91 @@ function SummaryStep({
   onChange: (s: string) => void;
 }) {
   const [generating, setGenerating] = useState(false);
+  const [outcome, setOutcome] = useState<AiOutcome | null>(null);
 
+  // POST /api/generate-content (generate-summary) with only this resume's saved facts.
+  // The retired /api/generate-summary endpoint answers 410, which used to fail silently.
   const generateSummary = async () => {
     setGenerating(true);
+    setOutcome(null);
     try {
-      const result = await post<{ summary: string }>('/generate-summary', {
+      const workHistory = experience
+        .filter((entry) => entry.position || entry.company || entry.description)
+        .map((entry) => ({ jobTitle: entry.position, employer: entry.company, description: entry.description }));
+      setOutcome(await runContentOperation('generate-summary', {
+        existingText: summary.trim(),
         name: `${heading.firstName} ${heading.lastName}`.trim(),
-        title: heading.title,
-        experience: experience.map((e) => ({
-          position: e.position,
-          company: e.company,
-          description: e.description,
-        })),
-      });
-      if (result.summary) {
-        onChange(result.summary);
-      }
-    } catch {
-      // Fallback: don't overwrite existing content
+        ...(heading.title?.trim() ? { jobTitle: heading.title.trim() } : {}),
+        workHistory,
+        tone: 'balanced',
+      }));
     } finally {
       setGenerating(false);
     }
   };
 
+  const statusText = generating
+    ? 'Asking for a suggestion…'
+    : !outcome
+      ? ''
+      : outcome.kind === 'text'
+        ? 'A suggested summary is ready below. Your summary has not been changed.'
+        : outcome.kind === 'questions'
+          ? 'More detail is needed before a summary can be suggested. See the questions below.'
+          : outcome.kind === 'skills'
+            ? ''
+            : outcome.message;
+  const statusIsProblem = !!outcome && outcome.kind !== 'text' && outcome.kind !== 'questions' && outcome.kind !== 'skills';
+
   return (
     <div>
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-ink">Professional Summary</h2>
+          <h2 id="resume-summary-heading" className="text-xl font-bold text-ink">Professional Summary</h2>
           <p className="mt-1 text-sm text-ink-muted">A brief overview of your qualifications and career goals.</p>
         </div>
-        <Button variant="outline" onClick={generateSummary} loading={generating} disabled={generating}>
-          <Sparkles className="size-4" />
-          Generate with AI
+        <Button variant="outline" onClick={() => void generateSummary()} loading={generating} disabled={generating}>
+          <Sparkles className="size-4" aria-hidden="true" />
+          Suggest a summary
         </Button>
       </div>
+
+      <div role="status" aria-live="polite" data-testid="summary-ai-status">
+        {statusText && (
+          <p className={cn(
+            'mt-4 flex items-start gap-2 rounded-lg p-3 text-sm',
+            statusIsProblem ? 'border border-error-200 bg-error-50 text-error-800' : 'bg-canvas text-ink-secondary',
+          )}>
+            {statusIsProblem && <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />}
+            <span className="min-w-0 break-words">{statusText}</span>
+          </p>
+        )}
+      </div>
+
+      {outcome?.kind === 'text' && (
+        <div className="mt-3 rounded-xl border border-brand-200 bg-brand-50/50 p-4" data-testid="summary-suggestion">
+          <p className="text-xs font-semibold text-ink">Suggested summary. Check every detail before using it.</p>
+          <p className="mt-2 whitespace-pre-wrap break-words text-sm text-ink">{outcome.text}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button size="sm" onClick={() => { onChange(outcome.text); setOutcome(null); }}>Use this summary</Button>
+            <Button size="sm" variant="ghost" onClick={() => setOutcome(null)}>Dismiss</Button>
+          </div>
+        </div>
+      )}
+
+      {outcome?.kind === 'questions' && (
+        <div className="mt-3 rounded-xl border border-border bg-surface p-4">
+          <ol className="list-decimal space-y-1 pl-5 text-sm text-ink" aria-label="Details to add">
+            {outcome.questions.map((question) => <li key={question}>{question}</li>)}
+          </ol>
+          <p className="mt-2 text-xs text-ink-muted">Add these details to your summary or work history, then ask again.</p>
+        </div>
+      )}
 
       <div className="mt-6">
         <FormattingToolbar value={summary} onChange={onChange} />
         <textarea
+          aria-labelledby="resume-summary-heading"
           value={summary}
           onChange={(e) => onChange(e.target.value)}
           rows={8}
@@ -3244,7 +3433,7 @@ function CertificationsStep({ entries, onChange }: { entries: CertificationEntry
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">Certification {index + 1}</CardTitle>
-                <Button variant="ghost" size="icon-sm" onClick={() => removeEntry(entry.id)}>
+                <Button variant="ghost" size="icon-sm" onClick={() => removeEntry(entry.id)} aria-label={`Delete ${entry.name || 'this certification'}`}>
                   <Trash2 className="size-4 text-error-500" />
                 </Button>
               </div>
@@ -3252,31 +3441,31 @@ function CertificationsStep({ entries, onChange }: { entries: CertificationEntry
             <CardContent className="space-y-3 pt-0">
               <div>
                 <label className="mb-1 block text-xs font-medium text-ink">Certification Name *</label>
-                <Input value={entry.name} onChange={(e) => updateEntry(entry.id, 'name', e.target.value)} placeholder="AWS Certified Solutions Architect" />
+                <Input aria-label="Certification Name" aria-required="true" value={entry.name} onChange={(e) => updateEntry(entry.id, 'name', e.target.value)} placeholder="AWS Certified Solutions Architect" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ink">Issuing Organization *</label>
-                  <Input value={entry.issuer} onChange={(e) => updateEntry(entry.id, 'issuer', e.target.value)} placeholder="Amazon Web Services" />
+                  <Input aria-label="Issuing Organization" aria-required="true" value={entry.issuer} onChange={(e) => updateEntry(entry.id, 'issuer', e.target.value)} placeholder="Amazon Web Services" />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ink">Credential ID</label>
-                  <Input value={entry.credentialId} onChange={(e) => updateEntry(entry.id, 'credentialId', e.target.value)} placeholder="ABCD1234EFGH" />
+                  <Input aria-label="Credential ID" value={entry.credentialId} onChange={(e) => updateEntry(entry.id, 'credentialId', e.target.value)} placeholder="ABCD1234EFGH" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ink">Issue Date</label>
-                  <Input type="month" value={entry.issueDate} onChange={(e) => updateEntry(entry.id, 'issueDate', e.target.value)} />
+                  <Input aria-label="Issue Date" type="month" value={entry.issueDate} onChange={(e) => updateEntry(entry.id, 'issueDate', e.target.value)} />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ink">Expiry Date (optional)</label>
-                  <Input type="month" value={entry.expiryDate} onChange={(e) => updateEntry(entry.id, 'expiryDate', e.target.value)} />
+                  <Input aria-label="Expiry Date (optional)" type="month" value={entry.expiryDate} onChange={(e) => updateEntry(entry.id, 'expiryDate', e.target.value)} />
                 </div>
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-ink">Credential URL (optional)</label>
-                <Input type="url" value={entry.credentialUrl} onChange={(e) => updateEntry(entry.id, 'credentialUrl', e.target.value)} placeholder="https://www.credly.com/badges/..." />
+                <Input aria-label="Credential URL (optional)" type="url" value={entry.credentialUrl} onChange={(e) => updateEntry(entry.id, 'credentialUrl', e.target.value)} placeholder="https://www.credly.com/badges/..." />
               </div>
             </CardContent>
           </Card>
@@ -3332,7 +3521,7 @@ function AchievementsStep({ entries, onChange }: { entries: AchievementEntry[]; 
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">Achievement {index + 1}</CardTitle>
-                <Button variant="ghost" size="icon-sm" onClick={() => removeEntry(entry.id)}>
+                <Button variant="ghost" size="icon-sm" onClick={() => removeEntry(entry.id)} aria-label={`Delete ${entry.title || 'this achievement'}`}>
                   <Trash2 className="size-4 text-error-500" />
                 </Button>
               </div>
@@ -3340,11 +3529,11 @@ function AchievementsStep({ entries, onChange }: { entries: AchievementEntry[]; 
             <CardContent className="space-y-3 pt-0">
               <div>
                 <label className="mb-1 block text-xs font-medium text-ink">Achievement Title *</label>
-                <Input value={entry.title} onChange={(e) => updateEntry(entry.id, 'title', e.target.value)} placeholder="Employee of the Year 2023" />
+                <Input aria-label="Achievement Title" aria-required="true" value={entry.title} onChange={(e) => updateEntry(entry.id, 'title', e.target.value)} placeholder="Employee of the Year 2023" />
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-ink">Description</label>
-                <textarea
+                <textarea aria-label="Description"
                   value={entry.description}
                   onChange={(e) => updateEntry(entry.id, 'description', e.target.value)}
                   rows={3}
@@ -3354,7 +3543,7 @@ function AchievementsStep({ entries, onChange }: { entries: AchievementEntry[]; 
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-ink">Date</label>
-                <Input type="month" value={entry.date} onChange={(e) => updateEntry(entry.id, 'date', e.target.value)} />
+                <Input aria-label="Date" type="month" value={entry.date} onChange={(e) => updateEntry(entry.id, 'date', e.target.value)} />
               </div>
             </CardContent>
           </Card>
@@ -3411,7 +3600,7 @@ function ProjectsStep({ entries, onChange }: { entries: ProjectEntry[]; onChange
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">Project {index + 1}</CardTitle>
-                <Button variant="ghost" size="icon-sm" onClick={() => removeEntry(entry.id)}>
+                <Button variant="ghost" size="icon-sm" onClick={() => removeEntry(entry.id)} aria-label={`Delete ${entry.title || 'this project'}`}>
                   <Trash2 className="size-4 text-error-500" />
                 </Button>
               </div>
@@ -3419,11 +3608,11 @@ function ProjectsStep({ entries, onChange }: { entries: ProjectEntry[]; onChange
             <CardContent className="space-y-3 pt-0">
               <div>
                 <label className="mb-1 block text-xs font-medium text-ink">Project Name *</label>
-                <Input value={entry.title} onChange={(e) => updateEntry(entry.id, 'title', e.target.value)} placeholder="E-commerce Platform Redesign" />
+                <Input aria-label="Project Name" aria-required="true" value={entry.title} onChange={(e) => updateEntry(entry.id, 'title', e.target.value)} placeholder="E-commerce Platform Redesign" />
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-ink">Description</label>
-                <textarea
+                <textarea aria-label="Description"
                   value={entry.description}
                   onChange={(e) => updateEntry(entry.id, 'description', e.target.value)}
                   rows={3}
@@ -3433,26 +3622,26 @@ function ProjectsStep({ entries, onChange }: { entries: ProjectEntry[]; onChange
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-ink">Technologies / Stack</label>
-                <Input value={entry.technologies} onChange={(e) => updateEntry(entry.id, 'technologies', e.target.value)} placeholder="React, TypeScript, Node.js, PostgreSQL, AWS" />
+                <Input aria-label="Technologies / Stack" value={entry.technologies} onChange={(e) => updateEntry(entry.id, 'technologies', e.target.value)} placeholder="React, TypeScript, Node.js, PostgreSQL, AWS" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ink">Live URL</label>
-                  <Input type="url" value={entry.liveUrl} onChange={(e) => updateEntry(entry.id, 'liveUrl', e.target.value)} placeholder="https://project-demo.com" />
+                  <Input aria-label="Live URL" type="url" value={entry.liveUrl} onChange={(e) => updateEntry(entry.id, 'liveUrl', e.target.value)} placeholder="https://project-demo.com" />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ink">GitHub Repository</label>
-                  <Input type="url" value={entry.githubUrl} onChange={(e) => updateEntry(entry.id, 'githubUrl', e.target.value)} placeholder="https://github.com/user/repo" />
+                  <Input aria-label="GitHub Repository" type="url" value={entry.githubUrl} onChange={(e) => updateEntry(entry.id, 'githubUrl', e.target.value)} placeholder="https://github.com/user/repo" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ink">Start Date</label>
-                  <Input type="month" value={entry.startDate} onChange={(e) => updateEntry(entry.id, 'startDate', e.target.value)} />
+                  <Input aria-label="Start Date" type="month" value={entry.startDate} onChange={(e) => updateEntry(entry.id, 'startDate', e.target.value)} />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ink">End Date (optional)</label>
-                  <Input type="month" value={entry.endDate} onChange={(e) => updateEntry(entry.id, 'endDate', e.target.value)} />
+                  <Input aria-label="End Date (optional)" type="month" value={entry.endDate} onChange={(e) => updateEntry(entry.id, 'endDate', e.target.value)} />
                 </div>
               </div>
             </CardContent>
@@ -3511,7 +3700,7 @@ function LanguagesStep({ entries, onChange }: { entries: LanguageEntry[]; onChan
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">Language {index + 1}</CardTitle>
-                <Button variant="ghost" size="icon-sm" onClick={() => removeEntry(entry.id)}>
+                <Button variant="ghost" size="icon-sm" onClick={() => removeEntry(entry.id)} aria-label={`Delete ${entry.language || 'this language'}`}>
                   <Trash2 className="size-4 text-error-500" />
                 </Button>
               </div>
@@ -3520,12 +3709,12 @@ function LanguagesStep({ entries, onChange }: { entries: LanguageEntry[]; onChan
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ink">Language *</label>
-                  <Input value={entry.language} onChange={(e) => updateEntry(entry.id, 'language', e.target.value)} placeholder="English" />
+                  <Input aria-label="Language" aria-required="true" value={entry.language} onChange={(e) => updateEntry(entry.id, 'language', e.target.value)} placeholder="English" />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ink">Proficiency *</label>
                   <Select value={entry.proficiency} onValueChange={(v) => updateEntry(entry.id, 'proficiency', v as LanguageEntry['proficiency'])}>
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger aria-label="Proficiency" aria-required="true" className="w-full">
                       <SelectValue placeholder="Select level" />
                     </SelectTrigger>
                     <SelectContent>
@@ -3594,7 +3783,7 @@ function ReferencesStep({ entries, onChange }: { entries: ReferenceEntry[]; onCh
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">Reference {index + 1}</CardTitle>
-                <Button variant="ghost" size="icon-sm" onClick={() => removeEntry(entry.id)}>
+                <Button variant="ghost" size="icon-sm" onClick={() => removeEntry(entry.id)} aria-label={`Delete ${entry.name || 'this reference'}`}>
                   <Trash2 className="size-4 text-error-500" />
                 </Button>
               </div>
@@ -3603,30 +3792,30 @@ function ReferencesStep({ entries, onChange }: { entries: ReferenceEntry[]; onCh
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ink">Name *</label>
-                  <Input value={entry.name} onChange={(e) => updateEntry(entry.id, 'name', e.target.value)} placeholder="Jane Smith" />
+                  <Input aria-label="Name" aria-required="true" value={entry.name} onChange={(e) => updateEntry(entry.id, 'name', e.target.value)} placeholder="Jane Smith" />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ink">Title</label>
-                  <Input value={entry.title} onChange={(e) => updateEntry(entry.id, 'title', e.target.value)} placeholder="Senior Engineering Manager" />
+                  <Input aria-label="Title" value={entry.title} onChange={(e) => updateEntry(entry.id, 'title', e.target.value)} placeholder="Senior Engineering Manager" />
                 </div>
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-ink">Company</label>
-                <Input value={entry.company} onChange={(e) => updateEntry(entry.id, 'company', e.target.value)} placeholder="Acme Corporation" />
+                <Input aria-label="Company" value={entry.company} onChange={(e) => updateEntry(entry.id, 'company', e.target.value)} placeholder="Acme Corporation" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ink">Email</label>
-                  <Input type="email" value={entry.email} onChange={(e) => updateEntry(entry.id, 'email', e.target.value)} placeholder="jane.smith@acme.com" />
+                  <Input aria-label="Email" type="email" value={entry.email} onChange={(e) => updateEntry(entry.id, 'email', e.target.value)} placeholder="jane.smith@acme.com" />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ink">Phone</label>
-                  <Input type="tel" value={entry.phone} onChange={(e) => updateEntry(entry.id, 'phone', e.target.value)} placeholder="+1 (555) 123-4567" />
+                  <Input aria-label="Phone" type="tel" value={entry.phone} onChange={(e) => updateEntry(entry.id, 'phone', e.target.value)} placeholder="+1 (555) 123-4567" />
                 </div>
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-ink">Relationship</label>
-                <Input value={entry.relationship} onChange={(e) => updateEntry(entry.id, 'relationship', e.target.value)} placeholder="Former Manager (2020–2023)" />
+                <Input aria-label="Relationship" value={entry.relationship} onChange={(e) => updateEntry(entry.id, 'relationship', e.target.value)} placeholder="Former Manager (2020–2023)" />
               </div>
             </CardContent>
           </Card>
@@ -3706,7 +3895,7 @@ function CustomSectionsStep({ entries, onChange }: { entries: CustomSectionEntry
                     placeholder="Section Title (e.g., Publications, Patents, Volunteer Work)"
                     className="flex-1 font-medium text-base"
                   />
-                  <Button variant="ghost" size="icon-sm" onClick={() => removeSection(section.id)}>
+                  <Button variant="ghost" size="icon-sm" onClick={() => removeSection(section.id)} aria-label={`Delete ${section.sectionTitle || 'this'} section`}>
                     <Trash2 className="size-4 text-error-500" />
                   </Button>
                 </div>
@@ -3723,7 +3912,7 @@ function CustomSectionsStep({ entries, onChange }: { entries: CustomSectionEntry
                   <div key={item.id} className="space-y-2 p-3 rounded-lg border border-border bg-surface/50">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-medium text-ink-muted">Item {itemIndex + 1}</span>
-                      <Button variant="ghost" size="icon-sm" onClick={() => removeItem(section.id, item.id)}>
+                      <Button variant="ghost" size="icon-sm" onClick={() => removeItem(section.id, item.id)} aria-label={`Delete ${item.title || 'this item'}`}>
                         <Trash2 className="size-3.5 text-error-500" />
                       </Button>
                     </div>
@@ -3854,7 +4043,7 @@ function ReviewStep({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-ink">{check.label}</span>
-                  {isOptional && <span className="text-xs text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded">Optional</span>}
+                  {isOptional && <span className="text-xs text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded">Optional</span>}
                 </div>
                 {check.description && (
                   <div className="mt-1 text-xs text-ink-muted">{check.description}</div>
@@ -3877,14 +4066,15 @@ function ReviewStep({
         <div className="flex flex-wrap items-center gap-3">
           <Button
             type="button"
+            disabled={!onOpenPreview && !resume.id}
             onClick={() => {
               if (onOpenPreview) {
                 onOpenPreview();
-              } else {
-                window.open(`/export/${resume.template || 'Cv1'}/${resume.id || 'res-alex-001'}/en`, '_blank');
+              } else if (resume.id) {
+                window.open(`/export/${resume.template || 'Cv1'}/${encodeURIComponent(resume.id)}/en`, '_blank', 'noopener');
               }
             }}
-            className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs px-4 py-2"
+            className="gap-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-xs px-4 py-2"
           >
             <FileDown className="size-4" />
             <span>Download PDF</span>

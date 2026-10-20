@@ -13,9 +13,26 @@ export function text(value: unknown, fallback = ''): string {
     return fallback;
 }
 
+/**
+ * Before P002 C6 the candidate builder stored skills as `{ category, skills: [...] }` groups;
+ * expand them into one item per skill so templates render those resumes' skills.
+ */
+function expandSkillGroups(items: unknown[]): unknown[] {
+    return items.flatMap((item) => {
+        const group = item as { category?: unknown; skills?: unknown } | null;
+        if (!group || typeof group !== 'object' || !Array.isArray(group.skills)) return [item];
+        const category = typeof group.category === 'string' ? group.category : '';
+        return (group.skills as unknown[])
+            .map((skill) => (typeof skill === 'string' ? skill : (skill as { name?: unknown } | null)?.name))
+            .filter((name): name is string => typeof name === 'string' && name.trim() !== '')
+            .map((name) => ({ name: name.trim(), category }));
+    });
+}
+
 export function normalizeCollection(field: string, value: unknown) {
     if (!Array.isArray(value)) return [];
-    return value.filter(item => item !== null && item !== undefined).map((item, index) => {
+    const items = field === 'skills' ? expandSkillGroups(value) : value;
+    return items.filter(item => item !== null && item !== undefined).map((item, index) => {
         const source = typeof item === 'object' ? { ...item } : { name: String(item), value: String(item) };
         const base = { ...source, date: source.date ?? index + 1 };
         if (field === 'employments') {

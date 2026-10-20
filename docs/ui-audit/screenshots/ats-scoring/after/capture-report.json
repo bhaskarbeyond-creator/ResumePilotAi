@@ -1,0 +1,173 @@
+{
+  "surface": "ats-scoring",
+  "phase": "after",
+  "capturedAt": "2026-10-20T02:37:44.835Z",
+  "baseURL": "http://127.0.0.1:4000",
+  "pages": [
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard",
+      "click": null,
+      "finalUrl": "/dashboard",
+      "file": "desktop-1920__dashboard.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/resumes",
+      "click": null,
+      "finalUrl": "/dashboard/resumes",
+      "file": "desktop-1920__dashboard_resumes.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard",
+      "click": null,
+      "finalUrl": "/dashboard",
+      "file": "laptop-1366__dashboard.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/resumes",
+      "click": null,
+      "finalUrl": "/dashboard/resumes",
+      "file": "laptop-1366__dashboard_resumes.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard",
+      "click": null,
+      "finalUrl": "/dashboard",
+      "file": "tablet-1024__dashboard.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/resumes",
+      "click": null,
+      "finalUrl": "/dashboard/resumes",
+      "file": "tablet-1024__dashboard_resumes.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard",
+      "click": null,
+      "finalUrl": "/dashboard",
+      "file": "mobile-390__dashboard.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/resumes",
+      "click": null,
+      "finalUrl": "/dashboard/resumes",
+      "file": "mobile-390__dashboard_resumes.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard",
+      "click": null,
+      "finalUrl": "/dashboard",
+      "file": "mobile-320__dashboard.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/resumes",
+      "click": null,
+      "finalUrl": "/dashboard/resumes",
+      "file": "mobile-320__dashboard_resumes.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/ats-score",
+      "click": "Check resume",
+      "finalUrl": "/dashboard/ats-score",
+      "file": "desktop-1920__dashboard_ats_score__after_click.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/ats-score",
+      "click": "Check resume",
+      "finalUrl": "/dashboard/ats-score",
+      "file": "laptop-1366__dashboard_ats_score__after_click.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/ats-score",
+      "click": "Check resume",
+      "finalUrl": "/dashboard/ats-score",
+      "file": "tablet-1024__dashboard_ats_score__after_click.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/ats-score",
+      "click": "Check resume",
+      "finalUrl": "/dashboard/ats-score",
+      "file": "mobile-390__dashboard_ats_score__after_click.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/ats-score",
+      "click": "Check resume",
+      "finalUrl": "/dashboard/ats-score",
+      "file": "mobile-320__dashboard_ats_score__after_click.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    }
+  ]
+}

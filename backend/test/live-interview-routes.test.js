@@ -249,3 +249,58 @@ test('live interview routes are authenticated, owner-scoped, revision-safe, and 
         resetRepositoryCacheForTests();
     }
 });
+
+test('provider outages say whether anything was saved: start and guide never claim a saved session', async () => {
+    const providerKeys = ['GEMINI_API_KEY', 'NVIDIA_API_KEY', 'OPENAI_API_KEY', 'GROQ_API_KEY', 'OPENROUTER_API_KEY', 'DEEPSEEK_API_KEY'];
+    const savedKeys = Object.fromEntries(providerKeys.map((key) => [key, process.env[key]]));
+    providerKeys.forEach((key) => { delete process.env[key]; });
+    resetRepositoryCacheForTests();
+    setRepositoryForTests(new InMemoryRepository());
+    clearProviderConfigurationCache();
+    const app = buildApp();
+    let restoreFetch = () => {};
+    try {
+        // No provider configured: nothing can be started, so nothing is "still saved".
+        const start = await request(app).post('/api/live-interview/sessions').set('x-test-user', 'candidate-a').send(startPayload);
+        assert.equal(start.status, 503);
+        assert.doesNotMatch(start.body.error.message, /still saved/i);
+        assert.match(start.body.error.message, /no interview was started/i);
+
+        const guide = await request(app)
+            .post('/api/live-interview/guide')
+            .set('x-test-user', 'candidate-a')
+            .send({ question: 'How do you prioritise competing deadlines?', role: 'Data Analyst' });
+        assert.equal(guide.status, 503);
+        assert.doesNotMatch(guide.body.error.message, /session/i);
+        assert.match(guide.body.error.message, /guidance is temporarily unavailable/i);
+
+        // A session that exists stays saved when the provider fails mid-interview.
+        process.env.GEMINI_API_KEY = 'route-test-key';
+        restoreFetch = installProviderMock();
+        clearProviderConfigurationCache();
+        const created = await request(app).post('/api/live-interview/sessions').set('x-test-user', 'candidate-a').send(startPayload);
+        assert.equal(created.status, 201);
+        restoreFetch();
+        restoreFetch = () => {};
+        delete process.env.GEMINI_API_KEY;
+        clearProviderConfigurationCache();
+        const { session } = created.body;
+        const turn = await request(app)
+            .post(`/api/live-interview/sessions/${session.sessionId}/turns`)
+            .set('x-test-user', 'candidate-a')
+            .send({ idempotencyKey: 'outage-turn-1', expectedRevision: session.revision, turnId: session.interviewer.turnId, answer: 'I measured the slow screens first and fixed the largest bundle.' });
+        assert.equal(turn.status, 503);
+        assert.match(turn.body.error.message, /still saved/i);
+        const reloaded = await request(app).get(`/api/live-interview/sessions/${session.sessionId}`).set('x-test-user', 'candidate-a');
+        assert.equal(reloaded.status, 200);
+        assert.equal(reloaded.body.session.revision, session.revision);
+    } finally {
+        restoreFetch();
+        providerKeys.forEach((key) => {
+            if (savedKeys[key] === undefined) delete process.env[key];
+            else process.env[key] = savedKeys[key];
+        });
+        clearProviderConfigurationCache();
+        resetRepositoryCacheForTests();
+    }
+});

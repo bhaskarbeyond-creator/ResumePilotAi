@@ -1,0 +1,58 @@
+{
+  "surface": "ai-assistant",
+  "phase": "after",
+  "capturedAt": "2026-10-20T02:07:19.505Z",
+  "baseURL": "http://127.0.0.1:4000",
+  "pages": [
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/ai",
+      "finalUrl": "/dashboard/ai",
+      "file": "desktop-1920__dashboard_ai.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/ai",
+      "finalUrl": "/dashboard/ai",
+      "file": "laptop-1366__dashboard_ai.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/ai",
+      "finalUrl": "/dashboard/ai",
+      "file": "tablet-1024__dashboard_ai.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/ai",
+      "finalUrl": "/dashboard/ai",
+      "file": "mobile-390__dashboard_ai.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/ai",
+      "finalUrl": "/dashboard/ai",
+      "file": "mobile-320__dashboard_ai.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    }
+  ]
+}

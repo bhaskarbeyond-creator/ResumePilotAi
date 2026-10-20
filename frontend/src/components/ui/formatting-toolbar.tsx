@@ -154,7 +154,7 @@ export function FormattingToolbar({
       {/* Action Verbs Quick Helpers */}
       <div className="flex items-center gap-1 text-[11px] text-ink-muted">
         <Sparkles className="size-3 text-brand-600 hidden sm:inline" />
-        <span className="hidden md:inline font-medium text-[10px] uppercase tracking-wider text-ink-subtle">Verbs:</span>
+        <span className="hidden md:inline font-medium text-[10px] uppercase tracking-wider text-ink-muted">Verbs:</span>
         <div className="flex items-center gap-1 overflow-x-auto max-w-[260px] sm:max-w-none">
           {POWER_ACTION_VERBS.slice(0, 4).map((verb) => (
             <button

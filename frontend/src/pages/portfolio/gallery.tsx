@@ -1,202 +1,167 @@
 /**
- * Portfolio Gallery — Public Community Showcase
+ * Portfolio gallery — /portfolios (anonymous).
  *
- * Route: /portfolios
- * Public gallery of published candidate portfolios with search and category filters.
+ * Lists GET /api/portfolios/public, the server's published summaries: title,
+ * description, tags, template and publication date. Search and the template
+ * filter work only on those fields and are kept in the URL (?q=, ?template=),
+ * so results can be linked and survive reload and back/forward. Earlier the page
+ * read name, headline, skills and avatar fields that summaries do not contain.
  */
-
-import { useState, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { ArrowRight, Globe, RotateCcw, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/loading';
-import { get, normalizeError } from '@/lib/api-client';
-import { cn } from '@/lib/utils';
-import {
-  Search,
-  Globe,
-  Briefcase,
-  Code,
-  Palette,
-  ExternalLink,
-  User,
-  Star,
-  Filter,
-} from 'lucide-react';
+import { listPublishedPortfolios, toPortfolioError, type PortfolioApiError, type PublicPortfolioSummary } from '@/lib/portfolio';
+import { PORTFOLIO_TEMPLATES, resolveTemplate, templateMeta } from '@/lib/portfolio-document';
 
-interface PortfolioItem {
-  id: string;
-  slug: string;
-  fullName: string;
-  headline: string;
-  location: string;
-  avatarUrl: string;
-  theme: string;
-  skills: { category: string; list: string[] }[];
-  featured?: boolean;
-  publishedAt: string;
-}
+type State =
+  | { status: 'loading' }
+  | { status: 'ready'; portfolios: PublicPortfolioSummary[] }
+  | { status: 'error'; error: PortfolioApiError };
 
-const CATEGORIES = ['All', 'Engineering', 'Design', 'Product', 'Marketing', 'Data', 'DevOps'];
+const dateFormat = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+const formatDate = (value: string | null) => {
+  if (!value) return '';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '' : dateFormat.format(date);
+};
+
+const templateOf = (portfolio: PublicPortfolioSummary) => resolveTemplate(portfolio.data?.templateKey || portfolio.data?.template || portfolio.theme);
 
 export function PortfolioGalleryPage() {
-  const [portfolios, setPortfolios] = useState<PortfolioItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState('All');
-
-  const fetchPortfolios = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await get<{ portfolios: PortfolioItem[] }>('/api/portfolios/public');
-      setPortfolios(data.portfolios ?? []);
-    } catch (err) {
-      setError(normalizeError(err).message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [state, setState] = useState<State>({ status: 'loading' });
+  const [attempt, setAttempt] = useState(0);
+  const [params, setParams] = useSearchParams();
+  const query = params.get('q') ?? '';
+  const templateFilter = params.get('template') ?? '';
 
   useEffect(() => {
-    void fetchPortfolios();
-  }, []);
+    const controller = new AbortController();
+    setState({ status: 'loading' });
+    listPublishedPortfolios(controller.signal)
+      .then((portfolios) => setState({ status: 'ready', portfolios }))
+      .catch((cause: unknown) => {
+        const error = toPortfolioError(cause);
+        if (!error.cancelled) setState({ status: 'error', error });
+      });
+    return () => controller.abort();
+  }, [attempt]);
 
-  const filtered = portfolios.filter((p) => {
-    const matchesSearch = !searchQuery || p.fullName.toLowerCase().includes(searchQuery.toLowerCase()) || p.headline.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = activeCategory === 'All' || p.skills.some((s) => s.category === activeCategory);
-    return matchesSearch && matchesCategory;
-  });
+  const updateParam = (key: string, value: string) => {
+    const next = new URLSearchParams(params);
+    if (value) next.set(key, value);
+    else next.delete(key);
+    setParams(next, { replace: key === 'q' });
+  };
 
-  const allSkillCategories = Array.from(new Set(portfolios.flatMap((p) => p.skills.map((s) => s.category))));
+  const portfolios = state.status === 'ready' ? state.portfolios : [];
+  const presentTemplates = PORTFOLIO_TEMPLATES.filter((template) => portfolios.some((portfolio) => templateOf(portfolio) === template.id));
+  const filtered = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return portfolios.filter((portfolio) => {
+      if (templateFilter && templateOf(portfolio) !== templateFilter) return false;
+      if (!needle) return true;
+      const haystack = [portfolio.title, portfolio.metadata?.description ?? '', ...(portfolio.metadata?.tags ?? [])].join(' ').toLowerCase();
+      return haystack.includes(needle);
+    });
+  }, [portfolios, query, templateFilter]);
+
+  const filtering = Boolean(query.trim() || templateFilter);
 
   return (
     <div className="min-h-screen bg-canvas">
-      {/* Header */}
-      <header className="border-b border-border bg-surface px-4 py-12">
-        <div className="mx-auto max-w-6xl text-center">
-          <h1 className="text-3xl font-bold text-ink lg:text-4xl">Community Portfolio Gallery</h1>
-          <p className="mt-2 text-ink-secondary">Discover talented professionals showcasing their work.</p>
-
-          {/* Search */}
-          <div className="mx-auto mt-6 max-w-md relative">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-muted" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by name, role, or skills…"
-              className="pl-9"
-            />
-          </div>
-
-          {/* Category Filters */}
-          <div className="mx-auto mt-6 max-w-5xl flex flex-wrap justify-center gap-2">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={cn(
-                  'rounded-full px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-colors',
-                  activeCategory === cat
-                    ? 'bg-brand-600 text-white'
-                    : 'text-ink-secondary hover:bg-neutral-100',
-                )}
+      <header className="border-b border-border bg-surface px-4 py-10">
+        <div className="mx-auto max-w-5xl">
+          <h1 className="text-3xl font-bold text-ink">Portfolios</h1>
+          <p className="mt-2 text-ink-secondary">Web CV portfolios that candidates have chosen to publish.</p>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="min-w-0 flex-1">
+              <label htmlFor="portfolio-search" className="mb-1 block text-sm font-medium text-ink">Search</label>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-muted" aria-hidden="true" />
+                <Input id="portfolio-search" type="search" value={query} onChange={(event) => updateParam('q', event.target.value)} placeholder="Title, description or tag" className="pl-9" />
+              </div>
+            </div>
+            <div className="sm:w-56">
+              <label htmlFor="portfolio-template" className="mb-1 block text-sm font-medium text-ink">Template</label>
+              <select
+                id="portfolio-template"
+                value={templateFilter}
+                onChange={(event) => updateParam('template', event.target.value)}
+                className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-ink"
               >
-                {cat}
-              </button>
-            ))}
+                <option value="">All templates</option>
+                {(presentTemplates.length ? presentTemplates : PORTFOLIO_TEMPLATES).map((template) => <option key={template.id} value={template.id}>{template.name}</option>)}
+              </select>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Content */}
-      <main className="mx-auto max-w-6xl px-4 py-8">
-        {error && (
-          <div className="mb-6 flex items-center gap-3 rounded-xl border border-error-200 bg-error-50 p-4 text-sm text-error-700">
-            <span>{error}</span>
-            <Button variant="outline" size="sm" onClick={() => void fetchPortfolios()}>
-              Retry
+      <main id="main-content" className="mx-auto max-w-5xl px-4 py-8">
+        <p role="status" className="mb-4 text-sm text-ink-secondary">
+          {state.status === 'ready' && (filtering
+            ? `${filtered.length} of ${portfolios.length} ${portfolios.length === 1 ? 'portfolio' : 'portfolios'} match`
+            : `${portfolios.length} published ${portfolios.length === 1 ? 'portfolio' : 'portfolios'}`)}
+        </p>
+
+        {state.status === 'loading' && (
+          <ul aria-busy="true" aria-label="Loading portfolios" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, index) => <li key={index} className="h-40 animate-pulse rounded-2xl bg-neutral-100" />)}
+          </ul>
+        )}
+
+        {state.status === 'error' && (
+          <div role="alert" className="rounded-xl border border-error-200 bg-error-50 p-4 text-sm text-error-800">
+            <p className="font-semibold">Portfolios could not be loaded</p>
+            <p className="mt-1">{state.error.message}</p>
+            <Button className="mt-3" size="sm" variant="outline" onClick={() => setAttempt((value) => value + 1)}>
+              <RotateCcw aria-hidden="true" /> Try again
             </Button>
           </div>
         )}
 
-        {loading && (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-72" />
-            ))}
-          </div>
-        )}
-
-        {!loading && filtered.length === 0 && (
+        {state.status === 'ready' && portfolios.length === 0 && (
           <div className="flex flex-col items-center py-16 text-center">
-            <Globe className="mb-4 size-12 text-ink-subtle" />
-            <h3 className="text-lg font-semibold text-ink">No portfolios found</h3>
-            <p className="mt-2 max-w-sm text-sm text-ink-muted">
-              {searchQuery ? 'Try a different search term.' : 'Check back soon for new portfolios.'}
-            </p>
+            <Globe className="size-10 text-ink-muted" aria-hidden="true" />
+            <h2 className="mt-4 text-lg font-semibold text-ink">No portfolios have been published yet</h2>
           </div>
         )}
 
-        {!loading && filtered.length > 0 && (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((portfolio) => (
-              <Card key={portfolio.id} className="group overflow-hidden transition-all hover:shadow-lg cursor-pointer">
-                {/* Avatar/Preview */}
-                <div className="aspect-video bg-neutral-100 relative overflow-hidden">
-                  <img
-                    src={portfolio.avatarUrl}
-                    alt={`${portfolio.fullName}'s portfolio`}
-                    className="object-cover w-full h-full opacity-80 transition-opacity group-hover:opacity-100"
-                  />
-                  {portfolio.featured && (
-                    <span className="absolute top-2 right-2 rounded-full bg-brand-600 px-2 py-0.5 text-xs font-medium text-white">
-                      Featured
-                    </span>
-                  )}
-                </div>
-
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 text-xs text-ink-muted mb-2">
-                    <span className="rounded-full bg-brand-50 px-2 py-0.5 font-medium text-brand-600">{portfolio.theme}</span>
-                    <span className="flex items-center gap-1"><User className="size-3" />{portfolio.location}</span>
-                  </div>
-
-                  <h3 className="text-base font-semibold text-ink line-clamp-1 group-hover:text-brand-600 transition-colors">
-                    {portfolio.fullName}
-                  </h3>
-
-                  <p className="mt-1 line-clamp-1 text-sm text-ink-muted">{portfolio.headline}</p>
-
-                  {/* Skills preview */}
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {portfolio.skills.flatMap((s) => s.list).slice(0, 4).map((skill) => (
-                      <span key={skill} className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-ink-secondary">
-                        {skill}
-                      </span>
-                    ))}
-                    {portfolio.skills.flatMap((s) => s.list).length > 4 && (
-                      <span className="text-xs text-ink-muted">+{portfolio.skills.flatMap((s) => s.list).length - 4} more</span>
-                    )}
-                  </div>
-
-                  <div className="mt-4 pt-3 border-t border-border">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                      asChild
-                    >
-                      <a href={`/portfolio/${portfolio.slug}`}>
-                        View Portfolio <ExternalLink className="size-3.5 ml-1.5" />
-                      </a>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+        {state.status === 'ready' && portfolios.length > 0 && filtered.length === 0 && (
+          <div className="flex flex-col items-center py-16 text-center">
+            <h2 className="text-lg font-semibold text-ink">No portfolios match</h2>
+            <Button className="mt-4" variant="outline" onClick={() => setParams(new URLSearchParams())}>Clear search and filter</Button>
           </div>
+        )}
+
+        {filtered.length > 0 && (
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {filtered.map((portfolio) => {
+              const template = templateMeta(templateOf(portfolio));
+              // Legacy documents default their tags to the template id, which the card already shows.
+              const tags = (portfolio.metadata?.tags ?? []).filter((tag) => tag !== template.id).slice(0, 4);
+              return (
+                <li key={portfolio.id} className="flex flex-col rounded-2xl border border-border bg-surface p-5">
+                  <p className="text-xs font-medium text-brand-700">{template.name}</p>
+                  <h2 className="mt-1 text-base font-semibold text-ink break-words">{portfolio.title}</h2>
+                  {portfolio.metadata?.description && <p className="mt-2 line-clamp-3 text-sm text-ink-secondary break-words">{portfolio.metadata.description}</p>}
+                  {tags.length > 0 && (
+                    <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="Tags">
+                      {tags.map((tag) => <li key={tag} className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-ink-secondary">{tag}</li>)}
+                    </ul>
+                  )}
+                  <div className="mt-auto flex items-center justify-between gap-2 pt-4">
+                    {formatDate(portfolio.publishedAt) && <p className="text-xs text-ink-muted">Published {formatDate(portfolio.publishedAt)}</p>}
+                    <Link to={`/portfolio/${portfolio.slug}`} className="inline-flex items-center gap-1 text-sm font-medium text-brand-700 underline-offset-4 hover:underline">
+                      View<span className="sr-only"> {portfolio.title}</span><ArrowRight className="size-4" aria-hidden="true" />
+                    </Link>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </main>
     </div>

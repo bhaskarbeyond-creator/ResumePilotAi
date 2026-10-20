@@ -1,0 +1,706 @@
+{
+  "generatedAt": "2026-10-20T10:45:57.993Z",
+  "routes": 694,
+  "calls": [
+    {
+      "file": "frontend/src/pages/dashboard/ats-score.tsx",
+      "line": 92,
+      "method": "GET",
+      "raw": "/resumes/:param",
+      "resolved": "/api/resumes/:param",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/resumes/:id"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/job-tracker.tsx",
+      "line": 80,
+      "method": "GET",
+      "raw": "/jobs-data/tracker",
+      "resolved": "/api/jobs-data/tracker",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/jobs-data/:id"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/job-tracker.tsx",
+      "line": 97,
+      "method": "DELETE",
+      "raw": "/jobs-data/tracker/:param",
+      "resolved": "/api/jobs-data/tracker/:param",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/jobs-data/tracker/:id"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/job-tracker.tsx",
+      "line": 107,
+      "method": "PATCH",
+      "raw": "/jobs-data/tracker/:param",
+      "resolved": "/api/jobs-data/tracker/:param",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/jobs-data/tracker/:id"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/job-tracker.tsx",
+      "line": 425,
+      "method": "POST",
+      "raw": "/jobs-data/tracker",
+      "resolved": "/api/jobs-data/tracker",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/jobs-data/:id"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/overview.tsx",
+      "line": 112,
+      "method": "GET",
+      "raw": "/user-stats",
+      "resolved": "/api/user-stats",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/user-stats"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/overview.tsx",
+      "line": 125,
+      "method": "GET",
+      "raw": "/resumes",
+      "resolved": "/api/resumes",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/resumes"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/overview.tsx",
+      "line": 149,
+      "method": "GET",
+      "raw": "/jobs-data",
+      "resolved": "/api/jobs-data",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/jobs-data"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/overview.tsx",
+      "line": 161,
+      "method": "GET",
+      "raw": "/favourites",
+      "resolved": "/api/favourites",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/favourites"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/overview.tsx",
+      "line": 177,
+      "method": "GET",
+      "raw": "/covers",
+      "resolved": "/api/covers",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/covers"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/overview.tsx",
+      "line": 192,
+      "method": "GET",
+      "raw": "/users-data/profile",
+      "resolved": "/api/users-data/profile",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/users-data/profile"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/overview.tsx",
+      "line": 218,
+      "method": "DELETE",
+      "raw": "/favourites/:param",
+      "resolved": "/api/favourites/:param",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/favourites/:itemId"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/overview.tsx",
+      "line": 225,
+      "method": "POST",
+      "raw": "/favourites",
+      "resolved": "/api/favourites",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/favourites"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/overview.tsx",
+      "line": 237,
+      "method": "GET",
+      "raw": "/favourites",
+      "resolved": "/api/favourites",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/favourites"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resume-builder.tsx",
+      "line": 693,
+      "method": "GET",
+      "raw": "/resumes",
+      "resolved": "/api/resumes",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/resumes"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resume-builder.tsx",
+      "line": 700,
+      "method": "GET",
+      "raw": "/resumes/:param",
+      "resolved": "/api/resumes/:param",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/resumes/:id"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resume-builder.tsx",
+      "line": 773,
+      "method": "GET",
+      "raw": "/users-data/profile",
+      "resolved": "/api/users-data/profile",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/users-data/profile"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resume-builder.tsx",
+      "line": 799,
+      "method": "POST",
+      "raw": "/resumes/:param",
+      "resolved": "/api/resumes/:param",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/resumes/:id"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resume-builder.tsx",
+      "line": 839,
+      "method": "POST",
+      "raw": "/export-docx",
+      "resolved": "/api/export-docx",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/export-docx"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resumes.tsx",
+      "line": 153,
+      "method": "GET",
+      "raw": "/resumes",
+      "resolved": "/api/resumes",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/resumes"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resumes.tsx",
+      "line": 191,
+      "method": "GET",
+      "raw": "/users-data/profile",
+      "resolved": "/api/users-data/profile",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/users-data/profile"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resumes.tsx",
+      "line": 321,
+      "method": "GET",
+      "raw": "/resumes/:param",
+      "resolved": "/api/resumes/:param",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/resumes/:id"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resumes.tsx",
+      "line": 535,
+      "method": "GET",
+      "raw": "/resumes/:param",
+      "resolved": "/api/resumes/:param",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/resumes/:id"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resumes.tsx",
+      "line": 548,
+      "method": "POST",
+      "raw": "/resumes/:param",
+      "resolved": "/api/resumes/:param",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/resumes/:id"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resumes.tsx",
+      "line": 568,
+      "method": "GET",
+      "raw": "/resumes/:param",
+      "resolved": "/api/resumes/:param",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/resumes/:id"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resumes.tsx",
+      "line": 578,
+      "method": "POST",
+      "raw": "/resumes/:param",
+      "resolved": "/api/resumes/:param",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/resumes/:id"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resumes.tsx",
+      "line": 598,
+      "method": "DELETE",
+      "raw": "/resumes/:param",
+      "resolved": "/api/resumes/:param",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/resumes/:id"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resumes.tsx",
+      "line": 497,
+      "method": "POST",
+      "raw": "/api/export-docx",
+      "resolved": "/api/export-docx",
+      "via": "fetch",
+      "candidateScope": true,
+      "route": "/api/export-docx"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/settings.tsx",
+      "line": 104,
+      "method": "GET",
+      "raw": "/users-data/profile",
+      "resolved": "/api/users-data/profile",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/users-data/profile"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/settings.tsx",
+      "line": 141,
+      "method": "POST",
+      "raw": "/users-data/profile",
+      "resolved": "/api/users-data/profile",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/users-data/profile"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/settings.tsx",
+      "line": 207,
+      "method": "POST",
+      "raw": "/account/export",
+      "resolved": "/api/account/export",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/account/export"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/settings.tsx",
+      "line": 228,
+      "method": "POST",
+      "raw": "/users-data/mfa/disable",
+      "resolved": "/api/users-data/mfa/disable",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/users-data/mfa/disable"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/settings.tsx",
+      "line": 245,
+      "method": "POST",
+      "raw": "/account/delete",
+      "resolved": "/api/account/delete",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/account/delete"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/settings.tsx",
+      "line": 694,
+      "method": "GET",
+      "raw": "/support/tickets",
+      "resolved": "/api/support/tickets",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/support/tickets"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/settings.tsx",
+      "line": 719,
+      "method": "POST",
+      "raw": "/support/tickets",
+      "resolved": "/api/support/tickets",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/support/tickets"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/settings.tsx",
+      "line": 744,
+      "method": "POST",
+      "raw": "/support/tickets/:param/messages",
+      "resolved": "/api/support/tickets/:param/messages",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/support/tickets/:ticketId/messages"
+    },
+    {
+      "file": "frontend/src/pages/portfolio/builder.tsx",
+      "line": 93,
+      "method": "GET",
+      "raw": "/api/portfolios",
+      "resolved": "/api/api/portfolios",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": null
+    },
+    {
+      "file": "frontend/src/pages/portfolio/builder.tsx",
+      "line": 120,
+      "method": "PUT",
+      "raw": "/api/portfolios/:param",
+      "resolved": "/api/api/portfolios/:param",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": null
+    },
+    {
+      "file": "frontend/src/pages/portfolio/builder.tsx",
+      "line": 122,
+      "method": "POST",
+      "raw": "/api/portfolios",
+      "resolved": "/api/api/portfolios",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": null
+    },
+    {
+      "file": "frontend/src/pages/portfolio/builder.tsx",
+      "line": 145,
+      "method": "POST",
+      "raw": "/api/portfolios/:param/publish",
+      "resolved": "/api/api/portfolios/:param/publish",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": null
+    },
+    {
+      "file": "frontend/src/pages/portfolio/gallery.tsx",
+      "line": 53,
+      "method": "GET",
+      "raw": "/api/portfolios/public",
+      "resolved": "/api/api/portfolios/public",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": null
+    },
+    {
+      "file": "frontend/src/pages/portfolio/public-portfolio.tsx",
+      "line": 92,
+      "method": "GET",
+      "raw": "/api/portfolios/public/:param",
+      "resolved": "/api/api/portfolios/public/:param",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": null
+    },
+    {
+      "file": "frontend/src/pages/auth/login.tsx",
+      "line": 59,
+      "method": "GET",
+      "raw": "/users-data/profile",
+      "resolved": "/api/users-data/profile",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/users-data/profile"
+    },
+    {
+      "file": "frontend/src/pages/auth/login.tsx",
+      "line": 60,
+      "method": "POST",
+      "raw": "/users-data/profile",
+      "resolved": "/api/users-data/profile",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/users-data/profile"
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 354,
+      "method": "GET",
+      "raw": "/platform/operational-status",
+      "resolved": "/api/platform/operational-status",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/platform/operational-status"
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 355,
+      "method": "GET",
+      "raw": "/platform/public-config",
+      "resolved": "/api/platform/public-config",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/platform/public-config"
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 478,
+      "method": "GET",
+      "raw": "/platform/operational-status",
+      "resolved": "/api/platform/operational-status",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/platform/operational-status"
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 554,
+      "method": "GET",
+      "raw": "/notifications-data",
+      "resolved": "/api/notifications-data",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/notifications-data"
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 565,
+      "method": "PATCH",
+      "raw": "/notifications-data/:param",
+      "resolved": "/api/notifications-data/:param",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/notifications-data/:id"
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 577,
+      "method": "POST",
+      "raw": "/notifications-data/mark-all-read",
+      "resolved": "/api/notifications-data/mark-all-read",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/notifications-data/mark-all-read"
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 589,
+      "method": "GET",
+      "raw": "/favourites",
+      "resolved": "/api/favourites",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/favourites"
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 600,
+      "method": "DELETE",
+      "raw": "/favourites/:param",
+      "resolved": "/api/favourites/:param",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/favourites/:itemId"
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 612,
+      "method": "GET",
+      "raw": "/support/tickets",
+      "resolved": "/api/support/tickets",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/support/tickets"
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 623,
+      "method": "POST",
+      "raw": "/support/tickets",
+      "resolved": "/api/support/tickets",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/support/tickets"
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 636,
+      "method": "POST",
+      "raw": "/support/tickets/:param/messages",
+      "resolved": "/api/support/tickets/:param/messages",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/support/tickets/:ticketId/messages"
+    },
+    {
+      "file": "frontend/src/lib/ai-content.ts",
+      "line": 62,
+      "method": "POST",
+      "raw": "/generate-content",
+      "resolved": "/api/generate-content",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/generate-content"
+    },
+    {
+      "file": "frontend/src/lib/cover-letters.ts",
+      "line": 134,
+      "method": "GET",
+      "raw": "/covers/:param",
+      "resolved": "/api/covers/:param",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/covers/:id"
+    },
+    {
+      "file": "frontend/src/lib/cover-letters.ts",
+      "line": 146,
+      "method": "POST",
+      "raw": "/covers/:param",
+      "resolved": "/api/covers/:param",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/covers/:id"
+    },
+    {
+      "file": "frontend/src/lib/cover-letters.ts",
+      "line": 152,
+      "method": "DELETE",
+      "raw": "/covers/:param",
+      "resolved": "/api/covers/:param",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/covers/:id"
+    },
+    {
+      "file": "frontend/src/lib/cover-letters.ts",
+      "line": 181,
+      "method": "GET",
+      "raw": "/users-data/profile",
+      "resolved": "/api/users-data/profile",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/users-data/profile"
+    },
+    {
+      "file": "frontend/src/lib/cover-letters.ts",
+      "line": 217,
+      "method": "POST",
+      "raw": "/generate-ai-cover-letter",
+      "resolved": "/api/generate-ai-cover-letter",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/generate-ai-cover-letter"
+    },
+    {
+      "file": "frontend/src/lib/interview-coach.ts",
+      "line": 146,
+      "method": "POST",
+      "raw": "/generate-interview",
+      "resolved": "/api/generate-interview",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/generate-interview"
+    },
+    {
+      "file": "frontend/src/lib/interview-coach.ts",
+      "line": 176,
+      "method": "POST",
+      "raw": "/live-interview/guide",
+      "resolved": "/api/live-interview/guide",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/live-interview/guide"
+    },
+    {
+      "file": "frontend/src/lib/interview-coach.ts",
+      "line": 256,
+      "method": "POST",
+      "raw": "/live-interview/sessions",
+      "resolved": "/api/live-interview/sessions",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/live-interview/sessions"
+    },
+    {
+      "file": "frontend/src/lib/interview-coach.ts",
+      "line": 271,
+      "method": "GET",
+      "raw": "/live-interview/sessions/:param",
+      "resolved": "/api/live-interview/sessions/:param",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/live-interview/sessions/:sessionId"
+    },
+    {
+      "file": "frontend/src/lib/interview-coach.ts",
+      "line": 289,
+      "method": "POST",
+      "raw": "/live-interview/sessions/:param/turns",
+      "resolved": "/api/live-interview/sessions/:param/turns",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/live-interview/sessions/:sessionId/turns"
+    },
+    {
+      "file": "frontend/src/lib/interview-coach.ts",
+      "line": 307,
+      "method": "POST",
+      "raw": "/live-interview/sessions/:param/complete",
+      "resolved": "/api/live-interview/sessions/:param/complete",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/live-interview/sessions/:sessionId/complete"
+    },
+    {
+      "file": "frontend/src/lib/interview-coach.ts",
+      "line": 319,
+      "method": "DELETE",
+      "raw": "/live-interview/sessions/:param",
+      "resolved": "/api/live-interview/sessions/:param",
+      "via": "api-client",
+      "candidateScope": true,
+      "route": "/api/live-interview/sessions/:sessionId"
+    },
+    {
+      "file": "frontend/src/lib/preview-session.ts",
+      "line": 134,
+      "method": "POST",
+      "raw": "/api/auth/preview-login",
+      "resolved": "/api/auth/preview-login",
+      "via": "fetch",
+      "candidateScope": true,
+      "route": "/api/auth/preview-login"
+    },
+    {
+      "file": "frontend/src/lib/preview-session.ts",
+      "line": 169,
+      "method": "GET",
+      "raw": "/api/users-data/profile",
+      "resolved": "/api/users-data/profile",
+      "via": "fetch",
+      "candidateScope": true,
+      "route": "/api/users-data/profile"
+    }
+  ]
+}

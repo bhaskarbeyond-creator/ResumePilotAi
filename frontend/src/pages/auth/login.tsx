@@ -19,7 +19,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { post } from '@/lib/api-client';
+import { get, post } from '@/lib/api-client';
+import { PreviewLoginError, requestPreviewLogin } from '@/lib/preview-session';
 import {
   Mail,
   Lock,
@@ -35,10 +36,41 @@ import { getMfaResolver, completeMfaSignIn, type MfaResolverState } from '@/lib/
 
 type AuthMode = 'login' | 'register' | 'reset';
 
+/** Only same-origin application paths are accepted as a post-login destination. */
+function safeReturnPath(raw: string | null): string {
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//') || raw.startsWith('/\\')) return '/dashboard';
+  return raw;
+}
+
+/**
+ * Preview identities (non-production only) are keyed by email; the backend
+ * performs no password verification for them. A one-time random value is sent
+ * instead of a stored credential, so no password literal lives in the bundle.
+ */
+function oneTimePreviewSecret(): string {
+  return typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+}
+
+/** Persist the names typed at registration through the real profile contract. */
+async function saveRegistrationProfile(firstname: string, lastname: string): Promise<void> {
+  if (!firstname && !lastname) return;
+  const current = await get<{ user?: { revision?: number } }>('/users-data/profile').catch(() => null);
+  await post('/users-data/profile', {
+    profile: { firstname, lastname },
+    expectedRevision: Number(current?.user?.revision ?? 0),
+  });
+}
+
 export function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const returnTo = searchParams.get('next') || '/dashboard';
+  const returnTo = safeReturnPath(searchParams.get('next'));
+  // Without a configured Firebase identity provider (local / QA / certification
+  // environments) the same form authenticates through the backend preview
+  // identity endpoint, which answers 404 unless the non-production verifier is on.
+  const usePreviewIdentity = !isFirebaseConfigured();
 
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
@@ -57,6 +89,33 @@ export function LoginPage() {
     setSuccess(null);
   };
 
+  /** Sign in (or register) through the backend preview identity endpoint. */
+  const completePreviewSignIn = async () => {
+    const name = firstName ? `${firstName} ${lastName}`.trim() : undefined;
+    await requestPreviewLogin({ email, password, ...(name ? { name } : {}) });
+    if (mode === 'register') {
+      await saveRegistrationProfile(firstName.trim(), lastName.trim()).catch(() => {
+        console.warn('Profile details will be completed from Settings');
+      });
+    }
+    // Full navigation so the auth provider re-reads and verifies the new session.
+    window.location.assign(returnTo);
+  };
+
+  /** Non-production QA shortcut: real preview login for a known demo identity. */
+  const handleDemoAccess = async (demoEmail: string) => {
+    clearMessages();
+    setLoading(true);
+    try {
+      await requestPreviewLogin({ email: demoEmail, password: oneTimePreviewSecret() });
+      window.location.assign(returnTo);
+    } catch (err) {
+      setError(err instanceof PreviewLoginError ? err.message : 'Demo sign-in failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleEmailAuth = async (e: FormEvent) => {
     e.preventDefault();
     clearMessages();
@@ -64,24 +123,27 @@ export function LoginPage() {
 
     try {
       if (mode === 'reset') {
+        if (usePreviewIdentity) {
+          setError('Password reset is not available in this environment.');
+          return;
+        }
         await sendPasswordResetEmail(auth, email);
         setSuccess('Password reset email sent. Check your inbox.');
         setLoading(false);
         return;
       }
 
+      if (usePreviewIdentity) {
+        await completePreviewSignIn();
+        return;
+      }
+
       if (mode === 'register') {
         const credential = await createUserWithEmailAndPassword(auth, email, password);
-        // Register the user profile on the backend
-        try {
-          await post('/users/profile', {
-            firstName: firstName || 'User',
-            lastName: lastName || '',
-          });
-        } catch {
-          // Non-blocking: profile creation can be retried
-          console.warn('Profile creation deferred');
-        }
+        await saveRegistrationProfile(firstName.trim(), lastName.trim()).catch(() => {
+          // Non-blocking: the profile can be completed from Settings.
+          console.warn('Profile details will be completed from Settings');
+        });
         if (credential.user) {
           navigate(returnTo, { replace: true });
         }
@@ -92,6 +154,10 @@ export function LoginPage() {
         }
       }
     } catch (err: unknown) {
+      if (err instanceof PreviewLoginError) {
+        setError(err.message);
+        return;
+      }
       const mfa = getMfaResolver(err);
       if (mfa) {
         setMfaResolverState(mfa);
@@ -102,36 +168,18 @@ export function LoginPage() {
       const firebaseError = err as { code?: string; message?: string };
       const code = firebaseError.code ?? '';
 
-      // Graceful fallback for local development & QA when domain is not in Firebase authorized list
+      // Local development & QA hosts that are not in Firebase's authorised
+      // domains can still authenticate through the preview identity endpoint
+      // (404 unless the backend's non-production verifier is enabled).
       if (code === 'auth/unauthorized-domain') {
         try {
-          const res = await fetch('/api/auth/preview-login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email,
-              password,
-              name: firstName ? `${firstName} ${lastName}`.trim() : email.split('@')[0],
-            }),
-          });
-          if (res.ok) {
-            const data = await res.json();
-            localStorage.setItem('token', data.token);
-            localStorage.setItem(
-              'ime_dev_user',
-              JSON.stringify({
-                uid: data.uid,
-                email: data.email,
-                displayName: data.displayName,
-                role: data.role,
-                token: data.token,
-              })
-            );
-            window.location.href = returnTo;
+          await completePreviewSignIn();
+          return;
+        } catch (previewErr) {
+          if (previewErr instanceof PreviewLoginError && previewErr.status !== 404) {
+            setError(previewErr.message);
             return;
           }
-        } catch (previewErr) {
-          console.warn('[Auth] preview-login fallback failed:', previewErr);
         }
       }
 
@@ -535,7 +583,11 @@ export function LoginPage() {
                   </div>
 
                   {/* Quick Demo Access (preview & QA builds only — the server
-                      endpoint 404s in production, so never advertise it there) */}
+                      endpoint 404s in production, so never advertise it there).
+                      Each button signs in through the real preview identity
+                      endpoint; a failure is reported, never replaced by a
+                      locally fabricated session. Roles come only from the
+                      server allowlist (PREVIEW_*_EMAILS). */}
                   {!import.meta.env.PROD && (
                   <div className="mt-6 pt-5 border-t border-border">
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted text-center mb-2.5">
@@ -547,44 +599,8 @@ export function LoginPage() {
                         variant="outline"
                         size="sm"
                         className="text-xs"
-                        onClick={async () => {
-                          try {
-                            const res = await fetch('/api/auth/preview-login', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({
-                                email: 'candidate@ime365.com',
-                                password: 'password123',
-                              }),
-                            });
-                            if (res.ok) {
-                              const data = await res.json();
-                              localStorage.setItem('token', data.token);
-                              localStorage.setItem(
-                                'ime_dev_user',
-                                JSON.stringify({
-                                  uid: data.uid,
-                                  email: data.email,
-                                  displayName: data.displayName || data.email?.split('@')[0] || 'Candidate',
-                                  role: data.role || 'CANDIDATE',
-                                  token: data.token,
-                                })
-                              );
-                              window.location.href = returnTo;
-                              return;
-                            }
-                          } catch {
-                            // Fallback
-                          }
-                          const demoUser = {
-                            uid: 'demo-candidate-1',
-                            email: 'candidate@ime365.com',
-                            displayName: 'candidate',
-                            role: 'CANDIDATE',
-                          };
-                          localStorage.setItem('ime_dev_user', JSON.stringify(demoUser));
-                          window.location.href = returnTo;
-                        }}
+                        disabled={loading}
+                        onClick={() => handleDemoAccess('candidate@ime365.com')}
                       >
                         Candidate Demo
                       </Button>
@@ -593,44 +609,8 @@ export function LoginPage() {
                         variant="outline"
                         size="sm"
                         className="text-xs"
-                        onClick={async () => {
-                          try {
-                            const res = await fetch('/api/auth/preview-login', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({
-                                email: 'admin@ime365.com',
-                                password: 'password123',
-                              }),
-                            });
-                            if (res.ok) {
-                              const data = await res.json();
-                              localStorage.setItem('token', data.token);
-                              localStorage.setItem(
-                                'ime_dev_user',
-                                JSON.stringify({
-                                  uid: data.uid,
-                                  email: data.email,
-                                  displayName: data.displayName || data.email?.split('@')[0] || 'Administrator',
-                                  role: data.role || 'ADMIN',
-                                  token: data.token,
-                                })
-                              );
-                              window.location.href = returnTo;
-                              return;
-                            }
-                          } catch {
-                            // Fallback
-                          }
-                          const demoAdmin = {
-                            uid: 'demo-admin-1',
-                            email: 'admin@ime365.com',
-                            displayName: 'admin',
-                            role: 'ADMIN',
-                          };
-                          localStorage.setItem('ime_dev_user', JSON.stringify(demoAdmin));
-                          window.location.href = returnTo;
-                        }}
+                        disabled={loading}
+                        onClick={() => handleDemoAccess('admin@ime365.com')}
                       >
                         Admin Demo
                       </Button>
