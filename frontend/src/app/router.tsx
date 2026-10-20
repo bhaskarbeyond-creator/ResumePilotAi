@@ -212,6 +212,15 @@ export function AppRouter() {
               path="/dashboard/settings/*"
               element={<RequireAuth><CubaAppShell><SettingsPage /></CubaAppShell></RequireAuth>}
             />
+            {/* Legacy aliases & deep links */}
+            <Route path="/dashboard/profile" element={<Navigate to="/dashboard/settings?tab=profile" replace />} />
+            <Route path="/dashboard/security" element={<Navigate to="/dashboard/settings?tab=security" replace />} />
+            <Route path="/dashboard/account" element={<Navigate to="/dashboard/settings" replace />} />
+            <Route path="/dashboard/tickets" element={<Navigate to="/dashboard/support" replace />} />
+            <Route path="/dashboard/help" element={<Navigate to="/dashboard/support" replace />} />
+            <Route path="/dashboard/billing" element={<Navigate to="/dashboard/plans" replace />} />
+            <Route path="/dashboard/my-resumes" element={<Navigate to="/dashboard/resumes" replace />} />
+            <Route path="/dashboard/job-matching" element={<Navigate to="/dashboard/job-tracker" replace />} />
 
             {/* ─── Resume Builder ─── */}
             <Route

@@ -4,9 +4,10 @@
  * Full contract implementation for Surface 2:
  * - Profile: GET /api/users-data/profile, POST /api/users-data/profile with { expectedRevision, profile }
  * - Password: Firebase updatePassword
- * - 2FA MFA: POST /api/users-data/mfa/disable
- * - Danger Zone: GDPR Export (POST /api/account/export), Account Deletion (POST /api/account/delete)
- * - Support Desk: GET /api/support/tickets, POST /api/support/tickets, POST /api/support/tickets/:ticketId/messages
+ * - 2FA MFA: POST /api/users-data/mfa/disable with Radix Dialog confirmation
+ * - Danger Zone: GDPR Export (POST /api/account/export), Account Deletion (POST /api/account/delete) with Radix Dialog
+ * - Notifications: State-persisted preferences
+ * - Support Desk: GET /api/support/tickets, POST /api/support/tickets, POST /api/support/tickets/:ticketId/messages with Radix Dialog
  */
 
 import { useState, useEffect, type FormEvent } from 'react';
@@ -15,12 +16,19 @@ import { useAuth } from '@/providers/auth-provider';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { get, post, normalizeError } from '@/lib/api-client';
-import { auth, signOut } from '@/lib/firebase';
+import { signOut } from '@/lib/firebase';
 import { updatePassword } from 'firebase/auth';
 import {
   User,
-  Mail,
   Lock,
   Shield,
   Bell,
@@ -29,7 +37,6 @@ import {
   CheckCircle2,
   Save,
   Trash2,
-  Globe,
   HelpCircle,
   Send,
   Plus,
@@ -37,6 +44,7 @@ import {
   ShieldAlert,
   KeyRound,
   RefreshCw,
+  AlertCircle,
 } from 'lucide-react';
 import { useTheme } from '@/providers/theme-provider';
 
@@ -51,6 +59,14 @@ interface UserProfile {
 }
 
 type SettingsTab = 'profile' | 'security' | 'notifications' | 'appearance' | 'support';
+
+const DEFAULT_NOTIFICATIONS = {
+  jobMatches: true,
+  applicationUpdates: true,
+  interviewReminders: true,
+  platformUpdates: true,
+  marketingEmails: false,
+};
 
 export function SettingsPage() {
   const { user } = useAuth();
@@ -79,6 +95,7 @@ export function SettingsPage() {
     setMessage(null);
     setSearchParams({ tab: tabId });
   };
+
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [revision, setRevision] = useState<number>(0);
   const [loading, setLoading] = useState(true);
@@ -92,10 +109,26 @@ export function SettingsPage() {
   const [passUpdating, setPassUpdating] = useState(false);
   const [passMessage, setPassMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Danger zone state
+  // Danger zone state & modals
   const [exportingData, setExportingData] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [mfaDisabling, setMfaDisabling] = useState(false);
+  const [showDisableMfaModal, setShowDisableMfaModal] = useState(false);
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [securityActionNotice, setSecurityActionNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Notification preferences
+  const [notificationPrefs, setNotificationPrefs] = useState(() => {
+    try {
+      const saved = localStorage.getItem('ime_notification_preferences');
+      return saved ? (JSON.parse(saved) as typeof DEFAULT_NOTIFICATIONS) : DEFAULT_NOTIFICATIONS;
+    } catch {
+      return DEFAULT_NOTIFICATIONS;
+    }
+  });
+  const [notificationsSaved, setNotificationsSaved] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -155,14 +188,11 @@ export function SettingsPage() {
         remoteRevision?: number;
         remoteProfile?: UserProfile | null;
       };
-      // 409 PROFILE_CONFLICT: another tab/device saved first. Keep the user's
-      // in-form edits (never discard typed answers), adopt the authoritative
-      // revision so the next save is accepted, and say exactly what happened.
-      if (apiErr.status === 409 && details.remoteRevision !== undefined) {
-        setRevision(Number(details.remoteRevision));
+      if (apiErr.code === 'PROFILE_CONFLICT' && details.remoteRevision) {
+        setRevision(details.remoteRevision);
         setMessage({
           type: 'error',
-          text: 'Your Master Profile was changed in another tab or device. Your edits are still in this form — review them and press Save again to apply on top of the latest version.',
+          text: 'Profile conflict: remote changes detected. Your edits were kept; please click Save again to overwrite.',
         });
       } else {
         setMessage({ type: 'error', text: apiErr.message });
@@ -174,25 +204,27 @@ export function SettingsPage() {
 
   const handleUpdatePassword = async (e: FormEvent) => {
     e.preventDefault();
-    if (!newPassword || newPassword.length < 6) {
-      setPassMessage({ type: 'error', text: 'New password must be at least 6 characters.' });
+    setPassMessage(null);
+
+    if (newPassword.length < 8) {
+      setPassMessage({ type: 'error', text: 'Password must be at least 8 characters long.' });
       return;
     }
     if (newPassword !== confirmPassword) {
-      setPassMessage({ type: 'error', text: 'Passwords do not match.' });
+      setPassMessage({ type: 'error', text: 'New passwords do not match.' });
       return;
     }
+
     setPassUpdating(true);
-    setPassMessage(null);
     try {
-      if (auth.currentUser) {
-        await updatePassword(auth.currentUser, newPassword);
-        setPassMessage({ type: 'success', text: 'Password successfully updated.' });
+      if (user) {
+        await updatePassword(user as any, newPassword);
+        setPassMessage({ type: 'success', text: 'Password updated successfully.' });
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
       } else {
-        throw new Error('No active authenticated session.');
+        setPassMessage({ type: 'error', text: 'You must be signed in to change your password.' });
       }
     } catch (err) {
       setPassMessage({ type: 'error', text: normalizeError(err).message });
@@ -203,6 +235,7 @@ export function SettingsPage() {
 
   const handleExportData = async () => {
     setExportingData(true);
+    setSecurityActionNotice(null);
     try {
       const data = await post<{ success: boolean; export?: unknown }>('/account/export', {});
       const blob = new Blob([JSON.stringify(data.export || data, null, 2)], {
@@ -214,41 +247,55 @@ export function SettingsPage() {
       a.download = `personal-data-export-${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       URL.revokeObjectURL(url);
+      setSecurityActionNotice({ type: 'success', text: 'Personal data archive exported successfully.' });
     } catch (err) {
-      alert(`Export failed: ${normalizeError(err).message}`);
+      setSecurityActionNotice({ type: 'error', text: `Export failed: ${normalizeError(err).message}` });
     } finally {
       setExportingData(false);
     }
   };
 
-  const handleDisableMfa = async () => {
-    if (!confirm('Disable multi-factor authentication for this account?')) return;
+  const confirmDisableMfa = async () => {
     setMfaDisabling(true);
+    setSecurityActionNotice(null);
     try {
       await post('/users-data/mfa/disable', {});
-      alert('2FA MFA has been successfully unenrolled.');
+      setShowDisableMfaModal(false);
+      setSecurityActionNotice({ type: 'success', text: '2FA MFA has been successfully unenrolled.' });
     } catch (err) {
-      alert(`Failed to disable 2FA: ${normalizeError(err).message}`);
+      setSecurityActionNotice({ type: 'error', text: `Failed to disable 2FA: ${normalizeError(err).message}` });
     } finally {
       setMfaDisabling(false);
     }
   };
 
-  const handleDeleteAccount = async () => {
-    const confirmation = prompt(
-      'Are you ABSOLUTELY sure? This will permanently delete your identity, resumes, cover letters, and all personal data.\n\nType DELETE to confirm:'
-    );
-    if (confirmation !== 'DELETE') return;
+  const confirmDeleteAccount = async () => {
+    if (deleteConfirmInput.trim().toUpperCase() !== 'DELETE') {
+      setDeleteError('Please type DELETE to confirm account deletion.');
+      return;
+    }
 
     setDeletingAccount(true);
+    setDeleteError(null);
     try {
       await post('/account/delete', {});
       await signOut();
       window.location.href = '/';
     } catch (err) {
-      alert(`Account deletion failed: ${normalizeError(err).message}`);
+      setDeleteError(`Account deletion failed: ${normalizeError(err).message}`);
       setDeletingAccount(false);
     }
+  };
+
+  const handleSaveNotificationPreferences = (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      localStorage.setItem('ime_notification_preferences', JSON.stringify(notificationPrefs));
+    } catch {
+      // Ignore
+    }
+    setNotificationsSaved(true);
+    setTimeout(() => setNotificationsSaved(false), 4000);
   };
 
   const tabs: { id: SettingsTab; label: string; icon: typeof User }[] = [
@@ -282,6 +329,7 @@ export function SettingsPage() {
                     : 'text-ink-secondary hover:bg-neutral-100 hover:text-ink'
                 }`}
                 aria-current={active ? 'page' : undefined}
+                data-testid={`settings-tab-${tab.id}`}
               >
                 <Icon className={`size-4 ${active ? 'text-brand-600' : 'text-ink-muted'}`} />
                 {tab.label}
@@ -324,77 +372,80 @@ export function SettingsPage() {
                     <>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label htmlFor="settings-firstName" className="mb-1.5 block text-sm font-medium text-ink">
+                          <label htmlFor="settings-first-name" className="mb-1.5 block text-sm font-medium text-ink">
                             First name
                           </label>
                           <Input
-                            id="settings-firstName"
+                            id="settings-first-name"
                             value={profile.firstName}
                             onChange={(e) => setProfile({ ...profile, firstName: e.target.value })}
                             placeholder="John"
+                            required
                           />
                         </div>
                         <div>
-                          <label htmlFor="settings-lastName" className="mb-1.5 block text-sm font-medium text-ink">
+                          <label htmlFor="settings-last-name" className="mb-1.5 block text-sm font-medium text-ink">
                             Last name
                           </label>
                           <Input
-                            id="settings-lastName"
+                            id="settings-last-name"
                             value={profile.lastName}
                             onChange={(e) => setProfile({ ...profile, lastName: e.target.value })}
                             placeholder="Doe"
+                            required
                           />
                         </div>
                       </div>
-
                       <div>
                         <label htmlFor="settings-email" className="mb-1.5 block text-sm font-medium text-ink">
-                          <span className="flex items-center gap-1.5">
-                            <Mail className="size-3.5 text-ink-muted" /> Email
-                          </span>
+                          Email address
                         </label>
                         <Input
                           id="settings-email"
                           type="email"
                           value={profile.email}
-                          disabled
-                          className="bg-neutral-50"
+                          onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                          placeholder="you@example.com"
+                          required
                         />
-                        <p className="mt-1 text-xs text-ink-muted">
-                          Email is managed through your authentication provider.
-                        </p>
                       </div>
-
                       <div>
                         <label htmlFor="settings-phone" className="mb-1.5 block text-sm font-medium text-ink">
-                          Phone
+                          Phone number
                         </label>
                         <Input
                           id="settings-phone"
-                          type="tel"
                           value={profile.phone}
                           onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
                           placeholder="+1 (555) 000-0000"
                         />
                       </div>
-
                       <div>
                         <label htmlFor="settings-location" className="mb-1.5 block text-sm font-medium text-ink">
-                          <span className="flex items-center gap-1.5">
-                            <Globe className="size-3.5 text-ink-muted" /> Location
-                          </span>
+                          Location
                         </label>
                         <Input
                           id="settings-location"
                           value={profile.location}
                           onChange={(e) => setProfile({ ...profile, location: e.target.value })}
-                          placeholder="New York, NY"
+                          placeholder="San Francisco, CA"
                         />
                       </div>
-
+                      <div>
+                        <label htmlFor="settings-website" className="mb-1.5 block text-sm font-medium text-ink">
+                          Website / Portfolio
+                        </label>
+                        <Input
+                          id="settings-website"
+                          type="url"
+                          value={profile.website}
+                          onChange={(e) => setProfile({ ...profile, website: e.target.value })}
+                          placeholder="https://yourportfolio.com"
+                        />
+                      </div>
                       <div>
                         <label htmlFor="settings-bio" className="mb-1.5 block text-sm font-medium text-ink">
-                          Bio
+                          Professional summary / Bio
                         </label>
                         <textarea
                           id="settings-bio"
@@ -409,7 +460,7 @@ export function SettingsPage() {
                   ) : null}
                 </CardContent>
                 <CardFooter>
-                  <Button type="submit" loading={saving} disabled={loading}>
+                  <Button type="submit" loading={saving} disabled={loading} data-testid="save-profile-button">
                     <Save className="size-4" />
                     Save Changes
                   </Button>
@@ -421,6 +472,25 @@ export function SettingsPage() {
           {/* Security tab */}
           {activeTab === 'security' && (
             <div className="space-y-6">
+              {securityActionNotice && (
+                <div
+                  role="status"
+                  aria-live="polite"
+                  className={`flex items-center gap-2 rounded-lg border p-3.5 text-sm ${
+                    securityActionNotice.type === 'success'
+                      ? 'border-success-200 bg-success-50 text-success-800'
+                      : 'border-error-200 bg-error-50 text-error-800'
+                  }`}
+                >
+                  {securityActionNotice.type === 'success' ? (
+                    <CheckCircle2 className="size-4 shrink-0 text-success-600" />
+                  ) : (
+                    <AlertCircle className="size-4 shrink-0 text-error-600" />
+                  )}
+                  <span>{securityActionNotice.text}</span>
+                </div>
+              )}
+
               {/* Password update */}
               <Card>
                 <CardHeader>
@@ -514,8 +584,9 @@ export function SettingsPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={handleDisableMfa}
+                      onClick={() => setShowDisableMfaModal(true)}
                       loading={mfaDisabling}
+                      data-testid="disable-mfa-trigger-button"
                     >
                       <ShieldAlert className="size-3.5 text-warning-600 mr-1" />
                       Disable 2FA
@@ -548,6 +619,7 @@ export function SettingsPage() {
                       size="sm"
                       onClick={handleExportData}
                       loading={exportingData}
+                      data-testid="export-data-button"
                     >
                       <Download className="size-3.5 mr-1" />
                       Export Data
@@ -564,8 +636,13 @@ export function SettingsPage() {
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={handleDeleteAccount}
+                      onClick={() => {
+                        setDeleteConfirmInput('');
+                        setDeleteError(null);
+                        setShowDeleteAccountModal(true);
+                      }}
                       loading={deletingAccount}
+                      data-testid="delete-account-trigger-button"
                     >
                       <Trash2 className="size-3.5" />
                       Delete Account
@@ -581,40 +658,59 @@ export function SettingsPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Notification Preferences</CardTitle>
-                <CardDescription>Choose how and when you want to be notified.</CardDescription>
+                <CardDescription>Choose how and when you want to receive platform updates and job alerts.</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {[
-                    { label: 'Job match alerts', description: 'Get notified when jobs matching your profile are posted' },
-                    { label: 'Application updates', description: 'Status changes on your job applications' },
-                    { label: 'Interview reminders', description: 'Reminders before scheduled practice sessions' },
-                    { label: 'Platform updates', description: 'New features and product announcements' },
-                    { label: 'Marketing emails', description: 'Tips, career advice, and promotional content' },
-                  ].map((item) => (
-                    <label
-                      key={item.label}
-                      className="flex items-center justify-between rounded-lg border border-border p-4 cursor-pointer hover:bg-neutral-50 transition-colors"
+              <form onSubmit={handleSaveNotificationPreferences}>
+                <CardContent>
+                  {notificationsSaved && (
+                    <div
+                      role="status"
+                      aria-live="polite"
+                      className="mb-4 flex items-center gap-2 rounded-lg border border-success-200 bg-success-50 p-3 text-sm text-success-800"
                     >
-                      <div>
-                        <p className="text-sm font-medium text-ink">{item.label}</p>
-                        <p className="text-xs text-ink-muted">{item.description}</p>
-                      </div>
-                      <input
-                        type="checkbox"
-                        defaultChecked
-                        className="size-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-500"
-                      />
-                    </label>
-                  ))}
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button>
-                  <Save className="size-4" />
-                  Save Preferences
-                </Button>
-              </CardFooter>
+                      <CheckCircle2 className="size-4 shrink-0 text-success-600" />
+                      <span>Notification preferences saved successfully.</span>
+                    </div>
+                  )}
+
+                  <div className="space-y-4">
+                    {[
+                      { key: 'jobMatches', label: 'Job match alerts', description: 'Get notified when jobs matching your profile are posted' },
+                      { key: 'applicationUpdates', label: 'Application updates', description: 'Status changes on your job applications' },
+                      { key: 'interviewReminders', label: 'Interview reminders', description: 'Reminders before scheduled practice sessions' },
+                      { key: 'platformUpdates', label: 'Platform updates', description: 'New features and product announcements' },
+                      { key: 'marketingEmails', label: 'Marketing emails', description: 'Tips, career advice, and promotional content' },
+                    ].map((item) => (
+                      <label
+                        key={item.key}
+                        className="flex items-center justify-between rounded-lg border border-border p-4 cursor-pointer hover:bg-neutral-50 transition-colors"
+                      >
+                        <div>
+                          <p className="text-sm font-medium text-ink">{item.label}</p>
+                          <p className="text-xs text-ink-muted">{item.description}</p>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={Boolean((notificationPrefs as any)[item.key])}
+                          onChange={(e) =>
+                            setNotificationPrefs((prev) => ({
+                              ...prev,
+                              [item.key]: e.target.checked,
+                            }))
+                          }
+                          className="size-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-500"
+                        />
+                      </label>
+                    ))}
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button type="submit" data-testid="save-notifications-button">
+                    <Save className="size-4" />
+                    Save Preferences
+                  </Button>
+                </CardFooter>
+              </form>
             </Card>
           )}
 
@@ -664,6 +760,96 @@ export function SettingsPage() {
           {activeTab === 'support' && <CandidateSupportTab />}
         </div>
       </div>
+
+      {/* Disable 2FA Radix Dialog */}
+      <Dialog open={showDisableMfaModal} onOpenChange={setShowDisableMfaModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldAlert className="size-5 text-warning-600" />
+              Disable Two-Factor Authentication
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to disable multi-factor authentication? Your account will only be protected by your password.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowDisableMfaModal(false)}
+              disabled={mfaDisabling}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={confirmDisableMfa}
+              loading={mfaDisabling}
+              data-testid="confirm-disable-mfa-button"
+            >
+              Disable 2FA
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Account Radix Dialog */}
+      <Dialog open={showDeleteAccountModal} onOpenChange={setShowDeleteAccountModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-error-600">
+              <Trash2 className="size-5" />
+              Delete Account & All Data
+            </DialogTitle>
+            <DialogDescription>
+              This is permanent and cannot be undone. All your resumes, cover letters, applications, and settings will be permanently erased.
+            </DialogDescription>
+          </DialogHeader>
+
+          {deleteError && (
+            <div className="flex items-center gap-2 rounded-lg border border-error-200 bg-error-50 p-3 text-xs text-error-700">
+              <AlertCircle className="size-4 shrink-0" />
+              <span>{deleteError}</span>
+            </div>
+          )}
+
+          <div className="space-y-2 py-1">
+            <label htmlFor="confirm-delete-input" className="text-xs font-semibold text-ink">
+              Type <span className="font-mono text-error-600">DELETE</span> to confirm:
+            </label>
+            <Input
+              id="confirm-delete-input"
+              value={deleteConfirmInput}
+              onChange={(e) => setDeleteConfirmInput(e.target.value)}
+              placeholder="DELETE"
+              data-testid="confirm-delete-input"
+            />
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowDeleteAccountModal(false)}
+              disabled={deletingAccount}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={confirmDeleteAccount}
+              loading={deletingAccount}
+              disabled={deleteConfirmInput.trim().toUpperCase() !== 'DELETE'}
+              data-testid="confirm-delete-account-button"
+            >
+              Permanently Delete Account
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -687,6 +873,7 @@ function CandidateSupportTab() {
   const [newMessage, setNewMessage] = useState('');
   const [replyText, setReplyText] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [supportMessage, setSupportMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const fetchTickets = async () => {
     setLoading(true);
@@ -715,6 +902,7 @@ function CandidateSupportTab() {
     if (!newSubject.trim() || !newMessage.trim()) return;
 
     setSubmitting(true);
+    setSupportMessage(null);
     try {
       const res = await post<{ ticket: UserTicket }>('/support/tickets', {
         subject: newSubject,
@@ -728,8 +916,9 @@ function CandidateSupportTab() {
       setShowNewModal(false);
       setNewSubject('');
       setNewMessage('');
+      setSupportMessage({ type: 'success', text: 'Support ticket submitted successfully.' });
     } catch (err) {
-      alert(`Failed to create ticket: ${normalizeError(err).message}`);
+      setSupportMessage({ type: 'error', text: `Failed to create ticket: ${normalizeError(err).message}` });
     } finally {
       setSubmitting(false);
     }
@@ -740,6 +929,7 @@ function CandidateSupportTab() {
     if (!replyText.trim() || !selectedTicket) return;
 
     setSubmitting(true);
+    setSupportMessage(null);
     try {
       const res = await post<{ ticket: UserTicket }>(`/support/tickets/${selectedTicket.id}/messages`, {
         body: replyText,
@@ -748,8 +938,9 @@ function CandidateSupportTab() {
         setTickets((prev) => prev.map((t) => (t.id === selectedTicket.id ? res.ticket : t)));
       }
       setReplyText('');
+      setSupportMessage({ type: 'success', text: 'Reply sent.' });
     } catch (err) {
-      alert(`Failed to send reply: ${normalizeError(err).message}`);
+      setSupportMessage({ type: 'error', text: `Failed to send reply: ${normalizeError(err).message}` });
     } finally {
       setSubmitting(false);
     }
@@ -757,6 +948,25 @@ function CandidateSupportTab() {
 
   return (
     <div className="space-y-6">
+      {supportMessage && (
+        <div
+          role="status"
+          aria-live="polite"
+          className={`flex items-center gap-2 rounded-lg border p-3 text-xs ${
+            supportMessage.type === 'success'
+              ? 'border-success-200 bg-success-50 text-success-800'
+              : 'border-error-200 bg-error-50 text-error-800'
+          }`}
+        >
+          {supportMessage.type === 'success' ? (
+            <CheckCircle2 className="size-4 shrink-0 text-success-600" />
+          ) : (
+            <AlertCircle className="size-4 shrink-0 text-error-600" />
+          )}
+          <span>{supportMessage.text}</span>
+        </div>
+      )}
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-3">
           <div>
@@ -769,7 +979,7 @@ function CandidateSupportTab() {
             <Button variant="outline" size="sm" onClick={fetchTickets}>
               <RefreshCw className="size-3.5" />
             </Button>
-            <Button size="sm" onClick={() => setShowNewModal(true)}>
+            <Button size="sm" onClick={() => setShowNewModal(true)} data-testid="new-ticket-button">
               <Plus className="size-4 mr-1.5" />
               New Ticket
             </Button>
@@ -870,56 +1080,69 @@ function CandidateSupportTab() {
         </CardContent>
       </Card>
 
-      {/* New ticket modal */}
-      {showNewModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-          <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl border border-border">
-            <h3 className="text-base font-bold text-ink mb-4">Create Support Ticket</h3>
-            <form onSubmit={handleCreateTicket} className="space-y-3">
-              <div>
-                <label className="text-xs font-medium text-ink block mb-1">Subject</label>
-                <Input
-                  value={newSubject}
-                  onChange={(e) => setNewSubject(e.target.value)}
-                  placeholder="Summary of your issue..."
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-ink block mb-1">Priority</label>
-                <select
-                  value={newPriority}
-                  onChange={(e) => setNewPriority(e.target.value)}
-                  className="w-full text-xs rounded-lg border border-border p-2 bg-surface"
-                >
-                  <option value="low">Low</option>
-                  <option value="normal">Normal</option>
-                  <option value="urgent">Urgent</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-ink block mb-1">Message</label>
-                <textarea
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  rows={4}
-                  required
-                  placeholder="Detailed description of your question or issue..."
-                  className="w-full text-xs rounded-lg border border-border p-2 bg-surface"
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button type="button" variant="outline" onClick={() => setShowNewModal(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" loading={submitting}>
-                  Submit Ticket
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* New ticket Radix Dialog */}
+      <Dialog open={showNewModal} onOpenChange={setShowNewModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create Support Ticket</DialogTitle>
+            <DialogDescription>
+              Submit an inquiry to our support and engineering team. We will respond via this ticket thread.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleCreateTicket} className="space-y-3 pt-1">
+            <div>
+              <label htmlFor="ticket-subject" className="text-xs font-semibold text-ink block mb-1">
+                Subject *
+              </label>
+              <Input
+                id="ticket-subject"
+                value={newSubject}
+                onChange={(e) => setNewSubject(e.target.value)}
+                placeholder="Summary of your issue..."
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="ticket-priority" className="text-xs font-semibold text-ink block mb-1">
+                Priority
+              </label>
+              <select
+                id="ticket-priority"
+                value={newPriority}
+                onChange={(e) => setNewPriority(e.target.value)}
+                className="w-full text-xs rounded-lg border border-border p-2 bg-surface"
+              >
+                <option value="low">Low</option>
+                <option value="normal">Normal</option>
+                <option value="urgent">Urgent</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="ticket-message" className="text-xs font-semibold text-ink block mb-1">
+                Message *
+              </label>
+              <textarea
+                id="ticket-message"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                rows={4}
+                required
+                placeholder="Detailed description of your question or issue..."
+                className="w-full text-xs rounded-lg border border-border p-2 bg-surface focus-visible:outline-2 focus-visible:outline-brand-500"
+              />
+            </div>
+            <DialogFooter className="gap-2 sm:gap-0 pt-2">
+              <Button type="button" variant="outline" onClick={() => setShowNewModal(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" loading={submitting}>
+                Submit Ticket
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

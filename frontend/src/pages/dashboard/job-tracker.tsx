@@ -4,13 +4,23 @@
  * Contract: /api/jobs-data/tracker
  * Track job applications through stages: Wishlist → Applied → Interview → Offer → Rejected.
  * Kanban-style board with list/board toggle, optimistic concurrency locking with expectedRevision.
+ * Enhanced with Radix UI accessible modal dialogs, real Cover Letter linkage, and zero native alerts.
  */
 
 import { useState, useEffect, useCallback, type FormEvent } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Link } from 'react-router-dom';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PageSpinner } from '@/components/ui/loading';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { get, post, patch, del, normalizeError } from '@/lib/api-client';
 import {
   Plus,
@@ -23,7 +33,6 @@ import {
   Search,
   LayoutGrid,
   List,
-  X,
   CheckCircle2,
   Clock,
   XCircle,
@@ -31,7 +40,7 @@ import {
   AlertCircle,
   RefreshCw,
   Bookmark,
-  ArrowRight,
+  FileText,
 } from 'lucide-react';
 
 export interface TrackedJob {
@@ -71,7 +80,17 @@ export function JobTrackerPage() {
   const [view, setView] = useState<'board' | 'list'>('board');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<TrackedJob | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [actionMenuId, setActionMenuId] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const showToast = useCallback((type: 'success' | 'error', text: string) => {
+    setToastMessage({ type, text });
+    setTimeout(() => {
+      setToastMessage((cur) => (cur?.text === text ? null : cur));
+    }, 4500);
+  }, []);
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
@@ -90,14 +109,19 @@ export function JobTrackerPage() {
     fetchJobs();
   }, [fetchJobs]);
 
-  const handleDelete = async (id: string, revision?: number) => {
-    if (!confirm('Delete this tracked job?')) return;
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      const expectedRevision = revision && revision > 0 ? revision : 1;
-      await del(`/jobs-data/tracker/${id}`, { expectedRevision });
-      setJobs((prev) => prev.filter((j) => j.id !== id));
+      const expectedRevision = deleteTarget.revision && deleteTarget.revision > 0 ? deleteTarget.revision : 1;
+      await del(`/jobs-data/tracker/${deleteTarget.id}`, { expectedRevision });
+      setJobs((prev) => prev.filter((j) => j.id !== deleteTarget.id));
+      showToast('success', `Removed tracked job for ${deleteTarget.company}.`);
+      setDeleteTarget(null);
     } catch (err) {
-      alert(normalizeError(err).message);
+      showToast('error', normalizeError(err).message);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -118,8 +142,9 @@ export function JobTrackerPage() {
         );
       }
       setActionMenuId(null);
+      showToast('success', `Moved ${job.company} to ${statusConfig[nextStatus].label}.`);
     } catch (err) {
-      alert(normalizeError(err).message);
+      showToast('error', normalizeError(err).message);
     }
   };
 
@@ -138,6 +163,35 @@ export function JobTrackerPage() {
 
   return (
     <div className="p-4 lg:p-6 xl:p-8">
+      {/* Toast Notification Banner */}
+      {toastMessage && (
+        <div
+          role="status"
+          aria-live="polite"
+          className={`mb-4 flex items-center justify-between rounded-xl border p-3.5 text-sm shadow-sm transition-all animate-in fade-in-50 ${
+            toastMessage.type === 'success'
+              ? 'border-success-200 bg-success-50 text-success-800'
+              : 'border-error-200 bg-error-50 text-error-800'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {toastMessage.type === 'success' ? (
+              <CheckCircle2 className="size-4 shrink-0 text-success-600" />
+            ) : (
+              <AlertCircle className="size-4 shrink-0 text-error-600" />
+            )}
+            <span>{toastMessage.text}</span>
+          </div>
+          <button
+            onClick={() => setToastMessage(null)}
+            className="text-xs font-semibold opacity-70 hover:opacity-100"
+            aria-label="Dismiss message"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -167,7 +221,7 @@ export function JobTrackerPage() {
               <List className="size-4" />
             </button>
           </div>
-          <Button onClick={() => setShowAddForm(true)}>
+          <Button onClick={() => setShowAddForm(true)} data-testid="track-job-button">
             <Plus className="size-4" />
             Track Job
           </Button>
@@ -182,6 +236,7 @@ export function JobTrackerPage() {
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search by company, position, or location…"
           className="pl-9"
+          aria-label="Search tracked jobs"
         />
       </div>
 
@@ -240,7 +295,7 @@ export function JobTrackerPage() {
                     <JobCard
                       key={job.id}
                       job={job}
-                      onDelete={() => handleDelete(job.id, job.revision)}
+                      onDelete={() => setDeleteTarget(job)}
                       onMoveStatus={(next) => handleMoveStatus(job, next)}
                       actionMenuId={actionMenuId}
                       setActionMenuId={setActionMenuId}
@@ -264,6 +319,7 @@ export function JobTrackerPage() {
           {filteredJobs.map((job) => (
             <div
               key={job.id}
+              data-testid="job-list-row"
               className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4 transition-colors hover:bg-neutral-25"
             >
               <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-neutral-100 font-bold text-neutral-500 text-sm">
@@ -271,7 +327,7 @@ export function JobTrackerPage() {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-semibold text-ink">{job.title || job.position || 'Position'}</div>
-                <div className="flex items-center gap-3 text-xs text-ink-muted">
+                <div className="flex flex-wrap items-center gap-3 text-xs text-ink-muted">
                   <span className="flex items-center gap-1">
                     <Building2 className="size-3" />
                     {job.company}
@@ -282,8 +338,22 @@ export function JobTrackerPage() {
                       {job.location}
                     </span>
                   )}
+                  {job.salary && (
+                    <span className="font-medium text-success-700">{job.salary}</span>
+                  )}
                 </div>
               </div>
+
+              {/* Cover Letter Shortcut */}
+              <Link
+                to={`/dashboard/cover-letters?role=${encodeURIComponent(job.title || job.position || '')}&company=${encodeURIComponent(job.company || '')}`}
+                className="inline-flex items-center gap-1 rounded-md border border-border bg-surface px-2.5 py-1 text-xs font-medium text-ink-muted hover:text-ink hover:bg-neutral-50"
+                title="Create or view linked cover letter"
+              >
+                <FileText className="size-3 text-brand-600" />
+                Cover Letter
+              </Link>
+
               <span
                 className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
                   statusConfig[job.status]?.color || 'bg-neutral-100 text-neutral-700'
@@ -295,9 +365,9 @@ export function JobTrackerPage() {
                 {formatDateShort(job.appliedDate || job.dateApplied || '')}
               </span>
               <button
-                className="rounded-md p-1 text-ink-muted hover:bg-neutral-100"
-                onClick={() => handleDelete(job.id, job.revision)}
-                aria-label="Delete"
+                className="rounded-md p-1.5 text-ink-muted hover:bg-error-50 hover:text-error-600 transition-colors"
+                onClick={() => setDeleteTarget(job)}
+                aria-label={`Delete ${job.company} application`}
               >
                 <Trash2 className="size-4" />
               </button>
@@ -306,8 +376,46 @@ export function JobTrackerPage() {
         </div>
       )}
 
-      {/* Add Job Modal */}
-      {showAddForm && <AddJobModal onClose={() => setShowAddForm(false)} onAdded={fetchJobs} />}
+      {/* Add Job Radix Dialog */}
+      <AddJobDialog
+        open={showAddForm}
+        onOpenChange={setShowAddForm}
+        onAdded={() => {
+          fetchJobs();
+          showToast('success', 'Job application added to your tracker.');
+        }}
+      />
+
+      {/* Delete Confirmation Radix Dialog */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Tracked Job</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove <strong className="text-ink">{deleteTarget?.title || 'this job'}</strong> at <strong className="text-ink">{deleteTarget?.company}</strong> from your tracker? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteTarget(null)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={confirmDelete}
+              loading={deleting}
+              data-testid="confirm-delete-job-button"
+            >
+              Delete Job
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -327,8 +435,10 @@ function JobCard({
   actionMenuId: string | null;
   setActionMenuId: (id: string | null) => void;
 }) {
+  const isMenuOpen = actionMenuId === job.id;
+
   return (
-    <Card className="transition-all hover:shadow-md">
+    <Card data-testid="job-card" className="transition-all hover:shadow-md">
       <CardContent className="p-3">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
@@ -349,14 +459,16 @@ function JobCard({
           <div className="relative">
             <button
               className="rounded-md p-1 text-ink-muted hover:bg-neutral-100"
-              onClick={() => setActionMenuId(actionMenuId === job.id ? null : job.id)}
+              onClick={() => setActionMenuId(isMenuOpen ? null : job.id)}
+              aria-label={`Options for ${job.company}`}
+              aria-expanded={isMenuOpen}
             >
               <MoreVertical className="size-3.5" />
             </button>
-            {actionMenuId === job.id && (
+            {isMenuOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setActionMenuId(null)} />
-                <div className="absolute right-0 top-7 z-20 w-44 rounded-lg border border-border bg-surface py-1 shadow-lg">
+                <div className="absolute right-0 top-7 z-20 w-48 rounded-lg border border-border bg-surface py-1 shadow-lg">
                   <div className="px-3 py-1 text-[11px] font-semibold text-ink-muted uppercase tracking-wider">
                     Move Stage
                   </div>
@@ -372,12 +484,21 @@ function JobCard({
                     </button>
                   ))}
                   <div className="my-1 border-t border-border" />
+                  <Link
+                    to={`/dashboard/cover-letters?role=${encodeURIComponent(job.title || job.position || '')}&company=${encodeURIComponent(job.company || '')}`}
+                    className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-ink hover:bg-neutral-50 no-underline"
+                    onClick={() => setActionMenuId(null)}
+                  >
+                    <FileText className="size-3.5 text-brand-600" />
+                    Tailor Cover Letter
+                  </Link>
                   {job.url && (
                     <a
                       href={job.url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-ink hover:bg-neutral-50 no-underline"
+                      onClick={() => setActionMenuId(null)}
                     >
                       <ExternalLink className="size-3.5" />
                       View Posting
@@ -385,7 +506,10 @@ function JobCard({
                   )}
                   <button
                     className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-error-600 hover:bg-error-50"
-                    onClick={onDelete}
+                    onClick={() => {
+                      setActionMenuId(null);
+                      onDelete();
+                    }}
                   >
                     <Trash2 className="size-3.5" />
                     Delete
@@ -395,19 +519,28 @@ function JobCard({
             )}
           </div>
         </div>
-        <div className="mt-2 flex items-center justify-between">
-          <span className="text-xs text-ink-muted">
+        <div className="mt-2.5 flex items-center justify-between border-t border-border/50 pt-2 text-xs">
+          <span className="text-ink-muted">
             {formatDateShort(job.appliedDate || job.dateApplied || '')}
           </span>
-          {job.salary && <span className="text-xs font-medium text-success-600">{job.salary}</span>}
+          {job.salary && <span className="font-medium text-success-600">{job.salary}</span>}
         </div>
       </CardContent>
     </Card>
   );
 }
 
-function AddJobModal({ onClose, onAdded }: { onClose: () => void; onAdded: () => void }) {
+function AddJobDialog({
+  open,
+  onOpenChange,
+  onAdded,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onAdded: () => void;
+}) {
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     company: '',
     title: '',
@@ -421,32 +554,48 @@ function AddJobModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =>
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSaving(true);
+    setError(null);
     try {
       await post('/jobs-data/tracker', formData);
       onAdded();
-      onClose();
+      onOpenChange(false);
+      setFormData({
+        company: '',
+        title: '',
+        location: '',
+        url: '',
+        status: 'applied',
+        notes: '',
+        salary: '',
+      });
     } catch (err) {
-      alert(normalizeError(err).message);
+      setError(normalizeError(err).message);
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-neutral-950/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-lg rounded-2xl border border-border bg-surface p-6 shadow-dialog animate-[scale-in_200ms_ease-out]">
-        <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-ink">Track a Job Application</h2>
-          <button onClick={onClose} className="rounded-md p-1 text-ink-muted hover:bg-neutral-100">
-            <X className="size-5" />
-          </button>
-        </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Track a Job Application</DialogTitle>
+          <DialogDescription>
+            Record application stages, salary expectations, notes, and links in your private career tracker.
+          </DialogDescription>
+        </DialogHeader>
+
+        {error && (
+          <div className="flex items-center gap-2 rounded-lg border border-error-200 bg-error-50 p-3 text-xs text-error-700">
+            <AlertCircle className="size-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label htmlFor="job-company" className="mb-1.5 block text-sm font-medium text-ink">
+              <label htmlFor="job-company" className="mb-1.5 block text-xs font-semibold text-ink">
                 Company *
               </label>
               <Input
@@ -455,10 +604,11 @@ function AddJobModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =>
                 onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                 required
                 placeholder="Acme Inc."
+                data-testid="input-job-company"
               />
             </div>
             <div>
-              <label htmlFor="job-title" className="mb-1.5 block text-sm font-medium text-ink">
+              <label htmlFor="job-title" className="mb-1.5 block text-xs font-semibold text-ink">
                 Position / Title *
               </label>
               <Input
@@ -467,12 +617,31 @@ function AddJobModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =>
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 required
                 placeholder="Software Engineer"
+                data-testid="input-job-title"
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label htmlFor="job-location" className="mb-1.5 block text-sm font-medium text-ink">
+              <label htmlFor="job-status" className="mb-1.5 block text-xs font-semibold text-ink">
+                Initial Stage
+              </label>
+              <select
+                id="job-status"
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value as TrackedJob['status'] })}
+                className="w-full h-9 rounded-lg border border-border bg-surface px-2.5 text-xs text-ink focus-visible:outline-2 focus-visible:outline-brand-500"
+              >
+                <option value="wishlist">Wishlist</option>
+                <option value="applied">Applied</option>
+                <option value="interview">Interview</option>
+                <option value="offer">Offer</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="job-location" className="mb-1.5 block text-xs font-semibold text-ink">
                 Location
               </label>
               <Input
@@ -483,19 +652,20 @@ function AddJobModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =>
               />
             </div>
             <div>
-              <label htmlFor="job-salary" className="mb-1.5 block text-sm font-medium text-ink">
-                Salary Range
+              <label htmlFor="job-salary" className="mb-1.5 block text-xs font-semibold text-ink">
+                Salary
               </label>
               <Input
                 id="job-salary"
                 value={formData.salary}
                 onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
-                placeholder="$80K - $120K"
+                placeholder="$90k - $120k"
               />
             </div>
           </div>
+
           <div>
-            <label htmlFor="job-url" className="mb-1.5 block text-sm font-medium text-ink">
+            <label htmlFor="job-url" className="mb-1.5 block text-xs font-semibold text-ink">
               Job URL
             </label>
             <Input
@@ -506,40 +676,41 @@ function AddJobModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =>
               placeholder="https://..."
             />
           </div>
+
           <div>
-            <label htmlFor="job-notes" className="mb-1.5 block text-sm font-medium text-ink">
+            <label htmlFor="job-notes" className="mb-1.5 block text-xs font-semibold text-ink">
               Notes
             </label>
             <textarea
               id="job-notes"
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              rows={2}
-              className="flex w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus-visible:outline-2 focus-visible:outline-brand-500 hover:border-neutral-400"
-              placeholder="Any notes about this application…"
+              rows={3}
+              className="flex w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs text-ink placeholder:text-ink-muted focus-visible:outline-2 focus-visible:outline-brand-500 hover:border-neutral-400"
+              placeholder="Key requirements, recruiter contacts, or referral notes…"
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-2">
-            <Button type="button" variant="outline" onClick={onClose}>
+          <DialogFooter className="gap-2 sm:gap-0 pt-2">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
               Cancel
             </Button>
-            <Button type="submit" loading={saving}>
+            <Button type="submit" loading={saving} data-testid="submit-track-job-button">
               <Plus className="size-4" />
               Track Application
             </Button>
-          </div>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 function formatDateShort(dateString: string): string {
   try {
-    if (!dateString) return '';
+    if (!dateString) return 'Recently';
     return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   } catch {
-    return '';
+    return 'Recently';
   }
 }
