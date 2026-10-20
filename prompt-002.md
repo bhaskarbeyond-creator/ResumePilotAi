@@ -135,6 +135,12 @@ Adhere strictly to the established IME365 architecture:
 * **Authentication Architecture:** Firebase Admin SDK (`firebase-admin`) with Bearer token validation (`Authorization: Bearer <token>`). Invariant: Never confuse Firebase `auth_time` (original login) with `iat` (token refresh).
 * **Reverse Proxy:** Apache / PHP reverse proxy (`api/index.php`) forwarding `/api/*` to `http://127.0.0.1:8080/api`.
 
+### 🚨 Strict Anti-Copy-Paste Guard: Enhance the New Frontend Only
+- **Zero Legacy Copy-Pasting:** You are strictly forbidden from copy-pasting old `.jsx`, `.scss`, or legacy component files from `src/` into `frontend/`.
+- **Legacy `src/` is a Read-Only Behavioral Reference:** The legacy code in `src/` exists solely as a functional specification so you know what business logic, fields, modals, and actions exist.
+- **Native Modern Engineering:** All enhancements must be written from scratch or built upon existing `frontend/src/` components using clean React 19, TypeScript (`.tsx`), Tailwind CSS v4, Radix UI primitives, and Cuba M3 design tokens (`bg-surface`, `text-ink`, `border-border`).
+- **Enforcement:** Copy-pasting legacy code will immediately fail TypeScript strict compilation (`npx tsc -b`) and break the Tailwind v4 build.
+
 ---
 
 ## 4. Forensic audit: legacy (`src/`) vs modern (`frontend/src/`)
