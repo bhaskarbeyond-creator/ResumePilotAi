@@ -951,7 +951,12 @@ function liveInterviewService() {
     return cachedLiveInterviewService;
 }
 
-function sendLiveInterviewError(res, error) {
+// The default outage message is accurate for routes acting on an existing
+// session; routes that never created one (start, guide) pass their own so a
+// failure never claims that something was saved.
+const LIVE_SESSION_SAVED_MESSAGE = 'The live interviewer is temporarily unavailable. Your session is still saved; please retry.';
+
+function sendLiveInterviewError(res, error, { unavailableMessage = LIVE_SESSION_SAVED_MESSAGE } = {}) {
     const status = Number(error?.status) || 502;
     const code = error?.code || 'LIVE_INTERVIEW_UNAVAILABLE';
     if (status >= 500) {
@@ -961,7 +966,7 @@ function sendLiveInterviewError(res, error) {
         error: {
             code,
             message: status >= 500
-                ? 'The live interviewer is temporarily unavailable. Your session is still saved; please retry.'
+                ? unavailableMessage
                 : String(error?.message || 'Unable to process this interview request.'),
             requestId: res.locals.requestId,
         },
@@ -994,7 +999,9 @@ router.post('/live-interview/sessions', async (req, res) => {
         res.setHeader('Cache-Control', 'no-store, private');
         return res.status(201).json({ session });
     } catch (error) {
-        return sendLiveInterviewError(res, error);
+        return sendLiveInterviewError(res, error, {
+            unavailableMessage: 'The live interviewer is temporarily unavailable. No interview was started; please try again in a moment.',
+        });
     }
 });
 
@@ -1098,7 +1105,9 @@ router.post('/live-interview/guide', async (req, res) => {
         }
         return res.json(checked.guide);
     } catch (error) {
-        return sendLiveInterviewError(res, error);
+        return sendLiveInterviewError(res, error, {
+            unavailableMessage: 'AI answer guidance is temporarily unavailable. Please try again in a moment.',
+        });
     }
 });
 

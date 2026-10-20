@@ -1,0 +1,9 @@
+{
+  "probe": "CBT timeout auto-submit vs manual submit on the unmodified Interview Coach (HEAD c29596cc94c530a9d795ec0c5ad3976da259ff0b)",
+  "method": "Playwright 1.64.1 against http://127.0.0.1:4000/dashboard/interviews at 1366x768, signed in as the candidate E2E account A; page.clock.install() before navigation; CBT Examination > General > Start Interview with the defaults (10 questions, 15 minutes); every question answered with option B (the bank's correct index for all three General items) via the page's own keyboard shortcuts; then either the Submit Exam button or page.clock.runFor(15 min + 2 s), which fires every timer tick.",
+  "results": [
+    { "endBy": "submit", "totalQuestions": 10, "distinctStems": 3, "headerBeforeEnd": "General · 10/10 answered", "reportStats": ["10/10 answered", "10 correct", "00:00 used"] },
+    { "endBy": "timeout", "totalQuestions": 10, "distinctStems": 3, "headerBeforeEnd": "General · 10/10 answered", "reportStats": ["0/10 answered", "0 correct", "15:00 used"] }
+  ],
+  "conclusion": "The timer effect captures handleCBTSubmit from the render in which the timer started, so the timeout auto-submit scores the initial unanswered state (0 correct) regardless of the candidate's answers. The 10-question exam also repeats 3 distinct questions (bank of 3 cycled with i % length)."
+}

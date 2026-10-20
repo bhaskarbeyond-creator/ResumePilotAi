@@ -1,0 +1,1528 @@
+{
+  "surface": "interview-coach",
+  "phase": "after",
+  "capturedAt": "2026-10-20T10:16:18.214Z",
+  "baseURL": "http://127.0.0.1:4000",
+  "pages": [
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "label": "mode-select",
+      "finalUrl": "/dashboard/interviews",
+      "file": "desktop-1920__dashboard_interviews__mode-select.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "label": "mode-select",
+      "finalUrl": "/dashboard/interviews",
+      "file": "laptop-1366__dashboard_interviews__mode-select.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "label": "mode-select",
+      "finalUrl": "/dashboard/interviews",
+      "file": "tablet-1024__dashboard_interviews__mode-select.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "label": "mode-select",
+      "finalUrl": "/dashboard/interviews",
+      "file": "mobile-390__dashboard_interviews__mode-select.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "label": "mode-select",
+      "finalUrl": "/dashboard/interviews",
+      "file": "mobile-320__dashboard_interviews__mode-select.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Practice/",
+        "click:/^Behavioral/",
+        "fill:/Target role/=Data Analyst",
+        "click:/Start practice/",
+        "fill:/Your answer/=I led a reporting migration and kept stakeholders informed weekly.",
+        "click:/^Next/"
+      ],
+      "label": "practice-answered",
+      "finalUrl": "/dashboard/interviews",
+      "file": "desktop-1920__dashboard_interviews__practice-answered.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Practice/",
+        "click:/^Behavioral/",
+        "fill:/Target role/=Data Analyst",
+        "click:/Start practice/",
+        "fill:/Your answer/=I led a reporting migration and kept stakeholders informed weekly.",
+        "click:/^Next/"
+      ],
+      "label": "practice-answered",
+      "finalUrl": "/dashboard/interviews",
+      "file": "laptop-1366__dashboard_interviews__practice-answered.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Practice/",
+        "click:/^Behavioral/",
+        "fill:/Target role/=Data Analyst",
+        "click:/Start practice/",
+        "fill:/Your answer/=I led a reporting migration and kept stakeholders informed weekly.",
+        "click:/^Next/"
+      ],
+      "label": "practice-answered",
+      "finalUrl": "/dashboard/interviews",
+      "file": "tablet-1024__dashboard_interviews__practice-answered.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Practice/",
+        "click:/^Behavioral/",
+        "fill:/Target role/=Data Analyst",
+        "click:/Start practice/",
+        "fill:/Your answer/=I led a reporting migration and kept stakeholders informed weekly.",
+        "click:/^Next/"
+      ],
+      "label": "practice-answered",
+      "finalUrl": "/dashboard/interviews",
+      "file": "mobile-390__dashboard_interviews__practice-answered.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Practice/",
+        "click:/^Behavioral/",
+        "fill:/Target role/=Data Analyst",
+        "click:/Start practice/",
+        "fill:/Your answer/=I led a reporting migration and kept stakeholders informed weekly.",
+        "click:/^Next/"
+      ],
+      "label": "practice-answered",
+      "finalUrl": "/dashboard/interviews",
+      "file": "mobile-320__dashboard_interviews__practice-answered.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Practice/",
+        "click:/^Behavioral/",
+        "click:/Start practice/",
+        "fill:/Your answer/=I kept stakeholders informed weekly during a migration.",
+        "click:/Finish session/"
+      ],
+      "label": "practice-report",
+      "finalUrl": "/dashboard/interviews",
+      "file": "desktop-1920__dashboard_interviews__practice-report.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Practice/",
+        "click:/^Behavioral/",
+        "click:/Start practice/",
+        "fill:/Your answer/=I kept stakeholders informed weekly during a migration.",
+        "click:/Finish session/"
+      ],
+      "label": "practice-report",
+      "finalUrl": "/dashboard/interviews",
+      "file": "laptop-1366__dashboard_interviews__practice-report.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Practice/",
+        "click:/^Behavioral/",
+        "click:/Start practice/",
+        "fill:/Your answer/=I kept stakeholders informed weekly during a migration.",
+        "click:/Finish session/"
+      ],
+      "label": "practice-report",
+      "finalUrl": "/dashboard/interviews",
+      "file": "tablet-1024__dashboard_interviews__practice-report.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Practice/",
+        "click:/^Behavioral/",
+        "click:/Start practice/",
+        "fill:/Your answer/=I kept stakeholders informed weekly during a migration.",
+        "click:/Finish session/"
+      ],
+      "label": "practice-report",
+      "finalUrl": "/dashboard/interviews",
+      "file": "mobile-390__dashboard_interviews__practice-report.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Practice/",
+        "click:/^Behavioral/",
+        "click:/Start practice/",
+        "fill:/Your answer/=I kept stakeholders informed weekly during a migration.",
+        "click:/Finish session/"
+      ],
+      "label": "practice-report",
+      "finalUrl": "/dashboard/interviews",
+      "file": "mobile-320__dashboard_interviews__practice-report.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^CBT examination/",
+        "click:/^General/",
+        "click:/Start exam with built-in questions/",
+        "press:b"
+      ],
+      "label": "cbt-active",
+      "finalUrl": "/dashboard/interviews",
+      "file": "desktop-1920__dashboard_interviews__cbt-active.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^CBT examination/",
+        "click:/^General/",
+        "click:/Start exam with built-in questions/",
+        "press:b"
+      ],
+      "label": "cbt-active",
+      "finalUrl": "/dashboard/interviews",
+      "file": "laptop-1366__dashboard_interviews__cbt-active.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^CBT examination/",
+        "click:/^General/",
+        "click:/Start exam with built-in questions/",
+        "press:b"
+      ],
+      "label": "cbt-active",
+      "finalUrl": "/dashboard/interviews",
+      "file": "tablet-1024__dashboard_interviews__cbt-active.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^CBT examination/",
+        "click:/^General/",
+        "click:/Start exam with built-in questions/",
+        "press:b"
+      ],
+      "label": "cbt-active",
+      "finalUrl": "/dashboard/interviews",
+      "file": "mobile-390__dashboard_interviews__cbt-active.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^CBT examination/",
+        "click:/^General/",
+        "click:/Start exam with built-in questions/",
+        "press:b"
+      ],
+      "label": "cbt-active",
+      "finalUrl": "/dashboard/interviews",
+      "file": "mobile-320__dashboard_interviews__cbt-active.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^CBT examination/",
+        "click:/^General/",
+        "click:/Start exam with built-in questions/",
+        "press:b",
+        "press:ArrowRight",
+        "press:a",
+        "press:ArrowRight",
+        "click:/^Submit exam/",
+        "dialog-click:/^Submit exam/"
+      ],
+      "label": "cbt-results",
+      "finalUrl": "/dashboard/interviews",
+      "file": "desktop-1920__dashboard_interviews__cbt-results.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^CBT examination/",
+        "click:/^General/",
+        "click:/Start exam with built-in questions/",
+        "press:b",
+        "press:ArrowRight",
+        "press:a",
+        "press:ArrowRight",
+        "click:/^Submit exam/",
+        "dialog-click:/^Submit exam/"
+      ],
+      "label": "cbt-results",
+      "finalUrl": "/dashboard/interviews",
+      "file": "laptop-1366__dashboard_interviews__cbt-results.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^CBT examination/",
+        "click:/^General/",
+        "click:/Start exam with built-in questions/",
+        "press:b",
+        "press:ArrowRight",
+        "press:a",
+        "press:ArrowRight",
+        "click:/^Submit exam/",
+        "dialog-click:/^Submit exam/"
+      ],
+      "label": "cbt-results",
+      "finalUrl": "/dashboard/interviews",
+      "file": "tablet-1024__dashboard_interviews__cbt-results.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^CBT examination/",
+        "click:/^General/",
+        "click:/Start exam with built-in questions/",
+        "press:b",
+        "press:ArrowRight",
+        "press:a",
+        "press:ArrowRight",
+        "click:/^Submit exam/",
+        "dialog-click:/^Submit exam/"
+      ],
+      "label": "cbt-results",
+      "finalUrl": "/dashboard/interviews",
+      "file": "mobile-390__dashboard_interviews__cbt-results.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^CBT examination/",
+        "click:/^General/",
+        "click:/Start exam with built-in questions/",
+        "press:b",
+        "press:ArrowRight",
+        "press:a",
+        "press:ArrowRight",
+        "click:/^Submit exam/",
+        "dialog-click:/^Submit exam/"
+      ],
+      "label": "cbt-results",
+      "finalUrl": "/dashboard/interviews",
+      "file": "mobile-320__dashboard_interviews__cbt-results.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Live AI interview/",
+        "fill:/Target role/=Data Analyst",
+        "click:/^Behavioral/",
+        "click:/Start live interview/",
+        "text:/No interview was started/"
+      ],
+      "label": "live-unavailable",
+      "finalUrl": "/dashboard/interviews",
+      "file": "desktop-1920__dashboard_interviews__live-unavailable.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable) [/api/live-interview/sessions]"
+      ],
+      "failedRequests": [],
+      "failedApi": [
+        "503 POST /api/live-interview/sessions"
+      ]
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Live AI interview/",
+        "fill:/Target role/=Data Analyst",
+        "click:/^Behavioral/",
+        "click:/Start live interview/",
+        "text:/No interview was started/"
+      ],
+      "label": "live-unavailable",
+      "finalUrl": "/dashboard/interviews",
+      "file": "laptop-1366__dashboard_interviews__live-unavailable.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable) [/api/live-interview/sessions]"
+      ],
+      "failedRequests": [],
+      "failedApi": [
+        "503 POST /api/live-interview/sessions"
+      ]
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Live AI interview/",
+        "fill:/Target role/=Data Analyst",
+        "click:/^Behavioral/",
+        "click:/Start live interview/",
+        "text:/No interview was started/"
+      ],
+      "label": "live-unavailable",
+      "finalUrl": "/dashboard/interviews",
+      "file": "tablet-1024__dashboard_interviews__live-unavailable.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable) [/api/live-interview/sessions]"
+      ],
+      "failedRequests": [],
+      "failedApi": [
+        "503 POST /api/live-interview/sessions"
+      ]
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Live AI interview/",
+        "fill:/Target role/=Data Analyst",
+        "click:/^Behavioral/",
+        "click:/Start live interview/",
+        "text:/No interview was started/"
+      ],
+      "label": "live-unavailable",
+      "finalUrl": "/dashboard/interviews",
+      "file": "mobile-390__dashboard_interviews__live-unavailable.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable) [/api/live-interview/sessions]"
+      ],
+      "failedRequests": [],
+      "failedApi": [
+        "503 POST /api/live-interview/sessions"
+      ]
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Live AI interview/",
+        "fill:/Target role/=Data Analyst",
+        "click:/^Behavioral/",
+        "click:/Start live interview/",
+        "text:/No interview was started/"
+      ],
+      "label": "live-unavailable",
+      "finalUrl": "/dashboard/interviews",
+      "file": "mobile-320__dashboard_interviews__live-unavailable.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable) [/api/live-interview/sessions]"
+      ],
+      "failedRequests": [],
+      "failedApi": [
+        "503 POST /api/live-interview/sessions"
+      ]
+    },
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Practice/",
+        "click:/^Behavioral/",
+        "click:/Start practice/",
+        "click:/Get answer guidance/",
+        "text:/guidance is temporarily unavailable/"
+      ],
+      "label": "guidance-unavailable",
+      "finalUrl": "/dashboard/interviews",
+      "file": "desktop-1920__dashboard_interviews__guidance-unavailable.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable) [/api/live-interview/guide]"
+      ],
+      "failedRequests": [],
+      "failedApi": [
+        "503 POST /api/live-interview/guide"
+      ]
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Practice/",
+        "click:/^Behavioral/",
+        "click:/Start practice/",
+        "click:/Get answer guidance/",
+        "text:/guidance is temporarily unavailable/"
+      ],
+      "label": "guidance-unavailable",
+      "finalUrl": "/dashboard/interviews",
+      "file": "laptop-1366__dashboard_interviews__guidance-unavailable.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable) [/api/live-interview/guide]"
+      ],
+      "failedRequests": [],
+      "failedApi": [
+        "503 POST /api/live-interview/guide"
+      ]
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Practice/",
+        "click:/^Behavioral/",
+        "click:/Start practice/",
+        "click:/Get answer guidance/",
+        "text:/guidance is temporarily unavailable/"
+      ],
+      "label": "guidance-unavailable",
+      "finalUrl": "/dashboard/interviews",
+      "file": "tablet-1024__dashboard_interviews__guidance-unavailable.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable) [/api/live-interview/guide]"
+      ],
+      "failedRequests": [],
+      "failedApi": [
+        "503 POST /api/live-interview/guide"
+      ]
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Practice/",
+        "click:/^Behavioral/",
+        "click:/Start practice/",
+        "click:/Get answer guidance/",
+        "text:/guidance is temporarily unavailable/"
+      ],
+      "label": "guidance-unavailable",
+      "finalUrl": "/dashboard/interviews",
+      "file": "mobile-390__dashboard_interviews__guidance-unavailable.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable) [/api/live-interview/guide]"
+      ],
+      "failedRequests": [],
+      "failedApi": [
+        "503 POST /api/live-interview/guide"
+      ]
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Practice/",
+        "click:/^Behavioral/",
+        "click:/Start practice/",
+        "click:/Get answer guidance/",
+        "text:/guidance is temporarily unavailable/"
+      ],
+      "label": "guidance-unavailable",
+      "finalUrl": "/dashboard/interviews",
+      "file": "mobile-320__dashboard_interviews__guidance-unavailable.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable) [/api/live-interview/guide]"
+      ],
+      "failedRequests": [],
+      "failedApi": [
+        "503 POST /api/live-interview/guide"
+      ]
+    },
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^CBT examination/",
+        "fill:/Target role/=Data Analyst",
+        "click:/^General/",
+        "click:/Generate exam/",
+        "text:/AI-generated/"
+      ],
+      "label": "acceptance-cbt-ai",
+      "aiRoutedTo": "http://127.0.0.1:8081",
+      "finalUrl": "/dashboard/interviews",
+      "file": "desktop-1920__dashboard_interviews__acceptance-cbt-ai.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^CBT examination/",
+        "fill:/Target role/=Data Analyst",
+        "click:/^General/",
+        "click:/Generate exam/",
+        "text:/AI-generated/"
+      ],
+      "label": "acceptance-cbt-ai",
+      "aiRoutedTo": "http://127.0.0.1:8081",
+      "finalUrl": "/dashboard/interviews",
+      "file": "laptop-1366__dashboard_interviews__acceptance-cbt-ai.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^CBT examination/",
+        "fill:/Target role/=Data Analyst",
+        "click:/^General/",
+        "click:/Generate exam/",
+        "text:/AI-generated/"
+      ],
+      "label": "acceptance-cbt-ai",
+      "aiRoutedTo": "http://127.0.0.1:8081",
+      "finalUrl": "/dashboard/interviews",
+      "file": "tablet-1024__dashboard_interviews__acceptance-cbt-ai.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^CBT examination/",
+        "fill:/Target role/=Data Analyst",
+        "click:/^General/",
+        "click:/Generate exam/",
+        "text:/AI-generated/"
+      ],
+      "label": "acceptance-cbt-ai",
+      "aiRoutedTo": "http://127.0.0.1:8081",
+      "finalUrl": "/dashboard/interviews",
+      "file": "mobile-390__dashboard_interviews__acceptance-cbt-ai.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^CBT examination/",
+        "fill:/Target role/=Data Analyst",
+        "click:/^General/",
+        "click:/Generate exam/",
+        "text:/AI-generated/"
+      ],
+      "label": "acceptance-cbt-ai",
+      "aiRoutedTo": "http://127.0.0.1:8081",
+      "finalUrl": "/dashboard/interviews",
+      "file": "mobile-320__dashboard_interviews__acceptance-cbt-ai.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Practice/",
+        "fill:/Target role/=Data Analyst",
+        "click:/^Behavioral/",
+        "click:/Start practice/",
+        "click:/Get answer guidance/",
+        "text:/What they want to learn/"
+      ],
+      "label": "acceptance-guidance",
+      "aiRoutedTo": "http://127.0.0.1:8081",
+      "finalUrl": "/dashboard/interviews",
+      "file": "desktop-1920__dashboard_interviews__acceptance-guidance.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Practice/",
+        "fill:/Target role/=Data Analyst",
+        "click:/^Behavioral/",
+        "click:/Start practice/",
+        "click:/Get answer guidance/",
+        "text:/What they want to learn/"
+      ],
+      "label": "acceptance-guidance",
+      "aiRoutedTo": "http://127.0.0.1:8081",
+      "finalUrl": "/dashboard/interviews",
+      "file": "laptop-1366__dashboard_interviews__acceptance-guidance.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Practice/",
+        "fill:/Target role/=Data Analyst",
+        "click:/^Behavioral/",
+        "click:/Start practice/",
+        "click:/Get answer guidance/",
+        "text:/What they want to learn/"
+      ],
+      "label": "acceptance-guidance",
+      "aiRoutedTo": "http://127.0.0.1:8081",
+      "finalUrl": "/dashboard/interviews",
+      "file": "tablet-1024__dashboard_interviews__acceptance-guidance.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Practice/",
+        "fill:/Target role/=Data Analyst",
+        "click:/^Behavioral/",
+        "click:/Start practice/",
+        "click:/Get answer guidance/",
+        "text:/What they want to learn/"
+      ],
+      "label": "acceptance-guidance",
+      "aiRoutedTo": "http://127.0.0.1:8081",
+      "finalUrl": "/dashboard/interviews",
+      "file": "mobile-390__dashboard_interviews__acceptance-guidance.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Practice/",
+        "fill:/Target role/=Data Analyst",
+        "click:/^Behavioral/",
+        "click:/Start practice/",
+        "click:/Get answer guidance/",
+        "text:/What they want to learn/"
+      ],
+      "label": "acceptance-guidance",
+      "aiRoutedTo": "http://127.0.0.1:8081",
+      "finalUrl": "/dashboard/interviews",
+      "file": "mobile-320__dashboard_interviews__acceptance-guidance.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Live AI interview/",
+        "fill:/Target role/=Data Analyst",
+        "click:/^Behavioral/",
+        "click:/Start live interview/",
+        "text:/^Live AI interview$/",
+        "fill:/Your answer/=I owned the weekly sales report and checked every figure with finance before sharing it.",
+        "click:/Send answer/",
+        "text:/Score 74/"
+      ],
+      "label": "acceptance-live-active",
+      "aiRoutedTo": "http://127.0.0.1:8081",
+      "finalUrl": "/dashboard/interviews",
+      "file": "desktop-1920__dashboard_interviews__acceptance-live-active.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Live AI interview/",
+        "fill:/Target role/=Data Analyst",
+        "click:/^Behavioral/",
+        "click:/Start live interview/",
+        "text:/^Live AI interview$/",
+        "fill:/Your answer/=I owned the weekly sales report and checked every figure with finance before sharing it.",
+        "click:/Send answer/",
+        "text:/Score 74/"
+      ],
+      "label": "acceptance-live-active",
+      "aiRoutedTo": "http://127.0.0.1:8081",
+      "finalUrl": "/dashboard/interviews",
+      "file": "laptop-1366__dashboard_interviews__acceptance-live-active.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Live AI interview/",
+        "fill:/Target role/=Data Analyst",
+        "click:/^Behavioral/",
+        "click:/Start live interview/",
+        "text:/^Live AI interview$/",
+        "fill:/Your answer/=I owned the weekly sales report and checked every figure with finance before sharing it.",
+        "click:/Send answer/",
+        "text:/Score 74/"
+      ],
+      "label": "acceptance-live-active",
+      "aiRoutedTo": "http://127.0.0.1:8081",
+      "finalUrl": "/dashboard/interviews",
+      "file": "tablet-1024__dashboard_interviews__acceptance-live-active.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Live AI interview/",
+        "fill:/Target role/=Data Analyst",
+        "click:/^Behavioral/",
+        "click:/Start live interview/",
+        "text:/^Live AI interview$/",
+        "fill:/Your answer/=I owned the weekly sales report and checked every figure with finance before sharing it.",
+        "click:/Send answer/",
+        "text:/Score 74/"
+      ],
+      "label": "acceptance-live-active",
+      "aiRoutedTo": "http://127.0.0.1:8081",
+      "finalUrl": "/dashboard/interviews",
+      "file": "mobile-390__dashboard_interviews__acceptance-live-active.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Live AI interview/",
+        "fill:/Target role/=Data Analyst",
+        "click:/^Behavioral/",
+        "click:/Start live interview/",
+        "text:/^Live AI interview$/",
+        "fill:/Your answer/=I owned the weekly sales report and checked every figure with finance before sharing it.",
+        "click:/Send answer/",
+        "text:/Score 74/"
+      ],
+      "label": "acceptance-live-active",
+      "aiRoutedTo": "http://127.0.0.1:8081",
+      "finalUrl": "/dashboard/interviews",
+      "file": "mobile-320__dashboard_interviews__acceptance-live-active.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Live AI interview/",
+        "fill:/Target role/=Data Analyst",
+        "click:/^Behavioral/",
+        "click:/Start live interview/",
+        "text:/^Live AI interview$/",
+        "fill:/Your answer/=I owned the weekly sales report and checked every figure with finance before sharing it.",
+        "click:/Send answer/",
+        "text:/^1 answered$/",
+        "fill:/Your answer/=I owned the weekly sales report and checked every figure with finance before sharing it.",
+        "click:/Send answer/",
+        "text:/^2 answered$/",
+        "fill:/Your answer/=I owned the weekly sales report and checked every figure with finance before sharing it.",
+        "click:/Send answer/",
+        "text:/^3 answered$/",
+        "fill:/Your answer/=I owned the weekly sales report and checked every figure with finance before sharing it.",
+        "click:/Send answer/",
+        "text:/The interview is complete/",
+        "click:/Get my report/",
+        "text:/^Interview report$/"
+      ],
+      "label": "acceptance-live-report",
+      "aiRoutedTo": "http://127.0.0.1:8081",
+      "finalUrl": "/dashboard/interviews",
+      "file": "desktop-1920__dashboard_interviews__acceptance-live-report.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Live AI interview/",
+        "fill:/Target role/=Data Analyst",
+        "click:/^Behavioral/",
+        "click:/Start live interview/",
+        "text:/^Live AI interview$/",
+        "fill:/Your answer/=I owned the weekly sales report and checked every figure with finance before sharing it.",
+        "click:/Send answer/",
+        "text:/^1 answered$/",
+        "fill:/Your answer/=I owned the weekly sales report and checked every figure with finance before sharing it.",
+        "click:/Send answer/",
+        "text:/^2 answered$/",
+        "fill:/Your answer/=I owned the weekly sales report and checked every figure with finance before sharing it.",
+        "click:/Send answer/",
+        "text:/^3 answered$/",
+        "fill:/Your answer/=I owned the weekly sales report and checked every figure with finance before sharing it.",
+        "click:/Send answer/",
+        "text:/The interview is complete/",
+        "click:/Get my report/",
+        "text:/^Interview report$/"
+      ],
+      "label": "acceptance-live-report",
+      "aiRoutedTo": "http://127.0.0.1:8081",
+      "finalUrl": "/dashboard/interviews",
+      "file": "laptop-1366__dashboard_interviews__acceptance-live-report.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Live AI interview/",
+        "fill:/Target role/=Data Analyst",
+        "click:/^Behavioral/",
+        "click:/Start live interview/",
+        "text:/^Live AI interview$/",
+        "fill:/Your answer/=I owned the weekly sales report and checked every figure with finance before sharing it.",
+        "click:/Send answer/",
+        "text:/^1 answered$/",
+        "fill:/Your answer/=I owned the weekly sales report and checked every figure with finance before sharing it.",
+        "click:/Send answer/",
+        "text:/^2 answered$/",
+        "fill:/Your answer/=I owned the weekly sales report and checked every figure with finance before sharing it.",
+        "click:/Send answer/",
+        "text:/^3 answered$/",
+        "fill:/Your answer/=I owned the weekly sales report and checked every figure with finance before sharing it.",
+        "click:/Send answer/",
+        "text:/The interview is complete/",
+        "click:/Get my report/",
+        "text:/^Interview report$/"
+      ],
+      "label": "acceptance-live-report",
+      "aiRoutedTo": "http://127.0.0.1:8081",
+      "finalUrl": "/dashboard/interviews",
+      "file": "tablet-1024__dashboard_interviews__acceptance-live-report.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Live AI interview/",
+        "fill:/Target role/=Data Analyst",
+        "click:/^Behavioral/",
+        "click:/Start live interview/",
+        "text:/^Live AI interview$/",
+        "fill:/Your answer/=I owned the weekly sales report and checked every figure with finance before sharing it.",
+        "click:/Send answer/",
+        "text:/^1 answered$/",
+        "fill:/Your answer/=I owned the weekly sales report and checked every figure with finance before sharing it.",
+        "click:/Send answer/",
+        "text:/^2 answered$/",
+        "fill:/Your answer/=I owned the weekly sales report and checked every figure with finance before sharing it.",
+        "click:/Send answer/",
+        "text:/^3 answered$/",
+        "fill:/Your answer/=I owned the weekly sales report and checked every figure with finance before sharing it.",
+        "click:/Send answer/",
+        "text:/The interview is complete/",
+        "click:/Get my report/",
+        "text:/^Interview report$/"
+      ],
+      "label": "acceptance-live-report",
+      "aiRoutedTo": "http://127.0.0.1:8081",
+      "finalUrl": "/dashboard/interviews",
+      "file": "mobile-390__dashboard_interviews__acceptance-live-report.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Live AI interview/",
+        "fill:/Target role/=Data Analyst",
+        "click:/^Behavioral/",
+        "click:/Start live interview/",
+        "text:/^Live AI interview$/",
+        "fill:/Your answer/=I owned the weekly sales report and checked every figure with finance before sharing it.",
+        "click:/Send answer/",
+        "text:/^1 answered$/",
+        "fill:/Your answer/=I owned the weekly sales report and checked every figure with finance before sharing it.",
+        "click:/Send answer/",
+        "text:/^2 answered$/",
+        "fill:/Your answer/=I owned the weekly sales report and checked every figure with finance before sharing it.",
+        "click:/Send answer/",
+        "text:/^3 answered$/",
+        "fill:/Your answer/=I owned the weekly sales report and checked every figure with finance before sharing it.",
+        "click:/Send answer/",
+        "text:/The interview is complete/",
+        "click:/Get my report/",
+        "text:/^Interview report$/"
+      ],
+      "label": "acceptance-live-report",
+      "aiRoutedTo": "http://127.0.0.1:8081",
+      "finalUrl": "/dashboard/interviews",
+      "file": "mobile-320__dashboard_interviews__acceptance-live-report.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Live AI interview/",
+        "fill:Target role=Support Engineer",
+        "click:/^Behavioral/",
+        "click:Start live interview",
+        "text:/Question 1 of about/",
+        "open-tab",
+        "click:Resume interview",
+        "fill:Your answer=Answered in the second tab: I escalated the outage and updated customers every hour.",
+        "click:Send answer",
+        "text:1 answered",
+        "tab:0",
+        "fill:Your answer=Answered in the first tab, which still showed the earlier question.",
+        "click:Send answer",
+        "text:/changed in another tab/"
+      ],
+      "label": "acceptance-live-conflict",
+      "aiRoutedTo": "http://127.0.0.1:8081",
+      "tabs": 2,
+      "finalUrl": "/dashboard/interviews",
+      "file": "desktop-1920__dashboard_interviews__acceptance-live-conflict.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 409 (Conflict) [/api/live-interview/sessions/jxzN1Dq-k_NMbYM3YF6khS7sJJfjszKb/turns]"
+      ],
+      "failedRequests": [],
+      "failedApi": [
+        "409 POST /api/live-interview/sessions/jxzN1Dq-k_NMbYM3YF6khS7sJJfjszKb/turns"
+      ]
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Live AI interview/",
+        "fill:Target role=Support Engineer",
+        "click:/^Behavioral/",
+        "click:Start live interview",
+        "text:/Question 1 of about/",
+        "open-tab",
+        "click:Resume interview",
+        "fill:Your answer=Answered in the second tab: I escalated the outage and updated customers every hour.",
+        "click:Send answer",
+        "text:1 answered",
+        "tab:0",
+        "fill:Your answer=Answered in the first tab, which still showed the earlier question.",
+        "click:Send answer",
+        "text:/changed in another tab/"
+      ],
+      "label": "acceptance-live-conflict",
+      "aiRoutedTo": "http://127.0.0.1:8081",
+      "tabs": 2,
+      "finalUrl": "/dashboard/interviews",
+      "file": "laptop-1366__dashboard_interviews__acceptance-live-conflict.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 409 (Conflict) [/api/live-interview/sessions/VJPX6buboL9Jz4E-S_RGkatVlgKmbcn2/turns]"
+      ],
+      "failedRequests": [],
+      "failedApi": [
+        "409 POST /api/live-interview/sessions/VJPX6buboL9Jz4E-S_RGkatVlgKmbcn2/turns"
+      ]
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Live AI interview/",
+        "fill:Target role=Support Engineer",
+        "click:/^Behavioral/",
+        "click:Start live interview",
+        "text:/Question 1 of about/",
+        "open-tab",
+        "click:Resume interview",
+        "fill:Your answer=Answered in the second tab: I escalated the outage and updated customers every hour.",
+        "click:Send answer",
+        "text:1 answered",
+        "tab:0",
+        "fill:Your answer=Answered in the first tab, which still showed the earlier question.",
+        "click:Send answer",
+        "text:/changed in another tab/"
+      ],
+      "label": "acceptance-live-conflict",
+      "aiRoutedTo": "http://127.0.0.1:8081",
+      "tabs": 2,
+      "finalUrl": "/dashboard/interviews",
+      "file": "tablet-1024__dashboard_interviews__acceptance-live-conflict.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 409 (Conflict) [/api/live-interview/sessions/bngueSwm_kXLmdjjPqranx-bSlNO5DdJ/turns]"
+      ],
+      "failedRequests": [],
+      "failedApi": [
+        "409 POST /api/live-interview/sessions/bngueSwm_kXLmdjjPqranx-bSlNO5DdJ/turns"
+      ]
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Live AI interview/",
+        "fill:Target role=Support Engineer",
+        "click:/^Behavioral/",
+        "click:Start live interview",
+        "text:/Question 1 of about/",
+        "open-tab",
+        "click:Resume interview",
+        "fill:Your answer=Answered in the second tab: I escalated the outage and updated customers every hour.",
+        "click:Send answer",
+        "text:1 answered",
+        "tab:0",
+        "fill:Your answer=Answered in the first tab, which still showed the earlier question.",
+        "click:Send answer",
+        "text:/changed in another tab/"
+      ],
+      "label": "acceptance-live-conflict",
+      "aiRoutedTo": "http://127.0.0.1:8081",
+      "tabs": 2,
+      "finalUrl": "/dashboard/interviews",
+      "file": "mobile-390__dashboard_interviews__acceptance-live-conflict.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 409 (Conflict) [/api/live-interview/sessions/DYiG2xTtvT7D7pWDHMWM6mgssB077TI1/turns]"
+      ],
+      "failedRequests": [],
+      "failedApi": [
+        "409 POST /api/live-interview/sessions/DYiG2xTtvT7D7pWDHMWM6mgssB077TI1/turns"
+      ]
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Live AI interview/",
+        "fill:Target role=Support Engineer",
+        "click:/^Behavioral/",
+        "click:Start live interview",
+        "text:/Question 1 of about/",
+        "open-tab",
+        "click:Resume interview",
+        "fill:Your answer=Answered in the second tab: I escalated the outage and updated customers every hour.",
+        "click:Send answer",
+        "text:1 answered",
+        "tab:0",
+        "fill:Your answer=Answered in the first tab, which still showed the earlier question.",
+        "click:Send answer",
+        "text:/changed in another tab/"
+      ],
+      "label": "acceptance-live-conflict",
+      "aiRoutedTo": "http://127.0.0.1:8081",
+      "tabs": 2,
+      "finalUrl": "/dashboard/interviews",
+      "file": "mobile-320__dashboard_interviews__acceptance-live-conflict.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 409 (Conflict) [/api/live-interview/sessions/vt7VZ1o9GPiX1b1ezOhGaAPcLtgEqEWv/turns]"
+      ],
+      "failedRequests": [],
+      "failedApi": [
+        "409 POST /api/live-interview/sessions/vt7VZ1o9GPiX1b1ezOhGaAPcLtgEqEWv/turns"
+      ]
+    },
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Live AI interview/",
+        "fill:Target role=Support Engineer",
+        "click:/^Behavioral/",
+        "click:Start live interview",
+        "text:/Question 1 of about/",
+        "open-tab",
+        "click:Resume interview",
+        "click:End interview",
+        "dialog-click:End interview",
+        "wait:500",
+        "tab:0",
+        "fill:Your answer=I escalated the outage and updated customers every hour.",
+        "click:Send answer",
+        "text:This interview is no longer available"
+      ],
+      "label": "acceptance-live-gone",
+      "aiRoutedTo": "http://127.0.0.1:8081",
+      "tabs": 2,
+      "finalUrl": "/dashboard/interviews",
+      "file": "desktop-1920__dashboard_interviews__acceptance-live-gone.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found) [/api/live-interview/sessions/b2ktZYzA-9szeSb00jj2wE8S4OjmNgPo/turns]"
+      ],
+      "failedRequests": [],
+      "failedApi": [
+        "404 POST /api/live-interview/sessions/b2ktZYzA-9szeSb00jj2wE8S4OjmNgPo/turns"
+      ]
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Live AI interview/",
+        "fill:Target role=Support Engineer",
+        "click:/^Behavioral/",
+        "click:Start live interview",
+        "text:/Question 1 of about/",
+        "open-tab",
+        "click:Resume interview",
+        "click:End interview",
+        "dialog-click:End interview",
+        "wait:500",
+        "tab:0",
+        "fill:Your answer=I escalated the outage and updated customers every hour.",
+        "click:Send answer",
+        "text:This interview is no longer available"
+      ],
+      "label": "acceptance-live-gone",
+      "aiRoutedTo": "http://127.0.0.1:8081",
+      "tabs": 2,
+      "finalUrl": "/dashboard/interviews",
+      "file": "laptop-1366__dashboard_interviews__acceptance-live-gone.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found) [/api/live-interview/sessions/JjHMi2ffznnqZawg8js_Gxv2r9qhB0i6/turns]"
+      ],
+      "failedRequests": [],
+      "failedApi": [
+        "404 POST /api/live-interview/sessions/JjHMi2ffznnqZawg8js_Gxv2r9qhB0i6/turns"
+      ]
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Live AI interview/",
+        "fill:Target role=Support Engineer",
+        "click:/^Behavioral/",
+        "click:Start live interview",
+        "text:/Question 1 of about/",
+        "open-tab",
+        "click:Resume interview",
+        "click:End interview",
+        "dialog-click:End interview",
+        "wait:500",
+        "tab:0",
+        "fill:Your answer=I escalated the outage and updated customers every hour.",
+        "click:Send answer",
+        "text:This interview is no longer available"
+      ],
+      "label": "acceptance-live-gone",
+      "aiRoutedTo": "http://127.0.0.1:8081",
+      "tabs": 2,
+      "finalUrl": "/dashboard/interviews",
+      "file": "tablet-1024__dashboard_interviews__acceptance-live-gone.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found) [/api/live-interview/sessions/ZaIhPku_htCz3VY2YxYVSDxAjOUmo1Kn/turns]"
+      ],
+      "failedRequests": [],
+      "failedApi": [
+        "404 POST /api/live-interview/sessions/ZaIhPku_htCz3VY2YxYVSDxAjOUmo1Kn/turns"
+      ]
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Live AI interview/",
+        "fill:Target role=Support Engineer",
+        "click:/^Behavioral/",
+        "click:Start live interview",
+        "text:/Question 1 of about/",
+        "open-tab",
+        "click:Resume interview",
+        "click:End interview",
+        "dialog-click:End interview",
+        "wait:500",
+        "tab:0",
+        "fill:Your answer=I escalated the outage and updated customers every hour.",
+        "click:Send answer",
+        "text:This interview is no longer available"
+      ],
+      "label": "acceptance-live-gone",
+      "aiRoutedTo": "http://127.0.0.1:8081",
+      "tabs": 2,
+      "finalUrl": "/dashboard/interviews",
+      "file": "mobile-390__dashboard_interviews__acceptance-live-gone.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found) [/api/live-interview/sessions/rOmzF-AzVPftRhi4VJ7DIT_l54CxunpH/turns]"
+      ],
+      "failedRequests": [],
+      "failedApi": [
+        "404 POST /api/live-interview/sessions/rOmzF-AzVPftRhi4VJ7DIT_l54CxunpH/turns"
+      ]
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/interviews",
+      "click": null,
+      "steps": [
+        "click:/^Live AI interview/",
+        "fill:Target role=Support Engineer",
+        "click:/^Behavioral/",
+        "click:Start live interview",
+        "text:/Question 1 of about/",
+        "open-tab",
+        "click:Resume interview",
+        "click:End interview",
+        "dialog-click:End interview",
+        "wait:500",
+        "tab:0",
+        "fill:Your answer=I escalated the outage and updated customers every hour.",
+        "click:Send answer",
+        "text:This interview is no longer available"
+      ],
+      "label": "acceptance-live-gone",
+      "aiRoutedTo": "http://127.0.0.1:8081",
+      "tabs": 2,
+      "finalUrl": "/dashboard/interviews",
+      "file": "mobile-320__dashboard_interviews__acceptance-live-gone.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found) [/api/live-interview/sessions/qmEX2A59XWHK1zTbX-7ZrAya7yA04Iom/turns]"
+      ],
+      "failedRequests": [],
+      "failedApi": [
+        "404 POST /api/live-interview/sessions/qmEX2A59XWHK1zTbX-7ZrAya7yA04Iom/turns"
+      ]
+    }
+  ]
+}

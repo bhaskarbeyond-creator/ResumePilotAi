@@ -12,6 +12,22 @@
  *
  * Optional: --click "<button name>" presses that button (by accessible name)
  * after the page loads, for states that need one real interaction.
+ * Optional: --steps "click:Practice|fill:Target role=Analyst|click:Start" runs a
+ * '|'-separated sequence of real interactions for multi-step states. Kinds:
+ * click:<button name>, fill:<label>=<value>, press:<key>, text:<visible text to
+ * wait for>, wait:<ms>. A name written as /pattern/ is a case-insensitive regex.
+ * dialog-click:<button name> presses a button inside the open dialog.
+ * open-tab opens a second tab of the current page with window.open, which copies
+ * sessionStorage exactly as a browser does, so both tabs share the same
+ * per-tab state (e.g. an in-progress interview); later steps act in that tab.
+ * tab:<index> switches back (tab:0 is the first tab). The screenshot is taken of
+ * the tab that is active after the last step.
+ * Use --label <state> to name the captured state in the file name and report.
+ * Optional: --route-ai-to http://127.0.0.1:8081 sends ONLY the interview AI
+ * endpoints (/api/generate-interview, /api/live-interview/*) to that backend,
+ * e.g. the acceptance instance whose provider is scripts/dev-ai's labelled stub.
+ * The report records it as aiRoutedTo so those screens are never mistaken for
+ * real AI output.
  *
  * Env: E2E_BASE_URL (default http://127.0.0.1:4000),
  *      E2E_STORAGE_STATE (signed-in state to load; default: the candidate
@@ -35,6 +51,53 @@ const surface = arg('surface');
 const phase = arg('phase');
 const routes = String(arg('routes', '')).split(',').filter(Boolean);
 const click = arg('click');
+const steps = String(arg('steps', '')).split('|').map((step) => step.trim()).filter(Boolean);
+const label = arg('label');
+const routeAiTo = arg('route-ai-to');
+const nameMatcher = (raw) => {
+  const pattern = /^\/(.+)\/$/.exec(raw);
+  return pattern ? new RegExp(pattern[1], 'i') : raw;
+};
+/** Runs one step and returns the tab that later steps act in. */
+async function runStep(page, step, session) {
+  const separator = step.indexOf(':');
+  const kind = separator < 0 ? step : step.slice(0, separator);
+  const value = separator < 0 ? '' : step.slice(separator + 1);
+  if (kind === 'open-tab') {
+    const [tab] = await Promise.all([
+      page.context().waitForEvent('page'),
+      page.evaluate(() => { window.open(window.location.href, '_blank'); }),
+    ]);
+    session.watch(tab);
+    session.tabs.push(tab);
+    await tab.waitForLoadState('networkidle').catch(() => {});
+    await tab.waitForTimeout(400);
+    return tab;
+  }
+  if (kind === 'tab') {
+    const tab = session.tabs[Number(value)];
+    if (!tab) throw new Error(`no tab ${value} (open tabs: ${session.tabs.length})`);
+    await tab.bringToFront();
+    return tab;
+  }
+  if (kind === 'click') await page.getByRole('button', { name: nameMatcher(value) }).first().click();
+  else if (kind === 'dialog-click') await page.getByRole('dialog').getByRole('button', { name: nameMatcher(value) }).first().click();
+  else if (kind === 'fill') {
+    const equals = value.indexOf('=');
+    const field = nameMatcher(value.slice(0, equals));
+    // Prefer the accessible label; fall back to the placeholder for unlabelled
+    // fields so baseline captures can still reach states behind them.
+    const labelled = page.getByLabel(field);
+    const target = (await labelled.count()) ? labelled : page.getByPlaceholder(field);
+    await target.first().fill(value.slice(equals + 1));
+  } else if (kind === 'press') await page.keyboard.press(value);
+  else if (kind === 'text') await page.getByText(nameMatcher(value)).first().waitFor({ timeout: 30_000 });
+  else if (kind === 'wait') await page.waitForTimeout(Number(value));
+  else throw new Error(`unknown step "${step}"`);
+  await page.waitForLoadState('networkidle').catch(() => {});
+  await page.waitForTimeout(250);
+  return page;
+}
 if (!surface || !['before', 'after'].includes(phase) || !routes.length) {
   console.error('usage: --surface <name> --phase before|after --routes /a,/b');
   process.exit(2);
@@ -69,32 +132,43 @@ for (const profile of PROFILES) {
     isMobile: profile.mobile,
     hasTouch: profile.mobile,
   });
+  if (routeAiTo) {
+    // Context-wide, so a tab opened by an open-tab step is routed the same way.
+    await context.route((url) => /^\/api\/(generate-interview$|live-interview\/)/.test(url.pathname), (intercepted) => {
+      const original = new URL(intercepted.request().url());
+      return intercepted.continue({ url: `${routeAiTo}${original.pathname}${original.search}` });
+    });
+  }
   for (const route of routes) {
     const page = await context.newPage();
     const consoleErrors = [];
     const failedApi = [];
     const failedRequests = [];
-    page.on('console', (message) => {
-      if (message.type() !== 'error') return;
-      const text = message.text();
-      // Chromium's "Failed to load resource: net::ERR_*" text omits the URL; attribute it.
-      const source = message.location()?.url || '';
-      if (/^Failed to load resource/.test(text)) {
-        if (UNREACHABLE_THIRD_PARTY.test(source)) return;
-        consoleErrors.push(source ? `${text} [${describeUrl(source)}]` : text);
-        return;
-      }
-      consoleErrors.push(text);
-    });
-    page.on('requestfailed', (request) => {
-      if (UNREACHABLE_THIRD_PARTY.test(request.url())) return;
-      failedRequests.push(`${request.failure()?.errorText || 'failed'} ${request.method()} ${describeUrl(request.url())}`);
-    });
-    page.on('pageerror', (error) => consoleErrors.push(`pageerror: ${error.message}`));
-    page.on('response', (response) => {
-      const url = new URL(response.url());
-      if (url.pathname.startsWith('/api/') && response.status() >= 400) failedApi.push(`${response.status()} ${response.request().method()} ${url.pathname}`);
-    });
+    const watch = (tab) => {
+      tab.on('console', (message) => {
+        if (message.type() !== 'error') return;
+        const text = message.text();
+        // Chromium's "Failed to load resource: net::ERR_*" text omits the URL; attribute it.
+        const source = message.location()?.url || '';
+        if (/^Failed to load resource/.test(text)) {
+          if (UNREACHABLE_THIRD_PARTY.test(source)) return;
+          consoleErrors.push(source ? `${text} [${describeUrl(source)}]` : text);
+          return;
+        }
+        consoleErrors.push(text);
+      });
+      tab.on('requestfailed', (request) => {
+        if (UNREACHABLE_THIRD_PARTY.test(request.url())) return;
+        failedRequests.push(`${request.failure()?.errorText || 'failed'} ${request.method()} ${describeUrl(request.url())}`);
+      });
+      tab.on('pageerror', (error) => consoleErrors.push(`pageerror: ${error.message}`));
+      tab.on('response', (response) => {
+        const url = new URL(response.url());
+        if (url.pathname.startsWith('/api/') && response.status() >= 400) failedApi.push(`${response.status()} ${response.request().method()} ${url.pathname}`);
+      });
+    };
+    watch(page);
+    const session = { tabs: [page], watch };
     await page.goto(route, { waitUntil: 'networkidle' });
     await page.waitForTimeout(400);
     if (click) {
@@ -109,12 +183,16 @@ for (const profile of PROFILES) {
       });
       await page.waitForTimeout(300);
     }
-    const slug = (route.replace(/^\//, '').replace(/[^a-z0-9]+/gi, '_') || 'root') + (click ? '__after_click' : '');
+    let active = page;
+    for (const step of steps) active = await runStep(active, step, session);
+    if (steps.length) await active.waitForTimeout(500);
+    const stateSuffix = label ? `__${label.replace(/[^a-z0-9-]+/gi, '_')}` : (click ? '__after_click' : '');
+    const slug = (route.replace(/^\//, '').replace(/[^a-z0-9]+/gi, '_') || 'root') + stateSuffix;
     const file = `${profile.name}__${slug}.jpg`;
-    await page.screenshot({ path: path.join(outDir, file), fullPage: true, type: 'jpeg', quality: 60 });
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-    report.pages.push({ profile: profile.name, route, click: click || null, finalUrl: new URL(page.url()).pathname, file, horizontalOverflowPx: Math.max(0, overflow), consoleErrors, failedRequests, failedApi });
-    await page.close();
+    await active.screenshot({ path: path.join(outDir, file), fullPage: true, type: 'jpeg', quality: 60 });
+    const overflow = await active.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    report.pages.push({ profile: profile.name, route, click: click || null, steps: steps.length ? steps : undefined, label: label || undefined, aiRoutedTo: routeAiTo || undefined, tabs: session.tabs.length > 1 ? session.tabs.length : undefined, finalUrl: new URL(active.url()).pathname, file, horizontalOverflowPx: Math.max(0, overflow), consoleErrors, failedRequests, failedApi });
+    for (const tab of session.tabs) await tab.close();
   }
   await context.close();
 }
@@ -130,5 +208,5 @@ fs.writeFileSync(reportFile, `${JSON.stringify(report, null, 2)}\n`);
 console.log(`captured ${report.pages.length} screens -> ${path.relative(repoRoot, outDir)}`);
 for (const entry of report.pages) {
   const issues = [entry.horizontalOverflowPx ? `overflow ${entry.horizontalOverflowPx}px` : '', entry.failedApi.length ? `api ${entry.failedApi.join(', ')}` : '', entry.failedRequests.length ? `requests ${entry.failedRequests.join(', ')}` : '', entry.consoleErrors.length ? `${entry.consoleErrors.length} console errors` : ''].filter(Boolean).join(' | ');
-  console.log(`  ${entry.profile.padEnd(13)} ${entry.route.padEnd(28)} ${issues || 'clean'}`);
+  console.log(`  ${entry.profile.padEnd(13)} ${(entry.route + (entry.label ? ` [${entry.label}]` : '')).padEnd(28)} ${issues || 'clean'}`);
 }
