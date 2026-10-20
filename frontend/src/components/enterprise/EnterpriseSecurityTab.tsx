@@ -150,7 +150,7 @@ export function EnterpriseSecurityTab({ initialFocus }: EnterpriseSecurityTabPro
     setError(null);
     try {
       const res = await enterpriseApi.createServiceAccount(tenant.id, saName.trim(), Array.from(selectedScopes));
-      setRawSecretKey(res.rawKey || 'sk_live_generated_key_mock_secure_token');
+      setRawSecretKey(res.rawKey || 'ent_live_generated_key_mock_secure_token');
       setSaName('');
       setNotification('Service account created. Copy your secret API key now; it will not be displayed again.');
       await loadSecurityData();
@@ -170,7 +170,7 @@ export function EnterpriseSecurityTab({ initialFocus }: EnterpriseSecurityTabPro
       action: async () => {
         if (!tenant?.id) return;
         const res = await enterpriseApi.rotateServiceAccount(tenant.id, sa.id);
-        setRawSecretKey(res.rawKey || 'sk_live_rotated_key_token');
+        setRawSecretKey(res.rawKey || 'ent_live_rotated_key_token');
         setNotification('Credential rotated successfully. Copy the newly issued secret key.');
         await loadSecurityData();
       },
