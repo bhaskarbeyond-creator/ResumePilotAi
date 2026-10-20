@@ -1,74 +1,91 @@
-# IME365 — Autonomous UI/UX Parity, Dashboard Expansion & Full-Stack Validation Directive
+# IME365 — Final 10/10 Autonomous Engineering Directive
+## Legacy-to-Modern UI Parity, Dashboard Expansion, Real-Backend Validation, Responsive Testing & Incremental Delivery
 
 **Project:** IME365 — Interview Made Easy  
 **Execution mode:** Autonomous remote development  
-**Task type:** Continuation of existing work; do not restart or overwrite prior implementation  
-**Incoming update:** Local developer's latest pushed commit `679af6be`  
-**Target branches:** `origin/arena/8a774228-resumepilotai` & `origin/main` (both in sync at `679af6be`)  
-**Primary objective:** Pull the latest changes, reconcile workspace, compare legacy `src/` vs modern `frontend/src/` UI, enhance dashboard surfaces autonomously, validate real Node.js/Express/MariaDB backend integration, and prove functionality using Playwright across five responsive layouts and all applicable deep links.
+**Directive type:** Continuation of existing implementation; no unnecessary rebuilds  
+**Incoming commit:** `679af6be` (ancestor of branch HEAD)  
+**Development branch:** `arena/8a774228-resumepilotai`  
+**Reference branch:** `main`  
+**Reported initial state:** `origin/arena/8a774228-resumepilotai` and `origin/main` are synchronized  
+**Legacy reference:** `src/` (Read-only behavioral specification)  
+**Active modern frontend:** `frontend/src/` (React 19 + TypeScript target)  
+**Backend:** Node.js 20+, Express 5.2.1, MariaDB/MySQL (Port 8080 / 3306)  
+**Frontend stack:** React 19, TypeScript, Vite, Tailwind CSS v4, Radix UI, TanStack Query/Table, Lucide React, Cuba M3 Executive Glassmorphic design system  
+**Primary objective:** Integrate the incoming changes, systematically compare and enhance the legacy and modern application, validate real backend behavior and persistence, test all applicable deep links and interactive workflows across five responsive layouts, and deliver every completed surface through verified incremental commits and pushes.
 
 ---
 
-## 1. Executive mandate
+# 1. Executive mandate
 
-Continue from the existing remote developer's completed work and the additional changes made by the local developer.
+Continue from the existing remote developer's completed work and the additional changes pushed by the local developer.
 
-The local developer has pushed commit:
+Your first task is to verify and safely integrate commit `679af6be`. After integration, conduct a forensic comparison of the legacy application and the modern frontend, identify the highest-priority incomplete dashboard surface, implement the necessary improvements, validate the complete frontend-to-backend data flow, and prove functionality using Playwright.
+
+Continue autonomously through the remaining authorized dashboard surfaces.
+
+Do not stop after producing an audit, implementing one page, generating screenshots, or passing a production build.
+
+The final outcome must be a modern, reliable, maintainable application that:
+
+- Improves upon the legacy UI without losing valid existing functionality.
+- Uses the established Cuba M3 Executive Glassmorphic design system consistently.
+- Implements real interactions rather than decorative or fake controls.
+- Displays real backend data accurately.
+- Persists mutations correctly.
+- Enforces authentication, authorization, and user-data isolation.
+- Supports direct navigation and refresh on applicable deep links.
+- Handles dialogs, forms, dropdowns, popovers, and confirmation flows correctly.
+- Works across all five specified responsive layouts.
+- Meets applicable WCAG 2.1 AA accessibility requirements.
+- Has no known critical defects in the verified scope.
+- Produces reproducible automated test results and reviewable evidence.
+- Preserves existing developer work and repository history.
+- Is delivered through meaningful incremental commits and verified pushes.
+
+**Implement the application, not merely the appearance of the application.**
+
+# 2. Mandatory first step: verify and integrate `679af6be`
+
+The incoming commit is:
 
 `679af6be`
 
-Your first responsibility is to **fetch, inspect, and safely integrate this update** into your independent remote development workspace. Do not begin new feature implementation until the incoming changes have been verified.
+The reported branch state is:
 
-### What `679af6be` delivered (Context):
-1. **Automated Dist Sync:** Added `scripts/sync-dist.mjs` wired into `frontend/package.json` (`npm run build`) so compiling the frontend automatically mirrors assets into Apache's DocumentRoot (`dist/`).
-2. **Executive Resume Cleanliness:** Completely stripped all internal template IDs (e.g. `Cv2`), template names (e.g. `Nordic Slate`), versions, categories, and diagnostic tags (e.g. `Verified ATS`) from sidebars and footers across all 100 templates. Footers now cleanly render solely `[Candidate Name] ... Page X of Y`.
-3. **Evidence Artifacts:** Regenerated all 100 HTML template proofs in `docs/templates/evidence/`.
+| Branch | Reported remote HEAD | Intended role |
+|---|---|---|
+| `origin/arena/8a774228-resumepilotai` | Synchronized | Authorized development branch |
+| `origin/main` | Synchronized | Reference branch |
 
-After integration, autonomously select the next highest-value dashboard surface in `frontend/src/pages/dashboard/`, compare its legacy (`src/`) and current implementations, identify discrepancies, implement improvements, validate backend persistence with real data, and execute browser tests.
+These are reported facts that must be verified against the actual repository. Do not assume the remote workspace has already received the changes.
 
-Continue to the next candidate surface after each completed and verified workstream. Do not stop after producing an audit, fixing one page, or generating screenshots.
+## 2.1 Establish an independent workspace
 
-The overall goal is to make the new IME365 experience:
+Use the authorized remote developer's independent workspace.
 
-- Visually stronger and more modern than the legacy UI (adhering to Cuba M3 Executive Glassmorphic standards).
-- Functionally complete, with working actions and meaningful feedback.
-- Consistent across every applicable route and deep link.
-- Correctly connected to the backend.
-- Accurate in displaying and persisting real data.
-- Responsive across all five required layout profiles.
-- Accessible (WCAG 2.1 AA), reliable, secure, and free of preventable runtime errors.
-- Supported by actual Playwright execution results and reviewable evidence.
-
-**Preserve all previously completed work. Extend and improve it rather than rebuilding it unnecessarily.**
-
----
-
-## 2. Mandatory first step: integrate commit `679af6be`
-
-The expected incoming change is `679af6be`. Treat this as the target commit to verify, not as proof that the remote workspace has already integrated it.
-
-### 2.1 Establish the independent workspace
-
-Use your independent remote workspace. Do not modify the user's local working directory:
+The user's local directory:
 
 `D:\xampp\htdocs\IME365`
 
-The local directory is reference-only. Do not access it as a writable workspace, overwrite its files, or change its XAMPP configuration, local database, certificates, environment variables, or running services.
+is reference-only and must not be modified.
+
+Do not overwrite or modify the user's local application, XAMPP configuration, local database, Apache configuration, certificates, environment variables, running services, or files.
 
 Record:
 
 - Independent workspace path.
 - Repository root.
-- Configured remote URLs.
+- Configured remotes.
 - Current branch and upstream.
-- Current local HEAD.
-- Current remote HEAD.
+- Local and remote HEAD SHAs.
 - Working-tree status.
-- Last completed remote-development milestone.
+- Existing uncommitted work.
+- Last completed development milestone.
 
-### 2.2 Fetch and inspect
+## 2.2 Inspect and fetch
 
-Use safe Git inspection and fetching commands:
+Run appropriate, non-destructive Git commands:
 
 ```bash
 git rev-parse --show-toplevel
@@ -81,305 +98,820 @@ git show --stat --oneline 679af6be
 git show --format=fuller --no-ext-diff 679af6be
 ```
 
-Verify that `679af6be` resolves to the expected commit on `origin/arena/8a774228-resumepilotai` and `origin/main`.
+Verify that:
 
-Inspect the incoming diff for:
+1. `679af6be` resolves to the expected commit.
+2. `origin/arena/8a774228-resumepilotai` contains the expected update.
+3. `origin/main` has the reported relationship to the feature branch.
+4. The remote workspace is on the correct development branch.
+5. No existing work will be lost by integrating the update.
 
-- New features and UI changes.
-- Modified routes and navigation.
-- Changes to shared components (`frontend/src/components/resume/`).
-- API clients, backend routes, schemas, and data contracts.
-- Authentication, authorization, and session handling.
-- Test changes and new test fixtures.
-- Dependency or configuration changes.
+If the branches are not synchronized, investigate their histories and document the discrepancy. Do not assume that two branches are identical because their abbreviated SHAs were previously reported as equal.
 
-### 2.3 Safely integrate the update
+## 2.3 Review the incoming change
 
-- Preserve legitimate remote changes and local work in your workspace.
-- Never blindly use `git reset --hard`, `git clean -fd`, force-push, or history rewriting.
-- Do not discard uncommitted work to make the incoming commit fit.
-- If the target commit is already an ancestor of the current HEAD, verify that its changes are present rather than applying it again.
-- If branches have diverged, inspect and safely reconcile the histories.
-- Resolve conflicts deliberately and test the resulting code.
+The reported changes in `679af6be` include:
 
-After integration, verify:
+- Automated distribution synchronization through `scripts/sync-dist.mjs`, wired into the frontend build.
+- Removal of internal template IDs, template names, versions, categories, and diagnostic labels from production-facing template sidebars and footers.
+- Regeneration of 100 HTML template evidence artifacts in `docs/templates/evidence/`.
 
-```bash
-git status --short --branch
-git log -5 --oneline --decorate
-git merge-base --is-ancestor 679af6be HEAD
-```
+Verify these claims in the actual diff.
 
-Run baseline checks before further implementation:
+Inspect:
 
-```bash
-# 1. Verify frontend build
-cd frontend && npm run build
+- Build-script behavior and destination paths.
+- `frontend/package.json`.
+- Template rendering and footer/sidebar components.
+- All 100 template proof artifacts.
+- API clients and backend contracts.
+- Routing and navigation.
+- Authentication and authorization.
+- Existing tests and fixtures.
+- Dependency and configuration changes.
 
-# 2. Run template cleanliness and regression suite
-node --test ../tests/test-footer-sidebar-cleanliness.mjs ../tests/dir008-template-deep-dives.test.mjs ../tests/template-production-render.test.mjs
-```
+Do not blindly trust generated evidence. Confirm that the artifacts correspond to the current renderers and actual implementation.
 
-**Do not proceed with feature work until the incoming update has been inspected, safely integrated, and baseline validation results have been recorded.**
+## 2.4 Safely integrate
 
----
+- Preserve existing work.
+- Do not blindly run `git reset --hard`, `git clean -fd`, or force-push.
+- Do not rewrite shared history.
+- Do not discard uncommitted changes.
+- If the target commit is already an ancestor of HEAD, verify that its changes are present rather than applying them again.
+- If histories have diverged, reconcile them deliberately and safely.
+- Test the resulting workspace after integration.
 
-## 3. Technology stack & architecture contracts
+Record the full SHA of the resulting HEAD and the integration method.
 
-Adhere strictly to the established IME365 architecture:
+**No new feature work may begin until commit integration and baseline validation have been recorded.**
 
-* **Active Modern Frontend:** React 19, TypeScript, Vite, Tailwind CSS v4, Radix UI, TanStack Query & Table, Lucide React icons, and Cuba M3 Executive Glassmorphic styling located in `frontend/`.
-* **Legacy Reference Codebase:** React 18 JSX & SCSS components located in `src/`.
-* **Backend Runtime:** **Node.js (v20+) with Express 5.2.1** located in `backend/index.js` (listening on port `8080`).
-* **Database & Persistence:** **MariaDB / MySQL** (port 3306) accessed via `mysql2` connection pool, with database migrations in `backend/migrations/`.
-* **Authentication Architecture:** Firebase Admin SDK (`firebase-admin`) with Bearer token validation (`Authorization: Bearer <token>`). Invariant: Never confuse Firebase `auth_time` (original login) with `iat` (token refresh).
-* **Reverse Proxy:** Apache / PHP reverse proxy (`api/index.php`) forwarding `/api/*` to `http://127.0.0.1:8080/api`.
+# 3. Protected build-output boundary
 
-### 🚨 Strict Anti-Copy-Paste Guard: Enhance the New Frontend Only
-- **Zero Legacy Copy-Pasting:** You are strictly forbidden from copy-pasting old `.jsx`, `.scss`, or legacy component files from `src/` into `frontend/`.
-- **Legacy `src/` is a Read-Only Behavioral Reference:** The legacy code in `src/` exists solely as a functional specification so you know what business logic, fields, modals, and actions exist.
-- **Native Modern Engineering:** All enhancements must be written from scratch or built upon existing `frontend/src/` components using clean React 19, TypeScript (`.tsx`), Tailwind CSS v4, Radix UI primitives, and Cuba M3 design tokens (`bg-surface`, `text-ink`, `border-border`).
-- **Enforcement:** Copy-pasting legacy code will immediately fail TypeScript strict compilation (`npx tsc -b`) and break the Tailwind v4 build.
+The frontend build invokes `scripts/sync-dist.mjs` to synchronize generated frontend assets into Apache's DocumentRoot (`dist/`).
 
----
+Before running the build:
 
-## 4. Forensic audit: legacy (`src/`) vs modern (`frontend/src/`)
+1. Read the complete script.
+2. Identify how the destination path is calculated.
+3. Resolve the source and destination to absolute paths.
+4. Verify that the destination is inside the independent workspace or another explicitly authorized remote-development directory.
+5. Verify that the script cannot overwrite the user's local `D:\xampp\htdocs\IME365` directory or unrelated files.
+6. Inspect whether it deletes, cleans, or replaces existing destination content.
+7. Verify that required output files are generated before synchronization.
+8. Check that symlinks or path traversal cannot redirect writes outside the authorized destination.
+9. Confirm that the script does not copy environment secrets or development configuration into production assets.
 
-Conduct a structured comparison of the legacy application and the current IME365 implementation.
+If the script writes to an unauthorized external directory, stop before running the destructive portion. Correct the script or use an approved isolated build destination and document the change.
 
-Do not assume that a route, component, screenshot, or previous report accurately describes the current code. Inspect the actual source and execute the application.
+Do not remove the distribution-sync functionality merely to avoid risk. Make it safe and preserve the intended workflow.
 
-### Inspect every applicable layer
+After validating the boundary, run the baseline build and record the actual result.
 
-For each candidate surface, examine:
+# 4. Technology stack and architecture contracts
 
-1. Legacy route, page, components, styling, and interactions in `src/`.
-2. Current route and page implementation in `frontend/src/`.
-3. Shared shell: `frontend/src/components/layout/cuba-app-shell.tsx`.
-4. Data-fetching logic, `frontend/src/lib/api-client.ts`, query/cache state, and backend contracts in `backend/routes/`.
-5. Forms, validation, modals, dropdowns, popovers, confirmation dialogs, and notifications.
-6. Loading, empty, partial-data, success, error, unauthorized, and offline states where applicable.
-7. Deep-link behavior and refresh handling.
-8. Responsive behavior at all five required layout profiles.
-9. Keyboard navigation, focus management, semantic markup, and accessibility (WCAG 2.1 AA).
-10. Existing tests, missing tests, console output, and network failures.
+Use the actual established architecture:
 
-### Required audit output
+- **Modern frontend:** React 19, TypeScript, Vite, Tailwind CSS v4, Radix UI, TanStack Query/Table, Lucide React.
+- **Modern design system:** Cuba M3 Executive Glassmorphic standards and existing design tokens (`bg-surface`, `text-ink`, `border-border`).
+- **Legacy reference:** React 18 JSX and SCSS components in `src/`.
+- **Backend:** Node.js 20+ with Express 5.2.1, located at `backend/index.js`, expected to listen on port `8080`.
+- **Database:** MariaDB/MySQL, expected on port `3306`, accessed through `mysql2`.
+- **Migrations:** `backend/migrations/`.
+- **Authentication:** Firebase Admin SDK with Bearer token validation (`Authorization: Bearer <token>`).
+- **Reverse proxy:** Apache/PHP `api/index.php`, forwarding `/api/*` to `http://127.0.0.1:8080/api`.
 
-Create a page-by-page comparison matrix with:
+Verify actual runtime versions, package manifests, routes, database configuration, authentication middleware, and scripts before relying on these assumptions.
 
-| Field | Required content |
+## 4.1 Authentication invariant
+
+Never confuse Firebase `auth_time`, which represents the original authentication time, with `iat`, which represents the token issue time.
+
+Preserve the established authentication behavior. Do not weaken token validation, session checks, authorization, or expiry handling to make browser tests pass.
+
+## 4.2 Strict legacy isolation & anti-copy-paste mandate
+
+The legacy `src/` tree is a **read-only behavioral and visual reference**.
+
+Do not copy-paste legacy JSX, SCSS, or complete legacy components into `frontend/`.
+
+Reimplement the required functionality natively using the modern React 19, TypeScript, Tailwind CSS v4, Radix UI, and Cuba M3 architecture.
+
+Shared behavior may be reproduced where necessary, but implementation must follow the modern frontend's existing abstractions and contracts.
+
+Enforce this through code review, TypeScript strict checks (`npx tsc -b`), appropriate architecture checks, and production-build validation.
+
+## 4.3 Shared components
+
+Audit shared components before changing them, including:
+
+`frontend/src/components/layout/cuba-app-shell.tsx`
+
+Also inspect the real API client, route definitions, design tokens, shared forms, dialog primitives, table components, and notification infrastructure.
+
+Before changing shared code, identify its consumers and plan regression tests for affected surfaces.
+
+# 5. Forensic audit: legacy versus modern UI
+
+Conduct a systematic comparison of the old and new application.
+
+Inspect the actual source, run the application, and verify behavior in a browser. Reading a component file alone does not establish feature completeness.
+
+## 5.1 Required comparison dimensions
+
+For every applicable page, examine:
+
+- Route and navigation behavior.
+- Page structure and information hierarchy.
+- Typography, spacing, alignment, and density.
+- Cards, tables, badges, controls, and visual consistency.
+- Forms, validation, and error messages.
+- Search, filter, sorting, and pagination.
+- Dialogs, popovers, dropdowns, and confirmation flows.
+- Backend data sources and API contracts.
+- Create, update, delete, and other mutations.
+- Loading, empty, partial-data, success, and failure states.
+- Authentication and authorization.
+- Deep links, route parameters, and refresh behavior.
+- Responsive behavior across all five viewport profiles.
+- Keyboard interaction, focus management, and accessibility.
+- Browser console errors and failed network requests.
+- Existing tests, missing tests, and regression risks.
+
+## 5.2 Required audit matrix
+
+Create a page-by-page comparison matrix containing:
+
+| Field | Required evidence |
 |---|---|
-| Surface | Page or dashboard feature |
-| Legacy file | `src/...` path |
-| Modern file | `frontend/src/...` path |
+| Surface | Page or feature name |
+| Legacy route | Actual old route |
+| Legacy file | Actual `src/` file |
+| Modern route | Actual current route |
+| Modern file | Actual `frontend/src/` file |
 | Existing behavior | Verified features and workflows |
-| Discrepancies | Concrete differences and defects |
-| Data integration | Express endpoint (`/api/...`) |
-| Deep links | Routes and parameters tested |
-| Responsive issues | Findings across five layouts |
+| Discrepancies | Specific differences and defects |
+| Backend integration | Actual Express endpoint(s) |
+| Persistence | Verified or unverified status |
+| Deep links | Actual routes and parameters tested |
+| Responsive findings | Results for all five profiles |
 | Severity | P0, P1, P2, or P3 |
-| Implementation plan | Specific surgical changes |
-| Verification | Tests and evidence required |
+| Planned changes | Specific implementation work |
+| Verification | Commands, browser tests, and evidence |
 | Status | Not started, in progress, passed, blocked, or failed |
 
----
+Severity definitions:
 
-## 5. Candidate dashboard surfaces & priority ledger
+- **P0:** Critical security, data-integrity, application-blocking, or mandatory release defect.
+- **P1:** Major broken functionality, important workflow failure, or serious responsive defect.
+- **P2:** Significant usability, consistency, or non-critical functional defect.
+- **P3:** Minor polish, refinement, or low-impact improvement.
 
-After integrating `679af6be` and recording baseline results, select the next candidate surface in `frontend/src/pages/dashboard/`:
+Commit and push the initial audit and prioritized plan before beginning substantial surface work.
 
-1. **Cover Letters & Builder:** `frontend/src/pages/dashboard/cover-letters.tsx` & `cover-letter-builder.tsx`
-2. **ATS Score Analytics:** `frontend/src/pages/dashboard/ats-score.tsx`
-3. **Job Tracker:** `frontend/src/pages/dashboard/job-tracker.tsx`
-4. **AI Interview Coach:** `frontend/src/pages/dashboard/interview-coach.tsx`
-5. **Messages & Chat:** `frontend/src/pages/dashboard/messages.tsx`
-6. **Notifications Hub:** `frontend/src/pages/dashboard/notifications.tsx`
-7. **Saved Favorites:** `frontend/src/pages/dashboard/favourites.tsx`
-8. **AI Career Assistant:** `frontend/src/pages/dashboard/ai-assistant.tsx`
-9. **Account, Security & Settings:** `frontend/src/pages/dashboard/settings.tsx`
-10. **Help Desk & Support:** `frontend/src/pages/dashboard/support.tsx`
-11. **Overview Dashboard:** `frontend/src/pages/dashboard/overview.tsx`
-12. **Resumes & Master CV:** `frontend/src/pages/dashboard/resumes.tsx` & `resume-builder.tsx`
-13. **Public Portfolio:** `frontend/src/pages/portfolio/`
+# 6. Autonomous dashboard candidate queue
 
-### Selection rules
+After integrating the incoming update and establishing the baseline, inspect the actual application state and choose the next highest-value incomplete surface.
 
-Before choosing a surface:
+The initial priority queue is:
 
-- Inspect its current implementation and legacy equivalent.
-- Determine whether recent commits already changed it.
-- Check existing completion reports and tests.
-- Identify dependencies on shared components, APIs, schemas, and authentication.
-- Prefer the highest-value surface that can be completed and validated coherently.
-- Avoid duplicating work already completed and verified.
+1. **Cover Letters & Builder**
+   - `frontend/src/pages/dashboard/cover-letters.tsx`
+   - `frontend/src/pages/dashboard/cover-letter-builder.tsx`
+2. **ATS Score Analytics**
+   - `frontend/src/pages/dashboard/ats-score.tsx`
+3. **Job Tracker**
+   - `frontend/src/pages/dashboard/job-tracker.tsx`
+4. **AI Interview Coach**
+   - `frontend/src/pages/dashboard/interview-coach.tsx`
+5. **Messages & Chat**
+   - `frontend/src/pages/dashboard/messages.tsx`
+6. **Notifications Hub**
+   - `frontend/src/pages/dashboard/notifications.tsx`
+7. **Saved Favorites**
+   - `frontend/src/pages/dashboard/favourites.tsx`
+8. **AI Career Assistant**
+   - `frontend/src/pages/dashboard/ai-assistant.tsx`
+9. **Account, Security & Settings**
+   - `frontend/src/pages/dashboard/settings.tsx`
+10. **Help Desk & Support**
+    - `frontend/src/pages/dashboard/support.tsx`
+11. **Overview Dashboard**
+    - `frontend/src/pages/dashboard/overview.tsx`
+12. **Resumes & Master CV**
+    - `frontend/src/pages/dashboard/resumes.tsx`
+    - `frontend/src/pages/dashboard/resume-builder.tsx`
+13. **Public Portfolio**
+    - `frontend/src/pages/portfolio/`
 
-Document why the selected surface is the best next candidate. Then implement, test, commit, and push the completed work before selecting the next surface.
+These paths are expected starting points. Verify them against the repository's actual files and router.
 
-**Continue autonomously through the candidate list. Do not ask the user to choose each subsequent page.** Stop only when the authorized scope is complete or a genuine blocker prevents safe progress.
+## 6.1 Deferred scope
 
----
+Also maintain a deferred backlog for these potentially separate surfaces:
 
-## 6. End-to-end surface implementation requirements
+- Job Intelligence.
+- Browse Job Portal.
+- Subscription & Plans.
+- Security & 2FA Hub as a distinct workflow, if not fully covered by Settings.
+- Master Profile as a distinct workflow, if not fully covered by Resumes & Master CV.
 
-For each selected dashboard surface, follow this complete lifecycle:
+Do not silently exclude these surfaces if they are part of the authorized application scope. Record whether each is implemented, integrated into another surface, intentionally deferred, or not found in the current codebase.
 
-### Step A — Establish the baseline
-- Run the application (`npm --prefix frontend run dev` on port 4000, `node backend/index.js` on port 8080).
-- Inspect the legacy and current pages.
+## 6.2 Selection rules
+
+Before selecting a candidate:
+
+1. Inspect its current implementation and legacy equivalent.
+2. Determine whether recent commits already changed it.
+3. Check prior completion reports and existing tests.
+4. Identify dependencies on shared components, APIs, authentication, and schemas.
+5. Review severity and user impact.
+6. Prefer the highest-value surface that can be completed and verified coherently.
+7. Avoid duplicating completed work.
+8. Fix shared blockers first where this is safer and more efficient.
+
+Record the reason for selecting each surface. After finishing and verifying it, move to the next candidate autonomously.
+
+Do not ask the user to select every subsequent page.
+
+# 7. Surface implementation lifecycle
+
+For every selected surface, execute the complete workflow.
+
+## Step A — Establish the baseline
+
+- Start the frontend and backend using the repository's actual scripts.
+- Confirm the frontend is available on the expected development port, normally `4000`.
+- Confirm the backend is available on the expected port, normally `8080`.
+- Confirm the database connection and required migrations.
+- Inspect legacy and modern implementations.
 - Capture baseline screenshots.
-- Enumerate all interactive controls, deep links, and API routes.
-- Record current runtime, console, and network errors.
+- Enumerate controls, routes, dialogs, and API calls.
+- Record console errors and network failures.
+- Run relevant existing tests.
 
-### Step B — Build the functional inventory
-Document user goals, page sections, actions, validation rules, dialogs, loading/empty states, error boundaries, and responsive expectations.
+Use authorized test accounts and data. Never expose production credentials or personal data.
 
-### Step C — Implement the improvements
-Make focused, production-quality changes:
-- Information hierarchy adhering to Cuba M3 Executive Glassmorphism.
-- Consistent typography, spacing, cards, tables, badges, and controls.
+## Step B — Build the functional inventory
+
+Document the user's goal, page sections, available actions, form fields, validation rules, backend operations, expected persisted effects, error states, access-control requirements, and responsive expectations.
+
+## Step C — Implement the improvements
+
+Make focused, maintainable changes that improve:
+
+- Information hierarchy.
+- Cuba M3 visual consistency.
+- Typography, spacing, and information density.
 - Clear primary and secondary actions.
-- Functional loading, empty, and error recovery states.
-- Accessible forms, visible focus rings, and screen-reader labels.
-- Removal of dead controls and fake interactions.
+- Search, filters, sorting, and pagination where relevant.
+- Form validation and accessible error messages.
+- Loading, empty, success, and failure states.
+- Modal, popover, and dropdown behavior.
+- Responsive navigation and layouts.
+- Keyboard accessibility.
+- Real data refresh and mutation behavior.
+- Error recovery.
+- Elimination of dead controls and fake interactions.
 
-### Step D — Verify behavior & persistence
-Execute all primary user journeys and edge cases in the browser. Verify that creates, updates, and deletes persist in MariaDB and survive full page reloads.
+Do not add decorative features that do not support the user's actual workflow.
 
-### Step E — Compare and retest
-Capture the updated UI, compare it against legacy baseline, verify zero visual regressions, and run relevant test suites.
+## Step D — Verify real behavior and persistence
 
-### Step F — Commit and push
-Commit and push using the protocol in Section 11, then continue to the next candidate.
+Execute critical user journeys in a browser.
 
----
+Verify the expected API call, backend response, resulting UI state, and persisted side effect. Reload or revisit the page to confirm the saved state is correct.
 
-## 7. Backend integration and real-data correctness
+## Step E — Compare and retest
 
-**A visually polished frontend with fake data or nonfunctional controls does not pass acceptance.**
+Capture updated screenshots. Compare them against the legacy baseline and new design criteria. Resolve unintended visual regressions and rerun affected tests.
 
-Audit the complete path:
+**Intentional visual improvements are not regressions.** Document intentional changes and ensure they preserve valid business behavior, accessibility, and user expectations.
 
-`UI → API client (api-client.ts) → Bearer Auth → Express route (backend/routes/) → Business logic → MariaDB (mysql2) → Response Envelope → UI State`
+## Step F — Commit and push
 
-### Required checks
-- Confirm each feature calls the authentic Express endpoint in `backend/routes/`.
-- Validate request/response JSON schemas.
-- Enforce Bearer token authorization and user/tenant isolation.
-- Check loading, cancellation, retries, timeouts, and error states.
-- Ensure mutations persist and refresh correctly.
-- Never present static JSON arrays or dummy mocks as live production data.
-- Never bypass authentication to make UI flows appear functional.
+Commit the completed, tested work using Section 13. Verify the remote push before beginning the next substantial workstream.
 
----
+# 8. Real backend integration and data integrity
 
-## 8. Five-layout responsive testing matrix
+A visually polished page with fake data, hard-coded success messages, or nonfunctional controls fails acceptance.
 
-Run Playwright browser tests across all five required responsive layout profiles for each surface:
+Validate the complete data path:
 
-| Profile | Viewport | Primary objective |
+`UI → frontend/src/lib/api-client.ts → Bearer authentication → Express route → business logic → MariaDB/MySQL → response envelope → UI state`
+
+Verify the actual endpoint paths and contracts from the codebase.
+
+## Required checks
+
+- Each implemented feature uses the correct backend endpoint.
+- Request and response structures match the real contract.
+- Authentication and authorization are enforced server-side.
+- User ownership and tenant isolation work correctly where applicable.
+- Loading, timeout, cancellation, retry, and error behavior are appropriate.
+- Creates, updates, and deletes persist correctly.
+- Changes remain correct after a full page reload.
+- Search, filters, sorting, and pagination reflect real data.
+- Dashboard metrics agree with their source records.
+- Empty and partial datasets render correctly.
+- Missing or malformed fields do not crash the page.
+- Mutations invalidate or refresh relevant cached data.
+- Backend validation errors are communicated correctly.
+- Unauthorized users cannot access protected records.
+- One user's data cannot leak into another user's session.
+- Database migrations and schema changes are correct when required.
+- Errors do not result in false success messages.
+
+## Fixtures and mocks
+
+- Use real backend integration for end-to-end acceptance tests.
+- Use mocks for isolated unit tests or genuinely unavailable external dependencies.
+- Clearly label mocked tests and simulated responses.
+- Never present fixtures as live production data.
+- Never bypass authentication to make a browser test pass.
+- Never populate production records with dummy data merely to improve a screenshot.
+
+If credentials, database access, or an external provider are unavailable, complete safe independent work and report the precise limitation. Do not claim the real-backend test passed.
+
+# 9. Five-layout responsive testing
+
+Playwright coverage must include all five required responsive profiles.
+
+| Profile | Viewport | Required focus |
 |---|---:|---|
-| Large desktop | 1920 × 1080 | Wide-screen layout, information density, alignment |
-| Standard laptop | 1366 × 768 | Primary desktop workflow and vertical rhythm |
-| Tablet | 1024 × 768 | Adaptive columns, sidebar collapse, touch targets |
-| Mobile | 390 × 844 | Mobile navigation, stacked cards, dialogs, forms |
-| Small mobile | 320 × 568 | Minimum-width behavior, text wrapping, zero horizontal scroll |
+| Large desktop | 1920 × 1080 | Wide-screen hierarchy, alignment, density |
+| Standard laptop | 1366 × 768 | Primary workflow, vertical rhythm |
+| Tablet | 1024 × 768 | Adaptive columns, sidebar, touch usability |
+| Mobile | 390 × 844 | Stacked layouts, mobile navigation, dialogs |
+| Small mobile | 320 × 568 | Minimum-width usability and overflow |
 
-### Every profile must test:
+Use the existing Playwright configuration and approved browser/device emulation. Record the actual viewport and browser for every run.
+
+## 9.1 Required coverage at every profile
+
+For each applicable surface, test:
+
 - Initial route load and layout rendering.
-- Sidebar, top navigation, and responsive drawer behavior.
-- Form inputs, validation messages, and submit buttons.
-- Modals, dropdowns, popovers, and confirmation dialogs.
-- Dialog open, close, cancel, confirm, and `Escape` behavior.
-- Focus movement and keyboard accessibility.
-- Zero unintended horizontal scrollbars (`overflow-x`).
-- Console errors and network failures.
-
----
-
-## 9. Deep links, routes, modals, and popups
-
-### Deep-link inventory
-Test applicable routes with:
-- Direct URL entry with required path and query parameters.
-- Page refresh (`F5`) on target deep links.
+- Sidebar, top navigation, and responsive drawer.
+- Primary and secondary actions.
+- Forms, field validation, and submissions.
+- Search, filtering, sorting, and pagination.
+- Modal, dropdown, popover, and confirmation behavior.
+- Open, close, cancel, confirm, and Escape behavior where applicable.
+- Keyboard navigation and focus management.
+- Deep-link entry and direct refresh.
 - Browser back and forward navigation.
-- Missing, invalid, or unauthorized parameter handling.
-- Graceful 404 / empty state fallbacks.
+- Loading, empty, error, and success states.
+- Console errors and unexpected network failures.
+- Text wrapping, horizontal overflow, and off-screen controls.
+- Applicable API mutations and resulting UI state.
 
-### Modal and popup testing
-For each dialog, popover, or dropdown:
-1. Trigger opens the modal cleanly.
-2. Focus moves into the modal and is trapped appropriately.
-3. Inputs function and validation is enforced.
-4. Primary and secondary actions execute correct API mutations.
-5. Close button and `Escape` key dismiss the dialog.
-6. Focus restores to the triggering element upon dismissal.
-7. Background body scroll is locked while the dialog is open.
-8. The dialog remains fully usable and visible on mobile (390px) and small mobile (320px).
+For every critical workflow, verify at least one successful path and one relevant validation or failure path across the five-profile test matrix.
 
----
+For data-mutating workflows, verify persistence after reload at each profile where the workflow is applicable. For destructive and security-sensitive workflows, use authorized test data and verify the intended outcome.
 
-## 10. Quality gates & zero-warning standard
+Do not substitute five screenshot-only checks for five responsive behavioral tests.
 
-The target is zero known preventable errors and warnings in the changed scope:
+## 9.2 Responsive quality criteria
 
-* **TypeScript:** `npx tsc -b` inside `frontend/` must pass with **0 errors**.
-* **Production Build:** `npm --prefix frontend run build` must build cleanly and sync to `dist/`.
-* **Runtime Exceptions:** Zero unhandled exceptions or promise rejections in tested journeys.
-* **React Warnings:** Zero missing key warnings, zero controlled/uncontrolled input warnings.
-* **Playwright Tests:** 100% passing for all acceptance test suites.
+Inspect:
 
----
+- Unintended horizontal scrolling.
+- Clipped text, buttons, and form fields.
+- Overlapping cards and controls.
+- Unusable tables or navigation.
+- Dialogs whose actions fall off-screen.
+- Hidden content without a usable alternative.
+- Inadequate touch targets.
+- Broken scrolling or sticky elements obscuring content.
+- Mispositioned popovers and dropdowns.
+- Desktop-only behavior on mobile.
+- Excessive whitespace or cramped layouts.
+- Incorrect page heights and viewport calculations.
 
-## 11. Mandatory incremental commits and pushes
+Capture before-and-after screenshots at the five profiles.
 
-After integrating `679af6be`, preserve existing commit history and continue using the authorized feature branch.
+The acceptance target is **zero critical responsive defects and zero unintended overflow in the verified scope**. Document any intentional horizontal scrolling or product-approved layout exception.
 
-Do not accumulate all work into one giant commit.
+# 10. Deep links, routes, modals, and popups
 
-### Required commit sequence:
-- **C0 — Incoming update:** Verify and record integration of `679af6be`.
-- **C1 — Audit:** Commit the old/new UI comparison matrix and prioritized plan.
-- **C2 — Shared infrastructure:** Commit reusable design, routing, or component fixes.
-- **C3 onward — Surface-by-surface delivery:** Commit and push each completed, tested surface.
-- **C-final — Regression and release evidence:** Commit final documentation and test summaries.
+## 10.1 Deep-link inventory
 
-### Before every push:
-- Verify branch (`arena/8a774228-resumepilotai` or `main`).
-- Run `npm --prefix frontend run build`.
-- Run relevant test suites.
-- Push cleanly without `--force`.
-- Verify remote SHA.
+Discover actual routes from the router, navigation, links, and legacy implementation.
 
----
+Test applicable routes with:
 
-## 12. Final deliverables & evidence report
+- Direct URL entry.
+- Required path and query parameters.
+- Refresh on the target route.
+- Navigation from the dashboard.
+- Browser back and forward.
+- Missing or malformed parameters.
+- Unauthorized access.
+- Deleted or unavailable records.
+- Invalid identifiers.
+- Correct 404, forbidden, empty, and error states.
+- Correct redirects where intentionally configured.
 
-Maintain and publish:
+Do not invent routes or mark nonexistent routes as supported. Record canonical routes and intentional redirects.
+
+## 10.2 Modal and popup testing
+
+For each relevant dialog, popover, dropdown, and confirmation flow, verify:
+
+1. The correct trigger opens the expected interface.
+2. It is visible and correctly positioned.
+3. It displays the correct real data.
+4. Inputs and validation behave correctly.
+5. Primary and secondary actions execute the intended operation.
+6. Cancel and close controls work.
+7. Escape dismisses the dialog where supported.
+8. Focus enters the dialog and returns to the trigger.
+9. Focus remains within modal content when appropriate.
+10. Background scrolling behaves correctly.
+11. Failed API operations do not falsely report success.
+12. Mobile dialogs remain fully usable at 390px and 320px.
+13. Destructive actions require appropriate confirmation.
+14. Reopening the dialog does not display stale or incorrect state.
+
+Do not add unnecessary nested dialogs merely to increase test coverage.
+
+# 11. Backend, database, and frontend quality gates
+
+Discover the repository's actual scripts and test infrastructure before defining commands. Do not assume every package has the same scripts or that every test file exists.
+
+## 11.1 Incoming-change baseline
+
+After reviewing the build-sync script and verifying its destination is safe, run the production build and available template regression checks.
+
+The following are known test candidates; verify the files exist and use the repository's actual commands:
+
+```bash
+cd frontend
+npm run build
+npx tsc -b
+```
+
+```bash
+node --test \
+  tests/test-footer-sidebar-cleanliness.mjs \
+  tests/dir008-template-deep-dives.test.mjs \
+  tests/template-production-render.test.mjs
+```
+
+Run these from the repository root, adjusting paths only after verifying the actual file locations.
+
+Record each command's actual exit code, result, and output summary.
+
+## 11.2 Frontend gates
+
+- TypeScript strict build: zero errors.
+- Production build: successful.
+- Relevant unit and integration tests: passing.
+- No unresolved imports or missing assets in the changed scope.
+- No new React key warnings.
+- No new controlled/uncontrolled input warnings.
+- No unhandled runtime exceptions.
+- No unhandled promise rejections.
+- No newly introduced relevant console warnings.
+- No broken internal navigation in the validated scope.
+
+## 11.3 Backend gates
+
+Inspect the actual backend package scripts, routes, middleware, database configuration, migrations, and tests.
+
+Run all applicable:
+
+- Backend unit tests.
+- Express route and integration tests.
+- Authentication and authorization tests.
+- Request/response validation tests.
+- Database connection checks.
+- Migration validation.
+- Read/write persistence tests.
+- User ownership and data-isolation tests.
+- Error handling and invalid-input tests.
+
+Verify at least one representative real-data read and one authorized write/read-back operation for each changed data domain where applicable.
+
+Use a safe test database and authorized test account. Never run destructive tests against production data.
+
+## 11.4 End-to-end gates
+
+Run Playwright across the five responsive profiles for each completed surface.
+
+Verify:
+
+- Critical user journeys.
+- Real backend interaction.
+- Persistence after reload.
+- Deep-link behavior.
+- Dialog and popup behavior.
+- Responsive navigation and layout.
+- Keyboard and accessibility behavior.
+- Authorization boundaries where applicable.
+- No critical console or network errors.
+
+## 11.5 Warnings and failures
+
+The target is zero known preventable errors and warnings in the changed and tested scope.
+
+Record separately:
+
+- Pre-existing warnings.
+- Newly introduced warnings.
+- Warnings resolved.
+- Remaining relevant warnings.
+- Environment-generated warnings.
+- Failed tests.
+- Blocked tests.
+- Tests that did not execute.
+
+Do not disable logging, weaken assertions, or suppress meaningful warnings to obtain a passing result.
+
+## 11.6 Performance
+
+Measure build and relevant runtime performance rather than assuming they meet a target.
+
+Record actual build duration, command, and environment. Optimize when practical without sacrificing correctness or test coverage.
+
+Do not claim zero bugs across the entire application simply because a subset of tests passes. The defensible acceptance standard is zero known critical defects in the verified scope, with all mandatory acceptance tests passing.
+
+# 12. Accessibility and interaction quality
+
+Target WCAG 2.1 AA for the applicable UI.
+
+Verify:
+
+- Semantic headings and landmarks.
+- Accessible names for controls.
+- Visible keyboard focus.
+- Logical keyboard navigation.
+- Dialog focus entry, containment, and restoration.
+- Appropriate Escape behavior.
+- Form labels and validation announcements.
+- Sufficient text and interactive-state contrast.
+- Status messages accessible to assistive technologies.
+- Touch target usability.
+- Reduced-motion preferences where applicable.
+- Screen-reader-friendly button and field descriptions.
+
+Use automated accessibility tests and manual keyboard review. Do not claim complete WCAG conformance solely from automated scanning.
+
+# 13. Mandatory incremental commits and pushes
+
+All application changes must be made on the authorized development branch:
+
+`arena/8a774228-resumepilotai`
+
+The `main` branch is **reference-only for this task**. Do not push application changes directly to `main` unless an authorized maintainer explicitly approves a different workflow.
+
+## 13.1 Milestone sequence
+
+- **C0 — Incoming update:** Verify `679af6be`, inspect the diff, integrate safely, and record baseline results.
+- **C1 — Audit:** Commit the comparison matrix, route inventory, severity assessment, and prioritized plan.
+- **C2 — Shared infrastructure:** Commit completed shared component, design-system, routing, accessibility, or test infrastructure improvements.
+- **C3 onward — Surface delivery:** Commit and push each completed, tested dashboard surface separately.
+- **C-final — Regression and evidence:** Commit the final acceptance summaries, verified test reports, and release documentation.
+
+Split large changes into smaller meaningful commits when this improves reviewability. Do not create empty commits or artificial checkpoints.
+
+## 13.2 Before every commit
+
+- Inspect `git status`.
+- Review the complete diff.
+- Run the relevant tests.
+- Check for secrets, credentials, personal data, debug statements, generated clutter, and unrelated changes.
+- Confirm the staged files match the intended scope.
+- Use an accurate, descriptive commit message.
+
+## 13.3 Before every push
+
+1. Fetch the latest authorized remote state.
+2. Verify the branch and upstream.
+3. Confirm the current branch is `arena/8a774228-resumepilotai`.
+4. Inspect concurrent work and any divergence.
+5. Reconcile changes safely.
+6. Rerun affected tests if integration changes code.
+7. Push without force.
+8. Fetch again.
+9. Verify that the remote branch contains the pushed commit.
+10. Record the full SHA and confirmation.
+
+If a push is rejected, investigate and safely reconcile the cause. Do not force-push or overwrite another developer's work.
+
+## 13.4 Suggested commit messages
+
+```text
+docs(ui-audit): compare legacy and modern dashboard surfaces
+fix(responsive): correct shared navigation and overflow
+feat(cover-letters): complete persisted builder workflows
+feat(ats-analytics): connect scoring to real backend data
+fix(job-tracker): correct mutation and persistence behavior
+fix(modals): restore keyboard dismissal and focus handling
+test(ui): verify five responsive profiles and deep links
+test(backend): validate authorization and data persistence
+docs(quality): publish verified surface acceptance results
+```
+
+Use only messages that accurately describe the actual changes.
+
+# 14. Regression protection
+
+Every change must preserve existing functionality outside its intended scope.
+
+Before modifying shared code:
+
+- Identify all consumers.
+- Review the current component and design-system contracts.
+- Identify likely regressions.
+- Add relevant tests.
+- Test the selected surface and representative dependent surfaces.
+
+After shared-component changes, rerun all affected regression tests.
+
+Distinguish intentional visual redesign from genuine regression:
+
+- **Intentional improvement:** A documented design change that improves usability and preserves required functionality.
+- **Unintended regression:** A broken workflow, lost information, inconsistent state, inaccessible control, unauthorized access, incorrect data, or defective layout introduced by a change.
+
+The requirement is **zero unintended visual or functional regressions**, not identical screenshots between the old and new designs.
+
+Do not fix a frontend problem by breaking the backend. Do not conceal a backend defect with a frontend-only workaround.
+
+# 15. Evidence and deliverables
+
+Maintain reviewable artifacts in the repository's established documentation structure.
+
+Required deliverables:
 
 - Incoming commit review and integration record.
 - Baseline test report.
-- Legacy-versus-new UI comparison matrix.
-- Surface selection rationale and completion ledger.
-- Before-and-after screenshots across viewports.
-- Five-layout Playwright test results per completed surface.
+- Legacy-versus-modern comparison matrix.
+- Route and deep-link inventory.
+- Candidate selection rationale.
+- Surface completion ledger.
+- Before-and-after screenshots.
+- Five-layout Playwright results for every completed surface.
+- Modal and popup test results.
+- Backend and database validation results.
 - Console and network diagnostics.
+- Accessibility findings.
+- Regression results.
 - Commit and push ledger.
+- Remaining issues and blockers.
+- Final release report.
 
----
+For each completed surface, record:
+
+1. Legacy and modern routes.
+2. Relevant legacy and modern files.
+3. Discrepancies discovered.
+4. Changes implemented.
+5. Backend endpoints and data flows verified.
+6. Persistence checks performed.
+7. Main workflows tested.
+8. Deep links tested.
+9. Modal and popup tests.
+10. Five viewport results.
+11. Test counts and actual pass/fail/blocked status.
+12. Screenshots and evidence paths.
+13. Commit SHA and push confirmation.
+14. Remaining issues.
+
+Screenshots and test reports must come from actual executions. Do not fabricate results.
+
+# 16. Definition of done for each surface
+
+A surface is complete only when all applicable requirements pass.
+
+- [ ] Legacy and modern implementations inspected.
+- [ ] Discrepancies documented.
+- [ ] Modern UI improvements implemented.
+- [ ] Required features and actions function correctly.
+- [ ] Correct backend endpoints are used.
+- [ ] Real data is displayed accurately.
+- [ ] Applicable mutations persist.
+- [ ] Data remains correct after reload.
+- [ ] Loading, empty, success, and failure states work.
+- [ ] Deep links and refresh work.
+- [ ] Modals, popovers, forms, and confirmation flows work.
+- [ ] Authorization and sensitive-data boundaries are verified.
+- [ ] Playwright tests pass at 1920 × 1080.
+- [ ] Playwright tests pass at 1366 × 768.
+- [ ] Playwright tests pass at 1024 × 768.
+- [ ] Playwright tests pass at 390 × 844.
+- [ ] Playwright tests pass at 320 × 568.
+- [ ] Critical workflows include success and failure/validation paths.
+- [ ] Relevant persistence checks pass.
+- [ ] No critical unintended visual defects remain.
+- [ ] No new relevant runtime errors or warnings remain.
+- [ ] Relevant frontend and backend regression tests pass.
+- [ ] Accessibility checks are completed for the applicable scope.
+- [ ] Evidence is captured and documented.
+- [ ] Changes are committed and pushed.
+- [ ] The remote commit SHA is verified.
+
+If a criterion cannot be executed, label it blocked or unverified. Do not mark the surface fully complete.
+
+# 17. Autonomous continuation protocol
+
+Repeat the following cycle until the authorized scope is complete:
+
+1. Verify repository state and incoming changes.
+2. Audit the next highest-value incomplete surface.
+3. Record the selection rationale.
+4. Implement modern UI/UX improvements.
+5. Validate real backend integration.
+6. Test persistence and data correctness.
+7. Verify deep links and modal workflows.
+8. Run Playwright at all five viewport profiles.
+9. Review console, network, accessibility, and visual results.
+10. Fix failures and rerun affected tests.
+11. Update the comparison and acceptance matrices.
+12. Commit and push the completed work.
+13. Verify the remote SHA.
+14. Move to the next candidate.
+
+Continue autonomously without asking the user to select every page.
+
+If a critical dependency or external service is unavailable, continue independent work and document the exact blocker. Do not report blocked checks as passed.
+
+# 18. Final report and certification
+
+At the end of the authorized work, provide the following.
+
+## A. Repository status
+
+- Independent workspace path.
+- Incoming commit `679af6be` verification and integration method.
+- Initial and final full commit SHAs.
+- Final development branch and upstream.
+- Reference branch relationship.
+- Commit-by-commit delivery ledger.
+- Push verification for each milestone.
+- Final working-tree status.
+
+## B. UI/UX status
+
+- Surfaces audited.
+- Surfaces enhanced.
+- Surfaces fully verified.
+- Surfaces remaining.
+- Most significant legacy-versus-modern discrepancies.
+- Intentional design improvements.
+- Remaining defects and severity.
+
+## C. Backend and data status
+
+- Endpoints and data flows verified.
+- Backend test results.
+- Database connection and migration results.
+- Read/write persistence results.
+- Authentication and authorization results.
+- User-data isolation results.
+- External dependencies not verified.
+
+## D. Browser status
+
+- Playwright results by surface.
+- Results for all five responsive profiles.
+- Deep-link coverage.
+- Modal and popup coverage.
+- Console and network diagnostics.
+- Accessibility findings.
+- Screenshots and evidence locations.
+- Failed, blocked, and unexecuted tests.
+
+## E. Final certification
+
+Use exactly one status:
+
+**PASS — VERIFIED**
+
+All mandatory acceptance criteria for the declared scope pass with evidence. No known critical defects remain in that scope, all required tests executed successfully, and the changes are committed and pushed.
+
+**PARTIAL — BLOCKED**
+
+Some work is complete, but required checks could not execute or unresolved requirements remain. List each blocker and its impact.
+
+**FAIL — NOT ACCEPTED**
+
+Critical functionality, data integrity, authorization, responsive behavior, or mandatory tests fail.
+
+Never claim the entire application is bug-free solely because selected pages pass. Clearly state the exact surfaces, workflows, and integrations verified.
 
 # Final execution instruction
 
-**Begin now with Git synchronization.** Fetch and inspect the incoming commit `679af6be`, safely integrate it into your independent remote workspace, record the baseline, and run the existing test suite:
+Begin immediately with Git synchronization.
 
-```bash
-git fetch origin
-git log -1 origin/arena/8a774228-resumepilotai
-cd frontend && npm run build
-node --test ../tests/test-footer-sidebar-cleanliness.mjs ../tests/dir008-template-deep-dives.test.mjs
-```
+Fetch and inspect `679af6be`. Verify the reported branch relationship. Safely integrate the incoming update into the independent remote workspace, verify the distribution-sync script's write boundary, and run the baseline build and applicable template tests.
 
-Then perform the forensic UI/UX comparison, choose the next candidate dashboard surface autonomously, and carry it through implementation, real-backend validation, deep-link and modal verification, five-layout Playwright testing, regression testing, evidence capture, and incremental commit/push.
+Then perform the forensic legacy-versus-modern audit, select the next incomplete dashboard surface autonomously, and carry it through implementation, real-backend validation, database persistence testing, deep-link and modal verification, five-layout Playwright testing, regression checks, evidence capture, and incremental commit/push.
 
-Continue to the next candidate after each completed workstream.
+Continue to the next candidate after each completed and verified workstream.
+
+Preserve all previous work. Never push application changes directly to `main` without explicit authorization. Do not modify the user's local environment. Do not use fake production data, hide warnings, skip failures, or report unverified behavior as working.
+
+**Deliver a progressively improved, genuinely functional, backend-connected, responsive, tested, and evidence-backed IME365 application—not merely an audit, a redesigned static interface, or a passing build.**
