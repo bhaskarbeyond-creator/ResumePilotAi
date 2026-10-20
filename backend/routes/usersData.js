@@ -143,19 +143,26 @@ router.get('/:id', requireAuth, async (req, res) => {
 });
 
 // POST /api/users-data/mfa/disable - Server-assisted MFA unenroll with active authenticated session
+// Recent sign-in is enforced by the route policy (security/policy.js).
+// Identity-provider failures are answered with controlled codes: provider
+// internals (credential/transport details) are logged, never sent to clients.
 router.post('/mfa/disable', requireAuth, async (req, res) => {
     const identityAdmin = req.app.get('firebaseAdmin') || require('../services/firebaseAdmin');
     if (!identityAdmin?.auth) return res.status(503).json({ success: false, code: 'IDENTITY_DIRECTORY_UNAVAILABLE', error: 'Identity service unavailable.' });
+    let identityPhase = true;
     try {
         const identity = await identityAdmin.auth().getUser(req.user.uid);
+        identityPhase = false;
         const factors = identity.multiFactor?.enrolledFactors || [];
         await req.repository.recordSecurityAuditLog({
             action: 'USER_MFA_UNENROLL_REQUESTED', actorUid: req.user.uid, targetUid: req.user.uid,
             category: 'iam.users', severity: 'HIGH', targetType: 'USER', targetId: req.user.uid,
             metadata: { enrolledFactorCount: factors.length }, requestId: res.locals.requestId,
         });
+        identityPhase = true;
         await identityAdmin.auth().updateUser(req.user.uid, { multiFactor: { enrolledFactors: [] } });
         await identityAdmin.auth().revokeRefreshTokens(req.user.uid);
+        identityPhase = false;
         await req.repository.recordSecurityAuditLog({
             action: 'USER_MFA_UNENROLLED', actorUid: req.user.uid, targetUid: req.user.uid,
             category: 'iam.users', severity: 'HIGH', targetType: 'USER', targetId: req.user.uid,
@@ -163,7 +170,17 @@ router.post('/mfa/disable', requireAuth, async (req, res) => {
         });
         return res.json({ success: true, mfaEnabled: false, removedFactorCount: factors.length });
     } catch (err) {
-        console.error('[UsersData MFA disable error]:', err.message);
+        console.error('[UsersData MFA disable error]:', err.code || '', err.message);
+        if (identityPhase && err?.code === 'auth/user-not-found') {
+            return res.status(404).json({ success: false, code: 'IDENTITY_NOT_FOUND', error: 'No identity-provider record exists for this account.', requestId: res.locals?.requestId });
+        }
+        if (identityPhase) {
+            return res.status(503).json({
+                success: false, code: 'IDENTITY_DIRECTORY_UNAVAILABLE',
+                error: 'The identity service is unavailable, so two-factor authentication was not confirmed as changed. Try again later.',
+                requestId: res.locals?.requestId,
+            });
+        }
         return replyRepoError(res, err, 'Failed to disable MFA');
     }
 });

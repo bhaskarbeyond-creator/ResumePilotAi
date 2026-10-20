@@ -100,6 +100,8 @@ function deny(res, code, message) {
   return res.status(403).json({ error: { code, message, requestId: res.locals.requestId } });
 }
 
+const RECENT_AUTHENTICATION_PATHS = new Set(['/account/delete', '/users-data/mfa/disable']);
+
 /** Route-level authorization policy installed after requireAuth. */
 function enforceApiPolicy(req, res, next) {
   const pathname = req.path;
@@ -132,7 +134,10 @@ function enforceApiPolicy(req, res, next) {
   if ((requiresVerifiedEmail(pathname) || isAdminPath(pathname)) && !req.user?.emailVerified) {
     return deny(res, 'EMAIL_VERIFICATION_REQUIRED', 'A verified email address is required');
   }
-  const requiresRecentAuthentication = pathname === '/account/delete';
+  // Irreversible self-service operations need a recent sign-in. Firebase's
+  // verified auth_time (time of the last real sign-in) is the source of truth;
+  // iat only reflects when the token was minted or refreshed.
+  const requiresRecentAuthentication = RECENT_AUTHENTICATION_PATHS.has(pathname);
   if (requiresRecentAuthentication) {
     const authTime = Number(req.user?.claims?.auth_time || 0) * 1000;
     const maxAgeMs = Number(process.env.SENSITIVE_AUTH_MAX_AGE_MS || 10 * 60 * 1000);

@@ -212,6 +212,10 @@ export function AppRouter() {
               path="/dashboard/settings/*"
               element={<RequireAuth><CubaAppShell><SettingsPage /></CubaAppShell></RequireAuth>}
             />
+            {/* Legacy settings addresses (C1 deep-link inventory) open the matching section. */}
+            <Route path="/dashboard/profile" element={<Navigate to="/dashboard/settings?tab=profile" replace />} />
+            <Route path="/dashboard/security" element={<Navigate to="/dashboard/settings?tab=security" replace />} />
+            <Route path="/dashboard/account" element={<Navigate to="/dashboard/settings?tab=account" replace />} />
 
             {/* ─── Resume Builder ─── */}
             <Route
