@@ -67,6 +67,17 @@ export function EnterpriseTeamsTab() {
     loadTeams();
   }, [loadTeams]);
 
+  useEffect(() => {
+    if (!showModal) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !busy) {
+        setShowModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showModal, busy]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!tenant?.id || !teamName.trim() || busy) return;

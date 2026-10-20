@@ -667,10 +667,10 @@ export function AdminHealthTab() {
                     className={cn(
                       'size-2.5 rounded-full shrink-0 mt-1',
                       s.status === 'OPERATIONAL'
-                        ? 'bg-emerald-500 ring-4 ring-emerald-100'
+                        ? 'bg-emerald-500 ring-4 ring-emerald-100 dark:ring-emerald-950/60'
                         : s.status === 'DEGRADED'
-                        ? 'bg-amber-500 ring-4 ring-amber-100'
-                        : 'bg-rose-500 ring-4 ring-rose-100'
+                        ? 'bg-amber-500 ring-4 ring-amber-100 dark:ring-amber-950/60'
+                        : 'bg-rose-500 ring-4 ring-rose-100 dark:ring-rose-950/60'
                     )}
                     title={s.status}
                   />
@@ -678,7 +678,11 @@ export function AdminHealthTab() {
 
                 <div className="space-y-1 text-[11px]">
                   <div className="text-ink-secondary truncate">{s.detail}</div>
-                  {s.engine && <div className="text-ink-muted font-mono text-[10px] truncate">{s.engine}</div>}
+                  {s.engine && (
+                    <div className="text-ink-muted font-mono text-[10px] truncate" title={s.engine}>
+                      {s.engine}
+                    </div>
+                  )}
                 </div>
 
                 <div className="pt-2 border-t border-border/50 flex items-center justify-between text-[11px]">

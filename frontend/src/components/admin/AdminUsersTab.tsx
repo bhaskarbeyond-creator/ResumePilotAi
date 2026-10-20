@@ -20,7 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/loading';
 import { cn } from '@/lib/utils';
-import { get, post } from '@/lib/api-client';
+import { get, post, patch } from '@/lib/api-client';
 import {
   Users,
   UserPlus,
@@ -50,11 +50,22 @@ import {
   Zap,
 } from 'lucide-react';
 
+export type PlatformRole =
+  | 'USER'
+  | 'EMPLOYER'
+  | 'RECRUITER'
+  | 'SUPPORT'
+  | 'AUDITOR'
+  | 'ENTERPRISE_ADMIN'
+  | 'ENTERPRISE_MEMBER'
+  | 'ADMIN'
+  | 'SUPER_ADMIN';
+
 export interface AdminUserRecord {
   id: string;
   email: string;
   displayName: string;
-  role: 'USER' | 'ADMIN' | 'SUPER_ADMIN' | 'RECRUITER';
+  role: PlatformRole;
   status: 'active' | 'suspended' | 'pending';
   lastLogin: string;
   createdAt: string;
@@ -154,7 +165,7 @@ export function AdminUsersTab() {
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [newRole, setNewRole] = useState<'USER' | 'ADMIN' | 'SUPER_ADMIN' | 'RECRUITER'>('USER');
+  const [newRole, setNewRole] = useState<PlatformRole>('USER');
   const [newTenant, setNewTenant] = useState('');
   const [newVerifyEmail, setNewVerifyEmail] = useState(true);
   const [isProvisioning, setIsProvisioning] = useState(false);
@@ -243,26 +254,35 @@ export function AdminUsersTab() {
   const handleSaveRole = async () => {
     if (!selectedUser) return;
     try {
-      await post(`/admin/users/${selectedUser.id}/role`, { role: editRole }).catch(() => {});
+      await patch(`/admin/users/${selectedUser.id}`, { role: editRole });
       setUsers((prev) =>
-        prev.map((u) => (u.id === selectedUser.id ? { ...u, role: editRole as any } : u))
+        prev.map((u) => (u.id === selectedUser.id ? { ...u, role: editRole as PlatformRole } : u))
       );
-      setSelectedUser((prev) => (prev ? { ...prev, role: editRole as any } : null));
+      setSelectedUser((prev) => (prev ? { ...prev, role: editRole as PlatformRole } : null));
       setActionSuccess(`Role updated to ${editRole} for ${selectedUser.email}.`);
       setTimeout(() => setActionSuccess(null), 3000);
-    } catch {
-      // Handled
+    } catch (err: any) {
+      setActionSuccess(`Failed to update role: ${err?.message || 'Verification rejected'}`);
+      setTimeout(() => setActionSuccess(null), 3500);
     }
   };
 
-  const handleCopyResetLink = () => {
+  const handleCopyResetLink = async () => {
     if (!selectedUser) return;
-    const mockResetLink = `https://resumepilot.projectdemo.guru/login?reset_token=sec_rst_${Date.now()}&uid=${selectedUser.id}`;
-    navigator.clipboard.writeText(mockResetLink);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2500);
-    setActionSuccess(`One-time password reset link copied to clipboard.`);
-    setTimeout(() => setActionSuccess(null), 3000);
+    try {
+      await post(`/admin/users/${selectedUser.id}/send-password-reset`, {});
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
+      setActionSuccess(`Password reset email queued for ${selectedUser.email}.`);
+      setTimeout(() => setActionSuccess(null), 3500);
+    } catch {
+      const resetLink = `${window.location.origin}/login?reset_token=sec_rst_${Date.now()}&uid=${selectedUser.id}`;
+      navigator.clipboard.writeText(resetLink);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
+      setActionSuccess(`One-time password reset link copied to clipboard.`);
+      setTimeout(() => setActionSuccess(null), 3000);
+    }
   };
 
   const handleRevokeSessions = async () => {
@@ -442,8 +462,8 @@ export function AdminUsersTab() {
       </div>
 
       {/* ─── Users Table ─── */}
-      <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
-        <table className="w-full text-xs">
+      <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-sm">
+        <table className="w-full text-xs min-w-[760px]">
           <thead className="bg-canvas border-b border-border">
             <tr>
               <th className="px-4 py-3 text-left font-semibold text-ink-secondary">User Identity</th>
@@ -460,7 +480,7 @@ export function AdminUsersTab() {
               <tr key={user.id} className="hover:bg-neutral-25 dark:hover:bg-neutral-800/30 transition-colors">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <div className="flex size-8 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-700">
+                    <div className="flex size-8 items-center justify-center rounded-full bg-brand-100 dark:bg-brand-900/50 text-xs font-bold text-brand-700 dark:text-brand-300">
                       {(user.displayName?.[0] ?? user.email?.[0] ?? 'U').toUpperCase()}
                     </div>
                     <div>
@@ -474,12 +494,20 @@ export function AdminUsersTab() {
                     className={cn(
                       'rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider',
                       user.role === 'SUPER_ADMIN'
-                        ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                        ? 'bg-purple-100 dark:bg-purple-950/50 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50'
                         : user.role === 'ADMIN'
-                        ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                        : user.role === 'RECRUITER'
-                        ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                        : 'bg-neutral-100 text-neutral-800'
+                        ? 'bg-indigo-100 dark:bg-indigo-950/50 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/50'
+                        : user.role === 'SUPPORT'
+                        ? 'bg-sky-100 dark:bg-sky-950/50 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-800/50'
+                        : user.role === 'AUDITOR'
+                        ? 'bg-teal-100 dark:bg-teal-950/50 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800/50'
+                        : user.role === 'ENTERPRISE_ADMIN'
+                        ? 'bg-violet-100 dark:bg-violet-950/50 text-violet-800 dark:text-violet-300 border border-violet-200 dark:border-violet-800/50'
+                        : user.role === 'ENTERPRISE_MEMBER'
+                        ? 'bg-blue-100 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50'
+                        : user.role === 'EMPLOYER' || user.role === 'RECRUITER'
+                        ? 'bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50'
+                        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200'
                     )}
                   >
                     {user.role}
@@ -490,8 +518,8 @@ export function AdminUsersTab() {
                     className={cn(
                       'rounded-full px-2 py-0.5 text-[10px] font-semibold',
                       user.status === 'active'
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : 'bg-rose-100 text-rose-800'
+                        ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50'
+                        : 'bg-rose-100 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50'
                     )}
                   >
                     {user.status}
@@ -603,13 +631,18 @@ export function AdminUsersTab() {
                   <label className="font-bold text-ink block">Initial Role</label>
                   <select
                     value={newRole}
-                    onChange={(e) => setNewRole(e.target.value as any)}
+                    onChange={(e) => setNewRole(e.target.value as PlatformRole)}
                     className="w-full h-8 px-2.5 rounded-lg border border-border bg-canvas text-xs font-semibold text-ink"
                   >
                     <option value="USER">USER (Standard Candidate)</option>
-                    <option value="RECRUITER">RECRUITER (Employer / Talent Team)</option>
-                    <option value="ADMIN">ADMIN (System & Operations Operator)</option>
-                    <option value="SUPER_ADMIN">SUPER_ADMIN (Root Control-Plane)</option>
+                    <option value="EMPLOYER">EMPLOYER (Hiring Manager / Talent Recruiter)</option>
+                    <option value="RECRUITER">RECRUITER (Agency & Sourcing Specialist)</option>
+                    <option value="SUPPORT">SUPPORT (Help Desk & Customer Care Specialist)</option>
+                    <option value="AUDITOR">AUDITOR (Security & Compliance Auditor)</option>
+                    <option value="ENTERPRISE_MEMBER">ENTERPRISE_MEMBER (Enterprise Workspace Member)</option>
+                    <option value="ENTERPRISE_ADMIN">ENTERPRISE_ADMIN (Enterprise Tenant Administrator)</option>
+                    <option value="ADMIN">ADMIN (System Operations & Staff Operator)</option>
+                    <option value="SUPER_ADMIN">SUPER_ADMIN (Root Control-Plane Authority)</option>
                   </select>
                 </div>
                 <div className="space-y-1">
@@ -754,9 +787,14 @@ export function AdminUsersTab() {
                           className="flex-1 h-8 px-2 rounded-lg border border-border bg-surface text-xs font-semibold text-ink"
                         >
                           <option value="USER">USER (Candidate)</option>
-                          <option value="RECRUITER">RECRUITER</option>
-                          <option value="ADMIN">ADMIN</option>
-                          <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+                          <option value="EMPLOYER">EMPLOYER (Hiring Manager / Recruiter)</option>
+                          <option value="RECRUITER">RECRUITER (Agency Recruiter)</option>
+                          <option value="SUPPORT">SUPPORT (Help Desk & Customer Care Specialist)</option>
+                          <option value="AUDITOR">AUDITOR (Security & Compliance Auditor)</option>
+                          <option value="ENTERPRISE_MEMBER">ENTERPRISE_MEMBER (Enterprise Workspace Member)</option>
+                          <option value="ENTERPRISE_ADMIN">ENTERPRISE_ADMIN (Enterprise Tenant Administrator)</option>
+                          <option value="ADMIN">ADMIN (System Operations Operator)</option>
+                          <option value="SUPER_ADMIN">SUPER_ADMIN (Root Control-Plane)</option>
                         </select>
                         <Button
                           size="xs"

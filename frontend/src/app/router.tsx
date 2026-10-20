@@ -271,11 +271,11 @@ export function AppRouter() {
             {/* ─── Admin Console ─── */}
             <Route
               path="/admin"
-              element={<RequireAuth roles={['ADMIN', 'SUPER_ADMIN']}><CubaAppShell><AdminConsolePage /></CubaAppShell></RequireAuth>}
+              element={<RequireAuth roles={['ADMIN', 'SUPER_ADMIN', 'SUPPORT', 'AUDITOR']}><CubaAppShell><AdminConsolePage /></CubaAppShell></RequireAuth>}
             />
             <Route
               path="/admin/*"
-              element={<RequireAuth roles={['ADMIN', 'SUPER_ADMIN']}><CubaAppShell><AdminConsolePage /></CubaAppShell></RequireAuth>}
+              element={<RequireAuth roles={['ADMIN', 'SUPER_ADMIN', 'SUPPORT', 'AUDITOR']}><CubaAppShell><AdminConsolePage /></CubaAppShell></RequireAuth>}
             />
 
             {/* ─── Blog Editor ─── */}

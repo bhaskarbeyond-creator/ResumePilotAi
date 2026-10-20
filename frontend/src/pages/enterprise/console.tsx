@@ -89,6 +89,31 @@ const VALID_ENTERPRISE_TABS: EnterpriseTabId[] = [
   'platform',
 ];
 
+const TAB_ALIASES: Record<string, EnterpriseTabId> = {
+  iam: 'members',
+  users: 'members',
+  member: 'members',
+  sso: 'security',
+  saml: 'security',
+  m2m: 'security',
+  credentials: 'security',
+  roles: 'access',
+  rbac: 'access',
+  permissions: 'access',
+  quotas: 'usage',
+  quota: 'usage',
+  billing: 'usage',
+  analytics: 'usage',
+  logs: 'audit',
+  'audit-log': 'audit',
+  'audit-logs': 'audit',
+  tickets: 'support',
+  helpdesk: 'support',
+  help: 'support',
+  preferences: 'settings',
+  config: 'settings',
+};
+
 interface NavItem {
   id: EnterpriseTabId;
   label: string;
@@ -144,21 +169,27 @@ function EnterpriseConsoleInner() {
 
   // Tab State resolution from query or path
   const resolveTab = useCallback((): EnterpriseTabId => {
-    const tabFromQuery = searchParams.get('tab') as EnterpriseTabId;
-    if (tabFromQuery && VALID_ENTERPRISE_TABS.includes(tabFromQuery)) {
-      return tabFromQuery;
-    }
+    const normalize = (raw?: string | null): EnterpriseTabId | null => {
+      if (!raw) return null;
+      const lower = raw.toLowerCase();
+      if (VALID_ENTERPRISE_TABS.includes(lower as EnterpriseTabId)) {
+        return lower as EnterpriseTabId;
+      }
+      if (TAB_ALIASES[lower]) {
+        return TAB_ALIASES[lower];
+      }
+      return null;
+    };
+
+    const queryTab = normalize(searchParams.get('tab'));
+    if (queryTab) return queryTab;
 
     const segments = location.pathname.replace(/\/+$/, '').split('/').filter(Boolean);
     if (segments[0] === 'org') {
-      const candidate1 = segments[1]?.toLowerCase();
-      const candidate2 = segments[2]?.toLowerCase();
-      if (candidate2 && VALID_ENTERPRISE_TABS.includes(candidate2 as EnterpriseTabId)) {
-        return candidate2 as EnterpriseTabId;
-      }
-      if (candidate1 && VALID_ENTERPRISE_TABS.includes(candidate1 as EnterpriseTabId)) {
-        return candidate1 as EnterpriseTabId;
-      }
+      const candidate2 = normalize(segments[2]);
+      if (candidate2) return candidate2;
+      const candidate1 = normalize(segments[1]);
+      if (candidate1) return candidate1;
     }
 
     return 'overview';
@@ -287,7 +318,7 @@ function EnterpriseConsoleInner() {
         <div>
           <div className="flex flex-wrap items-center gap-2.5">
             <h1 className="text-2xl font-black tracking-tight text-ink flex items-center gap-2.5">
-              <Building2 className="size-7 text-accent" />
+              <Building2 className="size-7 text-accent shrink-0" />
               {tenant?.name || 'Enterprise Organization Console'}
             </h1>
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-accent-soft text-accent border border-accent/20">

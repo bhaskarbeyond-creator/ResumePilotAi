@@ -148,11 +148,45 @@ export function EmployerPortalPage() {
   // Messages state
   const [activeChatCandidate, setActiveChatCandidate] = useState<string>('Sarah Jenkins');
   const [newMessageText, setNewMessageText] = useState('');
-  const [chatMessages, setChatMessages] = useState<Array<{ sender: 'recruiter' | 'candidate'; text: string; time: string }>>([
-    { sender: 'candidate', text: 'Hello, thank you for considering my application for Senior Full-Stack Engineer!', time: '10:14 AM' },
-    { sender: 'recruiter', text: 'Hi Sarah, your ATS score and past React/Node experience look stellar. Would you be free for an initial screening call this Thursday?', time: '10:30 AM' },
-    { sender: 'candidate', text: 'Yes, Thursday 2:00 PM EST works perfectly for me. Looking forward to speaking with the team!', time: '10:45 AM' },
-  ]);
+  const [candidateThreads, setCandidateThreads] = useState<Record<string, {
+    role: string;
+    atsScore: number;
+    unread?: boolean;
+    preview?: string;
+    messages: Array<{ sender: 'recruiter' | 'candidate'; text: string; time: string }>;
+  }>>({
+    'Sarah Jenkins': {
+      role: 'Senior Full-Stack Engineer',
+      atsScore: 88,
+      unread: false,
+      preview: 'Yes, Thursday 2:00 PM EST works...',
+      messages: [
+        { sender: 'candidate', text: 'Hello, thank you for considering my application for Senior Full-Stack Engineer!', time: '10:14 AM' },
+        { sender: 'recruiter', text: 'Hi Sarah, your ATS score and past React/Node experience look stellar. Would you be free for an initial screening call this Thursday?', time: '10:30 AM' },
+        { sender: 'candidate', text: 'Yes, Thursday 2:00 PM EST works perfectly for me. Looking forward to speaking with the team!', time: '10:45 AM' },
+      ],
+    },
+    'David Chen': {
+      role: 'Staff Backend Architect',
+      atsScore: 94,
+      unread: true,
+      preview: 'Attached is my updated portfolio repo...',
+      messages: [
+        { sender: 'candidate', text: 'Hi, attached is my updated portfolio repo and system architecture diagram for review.', time: '09:20 AM' },
+        { sender: 'recruiter', text: 'Thanks David! The distributed queue design matches our technical roadmap closely.', time: '09:45 AM' },
+      ],
+    },
+    'Emily Watson': {
+      role: 'Lead Product Designer',
+      atsScore: 91,
+      unread: false,
+      preview: 'Thank you for the quick interview update!',
+      messages: [
+        { sender: 'candidate', text: 'Thank you for the quick interview update! I have prepared the Cuba design audit deck.', time: 'Yesterday' },
+        { sender: 'recruiter', text: 'Terrific Emily, our design directors will join the walkthrough presentation.', time: 'Yesterday' },
+      ],
+    },
+  });
 
   // Settings state
   const [settingsSaved, setSettingsSaved] = useState(false);
@@ -203,10 +237,18 @@ export function EmployerPortalPage() {
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessageText.trim()) return;
-    setChatMessages((prev) => [
+    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    setCandidateThreads((prev) => ({
       ...prev,
-      { sender: 'recruiter', text: newMessageText.trim(), time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
-    ]);
+      [activeChatCandidate]: {
+        ...prev[activeChatCandidate],
+        preview: newMessageText.trim(),
+        messages: [
+          ...(prev[activeChatCandidate]?.messages || []),
+          { sender: 'recruiter', text: newMessageText.trim(), time: now },
+        ],
+      },
+    }));
     setNewMessageText('');
   };
 
@@ -264,7 +306,7 @@ export function EmployerPortalPage() {
       )}
 
       {/* ─── Navigation Tabs Strip ─── */}
-      <div className="flex items-center gap-2 sm:gap-4 border-b border-edge overflow-x-auto pb-1 scrollbar-none">
+      <div className="flex items-center gap-2 sm:gap-4 border-b border-edge overflow-x-auto pb-1 scrollbar-none scroll-smooth">
         <button
           type="button"
           onClick={() => handleSelectTab('overview')}
@@ -376,51 +418,51 @@ export function EmployerPortalPage() {
       {activeTab === 'overview' && (
         <div className="space-y-6">
           {/* High-Level Pipeline Metric Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
             <Card className="border-edge shadow-xs bg-surface">
-              <CardContent className="p-4 flex items-center gap-3.5">
-                <div className="size-10 rounded-xl bg-accent-soft text-accent flex items-center justify-center shrink-0">
-                  <Briefcase className="size-5" />
+              <CardContent className="p-3 sm:p-4 flex items-center gap-2.5 sm:gap-3.5">
+                <div className="size-8 sm:size-10 rounded-lg sm:rounded-xl bg-accent-soft text-accent flex items-center justify-center shrink-0">
+                  <Briefcase className="size-4 sm:size-5" />
                 </div>
-                <div>
-                  <p className="text-[11px] font-semibold text-ink-muted uppercase tracking-wider">Active Requisitions</p>
-                  <p className="text-xl font-extrabold text-ink">{jobsLoading ? '—' : jobs.length}</p>
+                <div className="min-w-0">
+                  <p className="text-[10px] sm:text-[11px] font-semibold text-ink-muted uppercase tracking-wider truncate" title="Active Requisitions">Active Jobs</p>
+                  <p className="text-lg sm:text-xl font-extrabold text-ink">{jobsLoading ? '—' : jobs.length}</p>
                 </div>
               </CardContent>
             </Card>
 
             <Card className="border-edge shadow-xs bg-surface">
-              <CardContent className="p-4 flex items-center gap-3.5">
-                <div className="size-10 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                  <Users className="size-5" />
+              <CardContent className="p-3 sm:p-4 flex items-center gap-2.5 sm:gap-3.5">
+                <div className="size-8 sm:size-10 rounded-lg sm:rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                  <Users className="size-4 sm:size-5" />
                 </div>
-                <div>
-                  <p className="text-[11px] font-semibold text-ink-muted uppercase tracking-wider">Total Applicants</p>
-                  <p className="text-xl font-extrabold text-ink">{jobsLoading ? '—' : totalApplicants}</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-edge shadow-xs bg-surface">
-              <CardContent className="p-4 flex items-center gap-3.5">
-                <div className="size-10 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-                  <Clock className="size-5" />
-                </div>
-                <div>
-                  <p className="text-[11px] font-semibold text-ink-muted uppercase tracking-wider">In Interview Loops</p>
-                  <p className="text-xl font-extrabold text-ink">{jobsLoading ? '—' : inInterviewCount}</p>
+                <div className="min-w-0">
+                  <p className="text-[10px] sm:text-[11px] font-semibold text-ink-muted uppercase tracking-wider truncate">Total Applicants</p>
+                  <p className="text-lg sm:text-xl font-extrabold text-ink">{jobsLoading ? '—' : totalApplicants}</p>
                 </div>
               </CardContent>
             </Card>
 
             <Card className="border-edge shadow-xs bg-surface">
-              <CardContent className="p-4 flex items-center gap-3.5">
-                <div className="size-10 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                  <UserCheck className="size-5" />
+              <CardContent className="p-3 sm:p-4 flex items-center gap-2.5 sm:gap-3.5">
+                <div className="size-8 sm:size-10 rounded-lg sm:rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                  <Clock className="size-4 sm:size-5" />
                 </div>
-                <div>
-                  <p className="text-[11px] font-semibold text-ink-muted uppercase tracking-wider">Offers Extended</p>
-                  <p className="text-xl font-extrabold text-ink">{jobsLoading ? '—' : offersExtendedCount}</p>
+                <div className="min-w-0">
+                  <p className="text-[10px] sm:text-[11px] font-semibold text-ink-muted uppercase tracking-wider truncate">In Interview Loops</p>
+                  <p className="text-lg sm:text-xl font-extrabold text-ink">{jobsLoading ? '—' : inInterviewCount}</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-edge shadow-xs bg-surface">
+              <CardContent className="p-3 sm:p-4 flex items-center gap-2.5 sm:gap-3.5">
+                <div className="size-8 sm:size-10 rounded-lg sm:rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                  <UserCheck className="size-4 sm:size-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] sm:text-[11px] font-semibold text-ink-muted uppercase tracking-wider truncate">Offers Extended</p>
+                  <p className="text-lg sm:text-xl font-extrabold text-ink">{jobsLoading ? '—' : offersExtendedCount}</p>
                 </div>
               </CardContent>
             </Card>
@@ -631,7 +673,22 @@ export function EmployerPortalPage() {
           {applicationsLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-pulse">
               {[1, 2, 3, 4].map((col) => (
-                <div key={col} className="h-80 rounded-xl bg-canvas-soft border border-edge" />
+                <div key={col} className="rounded-xl border border-edge bg-canvas-soft/60 p-3 space-y-3">
+                  <div className="flex items-center justify-between pb-2 border-b border-edge/60">
+                    <div className="h-4 w-24 rounded bg-canvas-soft" />
+                    <div className="h-4 w-6 rounded-full bg-canvas-soft" />
+                  </div>
+                  <div className="space-y-2.5">
+                    <div className="h-20 rounded-lg bg-surface border border-edge/60 p-3 space-y-2">
+                      <div className="h-3.5 w-3/4 rounded bg-canvas-soft" />
+                      <div className="h-3 w-1/2 rounded bg-canvas-soft" />
+                    </div>
+                    <div className="h-20 rounded-lg bg-surface border border-edge/60 p-3 space-y-2">
+                      <div className="h-3.5 w-2/3 rounded bg-canvas-soft" />
+                      <div className="h-3 w-1/3 rounded bg-canvas-soft" />
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           ) : pipelineViewMode === 'kanban' ? (
@@ -712,8 +769,8 @@ export function EmployerPortalPage() {
             </div>
           ) : (
             /* List Table View */
-            <div className="border border-edge rounded-xl bg-surface overflow-hidden shadow-xs">
-              <table className="w-full text-left text-xs border-collapse">
+            <div className="border border-edge rounded-xl bg-surface overflow-x-auto shadow-xs">
+              <table className="w-full text-left text-xs border-collapse min-w-[700px]">
                 <thead>
                   <tr className="border-b border-edge bg-canvas-soft/70">
                     <th className="p-3.5 font-semibold text-ink">Applicant Name</th>
@@ -779,7 +836,20 @@ export function EmployerPortalPage() {
           {jobsLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-pulse">
               {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="h-44 rounded-xl bg-canvas-soft border border-edge" />
+                <div key={i} className="rounded-xl border border-edge bg-surface/70 p-4 space-y-3.5 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <div className="h-4 w-16 rounded bg-canvas-soft" />
+                    <div className="h-4 w-14 rounded-full bg-canvas-soft" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="h-5 w-3/4 rounded bg-canvas-soft" />
+                    <div className="h-3.5 w-1/2 rounded bg-canvas-soft" />
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-edge/60">
+                    <div className="h-3 w-20 rounded bg-canvas-soft" />
+                    <div className="h-7 w-24 rounded bg-canvas-soft" />
+                  </div>
+                </div>
               ))}
             </div>
           ) : jobs.length === 0 ? (
@@ -911,100 +981,101 @@ export function EmployerPortalPage() {
                 <Search className="size-3.5 text-ink-muted absolute left-2.5 top-1/2 -translate-y-1/2" />
                 <Input placeholder="Search messages..." className="text-xs h-8 pl-8" />
               </div>
-              {[
-                { name: 'Sarah Jenkins', role: 'Senior Full-Stack Engineer', unread: false, preview: 'Yes, Thursday 2:00 PM EST works...' },
-                { name: 'David Chen', role: 'Staff Backend Architect', unread: true, preview: 'Attached is my updated portfolio repo...' },
-                { name: 'Emily Watson', role: 'Lead Product Designer', unread: false, preview: 'Thank you for the quick interview update!' },
-              ].map((c) => (
+              {Object.entries(candidateThreads).map(([name, data]) => (
                 <button
-                  key={c.name}
+                  key={name}
                   type="button"
-                  onClick={() => setActiveChatCandidate(c.name)}
+                  onClick={() => setActiveChatCandidate(name)}
                   className={cn(
                     'w-full text-left p-2.5 rounded-xl text-xs transition-all cursor-pointer flex flex-col gap-0.5',
-                    activeChatCandidate === c.name
+                    activeChatCandidate === name
                       ? 'bg-accent text-white shadow-2xs font-semibold'
                       : 'hover:bg-surface text-ink'
                   )}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-bold truncate">{c.name}</span>
-                    {c.unread && (
+                    <span className="font-bold truncate">{name}</span>
+                    {data.unread && (
                       <span className="size-2 rounded-full bg-accent-soft border border-white" />
                     )}
                   </div>
-                  <span className={cn('text-[11px] truncate', activeChatCandidate === c.name ? 'text-white/80' : 'text-ink-muted')}>
-                    {c.role}
+                  <span className={cn('text-[11px] truncate', activeChatCandidate === name ? 'text-white/80' : 'text-ink-muted')}>
+                    {data.role}
                   </span>
-                  <p className={cn('text-[10px] truncate', activeChatCandidate === c.name ? 'text-white/70' : 'text-ink-muted')}>
-                    {c.preview}
+                  <p className={cn('text-[10px] truncate', activeChatCandidate === name ? 'text-white/70' : 'text-ink-muted')}>
+                    {data.preview}
                   </p>
                 </button>
               ))}
             </div>
 
             {/* Conversation view & send box */}
-            <div className="flex-1 flex flex-col justify-between p-4 bg-surface min-h-[400px]">
-              <div>
-                <div className="flex items-center justify-between border-b border-edge pb-3 mb-4">
-                  <div className="flex items-center gap-2.5">
-                    <div className="size-8 rounded-full bg-accent text-white font-bold text-xs flex items-center justify-center">
-                      {activeChatCandidate.charAt(0)}
+            {(() => {
+              const activeThread = candidateThreads[activeChatCandidate] || candidateThreads['Sarah Jenkins'];
+              return (
+                <div className="flex-1 flex flex-col justify-between p-4 bg-surface min-h-[400px]">
+                  <div>
+                    <div className="flex items-center justify-between border-b border-edge pb-3 mb-4">
+                      <div className="flex items-center gap-2.5">
+                        <div className="size-8 rounded-full bg-accent text-white font-bold text-xs flex items-center justify-center">
+                          {activeChatCandidate.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-ink">{activeChatCandidate}</p>
+                          <p className="text-[10px] text-ink-muted">Applicant • {activeThread?.role}</p>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs h-7"
+                        onClick={() => handleSelectTab('pipeline')}
+                      >
+                        View ATS Score ({activeThread?.atsScore || 85}%)
+                      </Button>
                     </div>
-                    <div>
-                      <p className="text-xs font-bold text-ink">{activeChatCandidate}</p>
-                      <p className="text-[10px] text-ink-muted">Applicant • Senior Full-Stack Engineer</p>
+
+                    {/* Message bubbles */}
+                    <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                      {activeThread?.messages.map((msg, idx) => (
+                        <div
+                          key={idx}
+                          className={cn(
+                            'flex flex-col max-w-[80%]',
+                            msg.sender === 'recruiter' ? 'ml-auto items-end' : 'mr-auto items-start'
+                          )}
+                        >
+                          <div
+                            className={cn(
+                              'p-3 rounded-2xl text-xs leading-relaxed',
+                              msg.sender === 'recruiter'
+                                ? 'bg-accent text-white rounded-br-xs'
+                                : 'bg-canvas-soft border border-edge text-ink rounded-bl-xs'
+                            )}
+                          >
+                            {msg.text}
+                          </div>
+                          <span className="text-[10px] text-ink-muted mt-1 px-1">{msg.time}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-xs h-7"
-                    onClick={() => handleSelectTab('pipeline')}
-                  >
-                    View ATS Score (88%)
-                  </Button>
-                </div>
 
-                {/* Message bubbles */}
-                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
-                  {chatMessages.map((msg, idx) => (
-                    <div
-                      key={idx}
-                      className={cn(
-                        'flex flex-col max-w-[80%]',
-                        msg.sender === 'recruiter' ? 'ml-auto items-end' : 'mr-auto items-start'
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          'p-3 rounded-2xl text-xs leading-relaxed',
-                          msg.sender === 'recruiter'
-                            ? 'bg-accent text-white rounded-br-xs'
-                            : 'bg-canvas-soft border border-edge text-ink rounded-bl-xs'
-                        )}
-                      >
-                        {msg.text}
-                      </div>
-                      <span className="text-[10px] text-ink-muted mt-1 px-1">{msg.time}</span>
-                    </div>
-                  ))}
+                  {/* Chat Input */}
+                  <form onSubmit={handleSendMessage} className="flex items-center gap-2 pt-3 border-t border-edge mt-4">
+                    <Input
+                      value={newMessageText}
+                      onChange={(e) => setNewMessageText(e.target.value)}
+                      placeholder={`Reply to ${activeChatCandidate}...`}
+                      className="text-xs h-9"
+                    />
+                    <Button type="submit" size="sm" className="h-9 px-3 bg-accent hover:bg-accent/90 gap-1.5 shrink-0">
+                      <Send className="size-3.5" /> Send
+                    </Button>
+                  </form>
                 </div>
-              </div>
-
-              {/* Chat Input */}
-              <form onSubmit={handleSendMessage} className="flex items-center gap-2 pt-3 border-t border-edge mt-4">
-                <Input
-                  value={newMessageText}
-                  onChange={(e) => setNewMessageText(e.target.value)}
-                  placeholder={`Reply to ${activeChatCandidate}...`}
-                  className="text-xs h-9"
-                />
-                <Button type="submit" size="sm" className="h-9 px-3 bg-accent hover:bg-accent/90 gap-1.5 shrink-0">
-                  <Send className="size-3.5" /> Send
-                </Button>
-              </form>
-            </div>
+              );
+            })()}
           </CardContent>
         </Card>
       )}

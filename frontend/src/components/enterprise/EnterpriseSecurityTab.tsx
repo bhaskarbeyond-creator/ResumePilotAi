@@ -94,6 +94,18 @@ export function EnterpriseSecurityTab({ initialFocus }: EnterpriseSecurityTabPro
     }
   }, [initialFocus]);
 
+  useEffect(() => {
+    if (!showCreateModal && !rawSecretKey) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !busyCreate) {
+        setShowCreateModal(false);
+        setRawSecretKey(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showCreateModal, rawSecretKey, busyCreate]);
+
   const loadSecurityData = useCallback(async () => {
     if (!tenant?.id) {
       setLoading(false);

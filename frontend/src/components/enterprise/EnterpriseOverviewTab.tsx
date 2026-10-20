@@ -150,7 +150,9 @@ export function EnterpriseOverviewTab({ onNavigate }: EnterpriseOverviewTabProps
   const quotaRatio = dailyAiLimit > 0 ? todayRequests / dailyAiLimit : 0;
 
   const dlqCount = queue?.deadLetterCount || 0;
-  const isPlaneHealthy = dataPlane?.configured === true && dataPlane?.durable === true;
+  const isPlaneHealthy = dataPlane
+    ? dataPlane.status === 'ONLINE' || (dataPlane.configured && dataPlane.durable)
+    : dlqCount === 0;
 
   // Real actionable recommendations
   const recommendations = useMemo(() => {
@@ -312,8 +314,8 @@ export function EnterpriseOverviewTab({ onNavigate }: EnterpriseOverviewTabProps
               </div>
             </div>
             <div className="mt-3 flex items-baseline gap-2">
-              <span className="text-2xl font-black tracking-tight text-ink">
-                {isPlaneHealthy ? 'Healthy' : 'Degraded'}
+              <span className={cn('text-2xl font-black tracking-tight', isPlaneHealthy ? 'text-ink' : 'text-amber-600 dark:text-amber-400')}>
+                {loading ? 'Checking…' : isPlaneHealthy ? 'Operational' : 'Degraded'}
               </span>
             </div>
             <div className="mt-2 text-xs text-ink-muted flex items-center gap-1.5">

@@ -133,6 +133,7 @@ export interface EnterpriseConfiguration {
     aiRequestsPerDay?: number;
     monthlyTokenBudget?: number;
   };
+  customRoles?: Record<string, EnterpriseRoleDefinition> | Array<{ id: string; label: string; permissions: string[] }>;
 }
 
 export interface EnterpriseAiUsage {

@@ -250,8 +250,8 @@ export function AdminModerationTab() {
       {/* ─── Sub-Section 1: Employer Applications ─── */}
       {subSection === 'applications' && (
         <div className="space-y-3">
-          <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
-            <table className="w-full text-xs">
+          <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-sm">
+            <table className="w-full text-xs min-w-[700px]">
               <thead className="bg-canvas border-b border-border">
                 <tr>
                   <th className="px-4 py-3 text-left font-semibold text-ink-secondary">Company Name & Tax ID</th>
@@ -271,7 +271,7 @@ export function AdminModerationTab() {
                     </td>
                     <td className="px-4 py-3 text-ink-secondary">{app.contactEmail}</td>
                     <td className="px-4 py-3">
-                      <a href={app.website} target="_blank" rel="noreferrer" className="text-brand-600 hover:underline inline-flex items-center gap-1">
+                      <a href={app.website} target="_blank" rel="noreferrer" className="text-brand-600 dark:text-brand-400 hover:underline inline-flex items-center gap-1">
                         {app.website.replace('https://', '')}
                         <ExternalLink className="size-3" />
                       </a>
@@ -281,10 +281,10 @@ export function AdminModerationTab() {
                         className={cn(
                           'rounded-full px-2 py-0.5 text-[10px] font-bold uppercase',
                           app.status === 'APPROVED'
-                            ? 'bg-emerald-100 text-emerald-800'
+                            ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50'
                             : app.status === 'REJECTED'
-                            ? 'bg-rose-100 text-rose-800'
-                            : 'bg-amber-100 text-amber-800'
+                            ? 'bg-rose-100 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50'
+                            : 'bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50'
                         )}
                       >
                         {app.status}
@@ -339,8 +339,8 @@ export function AdminModerationTab() {
       {/* ─── Sub-Section 2: Job Postings Moderation ─── */}
       {subSection === 'jobs' && (
         <div className="space-y-3">
-          <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
-            <table className="w-full text-xs">
+          <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-sm">
+            <table className="w-full text-xs min-w-[700px]">
               <thead className="bg-canvas border-b border-border">
                 <tr>
                   <th className="px-4 py-3 text-left font-semibold text-ink-secondary">Job Title & Employer</th>
@@ -361,17 +361,17 @@ export function AdminModerationTab() {
                     <td className="px-4 py-3 text-ink-secondary">{job.location}</td>
                     <td className="px-4 py-3">
                       {job.isSpam ? (
-                        <span className="rounded bg-rose-100 text-rose-800 px-2 py-0.5 text-[10px] font-bold">
+                        <span className="rounded bg-rose-100 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50 px-2 py-0.5 text-[10px] font-bold">
                           SPAM FLAGGED
                         </span>
                       ) : (
-                        <span className="rounded bg-emerald-100 text-emerald-800 px-2 py-0.5 text-[10px] font-bold">
+                        <span className="rounded bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50 px-2 py-0.5 text-[10px] font-bold">
                           CLEAN
                         </span>
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-bold uppercase', job.status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800')}>
+                      <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-bold uppercase', job.status === 'active' ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50' : 'bg-rose-100 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50')}>
                         {job.status}
                       </span>
                     </td>

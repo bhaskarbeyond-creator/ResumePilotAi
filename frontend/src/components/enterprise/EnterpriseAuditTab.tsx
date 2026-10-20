@@ -69,6 +69,14 @@ export function EnterpriseAuditTab() {
   }, [events, severityFilter, searchQuery]);
 
   const handleExportCsv = () => {
+    const sanitizeCsvCell = (val: unknown): string => {
+      let str = String(val ?? '');
+      if (/^[=+@\t\r-]/.test(str)) {
+        str = `'${str}`;
+      }
+      return `"${str.replace(/"/g, '""')}"`;
+    };
+
     const headers = ['Timestamp', 'Action', 'Target', 'Actor', 'Actor Email', 'Severity', 'IP Address'];
     const rows = filteredEvents.map((evt) => [
       evt.timestamp,
@@ -80,7 +88,7 @@ export function EnterpriseAuditTab() {
       evt.ip || '',
     ]);
 
-    const csvContent = [headers.join(','), ...rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))].join('\n');
+    const csvContent = [headers.join(','), ...rows.map((r) => r.map(sanitizeCsvCell).join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

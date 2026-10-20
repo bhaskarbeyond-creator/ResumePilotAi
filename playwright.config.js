@@ -32,7 +32,7 @@ export default defineConfig({
         : {}),
     },
   },
-  webServer: [
+  webServer: process.env.PW_NO_WEBSERVER ? undefined : [
     {
       command: 'npm run dev',
       port: 5173,

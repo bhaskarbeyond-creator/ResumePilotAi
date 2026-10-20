@@ -301,9 +301,9 @@ export function CubaAppShell({
     if (targetRole === 'USER') {
       navigate('/dashboard?superadmin_view=1');
     } else if (targetRole === 'SUPPORT') {
-      navigate('/admin/users');
+      navigate('/admin/support');
     } else if (targetRole === 'AUDITOR') {
-      navigate('/admin/audit-logs');
+      navigate('/admin/health');
     } else {
       navigate('/admin/dashboard');
     }
@@ -375,8 +375,13 @@ export function CubaAppShell({
   );
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate('/login');
+    try {
+      await signOut();
+    } catch (err) {
+      console.warn('[CubaAppShell] Sign out error:', err);
+    } finally {
+      navigate('/login');
+    }
   };
 
   const displayName = user?.displayName || user?.email?.split('@')[0] || 'User';
@@ -709,7 +714,7 @@ export function CubaAppShell({
         )}
 
         {/* Navigation items by Cuba Groups */}
-        <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-4" aria-label="Main navigation">
+        <nav className="flex-1 overflow-y-auto px-2 pt-3 pb-28 space-y-4" aria-label="Main navigation">
           {currentNavGroups.map((group) => (
             <div key={group.id} className="space-y-1">
               {!sidebarCollapsed && (
@@ -717,7 +722,7 @@ export function CubaAppShell({
                   {group.label}
                 </h2>
               )}
-              <ul className="space-y-0.5" role="list">
+              <ul className="space-y-0.5">
                 {group.items.map((item) => {
                   const active = isActiveRoute(item);
                   const Icon = item.icon;
@@ -764,7 +769,7 @@ export function CubaAppShell({
         {/* Bottom section */}
         <div className="border-t border-border px-2 py-3">
           {isAdmin && activePortal !== 'admin' && (
-            <ul className="space-y-0.5 mb-2" role="list">
+            <ul className="space-y-0.5 mb-2">
               <li>
                 <Link
                   to="/admin"
@@ -836,37 +841,46 @@ export function CubaAppShell({
               </button>
 
               {/* 4-Level Breadcrumbs */}
-              <nav className="flex flex-1 items-center gap-1.5 overflow-x-auto" aria-label="Breadcrumb">
-                <ol className="flex items-center gap-1.5 whitespace-nowrap" role="list">
-                  {breadcrumbs.map((crumb, index) => (
-                    <li key={crumb.label} className="flex items-center gap-1.5">
-                      {index > 0 && (
-                        <span className="text-ink-muted" aria-hidden="true">/</span>
-                      )}
-                      {crumb.href ? (
-                        <Link
-                          to={crumb.href}
-                          className={cn(
-                            'text-sm font-medium transition-colors',
-                            crumb.isLast ? 'text-ink font-semibold' : 'text-ink-secondary hover:text-brand-600'
-                          )}
-                          aria-current={crumb.isLast ? 'page' : undefined}
-                        >
-                          {crumb.label}
-                        </Link>
-                      ) : (
-                        <span
-                          className={cn(
-                            'text-sm font-medium',
-                            crumb.isLast ? 'text-ink font-semibold' : 'text-ink-secondary'
-                          )}
-                          aria-current={crumb.isLast ? 'page' : undefined}
-                        >
-                          {crumb.label}
-                        </span>
-                      )}
-                    </li>
-                  ))}
+              <nav className="flex flex-1 items-center gap-1.5 overflow-x-auto min-w-0" aria-label="Breadcrumb">
+                <ol className="flex items-center gap-1.5 whitespace-nowrap min-w-0">
+                  {breadcrumbs.map((crumb, index) => {
+                    const isLast = crumb.isLast || index === breadcrumbs.length - 1;
+                    return (
+                      <li
+                        key={crumb.label}
+                        className={cn(
+                          'flex items-center gap-1.5 min-w-0',
+                          !isLast && 'hidden sm:flex'
+                        )}
+                      >
+                        {index > 0 && (
+                          <span className="text-ink-muted hidden sm:inline" aria-hidden="true">/</span>
+                        )}
+                        {crumb.href ? (
+                          <Link
+                            to={crumb.href}
+                            className={cn(
+                              'text-sm font-medium transition-colors truncate',
+                              isLast ? 'text-ink font-bold' : 'text-ink-secondary hover:text-brand-600'
+                            )}
+                            aria-current={isLast ? 'page' : undefined}
+                          >
+                            {crumb.label}
+                          </Link>
+                        ) : (
+                          <span
+                            className={cn(
+                              'text-sm font-medium truncate',
+                              isLast ? 'text-ink font-bold' : 'text-ink-secondary'
+                            )}
+                            aria-current={isLast ? 'page' : undefined}
+                          >
+                            {crumb.label}
+                          </span>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ol>
               </nav>
             </div>
@@ -1032,7 +1046,7 @@ export function CubaAppShell({
                       type="button"
                       data-testid="role-simulation-trigger"
                       className={cn(
-                        'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
+                        'hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
                         simulatedRole
                           ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700 animate-pulse'
                           : 'text-ink-secondary hover:text-ink hover:bg-neutral-100 dark:hover:bg-neutral-800 border-border'
@@ -1151,7 +1165,7 @@ export function CubaAppShell({
               {/* Theme Toggle */}
               <button
                 onClick={toggleTheme}
-                className="rounded-md p-1.5 text-ink-muted hover:bg-neutral-100 hover:text-ink transition-colors"
+                className="hidden sm:flex rounded-md p-1.5 text-ink-muted hover:bg-neutral-100 hover:text-ink transition-colors"
                 aria-label="Toggle theme"
                 title={`Current theme: ${theme}. Click to switch.`}
               >

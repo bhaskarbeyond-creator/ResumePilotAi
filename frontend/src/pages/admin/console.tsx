@@ -134,16 +134,48 @@ const NAVIGATION_GROUPS: NavGroup[] = [
   },
 ];
 
+import { useAuth } from '@/providers/auth-provider';
+
 export function AdminConsolePage() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { claims, isSuperAdmin } = useAuth();
+
+  const userRole = (claims?.role || '').toUpperCase();
+  const isSupport = userRole === 'SUPPORT';
+  const isAuditor = userRole === 'AUDITOR';
+
+  const { allowedTabs, defaultTab, roleBadgeText, roleSubtitle } = useMemo(() => {
+    if (isSupport) {
+      return {
+        allowedTabs: ['support', 'users'] as AdminTabId[],
+        defaultTab: 'support' as AdminTabId,
+        roleBadgeText: 'Customer Support Suite',
+        roleSubtitle: 'Help Desk, ticket escalation, and customer account directory.',
+      };
+    }
+    if (isAuditor) {
+      return {
+        allowedTabs: ['health', 'queues', 'operations', 'users', 'security'] as AdminTabId[],
+        defaultTab: 'health' as AdminTabId,
+        roleBadgeText: 'Compliance & Auditor Suite',
+        roleSubtitle: 'Infrastructure health telemetry, outbox DLQ inspection, and security audit logs.',
+      };
+    }
+    return {
+      allowedTabs: VALID_TABS,
+      defaultTab: 'dashboard' as AdminTabId,
+      roleBadgeText: isSuperAdmin ? 'Root Level' : 'System Admin Suite',
+      roleSubtitle: 'Platform governance, 28-service operational telemetry, AI provider orchestration, and CMS control.',
+    };
+  }, [isSupport, isAuditor, isSuperAdmin]);
 
   // Resolve active tab from URL path segment (/admin/:tab) or query param (?tab=...)
   const resolveTab = useCallback((): AdminTabId => {
     // 1. Check ?tab= query parameter
     const tabFromQuery = searchParams.get('tab') as AdminTabId;
-    if (tabFromQuery && VALID_TABS.includes(tabFromQuery)) {
+    if (tabFromQuery && allowedTabs.includes(tabFromQuery)) {
       return tabFromQuery;
     }
 
@@ -152,20 +184,25 @@ export function AdminConsolePage() {
     if (segments[0] === 'admin' && segments[1]) {
       const section = segments[1].toLowerCase();
       // Handle historical and semantic aliases
-      if (section === 'help-desk') return 'support';
-      if (section === 'blog-management') return 'blog';
-      if (['employer-applications', 'jobs-manager', 'company-management', 'tenants'].includes(section)) return 'moderation';
-      if (['phrases', 'reviews', 'landing-pages', 'trustedby'].includes(section)) return 'content';
-      if (section === 'settings') return 'settings';
-      if (section === 'modules' || section === 'addon-modules') return 'modules';
-      if (section === 'command-center' || section === 'dashboard') return 'dashboard';
-      if (VALID_TABS.includes(section as AdminTabId)) {
-        return section as AdminTabId;
+      let mappedTab: AdminTabId | null = null;
+      if (section === 'help-desk') mappedTab = 'support';
+      else if (section === 'blog-management') mappedTab = 'blog';
+      else if (['employer-applications', 'jobs-manager', 'company-management', 'tenants'].includes(section)) mappedTab = 'moderation';
+      else if (['phrases', 'reviews', 'landing-pages', 'trustedby'].includes(section)) mappedTab = 'content';
+      else if (section === 'settings') mappedTab = 'settings';
+      else if (section === 'modules' || section === 'addon-modules') mappedTab = 'modules';
+      else if (section === 'command-center' || section === 'dashboard') mappedTab = 'dashboard';
+      else if (VALID_TABS.includes(section as AdminTabId)) {
+        mappedTab = section as AdminTabId;
+      }
+
+      if (mappedTab && allowedTabs.includes(mappedTab)) {
+        return mappedTab;
       }
     }
 
-    return 'dashboard';
-  }, [location.pathname, searchParams]);
+    return defaultTab;
+  }, [location.pathname, searchParams, allowedTabs, defaultTab]);
 
   const [activeTab, setActiveTab] = useState<AdminTabId>(resolveTab);
 
@@ -181,9 +218,16 @@ export function AdminConsolePage() {
     navigate(tabId === 'dashboard' ? '/admin' : `/admin/${tabId}`);
   };
 
+  const navGroups = useMemo(() => {
+    return NAVIGATION_GROUPS.map((g) => ({
+      ...g,
+      items: g.items.filter((item) => allowedTabs.includes(item.id)),
+    })).filter((g) => g.items.length > 0);
+  }, [allowedTabs]);
+
   const allNavItems = useMemo(
-    () => NAVIGATION_GROUPS.flatMap((g) => g.items),
-    []
+    () => navGroups.flatMap((g) => g.items),
+    [navGroups]
   );
 
   return (
@@ -191,14 +235,14 @@ export function AdminConsolePage() {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
         <div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5">
             <h1 className="text-2xl font-extrabold text-ink tracking-tight">Super Admin Control Plane</h1>
-            <span className="rounded-full bg-brand-50 border border-brand-200 px-2.5 py-0.5 text-xs font-bold text-brand-700">
-              Root Level
+            <span className="rounded-full bg-brand-50 dark:bg-brand-950/40 border border-brand-200 dark:border-brand-800 px-2.5 py-0.5 text-xs font-bold text-brand-700 dark:text-brand-300 shrink-0">
+              {roleBadgeText}
             </span>
           </div>
           <p className="mt-1 text-sm text-ink-muted">
-            Platform governance, 28-service operational telemetry, AI provider orchestration, and CMS control.
+            {roleSubtitle}
           </p>
         </div>
       </div>
@@ -231,7 +275,7 @@ export function AdminConsolePage() {
                 <span
                   className={cn(
                     'rounded-full px-1.5 py-0.2 text-[10px] font-extrabold ml-0.5',
-                    isActive ? 'bg-white/20 text-white' : 'bg-brand-50 text-brand-700'
+                    isActive ? 'bg-white/20 text-white' : 'bg-brand-50 text-brand-700 dark:bg-brand-950/50 dark:text-brand-300'
                   )}
                 >
                   {item.badge}

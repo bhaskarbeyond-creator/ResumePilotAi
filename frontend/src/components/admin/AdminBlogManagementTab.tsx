@@ -212,8 +212,8 @@ export function AdminBlogManagementTab() {
       </div>
 
       {/* Articles Table */}
-      <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
-        <table className="w-full text-xs">
+      <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-sm">
+        <table className="w-full text-xs min-w-[700px]">
           <thead className="bg-canvas border-b border-border">
             <tr>
               <th className="px-4 py-3 text-left font-semibold text-ink-secondary">Article Title & Slug</th>
@@ -228,7 +228,7 @@ export function AdminBlogManagementTab() {
             {filteredArticles.map((article) => (
               <tr key={article.id} className="hover:bg-neutral-25 dark:hover:bg-neutral-800/30 transition-colors">
                 <td className="px-4 py-3">
-                  <div className="font-bold text-ink hover:text-brand-600 cursor-pointer" onClick={() => navigate(`/blog-editor/${article.id}`)}>
+                  <div className="font-bold text-ink hover:text-brand-600 dark:hover:text-brand-400 cursor-pointer" onClick={() => navigate(`/blog-editor/${article.id}`)}>
                     {article.title}
                   </div>
                   <div className="text-[11px] text-ink-muted font-mono">/blog/{article.slug}</div>
@@ -244,8 +244,8 @@ export function AdminBlogManagementTab() {
                     className={cn(
                       'rounded-full px-2 py-0.5 text-[10px] font-bold uppercase',
                       article.status === 'published'
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : 'bg-amber-100 text-amber-800'
+                        ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50'
+                        : 'bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50'
                     )}
                   >
                     {article.status}

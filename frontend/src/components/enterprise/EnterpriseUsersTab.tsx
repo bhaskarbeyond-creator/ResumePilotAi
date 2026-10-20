@@ -97,6 +97,7 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
   const [edit360Status, setEdit360Status] = useState<'ACTIVE' | 'SUSPENDED' | 'INVITED'>('ACTIVE');
   const [busySave360, setBusySave360] = useState(false);
   const [securityActionMsg, setSecurityActionMsg] = useState<string | null>(null);
+  const [customRoles, setCustomRoles] = useState<Record<string, { label?: string; description?: string }>>({});
 
   const canManageMembers = hasPermission('tenant.members.manage');
 
@@ -159,8 +160,14 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
     setLoading(true);
     setError(null);
     try {
-      const res = await enterpriseApi.getMemberships(tenant.id);
+      const [res, matrixRes] = await Promise.all([
+        enterpriseApi.getMemberships(tenant.id),
+        enterpriseApi.getRolesMatrix(tenant.id).catch(() => null),
+      ]);
       setMembers(res.memberships || []);
+      if (matrixRes?.customRoles) {
+        setCustomRoles(matrixRes.customRoles);
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load enterprise memberships');
     } finally {
@@ -410,7 +417,15 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
                 <tbody className="divide-y divide-edge">
                   {filteredMembers.map((m) => {
                     const primaryRole = (m.roles || [])[0] || 'MEMBER';
-                    const roleConfig = ROLE_HIERARCHY[primaryRole] || ROLE_HIERARCHY.MEMBER;
+                    const isCustom = Boolean(customRoles[primaryRole]);
+                    const customDef = customRoles[primaryRole];
+                    const roleTitle = isCustom
+                      ? (customDef?.label || primaryRole)
+                      : (ROLE_HIERARCHY[primaryRole]?.title || primaryRole);
+                    const roleColor = isCustom
+                      ? 'bg-purple-500/10 text-purple-600 border-purple-500/20'
+                      : (ROLE_HIERARCHY[primaryRole]?.color || ROLE_HIERARCHY.MEMBER.color);
+
                     return (
                       <tr
                         key={m.principalId}
@@ -426,8 +441,8 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
                           </div>
                         </td>
                         <td className="py-3 px-3">
-                          <span className={cn('inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold border', roleConfig.color)}>
-                            {roleConfig.title}
+                          <span className={cn('inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold border', roleColor)}>
+                            {roleTitle}
                           </span>
                         </td>
                         <td className="py-3 px-3">
@@ -580,11 +595,22 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
                   onChange={(e) => setEdit360Role(e.target.value)}
                   className="w-full h-9 px-3 rounded-xl bg-surface border border-edge text-xs text-ink focus:outline-none focus:ring-1 focus:ring-accent"
                 >
-                  {Object.entries(ROLE_HIERARCHY).map(([key, info]) => (
-                    <option key={key} value={key}>
-                      {info.title} — {info.desc}
-                    </option>
-                  ))}
+                  <optgroup label="Standard Roles">
+                    {Object.entries(ROLE_HIERARCHY).map(([key, info]) => (
+                      <option key={key} value={key}>
+                        {info.title} — {info.desc}
+                      </option>
+                    ))}
+                  </optgroup>
+                  {Object.keys(customRoles).length > 0 && (
+                    <optgroup label="Custom Roles">
+                      {Object.entries(customRoles).map(([key, info]) => (
+                        <option key={key} value={key}>
+                          {info.label || key} — {info.description || 'Custom role'}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
                 <p className="text-[11px] text-ink-muted leading-relaxed">
                   {ROLE_HIERARCHY[edit360Role]?.desc}
@@ -808,11 +834,22 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
                   onChange={(e) => setInviteRole(e.target.value)}
                   className="w-full h-9 px-3 rounded-lg bg-surface border border-edge text-xs text-ink focus:outline-none focus:ring-1 focus:ring-accent"
                 >
-                  <option value="TENANT_ADMIN">Administrator (Full Tenant Governance)</option>
-                  <option value="WORKSPACE_MANAGER">Workspace Manager (Department Lead)</option>
-                  <option value="BILLING_ADMIN">Billing Admin (Usage & Subscriptions)</option>
-                  <option value="MEMBER">Enterprise Member (Draft & AI Generation)</option>
-                  <option value="VIEWER">Read-Only Viewer (Inspect Only)</option>
+                  <optgroup label="Standard Roles">
+                    <option value="TENANT_ADMIN">Administrator (Full Tenant Governance)</option>
+                    <option value="WORKSPACE_MANAGER">Workspace Manager (Department Lead)</option>
+                    <option value="BILLING_ADMIN">Billing Admin (Usage & Subscriptions)</option>
+                    <option value="MEMBER">Enterprise Member (Draft & AI Generation)</option>
+                    <option value="VIEWER">Read-Only Viewer (Inspect Only)</option>
+                  </optgroup>
+                  {Object.keys(customRoles).length > 0 && (
+                    <optgroup label="Custom Roles">
+                      {Object.entries(customRoles).map(([key, info]) => (
+                        <option key={key} value={key}>
+                          {info.label || key} ({info.description || 'Custom role'})
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
               </div>
 

@@ -8,7 +8,7 @@
  * - Granular permissions matrix for recruitment operations
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Users,
   UserPlus,
@@ -23,6 +23,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useAuth } from '@/providers/auth-provider';
 import { cn } from '@/lib/utils';
 
 interface TeamMember {
@@ -38,7 +39,7 @@ interface TeamMember {
 const INITIAL_TEAM: TeamMember[] = [
   {
     id: 'tm-1',
-    name: 'Alex Vance (You)',
+    name: 'Primary Recruiter (You)',
     email: 'hiring@resumepilot.io',
     role: 'Admin',
     status: 'active',
@@ -72,12 +73,37 @@ const PERMISSIONS = [
 ];
 
 export function TeamSeats() {
+  const { user } = useAuth();
   const [team, setTeam] = useState<TeamMember[]>(INITIAL_TEAM);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteName, setInviteName] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'Recruiter' | 'Viewer' | 'Admin'>('Recruiter');
   const [inviteSuccess, setInviteSuccess] = useState(false);
+
+  useEffect(() => {
+    if (user?.email) {
+      const displayName = user.displayName ? `${user.displayName} (You)` : `${user.email} (You)`;
+      setTeam((prev) =>
+        prev.map((m) =>
+          m.id === 'tm-1'
+            ? { ...m, name: displayName, email: user.email || m.email }
+            : m
+        )
+      );
+    }
+  }, [user?.displayName, user?.email]);
+
+  useEffect(() => {
+    if (!showInviteModal) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowInviteModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showInviteModal]);
 
   const totalSeats = 5;
   const usedSeats = team.length;
@@ -162,7 +188,7 @@ export function TeamSeats() {
             {team.map((member) => (
               <div
                 key={member.id}
-                className="p-4 flex items-center justify-between hover:bg-canvas-soft/30 transition-colors"
+                className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-canvas-soft/30 transition-colors"
               >
                 <div className="flex items-center gap-3.5">
                   <div className="size-10 rounded-full bg-accent/15 text-accent font-bold text-xs flex items-center justify-center border border-accent/20">
@@ -193,7 +219,7 @@ export function TeamSeats() {
                   </div>
                 </div>
 
-                <div className="text-right text-xs text-ink-muted">
+                <div className="text-left sm:text-right text-xs text-ink-muted">
                   <span>Joined {member.joinedDate}</span>
                 </div>
               </div>
@@ -213,8 +239,8 @@ export function TeamSeats() {
             Enforced server-side via RBAC guards
           </CardDescription>
         </CardHeader>
-        <CardContent className="p-0">
-          <table className="w-full text-xs text-left">
+        <CardContent className="p-0 overflow-x-auto">
+          <table className="w-full text-xs text-left min-w-[500px]">
             <thead>
               <tr className="border-b border-edge bg-canvas-soft/60">
                 <th className="p-3 font-semibold text-ink">Action / Scope</th>

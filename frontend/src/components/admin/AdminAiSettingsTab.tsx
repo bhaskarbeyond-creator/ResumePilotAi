@@ -333,7 +333,7 @@ export function AdminAiSettingsTab() {
               key={p.id}
               className={cn(
                 'border transition-all',
-                isPrimary ? 'border-brand-500 ring-1 ring-brand-200' : 'border-border/70'
+                isPrimary ? 'border-brand-500 ring-1 ring-brand-200 dark:ring-brand-900/50' : 'border-border/70'
               )}
             >
               <CardContent className="p-4 space-y-4">
@@ -342,19 +342,19 @@ export function AdminAiSettingsTab() {
                     <span
                       className={cn(
                         'size-3 rounded-full',
-                        p.configuredOnServer ? 'bg-emerald-500' : 'bg-neutral-300'
+                        p.configuredOnServer ? 'bg-emerald-500' : 'bg-neutral-300 dark:bg-neutral-700'
                       )}
                     />
                     <div>
                       <div className="flex items-center gap-2">
                         <h3 className="text-sm font-bold text-ink">{p.name}</h3>
                         {isPrimary && (
-                          <span className="rounded-full bg-brand-100 text-brand-700 px-2 py-0.5 text-[10px] font-black uppercase">
+                          <span className="rounded-full bg-brand-100 dark:bg-brand-950/60 text-brand-700 dark:text-brand-300 px-2 py-0.5 text-[10px] font-black uppercase">
                             PRIMARY
                           </span>
                         )}
                         {p.configuredOnServer && (
-                          <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                          <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
                             ✓ Server Active
                           </span>
                         )}
@@ -380,10 +380,16 @@ export function AdminAiSettingsTab() {
                   <div
                     className={cn(
                       'rounded-lg p-2.5 text-xs flex items-center gap-2',
-                      status.ok ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'
+                      status.ok
+                        ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800'
+                        : 'bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800'
                     )}
                   >
-                    {status.ok ? <CheckCircle2 className="size-4 text-emerald-600" /> : <AlertCircle className="size-4 text-rose-600" />}
+                    {status.ok ? (
+                      <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    ) : (
+                      <AlertCircle className="size-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                    )}
                     <span>{status.message}</span>
                   </div>
                 )}

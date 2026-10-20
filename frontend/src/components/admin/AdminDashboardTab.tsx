@@ -52,16 +52,16 @@ export function AdminDashboardTab({ onNavigateTab }: AdminDashboardTabProps) {
   return (
     <div className="space-y-6">
       {/* ─── Super Admin Role View Mode Banner ─── */}
-      <div className="rounded-2xl border border-brand-200 bg-gradient-to-r from-brand-50 via-white to-purple-50 p-4 shadow-xs">
+      <div className="rounded-2xl border border-brand-200 dark:border-brand-800/40 bg-gradient-to-r from-brand-50 via-white to-purple-50 dark:from-brand-950/40 dark:via-surface dark:to-purple-950/30 p-4 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-brand-600 text-white shadow-xs">
+            <div className="flex size-10 items-center justify-center rounded-xl bg-brand-600 text-white shadow-xs shrink-0">
               <Shield className="size-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-bold text-sm text-ink">Super Admin Role View Mode</h3>
-                <span className="rounded-full bg-brand-100 px-2 py-0.5 text-xs font-extrabold text-brand-800 uppercase">
+                <span className="rounded-full bg-brand-100 dark:bg-brand-900/50 px-2 py-0.5 text-xs font-extrabold text-brand-800 dark:text-brand-300 uppercase">
                   Active
                 </span>
               </div>
@@ -71,12 +71,12 @@ export function AdminDashboardTab({ onNavigateTab }: AdminDashboardTabProps) {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <span className="text-xs font-semibold text-ink-secondary">Perspective:</span>
             <select
               value={roleView}
               onChange={(e) => setRoleView(e.target.value as any)}
-              className="rounded-lg border border-border bg-white px-2.5 py-1.5 text-xs font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="rounded-lg border border-border bg-white dark:bg-canvas-soft px-2.5 py-1.5 text-xs font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               <option value="super_admin">Root Platform Admin (*)</option>
               <option value="candidate">Candidate Perspective</option>
@@ -89,7 +89,7 @@ export function AdminDashboardTab({ onNavigateTab }: AdminDashboardTabProps) {
 
       {/* ─── Operational KPI Matrix ─── */}
       <div>
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-3">
           <h2 className="text-base font-bold text-ink">Command Center Telemetry & Metrics</h2>
           <span className="text-xs text-ink-muted">Bound to /api/platform/operational-status</span>
         </div>
@@ -112,7 +112,9 @@ export function AdminDashboardTab({ onNavigateTab }: AdminDashboardTabProps) {
                     </div>
                     <div>
                       <p className="text-xs font-medium text-ink-muted">{stat.label}</p>
-                      <p className="text-xl font-bold text-ink">{stat.value}</p>
+                      <p className="text-xl font-bold text-ink">
+                        {typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value}
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
@@ -128,10 +130,10 @@ export function AdminDashboardTab({ onNavigateTab }: AdminDashboardTabProps) {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           <button
             onClick={() => onNavigateTab('ai-settings')}
-            className="rounded-xl border border-border bg-white p-4 text-left hover:border-brand-300 hover:shadow-xs transition-all group cursor-pointer"
+            className="rounded-xl border border-border bg-surface p-4 text-left hover:border-brand-300 dark:hover:border-brand-700 hover:shadow-xs transition-all group cursor-pointer"
           >
             <div className="flex items-center justify-between mb-2">
-              <div className="flex size-9 items-center justify-center rounded-lg bg-purple-50 text-purple-600 group-hover:bg-purple-100">
+              <div className="flex size-9 items-center justify-center rounded-lg bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 group-hover:bg-purple-100 dark:group-hover:bg-purple-900/60">
                 <Brain className="size-5" />
               </div>
               <ArrowRight className="size-4 text-ink-muted group-hover:text-brand-600 transition-colors" />
@@ -142,10 +144,10 @@ export function AdminDashboardTab({ onNavigateTab }: AdminDashboardTabProps) {
 
           <button
             onClick={() => onNavigateTab('health')}
-            className="rounded-xl border border-border bg-white p-4 text-left hover:border-brand-300 hover:shadow-xs transition-all group cursor-pointer"
+            className="rounded-xl border border-border bg-surface p-4 text-left hover:border-brand-300 dark:hover:border-brand-700 hover:shadow-xs transition-all group cursor-pointer"
           >
             <div className="flex items-center justify-between mb-2">
-              <div className="flex size-9 items-center justify-center rounded-lg bg-success-50 text-success-600 group-hover:bg-success-100">
+              <div className="flex size-9 items-center justify-center rounded-lg bg-success-50 dark:bg-emerald-950/50 text-success-600 dark:text-emerald-400 group-hover:bg-success-100 dark:group-hover:bg-emerald-900/60">
                 <Activity className="size-5" />
               </div>
               <ArrowRight className="size-4 text-ink-muted group-hover:text-brand-600 transition-colors" />
@@ -156,10 +158,10 @@ export function AdminDashboardTab({ onNavigateTab }: AdminDashboardTabProps) {
 
           <button
             onClick={() => onNavigateTab('operations')}
-            className="rounded-xl border border-border bg-white p-4 text-left hover:border-brand-300 hover:shadow-xs transition-all group cursor-pointer"
+            className="rounded-xl border border-border bg-surface p-4 text-left hover:border-brand-300 dark:hover:border-brand-700 hover:shadow-xs transition-all group cursor-pointer"
           >
             <div className="flex items-center justify-between mb-2">
-              <div className="flex size-9 items-center justify-center rounded-lg bg-amber-50 text-amber-600 group-hover:bg-amber-100">
+              <div className="flex size-9 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 group-hover:bg-amber-100 dark:group-hover:bg-amber-900/60">
                 <Server className="size-5" />
               </div>
               <ArrowRight className="size-4 text-ink-muted group-hover:text-brand-600 transition-colors" />
@@ -170,10 +172,10 @@ export function AdminDashboardTab({ onNavigateTab }: AdminDashboardTabProps) {
 
           <Link
             to="/blog-editor"
-            className="rounded-xl border border-border bg-white p-4 text-left hover:border-brand-300 hover:shadow-xs transition-all group cursor-pointer block"
+            className="rounded-xl border border-border bg-surface p-4 text-left hover:border-brand-300 dark:hover:border-brand-700 hover:shadow-xs transition-all group cursor-pointer block"
           >
             <div className="flex items-center justify-between mb-2">
-              <div className="flex size-9 items-center justify-center rounded-lg bg-brand-50 text-brand-600 group-hover:bg-brand-100">
+              <div className="flex size-9 items-center justify-center rounded-lg bg-brand-50 dark:bg-brand-950/50 text-brand-600 dark:text-brand-400 group-hover:bg-brand-100 dark:group-hover:bg-brand-900/60">
                 <Edit3 className="size-5" />
               </div>
               <ExternalLink className="size-4 text-ink-muted group-hover:text-brand-600 transition-colors" />
@@ -208,11 +210,11 @@ export function AdminDashboardTab({ onNavigateTab }: AdminDashboardTabProps) {
                 { name: 'Durable Outbox Queue Dispatcher', status: 'HEALTHY', latency: '2ms' },
                 { name: 'Reverse Proxy (Nginx / Cloudflare)', status: 'HEALTHY', latency: '12ms' },
               ].map((svc) => (
-                <div key={svc.name} className="flex items-center justify-between text-xs p-2.5 rounded-lg bg-neutral-50 border border-border/60">
+                <div key={svc.name} className="flex items-center justify-between text-xs p-2.5 rounded-lg bg-canvas-soft border border-border/60">
                   <span className="font-semibold text-ink">{svc.name}</span>
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-ink-muted">{svc.latency}</span>
-                    <span className="rounded-full bg-success-50 px-2 py-0.5 font-bold text-success-700">
+                    <span className="rounded-full bg-success-50 dark:bg-emerald-950/60 px-2 py-0.5 font-bold text-success-700 dark:text-emerald-300">
                       {svc.status}
                     </span>
                   </div>
@@ -237,15 +239,15 @@ export function AdminDashboardTab({ onNavigateTab }: AdminDashboardTabProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-2.5">
-              <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3">
-                <div className="flex items-center justify-between text-xs font-bold text-amber-900 mb-1">
+              <div className="rounded-lg border border-amber-200 dark:border-amber-800/40 bg-amber-50/50 dark:bg-amber-950/30 p-3">
+                <div className="flex items-center justify-between text-xs font-bold text-amber-900 dark:text-amber-200 mb-1">
                   <span>Employer Verification Pending</span>
                   <span>14m ago</span>
                 </div>
-                <p className="text-xs text-amber-800">Vertex AI Labs has submitted enterprise employer documents awaiting approval.</p>
+                <p className="text-xs text-amber-800 dark:text-amber-300">Vertex AI Labs has submitted enterprise employer documents awaiting approval.</p>
               </div>
 
-              <div className="rounded-lg border border-border p-3 bg-neutral-50">
+              <div className="rounded-lg border border-border p-3 bg-canvas-soft">
                 <div className="flex items-center justify-between text-xs font-bold text-ink mb-1">
                   <span>Open Help Desk Ticket (#TK-1002)</span>
                   <span>1h ago</span>

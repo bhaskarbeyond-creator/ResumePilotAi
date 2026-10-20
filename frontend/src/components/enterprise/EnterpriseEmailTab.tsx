@@ -34,8 +34,35 @@ export function EnterpriseEmailTab() {
   const [senderName, setSenderName] = useState('Talent Acquisition Team');
   const [footerText, setFooterText] = useState('Sent via IME365 Enterprise Organization Portal');
   const [selectedTemplate, setSelectedTemplate] = useState<'invitation' | 'role_change' | 'quota_alert'>('invitation');
+  const [savingSignature, setSavingSignature] = useState(false);
 
   const canManageEmail = hasPermission('tenant.settings.write');
+
+  useState(() => {
+    try {
+      const savedSender = localStorage.getItem(`enterprise_email_sender_${tenant?.id || 'default'}`);
+      const savedFooter = localStorage.getItem(`enterprise_email_footer_${tenant?.id || 'default'}`);
+      if (savedSender) setSenderName(savedSender);
+      if (savedFooter) setFooterText(savedFooter);
+    } catch {
+      // Ignore storage access error
+    }
+  });
+
+  const handleSaveSignature = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingSignature(true);
+    try {
+      localStorage.setItem(`enterprise_email_sender_${tenant?.id || 'default'}`, senderName);
+      localStorage.setItem(`enterprise_email_footer_${tenant?.id || 'default'}`, footerText);
+      setNotification('Sender signature and email template configuration saved.');
+      setTimeout(() => setNotification(null), 3500);
+    } catch {
+      // Ignore
+    } finally {
+      setSavingSignature(false);
+    }
+  };
 
   const handleSendTestEmail = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -175,6 +202,40 @@ export function EnterpriseEmailTab() {
               <div className="opacity-70 mt-0.5">{footerText}</div>
             </div>
           </div>
+
+          {/* Signature Configuration Form */}
+          <form onSubmit={handleSaveSignature} className="space-y-4 pt-4 border-t border-edge/60 max-w-2xl">
+            <h4 className="text-xs font-bold text-ink">Custom Sender Signature & Disclaimer</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-ink block">Sender Display Name</label>
+                <Input
+                  value={senderName}
+                  onChange={(e) => setSenderName(e.target.value)}
+                  placeholder="e.g. Talent Acquisition Team"
+                  disabled={!canManageEmail}
+                  className="h-9 text-xs"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-ink block">Footer Disclaimer Text</label>
+                <Input
+                  value={footerText}
+                  onChange={(e) => setFooterText(e.target.value)}
+                  placeholder="e.g. Sent via Enterprise Portal"
+                  disabled={!canManageEmail}
+                  className="h-9 text-xs"
+                />
+              </div>
+            </div>
+            {canManageEmail && (
+              <div className="flex justify-start">
+                <Button type="submit" size="sm" disabled={savingSignature}>
+                  {savingSignature ? 'Saving…' : 'Save Sender Signature'}
+                </Button>
+              </div>
+            )}
+          </form>
         </CardContent>
       </Card>
     </div>

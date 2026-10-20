@@ -5,7 +5,7 @@
  * capability breakdowns by domain, and custom role assignments.
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Shield,
   Lock,
@@ -18,9 +18,13 @@ import {
   Search,
   Layers,
   Sparkles,
+  Plus,
+  Trash2,
+  AlertCircle,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { useEnterprise } from './EnterpriseContext';
 import { HelpTooltip } from './HelpTooltip';
 import { enterpriseApi, type EnterpriseRolesMatrixResponse } from '@/lib/enterprise-api';
@@ -168,7 +172,16 @@ export function EnterpriseRolesTab() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRole, setSelectedRole] = useState('TENANT_ADMIN');
 
-  useEffect(() => {
+  // Custom Role Modal state
+  const [showCustomModal, setShowCustomModal] = useState(false);
+  const [newRoleId, setNewRoleId] = useState('');
+  const [newRoleLabel, setNewRoleLabel] = useState('');
+  const [newRoleDesc, setNewRoleDesc] = useState('');
+  const [selectedPerms, setSelectedPerms] = useState<Set<string>>(new Set());
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const fetchMatrix = useCallback(() => {
     if (!tenant?.id) {
       setLoading(false);
       return;
@@ -180,13 +193,102 @@ export function EnterpriseRolesTab() {
       .finally(() => setLoading(false));
   }, [tenant?.id]);
 
+  useEffect(() => {
+    fetchMatrix();
+  }, [fetchMatrix]);
+
   const standardRoles = ['TENANT_OWNER', 'TENANT_ADMIN', 'WORKSPACE_MANAGER', 'BILLING_ADMIN', 'MEMBER', 'VIEWER'];
+  const customRoleKeys = Object.keys(matrix?.customRoles || {});
+  const allRoleKeys = [...standardRoles, ...customRoleKeys];
 
   const checkHasPermission = (role: string, permId: string): boolean => {
     if (role === 'TENANT_OWNER') return true;
+    if (matrix?.customRoles?.[role]) {
+      return matrix.customRoles[role].permissions?.includes(permId) ?? false;
+    }
     const rolePerms = matrix?.roles?.[role] || [];
     if (rolePerms.includes('*')) return true;
     return rolePerms.includes(permId);
+  };
+
+  const togglePermission = (permId: string) => {
+    setSelectedPerms((prev) => {
+      const next = new Set(prev);
+      if (next.has(permId)) next.delete(permId);
+      else next.add(permId);
+      return next;
+    });
+  };
+
+  const handleCreateCustomRole = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tenant?.id) return;
+    const cleanId = (newRoleId.trim() || newRoleLabel.trim().toUpperCase().replace(/[^A-Z0-9]/g, '_'));
+    if (!cleanId) {
+      setFeedback({ type: 'error', text: 'Please enter a valid role identifier or label.' });
+      return;
+    }
+    if (standardRoles.includes(cleanId)) {
+      setFeedback({ type: 'error', text: 'Cannot override built-in standard roles.' });
+      return;
+    }
+
+    setIsSubmitting(true);
+    setFeedback(null);
+    try {
+      const configRes = await enterpriseApi.getConfiguration(tenant.id);
+      const currentConfig = configRes.configuration || {};
+      const existingCustom = (currentConfig.customRoles && typeof currentConfig.customRoles === 'object' && !Array.isArray(currentConfig.customRoles))
+        ? currentConfig.customRoles
+        : {};
+
+      const updatedCustom = {
+        ...existingCustom,
+        [cleanId]: {
+          label: newRoleLabel.trim() || cleanId,
+          description: newRoleDesc.trim() || 'Custom tenant authorization role',
+          permissions: Array.from(selectedPerms),
+        },
+      };
+
+      await enterpriseApi.updateConfiguration(tenant.id, currentConfig.revision || 1, {
+        customRoles: updatedCustom,
+      });
+
+      setFeedback({ type: 'success', text: `Role ${cleanId} created successfully!` });
+      fetchMatrix();
+      setSelectedRole(cleanId);
+      setTimeout(() => {
+        setShowCustomModal(false);
+        setNewRoleId('');
+        setNewRoleLabel('');
+        setNewRoleDesc('');
+        setSelectedPerms(new Set());
+        setFeedback(null);
+      }, 1200);
+    } catch (err: any) {
+      setFeedback({ type: 'error', text: err?.message || 'Failed to persist custom role.' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteCustomRole = async (roleId: string) => {
+    if (!tenant?.id || !confirm(`Are you sure you want to delete custom role ${roleId}?`)) return;
+    try {
+      const configRes = await enterpriseApi.getConfiguration(tenant.id);
+      const currentConfig = configRes.configuration || {};
+      const existingCustom = { ...((currentConfig.customRoles as Record<string, any>) || {}) };
+      delete existingCustom[roleId];
+
+      await enterpriseApi.updateConfiguration(tenant.id, currentConfig.revision || 1, {
+        customRoles: existingCustom,
+      });
+      fetchMatrix();
+      if (selectedRole === roleId) setSelectedRole('TENANT_ADMIN');
+    } catch (err: any) {
+      alert(err?.message || 'Failed to delete role.');
+    }
   };
 
   const filteredDomains = useMemo(() => {
@@ -228,6 +330,47 @@ export function EnterpriseRolesTab() {
             </div>
           );
         })}
+
+        {/* Custom Roles Defined on Tenant */}
+        {customRoleKeys.map((cRoleKey) => {
+          const def = matrix?.customRoles?.[cRoleKey];
+          const isSelected = selectedRole === cRoleKey;
+          return (
+            <div
+              key={cRoleKey}
+              onClick={() => setSelectedRole(cRoleKey)}
+              className={cn(
+                'p-4 rounded-xl border text-xs cursor-pointer transition-all select-none relative group',
+                isSelected
+                  ? 'border-accent bg-accent-soft/40 shadow-xs ring-1 ring-accent'
+                  : 'border-edge bg-surface-raised/60 hover:bg-surface-raised',
+              )}
+            >
+              <div className="flex items-center justify-between font-bold text-ink">
+                <span className="truncate pr-2">{def?.label || cRoleKey}</span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold border bg-purple-500/10 text-purple-600 border-purple-500/20">
+                    Custom Role
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteCustomRole(cRoleKey);
+                    }}
+                    title="Delete custom role"
+                    className="p-1 rounded-md text-ink-muted hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                  >
+                    <Trash2 className="size-3.5" />
+                  </button>
+                </div>
+              </div>
+              <p className="text-[11px] text-ink-muted mt-2 leading-relaxed line-clamp-2">
+                {def?.description || 'Custom organizational role'} ({def?.permissions?.length || 0} permissions)
+              </p>
+            </div>
+          );
+        })}
       </div>
 
       {/* ─── Permission Matrix Table ─── */}
@@ -245,14 +388,25 @@ export function EnterpriseRolesTab() {
               </CardDescription>
             </div>
 
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-ink-muted" />
-              <Input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search capabilities…"
-                className="pl-8 text-xs h-8 bg-surface border-edge"
-              />
+            <div className="flex items-center gap-2">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setShowCustomModal(true)}
+                className="text-xs font-bold gap-1.5 shadow-xs"
+              >
+                <Plus className="size-3.5" />
+                Define Custom Role
+              </Button>
+              <div className="relative w-full sm:w-56">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-ink-muted" />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search capabilities…"
+                  className="pl-8 text-xs h-8 bg-surface border-edge"
+                />
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -267,23 +421,35 @@ export function EnterpriseRolesTab() {
                 <thead>
                   <tr className="border-b border-edge text-ink-muted font-bold uppercase tracking-wider text-[11px]">
                     <th className="py-3 px-3 min-w-[260px]">Capability / Scope</th>
-                    {standardRoles.map((r) => (
-                      <th
-                        key={r}
-                        className={cn(
-                          'py-3 px-3 text-center whitespace-nowrap',
-                          selectedRole === r && 'bg-accent-soft/40 text-accent font-black',
-                        )}
-                      >
-                        {ROLE_THEMES[r]?.label.replace('Enterprise ', '')}
-                      </th>
-                    ))}
+                    {allRoleKeys.map((r) => {
+                      const isCustom = customRoleKeys.includes(r);
+                      const customDef = matrix?.customRoles?.[r];
+                      const label = isCustom
+                        ? (customDef?.label || r)
+                        : (ROLE_THEMES[r]?.label.replace('Enterprise ', '') || r);
+                      return (
+                        <th
+                          key={r}
+                          className={cn(
+                            'py-3 px-3 text-center whitespace-nowrap',
+                            selectedRole === r && 'bg-accent-soft/40 text-accent font-black',
+                          )}
+                        >
+                          <div className="flex flex-col items-center">
+                            <span>{label}</span>
+                            {isCustom && (
+                              <span className="text-[9px] font-normal text-purple-600 dark:text-purple-400">custom</span>
+                            )}
+                          </div>
+                        </th>
+                      );
+                    })}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-edge">
                   {filteredDomains.map((domain) => (
                     <tr key={domain.id} className="bg-surface/30">
-                      <td colSpan={standardRoles.length + 1} className="py-2.5 px-3">
+                      <td colSpan={allRoleKeys.length + 1} className="py-2.5 px-3">
                         <div className="font-bold text-ink text-xs uppercase tracking-wider">
                           {domain.name}
                         </div>
@@ -298,7 +464,7 @@ export function EnterpriseRolesTab() {
                           <div className="font-semibold text-ink">{perm.label}</div>
                           <div className="text-[10px] font-mono text-ink-muted">{perm.id}</div>
                         </td>
-                        {standardRoles.map((roleId) => {
+                        {allRoleKeys.map((roleId) => {
                           const hasGrant = checkHasPermission(roleId, perm.id);
                           return (
                             <td
@@ -329,6 +495,185 @@ export function EnterpriseRolesTab() {
           )}
         </CardContent>
       </Card>
+
+      {/* ─── Define Custom Role Modal ─── */}
+      {showCustomModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-surface border border-edge rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-5 border-b border-edge bg-surface-raised/40">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-accent-soft text-accent">
+                  <Shield className="size-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-ink">Define Custom Role</h3>
+                  <p className="text-xs text-ink-muted">Configure fine-grained tenant authorization boundaries</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCustomModal(false)}
+                className="p-1 rounded-lg text-ink-muted hover:text-ink hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleCreateCustomRole} className="flex-1 overflow-y-auto p-5 space-y-4">
+              {feedback && (
+                <div
+                  className={cn(
+                    'p-3 rounded-xl text-xs font-semibold flex items-center gap-2',
+                    feedback.type === 'success'
+                      ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200'
+                      : 'bg-rose-50 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200'
+                  )}
+                >
+                  {feedback.type === 'success' ? <Check className="size-4" /> : <AlertCircle className="size-4" />}
+                  <span>{feedback.text}</span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="font-bold text-ink block text-xs">Role Label / Name</label>
+                  <Input
+                    required
+                    value={newRoleLabel}
+                    onChange={(e) => {
+                      setNewRoleLabel(e.target.value);
+                      if (!newRoleId) {
+                        setNewRoleId(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '_'));
+                      }
+                    }}
+                    placeholder="e.g. Customer Support Specialist"
+                    className="h-8 text-xs"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="font-bold text-ink block text-xs">Role Identifier (Code)</label>
+                  <Input
+                    required
+                    value={newRoleId}
+                    onChange={(e) => setNewRoleId(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ''))}
+                    placeholder="e.g. SUPPORT_SPECIALIST"
+                    className="h-8 text-xs font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold text-ink block text-xs">Role Purpose & Description</label>
+                <Input
+                  value={newRoleDesc}
+                  onChange={(e) => setNewRoleDesc(e.target.value)}
+                  placeholder="e.g. Help desk operator handling ticket triage and resume review"
+                  className="h-8 text-xs"
+                />
+              </div>
+
+              {/* Permission Checkboxes by Domain */}
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-ink text-xs uppercase tracking-wider">
+                    Assigned Permissions ({selectedPerms.size} selected)
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const allP = DOMAINS.flatMap((d) => d.permissions.map((p) => p.id));
+                        setSelectedPerms(new Set(allP));
+                      }}
+                      className="text-[11px] font-bold text-accent hover:underline"
+                    >
+                      Select All
+                    </button>
+                    <span className="text-ink-muted">·</span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPerms(new Set())}
+                      className="text-[11px] font-bold text-ink-muted hover:underline"
+                    >
+                      Clear All
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+                  {DOMAINS.map((domain) => (
+                    <div key={domain.id} className="p-3 rounded-xl border border-edge bg-canvas/40 space-y-2">
+                      <div className="font-bold text-ink text-xs flex items-center justify-between">
+                        <span>{domain.name}</span>
+                        <span className="text-[10px] text-ink-muted">{domain.permissions.length} perms</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {domain.permissions.map((perm) => {
+                          const isChecked = selectedPerms.has(perm.id);
+                          return (
+                            <label
+                              key={perm.id}
+                              onClick={() => togglePermission(perm.id)}
+                              className={cn(
+                                'flex items-start gap-2 p-2 rounded-lg border text-xs cursor-pointer transition-colors',
+                                isChecked
+                                  ? 'border-accent bg-accent-soft/40 text-ink'
+                                  : 'border-edge bg-surface text-ink-muted hover:text-ink'
+                              )}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => {}} // handled by parent onClick
+                                className="mt-0.5 rounded border-edge text-accent focus:ring-accent"
+                              />
+                              <div className="min-w-0">
+                                <div className="font-semibold text-[11px] leading-tight text-ink">{perm.label}</div>
+                                <div className="text-[9px] font-mono text-ink-muted">{perm.id}</div>
+                              </div>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-edge">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowCustomModal(false)}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  disabled={isSubmitting || selectedPerms.size === 0}
+                  className="gap-1.5"
+                >
+                  {isSubmitting ? (
+                    'Persisting Role…'
+                  ) : (
+                    <>
+                      <Check className="size-3.5" />
+                      Save Custom Role
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

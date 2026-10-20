@@ -35,7 +35,9 @@ export function EnterpriseSettingsTab() {
 
   const [loading, setLoading] = useState(false);
   const [busySave, setBusySave] = useState(false);
+  const [busySaveSecurity, setBusySaveSecurity] = useState(false);
   const [busyExport, setBusyExport] = useState(false);
+  const [revision, setRevision] = useState(1);
   const [notification, setNotification] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,6 +48,29 @@ export function EnterpriseSettingsTab() {
       setOrgName(tenant.name);
     }
   }, [tenant?.name]);
+
+  useEffect(() => {
+    if (!tenant?.id) return;
+    let isCurrent = true;
+    enterpriseApi
+      .getConfiguration(tenant.id)
+      .then((res) => {
+        if (!isCurrent || !res?.configuration) return;
+        const cfg = res.configuration;
+        if (cfg.revision !== undefined) setRevision(cfg.revision);
+        if (cfg.identityPolicy) {
+          if (cfg.identityPolicy.ssoEnabled !== undefined) setSsoEnabled(cfg.identityPolicy.ssoEnabled);
+          if (cfg.identityPolicy.enforce2FA !== undefined) setEnforce2FA(cfg.identityPolicy.enforce2FA);
+          if (cfg.identityPolicy.allowedDomains?.length) setAllowedDomains(cfg.identityPolicy.allowedDomains.join(', '));
+          if (cfg.identityPolicy.sessionTimeoutMinutes !== undefined) setSessionTimeout(cfg.identityPolicy.sessionTimeoutMinutes);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [tenant?.id]);
 
   const handleSaveOrganization = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,6 +87,38 @@ export function EnterpriseSettingsTab() {
       setError(err instanceof Error ? err.message : 'Failed to update organization');
     } finally {
       setBusySave(false);
+    }
+  };
+
+  const handleSaveSecurityPolicies = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tenant?.id || busySaveSecurity) return;
+
+    setBusySaveSecurity(true);
+    setError(null);
+    try {
+      const parsedDomains = allowedDomains
+        .split(',')
+        .map((d) => d.trim())
+        .filter(Boolean);
+
+      const res = await enterpriseApi.updateConfiguration(tenant.id, revision, {
+        identityPolicy: {
+          ssoEnabled,
+          enforce2FA,
+          allowedDomains: parsedDomains,
+          sessionTimeoutMinutes: sessionTimeout,
+        },
+      });
+      if (res?.configuration?.revision) {
+        setRevision(res.configuration.revision);
+      }
+      setNotification('Enterprise SSO & identity security policies saved successfully.');
+      setTimeout(() => setNotification(null), 3500);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to save security policies');
+    } finally {
+      setBusySaveSecurity(false);
     }
   };
 
@@ -153,63 +210,73 @@ export function EnterpriseSettingsTab() {
       </form>
 
       {/* ─── Enterprise SSO & Identity Security ─── */}
-      <Card className="border border-edge bg-surface-raised/60 backdrop-blur-md shadow-xs">
-        <CardHeader className="p-5 pb-3">
-          <CardTitle className="text-base font-bold text-ink flex items-center gap-2">
-            <Lock className="size-4 text-accent" />
-            Enterprise SSO & Authentication Security
-            <HelpTooltip text="Single Sign-On federation (SAML 2.0 / Okta / Azure AD) and enforced multi-factor authentication policies." />
-          </CardTitle>
-          <CardDescription className="text-xs text-ink-muted mt-0.5">
-            Configure authentication requirements for organizational members.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-5 pt-0 space-y-4">
-          <div className="space-y-3 max-w-xl text-xs">
-            <label className="flex items-center justify-between p-3 rounded-xl border border-edge bg-surface/50 cursor-pointer">
-              <div>
-                <span className="font-bold text-ink block">Enforce Single Sign-On (SAML 2.0 / OIDC)</span>
-                <span className="text-ink-muted text-[11px]">Require all members to authenticate via your identity provider.</span>
-              </div>
-              <input
-                type="checkbox"
-                checked={ssoEnabled}
-                onChange={(e) => setSsoEnabled(e.target.checked)}
-                disabled={!canManageSettings}
-                className="rounded border-edge text-accent focus:ring-accent size-4"
-              />
-            </label>
+      <form onSubmit={handleSaveSecurityPolicies}>
+        <Card className="border border-edge bg-surface-raised/60 backdrop-blur-md shadow-xs">
+          <CardHeader className="p-5 pb-3">
+            <CardTitle className="text-base font-bold text-ink flex items-center gap-2">
+              <Lock className="size-4 text-accent" />
+              Enterprise SSO & Authentication Security
+              <HelpTooltip text="Single Sign-On federation (SAML 2.0 / Okta / Azure AD) and enforced multi-factor authentication policies." />
+            </CardTitle>
+            <CardDescription className="text-xs text-ink-muted mt-0.5">
+              Configure authentication requirements for organizational members.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-5 pt-0 space-y-4">
+            <div className="space-y-3 max-w-xl text-xs">
+              <label className="flex items-center justify-between p-3 rounded-xl border border-edge bg-surface/50 cursor-pointer">
+                <div>
+                  <span className="font-bold text-ink block">Enforce Single Sign-On (SAML 2.0 / OIDC)</span>
+                  <span className="text-ink-muted text-[11px]">Require all members to authenticate via your identity provider.</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={ssoEnabled}
+                  onChange={(e) => setSsoEnabled(e.target.checked)}
+                  disabled={!canManageSettings}
+                  className="rounded border-edge text-accent focus:ring-accent size-4"
+                />
+              </label>
 
-            <label className="flex items-center justify-between p-3 rounded-xl border border-edge bg-surface/50 cursor-pointer">
-              <div>
-                <span className="font-bold text-ink block">Enforce Multi-Factor Authentication (2FA)</span>
-                <span className="text-ink-muted text-[11px]">Mandatory TOTP authenticator app verification on all sessions.</span>
-              </div>
-              <input
-                type="checkbox"
-                checked={enforce2FA}
-                onChange={(e) => setEnforce2FA(e.target.checked)}
-                disabled={!canManageSettings}
-                className="rounded border-edge text-accent focus:ring-accent size-4"
-              />
-            </label>
-          </div>
+              <label className="flex items-center justify-between p-3 rounded-xl border border-edge bg-surface/50 cursor-pointer">
+                <div>
+                  <span className="font-bold text-ink block">Enforce Multi-Factor Authentication (2FA)</span>
+                  <span className="text-ink-muted text-[11px]">Mandatory TOTP authenticator app verification on all sessions.</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={enforce2FA}
+                  onChange={(e) => setEnforce2FA(e.target.checked)}
+                  disabled={!canManageSettings}
+                  className="rounded border-edge text-accent focus:ring-accent size-4"
+                />
+              </label>
+            </div>
 
-          <div className="space-y-1.5 max-w-md pt-2">
-            <label className="text-xs font-bold text-ink block">Authorized Domain Filter</label>
-            <Input
-              value={allowedDomains}
-              onChange={(e) => setAllowedDomains(e.target.value)}
-              placeholder="company.com, subsidiary.com"
-              disabled={!canManageSettings}
-              className="h-9 text-xs"
-            />
-            <p className="text-[11px] text-ink-muted">
-              Comma-separated email domains allowed to receive invitations.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+            <div className="space-y-1.5 max-w-md pt-2">
+              <label className="text-xs font-bold text-ink block">Authorized Domain Filter</label>
+              <Input
+                value={allowedDomains}
+                onChange={(e) => setAllowedDomains(e.target.value)}
+                placeholder="company.com, subsidiary.com"
+                disabled={!canManageSettings}
+                className="h-9 text-xs"
+              />
+              <p className="text-[11px] text-ink-muted">
+                Comma-separated email domains allowed to receive invitations.
+              </p>
+            </div>
+
+            {canManageSettings && (
+              <div className="pt-2 flex justify-start">
+                <Button type="submit" size="sm" disabled={busySaveSecurity}>
+                  {busySaveSecurity ? 'Saving Policies…' : 'Save Security Policies'}
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </form>
 
       {/* ─── Data Export & Compliance ─── */}
       <Card className="border border-edge bg-surface-raised/60 backdrop-blur-md shadow-xs">
