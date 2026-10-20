@@ -173,8 +173,15 @@ export function AdminConsolePage() {
 
   // Resolve active tab from URL path segment (/admin/:tab) or query param (?tab=...)
   const resolveTab = useCallback((): AdminTabId => {
-    // 1. Check ?tab= query parameter
-    const tabFromQuery = searchParams.get('tab') as AdminTabId;
+    // 1. Check ?tab= query parameter.
+    //
+    // `?tab=aiSettings` is the deep link the LEGACY console used for the AI
+    // provider panel (`/admin/settings?tab=aiSettings`). It is preserved as a
+    // first-class alias so existing bookmarks, runbooks and dashboard links land
+    // on the modernised AI Multi-Provider Engine instead of the generic
+    // settings surface (deep-link parity, not a redirect to a dead end).
+    const rawTab = searchParams.get('tab');
+    const tabFromQuery = rawTab && /^ai[-_]?settings$/i.test(rawTab) ? ('ai-settings' as AdminTabId) : (rawTab as AdminTabId);
     if (tabFromQuery && allowedTabs.includes(tabFromQuery)) {
       return tabFromQuery;
     }
@@ -189,7 +196,10 @@ export function AdminConsolePage() {
       else if (section === 'blog-management') mappedTab = 'blog';
       else if (['employer-applications', 'jobs-manager', 'company-management', 'tenants'].includes(section)) mappedTab = 'moderation';
       else if (['phrases', 'reviews', 'landing-pages', 'trustedby'].includes(section)) mappedTab = 'content';
-      else if (section === 'settings') mappedTab = 'settings';
+      else if (section === 'settings') {
+        // /admin/settings?tab=aiSettings (legacy deep link) is the AI engine.
+        mappedTab = /^ai[-_]?settings$/i.test(searchParams.get('tab') || '') ? 'ai-settings' : 'settings';
+      }
       else if (section === 'modules' || section === 'addon-modules') mappedTab = 'modules';
       else if (section === 'command-center' || section === 'dashboard') mappedTab = 'dashboard';
       else if (VALID_TABS.includes(section as AdminTabId)) {
@@ -231,7 +241,10 @@ export function AdminConsolePage() {
   );
 
   return (
-    <div className="p-4 lg:p-6 xl:p-8 space-y-6 max-w-7xl mx-auto" data-testid="admin-console-page">
+    // Density-aware canvas: admin surfaces are table-heavy, so the shell uses the
+    // full 7xl column on laptops and widens on true desktop displays where a
+    // fixed 1280px column would leave a third of the screen empty.
+    <div className="p-4 lg:p-6 xl:p-8 space-y-6 max-w-7xl xl:max-w-[1600px] mx-auto" data-testid="admin-console-page">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
         <div>

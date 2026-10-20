@@ -98,9 +98,83 @@ function secretPatch(input = {}, existing = {}, legacy = {}) {
   return patch;
 }
 
-const { getRepository } = require('../repositories');
+const { getRepository, inMemoryRepositoryEnabled } = require('../repositories');
 const { getPool } = require('../database/mysql');
 const crypto = require('crypto');
+
+const ENVIRONMENT_KEY_NAMES = Object.freeze({
+  gemini: 'GEMINI_API_KEY', nvidia: 'NVIDIA_API_KEY', openai: 'OPENAI_API_KEY',
+  groq: 'GROQ_API_KEY', openrouter: 'OPENROUTER_API_KEY', deepseek: 'DEEPSEEK_API_KEY',
+});
+
+/**
+ * The single authority for what a save is allowed to write.
+ *
+ * Both persistence paths (the MariaDB transaction and the non-production
+ * in-memory certification repository) call THIS function, so revision
+ * compare-and-swap, write-only secret semantics, and the deployment-managed
+ * credential guard can never drift apart between environments.
+ */
+function prepareAiSettingsMerge({ input, currentSecrets = {}, currentPublic = {}, legacyAi = {}, expectedRevision, environment = process.env }) {
+  const safePublic = publicAiSettings(input);
+  const currentRevision = Math.max(
+    Number(currentPublic.aiRevision || 0), Number(currentSecrets._revision || 0),
+  );
+  if (expectedRevision !== undefined && Number(expectedRevision) !== currentRevision) {
+    throw errorWith('AI_SETTINGS_CONFLICT', 'AI settings changed after this panel loaded. Refresh before saving.', 409);
+  }
+  const providerPatch = secretPatch(input, currentSecrets, legacyAi);
+  const clearSecrets = input.clearSecrets && typeof input.clearSecrets === 'object' ? input.clearSecrets : {};
+  for (const provider of PROVIDERS) {
+    if (clearSecrets[provider] === true && String(environment[ENVIRONMENT_KEY_NAMES[provider]] || '').trim()) {
+      throw errorWith('INFRASTRUCTURE_SECRET_CANNOT_CLEAR', `${provider} is deployment-managed and cannot be cleared from the Admin UI.`, 409);
+    }
+    if (clearSecrets[provider] === true) delete providerPatch[provider].apiKey;
+  }
+  const nextRevision = currentRevision + 1;
+  return {
+    nextRevision,
+    safePublic,
+    mergedSecrets: { ...currentSecrets, ...providerPatch, _revision: nextRevision },
+    mergedPublic: { ...currentPublic, ai: safePublic, aiRevision: nextRevision },
+  };
+}
+
+/**
+ * Non-production persistence for the AI settings panel.
+ *
+ * WHY THIS EXISTS: the repository factory already swaps in an in-memory store
+ * when a certification/local stack has no MariaDB (`IN_MEMORY_REPOSITORY=1` or
+ * the degraded-mode probe). Reading settings worked in that mode, but saving
+ * did not: it opened a raw MySQL connection, so the panel could never prove a
+ * save, a revision conflict, or secret masking end to end — only a 503. The
+ * write path now follows the same authority decision as the read path.
+ *
+ * SAFETY: `inMemoryRepositoryEnabled()` is hard-disabled when
+ * NODE_ENV=production, so this branch is unreachable in a production process.
+ * The audit row is skipped here because `admin_audit_logs` is MariaDB-only;
+ * nothing claims an audit record exists.
+ */
+async function saveAiSettingsToRepository({ input, expectedRevision }) {
+  const repo = getRepository();
+  const [secrets, publicConfig, systemSettings] = await Promise.all([
+    repo.getSetting('ai_providers'),
+    repo.getSetting('public_config'),
+    repo.getSetting('system_settings'),
+  ]);
+  const { nextRevision, mergedSecrets, mergedPublic } = prepareAiSettingsMerge({
+    input,
+    currentSecrets: secrets || {},
+    currentPublic: publicConfig || {},
+    legacyAi: systemSettings?.ai || {},
+    expectedRevision,
+  });
+  await repo.saveSetting('ai_providers', mergedSecrets, nextRevision);
+  await repo.saveSetting('public_config', mergedPublic, nextRevision);
+  clearProviderConfigurationCache();
+  const loaded = await loadAiAdminSettings();
+  return { ...loaded, revision: nextRevision, persistence: 'in-memory-certification' };
+}
 
 async function loadAiAdminSettings(environment = process.env) {
   const repo = getRepository();
@@ -121,6 +195,11 @@ async function loadAiAdminSettings(environment = process.env) {
   const configuredProviders = Object.fromEntries(PROVIDERS.map(provider => [provider, credentialSources[provider] !== 'none']));
   const runtime = await loadProviderConfiguration(environment);
   const maskedKeys = Object.fromEntries(PROVIDERS.map(provider => [provider, maskApiKey(runtime.providers[provider]?.key || '')]));
+  // Deployment-managed credentials are resolved from the process environment
+  // and outrank stored secrets. The panel must say so, otherwise "Clear" looks
+  // available and then fails the save with INFRASTRUCTURE_SECRET_CANNOT_CLEAR.
+  const environmentManaged = Object.fromEntries(PROVIDERS.map(provider => [provider,
+    Boolean(String(environment[ENVIRONMENT_KEY_NAMES[provider]] || '').trim())]));
   const publicFields = new Set([
     'provider', 'temperature', 'maxTokens', 'enableFallback', 'enableImportModule',
     ...Object.values(ENABLE_FIELDS), ...Object.values(MODEL_FIELDS),
@@ -132,15 +211,30 @@ async function loadAiAdminSettings(environment = process.env) {
   settings.maxTokens = settings.maxTokens ?? runtime.maxTokens;
   settings.enableFallback = settings.enableFallback ?? runtime.enableFallback;
   for (const provider of PROVIDERS) settings[MODEL_FIELDS[provider]] = runtime.providers[provider].model;
+  const providers = Object.fromEntries(PROVIDERS.map(provider => [provider, {
+    id: provider,
+    enabled: runtime.providers[provider]?.enabled === true,
+    model: runtime.providers[provider]?.model || PROVIDER_DEFAULTS[provider]?.model || '',
+    baseUrl: runtime.providers[provider]?.baseUrl || '',
+    credentialConfigured: configuredProviders[provider],
+    credentialSource: credentialSources[provider],
+    environmentManaged: environmentManaged[provider],
+    maskedKey: maskedKeys[provider],
+  }]));
   return {
-    settings, configuredProviders, credentialSources, maskedKeys,
+    settings, providers, configuredProviders, credentialSources, maskedKeys, environmentManaged,
     revision: Number(publicConfig.aiRevision || providerSecrets._revision || 0),
     source: 'MARIADB_AND_DEPLOYMENT_ENVIRONMENT',
+    // Where a save would land in THIS process. The panel states it plainly so a
+    // certification stack never looks like it wrote to MariaDB when it did not.
+    persistence: inMemoryRepositoryEnabled() ? 'in-memory-certification' : 'mariadb',
   };
 }
 
 async function saveAiAdminSettings({ input, expectedRevision = 0, actorUid, requestId }) {
-  const safePublic = publicAiSettings(input);
+  if (inMemoryRepositoryEnabled()) {
+    return saveAiSettingsToRepository({ input, expectedRevision });
+  }
   const pool = getPool();
   const connection = await pool.getConnection();
   let nextRevision;
@@ -153,30 +247,19 @@ async function saveAiAdminSettings({ input, expectedRevision = 0, actorUid, requ
       data: typeof row.data === 'string' ? JSON.parse(row.data) : (row.data || {}),
       revision: Number(row.revision || 0),
     }]));
-    const currentSecrets = byCategory.ai_providers?.data || {};
-    const currentPublic = byCategory.public_config?.data || {};
-    const legacyAi = byCategory.system_settings?.data?.ai || {};
-    const currentRevision = Math.max(
-      Number(currentPublic.aiRevision || 0), Number(currentSecrets._revision || 0),
-    );
-    if (expectedRevision !== undefined && Number(expectedRevision) !== currentRevision) {
-      throw errorWith('AI_SETTINGS_CONFLICT', 'AI settings changed after this panel loaded. Refresh before saving.', 409);
-    }
-    const providerPatch = secretPatch(input, currentSecrets, legacyAi);
-    const clearSecrets = input.clearSecrets && typeof input.clearSecrets === 'object' ? input.clearSecrets : {};
-    const envKeyNames = {
-      gemini: 'GEMINI_API_KEY', nvidia: 'NVIDIA_API_KEY', openai: 'OPENAI_API_KEY',
-      groq: 'GROQ_API_KEY', openrouter: 'OPENROUTER_API_KEY', deepseek: 'DEEPSEEK_API_KEY',
-    };
-    for (const provider of PROVIDERS) {
-      if (clearSecrets[provider] === true && String(process.env[envKeyNames[provider]] || '').trim()) {
-        throw errorWith('INFRASTRUCTURE_SECRET_CANNOT_CLEAR', `${provider} is deployment-managed and cannot be cleared from the Admin UI.`, 409);
-      }
-      if (clearSecrets[provider] === true) delete providerPatch[provider].apiKey;
-    }
-    nextRevision = currentRevision + 1;
-    const mergedSecrets = { ...currentSecrets, ...providerPatch, _revision: nextRevision };
-    const mergedPublic = { ...currentPublic, ai: safePublic, aiRevision: nextRevision };
+    const {
+      nextRevision: mergedRevision,
+      safePublic,
+      mergedSecrets,
+      mergedPublic,
+    } = prepareAiSettingsMerge({
+      input,
+      currentSecrets: byCategory.ai_providers?.data || {},
+      currentPublic: byCategory.public_config?.data || {},
+      legacyAi: byCategory.system_settings?.data?.ai || {},
+      expectedRevision,
+    });
+    nextRevision = mergedRevision;
     for (const [category, data] of [['ai_providers', mergedSecrets], ['public_config', mergedPublic]]) {
       await connection.query(
         `INSERT INTO system_settings (category, data, revision, updated_at) VALUES (?, ?, ?, NOW())
@@ -267,7 +350,8 @@ async function fetchProviderModels({ environment = process.env, provider, apiKey
 }
 
 module.exports = {
-  ENABLE_FIELDS, MODEL_FIELDS, SECRET_FIELDS, MASKED_PATTERN,
+  ENABLE_FIELDS, MODEL_FIELDS, SECRET_FIELDS, MASKED_PATTERN, ENVIRONMENT_KEY_NAMES,
   maskApiKey, loadAiAdminSettings, publicAiSettings, saveAiAdminSettings,
+  prepareAiSettingsMerge, saveAiSettingsToRepository,
   secretPatch, testAiProvider, fetchProviderModels
 };

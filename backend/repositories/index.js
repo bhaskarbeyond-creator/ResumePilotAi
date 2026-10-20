@@ -81,6 +81,10 @@ function resetRepositoryCacheForTests() {
 module.exports = {
     getRepository,
     getDirectRepository,
+    // Exposed so transactional services can mirror the factory's own decision
+    // (`IN_MEMORY_REPOSITORY=1` / degraded certification mode) instead of
+    // re-deriving it with a second, drifting copy of the rules.
+    inMemoryRepositoryEnabled,
     MySQLRepository,
     ResilientRepository,
     resetRepositoryCacheForTests,
