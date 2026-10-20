@@ -269,7 +269,9 @@ Severity definitions:
 
 Commit and push the initial audit and prioritized plan before beginning substantial surface work.
 
-# 6. Autonomous dashboard candidate queue
+# 6. Autonomous dashboard candidate queue (Surface 1: Candidate / User Dashboard)
+
+> ℹ️ **Portal Scope Boundary:** This directive specifically governs the **Candidate / User Dashboard** (`frontend/src/pages/dashboard/` and related candidate routes). The other three major portals — **Employer Portal** (`frontend/src/pages/employer/`), **Admin Console** (`frontend/src/pages/admin/`), and **Enterprise Console** (`frontend/src/pages/enterprise/`) — represent distinct role-based access tiers and are managed as separate subsequent directives. Do not modify Employer, Admin, or Enterprise code within this workstream.
 
 After integrating the incoming update and establishing the baseline, inspect the actual application state and choose the next highest-value incomplete surface.
 
