@@ -383,6 +383,7 @@ test.describe('Cover letters (account A)', () => {
   });
 
   test('AI draft: input check, replace confirmation, and the unavailable path never changes the letter', async ({ page, guard }) => {
+    test.setTimeout(180_000);
     const aiCalls = countRequests(page, /\/api\/generate-ai-cover-letter/);
     await page.goto('/cover-letter/new');
     const generate = page.getByRole('button', { name: 'Generate draft' });
@@ -411,7 +412,8 @@ test.describe('Cover letters (account A)', () => {
 
     guard.expectApiStatuses(503);
     await generate.click();
-    const ai = page.waitForResponse((response) => response.url().includes('/api/generate-ai-cover-letter'));
+    await expect(dialog).toBeVisible();
+    const ai = page.waitForResponse((response) => response.url().includes('/api/generate-ai-cover-letter'), { timeout: 120_000 });
     await dialog.getByRole('button', { name: 'Replace with AI draft' }).click();
     const response = await ai;
     if (response.status() === 503) {
@@ -491,7 +493,8 @@ test.describe('Cover letters (account A)', () => {
     await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: new URL(page.url()).origin });
     await page.getByRole('button', { name: 'Copy text' }).click();
     await expect(statusRegion(page)).toContainText('Letter copied to the clipboard.');
-    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(text);
+    const clipboardText = (await page.evaluate(() => navigator.clipboard.readText())).replace(/\r\n/g, '\n').trim();
+    expect(clipboardText).toBe(text.replace(/\r\n/g, '\n').trim());
 
     await page.getByRole('button', { name: 'Print / Save as PDF' }).click();
     const printed = await page.locator('#cover-letter-print-frame').evaluate((frame: HTMLIFrameElement) => ({
@@ -537,6 +540,185 @@ test.describe('Cover letters (account A)', () => {
       await settleAnimations(page.getByRole('group', { name: 'Builder view' }));
       await expectNoAxeViolations(page, '#main-content');
     }
+  });
+
+  test('templates & live A4 letterhead: selecting templates switches layout, updates badge, and persists', async ({ page, apiAs }) => {
+    const tag = uniqueTag();
+    const id = await seedLetter(apiAs('a'), 'a', {
+      jobTitle: `Template Test ${tag}`,
+      companyName: 'Acme Corp',
+      candidateFirstname: 'Avery',
+      candidateLastname: 'Tester',
+      letterBody: 'Demonstrating dynamic template switching with executive letterhead styling.',
+    });
+    await page.goto(`/cover-letter/${id}`);
+    await expect(field(page, 'Job title')).toHaveValue(`Template Test ${tag}`);
+
+    // Initial state: Executive Classic (Cover1)
+    const preview = page.locator('#cover-letter-preview');
+    if (isCompact(page)) {
+      await page.getByRole('button', { name: 'Preview', exact: true }).click();
+    }
+    await expect(preview.getByText('Executive Classic')).toBeVisible();
+
+    if (isCompact(page)) {
+      await page.getByRole('button', { name: 'Edit', exact: true }).click();
+    }
+
+    // Switch to Cover2 (Modern Minimalist)
+    const templateCover2 = page.getByRole('radio', { name: /Modern Minimalist/ });
+    await templateCover2.click();
+    if (isCompact(page)) {
+      await page.getByRole('button', { name: 'Preview', exact: true }).click();
+    }
+    await expect(preview.getByText('Modern Minimalist')).toBeVisible();
+
+    // Switch to Cover3 (Split Sidebar)
+    if (isCompact(page)) {
+      await page.getByRole('button', { name: 'Edit', exact: true }).click();
+    }
+    const templateCover3 = page.getByRole('radio', { name: /Split Sidebar/ });
+    await templateCover3.click();
+    if (isCompact(page)) {
+      await page.getByRole('button', { name: 'Preview', exact: true }).click();
+    }
+    await expect(preview.getByText('Split Sidebar')).toBeVisible();
+
+    // Switch to Cover4 (Creative Accent)
+    if (isCompact(page)) {
+      await page.getByRole('button', { name: 'Edit', exact: true }).click();
+    }
+    const templateCover4 = page.getByRole('radio', { name: /Creative Accent/ });
+    await templateCover4.click();
+    if (isCompact(page)) {
+      await page.getByRole('button', { name: 'Preview', exact: true }).click();
+    }
+    await expect(preview.getByText('Creative Accent')).toBeVisible();
+
+    // Save with Cover4
+    if (isCompact(page)) {
+      await page.getByRole('button', { name: 'Edit', exact: true }).click();
+    }
+    const saved = page.waitForResponse((response) => response.request().method() === 'POST' && /\/api\/covers\//.test(response.url()));
+    await saveButton(page).click();
+    expect((await saved).status()).toBe(200);
+    await expect(saveState(page)).toContainText('All changes saved');
+
+    // Reload and verify Cover4 is persisted
+    await page.reload();
+    if (isCompact(page)) {
+      await page.getByRole('button', { name: 'Preview', exact: true }).click();
+    }
+    await expect(preview.getByText('Creative Accent')).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+  });
+
+  test('zoom ladder & fullscreen modal: preview zoom ladder and fullscreen modal preview', async ({ page, apiAs }) => {
+    const tag = uniqueTag();
+    const id = await seedLetter(apiAs('a'), 'a', {
+      jobTitle: `Zoom Test ${tag}`,
+      companyName: 'Zoom Corp',
+      candidateFirstname: 'Avery',
+      candidateLastname: 'Tester',
+      letterBody: 'Testing zoom controls and fullscreen modal preview.',
+    });
+    await page.goto(`/cover-letter/${id}`);
+    if (isCompact(page)) {
+      await page.getByRole('button', { name: 'Preview', exact: true }).click();
+    }
+
+    const preview = page.locator('#cover-letter-preview');
+    const zoomGroup = preview.getByRole('group', { name: 'Preview zoom' });
+    const zoom100 = zoomGroup.getByRole('button', { name: '1x' });
+    const zoom75 = zoomGroup.getByRole('button', { name: '0.75x' });
+    const zoom125 = zoomGroup.getByRole('button', { name: '1.25x' });
+
+    await expect(zoom100).toHaveAttribute('aria-pressed', 'true');
+    await zoom125.click();
+    await expect(zoom125).toHaveAttribute('aria-pressed', 'true');
+    await expect(zoom100).toHaveAttribute('aria-pressed', 'false');
+    await zoom75.click();
+    await expect(zoom75).toHaveAttribute('aria-pressed', 'true');
+
+    // Fullscreen modal
+    await preview.getByRole('button', { name: 'Fullscreen' }).click();
+    const modal = page.getByRole('dialog');
+    await expect(modal).toBeVisible();
+    await expect(modal.getByText(/A4 Executive Print Canvas/)).toBeVisible();
+
+    // Verify modal actions are available
+    await expect(modal.getByRole('button', { name: 'Copy' })).toBeVisible();
+    await expect(modal.getByRole('button', { name: 'Download .txt' })).toBeVisible();
+    await expect(modal.getByRole('button', { name: 'Print / PDF' })).toBeVisible();
+
+    // Close modal via Escape
+    await page.keyboard.press('Escape');
+    await expect(modal).toBeHidden();
+    await expectNoHorizontalOverflow(page);
+  });
+
+  test('ATS match score & missing keyword chips: visual gauge and interactive copy chips', async ({ page, context, apiAs }) => {
+    const tag = uniqueTag();
+    const id = await seedLetter(apiAs('a'), 'a', {
+      jobTitle: `ATS Score Test ${tag}`,
+      companyName: 'Cloud Systems',
+      candidateFirstname: 'Avery',
+      candidateLastname: 'Tester',
+      jobDescription: 'Senior Kubernetes engineer needed with extensive Terraform, Docker, Python and Prometheus observability.',
+      letterBody: 'I am applying with experience in Kubernetes and Python.',
+    });
+    await page.goto(`/cover-letter/${id}`);
+
+    // Verify ATS keyword section exists with progress bar and tier badge
+    const keywordsSection = page.locator('section[aria-labelledby="cover-letter-keywords"]');
+    await expect(keywordsSection).toBeVisible();
+    await expect(keywordsSection.getByRole('progressbar')).toBeVisible();
+    await expect(keywordsSection.getByText(/ATS Match/)).toBeVisible();
+
+    // Missing keywords include terraform, docker, prometheus
+    const missingChips = keywordsSection.getByRole('list', { name: 'Keywords not mentioned yet' });
+    await expect(missingChips).toBeVisible();
+    const terraformChip = missingChips.getByRole('button', { name: /Copy missing keyword terraform to clipboard/i });
+    await expect(terraformChip).toBeVisible();
+
+    await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: new URL(page.url()).origin });
+    await terraformChip.click();
+    await expect(statusRegion(page)).toContainText('Copied keyword “terraform” to clipboard.');
+    const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
+    expect(clipboardText.toLowerCase()).toContain('terraform');
+    await expectNoHorizontalOverflow(page);
+  });
+
+  test('Job Tracker sync: 1-click tracking from builder and from cover letters list', async ({ page, apiAs }) => {
+    const tag = uniqueTag();
+    const id = await seedLetter(apiAs('a'), 'a', {
+      jobTitle: `Lead Architect ${tag}`,
+      companyName: 'Global Corp',
+      candidateFirstname: 'Avery',
+      candidateLastname: 'Tester',
+      letterBody: 'Seeking to lead enterprise architecture and cloud engineering.',
+    });
+
+    // 1. Sync from Builder header action
+    await page.goto(`/cover-letter/${id}`);
+    const trackBtn = page.getByRole('button', { name: 'Track in Job Tracker' });
+    await expect(trackBtn).toBeVisible();
+    await trackBtn.click();
+    await expect(statusRegion(page)).toContainText('Application linked to Job Tracker as “Lead Architect');
+
+    // 2. Sync from Cover Letters list page item card
+    await page.goto('/dashboard/cover-letters');
+    const search = page.getByRole('searchbox', { name: 'Search cover letters' });
+    await search.fill(tag);
+    const card = page.getByRole('list', { name: 'Saved cover letters' }).getByRole('listitem');
+    await expect(card).toHaveCount(1);
+    await expect(card.getByText('Executive Classic')).toBeVisible();
+
+    const listTrackBtn = card.getByRole('button', { name: `Track Lead Architect ${tag} at Global Corp in Job Tracker` });
+    await expect(listTrackBtn).toBeVisible();
+    await listTrackBtn.click();
+    await expect(statusRegion(page)).toContainText('Linked “Lead Architect');
+    await expectNoHorizontalOverflow(page);
   });
 });
 

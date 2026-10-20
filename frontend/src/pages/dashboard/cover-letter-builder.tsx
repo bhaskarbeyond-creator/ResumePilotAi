@@ -14,10 +14,13 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   AlertCircle,
   ArrowLeft,
+  Briefcase,
   Check,
   ClipboardCopy,
   Download,
+  Expand,
   FileQuestion,
+  Plus,
   Printer,
   RefreshCw,
   Save,
@@ -40,6 +43,7 @@ import { normalizeError } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 import {
   AiUnavailableError,
+  COVER_TEMPLATES,
   CoverLetterNotFoundError,
   TONE_OPTIONS,
   emptyCoverLetter,
@@ -50,6 +54,7 @@ import {
   letterTitle,
   loadProfilePrefill,
   saveCoverLetter,
+  syncToJobTracker,
   type CoverLetterRecord,
 } from '@/lib/cover-letters';
 
@@ -126,6 +131,241 @@ function validateForSave(record: CoverLetterRecord): FieldErrors {
   return errors;
 }
 
+function CoverLetterA4Paper({
+  record,
+  parts,
+  scale = 1.0,
+}: {
+  record: CoverLetterRecord;
+  parts: LetterParts;
+  scale?: number;
+}) {
+  const templateId = record.templateId || 'Cover1';
+  const fullName = `${record.candidateFirstname} ${record.candidateLastname}`.trim() || 'Your Name';
+  const recipient = record.recipientName?.trim() || 'Hiring Team';
+
+  return (
+    <div
+      data-template={templateId}
+      className={cn(
+        'w-full max-w-[720px] mx-auto rounded-xl bg-white text-slate-800 shadow-sm border border-slate-200 transition-transform origin-top',
+        'p-6 sm:p-10 font-sans text-sm leading-relaxed min-h-[600px]',
+      )}
+      style={{ transform: scale !== 1.0 ? `scale(${scale})` : undefined }}
+    >
+      {templateId === 'Cover1' && (
+        <div className="space-y-6">
+          <div className="text-center space-y-1">
+            <p className="text-2xl font-bold tracking-tight text-slate-900">{fullName}</p>
+            {parts.sender.slice(1).length > 0 && (
+              <p className="text-xs text-slate-500 flex flex-wrap justify-center gap-x-2">
+                {parts.sender.slice(1).map((line, idx) => (
+                  <span key={idx} className="inline-flex items-center gap-1.5">
+                    {idx > 0 && <span aria-hidden="true">•</span>}
+                    {line}
+                  </span>
+                ))}
+              </p>
+            )}
+            <div className="h-1 w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 rounded-full my-4" />
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:justify-between gap-4 text-xs text-slate-600">
+            {parts.recipient.length > 0 && (
+              <div className="space-y-0.5">
+                <p className="font-semibold text-slate-900">{record.recipientName || 'Hiring Team'}</p>
+                {record.companyName && <p>{record.companyName}</p>}
+                {record.companyAddress && <p>{record.companyAddress}</p>}
+                {(record.companyCity || record.companyPostalCode) && (
+                  <p>{[record.companyCity, record.companyPostalCode].filter(Boolean).join(' ')}</p>
+                )}
+              </div>
+            )}
+            <p className="sm:text-right font-medium text-slate-500">{parts.date}</p>
+          </div>
+
+          {parts.subject && <p className="font-semibold text-slate-900">{parts.subject}</p>}
+
+          <div className="space-y-4">
+            <p className="font-medium text-slate-900">Dear {recipient},</p>
+            {parts.paragraphs.length > 0 ? (
+              parts.paragraphs.map((para, i) => (
+                <p key={i} className="whitespace-pre-wrap leading-relaxed">{para}</p>
+              ))
+            ) : (
+              <p className="italic text-slate-400">Your letter text will appear here.</p>
+            )}
+            <div className="pt-4 space-y-1">
+              <p className="text-slate-600">Sincerely,</p>
+              <p className="font-semibold text-slate-900">{fullName}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {templateId === 'Cover2' && (
+        <div className="space-y-6">
+          <div className="space-y-1">
+            <p className="text-2xl font-bold tracking-tight text-slate-900">{fullName}</p>
+            {parts.sender.slice(1).length > 0 && (
+              <p className="text-xs text-slate-500 flex flex-wrap gap-x-2">
+                {parts.sender.slice(1).map((line, idx) => (
+                  <span key={idx} className="inline-flex items-center gap-1.5">
+                    {idx > 0 && <span aria-hidden="true">•</span>}
+                    {line}
+                  </span>
+                ))}
+              </p>
+            )}
+            <div className="h-0.5 w-full bg-slate-900 rounded-full my-4" />
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:justify-between gap-4 text-xs text-slate-600">
+            {parts.recipient.length > 0 && (
+              <div className="space-y-0.5">
+                <p className="font-semibold text-slate-900">{record.recipientName || 'Hiring Team'}</p>
+                {record.companyName && <p>{record.companyName}</p>}
+                {record.companyAddress && <p>{record.companyAddress}</p>}
+                {(record.companyCity || record.companyPostalCode) && (
+                  <p>{[record.companyCity, record.companyPostalCode].filter(Boolean).join(' ')}</p>
+                )}
+              </div>
+            )}
+            <p className="sm:text-right font-medium text-slate-500">{parts.date}</p>
+          </div>
+
+          {parts.subject && <p className="font-semibold text-slate-900">{parts.subject}</p>}
+
+          <div className="space-y-4">
+            <p className="font-medium text-slate-900">Dear {recipient},</p>
+            {parts.paragraphs.length > 0 ? (
+              parts.paragraphs.map((para, i) => (
+                <p key={i} className="whitespace-pre-wrap leading-relaxed">{para}</p>
+              ))
+            ) : (
+              <p className="italic text-slate-400">Your letter text will appear here.</p>
+            )}
+            <div className="pt-4 space-y-1">
+              <p className="text-slate-600">Best regards,</p>
+              <p className="font-semibold text-slate-900">{fullName}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {templateId === 'Cover3' && (
+        <div className="space-y-6">
+          <div className="flex items-end justify-between border-b-2 border-slate-900 pb-3">
+            <div>
+              <p className="text-2xl font-bold tracking-tight text-slate-900">{fullName}</p>
+              {record.jobTitle && <p className="text-xs font-semibold text-blue-600 mt-0.5">{record.jobTitle}</p>}
+            </div>
+            <p className="text-xs text-slate-500 font-medium">{parts.date}</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="md:col-span-2 space-y-4">
+              {parts.subject && <p className="font-semibold text-slate-900">{parts.subject}</p>}
+              <p className="font-medium text-slate-900">Dear {recipient},</p>
+              {parts.paragraphs.length > 0 ? (
+                parts.paragraphs.map((para, i) => (
+                  <p key={i} className="whitespace-pre-wrap leading-relaxed">{para}</p>
+                ))
+              ) : (
+                <p className="italic text-slate-400">Your letter text will appear here.</p>
+              )}
+              <div className="pt-4 space-y-1">
+                <p className="text-slate-600">Sincerely,</p>
+                <p className="font-semibold text-slate-900">{fullName}</p>
+              </div>
+            </div>
+
+            <div className="md:col-span-1 space-y-4 rounded-xl bg-slate-50 border border-slate-200/90 p-4 text-xs text-slate-600">
+              {parts.recipient.length > 0 && (
+                <div className="space-y-1">
+                  <p className="font-bold uppercase tracking-wider text-[10px] text-slate-400">To</p>
+                  <p className="font-semibold text-slate-900">{record.recipientName || 'Hiring Team'}</p>
+                  {record.companyName && <p>{record.companyName}</p>}
+                  {record.companyAddress && <p>{record.companyAddress}</p>}
+                  {(record.companyCity || record.companyPostalCode) && (
+                    <p>{[record.companyCity, record.companyPostalCode].filter(Boolean).join(' ')}</p>
+                  )}
+                </div>
+              )}
+              {parts.sender.length > 0 && (
+                <div className="space-y-1 pt-3 border-t border-slate-200">
+                  <p className="font-bold uppercase tracking-wider text-[10px] text-slate-400">From</p>
+                  <p className="font-semibold text-slate-900">{fullName}</p>
+                  {record.candidateEmail && <p className="break-all">{record.candidateEmail}</p>}
+                  {record.candidatePhone && <p>{record.candidatePhone}</p>}
+                  {(record.candidateCity || record.candidatePostalCode) && (
+                    <p>{[record.candidateCity, record.candidatePostalCode].filter(Boolean).join(' ')}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {templateId === 'Cover4' && (
+        <div className="space-y-6">
+          <div className="border-b border-slate-200 pb-4 space-y-2">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <p className="text-2xl font-bold tracking-tight text-blue-900">{fullName}</p>
+              {record.jobTitle && (
+                <span className="inline-flex items-center rounded-full bg-amber-50 border border-amber-200 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+                  {record.jobTitle}
+                </span>
+              )}
+            </div>
+            {parts.sender.slice(1).length > 0 && (
+              <div className="flex flex-wrap gap-1.5 text-xs text-slate-600">
+                {parts.sender.slice(1).map((line, idx) => (
+                  <span key={idx} className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                    {line}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:justify-between gap-4 text-xs text-slate-600">
+            {parts.recipient.length > 0 && (
+              <div className="space-y-0.5">
+                <p className="font-semibold text-slate-900">{record.recipientName || 'Hiring Team'}</p>
+                {record.companyName && <p>{record.companyName}</p>}
+                {record.companyAddress && <p>{record.companyAddress}</p>}
+                {(record.companyCity || record.companyPostalCode) && (
+                  <p>{[record.companyCity, record.companyPostalCode].filter(Boolean).join(' ')}</p>
+                )}
+              </div>
+            )}
+            <p className="sm:text-right font-medium text-slate-500">{parts.date}</p>
+          </div>
+
+          {parts.subject && <p className="font-semibold text-slate-900">{parts.subject}</p>}
+
+          <div className="space-y-4">
+            <p className="font-medium text-slate-900">Dear {recipient},</p>
+            {parts.paragraphs.length > 0 ? (
+              parts.paragraphs.map((para, i) => (
+                <p key={i} className="whitespace-pre-wrap leading-relaxed">{para}</p>
+              ))
+            ) : (
+              <p className="italic text-slate-400">Your letter text will appear here.</p>
+            )}
+            <div className="pt-4 space-y-1">
+              <p className="text-slate-600">Warm regards,</p>
+              <p className="font-semibold text-slate-900">{fullName}</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function CoverLetterBuilderPage() {
   const params = useParams();
   const [searchParams] = useSearchParams();
@@ -150,6 +390,9 @@ export function CoverLetterBuilderPage() {
   const [generating, setGenerating] = useState(false);
   const [confirmReplace, setConfirmReplace] = useState(false);
   const [view, setView] = useState<'edit' | 'preview'>('edit');
+  const [zoom, setZoom] = useState<number>(1.0);
+  const [showFullscreenModal, setShowFullscreenModal] = useState<boolean>(false);
+  const [syncingTracker, setSyncingTracker] = useState<boolean>(false);
 
   /** Id of a new letter that was just saved and is already in state. */
   const justSavedIdRef = useRef<string | null>(null);
@@ -399,6 +642,40 @@ export function CoverLetterBuilderPage() {
     win.print();
   };
 
+  const handleSyncTracker = async () => {
+    if (phase !== 'ready' || syncingTracker) return;
+    setSyncingTracker(true);
+    try {
+      const job = await syncToJobTracker(record);
+      setNotice({
+        tone: 'success',
+        text: `Application linked to Job Tracker as “${job.title} at ${job.company}”. View it in /dashboard/job-tracker.`,
+      });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        text: `Could not link to Job Tracker: ${normalizeError(error).message}`,
+      });
+    } finally {
+      setSyncingTracker(false);
+    }
+  };
+
+  const copyKeyword = async (word: string) => {
+    try {
+      await navigator.clipboard.writeText(word);
+      setNotice({
+        tone: 'success',
+        text: `Copied keyword “${word}” to clipboard. Paste it into your letter to improve ATS match.`,
+      });
+    } catch {
+      setNotice({
+        tone: 'error',
+        text: `Could not copy “${word}”. Select and copy it manually.`,
+      });
+    }
+  };
+
   const textField = (field: TextKey, label: string, options: { autoComplete?: string; type?: string; hint?: string; maxLength?: number } = {}) => {
     const id = fieldId(field);
     const error = errors[field];
@@ -509,6 +786,9 @@ export function CoverLetterBuilderPage() {
           <Button variant="outline" size="sm" onClick={printLetter}>
             <Printer aria-hidden="true" /> Print / Save as PDF
           </Button>
+          <Button variant="outline" size="sm" onClick={() => void handleSyncTracker()} loading={syncingTracker}>
+            <Briefcase aria-hidden="true" /> Track in Job Tracker
+          </Button>
           <Button ref={saveButtonRef} type="submit" form="cover-letter-editor" size="sm" loading={saving}>
             <Save aria-hidden="true" /> Save
           </Button>
@@ -561,6 +841,46 @@ export function CoverLetterBuilderPage() {
           }}
           className={cn('min-w-0 space-y-5', view === 'edit' ? 'block' : 'hidden lg:block')}
         >
+          <Section
+            title="Cover letter template"
+            description="Choose an executive styling layout for your letterhead, metadata, and typography."
+          >
+            <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Cover letter template">
+              {COVER_TEMPLATES.map((tpl) => {
+                const isSelected = (record.templateId || 'Cover1') === tpl.id;
+                return (
+                  <button
+                    key={tpl.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={isSelected}
+                    onClick={() => setRecord((prev) => ({ ...prev, templateId: tpl.id }))}
+                    className={cn(
+                      'flex flex-col items-start gap-1.5 rounded-xl border p-3.5 text-left transition-all',
+                      isSelected
+                        ? 'border-brand-500 bg-brand-50/70 ring-2 ring-brand-500/20'
+                        : 'border-border bg-surface hover:border-slate-300 hover:bg-canvas',
+                    )}
+                  >
+                    <div className="flex w-full items-center justify-between">
+                      <span className="font-semibold text-sm text-ink">{tpl.name}</span>
+                      <span className={cn(
+                        'rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider',
+                        isSelected ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-600',
+                      )}>
+                        {tpl.badge}
+                      </span>
+                    </div>
+                    <p className="text-xs text-ink-muted leading-relaxed">{tpl.description}</p>
+                    <span className="text-[11px] font-medium text-brand-700 mt-1">
+                      {isSelected ? '✓ Active Template' : 'Click to select'}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </Section>
+
           <Section title="The job">
             <div className="grid gap-4 sm:grid-cols-2">
               {textField('jobTitle', 'Job title')}
@@ -654,32 +974,67 @@ export function CoverLetterBuilderPage() {
               </p>
             </div>
             {coverage && (
-              <section aria-labelledby="cover-letter-keywords" className="rounded-xl border border-border bg-canvas p-3">
-                <h3 id="cover-letter-keywords" className="text-sm font-semibold text-ink">
-                  Job description keywords mentioned: {coverage.matched.length} of {coverage.matched.length + coverage.missing.length}
-                </h3>
-                <p className="mt-0.5 text-xs text-ink-muted">A writing aid based on the most frequent terms in the posting. It is not an ATS score.</p>
+              <section aria-labelledby="cover-letter-keywords" className="rounded-xl border border-border bg-canvas p-4 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <h3 id="cover-letter-keywords" className="text-sm font-semibold text-ink">
+                    Job description keywords mentioned: {coverage.matched.length} of {coverage.matched.length + coverage.missing.length}
+                  </h3>
+                  <span className={cn(
+                    'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold border',
+                    coverage.tier === 'success' && 'bg-success-50 text-success-800 border-success-200',
+                    coverage.tier === 'warning' && 'bg-warning-50 text-warning-800 border-warning-200',
+                    coverage.tier === 'danger' && 'bg-brand-50 text-brand-800 border-brand-200',
+                  )}>
+                    <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />
+                    {coverage.tierLabel} ({coverage.percent}%)
+                  </span>
+                </div>
+
+                <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200" role="progressbar" aria-valuenow={coverage.percent} aria-valuemin={0} aria-valuemax={100} aria-label="ATS keyword match percentage">
+                  <div
+                    className={cn(
+                      'h-full transition-all duration-300',
+                      coverage.tier === 'success' && 'bg-success-600',
+                      coverage.tier === 'warning' && 'bg-warning-500',
+                      coverage.tier === 'danger' && 'bg-brand-600',
+                    )}
+                    style={{ width: `${coverage.percent}%` }}
+                  />
+                </div>
+
+                <p className="text-xs text-ink-muted">A writing aid based on the most frequent terms in the posting. Click any missing keyword to copy it to your clipboard.</p>
                 {coverage.matched.length > 0 && (
-                  <>
-                    <p className="mt-2 text-xs font-medium text-ink">Mentioned</p>
+                  <div>
+                    <p className="text-xs font-medium text-ink">Mentioned</p>
                     <ul className="mt-1 flex flex-wrap gap-1.5" aria-label="Keywords mentioned">
                       {coverage.matched.map((word) => (
-                        <li key={word} className="inline-flex items-center gap-1 rounded-full bg-success-50 px-2 py-0.5 text-xs text-success-800">
+                        <li key={word} className="inline-flex items-center gap-1 rounded-full bg-success-50 px-2 py-0.5 text-xs text-success-800 border border-success-200">
                           <Check className="size-3" aria-hidden="true" />{word}
                         </li>
                       ))}
                     </ul>
-                  </>
+                  </div>
                 )}
                 {coverage.missing.length > 0 && (
-                  <>
-                    <p className="mt-2 text-xs font-medium text-ink">Not mentioned yet</p>
+                  <div>
+                    <p className="text-xs font-medium text-ink">Not mentioned yet</p>
                     <ul className="mt-1 flex flex-wrap gap-1.5" aria-label="Keywords not mentioned yet">
                       {coverage.missing.map((word) => (
-                        <li key={word} className="rounded-full border border-border bg-surface px-2 py-0.5 text-xs text-ink-secondary">{word}</li>
+                        <li key={word}>
+                          <button
+                            type="button"
+                            onClick={() => void copyKeyword(word)}
+                            className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2 py-0.5 text-xs text-ink-secondary hover:border-brand-400 hover:text-brand-700 transition-colors"
+                            title={`Click to copy "${word}"`}
+                            aria-label={`Copy missing keyword ${word} to clipboard`}
+                          >
+                            <Plus className="size-3 text-ink-muted" aria-hidden="true" />
+                            {word}
+                          </button>
+                        </li>
                       ))}
                     </ul>
-                  </>
+                  </div>
                 )}
               </section>
             )}
@@ -705,26 +1060,110 @@ export function CoverLetterBuilderPage() {
           aria-labelledby="cover-letter-preview-heading"
           className={cn('min-w-0', view === 'preview' ? 'block' : 'hidden lg:block')}
         >
-          <h2 id="cover-letter-preview-heading" className="mb-2 text-sm font-semibold text-ink-muted">Preview</h2>
-          <article className="rounded-2xl border border-border bg-surface p-5 text-sm leading-relaxed text-ink shadow-sm sm:p-8 lg:sticky lg:top-4">
-            {parts.sender.length > 0 && (
-              <p className="whitespace-pre-line break-words">{parts.sender.join('\n')}</p>
-            )}
-            <p className="mt-4">{parts.date}</p>
-            {parts.recipient.length > 0 && (
-              <p className="mt-4 whitespace-pre-line break-words">{parts.recipient.join('\n')}</p>
-            )}
-            {parts.subject && <p className="mt-4 break-words font-semibold">{parts.subject}</p>}
-            {parts.paragraphs.length > 0 ? (
-              parts.paragraphs.map((paragraph, index) => (
-                <p key={index} className="mt-4 whitespace-pre-wrap break-words">{paragraph}</p>
-              ))
-            ) : (
-              <p className="mt-4 italic text-ink-muted">Your letter text will appear here.</p>
-            )}
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <h2 id="cover-letter-preview-heading" className="text-sm font-semibold text-ink-muted">Preview</h2>
+              <span className="inline-flex items-center rounded-md bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700">
+                {COVER_TEMPLATES.find((t) => t.id === (record.templateId || 'Cover1'))?.name || 'Executive Classic'}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="flex items-center rounded-lg border border-border bg-surface p-0.5 text-xs text-ink-muted" role="group" aria-label="Preview zoom">
+                {[0.75, 1.0, 1.25].map((level) => (
+                  <button
+                    key={level}
+                    type="button"
+                    aria-pressed={zoom === level}
+                    onClick={() => setZoom(level)}
+                    className={cn(
+                      'rounded px-2 py-0.5 font-medium transition-colors',
+                      zoom === level ? 'bg-brand-600 text-white' : 'hover:bg-canvas hover:text-ink',
+                    )}
+                  >
+                    {level}x
+                  </button>
+                ))}
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setShowFullscreenModal(true)}>
+                <Expand aria-hidden="true" /> Fullscreen
+              </Button>
+            </div>
+          </div>
+
+          <article className="rounded-2xl border border-border bg-slate-50/70 p-4 sm:p-6 shadow-sm overflow-x-auto lg:sticky lg:top-4">
+            <CoverLetterA4Paper record={record} parts={parts} scale={zoom} />
           </article>
         </section>
       </div>
+
+      <Dialog open={showFullscreenModal} onOpenChange={setShowFullscreenModal}>
+        <DialogContent className="w-[calc(100%-2rem)] max-w-4xl max-h-[92vh] overflow-y-auto rounded-2xl bg-slate-100 p-4 sm:p-6">
+          <DialogHeader className="border-b border-border/80 pb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <DialogTitle className="text-lg font-bold text-ink">
+                  {letterTitle(record)}
+                </DialogTitle>
+                <DialogDescription className="text-xs text-ink-muted">
+                  A4 Executive Print Canvas · {COVER_TEMPLATES.find((t) => t.id === (record.templateId || 'Cover1'))?.name}
+                </DialogDescription>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => void copyText()}>
+                  <ClipboardCopy aria-hidden="true" /> Copy
+                </Button>
+                <Button variant="outline" size="sm" onClick={downloadText}>
+                  <Download aria-hidden="true" /> Download .txt
+                </Button>
+                <Button variant="outline" size="sm" onClick={printLetter}>
+                  <Printer aria-hidden="true" /> Print / PDF
+                </Button>
+              </div>
+            </div>
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border/60">
+              <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Template switcher in modal">
+                {COVER_TEMPLATES.map((tpl) => (
+                  <button
+                    key={tpl.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={(record.templateId || 'Cover1') === tpl.id}
+                    onClick={() => setRecord((prev) => ({ ...prev, templateId: tpl.id }))}
+                    className={cn(
+                      'rounded-lg px-2.5 py-1 text-xs font-medium transition-colors',
+                      (record.templateId || 'Cover1') === tpl.id
+                        ? 'bg-brand-600 text-white'
+                        : 'bg-surface text-ink border border-border hover:bg-canvas',
+                    )}
+                  >
+                    {tpl.name}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center rounded-lg border border-border bg-surface p-0.5 text-xs text-ink-muted">
+                {[0.75, 1.0, 1.25].map((level) => (
+                  <button
+                    key={level}
+                    type="button"
+                    aria-pressed={zoom === level}
+                    onClick={() => setZoom(level)}
+                    className={cn(
+                      'rounded px-2 py-0.5 font-medium transition-colors',
+                      zoom === level ? 'bg-brand-600 text-white' : 'hover:bg-canvas hover:text-ink',
+                    )}
+                  >
+                    {level}x
+                  </button>
+                ))}
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="my-4 flex justify-center overflow-x-auto py-2">
+            <CoverLetterA4Paper record={record} parts={parts} scale={zoom} />
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={confirmReplace} onOpenChange={setConfirmReplace}>
         <DialogContent
