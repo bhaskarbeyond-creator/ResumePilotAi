@@ -174,6 +174,8 @@ export function AppRouter() {
               path="/dashboard/portfolio/*"
               element={<RequireAuth><CubaAppShell><PortfolioBuilderPage /></CubaAppShell></RequireAuth>}
             />
+            {/* Legacy dashboard path (plural). */}
+            <Route path="/dashboard/portfolios/*" element={<Navigate to="/dashboard/portfolio" replace />} />
             <Route
               path="/dashboard/ai/*"
               element={<RequireAuth><CubaAppShell><AIAssistantPage /></CubaAppShell></RequireAuth>}
@@ -236,11 +238,8 @@ export function AppRouter() {
               element={<RequireAuth><CubaAppShell><CoverLetterBuilderPage /></CubaAppShell></RequireAuth>}
             />
 
-            {/* ─── Portfolio Builder ─── */}
-            <Route
-              path="/portfolio/builder"
-              element={<RequireAuth><CubaAppShell><PortfolioBuilderPage /></CubaAppShell></RequireAuth>}
-            />
+            {/* ─── Portfolio Builder (legacy entry; the builder lives at /dashboard/portfolio) ─── */}
+            <Route path="/portfolio/builder" element={<Navigate to="/dashboard/portfolio" replace />} />
 
             {/* ─── Employer Portal ─── */}
             <Route

@@ -1,708 +1,703 @@
 /**
- * Portfolio Builder
+ * Portfolio builder: /dashboard/portfolio (the candidate's portfolios) and
+ * /dashboard/portfolio/:portfolioId (one portfolio). The legacy paths
+ * /dashboard/portfolios and /portfolio/builder redirect here.
  *
- * Comprehensive online portfolio builder allowing job seekers and developers
- * to customize profile branding, showcase featured projects with live links,
- * highlight categorized skills, configure custom themes, and publish a live portfolio.
+ * Everything goes through the real portfolio API (lib/portfolio.ts) and the
+ * shared Web CV document contract (lib/portfolio-document.ts):
+ * - A new portfolio is saved as a private draft first, so every editor URL
+ *   refers to a stored record that survives reload.
+ * - Saves are revision-checked. A 409 means the portfolio changed in another tab
+ *   or device; the candidate chooses to reload, and nothing is overwritten.
+ * - The public address is chosen once, on first publication, after the server
+ *   confirms the exact address. The server then keeps it permanently.
+ * - While an administrator has the module turned off (403
+ *   PORTFOLIO_MODULE_DISABLED, the shipped default), the page says so and offers
+ *   no editing.
+ * - Portfolios built with the earlier page editor can't be edited here, but
+ *   they can still be published, unpublished or deleted.
  */
-
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { AlertCircle, ArrowLeft, Check, Copy, ExternalLink, Eye, Globe, Loader2, Pencil, Plus, RotateCcw, Save, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
-import { get, post, put, normalizeError } from '@/lib/api-client';
+import { PortfolioView } from '@/components/portfolio/portfolio-view';
+import { EntryListEditor, TextAreaField, TextField } from '@/components/portfolio/portfolio-editor-fields';
+import { ConfirmDialog, CreatePortfolioDialog, PublishDialog, type CreatePortfolioInput } from '@/components/portfolio/portfolio-dialogs';
 import {
-  Globe,
-  ExternalLink,
-  Plus,
-  Trash2,
-  Eye,
-  Check,
-  Copy,
-  FolderGit2,
-  Sparkles,
-  Palette,
-  User,
-  Layers,
-  Share2,
-  Save,
-  Loader2,
-} from 'lucide-react';
-
-interface ProjectItem {
-  id: string;
-  title: string;
-  description: string;
-  techStack: string[];
-  liveUrl: string;
-  githubUrl: string;
-  featured?: boolean;
-}
-
-interface PortfolioConfig {
-  slug: string;
-  fullName: string;
-  headline: string;
-  bio: string;
-  location: string;
-  avatarUrl: string;
-  availableForHire: boolean;
-  theme: 'meridian' | 'minimal' | 'cyber' | 'editorial';
-  projects: ProjectItem[];
-  skills: { category: string; list: string[] }[];
-}
-
-// A portfolio starts empty. No demo persona is shipped: the page shows honest
-// empty states until the signed-in candidate saves their own content.
-const DEFAULT_PORTFOLIO: PortfolioConfig = {
-  slug: '',
-  fullName: '',
-  headline: '',
-  bio: '',
-  location: '',
-  avatarUrl: '',
-  availableForHire: false,
-  theme: 'meridian',
-  projects: [],
-  skills: [],
-};
-
-const THEMES = [
-  { id: 'meridian', name: 'Meridian Glass', desc: 'Vibrant gradients, translucent cards, and executive typography' },
-  { id: 'minimal', name: 'Clean Minimal', desc: 'High contrast, generous whitespace, and laser-focused readability' },
-  { id: 'cyber', name: 'Dark Terminal', desc: 'Monospaced accents, subtle neon borders, and hacker aesthetic' },
-  { id: 'editorial', name: 'Editorial Serif', desc: 'Sophisticated typography inspired by high-end design magazines' },
-];
+  deletePortfolio,
+  getPortfolio,
+  getResumeRecord,
+  listPortfolios,
+  mintPortfolioId,
+  publicPortfolioUrl,
+  savePortfolio,
+  toPortfolioError,
+  type PortfolioApiError,
+  type StoredPortfolio,
+} from '@/lib/portfolio';
+import {
+  PORTFOLIO_TEMPLATES,
+  buildDocument,
+  canonicalFromResume,
+  displayName,
+  documentWithVisibility,
+  emptyCanonical,
+  isWebCvDocument,
+  normalizeCanonical,
+  templateMeta,
+  type PortfolioCanonical,
+  type PortfolioEducation,
+  type PortfolioExperience,
+  type PortfolioProject,
+  type PortfolioSkill,
+} from '@/lib/portfolio-document';
+import { cn } from '@/lib/utils';
 
 export function PortfolioBuilderPage() {
-  const [data, setData] = useState<PortfolioConfig>(DEFAULT_PORTFOLIO);
-  const [activeTab, setActiveTab] = useState<'profile' | 'projects' | 'skills' | 'theme' | 'preview'>('profile');
-  const [copied, setCopied] = useState(false);
-  const [isPublished, setIsPublished] = useState(true);
-  const [newTag, setNewTag] = useState<{ [key: string]: string }>({});
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [portfolioId, setPortfolioId] = useState<string | null>(null);
+  const params = useParams();
+  const portfolioId = decodeURIComponent((params['*'] ?? '').split('/')[0] ?? '');
+  return portfolioId ? <PortfolioEditor key={portfolioId} portfolioId={portfolioId} /> : <PortfolioList />;
+}
 
-  // Load portfolio on mount
+const dateFormat = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+const formatDate = (value: unknown) => {
+  if (!value) return '';
+  const date = new Date(String(value));
+  return Number.isNaN(date.getTime()) ? '' : dateFormat.format(date);
+};
+
+function PageFrame({ children }: { children: React.ReactNode }) {
+  return <div className="p-4 lg:p-6 xl:p-8"><div className="mx-auto max-w-5xl space-y-5">{children}</div></div>;
+}
+
+function ModuleDisabled() {
+  return (
+    <PageFrame>
+      <h1 className="text-xl font-bold text-ink">Portfolios</h1>
+      <section aria-labelledby="portfolio-disabled-heading" className="rounded-2xl border border-border bg-surface p-6">
+        <h2 id="portfolio-disabled-heading" className="text-base font-semibold text-ink">Portfolios are turned off</h2>
+        <p className="mt-2 text-sm text-ink-secondary">
+          An administrator has turned off the portfolio module for this site, so portfolios can’t be created or edited right now.
+          Portfolios that were already published stay visible at their addresses.
+        </p>
+        <Link to="/portfolios" className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-brand-700 underline-offset-4 hover:underline">
+          <Globe className="size-4" aria-hidden="true" /> See published portfolios
+        </Link>
+      </section>
+    </PageFrame>
+  );
+}
+
+function LoadError({ title, error, onRetry }: { title: string; error: PortfolioApiError; onRetry: () => void }) {
+  return (
+    <div role="alert" className="rounded-xl border border-error-200 bg-error-50 p-4 text-sm text-error-800">
+      <p className="flex items-center gap-2 font-semibold"><AlertCircle className="size-4 shrink-0" aria-hidden="true" /> {title}</p>
+      <p className="mt-1 break-words">{error.message}</p>
+      <Button className="mt-3" size="sm" variant="outline" onClick={onRetry}><RotateCcw aria-hidden="true" /> Try again</Button>
+    </div>
+  );
+}
+
+function StatusBadge({ published }: { published: boolean }) {
+  return (
+    <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold', published ? 'bg-success-50 text-success-800' : 'bg-neutral-100 text-neutral-700')}>
+      {published ? 'Published' : 'Draft'}
+    </span>
+  );
+}
+
+/* ─── List ─── */
+
+type ListState =
+  | { status: 'loading' }
+  | { status: 'ready'; portfolios: StoredPortfolio[] }
+  | { status: 'disabled' }
+  | { status: 'error'; error: PortfolioApiError };
+
+function PortfolioList() {
+  const navigate = useNavigate();
+  const [state, setState] = useState<ListState>({ status: 'loading' });
+  const [attempt, setAttempt] = useState(0);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createBusy, setCreateBusy] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<StoredPortfolio | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [notice, setNotice] = useState('');
+  const newButtonRef = useRef<HTMLButtonElement>(null);
+  const deleteReturnRef = useRef<HTMLElement | null>(null);
+
   useEffect(() => {
-    setLoading(true);
-    get<{ portfolio: PortfolioConfig }>('/api/portfolios')
-      .then((res) => {
-        if (res?.portfolio) {
-          setData(res.portfolio);
-          setPortfolioId(res.portfolio.slug);
-          setIsPublished(true);
-        }
-      })
-      .catch((err) => {
-        setError(normalizeError(err).message);
-      })
-      .finally(() => setLoading(false));
-  }, []);
+    const controller = new AbortController();
+    listPortfolios(controller.signal)
+      .then((portfolios) => setState({ status: 'ready', portfolios }))
+      .catch((cause: unknown) => {
+        const error = toPortfolioError(cause);
+        if (error.cancelled) return;
+        setState(error.moduleDisabled ? { status: 'disabled' } : { status: 'error', error });
+      });
+    return () => controller.abort();
+  }, [attempt]);
 
-  const copyShareLink = () => {
-    const url = `${window.location.origin}/portfolio/${data.slug}`;
-    navigator.clipboard.writeText(url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    setSaveMessage(null);
-    setError(null);
+  const create = async ({ title, template, resumeId }: CreatePortfolioInput) => {
+    setCreateBusy(true);
+    setCreateError(null);
     try {
-      if (portfolioId) {
-        await put<{ portfolio: PortfolioConfig }>(`/api/portfolios/${portfolioId}`, data);
+      const canonical = resumeId ? canonicalFromResume(await getResumeRecord(resumeId), template) : emptyCanonical(template);
+      const id = mintPortfolioId();
+      await savePortfolio(id, buildDocument({ canonical: { ...canonical, template }, title, isPublished: false }), 0);
+      setCreateOpen(false);
+      navigate(`/dashboard/portfolio/${encodeURIComponent(id)}`);
+    } catch (cause) {
+      const error = toPortfolioError(cause);
+      if (error.moduleDisabled) {
+        setCreateOpen(false);
+        setState({ status: 'disabled' });
       } else {
-        const result = await post<{ portfolio: PortfolioConfig }>('/api/portfolios', data);
-        if (result?.portfolio?.slug) {
-          setPortfolioId(result.portfolio.slug);
-        }
+        setCreateError(error.message);
       }
-      setSaveMessage('Saved successfully');
-      setTimeout(() => setSaveMessage(null), 3000);
-    } catch (err) {
-      setError(normalizeError(err).message);
     } finally {
-      setSaving(false);
+      setCreateBusy(false);
     }
   };
 
-  const handlePublish = async () => {
-    if (!portfolioId) {
-      await handleSave();
-      if (!portfolioId) return;
-    }
-    setSaving(true);
-    setSaveMessage(null);
-    setError(null);
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    setDeleteBusy(true);
+    setDeleteError(null);
     try {
-      await post<{ portfolio: PortfolioConfig }>(`/api/portfolios/${portfolioId}/publish`, {});
-      setIsPublished(true);
-      setSaveMessage('Published successfully!');
-      setTimeout(() => setSaveMessage(null), 3000);
-    } catch (err) {
-      setError(normalizeError(err).message);
+      await deletePortfolio(deleting.id, deleting.revision);
+      setNotice(`“${deleting.title}” was deleted.`);
+      setDeleting(null);
+      deleteReturnRef.current = newButtonRef.current;
+      setAttempt((value) => value + 1);
+    } catch (cause) {
+      const error = toPortfolioError(cause);
+      if (error.notFound) {
+        setNotice(`“${deleting.title}” had already been deleted.`);
+        setDeleting(null);
+        deleteReturnRef.current = newButtonRef.current;
+        setAttempt((value) => value + 1);
+      } else if (error.conflict) {
+        setDeleteError('This portfolio was changed in another tab or on another device. Cancel to see the latest version, then decide again.');
+        setAttempt((value) => value + 1);
+      } else {
+        setDeleteError(error.message);
+      }
     } finally {
-      setSaving(false);
+      setDeleteBusy(false);
     }
   };
 
-  const addProject = () => {
-    const newProj: ProjectItem = {
-      id: `proj-${Date.now()}`,
-      title: 'New Featured Project',
-      description: 'Describe the problem solved, architectural decisions, and tangible impact.',
-      techStack: ['TypeScript', 'React'],
-      liveUrl: 'https://',
-      githubUrl: 'https://github.com',
-      featured: false,
-    };
-    setData({ ...data, projects: [newProj, ...data.projects] });
-  };
-
-  const removeProject = (id: string) => {
-    setData({ ...data, projects: data.projects.filter((p) => p.id !== id) });
-  };
-
-  const updateProject = (id: string, updates: Partial<ProjectItem>) => {
-    setData({
-      ...data,
-      projects: data.projects.map((p) => (p.id === id ? { ...p, ...updates } : p)),
-    });
-  };
-
-  const addProjectTag = (projectId: string) => {
-    const tag = newTag[projectId]?.trim();
-    if (!tag) return;
-    const project = data.projects.find((p) => p.id === projectId);
-    if (!project || project.techStack.includes(tag)) return;
-
-    updateProject(projectId, { techStack: [...project.techStack, tag] });
-    setNewTag({ ...newTag, [projectId]: '' });
-  };
-
-  const removeProjectTag = (projectId: string, tagToRemove: string) => {
-    const project = data.projects.find((p) => p.id === projectId);
-    if (!project) return;
-    updateProject(projectId, {
-      techStack: project.techStack.filter((t) => t !== tagToRemove),
-    });
-  };
+  if (state.status === 'disabled') return <ModuleDisabled />;
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto pb-16">
-      {/* ─── Top Header & Share Bar ─── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-edge pb-5">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-ink flex items-center gap-2">
-              <Globe className="size-6 text-accent" />
-              Portfolio Builder
-            </h1>
-            <span
-              className={cn(
-                'inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold border',
-                isPublished
-                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                  : 'bg-canvas-soft text-ink-muted border-edge'
-              )}
-            >
-              {isPublished ? '● Live & Published' : '○ Draft'}
-            </span>
-          </div>
-          <p className="text-sm text-ink-muted mt-1">
-            Build and share a high-conversion, responsive personal portfolio website in minutes.
-          </p>
+    <PageFrame>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold text-ink">Portfolios</h1>
+          <p className="mt-0.5 text-sm text-ink-secondary">Publish a Web CV that anyone with the link can see. Drafts stay private.</p>
         </div>
-
-        <div className="flex items-center gap-2.5">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={copyShareLink}
-            className="text-xs gap-1.5"
-          >
-            {copied ? (
-              <>
-                <Check className="size-3.5 text-emerald-500" />
-                Copied Link!
-              </>
-            ) : (
-              <>
-                <Share2 className="size-3.5" />
-                Share Link
-              </>
-            )}
+        {state.status === 'ready' && (
+          <Button ref={newButtonRef} onClick={() => { setCreateError(null); setCreateOpen(true); }}>
+            <Plus aria-hidden="true" /> New portfolio
           </Button>
+        )}
+      </header>
 
-          <Button
-            variant={isPublished ? 'secondary' : 'primary'}
-            size="sm"
-            onClick={handlePublish}
-            loading={saving}
-            className="text-xs font-semibold gap-1.5"
-          >
-            <Sparkles className="size-3.5" />
-            {isPublished ? 'Update Changes' : 'Publish Portfolio'}
-          </Button>
+      <div role="status" className={notice ? 'rounded-xl border border-border bg-surface p-3 text-sm text-ink-secondary' : 'sr-only'}>{notice}</div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSave}
-            loading={saving}
-            className="text-xs font-semibold gap-1.5"
-          >
-            <Save className="size-3.5" />
-            Save Draft
-          </Button>
-        </div>
-      </div>
-
-      {error && (
-        <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-sm" role="alert">
-          {error}
-        </div>
+      {state.status === 'loading' && (
+        <p className="flex items-center gap-2 text-sm text-ink-secondary"><Loader2 className="size-4 animate-spin" aria-hidden="true" /> Loading your portfolios…</p>
       )}
 
-      {saveMessage && (
-        <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm">
-          {saveMessage}
-        </div>
+      {state.status === 'error' && <LoadError title="Your portfolios could not be loaded" error={state.error} onRetry={() => { setState({ status: 'loading' }); setAttempt((value) => value + 1); }} />}
+
+      {state.status === 'ready' && state.portfolios.length === 0 && (
+        <section className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center">
+          <Globe className="mx-auto size-10 text-ink-muted" aria-hidden="true" />
+          <h2 className="mt-3 text-base font-semibold text-ink">You have no portfolios yet</h2>
+          <p className="mt-1 text-sm text-ink-secondary">Start from one of your saved resumes or from scratch. It stays a private draft until you publish it.</p>
+        </section>
       )}
 
-      {/* ─── Builder Tabs ─── */}
-      <div className="flex items-center gap-1 border-b border-edge overflow-x-auto pb-px">
-        {[
-          { id: 'profile', label: 'Profile & Bio', icon: User },
-          { id: 'projects', label: `Projects (${data.projects.length})`, icon: FolderGit2 },
-          { id: 'skills', label: 'Skills & Tech Stack', icon: Layers },
-          { id: 'theme', label: 'Theme & URL', icon: Palette },
-          { id: 'preview', label: 'Live Preview', icon: Eye },
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id as typeof activeTab)}
-              className={cn(
-                'flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap',
-                isActive
-                  ? 'border-accent text-accent font-semibold'
-                  : 'border-transparent text-ink-muted hover:text-ink hover:border-edge-strong'
-              )}
-            >
-              <Icon className="size-3.5" />
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* ─── TAB 1: Profile & Bio ─── */}
-      {activeTab === 'profile' && (
-        <Card className="border-edge shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-base">Personal Branding & Bio</CardTitle>
-            <CardDescription className="text-xs">
-              This information sits prominently at the top of your public portfolio.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-ink mb-1.5">Full Name</label>
-                <Input
-                  value={data.fullName}
-                  onChange={(e) => setData({ ...data, fullName: e.target.value })}
-                  className="text-xs h-9"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-ink mb-1.5">Location</label>
-                <Input
-                  value={data.location}
-                  onChange={(e) => setData({ ...data, location: e.target.value })}
-                  className="text-xs h-9"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-ink mb-1.5">Professional Headline</label>
-              <Input
-                value={data.headline}
-                onChange={(e) => setData({ ...data, headline: e.target.value })}
-                className="text-xs h-9"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-ink mb-1.5">Biography & Value Proposition</label>
-              <textarea
-                rows={4}
-                value={data.bio}
-                onChange={(e) => setData({ ...data, bio: e.target.value })}
-                className="w-full rounded-lg border border-edge bg-canvas px-3 py-2 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-              <div>
-                <label className="block text-xs font-semibold text-ink mb-1.5">Avatar / Headshot URL</label>
-                <Input
-                  value={data.avatarUrl}
-                  onChange={(e) => setData({ ...data, avatarUrl: e.target.value })}
-                  placeholder="https://..."
-                  className="text-xs h-9"
-                />
-              </div>
-              <div className="flex items-center gap-3 pt-6">
-                <input
-                  type="checkbox"
-                  id="avail"
-                  checked={data.availableForHire}
-                  onChange={(e) => setData({ ...data, availableForHire: e.target.checked })}
-                  className="size-4 rounded text-accent focus:ring-accent"
-                />
-                <label htmlFor="avail" className="text-xs font-medium text-ink cursor-pointer">
-                  Show "Available for New Opportunities" Badge
-                </label>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ─── TAB 2: Projects Showcase ─── */}
-      {activeTab === 'projects' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-ink-muted">
-              Add your most impressive software engineering or design deliverables.
-            </p>
-            <Button size="sm" onClick={addProject} className="text-xs gap-1.5">
-              <Plus className="size-3.5" />
-              Add Project
-            </Button>
-          </div>
-
-          <div className="space-y-4">
-            {data.projects.map((proj, idx) => (
-              <Card key={proj.id} className="border-edge shadow-sm relative">
-                <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
-                  <div className="flex items-center gap-2">
-                    <span className="size-6 rounded-full bg-accent/10 text-accent font-bold text-xs flex items-center justify-center">
-                      {idx + 1}
-                    </span>
-                    <CardTitle className="text-sm font-bold">{proj.title || 'Untitled Project'}</CardTitle>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeProject(proj.id)}
-                    className="h-7 px-2 text-ink-muted hover:text-red-500"
-                  >
-                    <Trash2 className="size-3.5" />
-                  </Button>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-semibold text-ink mb-1">Project Title</label>
-                      <Input
-                        value={proj.title}
-                        onChange={(e) => updateProject(proj.id, { title: e.target.value })}
-                        className="text-xs h-8"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-semibold text-ink mb-1">Live URL</label>
-                      <Input
-                        value={proj.liveUrl}
-                        onChange={(e) => updateProject(proj.id, { liveUrl: e.target.value })}
-                        className="text-xs h-8"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-semibold text-ink mb-1">Description & Impact</label>
-                    <textarea
-                      rows={2}
-                      value={proj.description}
-                      onChange={(e) => updateProject(proj.id, { description: e.target.value })}
-                      className="w-full rounded-lg border border-edge bg-canvas px-3 py-1.5 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition"
-                    />
-                  </div>
-
-                  {/* Tech Stack Tags */}
-                  <div>
-                    <label className="block text-[11px] font-semibold text-ink mb-1.5">Technologies Used</label>
-                    <div className="flex flex-wrap items-center gap-1.5 mb-2">
-                      {proj.techStack.map((tech) => (
-                        <span
-                          key={tech}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-canvas-soft border border-edge text-ink"
-                        >
-                          {tech}
-                          <button
-                            type="button"
-                            onClick={() => removeProjectTag(proj.id, tech)}
-                            className="text-ink-muted hover:text-red-500"
-                          >
-                            ×
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                    <div className="flex gap-2 max-w-sm">
-                      <Input
-                        placeholder="Add technology (e.g. Docker, GraphQL)"
-                        value={newTag[proj.id] || ''}
-                        onChange={(e) => setNewTag({ ...newTag, [proj.id]: e.target.value })}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            addProjectTag(proj.id);
-                          }
-                        }}
-                        className="text-xs h-7"
-                      />
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => addProjectTag(proj.id)}
-                        className="h-7 text-xs px-2.5"
-                      >
-                        Add
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ─── TAB 3: Skills ─── */}
-      {activeTab === 'skills' && (
-        <Card className="border-edge shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-base">Categorized Skills & Core Competencies</CardTitle>
-            <CardDescription className="text-xs">
-              Organized skill badges that give recruiters an immediate high-confidence overview.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {data.skills.map((cat) => (
-              <div key={cat.category} className="p-3.5 rounded-lg border border-edge bg-surface/50">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold text-xs text-ink uppercase tracking-wider">{cat.category}</h3>
-                  <span className="text-[11px] text-ink-muted">{cat.list.length} skills</span>
+      {state.status === 'ready' && state.portfolios.length > 0 && (
+        <ul className="grid gap-4 md:grid-cols-2">
+          {state.portfolios.map((portfolio) => {
+            const url = portfolio.isPublished && portfolio.slug ? publicPortfolioUrl(portfolio.slug) : null;
+            const webCv = isWebCvDocument(portfolio);
+            return (
+              <li key={portfolio.id} className="flex min-w-0 flex-col rounded-2xl border border-border bg-surface p-5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <StatusBadge published={portfolio.isPublished} />
+                  <span className="text-xs text-ink-muted">{webCv ? templateMeta(portfolio.templateKey ?? portfolio.template ?? portfolio.theme).name : 'Earlier page editor'}</span>
                 </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {cat.list.map((item) => (
-                    <span
-                      key={item}
-                      className="px-2.5 py-1 rounded-md text-xs font-medium bg-canvas border border-edge text-ink shadow-2xs"
-                    >
-                      {item}
-                    </span>
+                <h2 className="mt-2 text-base font-semibold text-ink break-words">{portfolio.title}</h2>
+                {url && <a href={url} target="_blank" rel="noopener noreferrer" className="mt-1 text-sm text-brand-700 underline-offset-4 hover:underline break-all">{url}<span className="sr-only"> (opens in a new tab)</span></a>}
+                {formatDate(portfolio.updatedAt) && <p className="mt-1 text-xs text-ink-muted">Last saved {formatDate(portfolio.updatedAt)}</p>}
+                <div className="mt-auto flex flex-wrap gap-2 pt-4">
+                  <Button asChild size="sm" variant="outline">
+                    <Link to={`/dashboard/portfolio/${encodeURIComponent(portfolio.id)}`}>
+                      <Pencil aria-hidden="true" /> Open<span className="sr-only"> {portfolio.title}</span>
+                    </Link>
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={(event) => { deleteReturnRef.current = event.currentTarget; setDeleteError(null); setDeleting(portfolio); }}
+                  >
+                    <Trash2 aria-hidden="true" /> Delete<span className="sr-only"> {portfolio.title}</span>
+                  </Button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      <CreatePortfolioDialog
+        open={createOpen}
+        busy={createBusy}
+        error={createError}
+        onCreate={(input) => void create(input)}
+        onClose={() => setCreateOpen(false)}
+        returnFocusRef={newButtonRef}
+      />
+      <ConfirmDialog
+        open={deleting !== null}
+        title="Delete this portfolio?"
+        description={
+          <>
+            <p>“{deleting?.title}” will be deleted permanently.</p>
+            {deleting?.isPublished && deleting.slug && <p>Its public page at {publicPortfolioUrl(deleting.slug)} will stop working.</p>}
+          </>
+        }
+        confirmLabel="Delete portfolio"
+        destructive
+        busy={deleteBusy}
+        error={deleteError}
+        onConfirm={() => void confirmDelete()}
+        onClose={() => setDeleting(null)}
+        returnFocusRef={deleteReturnRef}
+      />
+    </PageFrame>
+  );
+}
+
+/* ─── Editor ─── */
+
+type EditorState =
+  | { status: 'loading' }
+  | { status: 'ready' }
+  | { status: 'disabled' }
+  | { status: 'not-found' }
+  | { status: 'error'; error: PortfolioApiError };
+
+type VisibilityDialog = null | 'publish' | 'republish' | 'unpublish';
+
+const snapshot = (title: string, canonical: PortfolioCanonical) => JSON.stringify({ title, canonical });
+const newId = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
+
+function PortfolioEditor({ portfolioId }: { portfolioId: string }) {
+  const [state, setState] = useState<EditorState>({ status: 'loading' });
+  const [stored, setStored] = useState<StoredPortfolio | null>(null);
+  const [title, setTitle] = useState('');
+  const [titleError, setTitleError] = useState('');
+  const [canonical, setCanonical] = useState<PortfolioCanonical>(() => emptyCanonical());
+  const [savedSnapshot, setSavedSnapshot] = useState('');
+  const [mode, setMode] = useState<'edit' | 'preview'>('edit');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<PortfolioApiError | null>(null);
+  const [dialog, setDialog] = useState<VisibilityDialog>(null);
+  const [dialogError, setDialogError] = useState<string | null>(null);
+  const [announcement, setAnnouncement] = useState('');
+  const [copied, setCopied] = useState(false);
+  const titleRef = useRef<HTMLInputElement>(null);
+  const visibilityButtonRef = useRef<HTMLButtonElement>(null);
+  const alertRef = useRef<HTMLDivElement>(null);
+
+  const apply = useCallback((portfolio: StoredPortfolio) => {
+    const next = normalizeCanonical(portfolio);
+    setStored(portfolio);
+    setTitle(portfolio.title ?? '');
+    setCanonical(next);
+    setSavedSnapshot(snapshot(portfolio.title ?? '', next));
+  }, []);
+
+  const load = useCallback((signal?: AbortSignal) => {
+    setState({ status: 'loading' });
+    setSaveError(null);
+    getPortfolio(portfolioId, signal)
+      .then((portfolio) => { apply(portfolio); setState({ status: 'ready' }); })
+      .catch((cause: unknown) => {
+        const error = toPortfolioError(cause);
+        if (error.cancelled) return;
+        setState(error.moduleDisabled ? { status: 'disabled' } : error.notFound ? { status: 'not-found' } : { status: 'error', error });
+      });
+  }, [apply, portfolioId]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    load(controller.signal);
+    return () => controller.abort();
+  }, [load]);
+
+  const editable = stored ? isWebCvDocument(stored) : false;
+  const dirty = Boolean(stored) && editable && snapshot(title, canonical) !== savedSnapshot;
+
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty]);
+
+  useEffect(() => {
+    if (saveError) alertRef.current?.scrollIntoView({ block: 'nearest' });
+  }, [saveError]);
+
+  /** Saves the current edits with the given visibility. Returns the error, or null on success. */
+  const persist = async (isPublished: boolean, slugBase?: string): Promise<PortfolioApiError | null> => {
+    if (!stored) return null;
+    if (editable && !title.trim()) {
+      setMode('edit');
+      setTitleError('Give your portfolio a title.');
+      requestAnimationFrame(() => titleRef.current?.focus());
+      return toPortfolioError(new Error('Give your portfolio a title.'));
+    }
+    const document = editable
+      ? buildDocument({ canonical, title, isPublished, slugBase, previous: stored })
+      : { ...documentWithVisibility(stored, isPublished), ...(slugBase ? { slug: slugBase } : {}) };
+    try {
+      const saved = await savePortfolio(stored.id, document, stored.revision);
+      apply({ ...stored, ...saved });
+      return null;
+    } catch (cause) {
+      const error = toPortfolioError(cause);
+      if (error.moduleDisabled) setState({ status: 'disabled' });
+      return error;
+    }
+  };
+
+  const save = async () => {
+    setSaving(true);
+    setSaveError(null);
+    const error = await persist(Boolean(stored?.isPublished));
+    setSaving(false);
+    if (error) {
+      if (!titleError && title.trim()) setSaveError(error);
+    } else {
+      setAnnouncement(stored?.isPublished ? 'Saved. Your published page now shows these changes.' : 'Saved as a private draft.');
+    }
+  };
+
+  const changeVisibility = async (isPublished: boolean, slugBase?: string) => {
+    setDialogError(null);
+    setSaving(true);
+    const error = await persist(isPublished, slugBase);
+    setSaving(false);
+    if (!error) {
+      setDialog(null);
+      setAnnouncement(isPublished ? 'Your portfolio is published.' : 'Your portfolio is unpublished. Its address stays reserved for it.');
+      return;
+    }
+    if (!title.trim()) {
+      setDialog(null);
+      return;
+    }
+    setDialogError(error.conflict
+      ? 'This portfolio was changed in another tab or on another device. Cancel, reload the latest version, then try again.'
+      : error.code === 'PORTFOLIO_SLUG_CONFLICT'
+        ? 'That address was taken a moment ago. Choose a different one.'
+        : error.message);
+  };
+
+  const copyLink = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setAnnouncement('Link copied.');
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setAnnouncement('The link could not be copied. You can copy the address shown on the page.');
+    }
+  };
+
+  if (state.status === 'disabled') return <ModuleDisabled />;
+
+  const back = (
+    <Link to="/dashboard/portfolio" className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-700 underline-offset-4 hover:underline">
+      <ArrowLeft className="size-4" aria-hidden="true" /> All portfolios
+    </Link>
+  );
+
+  if (state.status === 'loading' || !stored) {
+    return (
+      <PageFrame>
+        {back}
+        {state.status === 'loading' && <p className="flex items-center gap-2 text-sm text-ink-secondary"><Loader2 className="size-4 animate-spin" aria-hidden="true" /> Loading portfolio…</p>}
+        {state.status === 'not-found' && (
+          <section className="rounded-2xl border border-border bg-surface p-6">
+            <h1 className="text-xl font-bold text-ink">Portfolio not found</h1>
+            <p className="mt-2 text-sm text-ink-secondary">It may have been deleted, or it belongs to another account.</p>
+          </section>
+        )}
+        {state.status === 'error' && <LoadError title="This portfolio could not be loaded" error={state.error} onRetry={() => load()} />}
+      </PageFrame>
+    );
+  }
+
+  const url = stored.isPublished && stored.slug ? publicPortfolioUrl(stored.slug) : null;
+  const heading = canonical.heading;
+  const setHeading = (patch: Partial<PortfolioCanonical['heading']>) => {
+    const next = { ...heading, ...patch };
+    next.fullName = [next.firstname, next.lastname].filter(Boolean).join(' ') || next.fullName;
+    setCanonical({ ...canonical, heading: next });
+  };
+  const keptSections = [
+    ['certifications', canonical.certifications.length],
+    ['achievements', canonical.achievements.length],
+    ['languages', canonical.languages.length],
+    ['references', canonical.references.length],
+    ['interests', canonical.hobbies.length],
+    ['custom sections', canonical.customSections.length],
+  ].filter(([, count]) => Number(count) > 0) as Array<[string, number]>;
+
+  return (
+    <PageFrame>
+      {back}
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-xl font-bold text-ink break-words">{stored.title || 'Untitled portfolio'}</h1>
+            <StatusBadge published={stored.isPublished} />
+          </div>
+          <p className="mt-0.5 text-sm text-ink-secondary" aria-live="polite">{editable ? (dirty ? 'Unsaved changes' : 'All changes saved') : 'Built with the earlier page editor'}</p>
+          {url && (
+            <p className="mt-1 flex flex-wrap items-center gap-2 text-sm">
+              <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-medium text-brand-700 underline-offset-4 hover:underline break-all">
+                {url}<ExternalLink className="size-3.5 shrink-0" aria-hidden="true" /><span className="sr-only"> (opens in a new tab)</span>
+              </a>
+              <Button size="xs" variant="outline" onClick={() => void copyLink(url)}>
+                {copied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />} {copied ? 'Copied' : 'Copy link'}
+              </Button>
+            </p>
+          )}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {editable && (
+            <div role="group" aria-label="View" className="inline-flex rounded-lg border border-border p-0.5">
+              <Button size="sm" variant={mode === 'edit' ? 'secondary' : 'ghost'} aria-pressed={mode === 'edit'} onClick={() => setMode('edit')}><Pencil aria-hidden="true" /> Edit</Button>
+              <Button size="sm" variant={mode === 'preview' ? 'secondary' : 'ghost'} aria-pressed={mode === 'preview'} onClick={() => setMode('preview')}><Eye aria-hidden="true" /> Preview</Button>
+            </div>
+          )}
+          {editable && <Button size="sm" variant="outline" onClick={() => void save()} loading={saving && dialog === null} disabled={!dirty || saving}><Save aria-hidden="true" /> Save</Button>}
+          {stored.isPublished ? (
+            <Button ref={visibilityButtonRef} size="sm" variant="outline" onClick={() => { setDialogError(null); setDialog('unpublish'); }} disabled={saving}>Unpublish</Button>
+          ) : (
+            <Button ref={visibilityButtonRef} size="sm" onClick={() => { setDialogError(null); setDialog(stored.slug ? 'republish' : 'publish'); }} disabled={saving}><Globe aria-hidden="true" /> Publish</Button>
+          )}
+        </div>
+      </header>
+
+      <p role="status" className="sr-only">{announcement}</p>
+
+      {saveError && (
+        <div ref={alertRef} role="alert" className="scroll-mt-4 rounded-xl border border-error-200 bg-error-50 p-4 text-sm text-error-800">
+          <p className="flex items-center gap-2 font-semibold"><AlertCircle className="size-4 shrink-0" aria-hidden="true" /> {saveError.conflict ? 'This portfolio changed elsewhere' : 'Your changes were not saved'}</p>
+          <p className="mt-1 break-words">
+            {saveError.conflict
+              ? 'It was saved in another tab or on another device after you opened it. Reload to get the latest version; your unsaved changes here will be replaced.'
+              : saveError.message}
+          </p>
+          <Button className="mt-3" size="sm" variant="outline" onClick={() => (saveError.conflict ? load() : void save())}>
+            <RotateCcw aria-hidden="true" /> {saveError.conflict ? 'Reload latest version' : 'Try again'}
+          </Button>
+        </div>
+      )}
+
+      {!editable && (
+        <section className="rounded-2xl border border-border bg-surface p-5 text-sm text-ink-secondary">
+          This portfolio was built with the earlier page editor. Its content can’t be edited here, but you can publish, unpublish or delete it.
+        </section>
+      )}
+
+      {editable && mode === 'preview' && (
+        <section aria-label="Preview of your portfolio" className="overflow-hidden rounded-2xl border border-border">
+          <PortfolioView canonical={canonical} headingLevel={2} />
+        </section>
+      )}
+
+      {editable && mode === 'edit' && (
+        <div className="space-y-5">
+          <EditorSection id="portfolio-details" title="Details">
+            <div className="grid gap-4">
+              <TextField label="Title" value={title} onChange={(value) => { setTitle(value); if (titleError) setTitleError(''); }} error={titleError} required maxLength={160} inputRef={titleRef} hint="Shown on the portfolio list and as the page title." />
+              <fieldset>
+                <legend className="mb-2 text-sm font-medium text-ink">Template</legend>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {PORTFOLIO_TEMPLATES.map((option) => (
+                    <label key={option.id} className={cn('flex cursor-pointer gap-2 rounded-xl border p-3 text-sm', canonical.template === option.id ? 'border-brand-600 bg-brand-50' : 'border-border')}>
+                      <input type="radio" name="editor-template" value={option.id} checked={canonical.template === option.id} onChange={() => setCanonical({ ...canonical, template: option.id })} className="mt-0.5" />
+                      <span><span className="block font-medium text-ink">{option.name}</span><span className="block text-xs text-ink-secondary">{option.description}</span></span>
+                    </label>
                   ))}
                 </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+              </fieldset>
+            </div>
+          </EditorSection>
 
-      {/* ─── TAB 4: Theme & URL ─── */}
-      {activeTab === 'theme' && (
-        <div className="space-y-6">
-          <Card className="border-edge shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-base">Custom Domain & URL Slug</CardTitle>
-              <CardDescription className="text-xs">
-                Your portfolio will be instantly accessible at this unique URL.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center max-w-md">
-                <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-edge bg-canvas-soft text-xs text-ink-muted h-9">
-                  ime365.com/p/
-                </span>
-                <Input
-                  value={data.slug}
-                  onChange={(e) => setData({ ...data, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
-                  className="rounded-l-none text-xs h-9 font-semibold"
-                />
-              </div>
-            </CardContent>
-          </Card>
+          <EditorSection id="portfolio-profile" title="Profile">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <TextField label="First name" value={heading.firstname} onChange={(value) => setHeading({ firstname: value })} autoComplete="given-name" />
+              <TextField label="Last name" value={heading.lastname} onChange={(value) => setHeading({ lastname: value })} autoComplete="family-name" />
+              <TextField label="Occupation" value={heading.occupation} onChange={(value) => setHeading({ occupation: value })} placeholder="e.g. Data analyst" />
+              <TextField label="Tagline" value={canonical.extras.tagline} onChange={(value) => setCanonical({ ...canonical, extras: { ...canonical.extras, tagline: value } })} hint="One line under your name." />
+              <TextField label="Email" type="email" value={heading.email} onChange={(value) => setHeading({ email: value })} autoComplete="email" hint="Shown publicly when published." />
+              <TextField label="Phone" type="tel" value={heading.phone} onChange={(value) => setHeading({ phone: value })} autoComplete="tel" hint="Shown publicly when published." />
+              <TextField label="City" value={heading.city} onChange={(value) => setHeading({ city: value })} autoComplete="address-level2" />
+              <TextField label="Country" value={heading.country} onChange={(value) => setHeading({ country: value })} autoComplete="country-name" />
+              <TextField label="Website" value={heading.website} onChange={(value) => setHeading({ website: value })} placeholder="https://" />
+              <TextField label="LinkedIn" value={heading.linkedin} onChange={(value) => setHeading({ linkedin: value })} placeholder="https://www.linkedin.com/in/…" />
+              <TextField label="GitHub" value={heading.github} onChange={(value) => setHeading({ github: value })} placeholder="https://github.com/…" />
+              <TextField label="Photo URL" value={heading.photo} onChange={(value) => setHeading({ photo: value })} placeholder="https://" hint="A link to an image (http or https)." />
+            </div>
+            <TextAreaField className="mt-3" label="About" value={canonical.summary} onChange={(value) => setCanonical({ ...canonical, summary: value })} rows={5} hint="A short introduction in your own words." />
+          </EditorSection>
 
-          <Card className="border-edge shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-base">Visual Theme & Layout Style</CardTitle>
-              <CardDescription className="text-xs">
-                Pick a typography and layout preset tailored to your personality.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {THEMES.map((theme) => {
-                  const isSelected = data.theme === theme.id;
-                  return (
-                    <button
-                      key={theme.id}
-                      type="button"
-                      onClick={() => setData({ ...data, theme: theme.id as typeof data.theme })}
-                      className={cn(
-                        'p-4 rounded-xl border text-left transition-all',
-                        isSelected
-                          ? 'border-accent bg-accent-soft/30 shadow-sm ring-2 ring-accent/30'
-                          : 'border-edge hover:border-edge-strong bg-surface'
-                      )}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-bold text-xs text-ink">{theme.name}</span>
-                        {isSelected && <Check className="size-4 text-accent" />}
-                      </div>
-                      <p className="text-[11px] text-ink-muted">{theme.desc}</p>
-                    </button>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+          <EditorSection id="portfolio-experience" title="Experience">
+            <EntryListEditor<PortfolioExperience>
+              noun="Experience"
+              entries={canonical.experiences}
+              onChange={(experiences) => setCanonical({ ...canonical, experiences })}
+              create={() => ({ id: newId('experience'), jobTitle: '', employer: '', begin: '', end: '', description: '', date: canonical.experiences.length + 1, location: '' })}
+              emptyText="No experience added."
+              fields={[
+                { key: 'jobTitle', label: 'Job title' },
+                { key: 'employer', label: 'Employer' },
+                { key: 'begin', label: 'Start', placeholder: 'e.g. Jan 2022' },
+                { key: 'end', label: 'End', placeholder: 'e.g. Present' },
+                { key: 'location', label: 'Location', wide: true },
+                { key: 'description', label: 'Description', multiline: true },
+              ]}
+            />
+          </EditorSection>
+
+          <EditorSection id="portfolio-projects" title="Projects">
+            <EntryListEditor<PortfolioProject>
+              noun="Project"
+              entries={canonical.projects}
+              onChange={(projects) => setCanonical({ ...canonical, projects })}
+              create={() => ({ id: newId('project'), title: '', description: '', link: '', technologies: '', technologyList: [], image: '' })}
+              normalize={(project) => ({ ...project, technologyList: project.technologies.split(',').map((item) => item.trim()).filter(Boolean) })}
+              emptyText="No projects added."
+              fields={[
+                { key: 'title', label: 'Project name' },
+                { key: 'link', label: 'Link', placeholder: 'https://' },
+                { key: 'technologies', label: 'Technologies', hint: 'Separate with commas.', wide: true },
+                { key: 'description', label: 'Description', multiline: true },
+              ]}
+            />
+          </EditorSection>
+
+          <EditorSection id="portfolio-skills" title="Skills">
+            <EntryListEditor<PortfolioSkill>
+              noun="Skill"
+              entries={canonical.skills}
+              onChange={(skills) => setCanonical({ ...canonical, skills })}
+              create={() => ({ id: newId('skill'), name: '', skillName: '', rating: 50, category: '' })}
+              normalize={(skill) => ({ ...skill, skillName: skill.name })}
+              emptyText="No skills added."
+              fields={[
+                { key: 'name', label: 'Skill' },
+                { key: 'category', label: 'Group (optional)', placeholder: 'e.g. Tools' },
+              ]}
+            />
+          </EditorSection>
+
+          <EditorSection id="portfolio-education" title="Education">
+            <EntryListEditor<PortfolioEducation>
+              noun="Education"
+              entries={canonical.education}
+              onChange={(education) => setCanonical({ ...canonical, education })}
+              create={() => ({ id: newId('education'), school: '', degree: '', started: '', finished: '', description: '', date: canonical.education.length + 1 })}
+              emptyText="No education added."
+              fields={[
+                { key: 'school', label: 'School' },
+                { key: 'degree', label: 'Degree' },
+                { key: 'started', label: 'Start' },
+                { key: 'finished', label: 'End' },
+                { key: 'description', label: 'Description', multiline: true },
+              ]}
+            />
+          </EditorSection>
+
+          {keptSections.length > 0 && (
+            <EditorSection id="portfolio-kept" title="Also included">
+              <p className="text-sm text-ink-secondary">
+                These sections came from your resume or an earlier editor. They are kept and published as they are; this builder doesn’t edit them yet.
+              </p>
+              <ul className="mt-2 flex flex-wrap gap-2 text-sm">
+                {keptSections.map(([label, count]) => <li key={label} className="rounded-full bg-neutral-100 px-3 py-1 text-ink-secondary">{count} {count === 1 ? label.replace(/s$/, "") : label}</li>)}
+              </ul>
+            </EditorSection>
+          )}
+
+          {canonical.source.resumeTitle && (
+            <p className="text-xs text-ink-muted">Started from the resume “{canonical.source.resumeTitle}”. Changes here don’t change the resume.</p>
+          )}
         </div>
       )}
 
-      {/* ─── TAB 5: Live Preview ─── */}
-      {activeTab === 'preview' && (
-        <div className="rounded-2xl border border-edge overflow-hidden shadow-xl bg-canvas">
-          {/* Simulated Browser Bar */}
-          <div className="bg-canvas-soft px-4 py-2.5 border-b border-edge flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <span className="size-2.5 rounded-full bg-red-400" />
-              <span className="size-2.5 rounded-full bg-amber-400" />
-              <span className="size-2.5 rounded-full bg-emerald-400" />
-            </div>
-            <div className="px-3 py-1 rounded bg-surface border border-edge text-[11px] text-ink-muted font-mono flex items-center gap-1">
-              <Globe className="size-3" />
-              https://ime365.com/p/{data.slug}
-            </div>
-            <div className="text-[11px] text-ink-muted">Live Preview</div>
-          </div>
+      <PublishDialog
+        open={dialog === 'publish'}
+        portfolioId={stored.id}
+        defaultBase={displayName(canonical) || title}
+        busy={saving}
+        error={dialogError}
+        onPublish={(base) => void changeVisibility(true, base)}
+        onClose={() => setDialog(null)}
+        returnFocusRef={visibilityButtonRef}
+      />
+      <ConfirmDialog
+        open={dialog === 'republish'}
+        title="Publish again?"
+        description={<p>Your portfolio will be visible again at {stored.slug ? publicPortfolioUrl(stored.slug) : ''}{dirty ? ', including your unsaved changes' : ''}.</p>}
+        confirmLabel="Publish"
+        busy={saving}
+        error={dialogError}
+        onConfirm={() => void changeVisibility(true)}
+        onClose={() => setDialog(null)}
+        returnFocusRef={visibilityButtonRef}
+      />
+      <ConfirmDialog
+        open={dialog === 'unpublish'}
+        title="Unpublish this portfolio?"
+        description={
+          <>
+            <p>Visitors will no longer see it{url ? ` at ${url}` : ''}, and it leaves the public portfolio list. A copy a browser already cached can take a few minutes to clear.</p>
+            <p>The address stays reserved, so you can publish it again later.{dirty ? ' Your unsaved changes are saved too.' : ''}</p>
+          </>
+        }
+        confirmLabel="Unpublish"
+        destructive
+        busy={saving}
+        error={dialogError}
+        onConfirm={() => void changeVisibility(false)}
+        onClose={() => setDialog(null)}
+        returnFocusRef={visibilityButtonRef}
+      />
+    </PageFrame>
+  );
+}
 
-          {/* Rendered Portfolio Simulation */}
-          <div className="p-6 sm:p-12 max-w-4xl mx-auto space-y-12">
-            {/* Hero */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-              {data.avatarUrl ? (
-                <img
-                  src={data.avatarUrl}
-                  alt={data.fullName || 'Portfolio avatar'}
-                  className="size-24 rounded-full object-cover border-2 border-accent shadow-md"
-                />
-              ) : (
-                <div
-                  className="flex size-24 shrink-0 items-center justify-center rounded-full border-2 border-edge bg-canvas-soft text-xl font-bold text-ink-muted"
-                  aria-hidden="true"
-                >
-                  {(data.fullName || 'CV')
-                    .split(/\s+/)
-                    .filter(Boolean)
-                    .slice(0, 2)
-                    .map((part) => part[0]?.toUpperCase())
-                    .join('') || 'CV'}
-                </div>
-              )}
-              <div className="space-y-1.5">
-                {data.availableForHire && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                    ● Available for Opportunities
-                  </span>
-                )}
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-ink">
-                  {data.fullName || 'Your name appears here'}
-                </h1>
-                <p className="text-sm font-semibold text-accent">{data.headline}</p>
-                <p className="text-xs text-ink-muted max-w-xl">{data.bio}</p>
-              </div>
-            </div>
-
-            {/* Featured Projects */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-bold text-ink border-b border-edge pb-2">
-                Featured Projects
-              </h2>
-              <div className="grid grid-cols-1 gap-4">
-                {data.projects.map((proj) => (
-                  <div key={proj.id} className="p-4 rounded-xl border border-edge bg-surface/60 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-bold text-sm text-ink">{proj.title}</h3>
-                      <div className="flex items-center gap-3">
-                        {proj.liveUrl && (
-                          <a
-                            href={proj.liveUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-xs text-accent hover:underline flex items-center gap-1"
-                          >
-                            Live Demo <ExternalLink className="size-3" />
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                    <p className="text-xs text-ink-muted">{proj.description}</p>
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {proj.techStack.map((tech) => (
-                        <span key={tech} className="px-2 py-0.5 rounded text-[10px] font-medium bg-canvas-soft border border-edge/60 text-ink">
-                          {tech}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-                {data.projects.length === 0 && (
-                  <p className="text-xs text-ink-muted">No projects yet — add one from the Projects tab.</p>
-                )}
-              </div>
-            </div>
-
-            {/* Skills */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-bold text-ink border-b border-edge pb-2">
-                Technical Expertise
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {data.skills.map((cat) => (
-                  <div key={cat.category} className="space-y-2">
-                    <h3 className="text-xs font-bold text-ink uppercase tracking-wider">{cat.category}</h3>
-                    <div className="flex flex-wrap gap-1">
-                      {cat.list.map((item) => (
-                        <span key={item} className="px-2 py-0.5 rounded text-[11px] bg-canvas-soft border border-edge text-ink">
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+function EditorSection({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
+  return (
+    <section aria-labelledby={`${id}-heading`} className="rounded-2xl border border-border bg-surface p-5">
+      <h2 id={`${id}-heading`} className="mb-3 text-base font-semibold text-ink">{title}</h2>
+      {children}
+    </section>
   );
 }

@@ -48,7 +48,10 @@ function listFiles(target) {
   });
 }
 
-const CALL = /\b(get|post|put|patch|del|apiClient\.(?:get|post|put|patch|delete))\s*(?:<[^>()]*(?:<[^>()]*>[^>()]*)*>)?\s*\(\s*(`[^`]*`|'[^']*'|"[^"]*")/g;
+// Type arguments are skipped as balanced <...> up to three levels deep, e.g.
+// get<{ resumes?: Array<Record<string, unknown>> }>('/resumes'). (One level was
+// supported before, so calls with deeper type arguments were silently missed.)
+const CALL = /\b(get|post|put|patch|del|apiClient\.(?:get|post|put|patch|delete))\s*(?:<(?:[^<>()]|<(?:[^<>()]|<[^<>()]*>)*>)*>)?\s*\(\s*(`[^`]*`|'[^']*'|"[^"]*")/g;
 const FETCH = /\bfetch\s*\(\s*(`[^`]*`|'[^']*'|"[^"]*")/g;
 
 function normalise(literal) {

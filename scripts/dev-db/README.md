@@ -40,3 +40,21 @@ still pass through the unchanged `requireAuth` middleware. Authentication is not
   credit_notes` reports Note 1050 although the table cannot be opened. Run DDL rollback gates
   (`scripts/verify-mariadb-migrations.mjs`) on native MariaDB.
 - Any credentials are accepted, which is why the listener refuses non-loopback addresses.
+
+## Module flags for tests (`set-public-module.mjs`)
+
+Some candidate modules are gated by `public_config.modules` in `system_settings`
+(seeded by migration 009; portfolios, messages and the job tracker are off by
+default). The candidate E2E suite exercises both real states of a gate with:
+
+```bash
+. ~/.cache/ime365-tools/backend.env.sh   # DB_* as for the backend
+node scripts/dev-db/set-public-module.mjs --module enablePortfolioModule --get
+node scripts/dev-db/set-public-module.mjs --module enablePortfolioModule --value true
+```
+
+It changes one allowed key only (`enablePortfolioModule`, `enableMessagesModule`,
+`enableJobTrackerModule`). It refuses anything but a loopback host and a
+database whose name contains `sandbox`, `test` or `acceptance`, and it writes no
+admin audit record, so it is test-environment configuration only. The specs
+restore the shipped default (off) when they finish.
