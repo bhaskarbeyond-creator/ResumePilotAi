@@ -13,6 +13,7 @@
  */
 
 import { auth } from '@/lib/firebase';
+import { resolveActiveTenantId, setActiveTenantId } from '@/lib/tenant-context';
 
 export interface EnterpriseError extends Error {
   code: string;
@@ -301,8 +302,9 @@ export async function enterpriseRequest<T>(path: string, options: RequestOptions
     }
 
     // Attach tenant context invariants
-    if (tenantId) {
-      reqHeaders['X-Tenant-Id'] = tenantId;
+    const effectiveTenantId = tenantId || resolveActiveTenantId();
+    if (effectiveTenantId) {
+      reqHeaders['X-Tenant-Id'] = effectiveTenantId;
     }
     if (workspaceId) {
       reqHeaders['X-Workspace-Id'] = workspaceId;
@@ -321,6 +323,17 @@ export async function enterpriseRequest<T>(path: string, options: RequestOptions
     }
 
     const data = await response.json().catch(() => ({}));
+
+    // Auto-resolve on TENANT_CONTEXT_REQUIRED if user has ambiguous memberships
+    if (response.status === 400 && attempt <= 2) {
+      const errCode = data?.error?.code;
+      const primary = data?.error?.primaryTenantId || data?.error?.availableTenants?.[0]?.tenantId;
+      if (errCode === 'TENANT_CONTEXT_REQUIRED' && primary) {
+        setActiveTenantId(primary);
+        options.tenantId = primary;
+        return execute(attempt + 1);
+      }
+    }
 
     if (!response.ok) {
       const err = new Error(data?.error?.message || `Enterprise API error (${response.status})`) as EnterpriseError;

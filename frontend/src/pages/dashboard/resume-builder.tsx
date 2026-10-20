@@ -43,6 +43,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { FormattingToolbar } from '@/components/ui/formatting-toolbar';
+import { AiProcessingModal } from '@/components/ui/ai-processing-modal';
 import { TEMPLATES, TEMPLATE_CATEGORIES, getTemplatesByCategory } from '@/lib/template-catalog';
 import {
   User,
@@ -224,6 +225,7 @@ interface ResumeData {
   references: ReferenceEntry[];
   customSections: CustomSectionEntry[];
   revision?: number;
+  targetJobDescription?: string;
 }
 
 type BuilderStep =
@@ -1356,6 +1358,8 @@ export function ResumeBuilderPage() {
                     summary={resume.summary}
                     heading={resume.heading}
                     experience={resume.experience}
+                    skillCategories={resume.skillCategories}
+                    targetJobDescription={resume.targetJobDescription}
                     onChange={(summary) => setResume((prev) => ({ ...prev, summary }))}
                   />
                 )}
@@ -3119,126 +3123,493 @@ function SkillsStep({ categories, onChange }: { categories: SkillCategory[]; onC
   );
 }
 
-/* ─── Step 5: Summary ─── */
+/* ─── Step 5: Executive Bio & Professional Summary Studio (10/10 Cuba M3 Standard) ─── */
+
+const SUMMARY_TONES = [
+  { id: 'balanced', label: 'Balanced', desc: 'Natural & authoritative recruiter cadence' },
+  { id: 'concise', label: 'Concise', desc: 'Direct, high-impact & dense phrasing' },
+  { id: 'technical', label: 'Technical', desc: 'Architecture, systems & tooling focus' },
+  { id: 'executive', label: 'Executive', desc: 'Strategic leadership, governance & business impact' },
+  { id: 'results', label: 'Results-Focused', desc: 'Metric-driven, operational KPIs & outcomes' },
+  { id: 'leadership', label: 'Leadership', desc: 'Cross-functional orchestration & team scale' },
+];
 
 function SummaryStep({
-  summary, heading, experience, onChange,
+  summary,
+  heading,
+  experience,
+  skillCategories,
+  targetJobDescription,
+  onChange,
 }: {
   summary: string;
   heading: ResumeHeading;
   experience: ExperienceEntry[];
+  skillCategories?: SkillCategory[];
+  targetJobDescription?: string;
   onChange: (s: string) => void;
 }) {
   const [generating, setGenerating] = useState(false);
+  const [selectedTone, setSelectedTone] = useState('balanced');
   const [outcome, setOutcome] = useState<AiOutcome | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [masterBio, setMasterBio] = useState<string>('');
+  const [syncNotice, setSyncNotice] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [questionAnswers, setQuestionAnswers] = useState<Record<string, string>>({});
 
-  // POST /api/generate-content (generate-summary) with only this resume's saved facts.
-  // The retired /api/generate-summary endpoint answers 410, which used to fail silently.
-  const generateSummary = async () => {
+  // Load Master Profile Executive Bio on mount
+  useEffect(() => {
+    let active = true;
+    get<{ user?: { profile?: { summary?: string; bio?: string } } }>('/users-data/profile')
+      .then((res) => {
+        if (!active) return;
+        const bio = res?.user?.profile?.summary || res?.user?.profile?.bio || '';
+        if (bio.trim()) setMasterBio(bio.trim());
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const charCount = summary.length;
+  const wordCount = summary.trim() ? summary.trim().split(/\s+/).length : 0;
+
+  // Real-time ATS metrics calculation
+  const atsStatus = useMemo(() => {
+    if (charCount === 0) {
+      return {
+        label: 'Empty summary',
+        badgeClass: 'bg-neutral-100 text-ink-muted border-border',
+        tone: 'neutral',
+        progress: 0,
+      };
+    }
+    if (charCount < 150) {
+      return {
+        label: 'Too brief — add core tenure & domains',
+        badgeClass: 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800',
+        tone: 'warning',
+        progress: Math.min(100, Math.round((charCount / 320) * 100)),
+      };
+    }
+    if (charCount < 320) {
+      return {
+        label: 'Building strength — expand technical application',
+        badgeClass: 'bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800',
+        tone: 'info',
+        progress: Math.min(100, Math.round((charCount / 320) * 100)),
+      };
+    }
+    if (charCount <= 440) {
+      return {
+        label: '★ 10/10 ATS Sweet Spot (Optimal Density)',
+        badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800',
+        tone: 'success',
+        progress: 100,
+      };
+    }
+    return {
+      label: 'Approaching ATS ceiling (Max 460 chars)',
+      badgeClass: 'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800',
+      tone: 'danger',
+      progress: 100,
+    };
+  }, [charCount]);
+
+  const handleCopy = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {}
+  };
+
+  const handleImportMasterBio = () => {
+    if (!masterBio) return;
+    onChange(masterBio);
+    setSyncNotice('Imported from Master Profile');
+    setTimeout(() => setSyncNotice(null), 3000);
+  };
+
+  const handleSaveToMasterProfile = async () => {
+    if (!summary.trim() || isSyncing) return;
+    setIsSyncing(true);
+    try {
+      await post('/users-data/profile', {
+        profile: { summary: summary.trim() },
+      });
+      setMasterBio(summary.trim());
+      setSyncNotice('✓ Synced with Master Profile');
+      setTimeout(() => setSyncNotice(null), 3000);
+    } catch {
+      setSyncNotice('Failed to update Master Profile');
+      setTimeout(() => setSyncNotice(null), 3000);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const generateSummary = async (customAnswers?: Record<string, string>) => {
     setGenerating(true);
     setOutcome(null);
     try {
       const workHistory = experience
         .filter((entry) => entry.position || entry.company || entry.description)
         .map((entry) => ({ jobTitle: entry.position, employer: entry.company, description: entry.description }));
-      setOutcome(await runContentOperation('generate-summary', {
+
+      const skills = (skillCategories || []).flatMap((c) => c.skills || []);
+
+      const payload: Record<string, unknown> = {
         existingText: summary.trim(),
         name: `${heading.firstName} ${heading.lastName}`.trim(),
         ...(heading.title?.trim() ? { jobTitle: heading.title.trim() } : {}),
         workHistory,
-        tone: 'balanced',
-      }));
+        ...(skills.length > 0 ? { skills } : {}),
+        ...(targetJobDescription?.trim() ? { targetJd: targetJobDescription.trim() } : {}),
+        tone: selectedTone,
+      };
+
+      if (customAnswers && Object.keys(customAnswers).length > 0) {
+        payload.answers = customAnswers;
+      }
+
+      const res = await runContentOperation('generate-summary', payload);
+      setOutcome(res);
     } finally {
       setGenerating(false);
     }
   };
 
-  const statusText = generating
-    ? 'Asking for a suggestion…'
-    : !outcome
-      ? ''
-      : outcome.kind === 'text'
-        ? 'A suggested summary is ready below. Your summary has not been changed.'
-        : outcome.kind === 'questions'
-          ? 'More detail is needed before a summary can be suggested. See the questions below.'
-          : outcome.kind === 'skills'
-            ? ''
-            : outcome.message;
+  const statusText = !outcome
+    ? ''
+    : outcome.kind === 'text'
+      ? 'A suggested executive summary is ready below. Your current summary was not overwritten.'
+      : outcome.kind === 'questions'
+        ? 'More career detail is needed for a grounded summary. Please answer below.'
+        : outcome.kind === 'skills'
+          ? ''
+          : outcome.message;
   const statusIsProblem = !!outcome && outcome.kind !== 'text' && outcome.kind !== 'questions' && outcome.kind !== 'skills';
 
   return (
-    <div>
-      <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      {/* ─── Header & Top Actions ─── */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-5">
         <div>
-          <h2 id="resume-summary-heading" className="text-xl font-bold text-ink">Professional Summary</h2>
-          <p className="mt-1 text-sm text-ink-muted">A brief overview of your qualifications and career goals.</p>
+          <div className="flex items-center gap-2">
+            <h2 id="resume-summary-heading" className="text-xl font-bold tracking-tight text-ink">
+              Executive Bio & Summary Studio
+            </h2>
+            <span className="rounded-full bg-brand-50 border border-brand-200 px-2 py-0.5 text-[11px] font-semibold text-brand-700">
+              ATS 10/10 Calibrated
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-ink-muted">
+            Craft an authentic, high-impact summary grounded in your career facts with zero fabrication.
+          </p>
         </div>
-        <Button variant="outline" onClick={() => void generateSummary()} loading={generating} disabled={generating}>
-          <Sparkles className="size-4" aria-hidden="true" />
-          Suggest a summary
-        </Button>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {masterBio && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleImportMasterBio}
+              className="gap-1.5 text-xs text-ink-secondary hover:text-ink cursor-pointer"
+              title="Import executive bio from Master Profile"
+            >
+              <FileText className="size-3.5" />
+              Import from Profile
+            </Button>
+          )}
+
+          {summary.trim() && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => void handleSaveToMasterProfile()}
+              loading={isSyncing}
+              disabled={isSyncing}
+              className="gap-1.5 text-xs text-ink-secondary hover:text-ink cursor-pointer"
+              title="Save current summary to Master Profile"
+            >
+              <Save className="size-3.5" />
+              Save to Profile
+            </Button>
+          )}
+
+          <Button
+            type="button"
+            onClick={() => void generateSummary()}
+            disabled={generating}
+            className="gap-1.5 text-xs shadow-xs cursor-pointer bg-brand-600 hover:bg-brand-700 text-white"
+          >
+            <Sparkles className="size-3.5" />
+            Generate Executive Bio
+          </Button>
+        </div>
       </div>
 
+      {/* Sync / Status Feedback Toast */}
+      {syncNotice && (
+        <div
+          role="status"
+          className="flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50/80 p-3 text-xs font-semibold text-brand-800 animate-in fade-in duration-200"
+        >
+          <CheckCircle2 className="size-4 text-brand-600" />
+          <span>{syncNotice}</span>
+        </div>
+      )}
+
+      {/* ─── 6 Tone Selector Chips ─── */}
+      <div className="rounded-2xl border border-border/80 bg-surface p-4 shadow-2xs space-y-2.5">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-bold text-ink uppercase tracking-wider">
+            Executive Tone & Framing
+          </label>
+          <span className="text-[11px] text-ink-muted">Shapes vocabulary, density & cadence</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+          {SUMMARY_TONES.map((t) => {
+            const isSelected = selectedTone === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setSelectedTone(t.id)}
+                title={t.desc}
+                className={cn(
+                  'flex flex-col items-start rounded-xl border px-3 py-2 text-left transition-all cursor-pointer',
+                  isSelected
+                    ? 'border-brand-600 bg-brand-50/70 text-brand-900 shadow-2xs ring-1 ring-brand-500/30'
+                    : 'border-border/70 bg-canvas/40 text-ink-secondary hover:border-brand-300 hover:bg-canvas'
+                )}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className={cn('size-1.5 rounded-full', isSelected ? 'bg-brand-600' : 'bg-neutral-300')} />
+                  <span className="text-xs font-bold">{t.label}</span>
+                </div>
+                <span className="mt-1 line-clamp-1 text-[10px] text-ink-muted">{t.desc}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ─── Real-Time ATS Sweet Spot Density Meter ─── */}
+      <div className="rounded-2xl border border-border/80 bg-surface p-4 shadow-2xs space-y-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2">
+            <Target className="size-4 text-brand-600" />
+            <span className="text-xs font-bold text-ink uppercase tracking-wider">
+              ATS Length & Density Calibrator
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-ink-muted font-mono">
+              <strong className="text-ink font-semibold">{charCount}</strong> / 440 chars ·{' '}
+              <strong className="text-ink font-semibold">{wordCount}</strong> words
+            </span>
+            <span className={cn('rounded-full border px-2.5 py-0.5 text-[11px] font-semibold', atsStatus.badgeClass)}>
+              {atsStatus.label}
+            </span>
+          </div>
+        </div>
+
+        {/* Visual Progress Track */}
+        <div className="relative h-2 w-full overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800">
+          <div
+            className={cn(
+              'h-full rounded-full transition-all duration-300 ease-out',
+              atsStatus.tone === 'success' && 'bg-emerald-500',
+              atsStatus.tone === 'info' && 'bg-blue-500',
+              atsStatus.tone === 'warning' && 'bg-amber-500',
+              atsStatus.tone === 'danger' && 'bg-rose-500',
+              atsStatus.tone === 'neutral' && 'bg-neutral-300'
+            )}
+            style={{ width: `${Math.min(100, (charCount / 460) * 100)}%` }}
+          />
+        </div>
+        <div className="flex items-center justify-between text-[11px] text-ink-muted">
+          <span>0 chars</span>
+          <span className="text-emerald-700 font-semibold dark:text-emerald-400">
+            ★ Sweet Spot: 320–440 chars (45–70 words)
+          </span>
+          <span>Max 460 chars</span>
+        </div>
+      </div>
+
+      {/* ─── Status Notice ─── */}
       <div role="status" aria-live="polite" data-testid="summary-ai-status">
         {statusText && (
-          <p className={cn(
-            'mt-4 flex items-start gap-2 rounded-lg p-3 text-sm',
-            statusIsProblem ? 'border border-error-200 bg-error-50 text-error-800' : 'bg-canvas text-ink-secondary',
-          )}>
+          <p
+            className={cn(
+              'flex items-start gap-2 rounded-xl p-3.5 text-xs font-medium leading-relaxed',
+              statusIsProblem ? 'border border-error-200 bg-error-50 text-error-800' : 'border border-border bg-canvas text-ink-secondary'
+            )}
+          >
             {statusIsProblem && <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />}
             <span className="min-w-0 break-words">{statusText}</span>
           </p>
         )}
       </div>
 
+      {/* ─── High-Impact AI Draft Review Card ─── */}
       {outcome?.kind === 'text' && (
-        <div className="mt-3 rounded-xl border border-brand-200 bg-brand-50/50 p-4" data-testid="summary-suggestion">
-          <p className="text-xs font-semibold text-ink">Suggested summary. Check every detail before using it.</p>
-          <p className="mt-2 whitespace-pre-wrap break-words text-sm text-ink">{outcome.text}</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button size="sm" onClick={() => { onChange(outcome.text); setOutcome(null); }}>Use this summary</Button>
-            <Button size="sm" variant="ghost" onClick={() => setOutcome(null)}>Dismiss</Button>
+        <div
+          className="rounded-2xl border border-brand-300 bg-gradient-to-b from-brand-50/60 to-surface p-5 shadow-md shadow-brand-500/5 space-y-3 animate-in fade-in zoom-in-98 duration-200"
+          data-testid="summary-suggestion"
+        >
+          <div className="flex items-center justify-between gap-3 border-b border-brand-200/60 pb-3">
+            <div className="flex items-center gap-2">
+              <div className="flex size-6 items-center justify-center rounded-lg bg-brand-600 text-white shadow-2xs">
+                <Sparkles className="size-3.5" />
+              </div>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-brand-900">
+                Suggested Executive Summary Draft
+              </h4>
+            </div>
+            <span className="text-xs font-mono text-brand-700">
+              {outcome.text.length} chars · {outcome.text.split(/\s+/).length} words
+            </span>
+          </div>
+
+          <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-ink font-serif sm:text-base">
+            {outcome.text}
+          </p>
+
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-brand-200/50">
+            <span className="text-[11px] text-ink-muted">
+              Grounded in verified facts · Zero pronouns · Recruiter-ready
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => void handleCopy(outcome.text)}
+                className="gap-1.5 text-xs cursor-pointer"
+              >
+                {copied ? <Check className="size-3.5 text-emerald-600" /> : <Copy className="size-3.5" />}
+                {copied ? 'Copied' : 'Copy'}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => {
+                  onChange(outcome.text);
+                  setOutcome(null);
+                }}
+                className="gap-1.5 text-xs cursor-pointer bg-brand-600 hover:bg-brand-700 text-white"
+              >
+                <Check className="size-3.5" />
+                Use this summary
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => setOutcome(null)}
+                className="text-xs text-ink-muted hover:text-ink cursor-pointer"
+              >
+                Dismiss
+              </Button>
+            </div>
           </div>
         </div>
       )}
 
+      {/* ─── Clarification Questions Panel ─── */}
       {outcome?.kind === 'questions' && (
-        <div className="mt-3 rounded-xl border border-border bg-surface p-4">
-          <ol className="list-decimal space-y-1 pl-5 text-sm text-ink" aria-label="Details to add">
-            {outcome.questions.map((question) => <li key={question}>{question}</li>)}
-          </ol>
-          <p className="mt-2 text-xs text-ink-muted">Add these details to your summary or work history, then ask again.</p>
+        <div className="rounded-2xl border border-border bg-surface p-5 shadow-2xs space-y-4">
+          <div className="flex items-center gap-2 border-b border-border pb-3">
+            <HelpCircle className="size-4 text-brand-600" />
+            <h4 className="text-xs font-bold uppercase tracking-wider text-ink">
+              Clarification Needed for Factual Grounding
+            </h4>
+          </div>
+          <p className="text-xs text-ink-muted leading-relaxed">
+            To ensure zero hallucination, please answer any of the questions below. Only your answers will be used.
+          </p>
+          <div className="space-y-3">
+            {outcome.questions.map((question, index) => (
+              <div key={index} className="space-y-1">
+                <label className="text-xs font-semibold text-ink">
+                  {index + 1}. {question}
+                </label>
+                <textarea
+                  rows={2}
+                  value={questionAnswers[question] || ''}
+                  onChange={(e) =>
+                    setQuestionAnswers((prev) => ({
+                      ...prev,
+                      [question]: e.target.value,
+                    }))
+                  }
+                  placeholder="Provide brief facts or numbers..."
+                  className="w-full rounded-xl border border-border bg-canvas px-3 py-2 text-xs text-ink focus:border-brand-500 focus:outline-none"
+                />
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center justify-between pt-2 border-t border-border">
+            <span className="text-[11px] text-ink-muted">Even one answer provides enough grounding to draft</span>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => void generateSummary(questionAnswers)}
+              className="gap-1.5 text-xs cursor-pointer"
+            >
+              <Sparkles className="size-3.5" />
+              Regenerate with answers
+            </Button>
+          </div>
         </div>
       )}
 
-      <div className="mt-6">
+      {/* ─── Summary Editor Area ─── */}
+      <div className="space-y-2">
         <FormattingToolbar value={summary} onChange={onChange} />
         <textarea
           aria-labelledby="resume-summary-heading"
           value={summary}
           onChange={(e) => onChange(e.target.value)}
-          rows={8}
-          className="flex w-full rounded-b-lg border border-border bg-surface px-4 py-3 text-sm leading-relaxed text-ink placeholder:text-ink-muted focus-visible:outline-2 focus-visible:outline-brand-500 hover:border-neutral-400"
-          placeholder="Results-driven software engineer with 5+ years of experience building scalable web applications. Passionate about clean code, performance optimization, and delivering exceptional user experiences…"
+          rows={7}
+          className="flex w-full rounded-b-2xl border border-border bg-surface px-4 py-3 text-sm leading-relaxed text-ink placeholder:text-ink-muted focus-visible:outline-2 focus-visible:outline-brand-500 hover:border-neutral-400 shadow-2xs transition-colors"
+          placeholder="Senior Software Engineer with 8+ years of experience architecting and engineering distributed systems, specializing in building reactive interfaces with TypeScript and React, and deploying containerized microservices on AWS…"
         />
-        <p className="mt-2 text-xs text-ink-muted">
-          {summary.length} characters · Recommended: 150–300 characters for ATS optimization.
-        </p>
       </div>
 
-      {/* Tips */}
-      <Card className="mt-6 border-brand-200 bg-brand-50/50">
-        <CardContent className="p-4">
-          <h4 className="text-sm font-semibold text-brand-800">💡 Tips for a great summary</h4>
-          <ul className="mt-2 space-y-1 text-xs text-brand-700">
-            <li>• Lead with your years of experience and specialization</li>
-            <li>• Include 2-3 key achievements or strengths</li>
-            <li>• Mention technologies or domains relevant to your target role</li>
-            <li>• Keep it concise — 3-4 sentences maximum</li>
-            <li>• Avoid first-person pronouns (I, my, me)</li>
+      {/* ─── Cuba Executive Guidance Card ─── */}
+      <Card className="border-brand-200/80 bg-brand-50/40">
+        <CardContent className="p-4 space-y-2">
+          <div className="flex items-center gap-2">
+            <Lightbulb className="size-4 text-brand-700" />
+            <h4 className="text-xs font-bold text-brand-900 uppercase tracking-wider">
+              Executive CPRW Resume Blueprint Standards
+            </h4>
+          </div>
+          <ul className="grid sm:grid-cols-2 gap-2 text-xs text-brand-800 leading-relaxed">
+            <li>• <strong>Sentence 1:</strong> Target Role Title + Career Tenure + Primary Domain.</li>
+            <li>• <strong>Sentence 2:</strong> Active synthesis of core frameworks, platforms & tools.</li>
+            <li>• <strong>Imperial Voice:</strong> Zero first-person pronouns (I, me, my) or candidate name mentions.</li>
+            <li>• <strong>ATS Precision:</strong> Keep strictly between 320–440 characters / 45–70 words.</li>
           </ul>
         </CardContent>
       </Card>
+
+      {/* ─── Universal Cuba M3 Executive Glassmorphic Processing Modal ─── */}
+      <AiProcessingModal
+        isOpen={generating}
+        onCancel={() => setGenerating(false)}
+        kind="summary"
+        title="Executive AI Bio Studio"
+        subtitle="Calibrating ATS guidelines, domain verbs & career facts into an authoritative summary"
+      />
     </div>
   );
 }

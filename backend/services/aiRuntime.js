@@ -170,6 +170,7 @@ const FACTUAL_SOURCE_FIELDS = Object.freeze({
     'generate-summary': [
         'existingText', 'name', 'jobTitle', 'occupation', 'experience',
         'workHistory', 'education', 'skills', 'certifications', 'projects', 'achievement',
+        'achievements', 'highlights', 'notes', 'industry', 'targetRole',
     ],
     'generate-work-description': [
         'existingText', 'notes', 'description', 'userNotes', 'responsibilities', 'achievements',
@@ -190,7 +191,20 @@ function firstSourceValue(payload, fields) {
 
 function factualSourceSegments(operation, payload = {}) {
     return (FACTUAL_SOURCE_FIELDS[operation] || [])
-        .map(field => [field, compact(payload[field], 4000)])
+        .map(field => {
+            const raw = payload[field];
+            if (Array.isArray(raw)) {
+                const text = raw.map(item => {
+                    if (typeof item === 'string') return item;
+                    if (item && typeof item === 'object') {
+                        return Object.values(item).filter(v => typeof v === 'string' || typeof v === 'number').join(' ');
+                    }
+                    return '';
+                }).filter(Boolean).join('; ');
+                return [field, compact(text, 4000)];
+            }
+            return [field, compact(raw, 4000)];
+        })
         .filter(([, value]) => value.length > 0);
 }
 
@@ -235,7 +249,9 @@ function sourceNotesForOperation(operation, payload = {}) {
             ? payload.employments.map(e => `${e.jobTitle || e.title || ''} at ${e.employer || ''} ${e.description || ''}`).join('; ')
             : (Array.isArray(payload.workExperiences)
                 ? payload.workExperiences.map(e => `${e.jobTitle || e.title || ''} at ${e.employer || ''} ${e.description || ''}`).join('; ')
-                : '');
+                : (Array.isArray(payload.workHistory)
+                    ? payload.workHistory.map(e => typeof e === 'string' ? e : `${e.jobTitle || e.position || e.title || ''} at ${e.employer || e.company || ''} ${e.description || ''}`).join('; ')
+                    : ''));
         const rootEdus = Array.isArray(payload.educations)
             ? payload.educations.map(e => `${e.degree || ''} from ${e.school || ''}`).join('; ')
             : '';
@@ -248,13 +264,14 @@ function sourceNotesForOperation(operation, payload = {}) {
 
         const combined = [
             payload.existingText, payload.sourceFacts, payload.jobTitle, payload.targetRole,
-            payload.workHistory, roles, rootRoles,
-            payload.education, edus, rootEdus,
+            payload.industry, typeof payload.workHistory === 'string' ? payload.workHistory : '', roles, rootRoles,
+            typeof payload.education === 'string' ? payload.education : '', edus, rootEdus,
             Array.isArray(payload.skills) ? payload.skills.join(', ') : payload.skills,
             Array.isArray(payload.existingSkills) ? payload.existingSkills.join(', ') : '',
             skills,
             certs, rootCerts,
             projs, rootProjs,
+            payload.achievements, payload.highlights, payload.notes,
             payload.experience, payload.experienceTenure,
             contextFacts.experience, contextFacts.experienceYears ? `${contextFacts.experienceYears} years` : '',
         ].filter(Boolean).join('\n');
@@ -1193,7 +1210,8 @@ function assertGroundedGeneratedContent(operation, parsed, data, payload = {}) {
     if (operation === 'generate-summary') {
         // Source citations and substantive evidence presence are verified in assertSourceCitations.
         // Enforce protected claim families: prevent hallucinating unheld credentials or academic honors
-        assertNoInventedNumbers(generated, `${source}\n${safeJson(payload)}`);
+        const evidence = buildEvidencePayload(operation, payload);
+        assertNoInventedNumbers(generated, `${source}\n${safeJson(payload)}\n${safeJson(evidence)}`);
         const STRICT_PROTECTED_FAMILIES = new Set(['credential', 'academic distinction']);
         for (const family of PROTECTED_CLAIM_FAMILIES) {
             if (!STRICT_PROTECTED_FAMILIES.has(family.label)) continue;

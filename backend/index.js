@@ -534,6 +534,7 @@ app.use('/api', async (req, res, next) => {
         || req.path === '/generate-content'
         || req.path === '/parse-resume'
         || req.path === '/generate-ai-cover-letter'
+        || req.path === '/check-grammar'
         // DIR-106: the usage readout is tenant-aware by construction — it resolves
         // the caller's organization entitlement. Without this entry the guard
         // below rejected the header with 400, so a member of two organizations

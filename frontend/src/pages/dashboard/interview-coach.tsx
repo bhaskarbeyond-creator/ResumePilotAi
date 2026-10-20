@@ -48,6 +48,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AiProcessingModal } from '@/components/ui/ai-processing-modal';
 import { LiveInterviewPanel } from '@/components/interview/live-interview-panel';
 import { useAuth } from '@/providers/auth-provider';
 import {
@@ -737,6 +738,17 @@ export function InterviewCoachPage() {
             </div>
           </div>
         </div>
+        <AiProcessingModal
+          isOpen={pending === 'assessment' || pending === 'live'}
+          onCancel={() => startAbortRef.current?.abort()}
+          kind="interview"
+          title={pending === 'live' ? 'Connecting to AI Interviewer' : 'AI Interview Blueprint Engine'}
+          subtitle={
+            pending === 'live'
+              ? `Initializing adaptive interviewer for ${trimmedRole || 'your target role'}...`
+              : `Calibrating Bloom's taxonomy, difficulty & scenario questions for ${trimmedRole || 'your target role'}`
+          }
+        />
       </div>
     );
   }
@@ -764,7 +776,7 @@ export function InterviewCoachPage() {
               {resumable.report ? 'View report' : 'Resume interview'}
             </Button>
             {resumable.report && (
-              <Button variant="outline" onClick={() => { if (uid) forgetLiveSession(uid); setResumable(null); }}>Dismiss</Button>
+              <Button variant="outline" onClick={() => { if (uid) { forgetLiveSession(uid); } setResumable(null); }}>Dismiss</Button>
             )}
           </div>
         </section>

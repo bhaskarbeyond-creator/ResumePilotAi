@@ -12,6 +12,7 @@ import axios, {
 } from 'axios';
 import { auth } from '@/lib/firebase';
 import { readPreviewSession } from '@/lib/preview-session';
+import { resolveActiveTenantId, autoResolveTenantFromError } from '@/lib/tenant-context';
 
 /** Standardized API error shape */
 export interface ApiError {
@@ -97,7 +98,7 @@ function createApiClient(): AxiosInstance {
     },
   });
 
-  // Request interceptor: attach Firebase Auth token and normalize URL
+  // Request interceptor: attach Firebase Auth token, tenant context, and normalize URL
   client.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
     if (config.url) {
       config.url = config.url.replace(/^\/?api\//, '/');
@@ -106,14 +107,30 @@ function createApiClient(): AxiosInstance {
     if (authorization) {
       config.headers.Authorization = authorization;
     }
+
+    // Inject X-Tenant-Id for AI governance and quota routing.
+    // Only attach when not already set (enterprise-api.ts manages its own tenant headers)
+    // and only for non-enterprise routes (per LEGACY ISOLATION invariant).
+    if (!config.headers['X-Tenant-Id']) {
+      const tenantId = resolveActiveTenantId();
+      if (tenantId) {
+        config.headers['X-Tenant-Id'] = tenantId;
+      }
+    }
+
     return config;
   });
 
-  // Response interceptor: 401 retry with token refresh
+  // Response interceptor: 401 retry with token refresh + TENANT_CONTEXT_REQUIRED auto-resolution
   client.interceptors.response.use(
     (response) => response,
     async (error: AxiosError) => {
-      const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+      const originalRequest = error.config as InternalAxiosRequestConfig & {
+        _retry?: boolean;
+        _tenantRetry?: boolean;
+      };
+
+      // 401 retry with token refresh
       if (
         error.response?.status === 401 &&
         !originalRequest._retry &&
@@ -126,12 +143,50 @@ function createApiClient(): AxiosInstance {
           return client(originalRequest);
         }
       }
+
+      // TENANT_CONTEXT_REQUIRED auto-resolution retry
+      // When the backend returns 400 with TENANT_CONTEXT_REQUIRED (because user
+      // has multiple active tenant memberships and no X-Tenant-Id was sent),
+      // auto-resolve from the error payload and retry once.
+      if (
+        error.response?.status === 400 &&
+        !originalRequest._tenantRetry &&
+        originalRequest.url
+      ) {
+        const data = error.response?.data as {
+          error?: {
+            code?: string;
+            message?: string;
+            primaryTenantId?: string;
+            availableTenants?: Array<{ tenantId?: string }>;
+          };
+        } | undefined;
+        const errorInfo = data?.error;
+        const isTenantRequired =
+          errorInfo?.code === 'TENANT_CONTEXT_REQUIRED' ||
+          (typeof errorInfo?.message === 'string' &&
+            errorInfo.message.includes('Multiple active tenant memberships'));
+
+        if (isTenantRequired) {
+          originalRequest._tenantRetry = true;
+          const resolvedTenant = await autoResolveTenantFromError(
+            errorInfo,
+            getAuthHeader,
+          );
+          if (resolvedTenant) {
+            originalRequest.headers['X-Tenant-Id'] = resolvedTenant;
+            return client(originalRequest);
+          }
+        }
+      }
+
       return Promise.reject(error);
     },
   );
 
   return client;
 }
+
 
 export const apiClient = createApiClient();
 

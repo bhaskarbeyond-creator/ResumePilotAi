@@ -193,6 +193,7 @@ function calculateDetailedExperience(employments = []) {
     }
 
     return {
+        intervalsCount: intervals.length,
         totalMonths,
         years,
         remainingMonths,
@@ -398,11 +399,17 @@ function buildEvidencePayload(operation, rawPayload = {}) {
 
     // Calculate accurate, non-overlapping calendar experience
     const detailedTenure = calculateDetailedExperience(candidateRoles);
-    const expText = detailedTenure.formattedTenure
-        || (facts.experienceYears ? `${facts.experienceYears} years` : '')
+    const explicitYearsMatch = String(payload.experience || facts.experience || '').match(/\b(\d+)\+?\s*years?/i);
+    const explicitYears = Number(facts.experienceYears || payload.experienceYears || (explicitYearsMatch ? explicitYearsMatch[1] : 0)) || 0;
+    const expText = (detailedTenure.intervalsCount > 0 && detailedTenure.formattedTenure)
+        || (explicitYears > 0 ? `${explicitYears}+ years` : '')
+        || detailedTenure.formattedTenure
         || payload.experience
         || '';
-    const expYears = detailedTenure.numericYears || facts.experienceYears || 0;
+    const expYears = (detailedTenure.intervalsCount > 0 && detailedTenure.numericYears)
+        || explicitYears
+        || detailedTenure.numericYears
+        || 0;
 
     const flatSkills = Array.isArray(facts.skills) && facts.skills.length
         ? facts.skills

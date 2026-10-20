@@ -63,6 +63,12 @@ export async function runContentOperation(operation: AiOperation, payload: Recor
   } catch (error) {
     const failure = normalizeError(error);
     if (failure.status === 429) return { kind: 'rate-limited', message: failure.message || 'Too many AI requests. Wait a minute, then try again.' };
+    // Tenant context errors surface as 400 with TENANT_CONTEXT_REQUIRED code.
+    // The api-client interceptor auto-retries once, but if it still fails,
+    // surface a clear message instead of a generic rejection.
+    if (failure.status === 400 && failure.code === 'TENANT_CONTEXT_REQUIRED') {
+      return { kind: 'unavailable', message: 'Your account belongs to multiple organizations. Please select a workspace from the sidebar, then try again.' };
+    }
     if (failure.status >= 500) return { kind: 'unavailable', message: AI_UNAVAILABLE_MESSAGE };
     if (failure.status >= 400) return { kind: 'rejected', message: failure.message };
     return { kind: 'error', message: `The request did not reach the server (${failure.message}). Nothing was generated.` };

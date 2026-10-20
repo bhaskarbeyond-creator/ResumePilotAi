@@ -14,6 +14,7 @@ import {
   type EnterpriseContextResponse,
   type EnterpriseError,
 } from '@/lib/enterprise-api';
+import { setActiveTenantId as setGlobalTenantId } from '@/lib/tenant-context';
 
 export interface EnterpriseContextValue {
   tenant: TenantSummary | null;
@@ -115,6 +116,9 @@ export function EnterpriseProvider({ children }: { children: React.ReactNode }) 
         setSimulatedRole(activeContext.context?.simulatedRole || null);
 
         if (activeTenant?.id) {
+          // Sync the global tenant-context module so the shared api-client
+          // injects X-Tenant-Id into all subsequent requests.
+          setGlobalTenantId(activeTenant.id);
           try {
             sessionStorage.setItem('activeTenantId', activeTenant.id);
             localStorage.setItem('activeTenantId', activeTenant.id);
@@ -144,6 +148,7 @@ export function EnterpriseProvider({ children }: { children: React.ReactNode }) 
   }, [load]);
 
   const selectTenant = useCallback(async (tenantId: string) => {
+    setGlobalTenantId(tenantId);
     try {
       sessionStorage.setItem('activeTenantId', tenantId);
     } catch {

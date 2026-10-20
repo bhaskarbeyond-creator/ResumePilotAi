@@ -30,6 +30,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { AiProcessingModal } from '@/components/ui/ai-processing-modal';
 import {
   Dialog,
   DialogContent,
@@ -1186,6 +1187,14 @@ export function CoverLetterBuilderPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AiProcessingModal
+        isOpen={generating}
+        onCancel={() => setGenerating(false)}
+        kind="cover-letter"
+        title="AI Cover Letter Architect"
+        subtitle="Aligning job description requirements with your verified career achievements"
+      />
     </div>
   );
 }
