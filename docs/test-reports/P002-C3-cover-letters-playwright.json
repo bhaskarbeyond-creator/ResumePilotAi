@@ -1,0 +1,803 @@
+{
+  "generatedFrom": "frontend/test-results/candidate/results.json",
+  "command": "npx playwright test -c playwright.candidate.config.ts tests/candidate/cover-letters.spec.ts tests/candidate/auth-session.spec.ts",
+  "startTime": "2026-10-20T01:40:20.155Z",
+  "durationMs": 313262,
+  "stats": {
+    "expected": 97,
+    "unexpected": 0,
+    "flaky": 0,
+    "skipped": 0
+  },
+  "byStatus": {
+    "passed": 97
+  },
+  "tests": [
+    {
+      "file": "auth.setup.ts",
+      "title": "register and sign in through the form as p002.candidate.a@example.test",
+      "project": "setup",
+      "status": "passed",
+      "durationMs": 3420,
+      "annotations": []
+    },
+    {
+      "file": "auth.setup.ts",
+      "title": "register and sign in through the form as p002.candidate.b@example.test",
+      "project": "setup",
+      "status": "passed",
+      "durationMs": 3479,
+      "annotations": []
+    },
+    {
+      "file": "auth-session.spec.ts",
+      "title": "a real session renders the dashboard and sign-out clears every session key",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 3866,
+      "annotations": []
+    },
+    {
+      "file": "auth-session.spec.ts",
+      "title": "a real session renders the dashboard and sign-out clears every session key",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 3855,
+      "annotations": []
+    },
+    {
+      "file": "auth-session.spec.ts",
+      "title": "a real session renders the dashboard and sign-out clears every session key",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 3631,
+      "annotations": []
+    },
+    {
+      "file": "auth-session.spec.ts",
+      "title": "a real session renders the dashboard and sign-out clears every session key",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 3531,
+      "annotations": []
+    },
+    {
+      "file": "auth-session.spec.ts",
+      "title": "a real session renders the dashboard and sign-out clears every session key",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 3442,
+      "annotations": []
+    },
+    {
+      "file": "auth-session.spec.ts",
+      "title": "a forged session without a token does not authenticate",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 1089,
+      "annotations": []
+    },
+    {
+      "file": "auth-session.spec.ts",
+      "title": "a well-formed but unsigned token is rejected by the backend and cleared",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 1118,
+      "annotations": []
+    },
+    {
+      "file": "auth-session.spec.ts",
+      "title": "an absolute ?next= URL cannot redirect off-site after sign-in",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 1795,
+      "annotations": []
+    },
+    {
+      "file": "auth-session.spec.ts",
+      "title": "a forged session without a token does not authenticate",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 1054,
+      "annotations": []
+    },
+    {
+      "file": "auth-session.spec.ts",
+      "title": "a well-formed but unsigned token is rejected by the backend and cleared",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 1124,
+      "annotations": []
+    },
+    {
+      "file": "auth-session.spec.ts",
+      "title": "an absolute ?next= URL cannot redirect off-site after sign-in",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 1879,
+      "annotations": []
+    },
+    {
+      "file": "auth-session.spec.ts",
+      "title": "a forged session without a token does not authenticate",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 1057,
+      "annotations": []
+    },
+    {
+      "file": "auth-session.spec.ts",
+      "title": "a well-formed but unsigned token is rejected by the backend and cleared",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 966,
+      "annotations": []
+    },
+    {
+      "file": "auth-session.spec.ts",
+      "title": "an absolute ?next= URL cannot redirect off-site after sign-in",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 1776,
+      "annotations": []
+    },
+    {
+      "file": "auth-session.spec.ts",
+      "title": "a forged session without a token does not authenticate",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 916,
+      "annotations": []
+    },
+    {
+      "file": "auth-session.spec.ts",
+      "title": "a well-formed but unsigned token is rejected by the backend and cleared",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 832,
+      "annotations": []
+    },
+    {
+      "file": "auth-session.spec.ts",
+      "title": "an absolute ?next= URL cannot redirect off-site after sign-in",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 1750,
+      "annotations": []
+    },
+    {
+      "file": "auth-session.spec.ts",
+      "title": "a forged session without a token does not authenticate",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 972,
+      "annotations": []
+    },
+    {
+      "file": "auth-session.spec.ts",
+      "title": "a well-formed but unsigned token is rejected by the backend and cleared",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 752,
+      "annotations": []
+    },
+    {
+      "file": "auth-session.spec.ts",
+      "title": "an absolute ?next= URL cannot redirect off-site after sign-in",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 1833,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "list: real letters with search, sort, URL state, refresh and back/forward",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 6072,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "create: validation blocks empty and invalid input, then the letter saves and persists after reload",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 4056,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "edit: direct link and legacy alias load the letter; keyboard edits save with Ctrl+S and persist",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 4993,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "duplicate: creates an independent saved copy",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 2478,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "delete dialog: confirmation, Escape, focus entry/return/containment, scroll lock, cancel, confirm, fresh reopen",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 5093,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "delete failure (FAULT INJECTION: request aborted) keeps the letter and never reports success",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 2500,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "deep links: ?role=&company= opens a prefilled unsaved letter; /dashboard/cv redirects to the list",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 4563,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "a missing letter id shows a not-found state (HTTP 404), never a blank or invented letter",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 1905,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "AI draft: input check, replace confirmation, and the unavailable path never changes the letter",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 2900,
+      "annotations": [
+        "environment: No AI provider is configured: the explicit unavailable path (HTTP 503) was exercised."
+      ]
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "list load failure (FAULT INJECTION: request aborted) shows an error with a working retry",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 2035,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "save failure (FAULT INJECTION: request aborted) keeps the edits and does not report success",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 2342,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "export: download, clipboard and print layout carry the real letter as plain text",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 3792,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "accessibility: no axe WCAG 2.1 A/AA violations on the list, delete dialog and builder",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 4860,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "list: real letters with search, sort, URL state, refresh and back/forward",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 6220,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "create: validation blocks empty and invalid input, then the letter saves and persists after reload",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 4031,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "edit: direct link and legacy alias load the letter; keyboard edits save with Ctrl+S and persist",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 5106,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "duplicate: creates an independent saved copy",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 2454,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "delete dialog: confirmation, Escape, focus entry/return/containment, scroll lock, cancel, confirm, fresh reopen",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 4980,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "delete failure (FAULT INJECTION: request aborted) keeps the letter and never reports success",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 2400,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "deep links: ?role=&company= opens a prefilled unsaved letter; /dashboard/cv redirects to the list",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 4631,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "a missing letter id shows a not-found state (HTTP 404), never a blank or invented letter",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 1785,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "AI draft: input check, replace confirmation, and the unavailable path never changes the letter",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 2741,
+      "annotations": [
+        "environment: No AI provider is configured: the explicit unavailable path (HTTP 503) was exercised."
+      ]
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "list load failure (FAULT INJECTION: request aborted) shows an error with a working retry",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 1856,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "save failure (FAULT INJECTION: request aborted) keeps the edits and does not report success",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 2167,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "export: download, clipboard and print layout carry the real letter as plain text",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 3632,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "accessibility: no axe WCAG 2.1 A/AA violations on the list, delete dialog and builder",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 4768,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "list: real letters with search, sort, URL state, refresh and back/forward",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 6083,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "create: validation blocks empty and invalid input, then the letter saves and persists after reload",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 4136,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "edit: direct link and legacy alias load the letter; keyboard edits save with Ctrl+S and persist",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 5083,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "duplicate: creates an independent saved copy",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 2527,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "delete dialog: confirmation, Escape, focus entry/return/containment, scroll lock, cancel, confirm, fresh reopen",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 4819,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "delete failure (FAULT INJECTION: request aborted) keeps the letter and never reports success",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 2469,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "deep links: ?role=&company= opens a prefilled unsaved letter; /dashboard/cv redirects to the list",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 4466,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "a missing letter id shows a not-found state (HTTP 404), never a blank or invented letter",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 1824,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "AI draft: input check, replace confirmation, and the unavailable path never changes the letter",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 2746,
+      "annotations": [
+        "environment: No AI provider is configured: the explicit unavailable path (HTTP 503) was exercised."
+      ]
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "list load failure (FAULT INJECTION: request aborted) shows an error with a working retry",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 1949,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "save failure (FAULT INJECTION: request aborted) keeps the edits and does not report success",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 2276,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "export: download, clipboard and print layout carry the real letter as plain text",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 3773,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "accessibility: no axe WCAG 2.1 A/AA violations on the list, delete dialog and builder",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 4878,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "list: real letters with search, sort, URL state, refresh and back/forward",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 5939,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "create: validation blocks empty and invalid input, then the letter saves and persists after reload",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 3981,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "edit: direct link and legacy alias load the letter; keyboard edits save with Ctrl+S and persist",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 5445,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "duplicate: creates an independent saved copy",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 2596,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "delete dialog: confirmation, Escape, focus entry/return/containment, scroll lock, cancel, confirm, fresh reopen",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 4835,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "delete failure (FAULT INJECTION: request aborted) keeps the letter and never reports success",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 2334,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "deep links: ?role=&company= opens a prefilled unsaved letter; /dashboard/cv redirects to the list",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 4505,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "a missing letter id shows a not-found state (HTTP 404), never a blank or invented letter",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 1822,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "AI draft: input check, replace confirmation, and the unavailable path never changes the letter",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 2678,
+      "annotations": [
+        "environment: No AI provider is configured: the explicit unavailable path (HTTP 503) was exercised."
+      ]
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "list load failure (FAULT INJECTION: request aborted) shows an error with a working retry",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 2034,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "save failure (FAULT INJECTION: request aborted) keeps the edits and does not report success",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 2305,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "export: download, clipboard and print layout carry the real letter as plain text",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 3545,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "accessibility: no axe WCAG 2.1 A/AA violations on the list, delete dialog and builder",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 5238,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "list: real letters with search, sort, URL state, refresh and back/forward",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 5985,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "create: validation blocks empty and invalid input, then the letter saves and persists after reload",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 3882,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "edit: direct link and legacy alias load the letter; keyboard edits save with Ctrl+S and persist",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 5120,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "duplicate: creates an independent saved copy",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 2391,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "delete dialog: confirmation, Escape, focus entry/return/containment, scroll lock, cancel, confirm, fresh reopen",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 4552,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "delete failure (FAULT INJECTION: request aborted) keeps the letter and never reports success",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 2331,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "deep links: ?role=&company= opens a prefilled unsaved letter; /dashboard/cv redirects to the list",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 4516,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "a missing letter id shows a not-found state (HTTP 404), never a blank or invented letter",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 1783,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "AI draft: input check, replace confirmation, and the unavailable path never changes the letter",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 2575,
+      "annotations": [
+        "environment: No AI provider is configured: the explicit unavailable path (HTTP 503) was exercised."
+      ]
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "list load failure (FAULT INJECTION: request aborted) shows an error with a working retry",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 1898,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "save failure (FAULT INJECTION: request aborted) keeps the edits and does not report success",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 2084,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "export: download, clipboard and print layout carry the real letter as plain text",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 3510,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "accessibility: no axe WCAG 2.1 A/AA violations on the list, delete dialog and builder",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 5172,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "empty state: guidance and a working create action, with B’s own profile details",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 2581,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "isolation: account A’s letter is not listed and cannot be opened, overwritten or deleted by B",
+      "project": "desktop-1920",
+      "status": "passed",
+      "durationMs": 3586,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "empty state: guidance and a working create action, with B’s own profile details",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 2361,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "isolation: account A’s letter is not listed and cannot be opened, overwritten or deleted by B",
+      "project": "laptop-1366",
+      "status": "passed",
+      "durationMs": 3484,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "empty state: guidance and a working create action, with B’s own profile details",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 2370,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "isolation: account A’s letter is not listed and cannot be opened, overwritten or deleted by B",
+      "project": "tablet-1024",
+      "status": "passed",
+      "durationMs": 3511,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "empty state: guidance and a working create action, with B’s own profile details",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 2313,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "isolation: account A’s letter is not listed and cannot be opened, overwritten or deleted by B",
+      "project": "mobile-390",
+      "status": "passed",
+      "durationMs": 3458,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "empty state: guidance and a working create action, with B’s own profile details",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 2389,
+      "annotations": []
+    },
+    {
+      "file": "cover-letters.spec.ts",
+      "title": "isolation: account A’s letter is not listed and cannot be opened, overwritten or deleted by B",
+      "project": "mobile-320",
+      "status": "passed",
+      "durationMs": 3535,
+      "annotations": []
+    }
+  ]
+}

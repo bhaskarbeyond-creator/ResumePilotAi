@@ -164,6 +164,8 @@ export function AppRouter() {
               path="/dashboard/cover-letters/*"
               element={<RequireAuth><CubaAppShell><CoverLettersPage /></CubaAppShell></RequireAuth>}
             />
+            {/* Legacy alias (src/components/Dashboard/DashboardMain: path="cv" → /dashboard/cover-letters). */}
+            <Route path="/dashboard/cv" element={<Navigate to="/dashboard/cover-letters" replace />} />
             <Route
               path="/dashboard/ats-score"
               element={<RequireAuth><CubaAppShell><ATSScorePage /></CubaAppShell></RequireAuth>}
