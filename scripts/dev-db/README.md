@@ -27,6 +27,25 @@ cd backend && NODE_ENV=development DB_HOST=127.0.0.1 DB_PORT=3306 DB_USER=root \
 (`rptest.` tokens, inert when `NODE_ENV=production`) and `/api/auth/preview-login`. Tokens
 still pass through the unchanged `requireAuth` middleware. Authentication is not bypassed.
 
+## Rate limits in local end-to-end runs
+
+The candidate suites register and sign in many accounts, so a local run can reach
+the production rate limits. Raise them through the backend's own configuration,
+never through anything a client sends: a request header or a `.test` email must not
+lift a limit (`backend/test/rate-limits-no-client-bypass.test.js`).
+
+| Variable | Default when `NODE_ENV` is not `test` | P002 sandbox value |
+|---|---|---|
+| `AUTH_BURST_RATE_LIMIT_MAX` | 5 per minute per IP (`/api/auth`, `/api/email`) | not set; re-runs use Playwright's `--no-deps` |
+| `AUTH_RATE_LIMIT_MAX` | 20 per hour per IP | 200 |
+| `GLOBAL_RATE_LIMIT_MAX` | 2500 per 15 minutes | 20000 |
+| `GENERAL_API_MINUTE_LIMIT` | 120 per minute per account (per IP when signed out) | 5000 |
+| `AI_BURST_LIMIT` | 12 per minute per account (per IP when signed out) | 60 |
+| `AI_BASIC_DAILY_LIMIT` | 10 or 100, depending on the quota check | 1000 |
+
+With `NODE_ENV=test` (the backend unit suite) the auth limiters already default to
+10000 requests, and the configured values still apply, so the limiter tests can run.
+
 ## Honest limits
 
 - The engine is **MariaDB 13.1.0-embedded**, not 11.4. Evidence produced through the bridge

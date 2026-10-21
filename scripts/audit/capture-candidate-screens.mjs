@@ -17,6 +17,7 @@
  * click:<button name>, fill:<label>=<value>, press:<key>, text:<visible text to
  * wait for>, wait:<ms>. A name written as /pattern/ is a case-insensitive regex.
  * dialog-click:<button name> presses a button inside the open dialog.
+ * menu-click:<item name> picks an item in the open menu (role menuitem).
  * open-tab opens a second tab of the current page with window.open, which copies
  * sessionStorage exactly as a browser does, so both tabs share the same
  * per-tab state (e.g. an in-progress interview); later steps act in that tab.
@@ -85,6 +86,7 @@ async function runStep(page, step, session) {
   }
   if (kind === 'click') await page.getByRole('button', { name: nameMatcher(value) }).first().click();
   else if (kind === 'dialog-click') await page.getByRole('dialog').getByRole('button', { name: nameMatcher(value) }).first().click();
+  else if (kind === 'menu-click') await page.getByRole('menuitem', { name: nameMatcher(value) }).first().click();
   else if (kind === 'fill') {
     const equals = value.indexOf('=');
     const field = nameMatcher(value.slice(0, equals));

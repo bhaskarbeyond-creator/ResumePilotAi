@@ -96,8 +96,8 @@ test.describe('Notifications — candidate A’s real feed', () => {
     // Both F-2 (the applicant keeps this row) and the company name from the jobs row.
     await expect(oldest).toContainText(`Your application for ${JOB.title} at ${JOB.company} was submitted.`);
     await expect(oldest).toContainText('Application');
-    // No candidate page lists real applications, so this row links nowhere.
-    await expect(oldest.getByRole('link')).toHaveCount(0);
+    // Applied Jobs lists the candidate's real applications (P002 C14), so the row opens it.
+    await expect(oldest.getByRole('link', { name: 'View your applications' })).toHaveAttribute('href', '/dashboard/applied-jobs');
     for (const row of [newest, oldest]) {
       const dateTime = await row.locator('time').getAttribute('datetime');
       expect(Number.isFinite(Date.parse(dateTime ?? '')), 'each row shows its created_at time').toBe(true);
@@ -342,18 +342,24 @@ test.describe('Notifications — candidate A’s real feed', () => {
       { id: 'legacy_msg_2', type: 'message', title: 'Earlier chat', message: '', data: {}, read: true, created_at: '2026-01-04T10:00:00.000Z' },
       { id: 'payment_row', type: 'payment_active', title: 'Payment confirmed', message: 'Your payment was confirmed and premium access is active.', data: {}, read: true, created_at: '2026-01-03T10:00:00.000Z' },
       { id: 'moderation_row', type: 'blog_moderation', title: 'Blog post published', message: '“Notes” is now approved.', data: {}, read: true, created_at: '2026-01-02T10:00:00.000Z' },
+      { id: 'accepted_row', type: 'application_accepted', title: 'Application accepted', message: 'Your application for Platform Engineer at Example Test Co was accepted.', data: { jobId: 'job_replayed', applicationId: 'app_replayed' }, read: true, created_at: '2026-01-01T10:00:00.000Z' },
+      { id: 'received_row', type: 'job_application_received', title: 'New job application', message: 'Blake Tester applied for Platform Engineer.', data: { jobId: 'job_replayed', applicationId: 'app_replayed_b' }, read: true, created_at: '2025-12-31T10:00:00.000Z' },
     ];
     await page.route('**/api/notifications-data', (route) => (route.request().method() === 'GET'
       ? route.fulfill({ json: { success: true, notifications: replayed } })
       : route.fallback()));
     await openFeed(page);
-    await expect(rows(page)).toHaveCount(4);
+    await expect(rows(page)).toHaveCount(6);
     await expect(rowFor(page, 'New message').getByRole('link', { name: 'Open conversation' })).toHaveAttribute('href', '/dashboard/messages?conversationId=conv_legacy_1');
     await expect(rowFor(page, 'Earlier chat').getByRole('link', { name: 'Open messages' })).toHaveAttribute('href', '/dashboard/messages');
     await expect(rowFor(page, 'Payment confirmed')).toContainText('Billing');
     await expect(rowFor(page, 'Payment confirmed').getByRole('link')).toHaveCount(0);
     await expect(rowFor(page, 'Blog post published')).toContainText('Update');
     await expect(rowFor(page, 'Blog post published').getByRole('link')).toHaveCount(0);
+    // The candidate's own application rows open Applied Jobs; the employer's
+    // "New job application" row is about someone else's application (P002 C14).
+    await expect(rowFor(page, 'Application accepted').getByRole('link', { name: 'View your applications' })).toHaveAttribute('href', '/dashboard/applied-jobs');
+    await expect(rowFor(page, 'New job application').getByRole('link')).toHaveCount(0);
     await expect(markAll(page)).toHaveAttribute('aria-disabled', 'true');
 
     // MOCKED RESPONSE (labelled): a row without an id breaks the documented contract.
@@ -419,6 +425,9 @@ test.describe('Notifications — candidate A’s real feed', () => {
     await page.keyboard.press('Space');
     expect((await restored).request().postDataJSON()).toEqual({ read: false });
     await expect(toggle(page, 'Interview invitation', 'read')).toBeFocused();
+    await page.keyboard.press('Tab');
+    // The application row links to Applied Jobs (P002 C14) before its toggle.
+    await expect(rowFor(page, 'Application submitted').getByRole('link', { name: 'View your applications' })).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(toggle(page, 'Application submitted', 'read')).toBeFocused();
   });

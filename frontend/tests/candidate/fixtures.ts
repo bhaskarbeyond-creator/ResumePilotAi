@@ -55,7 +55,9 @@ export function uidFor(account: AccountKey): string {
 export interface ApiClient {
   get<T = unknown>(path: string): Promise<{ status: number; body: T }>;
   post<T = unknown>(path: string, data?: unknown): Promise<{ status: number; body: T }>;
-  del<T = unknown>(path: string): Promise<{ status: number; body: T }>;
+  patch<T = unknown>(path: string, data?: unknown): Promise<{ status: number; body: T }>;
+  /** `data` is sent as the request body (revision-checked deletes need one). */
+  del<T = unknown>(path: string, data?: unknown): Promise<{ status: number; body: T }>;
 }
 
 function apiClientFor(request: APIRequestContext, token: string): ApiClient {
@@ -69,7 +71,8 @@ function apiClientFor(request: APIRequestContext, token: string): ApiClient {
   return {
     get: async (path) => parse(await request.get(`/api${path}`, { headers })),
     post: async (path, data) => parse(await request.post(`/api${path}`, { headers, data: data ?? {} })),
-    del: async (path) => parse(await request.delete(`/api${path}`, { headers })),
+    patch: async (path, data) => parse(await request.patch(`/api${path}`, { headers, data: data ?? {} })),
+    del: async (path, data) => parse(await request.delete(`/api${path}`, data === undefined ? { headers } : { headers, data })),
   };
 }
 

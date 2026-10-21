@@ -1,0 +1,218 @@
+{
+  "surface": "job-tracker",
+  "phase": "before",
+  "capturedAt": "2026-10-20T19:49:16.369Z",
+  "baseURL": "http://127.0.0.1:4000",
+  "pages": [
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/job-tracker",
+      "click": null,
+      "steps": [
+        "text:Senior Data Analyst"
+      ],
+      "label": "board",
+      "finalUrl": "/dashboard/job-tracker",
+      "file": "desktop-1920__dashboard_job_tracker__board.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/job-tracker",
+      "click": null,
+      "steps": [
+        "text:Senior Data Analyst"
+      ],
+      "label": "board",
+      "finalUrl": "/dashboard/job-tracker",
+      "file": "laptop-1366__dashboard_job_tracker__board.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/job-tracker",
+      "click": null,
+      "steps": [
+        "text:Senior Data Analyst"
+      ],
+      "label": "board",
+      "finalUrl": "/dashboard/job-tracker",
+      "file": "tablet-1024__dashboard_job_tracker__board.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/job-tracker",
+      "click": null,
+      "steps": [
+        "text:Senior Data Analyst"
+      ],
+      "label": "board",
+      "finalUrl": "/dashboard/job-tracker",
+      "file": "mobile-390__dashboard_job_tracker__board.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/job-tracker",
+      "click": null,
+      "steps": [
+        "text:Senior Data Analyst"
+      ],
+      "label": "board",
+      "finalUrl": "/dashboard/job-tracker",
+      "file": "mobile-320__dashboard_job_tracker__board.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/job-tracker",
+      "click": null,
+      "steps": [
+        "text:Senior Data Analyst",
+        "click:List view",
+        "wait:400"
+      ],
+      "label": "list-view",
+      "finalUrl": "/dashboard/job-tracker",
+      "file": "laptop-1366__dashboard_job_tracker__list-view.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/job-tracker",
+      "click": null,
+      "steps": [
+        "text:Senior Data Analyst",
+        "click:List view",
+        "wait:400"
+      ],
+      "label": "list-view",
+      "finalUrl": "/dashboard/job-tracker",
+      "file": "mobile-390__dashboard_job_tracker__list-view.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/job-tracker",
+      "click": null,
+      "steps": [
+        "text:Senior Data Analyst",
+        "click:Options for Northwind Analytics",
+        "wait:300"
+      ],
+      "label": "action-menu",
+      "finalUrl": "/dashboard/job-tracker",
+      "file": "laptop-1366__dashboard_job_tracker__action-menu.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/job-tracker",
+      "click": null,
+      "steps": [
+        "text:Senior Data Analyst",
+        "click:Options for Northwind Analytics",
+        "wait:300"
+      ],
+      "label": "action-menu",
+      "finalUrl": "/dashboard/job-tracker",
+      "file": "mobile-320__dashboard_job_tracker__action-menu.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/job-tracker",
+      "click": null,
+      "steps": [
+        "text:Senior Data Analyst",
+        "click:Track Job",
+        "wait:400"
+      ],
+      "label": "add-dialog",
+      "finalUrl": "/dashboard/job-tracker",
+      "file": "laptop-1366__dashboard_job_tracker__add-dialog.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/job-tracker",
+      "click": null,
+      "steps": [
+        "text:Senior Data Analyst",
+        "click:Track Job",
+        "wait:400"
+      ],
+      "label": "add-dialog",
+      "finalUrl": "/dashboard/job-tracker",
+      "file": "mobile-390__dashboard_job_tracker__add-dialog.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/job-tracker",
+      "click": null,
+      "steps": [
+        "text:Senior Data Analyst",
+        "click:List view",
+        "click:Delete Northwind Analytics application",
+        "wait:400"
+      ],
+      "label": "delete-dialog",
+      "finalUrl": "/dashboard/job-tracker",
+      "file": "laptop-1366__dashboard_job_tracker__delete-dialog.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/applied-jobs",
+      "click": null,
+      "steps": [
+        "text:Senior Data Analyst"
+      ],
+      "label": "applied-jobs-route",
+      "finalUrl": "/dashboard/applied-jobs",
+      "file": "laptop-1366__dashboard_applied_jobs__applied-jobs-route.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    }
+  ]
+}

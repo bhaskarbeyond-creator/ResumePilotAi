@@ -13,6 +13,7 @@
  */
 import axios from 'axios';
 import { del, get, normalizeError, post } from '@/lib/api-client';
+import { createTrackedJob, EMPTY_TRACKER_FIELDS, listTrackedJobs, stageLabel } from '@/lib/job-tracker';
 
 export type CoverLetterTone = 'modern' | 'formal' | 'impact' | 'creative';
 
@@ -76,7 +77,9 @@ export const COVER_TEMPLATES: ReadonlyArray<CoverLetterTemplate> = [
 export interface CoverLetterSummary {
   id: string;
   title: string;
+  jobTitle: string;
   companyName: string;
+  companyCity: string;
   recipientName: string;
   updatedAt: string | null;
   excerpt: string;
@@ -147,7 +150,9 @@ function toSummary(raw: Record<string, unknown>): CoverLetterSummary {
   return {
     id: record.id,
     title,
+    jobTitle: record.jobTitle,
     companyName: record.companyName,
+    companyCity: record.companyCity,
     recipientName: record.recipientName,
     updatedAt,
     excerpt: record.letterBody.replace(/\s+/g, ' ').trim().slice(0, 160),
@@ -156,30 +161,46 @@ function toSummary(raw: Record<string, unknown>): CoverLetterSummary {
   };
 }
 
-/**
- * Track an application directly in the Job Tracker (POST /api/jobs-data/tracker),
- * linking the cover letter excerpt and template metadata.
- */
-export async function syncToJobTracker(
-  record: CoverLetterRecord | CoverLetterSummary
-): Promise<{ id: string; title: string; company: string }> {
-  const jobTitle = 'jobTitle' in record && record.jobTitle ? record.jobTitle : ('title' in record && record.title ? record.title : 'Target Position');
-  const title = jobTitle.trim() || 'Target Position';
-  const company = (record.companyName || '').trim() || 'Target Company';
-  const location = ('companyCity' in record && record.companyCity ? record.companyCity : '').trim() || 'Remote / Hybrid';
-  const bodyText = ('letterBody' in record && record.letterBody ? record.letterBody : '') || ('excerpt' in record && record.excerpt ? record.excerpt : '');
-  const template = record.templateId || 'Cover1';
-  const notes = `[Cover Letter Linked: ${title}]\nTemplate: ${template}\nUpdated: ${new Date().toLocaleDateString()}\n\nExcerpt:\n${bodyText.slice(0, 300)}...`;
+export interface TrackerSyncResult {
+  /** `existing`: the tracker already had this job, so nothing was added. */
+  outcome: 'added' | 'existing';
+  title: string;
+  company: string;
+  stage: string;
+}
 
-  const data = await post<{ success?: boolean; job?: { id: string; title: string; company: string } }>('/jobs-data/tracker', {
+/**
+ * Adds the letter's job to the Job Tracker (POST /api/jobs-data/tracker) as a
+ * Wishlist entry, using only what the letter contains. A letter without a job
+ * title or company is not added, and a job already in the tracker is not added
+ * twice. The candidate moves it to Applied when they send the application.
+ */
+export async function syncToJobTracker(letter: { jobTitle: string; companyName: string; companyCity?: string; title?: string }): Promise<TrackerSyncResult> {
+  const title = letter.jobTitle.trim();
+  const company = letter.companyName.trim();
+  if (!title || !company) {
+    throw new Error('Add the job title and company to this letter first, then add it to the Job Tracker.');
+  }
+  const same = (a: string, b: string) => a.trim().localeCompare(b.trim(), undefined, { sensitivity: 'base' }) === 0;
+  const existing = (await listTrackedJobs()).find((job) => same(job.title, title) && same(job.company, company));
+  if (existing) return { outcome: 'existing', title: existing.title, company: existing.company, stage: stageLabel(existing.status) };
+  const job = await createTrackedJob({
+    ...EMPTY_TRACKER_FIELDS,
     title,
     company,
-    location,
-    status: 'applied',
-    notes,
+    location: (letter.companyCity ?? '').trim(),
+    status: 'wishlist',
+    notes: letter.title ? `Cover letter: ${letter.title}` : '',
   });
-  if (!data.success || !data.job) throw new Error('Could not sync to Job Tracker.');
-  return data.job;
+  return { outcome: 'added', title: job.title, company: job.company, stage: stageLabel(job.status) };
+}
+
+/** What happened, in words, for the status region of the page that synced. */
+export function trackerSyncMessage(result: TrackerSyncResult): string {
+  const job = `${result.title} at ${result.company}`;
+  return result.outcome === 'added'
+    ? `Added “${job}” to your Job Tracker under ${result.stage}. Move it to Applied when you send your application.`
+    : `“${job}” is already in your Job Tracker (${result.stage}), so nothing was added.`;
 }
 
 export async function listCoverLetters(): Promise<CoverLetterSummary[]> {

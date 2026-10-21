@@ -25,6 +25,8 @@ function _uid(prefix) {
     return `${prefix}_${crypto.randomBytes(9).toString('hex')}`;
 }
 
+const applicantOf = application => String(application?.applicantId || application?.applicant_id || application?.userId || '');
+
 class InMemoryRepository {
     constructor() {
         this._users = new Map();
@@ -473,12 +475,55 @@ class InMemoryRepository {
         this._companies.delete(companyId);
         return 1;
     }
-    async getApplications({ jobId, employerId, userId } = {}) {
+    async getApplications({ jobId, employerId, userId, applicantId } = {}) {
         let rows = Array.from(this._applications.values());
         if (jobId) rows = rows.filter(a => a.jobId === jobId);
         if (userId) rows = rows.filter(a => a.userId === userId);
+        // The MariaDB repository filters on applicant_id; ignoring it here listed
+        // every applicant's applications to whoever asked (P002 C14).
+        if (applicantId) rows = rows.filter(a => applicantOf(a) === String(applicantId));
         if (employerId) rows = rows.filter(a => a.employerId === employerId);
         return rows;
+    }
+    /** Same contract as MySQLRepository.getApplicantApplications. */
+    async getApplicantApplications({ applicantId } = {}) {
+        if (!applicantId) return [];
+        return Array.from(this._applications.values())
+            .filter(a => applicantOf(a) === String(applicantId))
+            .map((a) => {
+                const job = this._jobs.get(a.jobId || a.job_id) || null;
+                return {
+                    id: a.id,
+                    jobId: a.jobId || a.job_id || '',
+                    status: a.status || 'pending',
+                    applicantName: a.applicantName || a.applicant_name || '',
+                    applicantEmail: a.applicantEmail || a.applicant_email || '',
+                    applicantPhone: a.applicantPhone || a.applicant_phone || a.phone || '',
+                    resumeId: a.resumeId || a.resume_id || null,
+                    coverLetter: a.coverLetter || a.cover_letter || '',
+                    createdAt: a.createdAt || null,
+                    updatedAt: a.updatedAt || a.createdAt || null,
+                    job: job ? {
+                        title: job.title || '',
+                        company: job.companyName || job.company_name || job.company || '',
+                        location: job.location || '',
+                        status: job.status || '',
+                        expiresAt: job.expiresAt || job.expires_at || null,
+                    } : null,
+                };
+            })
+            .sort((left, right) => String(right.createdAt || '').localeCompare(String(left.createdAt || '')));
+    }
+    /** Same contract as MySQLRepository.updateApplicantContact. */
+    async updateApplicantContact(applicationId, applicantId, fields = {}) {
+        const current = this._applications.get(applicationId);
+        if (!current || applicantOf(current) !== String(applicantId)) return false;
+        const changes = {};
+        if (fields.applicantName !== undefined) changes.applicantName = fields.applicantName;
+        if (fields.applicantPhone !== undefined) changes.applicantPhone = fields.applicantPhone;
+        if (!Object.keys(changes).length) return false;
+        this._applications.set(applicationId, { ...current, ...changes, updatedAt: new Date().toISOString() });
+        return true;
     }
     async getApplication(applicationId) {
         return this._applications.get(applicationId) || null;

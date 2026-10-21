@@ -230,3 +230,19 @@ test('Firebase deploy config retains Auth only and cannot deploy application-dat
     assert.equal(fs.existsSync(path.join(root, retired)), false);
   }
 });
+
+test('rate limits and the sign-in form ignore test signals chosen by the client', () => {
+  // A request header or an address pattern is chosen by the client, so it must
+  // not lift a rate limit or divert a real address to another sign-in path.
+  // backend/test/rate-limits-no-client-bypass.test.js pins the limiter behaviour.
+  for (const file of ['backend/index.js', 'backend/security/abuse.js']) {
+    const source = read(file);
+    assert.doesNotMatch(source, /x-e2e-test/i, `${file} trusts a client test header`);
+    assert.doesNotMatch(source, /endsWith\(\s*['"]\.test['"]\s*\)/, `${file} trusts a client-chosen .test address`);
+  }
+  assert.doesNotMatch(
+    read('frontend/src/pages/auth/login.tsx'),
+    /email(?:\.trim\(\))?(?:\.toLowerCase\(\))?\.(?:startsWith|includes)\(/,
+    'the sign-in form diverts addresses by prefix or substring',
+  );
+});

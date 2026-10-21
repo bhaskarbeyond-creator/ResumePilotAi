@@ -1,0 +1,411 @@
+{
+  "surface": "settings",
+  "phase": "before",
+  "capturedAt": "2026-10-20T16:24:47.368Z",
+  "baseURL": "http://127.0.0.1:4000",
+  "pages": [
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/settings",
+      "click": null,
+      "label": "profile-blank-names",
+      "finalUrl": "/dashboard/settings",
+      "file": "desktop-1920__dashboard_settings__profile-blank-names.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/settings",
+      "click": null,
+      "label": "profile-blank-names",
+      "finalUrl": "/dashboard/settings",
+      "file": "laptop-1366__dashboard_settings__profile-blank-names.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/settings",
+      "click": null,
+      "label": "profile-blank-names",
+      "finalUrl": "/dashboard/settings",
+      "file": "tablet-1024__dashboard_settings__profile-blank-names.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/settings",
+      "click": null,
+      "label": "profile-blank-names",
+      "finalUrl": "/dashboard/settings",
+      "file": "mobile-390__dashboard_settings__profile-blank-names.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/settings",
+      "click": null,
+      "label": "profile-blank-names",
+      "finalUrl": "/dashboard/settings",
+      "file": "mobile-320__dashboard_settings__profile-blank-names.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/settings",
+      "click": null,
+      "steps": [
+        "wait:1500",
+        "fill:First name=Avery",
+        "click:Save Changes",
+        "text:/Unsupported profile field/"
+      ],
+      "label": "profile-save-rejected",
+      "finalUrl": "/dashboard/settings",
+      "file": "desktop-1920__dashboard_settings__profile-save-rejected.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [
+        "A component is changing an uncontrolled input to be controlled. This is likely caused by the value changing from undefined to a defined value, which should not happen. Decide between using a controlled or uncontrolled input element for the lifetime of the component. More info: https://react.dev/link/controlled-components",
+        "Failed to load resource: the server responded with a status of 400 (Bad Request) [/api/users-data/profile]"
+      ],
+      "failedRequests": [],
+      "failedApi": [
+        "400 POST /api/users-data/profile"
+      ]
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/settings",
+      "click": null,
+      "steps": [
+        "wait:1500",
+        "fill:First name=Avery",
+        "click:Save Changes",
+        "text:/Unsupported profile field/"
+      ],
+      "label": "profile-save-rejected",
+      "finalUrl": "/dashboard/settings",
+      "file": "laptop-1366__dashboard_settings__profile-save-rejected.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [
+        "A component is changing an uncontrolled input to be controlled. This is likely caused by the value changing from undefined to a defined value, which should not happen. Decide between using a controlled or uncontrolled input element for the lifetime of the component. More info: https://react.dev/link/controlled-components",
+        "Failed to load resource: the server responded with a status of 400 (Bad Request) [/api/users-data/profile]"
+      ],
+      "failedRequests": [],
+      "failedApi": [
+        "400 POST /api/users-data/profile"
+      ]
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/settings",
+      "click": null,
+      "steps": [
+        "wait:1500",
+        "fill:First name=Avery",
+        "click:Save Changes",
+        "text:/Unsupported profile field/"
+      ],
+      "label": "profile-save-rejected",
+      "finalUrl": "/dashboard/settings",
+      "file": "tablet-1024__dashboard_settings__profile-save-rejected.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [
+        "A component is changing an uncontrolled input to be controlled. This is likely caused by the value changing from undefined to a defined value, which should not happen. Decide between using a controlled or uncontrolled input element for the lifetime of the component. More info: https://react.dev/link/controlled-components",
+        "Failed to load resource: the server responded with a status of 400 (Bad Request) [/api/users-data/profile]"
+      ],
+      "failedRequests": [],
+      "failedApi": [
+        "400 POST /api/users-data/profile"
+      ]
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/settings",
+      "click": null,
+      "steps": [
+        "wait:1500",
+        "fill:First name=Avery",
+        "click:Save Changes",
+        "text:/Unsupported profile field/"
+      ],
+      "label": "profile-save-rejected",
+      "finalUrl": "/dashboard/settings",
+      "file": "mobile-390__dashboard_settings__profile-save-rejected.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [
+        "A component is changing an uncontrolled input to be controlled. This is likely caused by the value changing from undefined to a defined value, which should not happen. Decide between using a controlled or uncontrolled input element for the lifetime of the component. More info: https://react.dev/link/controlled-components",
+        "Failed to load resource: the server responded with a status of 400 (Bad Request) [/api/users-data/profile]"
+      ],
+      "failedRequests": [],
+      "failedApi": [
+        "400 POST /api/users-data/profile"
+      ]
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/settings",
+      "click": null,
+      "steps": [
+        "wait:1500",
+        "fill:First name=Avery",
+        "click:Save Changes",
+        "text:/Unsupported profile field/"
+      ],
+      "label": "profile-save-rejected",
+      "finalUrl": "/dashboard/settings",
+      "file": "mobile-320__dashboard_settings__profile-save-rejected.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [
+        "A component is changing an uncontrolled input to be controlled. This is likely caused by the value changing from undefined to a defined value, which should not happen. Decide between using a controlled or uncontrolled input element for the lifetime of the component. More info: https://react.dev/link/controlled-components",
+        "Failed to load resource: the server responded with a status of 400 (Bad Request) [/api/users-data/profile]"
+      ],
+      "failedRequests": [],
+      "failedApi": [
+        "400 POST /api/users-data/profile"
+      ]
+    },
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/settings?tab=security",
+      "click": null,
+      "label": "security-tab",
+      "finalUrl": "/dashboard/settings",
+      "file": "desktop-1920__dashboard_settings_tab_security__security-tab.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/settings?tab=security",
+      "click": null,
+      "label": "security-tab",
+      "finalUrl": "/dashboard/settings",
+      "file": "laptop-1366__dashboard_settings_tab_security__security-tab.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/settings?tab=security",
+      "click": null,
+      "label": "security-tab",
+      "finalUrl": "/dashboard/settings",
+      "file": "tablet-1024__dashboard_settings_tab_security__security-tab.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/settings?tab=security",
+      "click": null,
+      "label": "security-tab",
+      "finalUrl": "/dashboard/settings",
+      "file": "mobile-390__dashboard_settings_tab_security__security-tab.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/settings?tab=security",
+      "click": null,
+      "label": "security-tab",
+      "finalUrl": "/dashboard/settings",
+      "file": "mobile-320__dashboard_settings_tab_security__security-tab.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/settings?tab=security",
+      "click": null,
+      "steps": [
+        "fill:Current password=whatever1",
+        "fill:New password=newpass123",
+        "fill:Confirm new password=newpass123",
+        "click:Update Password",
+        "text:/No active authenticated session/"
+      ],
+      "label": "password-no-session",
+      "finalUrl": "/dashboard/settings",
+      "file": "laptop-1366__dashboard_settings_tab_security__password-no-session.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/settings?tab=security",
+      "click": null,
+      "steps": [
+        "fill:Current password=whatever1",
+        "fill:New password=newpass123",
+        "fill:Confirm new password=newpass123",
+        "click:Update Password",
+        "text:/No active authenticated session/"
+      ],
+      "label": "password-no-session",
+      "finalUrl": "/dashboard/settings",
+      "file": "mobile-390__dashboard_settings_tab_security__password-no-session.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/settings?tab=notifications",
+      "click": null,
+      "label": "decorative-preferences",
+      "finalUrl": "/dashboard/settings",
+      "file": "laptop-1366__dashboard_settings_tab_notifications__decorative-preferences.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/settings?tab=notifications",
+      "click": null,
+      "label": "decorative-preferences",
+      "finalUrl": "/dashboard/settings",
+      "file": "mobile-390__dashboard_settings_tab_notifications__decorative-preferences.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/settings?tab=support",
+      "click": null,
+      "steps": [
+        "wait:1500",
+        "click:New Ticket",
+        "text:Create Support Ticket"
+      ],
+      "label": "support-duplicate-modal",
+      "finalUrl": "/dashboard/settings",
+      "file": "laptop-1366__dashboard_settings_tab_support__support-duplicate-modal.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/settings?tab=support",
+      "click": null,
+      "steps": [
+        "wait:1500",
+        "click:New Ticket",
+        "text:Create Support Ticket"
+      ],
+      "label": "support-duplicate-modal",
+      "finalUrl": "/dashboard/settings",
+      "file": "mobile-390__dashboard_settings_tab_support__support-duplicate-modal.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/settings?tab=appearance",
+      "click": null,
+      "label": "appearance",
+      "finalUrl": "/dashboard/settings",
+      "file": "laptop-1366__dashboard_settings_tab_appearance__appearance.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/settings?tab=appearance",
+      "click": null,
+      "label": "appearance",
+      "finalUrl": "/dashboard/settings",
+      "file": "mobile-320__dashboard_settings_tab_appearance__appearance.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/settings?tab=account",
+      "click": null,
+      "label": "legacy-deep-links",
+      "finalUrl": "/dashboard/settings",
+      "file": "laptop-1366__dashboard_settings_tab_account__legacy-deep-links.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/profile",
+      "click": null,
+      "label": "legacy-deep-links",
+      "finalUrl": "/dashboard/profile",
+      "file": "laptop-1366__dashboard_profile__legacy-deep-links.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/security",
+      "click": null,
+      "label": "legacy-deep-links",
+      "finalUrl": "/dashboard/security",
+      "file": "laptop-1366__dashboard_security__legacy-deep-links.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/account",
+      "click": null,
+      "label": "legacy-deep-links",
+      "finalUrl": "/dashboard/account",
+      "file": "laptop-1366__dashboard_account__legacy-deep-links.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    }
+  ]
+}

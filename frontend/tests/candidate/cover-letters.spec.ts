@@ -690,35 +690,62 @@ test.describe('Cover letters (account A)', () => {
   });
 
   test('Job Tracker sync: 1-click tracking from builder and from cover letters list', async ({ page, apiAs }) => {
+    // Rewritten in C13: the sync adds the letter's real job once (Wishlist), never
+    // invents a title or company, and reports an existing entry instead of duplicating it.
     const tag = uniqueTag();
-    const id = await seedLetter(apiAs('a'), 'a', {
+    const api = apiAs('a');
+    const trackedFor = async () => {
+      const { body } = await api.get<{ jobs?: Array<{ id: string; title: string; company: string; status: string; notes: string; location: string; revision: number }> }>('/jobs-data/tracker');
+      return (body.jobs ?? []).filter((job) => job.title.includes(tag));
+    };
+    const id = await seedLetter(api, 'a', {
       jobTitle: `Lead Architect ${tag}`,
       companyName: 'Global Corp',
       candidateFirstname: 'Avery',
       candidateLastname: 'Tester',
       letterBody: 'Seeking to lead enterprise architecture and cloud engineering.',
     });
+    const incomplete = await seedLetter(api, 'a', { jobTitle: `Platform Lead ${tag}`, letterBody: 'No company yet.' });
+    expect(incomplete).toBeTruthy();
+    try {
+      // 1. Sync from the builder header action: added once, to Wishlist
+      await page.goto(`/cover-letter/${id}`);
+      const trackBtn = page.getByRole('button', { name: 'Track in Job Tracker' });
+      await expect(trackBtn).toBeVisible();
+      await trackBtn.click();
+      await expect(statusRegion(page)).toHaveText(`Added “Lead Architect ${tag} at Global Corp” to your Job Tracker under Wishlist. Move it to Applied when you send your application.`);
+      const [tracked, ...extra] = await trackedFor();
+      expect(extra).toEqual([]);
+      expect(tracked).toMatchObject({ title: `Lead Architect ${tag}`, company: 'Global Corp', status: 'wishlist', location: '', notes: `Cover letter: Lead Architect ${tag} at Global Corp` });
 
-    // 1. Sync from Builder header action
-    await page.goto(`/cover-letter/${id}`);
-    const trackBtn = page.getByRole('button', { name: 'Track in Job Tracker' });
-    await expect(trackBtn).toBeVisible();
-    await trackBtn.click();
-    await expect(statusRegion(page)).toContainText('Application linked to Job Tracker as “Lead Architect');
+      // 2. Again from the builder: reported, not duplicated
+      await trackBtn.click();
+      await expect(statusRegion(page)).toHaveText(`“Lead Architect ${tag} at Global Corp” is already in your Job Tracker (Wishlist), so nothing was added.`);
+      expect(await trackedFor()).toHaveLength(1);
 
-    // 2. Sync from Cover Letters list page item card
-    await page.goto('/dashboard/cover-letters');
-    const search = page.getByRole('searchbox', { name: 'Search cover letters' });
-    await search.fill(tag);
-    const card = page.getByRole('list', { name: 'Saved cover letters' }).getByRole('listitem');
-    await expect(card).toHaveCount(1);
-    await expect(card.getByText('Executive Classic')).toBeVisible();
+      // 3. From the Cover Letters list card: the same job, still not duplicated
+      await page.goto('/dashboard/cover-letters');
+      const search = page.getByRole('searchbox', { name: 'Search cover letters' });
+      await search.fill(tag);
+      const card = page.getByRole('list', { name: 'Saved cover letters' }).getByRole('listitem').filter({ hasText: 'Global Corp' });
+      await expect(card).toHaveCount(1);
+      await expect(card.getByText('Executive Classic')).toBeVisible();
+      const listTrackBtn = card.getByRole('button', { name: `Track Lead Architect ${tag} at Global Corp in Job Tracker` });
+      await expect(listTrackBtn).toBeVisible();
+      await listTrackBtn.click();
+      await expect(statusRegion(page)).toHaveText(`“Lead Architect ${tag} at Global Corp” is already in your Job Tracker (Wishlist), so nothing was added.`);
+      expect(await trackedFor()).toHaveLength(1);
 
-    const listTrackBtn = card.getByRole('button', { name: `Track Lead Architect ${tag} at Global Corp in Job Tracker` });
-    await expect(listTrackBtn).toBeVisible();
-    await listTrackBtn.click();
-    await expect(statusRegion(page)).toContainText('Linked “Lead Architect');
-    await expectNoHorizontalOverflow(page);
+      // 4. A letter without a company is not tracked under an invented name
+      await page.getByRole('button', { name: `Track Platform Lead ${tag} in Job Tracker` }).click();
+      await expect(statusRegion(page)).toHaveText(`“Platform Lead ${tag}” wasn’t added to the Job Tracker. Add the job title and company to this letter first, then add it to the Job Tracker.`);
+      expect((await trackedFor()).map((job) => job.title)).toEqual([`Lead Architect ${tag}`]);
+      await expectNoHorizontalOverflow(page);
+    } finally {
+      for (const job of await trackedFor()) {
+        await api.del(`/jobs-data/tracker/${encodeURIComponent(job.id)}`, { expectedRevision: job.revision });
+      }
+    }
   });
 });
 

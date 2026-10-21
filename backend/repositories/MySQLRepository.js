@@ -26,9 +26,18 @@ const INTERVIEW_FORMATS = new Set(['Video', 'In-Person', 'Phone']);
  */
 function normalizeInterviewAt(value) {
     if (value === null || value === undefined || value === '') return null;
-    const candidate = value instanceof Date ? value : new Date(String(value).trim());
-    if (Number.isNaN(candidate.getTime())) return null;
     const pad = (n) => String(n).padStart(2, '0');
+    // interview_at is a wall-clock time. A Date here was read from the column,
+    // and the pool reads DATETIME with timezone 'Z' (database/mysql.js), so its
+    // UTC fields are the stored wall clock. Reading local fields instead shifted
+    // the interview by the server's UTC offset on every unrelated update.
+    if (value instanceof Date) {
+        if (Number.isNaN(value.getTime())) return null;
+        return `${value.getUTCFullYear()}-${pad(value.getUTCMonth() + 1)}-${pad(value.getUTCDate())} `
+            + `${pad(value.getUTCHours())}:${pad(value.getUTCMinutes())}:${pad(value.getUTCSeconds())}`;
+    }
+    const candidate = new Date(String(value).trim());
+    if (Number.isNaN(candidate.getTime())) return null;
     return `${candidate.getFullYear()}-${pad(candidate.getMonth() + 1)}-${pad(candidate.getDate())} `
         + `${pad(candidate.getHours())}:${pad(candidate.getMinutes())}:${pad(candidate.getSeconds())}`;
 }
@@ -179,6 +188,8 @@ class MySQLRepository {
 
     _trackedJobValues(data = {}) {
         const text = (value, maximum) => String(value || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, maximum);
+        const multiline = (value, maximum) => String(value || '').replace(/\r\n?/g, '\n')
+            .replace(/\p{Cc}/gu, character => (character === '\n' ? '\n' : ' ')).trim().slice(0, maximum);
         const allowedStatuses = new Set(['wishlist', 'applied', 'interview', 'offer', 'rejected']);
         const status = allowedStatuses.has(String(data.status || '').toLowerCase())
             ? String(data.status).toLowerCase()
@@ -197,18 +208,31 @@ class MySQLRepository {
             contact_person: text(data.contactPerson || data.contact_person, 255) || null,
             contact_email: text(data.contactEmail || data.contact_email, 255) || null,
             url: text(data.url, 1024),
-            notes: text(data.notes, 4000),
+            notes: multiline(data.notes, 4000),
             deadline: text(data.deadline, 10) || null,
             // DIR-020: work mode + interview scheduling, all on job_tracker so a
             // move into the interviewing stage stays a single atomic write.
+            // Only a work mode the candidate chose is stored; none is recorded as
+            // none, never as an invented "Remote".
             work_mode: WORK_MODES.has(text(data.workMode || data.work_mode, 32))
-                ? text(data.workMode || data.work_mode, 32) : 'Remote',
+                ? text(data.workMode || data.work_mode, 32) : null,
             interview_round: INTERVIEW_ROUNDS.has(text(data.interviewRound || data.interview_round, 64))
                 ? text(data.interviewRound || data.interview_round, 64) || null : null,
             interview_at: normalizeInterviewAt(data.interviewAt ?? data.interview_at),
             interview_format: INTERVIEW_FORMATS.has(text(data.interviewFormat || data.interview_format, 32))
                 ? text(data.interviewFormat || data.interview_format, 32) || null : null,
             interview_link: text(data.interviewLink || data.interview_link, 1024) || null,
+        };
+    }
+
+    /** A stored job_tracker row in the shape _trackedJobValues reads from requests. */
+    _trackedJobInput(row = {}) {
+        return {
+            title: row.job_title, company: row.company, status: row.status, order: row.sort_order,
+            location: row.location, workMode: row.work_mode, salary: row.salary, dateApplied: row.date_applied,
+            contactPerson: row.contact_person, contactEmail: row.contact_email, url: row.url, notes: row.notes,
+            deadline: row.deadline, interviewRound: row.interview_round, interviewAt: row.interview_at,
+            interviewFormat: row.interview_format, interviewLink: row.interview_link,
         };
     }
 
@@ -1322,7 +1346,7 @@ class MySQLRepository {
         // client-side guess. The card renders "Applied N min ago" straight from the
         // POST response, so a freshly created card must already carry a real
         // created_at/updated_at exactly like a row re-read through GET (INV-2).
-        const [stamp] = await this._getPool().query(
+        const [[stamp] = []] = await this._getPool().query(
             'SELECT created_at AS createdAt, updated_at AS updatedAt FROM job_tracker WHERE id = ? AND user_id = ?',
             [trackerId, userId]
         );
@@ -1351,7 +1375,9 @@ class MySQLRepository {
                     code: 'JOB_TRACKER_CONFLICT', status: 409, remoteRevision: currentRevision,
                 });
             }
-            const values = this._trackedJobValues({ ...rows[0], ...data });
+            // Merge onto the stored row in the input shape: a field sent as '' is
+            // cleared, and a field left out keeps its stored value.
+            const values = this._trackedJobValues({ ...this._trackedJobInput(rows[0]), ...data });
             if (!values.job_title || !values.company) {
                 throw Object.assign(new Error('Job title and company are required.'), { code: 'JOB_TRACKER_VALIDATION_ERROR', status: 400 });
             }
@@ -1510,6 +1536,67 @@ class MySQLRepository {
         return rows;
     }
 
+    /**
+     * The applicant's own applications with the job each was made for (P002 C14).
+     * One owner-scoped query. The employer's columns (rating, notes, employer_id,
+     * extra_json) and the stored resume URL are not selected.
+     */
+    async getApplicantApplications({ applicantId } = {}) {
+        if (!applicantId) return [];
+        const [rows] = await this._getPool().query(
+            `SELECT a.id, a.job_id, a.status, a.applicant_name, a.applicant_email, a.applicant_phone,
+                    a.resume_id, a.cover_letter, a.created_at, a.updated_at,
+                    j.title AS job_title, j.company_name AS job_company, j.location AS job_location,
+                    j.status AS job_status, j.expires_at AS job_expires_at
+               FROM applications a
+               LEFT JOIN jobs j ON j.id = a.job_id
+              WHERE a.applicant_id = ?
+              ORDER BY a.created_at DESC, a.id DESC`,
+            [applicantId]
+        );
+        const iso = (value) => {
+            if (!value) return null;
+            const date = new Date(value);
+            return Number.isNaN(date.getTime()) ? null : date.toISOString();
+        };
+        return rows.map(row => ({
+            id: row.id,
+            jobId: row.job_id,
+            status: row.status,
+            applicantName: row.applicant_name || '',
+            applicantEmail: row.applicant_email || '',
+            applicantPhone: row.applicant_phone || '',
+            resumeId: row.resume_id || null,
+            coverLetter: row.cover_letter || '',
+            createdAt: iso(row.created_at),
+            updatedAt: iso(row.updated_at),
+            // jobs.title is NOT NULL, so a null title means the job row is missing.
+            job: row.job_title === null || row.job_title === undefined ? null : {
+                title: row.job_title,
+                company: row.job_company || '',
+                location: row.job_location || '',
+                status: row.job_status || '',
+                expiresAt: iso(row.job_expires_at),
+            },
+        }));
+    }
+
+    /**
+     * Corrects the applicant's own contact details on their application. One
+     * UPDATE scoped to the application and its applicant; nothing the employer
+     * decides (status, rating, notes) and neither the job nor the employer is touched.
+     */
+    async updateApplicantContact(appId, applicantId, fields = {}) {
+        const columns = [['applicantName', 'applicant_name'], ['applicantPhone', 'applicant_phone']]
+            .filter(([key]) => fields[key] !== undefined);
+        if (!appId || !applicantId || !columns.length) return false;
+        const [result] = await this._getPool().query(
+            `UPDATE applications SET ${columns.map(([, column]) => `${column} = ?`).join(', ')} WHERE id = ? AND applicant_id = ?`,
+            [...columns.map(([key]) => fields[key]), appId, applicantId]
+        );
+        return Number(result?.affectedRows || 0) === 1;
+    }
+
     async saveApplication(appId, data) {
         const pool = this._getPool();
         let empId = data.employerId || data.employer_id;
@@ -1525,7 +1612,8 @@ class MySQLRepository {
             applicant_id: data.applicantId || data.applicant_id,
             applicant_name: data.applicantName || data.applicant_name || '',
             applicant_email: data.applicantEmail || data.applicant_email || '',
-            applicant_phone: data.applicantPhone || data.applicant_phone || '',
+            // The apply workflow sends the phone as `phone` (P002 C14: it was stored empty).
+            applicant_phone: data.applicantPhone || data.applicant_phone || data.phone || '',
             resume_id: data.resumeId || data.resume_id || null,
             resume_url: data.resumeUrl || data.resume_url || null,
             cover_letter: data.coverLetter || data.cover_letter || '',

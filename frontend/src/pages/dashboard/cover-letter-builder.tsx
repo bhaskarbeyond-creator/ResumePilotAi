@@ -11,6 +11,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   AlertCircle,
   ArrowLeft,
@@ -41,6 +42,7 @@ import {
 } from '@/components/ui/dialog';
 import { useRestoreFocusWhenIdle } from '@/hooks/use-restore-focus-when-idle';
 import { normalizeError } from '@/lib/api-client';
+import { TRACKER_QUERY_KEY } from '@/lib/job-tracker';
 import { cn } from '@/lib/utils';
 import {
   AiUnavailableError,
@@ -56,6 +58,7 @@ import {
   loadProfilePrefill,
   saveCoverLetter,
   syncToJobTracker,
+  trackerSyncMessage,
   type CoverLetterRecord,
 } from '@/lib/cover-letters';
 
@@ -394,6 +397,7 @@ export function CoverLetterBuilderPage() {
   const [zoom, setZoom] = useState<number>(1.0);
   const [showFullscreenModal, setShowFullscreenModal] = useState<boolean>(false);
   const [syncingTracker, setSyncingTracker] = useState<boolean>(false);
+  const queryClient = useQueryClient();
 
   /** Id of a new letter that was just saved and is already in state. */
   const justSavedIdRef = useRef<string | null>(null);
@@ -647,15 +651,13 @@ export function CoverLetterBuilderPage() {
     if (phase !== 'ready' || syncingTracker) return;
     setSyncingTracker(true);
     try {
-      const job = await syncToJobTracker(record);
-      setNotice({
-        tone: 'success',
-        text: `Application linked to Job Tracker as “${job.title} at ${job.company}”. View it in /dashboard/job-tracker.`,
-      });
+      const result = await syncToJobTracker({ jobTitle: record.jobTitle, companyName: record.companyName, companyCity: record.companyCity, title: letterTitle(record) });
+      if (result.outcome === 'added') void queryClient.invalidateQueries({ queryKey: TRACKER_QUERY_KEY });
+      setNotice({ tone: 'success', text: trackerSyncMessage(result) });
     } catch (error) {
       setNotice({
         tone: 'error',
-        text: `Could not link to Job Tracker: ${normalizeError(error).message}`,
+        text: `This job wasn’t added to the Job Tracker. ${normalizeError(error).message}`,
       });
     } finally {
       setSyncingTracker(false);

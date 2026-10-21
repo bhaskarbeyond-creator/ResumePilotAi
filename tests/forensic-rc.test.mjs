@@ -44,7 +44,9 @@ test('employer and application queries are backend-owned with no Firestore sampl
   assert.match(operations, /\/api\/jobs-data/);
   assert.match(backend, /getApplications\(\{ jobId \}\)/);
   const jobsRoutes = await fs.readFile('backend/routes/jobsData.js', 'utf8');
-  assert.match(jobsRoutes, /getApplications\(\{ applicantId: req\.user\.uid \}\)/);
+  // P002 C14: the applicant's list is its own owner-scoped repository query (the job
+  // joined, none of the employer's columns); it is still keyed on req.user.uid.
+  assert.match(jobsRoutes, /getApplicantApplications\(\{ applicantId: req\.user\.uid \}\)/);
   assert.doesNotMatch(operations, /Sample jobs in collection|Returning sorted jobs/);
 });
 

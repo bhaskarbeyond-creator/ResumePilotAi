@@ -199,6 +199,7 @@ export const queryKeys = {
     notifications: ['dashboard', 'notifications'] as const,
     favourites: ['dashboard', 'favourites'] as const,
     supportTickets: ['dashboard', 'supportTickets'] as const,
+    profile: ['dashboard', 'profile'] as const,
   },
 };
 

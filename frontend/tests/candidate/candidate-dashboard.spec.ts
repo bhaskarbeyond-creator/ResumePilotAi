@@ -11,68 +11,81 @@ import { randomUUID } from 'node:crypto';
 import { test, expect, expectNoHorizontalOverflow } from './fixtures';
 
 test.describe('Candidate Dashboard — Job Tracker Surface', () => {
+  // Rewritten in C13 for the rebuilt tracker: accessible names replace the old
+  // test ids. tests/candidate/job-tracker.spec.ts covers the surface in depth.
+  let testCompany = '';
+  test.afterEach(async ({ apiAs }) => {
+    if (!testCompany) return;
+    const api = apiAs('a');
+    const { body } = await api.get<{ jobs?: Array<{ id: string; company: string; revision: number }> }>('/jobs-data/tracker');
+    for (const job of (body.jobs ?? []).filter((item) => item.company === testCompany)) {
+      await api.del(`/jobs-data/tracker/${encodeURIComponent(job.id)}`, { expectedRevision: job.revision });
+    }
+  });
+
   test('tracks a job, verifies stage column, tests Cover Letter link, moves stage, and deletes with Radix Dialog', async ({ page }) => {
-    const testCompany = `AcmeCorp-${randomUUID().slice(0, 6)}`;
+    testCompany = `AcmeCorp-${randomUUID().slice(0, 6)}`;
     const testTitle = 'Senior Cloud Architect';
+    const job = `${testTitle} at ${testCompany}`;
 
     await page.goto('/dashboard/job-tracker');
-    await expect(page.getByRole('heading', { name: 'Job Tracker' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Job Tracker' })).toBeVisible();
     await expectNoHorizontalOverflow(page);
 
-    // 1. Open Track Job Dialog
-    await page.getByTestId('track-job-button').click();
-    const dialog = page.getByRole('dialog');
+    // 1. Open the add dialog
+    await page.getByRole('button', { name: 'Track a job', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'Track a job' });
     await expect(dialog).toBeVisible();
-    await expect(dialog.getByText('Track a Job Application')).toBeVisible();
 
-    // 2. Fill form and submit
-    await page.getByTestId('input-job-company').fill(testCompany);
-    await page.getByTestId('input-job-title').fill(testTitle);
-    await dialog.locator('#job-location').fill('Remote, US');
-    await dialog.locator('#job-salary').fill('$150k - $180k');
-    await dialog.locator('#job-status').selectOption('applied');
-
-    await page.getByTestId('submit-track-job-button').click();
+    // 2. Fill the form and submit
+    await dialog.getByLabel('Company (required)').fill(testCompany);
+    await dialog.getByLabel('Job title (required)').fill(testTitle);
+    await dialog.getByLabel('Location', { exact: true }).fill('Remote, US');
+    await dialog.getByLabel('Salary or range').fill('$150k - $180k');
+    await dialog.getByLabel('Stage', { exact: true }).selectOption('applied');
+    await dialog.getByRole('button', { name: 'Add to tracker' }).click();
     await expect(dialog).not.toBeVisible();
 
-    // 3. Verify card exists on the board
-    const jobCard = page.getByTestId('job-card').filter({ hasText: testCompany }).first();
+    // 3. The job is in the Applied column
+    const jobCard = page.getByRole('region', { name: /^Applied \(\d+ jobs?\)$/ }).getByRole('article', { name: testTitle }).filter({ hasText: testCompany });
     await expect(jobCard).toBeVisible();
-    await expect(jobCard).toContainText(testTitle);
+    await expect(jobCard).toContainText('$150k - $180k');
 
-    // 4. Test Cover Letter link in action menu
-    await jobCard.getByRole('button', { name: `Options for ${testCompany}` }).click();
-    const tailorLink = page.getByRole('link', { name: 'Tailor Cover Letter' });
+    // 4. Cover letter link in the actions menu
+    await page.getByRole('button', { name: `Actions for ${job}` }).click();
+    const tailorLink = page.getByRole('menuitem', { name: 'Write a cover letter' });
     await expect(tailorLink).toBeVisible();
     const href = await tailorLink.getAttribute('href');
     expect(href).toContain('/dashboard/cover-letters?role=');
     expect(href).toContain(encodeURIComponent(testCompany));
+    await page.keyboard.press('Escape');
 
-    // 5. Move stage to 'interview'
-    await page.getByRole('button', { name: 'Interview' }).click();
-    await expect(page.getByRole('status')).toContainText(`Moved ${testCompany} to Interview`);
+    // 5. Move the stage to Interviewing
+    await page.getByLabel(`Stage for ${job}`).selectOption('interview');
+    await expect(page.locator('#main-content').getByRole('status')).toContainText(`Moved ${job} to Interviewing.`);
 
-    // 6. Toggle to List view and verify row
-    await page.getByRole('button', { name: 'List view' }).click();
-    const listRow = page.getByTestId('job-list-row').filter({ hasText: testCompany }).first();
+    // 6. Switch to the list view and find the job
+    await page.getByRole('button', { name: 'List', exact: true }).click();
+    const listRow = page.getByRole('list', { name: 'Tracked jobs' }).getByRole('article', { name: testTitle }).filter({ hasText: testCompany });
     await expect(listRow).toBeVisible();
-    await expect(listRow.getByRole('link', { name: 'Cover Letter' })).toBeVisible();
+    await expect(listRow.getByLabel(`Stage for ${job}`)).toHaveValue('interview');
 
-    // 7. Delete job through accessible Radix confirmation Dialog
-    await listRow.getByRole('button', { name: `Delete ${testCompany} application` }).click();
-    const deleteDialog = page.getByRole('dialog');
+    // 7. Remove the job through the confirmation dialog
+    await page.getByRole('button', { name: `Actions for ${job}` }).click();
+    await page.getByRole('menuitem', { name: 'Remove from tracker…' }).click();
+    const deleteDialog = page.getByRole('dialog', { name: 'Remove this job from your tracker?' });
     await expect(deleteDialog).toBeVisible();
-    await expect(deleteDialog.getByText('Delete Tracked Job')).toBeVisible();
-
-    await page.getByTestId('confirm-delete-job-button').click();
+    await deleteDialog.getByRole('button', { name: 'Remove job' }).click();
     await expect(deleteDialog).not.toBeVisible();
-    await expect(page.getByTestId('job-list-row').filter({ hasText: testCompany })).toHaveCount(0);
+    await expect(page.getByRole('article', { name: testTitle }).filter({ hasText: testCompany })).toHaveCount(0);
   });
 
   test('applied-jobs and job-matching route aliases resolve correctly', async ({ page }) => {
-    // /dashboard/applied-jobs displays Job Tracker
+    // /dashboard/applied-jobs lists the candidate's submitted applications again,
+    // as in legacy (P002 C14; tests/candidate/applied-jobs.spec.ts covers the page).
     await page.goto('/dashboard/applied-jobs');
-    await expect(page.getByRole('heading', { name: 'Job Tracker' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Applied Jobs' })).toBeVisible();
+    await expect(page).toHaveURL(/\/dashboard\/applied-jobs$/);
 
     // /dashboard/job-matching redirects to /dashboard/job-tracker
     await page.goto('/dashboard/job-matching');
@@ -82,84 +95,77 @@ test.describe('Candidate Dashboard — Job Tracker Surface', () => {
 });
 
 test.describe('Candidate Dashboard — Settings & Security Surface', () => {
-  test('navigates tabs, tests Radix security dialogs, and saves preferences', async ({ page }) => {
+  // Settings was rebuilt in P002 C11 (docs/test-reports/P002-C11-settings.md):
+  // the Master Profile uses the backend's own fields, a preview session is told
+  // it has no password or second factor, the decorative notification preferences
+  // and the duplicate help desk moved to their own pages, and the theme is a
+  // radio group. These two checks walk the same path as the original ones on the
+  // real page; settings.spec.ts covers saves, conflicts, deletion and axe.
+  test('navigates the sections, guards the deletion dialog, and sends moved sections to their pages', async ({ page }) => {
+    // Candidate A must never be deleted: any deletion request is answered here.
+    const deletionRequests: string[] = [];
+    await page.route('**/api/account/delete', (route) => {
+      deletionRequests.push(route.request().method());
+      return route.fulfill({ status: 418, json: { success: false, error: 'Blocked by the test: candidate A must never be deleted.' } });
+    });
+
     await page.goto('/dashboard/settings');
-    await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Settings' })).toBeVisible();
     await expectNoHorizontalOverflow(page);
+    const sections = page.getByRole('navigation', { name: 'Settings sections' });
 
-    // 1. Profile tab: Verify form fields
-    await expect(page.locator('#settings-first-name')).toBeVisible();
-    await expect(page.locator('#settings-last-name')).toBeVisible();
-    await expect(page.locator('#settings-email')).toBeVisible();
+    // 1. Master Profile: the real contact fields; the sign-in email is read-only.
+    const profile = page.getByRole('form', { name: 'Master Profile' });
+    await expect(profile.getByLabel('First name')).toBeVisible();
+    await expect(profile.getByLabel('Last name')).toBeVisible();
+    await expect(profile.getByLabel('Sign-in email')).not.toBeEditable();
 
-    // 2. Switch to Security tab
-    await page.getByTestId('settings-tab-security').click();
-    await expect(page.getByRole('heading', { name: 'Password' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Two-Factor Authentication (TOTP 2FA)' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Danger Zone & Privacy Compliance' })).toBeVisible();
+    // 2. Security & 2FA: a preview session has no password form and no factor control.
+    await sections.getByRole('link', { name: 'Security & 2FA' }).click();
+    await expect(page).toHaveURL(/\/dashboard\/settings\?tab=security$/);
+    await expect(page.getByRole('heading', { level: 3, name: 'Password', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 3, name: 'Two-factor authentication', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: /two-factor|2FA/i })).toHaveCount(0);
 
-    // 3. Test Disable 2FA Radix dialog
-    await page.getByTestId('disable-mfa-trigger-button').click();
-    const mfaDialog = page.getByRole('dialog');
-    await expect(mfaDialog).toBeVisible();
-    await expect(mfaDialog.getByText('Disable Two-Factor Authentication')).toBeVisible();
-    await mfaDialog.getByRole('button', { name: 'Cancel' }).click();
-    await expect(mfaDialog).not.toBeVisible();
+    // 3. Account & Data: the deletion dialog refuses anything but DELETE; Cancel closes it.
+    await sections.getByRole('link', { name: 'Account & Data' }).click();
+    await page.getByRole('button', { name: 'Delete account…', exact: true }).click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByRole('heading', { name: 'Delete your account?' })).toBeVisible();
+    await dialog.getByLabel('Type DELETE to confirm').fill('NO');
+    await dialog.getByRole('button', { name: 'Delete my account', exact: true }).click();
+    await expect(dialog.getByText('Type DELETE in capital letters to confirm.')).toBeVisible();
+    await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await expect(dialog).toBeHidden();
 
-    // 4. Test Delete Account Radix dialog with safety validation
-    await page.getByTestId('delete-account-trigger-button').click();
-    const deleteAccountDialog = page.getByRole('dialog');
-    await expect(deleteAccountDialog).toBeVisible();
-    await expect(deleteAccountDialog.getByText('Delete Account & All Data')).toBeVisible();
+    // 4. Appearance: the theme is a radio group.
+    await sections.getByRole('link', { name: 'Appearance' }).click();
+    await expect(page.getByRole('radio', { name: 'Light', exact: true })).toBeVisible();
+    await expect(page.getByRole('radio', { name: 'Dark', exact: true })).toBeVisible();
 
-    const deleteBtn = page.getByTestId('confirm-delete-account-button');
-    await expect(deleteBtn).toBeDisabled();
+    // 5. Notification preferences and the help desk live on their own pages.
+    await page.goto('/dashboard/settings?tab=notifications');
+    await expect(page).toHaveURL(/\/dashboard\/notifications$/);
+    await page.goto('/dashboard/settings?tab=support');
+    await expect(page).toHaveURL(/\/dashboard\/support$/);
+    await expect(page.getByRole('heading', { name: 'Support Center' })).toBeVisible();
 
-    // Typing wrong text keeps it disabled
-    await page.getByTestId('confirm-delete-input').fill('NO');
-    await expect(deleteBtn).toBeDisabled();
-
-    // Typing DELETE enables it
-    await page.getByTestId('confirm-delete-input').fill('DELETE');
-    await expect(deleteBtn).toBeEnabled();
-
-    // Cancel out
-    await deleteAccountDialog.getByRole('button', { name: 'Cancel' }).click();
-    await expect(deleteAccountDialog).not.toBeVisible();
-
-    // 5. Switch to Notifications tab and save preferences
-    await page.getByTestId('settings-tab-notifications').click();
-    await expect(page.getByText('Job match alerts')).toBeVisible();
-    await page.getByTestId('save-notifications-button').click();
-    await expect(page.getByText('Notification preferences saved successfully.')).toBeVisible();
-
-    // 6. Switch to Appearance tab
-    await page.getByTestId('settings-tab-appearance').click();
-    await expect(page.getByText('Theme')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Light' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Dark' })).toBeVisible();
-
-    // 7. Switch to Support tab within Settings
-    await page.getByTestId('settings-tab-support').click();
-    await expect(page.getByText('Support & Help Desk')).toBeVisible();
-    await expect(page.getByTestId('new-ticket-button')).toBeVisible();
+    expect(deletionRequests, 'no deletion request was sent for candidate A').toEqual([]);
   });
 
-  test('legacy settings route aliases redirect to correct tabs', async ({ page }) => {
-    // /dashboard/profile -> /dashboard/settings?tab=profile
+  test('legacy settings route aliases redirect to their sections', async ({ page }) => {
     await page.goto('/dashboard/profile');
-    await expect(page).toHaveURL(/\/dashboard\/settings\?tab=profile/);
-    await expect(page.locator('#settings-first-name')).toBeVisible();
+    await expect(page).toHaveURL(/\/dashboard\/settings\?tab=profile$/);
+    await expect(page.getByRole('form', { name: 'Master Profile' }).getByLabel('First name')).toBeVisible();
 
-    // /dashboard/security -> /dashboard/settings?tab=security
     await page.goto('/dashboard/security');
-    await expect(page).toHaveURL(/\/dashboard\/settings\?tab=security/);
-    await expect(page.getByRole('heading', { name: 'Password' })).toBeVisible();
+    await expect(page).toHaveURL(/\/dashboard\/settings\?tab=security$/);
+    await expect(page.getByRole('heading', { level: 3, name: 'Password', exact: true })).toBeVisible();
 
-    // /dashboard/account -> /dashboard/settings
+    // The shell's "Account Settings" is ?tab=account, so the old address opens that section.
     await page.goto('/dashboard/account');
-    await expect(page).toHaveURL(/\/dashboard\/settings/);
-    await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
+    await expect(page).toHaveURL(/\/dashboard\/settings\?tab=account$/);
+    await expect(page.getByRole('heading', { level: 2, name: 'Account & Data', exact: true })).toBeVisible();
   });
 });
 

@@ -22,6 +22,7 @@ const DashboardOverview = lazy(() => import('@/pages/dashboard/overview').then((
 const ResumesPage = lazy(() => import('@/pages/dashboard/resumes').then((m) => ({ default: m.ResumesPage })));
 const SettingsPage = lazy(() => import('@/pages/dashboard/settings').then((m) => ({ default: m.SettingsPage })));
 const JobTrackerPage = lazy(() => import('@/pages/dashboard/job-tracker').then((m) => ({ default: m.JobTrackerPage })));
+const AppliedJobsPage = lazy(() => import('@/pages/dashboard/applied-jobs').then((m) => ({ default: m.AppliedJobsPage })));
 const InterviewCoachPage = lazy(() => import('@/pages/dashboard/interview-coach').then((m) => ({ default: m.InterviewCoachPage })));
 const CoverLettersPage = lazy(() => import('@/pages/dashboard/cover-letters').then((m) => ({ default: m.CoverLettersPage })));
 const ResumeBuilderPage = lazy(() => import('@/pages/dashboard/resume-builder').then((m) => ({ default: m.ResumeBuilderPage })));
@@ -146,7 +147,7 @@ export function AppRouter() {
             />
             <Route
               path="/dashboard/applied-jobs"
-              element={<RequireAuth><CubaAppShell><JobTrackerPage /></CubaAppShell></RequireAuth>}
+              element={<RequireAuth><CubaAppShell><AppliedJobsPage /></CubaAppShell></RequireAuth>}
             />
             <Route
               path="/dashboard/interview/*"
@@ -212,10 +213,11 @@ export function AppRouter() {
               path="/dashboard/settings/*"
               element={<RequireAuth><CubaAppShell><SettingsPage /></CubaAppShell></RequireAuth>}
             />
-            {/* Legacy aliases & deep links */}
+            {/* Legacy dashboard addresses (legacy DashboardMain aliases, C1 deep-link inventory). */}
+            {/* Settings: each opens the matching section; "account" is the shell's Account Settings (?tab=account). */}
             <Route path="/dashboard/profile" element={<Navigate to="/dashboard/settings?tab=profile" replace />} />
             <Route path="/dashboard/security" element={<Navigate to="/dashboard/settings?tab=security" replace />} />
-            <Route path="/dashboard/account" element={<Navigate to="/dashboard/settings" replace />} />
+            <Route path="/dashboard/account" element={<Navigate to="/dashboard/settings?tab=account" replace />} />
             <Route path="/dashboard/tickets" element={<Navigate to="/dashboard/support" replace />} />
             <Route path="/dashboard/help" element={<Navigate to="/dashboard/support" replace />} />
             <Route path="/dashboard/billing" element={<Navigate to="/dashboard/plans" replace />} />
