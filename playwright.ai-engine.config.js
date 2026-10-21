@@ -51,6 +51,11 @@ const viewports = [
 
 export default defineConfig({
   testDir: './tests/ai-engine',
+  // Credentials seeded by these tests are removed again at the end of the run,
+  // and any residue from an aborted run is cleared at the start, so a rerun
+  // never inherits mutated server state.
+  globalSetup: './tests/ai-engine/global-setup.ts',
+  globalTeardown: './tests/ai-engine/global-teardown.ts',
   testMatch: /.*\.spec\.(ts|js|mjs)$/,
   timeout: 90_000,
   expect: { timeout: 15_000 },
@@ -88,7 +93,10 @@ export default defineConfig({
       timeout: 180_000,
       env: {
         ...process.env,
-        NODE_ENV: 'development',
+        // `test` is the backend's own certification mode: it disables the
+        // account rate limiters (which would otherwise throttle back-to-back
+        // local reruns) while leaving every authorization path intact.
+        NODE_ENV: 'test',
         PORT: '8080',
         IN_MEMORY_REPOSITORY: '1',
         TEST_AUTH_HMAC_SECRET:

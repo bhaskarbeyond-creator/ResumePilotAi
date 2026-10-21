@@ -158,12 +158,33 @@ test('10/10 Verification: ATS Score Reliability Across 29 Personas', () => {
     }
 });
 
-test('10/10 Verification: Substantive Completion Guard in BuildResume.jsx', () => {
-    const buildResumeContent = fs.readFileSync(path.resolve('src/components/BuildResume/BuildResume.jsx'), 'utf-8');
+test('10/10 Verification: Substantive Completion Guard is enforced before any cached flag', async () => {
+    // The guard now lives in its own importable module, so this asserts the
+    // BEHAVIOUR (content beats cache) rather than a string inside the JSX.
+    const { isStepCompleted } = await import('../src/utils/stepCompletion.js');
 
-    // Must evaluate substantive content first before honoring completedSteps cache
-    assert.match(buildResumeContent, /hasSubstantiveContent/);
-    assert.match(buildResumeContent, /if \(!hasSubstantiveContent\) return false;/);
+    // A satisfied flag on an empty section must NOT report complete.
+    assert.equal(
+        isStepCompleted('work-history', { employments: [], completedSteps: ['work-history', 2] }),
+        false,
+        'cached completion flags must never override an empty section',
+    );
+    // Legacy numeric aliases cannot rescue an empty section either.
+    assert.equal(
+        isStepCompleted(2, { employments: [] }, 'work-history'),
+        false,
+        'legacy numeric alias must not complete an empty section',
+    );
+    // Substantive content is authoritative on its own.
+    assert.equal(
+        isStepCompleted('work-history', { employments: [{ employer: 'Acme', jobTitle: 'Engineer' }] }),
+        true,
+    );
+
+    // …and the builder must actually delegate to that guard.
+    const buildResumeContent = fs.readFileSync(path.resolve('src/components/BuildResume/BuildResume.jsx'), 'utf-8');
+    assert.match(buildResumeContent, /from '..\/..\/utils\/stepCompletion'/);
+    assert.match(buildResumeContent, /isStepCompletedFor\(stepId, resumeData, stepPath\)/);
 });
 
 test('10/10 Verification: Mobile Progressive Disclosure in StepShell.jsx', () => {

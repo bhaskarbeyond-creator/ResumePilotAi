@@ -28,21 +28,44 @@ test.describe('Providers & save contract', () => {
     const session = await mintSession(request);
     await installSession(context, session);
     const api = apiFor(request, session);
-    const { body } = await api.get<SettingsBody>('/admin/ai-settings');
 
     await openEngine(page, 'providers');
 
+    // The suite creates and revokes credentials, so the projection can move
+    // between the first read and this assertion. Compare the RENDERED state
+    // against a read taken after the page settled, and poll, so this test
+    // verifies fidelity rather than a particular ordering of tests.
+    await expect
+      .poll(
+        async () => {
+          const fresh = await api.get<SettingsBody>('/admin/ai-settings');
+          const mismatches: string[] = [];
+          for (const id of PROVIDER_IDS) {
+            const card = page.getByTestId(`ai-engine-provider-${id}`);
+            if (!(await card.isVisible())) {
+              mismatches.push(`${id}: card not visible`);
+              continue;
+            }
+            const configured = fresh.body.providers?.[id]?.credentialConfigured === true;
+            const expectedLabel = configured ? 'Credential present' : 'No credential';
+            const labelCount = await card.getByText(expectedLabel, { exact: false }).count();
+            if (labelCount === 0) mismatches.push(`${id}: expected "${expectedLabel}"`);
+            const enabled = await page
+              .getByTestId(`ai-engine-enable-${id}`)
+              .getAttribute('aria-checked')
+              .catch(() => null);
+            if (enabled !== String(fresh.body.providers?.[id]?.enabled === true)) {
+              mismatches.push(`${id}: enable switch ${enabled}`);
+            }
+          }
+          return mismatches;
+        },
+        { timeout: 20_000, message: 'rendered provider state must match the server projection' },
+      )
+      .toEqual([]);
+
     for (const id of PROVIDER_IDS) {
-      const card = page.getByTestId(`ai-engine-provider-${id}`);
-      await expect(card, `card for ${id}`).toBeVisible();
-      const configured = body.providers?.[id]?.credentialConfigured === true;
-      // Credential state in the UI must match the server projection exactly.
-      await expect(card.getByText(configured ? 'Credential present' : 'No credential', { exact: false }).first()).toBeVisible();
-      // Enable switch mirrors the server's runtime flag.
-      await expect(page.getByTestId(`ai-engine-enable-${id}`)).toHaveAttribute(
-        'aria-checked',
-        String(body.providers?.[id]?.enabled === true),
-      );
+      await expect(page.getByTestId(`ai-engine-provider-${id}`), `card for ${id}`).toBeVisible();
     }
     await expect(page.getByTestId('ai-engine-persistence')).toHaveText(/MariaDB|Certification store/);
   });

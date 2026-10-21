@@ -1,9 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { 
-  shouldRenderWatermark, 
-  resolvePreviewWatermark, 
-  readEntitlement 
+import {
+  shouldRenderWatermark,
+  resolvePreviewWatermark,
+  readEntitlement
 } from '../../src/utils/watermarkEntitlement.js';
+// Step completion used to be called here as an undefined `shouldStepCompleted`;
+// the predicate lives in `src/utils/stepCompletion.js` and is shared with the
+// builder itself, so these cases now exercise the real implementation.
+import { isStepCompleted as shouldStepCompleted } from '../../src/utils/stepCompletion.js';
 
 describe('BuildResume core logic', () => {
   describe('isStepCompleted', () => {

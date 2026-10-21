@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { apiFor, installSession, mintSession, openEngine, releaseCredential, seedCredential } from './helpers';
+import { apiFor, installSession, mintSession, openEngine, withCredential } from './helpers';
 
 /**
  * Popups and failure paths.
@@ -128,33 +128,35 @@ test.describe('Popups', () => {
     const session = await mintSession(request);
     await installSession(context, session);
     const api = apiFor(request, session);
-    // A real credential is required for a revoke control to exist at all.
-    const seeded = await seedCredential(api, 'groq');
-    await openEngine(page, 'providers');
+    // A real credential is required for a revoke control to exist at all, and
+    // it is always released again — even when an assertion below fails.
+    await withCredential(api, 'groq', async (seeded) => {
+      await openEngine(page, 'providers');
 
-    const confirmTarget = page.getByTestId('ai-engine-clear-groq');
-    const available = (await confirmTarget.count()) > 0 && !(await confirmTarget.isDisabled());
-    if (!available) {
-      if (seeded) await releaseCredential(api, 'groq');
-      test.skip(true, 'The groq credential is deployment-managed; revocation is correctly disabled.');
-    }
+      const confirmTarget = page.getByTestId('ai-engine-clear-groq');
+      if ((await confirmTarget.count()) === 0 || (await confirmTarget.isDisabled())) {
+        if (!seeded) {
+          test.skip(true, 'The groq credential is deployment-managed; revocation is correctly disabled.');
+          return;
+        }
+        throw new Error('a seeded groq credential did not produce a revocable control');
+      }
 
-    await confirmTarget.focus();
-    await confirmTarget.click();
-    const dialog = page.getByTestId('ai-engine-confirm-dialog');
-    await expect(dialog).toBeVisible();
-    // Focus must move inside the dialog, not stay on the trigger behind it.
-    const focusInside = await page.evaluate(() => {
-      const dialogEl = document.querySelector('[data-testid="ai-engine-confirm-dialog"]');
-      return Boolean(dialogEl && dialogEl.contains(document.activeElement));
+      await confirmTarget.focus();
+      await confirmTarget.click();
+      const dialog = page.getByTestId('ai-engine-confirm-dialog');
+      await expect(dialog).toBeVisible();
+      // Focus must move inside the dialog, not stay on the trigger behind it.
+      const focusInside = await page.evaluate(() => {
+        const dialogEl = document.querySelector('[data-testid="ai-engine-confirm-dialog"]');
+        return Boolean(dialogEl && dialogEl.contains(document.activeElement));
+      });
+      expect(focusInside).toBe(true);
+
+      await page.keyboard.press('Escape');
+      await expect(dialog).toBeHidden();
+      await expect(confirmTarget).toBeFocused();
     });
-    expect(focusInside).toBe(true);
-
-    await page.keyboard.press('Escape');
-    await expect(dialog).toBeHidden();
-    await expect(confirmTarget).toBeFocused();
-
-    if (seeded) await releaseCredential(api, 'groq');
   });
 });
 

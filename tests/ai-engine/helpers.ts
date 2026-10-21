@@ -138,6 +138,24 @@ interface MinimalSettings {
 }
 
 /**
+ * Handler-safe wrapper around {@link seedCredential}: the credential is always
+ * released, including when the test body throws, so one failing assertion can
+ * never leave residue that breaks the next test (or the next run).
+ */
+export async function withCredential<T>(
+  api: ReturnType<typeof apiFor>,
+  provider: ProviderId,
+  body: (seeded: boolean) => Promise<T>,
+): Promise<T> {
+  const seeded = await seedCredential(api, provider);
+  try {
+    return await body(seeded);
+  } finally {
+    if (seeded) await releaseCredential(api, provider).catch(() => {});
+  }
+}
+
+/**
  * Store a throwaway credential through the real API so credential-dependent UI
  * (revoke buttons, confirmation dialogs) can be exercised. Returns `false` when
  * the deployment already manages that provider's credential, in which case the

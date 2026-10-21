@@ -22,6 +22,7 @@ const ReviewStep = lazy(() => import('./steps/ReviewStep'));
 // SmartResumeComposer, templateRegistry and Cv1 into this chunk. PreviewModal
 // still imports TemplateRenderer, so previews load that chain lazily.
 import { getTemplateMeta } from '../../utils/templateCatalog';
+import { isStepCompleted as isStepCompletedFor } from '../../utils/stepCompletion';
 
 // Modal Components — code-split and mounted only while their open flag is true.
 const PreviewModal = lazy(() => import('./PreviewModal'));
@@ -591,79 +592,10 @@ const BuildResume = () => {
         navigate(`/build-resume/${stepPath}`);
     };
 
-    const isStepCompleted = (stepId, stepPath) => {
-        const targetPath = stepPath || (orderedSteps.find(s => s.id === stepId)?.path);
-        
-        // Substantive content verification is the authoritative source of truth.
-        // A blank or empty section must NEVER count as complete, regardless of stale flags.
-        const hasSubstantiveContent = (() => {
-            switch (targetPath) {
-                case 'heading':
-                    return Boolean(resumeData.firstname?.trim() || resumeData.email?.trim());
-                case 'work-history':
-                    return Array.isArray(resumeData.employments) && resumeData.employments.some(e => Boolean(e?.jobTitle?.trim() || e?.employer?.trim() || (e?.description && String(e.description).replace(/<[^>]*>/g, '').trim().length > 5)));
-                case 'education':
-                    return Array.isArray(resumeData.educations) && resumeData.educations.some(e => Boolean(
-                        e?.school?.trim() || e?.degree?.trim()
-                    ));
-                case 'skills':
-                    return Array.isArray(resumeData.skills) && resumeData.skills.some(s => (
-                        typeof s === 'string' ? Boolean(s.trim()) : Boolean(s?.skillName?.trim() || s?.name?.trim())
-                    ));
-                case 'projects':
-                    return Array.isArray(resumeData.projects) && resumeData.projects.some(p => Boolean(
-                        p?.title?.trim() || p?.name?.trim() || (p?.description && String(p.description).replace(/<[^>]*>/g, '').trim().length > 5)
-                    ));
-                case 'certifications':
-                    return Array.isArray(resumeData.certifications) && resumeData.certifications.some(c => Boolean(
-                        c?.title?.trim() || c?.name?.trim() || c?.issuer?.trim()
-                    ));
-                case 'languages':
-                    return Array.isArray(resumeData.languages) && resumeData.languages.some(l => (
-                        typeof l === 'string' ? Boolean(l.trim()) : Boolean(l?.language?.trim() || l?.name?.trim())
-                    ));
-                case 'summary':
-                    return Boolean(resumeData.summary && String(resumeData.summary).replace(/<[^>]*>/g, ' ').replace(/&nbsp;|&#160;/gi, ' ').trim().length >= 20);
-                case 'achievements':
-                    return Array.isArray(resumeData.achievements) && resumeData.achievements.some(a => Boolean(
-                        a?.title?.trim() || (a?.description && String(a.description).replace(/<[^>]*>/g, '').trim().length > 5)
-                    ));
-                case 'references':
-                    return Array.isArray(resumeData.references) && resumeData.references.some(r => Boolean(
-                        r?.name?.trim() || r?.company?.trim() || r?.availableUponRequest
-                    ));
-                case 'custom':
-                    return Array.isArray(resumeData.customSections) && resumeData.customSections.some(s => Boolean(
-                        s?.title?.trim() || (Array.isArray(s?.items) && s.items.length > 0)
-                    ));
-                default:
-                    return false;
-            }
-        })();
-
-        if (!hasSubstantiveContent) return false;
-
-        const completed = resumeData.completedSteps || [];
-        if (completed.includes(stepId)) return true;
-        if (stepPath && completed.includes(stepPath)) return true;
-        const legacyMap = {
-            1: [1, 'heading'],
-            2: [2, 'work-history', 'employment'],
-            3: [3, 'education'],
-            4: [4, 'skills'],
-            5: [5, 'projects'],
-            6: [6, 'certifications'],
-            7: [7, 'languages'],
-            8: [8, 'summary'],
-            9: [9, 'achievements'],
-            10: [10, 'references'],
-            11: [11, 'custom'],
-        };
-        const aliases = legacyMap[stepId] || [];
-        if (aliases.some((alias) => completed.includes(alias))) return true;
-
-        return hasSubstantiveContent;
-    };
+    // Step completion is a pure predicate shared with the unit tests
+    // (`src/utils/stepCompletion.js`); the rules live there so they can be
+    // tested without mounting this 2,700-line builder.
+    const isStepCompleted = (stepId, stepPath) => isStepCompletedFor(stepId, resumeData, stepPath);
 
     const getStepAiGuidance = (stepPath) => {
         const candidateContext = getCandidateContext(resumeData);

@@ -110,7 +110,9 @@ PLAYWRIGHT_CHROMIUM_LD_LIBRARY_PATH=/tmp/al2023/lib \
 npx playwright test -c playwright.ai-engine.config.js
 ```
 
-The config boots the Vite app on `:4000` and the backend on `:8080` in certification mode, granting `SUPER_ADMIN` through `PREVIEW_SUPER_ADMIN_EMAILS` — the server-side allowlist, never a client-side claim.
+The config boots the Vite app on `:4000` and the backend on `:8080` in certification mode (`NODE_ENV=test`, which is the backend's own mode for disabling the account rate limiters), granting `SUPER_ADMIN` through `PREVIEW_SUPER_ADMIN_EMAILS` — the server-side allowlist, never a client-side claim.
+
+**Run-to-run isolation.** These tests really do create and revoke provider credentials, so a `globalSetup`/`globalTeardown` pair captures the credential baseline before the suite and restores it afterwards. Tests that need a credential use `withCredential(...)`, which releases it in a `finally`, so a failing assertion cannot leave residue. Without this, an aborted run poisoned the next one and produced false failures that looked like product bugs — which is exactly how the first draft of this suite failed.
 
 ---
 

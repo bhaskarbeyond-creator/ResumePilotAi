@@ -231,13 +231,11 @@ class InMemoryRepository {
         }
         const now = new Date().toISOString();
         const saved = {
-            id: resumeId,
             title: data.title || existing?.title || 'Untitled Resume',
             template: data.template || existing?.template || 'modern',
             content: data.content || existing?.content || {},
             createdAt: existing?.createdAt || now,
             updatedAt: now,
-            revision: currentRev + 1,
             publicationRevision: existing?.publicationRevision || 0,
             isPublished: existing?.isPublished || false,
             pbId: existing?.pbId || null,

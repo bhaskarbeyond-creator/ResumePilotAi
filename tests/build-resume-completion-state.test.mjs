@@ -27,15 +27,20 @@ import fs from 'node:fs';
  */
 
 const SHELL = fs.readFileSync('src/components/BuildResume/BuildResume.jsx', 'utf8');
+// The completion predicate was extracted out of the builder so it can be
+// imported (and therefore tested behaviourally) instead of regex-scraped from a
+// 2,700-line JSX file.
+const COMPLETION_SRC = fs.readFileSync('src/utils/stepCompletion.js', 'utf8');
+const { hasSubstantiveStepContent, isStepCompleted } = await import('../src/utils/stepCompletion.js');
 const TAILWIND = fs.readFileSync('src/tailwind.css', 'utf8');
 const EN_JSON = fs.readFileSync('src/locales/en/en.json', 'utf8');
 const METER = fs.readFileSync('src/components/BuildResume/AtsScoreMeter.jsx', 'utf8');
 const HEADING = fs.readFileSync('src/components/BuildResume/steps/HeadingStep.jsx', 'utf8');
 
 test('P0-1: legacy completion alias map contains no cross-step numeric collisions', () => {
-    // Extract the legacyMap object literal.
-    const mapMatch = SHELL.match(/const legacyMap = \{([\s\S]*?)\};/);
-    assert.ok(mapMatch, 'legacyMap must exist in isStepCompleted');
+    // Extract the legacy alias map object literal.
+    const mapMatch = COMPLETION_SRC.match(/const LEGACY_STEP_ALIASES = \{([\s\S]*?)\};/);
+    assert.ok(mapMatch, 'LEGACY_STEP_ALIASES must exist in src/utils/stepCompletion.js');
     const body = mapMatch[1];
     const entries = [...body.matchAll(/(\d+):\s*\[([^\]]*)\]/g)];
     assert.equal(entries.length, 11, 'one alias entry per content step');
@@ -51,10 +56,11 @@ test('P0-1: legacy completion alias map contains no cross-step numeric collision
 });
 
 test('P0-1: work-history completion checks the canonical employments field', () => {
-    const whMatch = SHELL.match(/case 'work-history':\s*(?:\/\/[^\n]*\n\s*)*return ([^\n;]+);/);
-    assert.ok(whMatch, 'work-history case must exist');
-    assert.match(whMatch[1], /resumeData\.employments/);
-    assert.doesNotMatch(whMatch[1], /resumeData\.workHistory/, 'legacy workHistory field must not gate completion');
+    assert.ok(hasSubstantiveStepContent('work-history', { employments: [{ jobTitle: 'Engineer' }] }),
+        'canonical employments must satisfy the work-history check');
+    assert.equal(hasSubstantiveStepContent('work-history', { workHistory: [{ employer: 'X', jobTitle: 'Y' }] }), false,
+        'the legacy workHistory field must never gate completion');
+    assert.equal(hasSubstantiveStepContent('work-history', {}), false);
 });
 
 test('P0-1: valid employments complete work history without any flags (content is authoritative)', () => {
@@ -164,9 +170,14 @@ test('P1-3: document title never leaks into the role context (adversarial probe 
 });
 
 test('P0-3: Empty employment and education entries do not falsely complete steps', () => {
-    // Substantive check evaluation: blank entries with only empty strings must not pass.
-    assert.match(SHELL, /case 'work-history':[\s\S]*?\.some\([\s\S]*?e\?\.jobTitle\?\.trim\(\) \|\| e\?\.employer\?\.trim\(\)/);
-    assert.match(SHELL, /case 'education':[\s\S]*?\.some\([\s\S]*?e\?\.school\?\.trim\(\) \|\| e\?\.degree\?\.trim\(\)/);
+    // Behavioural: blank entries carrying only empty strings must not pass, and
+    // a stale `completedSteps` flag must not rescue an empty section.
+    assert.equal(hasSubstantiveStepContent('work-history', { employments: [{ jobTitle: '   ', employer: '' }] }), false);
+    assert.equal(hasSubstantiveStepContent('education', { educations: [{ school: '', degree: '  ' }] }), false);
+    assert.equal(isStepCompleted('work-history', { employments: [], completedSteps: ['work-history'] }), false,
+        'an empty section must never report complete, even when flagged');
+    assert.equal(isStepCompleted('work-history', { employments: [{ employer: 'Acme' }] }), true,
+        'substantive content is authoritative');
 });
 
 test('P0-4: Zero neighbor step pruning across all builder step components', () => {

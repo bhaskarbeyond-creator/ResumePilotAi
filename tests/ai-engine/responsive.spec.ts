@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { apiFor, horizontalOverflow, installSession, mintSession, openEngine, releaseCredential, seedCredential } from './helpers';
+import { apiFor, horizontalOverflow, installSession, mintSession, openEngine, withCredential } from './helpers';
 
 /**
  * Cross-viewport rendering.
@@ -88,31 +88,34 @@ test.describe('Responsive rendering', () => {
     const session = await mintSession(request);
     await installSession(context, session);
     const api = apiFor(request, session);
-    const seeded = await seedCredential(api, 'openrouter');
-    await openEngine(page, 'providers');
+    await withCredential(api, 'openrouter', async (seeded) => {
+      await openEngine(page, 'providers');
 
-    const revoke = page.getByTestId('ai-engine-clear-openrouter');
-    if ((await revoke.count()) === 0 || (await revoke.isDisabled())) {
-      if (seeded) await releaseCredential(api, 'openrouter');
-      test.skip(true, 'The openrouter credential is deployment-managed; revocation is correctly disabled.');
-    }
+      const revoke = page.getByTestId('ai-engine-clear-openrouter');
+      if ((await revoke.count()) === 0 || (await revoke.isDisabled())) {
+        if (!seeded) {
+          test.skip(true, 'The openrouter credential is deployment-managed; revocation is correctly disabled.');
+          return;
+        }
+        throw new Error('a seeded openrouter credential did not produce a revocable control');
+      }
 
-    await revoke.click();
-    const dialog = page.getByTestId('ai-engine-confirm-dialog');
-    await expect(dialog).toBeVisible();
-    const box = await dialog.boundingBox();
-    const viewport = page.viewportSize();
-    expect(box).not.toBeNull();
-    expect(viewport).not.toBeNull();
-    if (box && viewport) {
-      expect(box.x).toBeGreaterThanOrEqual(0);
-      expect(box.y).toBeGreaterThanOrEqual(0);
-      expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1);
-      expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 1);
-    }
-    await page.keyboard.press('Escape');
-    await expect(dialog).toBeHidden();
-    if (seeded) await releaseCredential(api, 'openrouter');
+      await revoke.click();
+      const dialog = page.getByTestId('ai-engine-confirm-dialog');
+      await expect(dialog).toBeVisible();
+      const box = await dialog.boundingBox();
+      const viewport = page.viewportSize();
+      expect(box).not.toBeNull();
+      expect(viewport).not.toBeNull();
+      if (box && viewport) {
+        expect(box.x).toBeGreaterThanOrEqual(0);
+        expect(box.y).toBeGreaterThanOrEqual(0);
+        expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1);
+        expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 1);
+      }
+      await page.keyboard.press('Escape');
+      await expect(dialog).toBeHidden();
+    });
   });
 
   test('primary actions stay visible without horizontal scrolling @responsive', async ({ page, context, request }) => {
