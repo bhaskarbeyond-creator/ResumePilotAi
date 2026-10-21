@@ -5,17 +5,25 @@
  *
  * Implements:
  * 1. Dual-tier routing: Tenant Dedicated BYOK vs Platform Free-Pool Mesh
- * 2. Automatic multi-provider failover (Groq -> Cerebras -> Gemini -> NIM -> Mistral -> OpenRouter)
- * 3. Dynamic cooldown backoff on HTTP 429 / 5xx
- * 4. In-memory LRU prompt cache integration
- * 5. Structured JSON mode guarantee & fact grounding adherence
+ * 2. Automatic multi-provider failover (Groq → Cerebras → Gemini → NIM → Mistral → OpenRouter)
+ * 3. Multi-key pooling: rotate keys on 429/401 before benching a whole provider
+ * 4. Dynamic cooldown backoff on HTTP 429 / 5xx (persisted across restarts)
+ * 5. Search/media provider isolation: agent tools never reach /chat/completions
+ * 6. Multi-stage prompt compression before dispatch
+ * 7. Inline tool-call dialect rescue for budget free models
+ * 8. In-memory LRU prompt cache integration
+ * 9. SSE streaming with provider failover before the first forwarded chunk
  */
 
 const { getProviderMeta } = require('../providers/registry');
-const { callOpenAiCompat } = require('../providers/openaiCompat');
-const { callGoogleGemini } = require('../providers/googleGemini');
+const { callOpenAiCompat, streamOpenAiCompat } = require('../providers/openaiCompat');
+const { callGoogleGemini, streamGoogleGemini } = require('../providers/googleGemini');
 const { cooldownManager } = require('./cooldown');
 const { promptCache } = require('./cache');
+const { compressMessages } = require('./compression');
+const { rescueInlineToolCalls, toolNamesFrom, normalizeTools } = require('../lib/toolRescue');
+const { getMetricsPersistence } = require('./persistence');
+const { modelDiscovery } = require('./modelDiscovery');
 
 // Standard fallback priority order for platform free/budget mesh:
 // Strictly prioritized by High-Intelligence (70B+ / Frontier) and Ultra-Fast Latency
@@ -42,9 +50,34 @@ const DEFAULT_PRIORITY_ORDER = Object.freeze([
   'pollinations',
 ]);
 
-function normalizeMessages(prompt, systemPrompt) {
+/**
+ * Provider types that speak a chat wire protocol. `search` and `media`
+ * providers are agent tools with their own endpoints — sending them a
+ * `/chat/completions` request returns 404/422 from upstream (the bug fixed in
+ * freellmapi 0.16.6).
+ */
+const CHAT_PROVIDER_TYPES = Object.freeze(['openai-compat', 'google']);
+
+function isChatCapableMeta(meta) {
+  if (!meta) return false;
+  return CHAT_PROVIDER_TYPES.includes(String(meta.type || 'openai-compat'));
+}
+
+function isSearchOrMediaMeta(meta) {
+  if (!meta) return false;
+  return meta.type === 'search' || meta.type === 'media';
+}
+
+function normalizeMessages(prompt, systemPrompt, explicitMessages) {
+  if (Array.isArray(explicitMessages) && explicitMessages.length > 0) {
+    const list = explicitMessages.map(message => ({ ...message }));
+    if (systemPrompt && !list.some(m => m.role === 'system')) {
+      list.unshift({ role: 'system', content: String(systemPrompt) });
+    }
+    return list;
+  }
   if (Array.isArray(prompt)) {
-    const list = [...prompt];
+    const list = prompt.map(message => ({ ...message }));
     if (systemPrompt && !list.some(m => m.role === 'system')) {
       list.unshift({ role: 'system', content: String(systemPrompt) });
     }
@@ -58,13 +91,50 @@ function normalizeMessages(prompt, systemPrompt) {
   return messages;
 }
 
-const { modelDiscovery } = require('./modelDiscovery');
+/**
+ * `key: string | string[]` — or the newer `apiKeys: string[]` array. Splitting
+ * on commas/newlines lets an operator paste a pool straight into one field.
+ */
+function normalizeKeyPool(config = {}) {
+  const raw = [];
+  if (Array.isArray(config.apiKeys)) raw.push(...config.apiKeys);
+  if (Array.isArray(config.key)) raw.push(...config.key);
+  else if (typeof config.key === 'string') raw.push(config.key);
+
+  const keys = [];
+  for (const entry of raw) {
+    for (const piece of String(entry || '').split(/[\n,]+/)) {
+      const key = piece.trim();
+      if (key && !keys.includes(key)) keys.push(key);
+    }
+  }
+  return keys;
+}
+
+function estimateTokens(messages) {
+  const chars = (messages || []).reduce((sum, message) => {
+    if (typeof message?.content === 'string') return sum + message.content.length;
+    if (Array.isArray(message?.content)) {
+      return sum + message.content.reduce((n, block) => n + (typeof block?.text === 'string' ? block.text.length : 0), 0);
+    }
+    return sum;
+  }, 0);
+  return Math.ceil(chars / 4);
+}
 
 class FreeLlmRouter {
   constructor() {
     this.cooldownManager = cooldownManager;
     this.promptCache = promptCache;
     this.modelDiscovery = modelDiscovery;
+    this.keyCursor = new Map(); // provider -> next key index (round-robin)
+  }
+
+  _nextKeyOrder(provider, keyCount) {
+    if (keyCount <= 1) return [0];
+    const start = this.keyCursor.get(provider) || 0;
+    this.keyCursor.set(provider, (start + 1) % keyCount);
+    return Array.from({ length: keyCount }, (_unused, offset) => (start + offset) % keyCount);
   }
 
   async resolveModelForCandidate(pId, key, baseUrl, requestedModel, fetchImpl) {
@@ -96,6 +166,13 @@ class FreeLlmRouter {
     return meta?.defaultModel || 'default';
   }
 
+  /**
+   * Build the ordered failover cascade.
+   *
+   * Each entry carries a *key pool*, not a single credential. Search and media
+   * providers are filtered out here — the single choke point every completion
+   * passes through.
+   */
   async buildCandidateList({ tenantContext, platformConfig = {}, fetchImpl }) {
     const customKeys = tenantContext?.customProviderKeys || {};
     const hasTenantByok = Object.keys(customKeys).some(k => Boolean(String(customKeys[k] || '').trim()));
@@ -109,16 +186,18 @@ class FreeLlmRouter {
       const candidates = [];
       for (const [providerId, rawKey] of Object.entries(customKeys)) {
         const pId = providerId.toLowerCase().trim();
-        const key = String(rawKey || '').trim();
-        if (!key) continue;
+        const meta = getProviderMeta(pId);
+        if (isSearchOrMediaMeta(meta) || !isChatCapableMeta(meta)) continue;
         if (allowed && allowed.size > 0 && !allowed.has(pId)) continue;
 
-        const meta = getProviderMeta(pId) || { baseUrl: '', defaultModel: 'default' };
-        const model = await this.resolveModelForCandidate(pId, key, meta.baseUrl, tenantContext?.primaryModel, fetchImpl);
+        const keys = normalizeKeyPool({ key: rawKey });
+        if (keys.length === 0) continue;
+        const model = await this.resolveModelForCandidate(pId, keys[0], meta.baseUrl, tenantContext?.primaryModel, fetchImpl);
 
         candidates.push({
           provider: pId,
-          key,
+          keys,
+          key: keys[0],
           model,
           baseUrl: meta.baseUrl,
           isDedicatedByok: true,
@@ -142,34 +221,41 @@ class FreeLlmRouter {
     // Order by standard failover hierarchy: High-Intelligence & Ultra-Fast first
     // If operator has configured a primary provider, prioritize it first!
     const primary = platformConfig?.primary;
-    let orderedKeys = [
+    // Configured providers outside the standard order are appended, preserving
+    // the operator's own priority intent for anything not in the default mesh.
+    const orderedKeys = [...new Set([
+      ...(primary && providers[primary] ? [primary] : []),
       ...DEFAULT_PRIORITY_ORDER,
-      ...Object.keys(providers).filter(k => !DEFAULT_PRIORITY_ORDER.includes(k)),
-    ];
-    if (primary && providers[primary]) {
-      orderedKeys = [primary, ...orderedKeys.filter(k => k !== primary)];
-    }
+      ...Object.keys(providers),
+    ])];
 
     for (const pId of orderedKeys) {
       const conf = providers[pId];
       if (!conf || conf.enabled === false) continue;
-      const key = String(conf.key || '').trim();
-      if (!key) continue;
 
       const meta = getProviderMeta(pId);
-      const baseUrl = String(conf.baseUrl || meta?.baseUrl || '').trim();
-      const model = await this.resolveModelForCandidate(pId, key, baseUrl, conf.model, fetchImpl);
+      // Pillar 3 — isolation: search/media providers are not chat models.
+      if (isSearchOrMediaMeta(meta)) continue;
+      // Unknown provider ids are only callable when the operator supplied an
+      // explicit OpenAI-compatible endpoint.
+      if (!meta && !conf.baseUrl) continue;
+      if (!isChatCapableMeta(meta) && !conf.baseUrl) continue;
 
-      // Check if on active cooldown
+      let keys = normalizeKeyPool(conf);
+      if (keys.length === 0 && meta?.keyless) keys = ['keyless'];
+      if (keys.length === 0) continue;
+
+      const baseUrl = String(conf.baseUrl || meta?.baseUrl || '').trim();
+      const model = await this.resolveModelForCandidate(pId, keys[0], baseUrl, conf.model, fetchImpl);
+
+      // Check if on active cooldown (provider-level or model-level)
       const cooldown = this.cooldownManager.isOnCooldown(pId, model);
-      if (cooldown.onCooldown) {
-        // benched temporarily
-        continue;
-      }
+      if (cooldown.onCooldown) continue;
 
       candidates.push({
         provider: pId,
-        key,
+        keys,
+        key: keys[0],
         model,
         baseUrl: baseUrl || meta?.baseUrl,
         isDedicatedByok: false,
@@ -185,39 +271,143 @@ class FreeLlmRouter {
     if (candidates.length === 0) {
       for (const pId of orderedKeys) {
         const conf = providers[pId];
-        if (conf && conf.enabled !== false && conf.key) {
-          const meta = getProviderMeta(pId);
-          candidates.push({
-            provider: pId,
-            key: conf.key,
-            model: conf.model || meta?.defaultModel,
-            baseUrl: conf.baseUrl || meta?.baseUrl,
-            isDedicatedByok: false,
-          });
-        }
+        if (!conf || conf.enabled === false) continue;
+        const meta = getProviderMeta(pId);
+        if (isSearchOrMediaMeta(meta)) continue;
+        let keys = normalizeKeyPool(conf);
+        if (keys.length === 0 && meta?.keyless) keys = ['keyless'];
+        if (keys.length === 0) continue;
+        candidates.push({
+          provider: pId,
+          keys,
+          key: keys[0],
+          model: conf.model || meta?.defaultModel,
+          baseUrl: conf.baseUrl || meta?.baseUrl,
+          isDedicatedByok: false,
+        });
       }
     }
 
     return candidates;
   }
 
+  _resolveRequestOptions(options) {
+    const tools = normalizeTools(options.tools);
+    const toolNames = toolNamesFrom(options.tools);
+    const messages = normalizeMessages(options.prompt, options.systemPrompt, options.messages);
+    const compressionInput = options.compression;
+    const compressionOptions = compressionInput && typeof compressionInput === 'object' ? compressionInput : {};
+    const targetTokens = Number(
+      compressionOptions.targetTokens
+      || options.maxPromptTokens
+      || options.platformConfig?.promptTokenBudget
+      || 0,
+    );
+    const compressed = compressionInput === false
+      ? { messages, stats: { enabled: false, skipped: 'disabled', beforeTokens: estimateTokens(messages), afterTokens: estimateTokens(messages) } }
+      : compressMessages(messages, {
+        ...compressionOptions,
+        ...(targetTokens > 0 ? { targetTokens } : {}),
+      });
+
+    return { messages: compressed.messages, compression: compressed.stats, tools, toolNames };
+  }
+
+  _applyToolRescue(result, { tools, toolNames }) {
+    if (!tools || tools.length === 0 || !toolNames.size) return result;
+    if (Array.isArray(result.toolCalls) && result.toolCalls.length > 0) return result;
+
+    const rescued = rescueInlineToolCalls(result.content || '', toolNames);
+    if (!rescued.detected) return result;
+
+    if (!rescued.calls || rescued.calls.length === 0) {
+      // Detected as a dialect but unparseable: a dead turn. Fail over rather
+      // than handing the agent loop gibberish prose.
+      const err = new Error(`[${result.provider}] model emitted an inline tool-call dialect that could not be parsed`);
+      err.code = 'TOOL_CALL_DIALECT_UNPARSEABLE';
+      err.status = 502;
+      err.retryable = true;
+      err.provider = result.provider;
+      throw err;
+    }
+
+    return {
+      ...result,
+      content: rescued.cleanText,
+      toolCalls: rescued.calls.map((call, index) => ({
+        id: `call_rescued_${Date.now().toString(36)}_${index}`,
+        type: 'function',
+        function: { name: call.name, arguments: call.arguments },
+      })),
+      finishReason: 'tool_calls',
+      toolCallsRescued: true,
+    };
+  }
+
+  _recordMetrics({ provider, model, ok, latencyMs, status }) {
+    try {
+      getMetricsPersistence().recordRequest({ provider, model, ok, latencyMs, status });
+    } catch { /* metrics are best-effort */ }
+  }
+
+  async _dispatch(candidate, { messages, temperature, maxTokens, jsonMode, responseFormat, tools, toolChoice, timeoutMs, fetchImpl, signal }) {
+    const meta = getProviderMeta(candidate.provider);
+    const shared = {
+      apiKey: candidate.key,
+      model: candidate.model,
+      messages,
+      temperature,
+      maxTokens,
+      jsonMode,
+      responseFormat,
+      tools,
+      toolChoice,
+      timeoutMs,
+      fetchImpl,
+      signal,
+    };
+    if (meta?.type === 'google' || candidate.provider === 'gemini') {
+      return callGoogleGemini({
+        ...shared,
+        baseUrl: candidate.baseUrl || 'https://generativelanguage.googleapis.com/v1beta',
+      });
+    }
+    return callOpenAiCompat({
+      ...shared,
+      baseUrl: candidate.baseUrl,
+      providerId: candidate.provider,
+    });
+  }
+
   async routeCompletion({
     prompt,
+    messages: explicitMessages,
     systemPrompt,
     tenantContext = null,
     platformConfig = {},
     temperature = 0.3,
     maxTokens = 4096,
     jsonMode = false,
+    responseFormat,
+    tools,
+    toolChoice,
+    compression,
+    maxPromptTokens,
     timeoutMs = 45000,
     fetchImpl = globalThis.fetch,
     signal,
     bypassCache = false,
   }) {
-    const messages = normalizeMessages(prompt, systemPrompt);
+    const prepared = this._resolveRequestOptions({
+      prompt, messages: explicitMessages, systemPrompt, tools, compression, maxPromptTokens, platformConfig,
+    });
+    const messages = prepared.messages;
+    const compressionStats = prepared.compression;
+    const normalizedTools = prepared.tools;
+    const toolNames = prepared.toolNames;
 
-    // 1. In-Memory LRU Cache Check
-    if (!bypassCache) {
+    // 1. In-Memory LRU Cache Check (structured tool turns are never cached)
+    if (!bypassCache && normalizedTools.length === 0) {
       const cacheKeyModel = tenantContext?.primaryModel || 'default';
       const cached = this.promptCache.get(messages, cacheKeyModel, temperature);
       if (cached) {
@@ -229,6 +419,7 @@ class FreeLlmRouter {
           cached: true,
           latencyMs: 0,
           fallbacksAttempted: [],
+          compression: compressionStats,
         };
       }
     }
@@ -246,96 +437,310 @@ class FreeLlmRouter {
     const fallbacksAttempted = [];
     let lastError = null;
 
-    // 3. Failover Execution Loop
+    // 3. Failover Execution Loop: provider → key pool
     for (const candidate of candidates) {
-      const startTime = Date.now();
-      try {
-        let result;
-        const meta = getProviderMeta(candidate.provider);
+      const keyOrder = candidate.isDedicatedByok ? [0] : this._nextKeyOrder(candidate.provider, candidate.keys.length);
+      let keyFailures = 0;
+      let sawRateLimit = false;
+      let sawAuthFailure = false;
 
-        if (meta?.type === 'google' || candidate.provider === 'gemini') {
-          result = await callGoogleGemini({
-            baseUrl: candidate.baseUrl || 'https://generativelanguage.googleapis.com/v1beta',
-            apiKey: candidate.key,
-            model: candidate.model,
+      for (const keyIndex of keyOrder) {
+        const key = candidate.keys[keyIndex];
+        if (!key) continue;
+        const startTime = Date.now();
+
+        try {
+          const result = await this._dispatch({ ...candidate, key }, {
             messages,
             temperature,
             maxTokens,
             jsonMode,
+            responseFormat,
+            tools: normalizedTools,
+            toolChoice,
             timeoutMs,
             fetchImpl,
             signal,
           });
-        } else {
-          result = await callOpenAiCompat({
-            baseUrl: candidate.baseUrl,
-            apiKey: candidate.key,
+
+          const rescued = this._applyToolRescue(result, { tools: normalizedTools, toolNames });
+          const latencyMs = rescued.latencyMs || (Date.now() - startTime);
+
+          // Cache successful text-only responses in memory
+          if (normalizedTools.length === 0 && !rescued.toolCalls) {
+            this.promptCache.set(messages, candidate.model, temperature, {
+              content: rescued.content,
+              provider: candidate.provider,
+              model: candidate.model,
+              usage: rescued.usage,
+            });
+          }
+
+          // Clear cooldown strikes on successful execution
+          this.cooldownManager.clearCooldown(candidate.provider, candidate.model);
+          this._recordMetrics({ provider: candidate.provider, model: candidate.model, ok: true, latencyMs, status: 200 });
+
+          return {
+            content: rescued.content,
+            toolCalls: rescued.toolCalls || null,
+            finishReason: rescued.finishReason || (rescued.toolCalls ? 'tool_calls' : 'stop'),
+            provider: candidate.provider,
             model: candidate.model,
-            messages,
-            temperature,
-            maxTokens,
-            jsonMode,
-            timeoutMs,
-            providerId: candidate.provider,
-            fetchImpl,
-            signal,
+            usage: rescued.usage,
+            cached: false,
+            latencyMs,
+            fallbacksAttempted,
+            compression: compressionStats,
+            keysAttempted: keyFailures + 1,
+            toolCallsRescued: Boolean(rescued.toolCallsRescued),
+            isDedicatedByok: Boolean(candidate.isDedicatedByok),
+          };
+        } catch (error) {
+          lastError = error;
+          keyFailures += 1;
+          const latencyMs = Date.now() - startTime;
+          const status = Number(error.status) || 500;
+
+          fallbacksAttempted.push({
+            provider: candidate.provider,
+            model: candidate.model,
+            keyIndex,
+            error: error.message,
+            code: error.code || 'UNKNOWN_ERROR',
+            status,
+            latencyMs,
           });
+          this._recordMetrics({ provider: candidate.provider, model: candidate.model, ok: false, latencyMs, status });
+
+          if (status === 429) sawRateLimit = true;
+          if (status === 401 || status === 403) sawAuthFailure = true;
         }
+      }
 
-        // Cache successful response in memory
-        this.promptCache.set(messages, candidate.model, temperature, {
-          content: result.content,
-          provider: candidate.provider,
-          model: candidate.model,
-          usage: result.usage,
-        });
+      // Only bench the *provider* once every key in its pool failed.
+      if (!candidate.isDedicatedByok && (sawRateLimit || keyFailures === candidate.keys.length)) {
+        this.cooldownManager.setCooldown(
+          candidate.provider,
+          candidate.model,
+          sawRateLimit ? 'HTTP 429 across all pooled keys' : (sawAuthFailure ? 'All pooled keys rejected' : 'Provider unavailable'),
+        );
+      }
 
-        // Clear cooldown strikes on successful execution
-        this.cooldownManager.clearCooldown(candidate.provider, candidate.model);
-
-        return {
-          content: result.content,
-          provider: candidate.provider,
-          model: candidate.model,
-          usage: result.usage,
-          cached: false,
-          latencyMs: result.latencyMs || (Date.now() - startTime),
-          fallbacksAttempted,
-          isDedicatedByok: Boolean(candidate.isDedicatedByok),
-        };
-      } catch (error) {
-        lastError = error;
-        const latencyMs = Date.now() - startTime;
-
-        fallbacksAttempted.push({
-          provider: candidate.provider,
-          model: candidate.model,
-          error: error.message,
-          code: error.code || 'UNKNOWN_ERROR',
-          status: error.status || 500,
-          latencyMs,
-        });
-
-        // If error is retryable (429, 503, timeout, etc.), bench this provider temporarily and fail over
-        if (error.retryable !== false && !candidate.isDedicatedByok) {
-          this.cooldownManager.setCooldown(candidate.provider, candidate.model, error.message);
-        }
-
-        // Dedicated BYOK errors should not fail over to other tenants or public mesh
-        if (candidate.isDedicatedByok && candidates.length === 1) {
-          throw error;
-        }
+      // Dedicated BYOK errors should not fail over to other tenants or public mesh
+      if (candidate.isDedicatedByok && candidates.length === 1) {
+        throw lastError || new Error('Dedicated BYOK provider failed');
       }
     }
 
     // 4. All Candidates Exhausted
-    const fallbackSummary = fallbacksAttempted.map(f => f.provider + ' (' + f.code + ': ' + f.error + ')').join('; ');
-    const finalError = new Error('All AI providers failed: ' + fallbackSummary);
+    const fallbackSummary = fallbacksAttempted.map(f => `${f.provider} (${f.code}: ${f.error})`).join('; ');
+    const finalError = new Error(`All AI providers failed: ${fallbackSummary}`);
     finalError.code = 'ALL_PROVIDERS_FAILED';
     finalError.status = 502;
     finalError.fallbacksAttempted = fallbacksAttempted;
     finalError.lastError = lastError;
     throw finalError;
+  }
+
+  /**
+   * Streaming completion with pre-first-token failover.
+   *
+   * Yields: {type:'meta'|'text'|'tool_call'|'usage'|'finish'}.
+   * Once a provider has emitted its first content event the stream is committed
+   * (retrying another provider would duplicate content in the client).
+   */
+  async *routeStream({
+    prompt,
+    messages: explicitMessages,
+    systemPrompt,
+    tenantContext = null,
+    platformConfig = {},
+    temperature = 0.3,
+    maxTokens = 4096,
+    jsonMode = false,
+    responseFormat,
+    tools,
+    toolChoice,
+    compression,
+    maxPromptTokens,
+    timeoutMs = 45000,
+    fetchImpl = globalThis.fetch,
+    signal,
+  }) {
+    const prepared = this._resolveRequestOptions({
+      prompt, messages: explicitMessages, systemPrompt, tools, compression, maxPromptTokens, platformConfig,
+    });
+    const messages = prepared.messages;
+    const normalizedTools = prepared.tools;
+    // Streaming is not buffered, so inline tool-call rescue (pillar 5) only
+    // applies to the non-streaming path in completeChat — text has already
+    // reached the client by the time a stream can be inspected.
+    const compressionStats = prepared.compression;
+
+    const candidates = await this.buildCandidateList({ tenantContext, platformConfig, fetchImpl });
+    if (candidates.length === 0) {
+      const err = new Error('No enabled AI provider is configured or healthy');
+      err.code = 'AI_PROVIDER_UNAVAILABLE';
+      err.status = 503;
+      throw err;
+    }
+
+    const fallbacksAttempted = [];
+    let lastError = null;
+
+    for (const candidate of candidates) {
+      const keyOrder = candidate.isDedicatedByok ? [0] : this._nextKeyOrder(candidate.provider, candidate.keys.length);
+      let keyFailures = 0;
+      let sawRateLimit = false;
+
+      for (const keyIndex of keyOrder) {
+        const key = candidate.keys[keyIndex];
+        if (!key) continue;
+        const meta = getProviderMeta(candidate.provider);
+        const startTime = Date.now();
+        let opened = false;
+        let emitted = false;
+        let finishReason = null;
+        let usage = null;
+        const toolState = new Map();
+
+        try {
+          const shared = {
+            apiKey: key,
+            model: candidate.model,
+            messages,
+            temperature,
+            maxTokens,
+            jsonMode,
+            responseFormat,
+            tools: normalizedTools,
+            toolChoice,
+            timeoutMs,
+            fetchImpl,
+            signal,
+          };
+          const events = (meta?.type === 'google' || candidate.provider === 'gemini')
+            ? streamGoogleGemini({ ...shared, baseUrl: candidate.baseUrl || 'https://generativelanguage.googleapis.com/v1beta' })
+            : streamOpenAiCompat({ ...shared, baseUrl: candidate.baseUrl, providerId: candidate.provider });
+
+          for await (const event of events) {
+            if (event.type === 'open') {
+              opened = true;
+              yield {
+                type: 'meta',
+                provider: candidate.provider,
+                model: candidate.model,
+                latencyMs: Date.now() - startTime,
+                compression: compressionStats,
+                fallbacksAttempted,
+                isDedicatedByok: Boolean(candidate.isDedicatedByok),
+              };
+              continue;
+            }
+
+            if (event.type === 'text') {
+              emitted = true;
+              yield { type: 'text', text: event.text };
+              continue;
+            }
+
+            if (event.type === 'tool_call') {
+              emitted = true;
+              const state = toolState.get(event.index) || { id: null, name: '', arguments: '' };
+              if (event.id) state.id = event.id;
+              if (event.name) state.name = event.name;
+              if (typeof event.arguments === 'string') state.arguments = event.arguments;
+              toolState.set(event.index, state);
+              yield { ...event, provider: candidate.provider };
+              continue;
+            }
+
+            if (event.type === 'usage') {
+              usage = event.usage;
+              continue;
+            }
+
+            if (event.type === 'finish') {
+              finishReason = event.finishReason;
+            }
+          }
+
+          if (!opened) {
+            throw Object.assign(new Error(`[${candidate.provider}] stream closed before opening`), {
+              code: 'EMPTY_STREAM', status: 502, retryable: true,
+            });
+          }
+          if (!emitted) {
+            throw Object.assign(new Error(`[${candidate.provider}] stream produced no content`), {
+              code: 'EMPTY_COMPLETION', status: 502, retryable: true,
+            });
+          }
+
+          const latencyMs = Date.now() - startTime;
+          this.cooldownManager.clearCooldown(candidate.provider, candidate.model);
+          this._recordMetrics({ provider: candidate.provider, model: candidate.model, ok: true, latencyMs, status: 200 });
+
+          if (usage) yield { type: 'usage', usage };
+          yield {
+            type: 'finish',
+            finishReason: finishReason || (toolState.size > 0 ? 'tool_calls' : 'stop'),
+            toolCalls: toolState.size > 0 ? [...toolState.entries()].sort((a, b) => a[0] - b[0]).map(([, state]) => state) : null,
+            usage: usage || { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+            provider: candidate.provider,
+            model: candidate.model,
+            latencyMs,
+          };
+          return;
+        } catch (error) {
+          lastError = error;
+          const status = Number(error.status) || 500;
+          if (status === 429) sawRateLimit = true;
+
+          if (opened || emitted) {
+            // Mid-stream failure: the client already received partial content.
+            // Surface it instead of replaying the answer from another provider.
+            this._recordMetrics({ provider: candidate.provider, model: candidate.model, ok: false, latencyMs: Date.now() - startTime, status });
+            throw error;
+          }
+
+          keyFailures += 1;
+          fallbacksAttempted.push({
+            provider: candidate.provider,
+            model: candidate.model,
+            keyIndex,
+            error: error.message,
+            code: error.code || 'UNKNOWN_ERROR',
+            status,
+            latencyMs: Date.now() - startTime,
+          });
+          this._recordMetrics({ provider: candidate.provider, model: candidate.model, ok: false, latencyMs: Date.now() - startTime, status });
+        }
+      }
+
+      if (!candidate.isDedicatedByok && (sawRateLimit || keyFailures === candidate.keys.length)) {
+        this.cooldownManager.setCooldown(
+          candidate.provider,
+          candidate.model,
+          sawRateLimit ? 'HTTP 429 across all pooled keys' : 'Provider unavailable',
+        );
+      }
+      if (candidate.isDedicatedByok && candidates.length === 1) {
+        throw lastError || new Error('Dedicated BYOK provider failed');
+      }
+    }
+
+    const summary = fallbacksAttempted.map(f => `${f.provider} (${f.code}: ${f.error})`).join('; ');
+    const finalError = new Error(`All AI providers failed: ${summary}`);
+    finalError.code = 'ALL_PROVIDERS_FAILED';
+    finalError.status = 502;
+    finalError.fallbacksAttempted = fallbacksAttempted;
+    finalError.lastError = lastError;
+    throw finalError;
+  }
+
+  /** Providers eligible for chat, used by /v1/models and the admin UI. */
+  listChatProviders() {
+    return Object.values(require('../providers/registry').PROVIDER_REGISTRY).filter(isChatCapableMeta);
   }
 }
 
@@ -344,4 +749,11 @@ const defaultRouter = new FreeLlmRouter();
 module.exports = {
   FreeLlmRouter,
   freeLlmRouter: defaultRouter,
+  DEFAULT_PRIORITY_ORDER,
+  CHAT_PROVIDER_TYPES,
+  isChatCapableMeta,
+  isSearchOrMediaMeta,
+  normalizeKeyPool,
+  normalizeMessages,
+  estimateTokens,
 };

@@ -3,18 +3,53 @@
 /**
  * FreeLLMAPI In-Memory Cooldown & Backoff Manager
  *
- * Tracks rate-limited or temporarily degraded providers/models in RAM.
- * Ensures that if a provider returns HTTP 429 or 503, traffic immediately
- * pivots to the next priority provider without blocking user requests.
+ * Tracks rate-limited or temporarily degraded providers/models in RAM and, when
+ * a durable store is attached, mirrors the expiry into `data/freellm_metrics.db`
+ * so a Node restart does not re-hammer a provider that is still benched.
  *
- * Self-healing: Cooldowns expire lazily or can be cleared on demand.
+ * Self-healing: cooldowns expire lazily or can be cleared on demand.
  */
 
 class CooldownManager {
-  constructor() {
+  constructor({ persistence = null, now = () => Date.now() } = {}) {
     this.cooldowns = new Map(); // key -> { expiresAt, reason, strikeCount, lastFailureAt }
     this.DEFAULT_COOLDOWN_MS = 60_000; // 1 minute
     this.MAX_COOLDOWN_MS = 300_000;    // 5 minutes max
+    this.persistence = persistence;
+    this.now = now;
+  }
+
+  /**
+   * Attach a MetricsPersistence instance (or null to detach) and hydrate any
+   * cooldown that is still active from the previous process.
+   */
+  attachPersistence(persistence) {
+    this.persistence = persistence || null;
+    if (!this.persistence) return { hydrated: 0 };
+    let hydrated = 0;
+    try {
+      for (const row of this.persistence.loadCooldowns({ now: this.now() })) {
+        const key = this._makeKey(row.provider, row.model);
+        this.cooldowns.set(key, {
+          provider: String(row.provider || '').toLowerCase(),
+          model: String(row.model || ''),
+          expiresAt: Number(row.expiresAt),
+          reason: row.reason || 'Persisted cooldown',
+          strikeCount: Number(row.strikes || 1),
+          lastFailureAt: Number(row.updatedAt || this.now()),
+          durationMs: Math.max(0, Number(row.expiresAt) - Number(row.updatedAt || this.now())),
+        });
+        hydrated += 1;
+      }
+    } catch {
+      // Hydration is best-effort: never block startup on a corrupt metrics DB.
+    }
+    return { hydrated };
+  }
+
+  _persist(fn) {
+    if (!this.persistence) return;
+    try { fn(this.persistence); } catch { /* persistence must never break routing */ }
   }
 
   _makeKey(provider, model) {
@@ -27,7 +62,7 @@ class CooldownManager {
     const specificKey = this._makeKey(provider, model);
     const providerKey = this._makeKey(provider, '');
 
-    const now = Date.now();
+    const now = this.now();
     for (const key of [specificKey, providerKey]) {
       const entry = this.cooldowns.get(key);
       if (entry) {
@@ -36,6 +71,7 @@ class CooldownManager {
         }
         // Expired -> lazy cleanup
         this.cooldowns.delete(key);
+        this._persist(store => store.clearCooldown({ provider, model: key === providerKey ? '' : model }));
       }
     }
 
@@ -46,7 +82,7 @@ class CooldownManager {
     const key = this._makeKey(provider, model);
     const existing = this.cooldowns.get(key);
 
-    const now = Date.now();
+    const now = this.now();
     let strikeCount = 1;
     let durationMs = this.DEFAULT_COOLDOWN_MS;
 
@@ -66,6 +102,15 @@ class CooldownManager {
       durationMs,
     });
 
+    this._persist(store => store.recordCooldown({
+      provider,
+      model: String(model || ''),
+      expiresAt,
+      reason,
+      strikes: strikeCount,
+      at: now,
+    }));
+
     return { expiresAt, durationMs, strikeCount };
   }
 
@@ -74,14 +119,34 @@ class CooldownManager {
     const providerKey = this._makeKey(provider, '');
     this.cooldowns.delete(specificKey);
     this.cooldowns.delete(providerKey);
+    this._persist(store => {
+      store.clearCooldown({ provider, model: String(model || '') });
+      if (providerKey !== specificKey) store.clearCooldown({ provider, model: '' });
+    });
   }
 
   resetAll() {
     this.cooldowns.clear();
+    this._persist(store => store.clearAllCooldowns());
+  }
+
+  cleanExpired() {
+    const now = this.now();
+    for (const [key, entry] of this.cooldowns.entries()) {
+      if (entry.expiresAt <= now) {
+        this.cooldowns.delete(key);
+        this._persist(store => store.clearCooldown({ provider: entry.provider, model: entry.model }));
+      }
+    }
+  }
+
+  /** Could this provider serve a request right now? Used by the search chain too. */
+  hasAvailableProvider(providers) {
+    return (providers || []).some(provider => !this.isOnCooldown(provider).onCooldown);
   }
 
   getStatus() {
-    const now = Date.now();
+    const now = this.now();
     const active = [];
     for (const [key, entry] of this.cooldowns.entries()) {
       if (entry.expiresAt > now) {
@@ -95,6 +160,7 @@ class CooldownManager {
         });
       } else {
         this.cooldowns.delete(key);
+        this._persist(store => store.clearCooldown({ provider: entry.provider, model: entry.model }));
       }
     }
     return active;
