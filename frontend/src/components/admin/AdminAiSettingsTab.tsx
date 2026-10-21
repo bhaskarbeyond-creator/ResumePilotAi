@@ -2173,6 +2173,8 @@ export function AdminAiSettingsTab() {
 
                   {modalSeveral ? (
                     <textarea
+                      data-testid="modal-api-key-multi"
+                      aria-label="API keys, one per line"
                       value={modalApiKey}
                       onChange={(e) => setModalApiKey(e.target.value)}
                       rows={3}

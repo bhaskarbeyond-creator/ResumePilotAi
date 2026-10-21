@@ -301,7 +301,33 @@ async function main() {
       (await kiloPill.textContent() || '').includes('Keyless Active'),
       (await kiloPill.textContent() || '').trim());
 
-    // ── 4. Groq live latency probe ───────────────────────────────────────
+    // ── 4. Multi-key paste saves the whole pool ─────────────────────────
+    await page.locator('[data-testid="configure-provider"]').click();
+    await page.waitForSelector('[data-testid="add-key-dialog"]');
+    await page.locator('[data-testid="platform-selector"]').click();
+    await page.locator('[data-testid="platform-search"]').fill('cerebras');
+    await page.locator('[data-testid="platform-option-cerebras"]').click();
+    await page.getByRole('button', { name: 'Paste several' }).click();
+    await page.locator('[data-testid="modal-api-key-multi"]').fill('cerebras-key-one\ncerebras-key-two');
+    await page.getByRole('button', { name: 'Add key & Activate' }).click();
+    await page.waitForSelector('[data-testid="add-key-dialog"]', { state: 'detached', timeout: 10_000 });
+
+    const poolSave = fixture.state.saves.find(save => Array.isArray(save.cerebrasApiKeys));
+    check('pasting several keys saves the whole pool (not just the first)',
+      Boolean(poolSave) && poolSave.cerebrasApiKeys.length === 2
+        && poolSave.cerebrasApiKeys[0] === 'cerebras-key-one'
+        && poolSave.cerebrasApiKeys[1] === 'cerebras-key-two'
+        && poolSave.cerebrasApiKey === 'cerebras-key-one',
+      poolSave ? JSON.stringify(poolSave) : 'no pool save captured');
+
+    const cerebrasRow = page.locator('[data-testid="provider-row-cerebras"]');
+    check('the row reflects the pooled key count immediately',
+      (await cerebrasRow.textContent() || '').includes('2 keys'),
+      (await cerebrasRow.textContent() || '').replace(/\s+/g, ' ').trim().slice(0, 120));
+    check('the pooled provider flips to ● Live & Active',
+      ((await page.locator('[data-testid="provider-status-cerebras"]').textContent()) || '').includes('Live & Active'));
+
+    // ── 5. Groq live latency probe ───────────────────────────────────────
     const probeResponsePromise = page.waitForResponse(response =>
       response.url().endsWith('/api/admin/ai/test-provider') && response.status() === 200,
       { timeout: 10_000 },
