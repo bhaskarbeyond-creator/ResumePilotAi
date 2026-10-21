@@ -132,18 +132,29 @@ The config boots the Vite app on `:4000` and the backend on `:8080` in certifica
 
 ## 6. CI gate repair (adjacent, blocking)
 
-The PR's quality gate was red before this branch existed, at the step **before** lint:
+The PR's quality gate started red long before this branch, and every red step had to be cleared before "the console works" could be trusted as a claim:
 
-```
-Clean-state migration application did not reach version 017 (observed 026)
-```
+| Gate step | Was | Now |
+|---|---|---|
+| Migrations | `did not reach version 017 (observed 026)` — a literal that went stale when 018–026 landed | Expectation derived from `discoverMigrations()`; pinned DB-free by `backend/test/migration-verifier-expectation.test.js` |
+| Lint | 9 errors in unmodified files | 0 errors, 204 warnings |
+| Security + backend regression | Limiter suites asserted against a middleware that skipped itself when `NODE_ENV=test` | `RATE_LIMIT_ENFORCE=1` opt-in per suite; the public-form `.test` bypass is gone |
+| Product regression | Freeze check died on `bad revision e314f715` (depth-1 checkout) | Checkout fetches full history; the test deepens once before asserting |
+| Production audit | 7 high advisories in root, 10 in backend | 0 high/critical in both |
 
-`scripts/verify-mariadb-migrations.mjs` asserted a literal end-version that went stale when migrations 018–026 landed — 026 being the AI quota counter migration that this console's usage panel reads. The expectation is now derived from `discoverMigrations()`: a clean database must apply **every** checked-in migration and finish with nothing pending. `backend/test/migration-verifier-expectation.test.js` pins that derivation DB-free so the literal cannot return.
+Two of those repairs were real product defects rather than test hygiene:
 
-Two further pre-existing red marks remain and were deliberately **not** touched, because they belong to other workstreams:
+- **Limiter bypass.** `accountRateLimit` returned early whenever `NODE_ENV==='test'`, so every test that claimed to prove throttling was proving nothing. It now enforces unless a suite opts out, and the limiter suites opt *in*.
+- **Public-form exemption.** The body-email exemption meant any anonymous visitor could post unlimited contact/reset requests by typing `anything@example.test`. Only an authenticated `.test` identity (the case the bypass exists for) may skip throttling now.
+- **Supply chain.** axios 1.20.0, vite 8.3.4, `@tiptap/*` pinned to a single version, `@grpc/grpc-js` overridden to ^1.14.6, backend `nodemailer` ^10.1.7 and `proxy-addr` 2.0.8, and `nodemon` moved to devDependencies so a file watcher stops counting as production surface.
 
-- `eslint .` reports 9 errors in unmodified files (`backend/repositories/InMemoryRepository.js` duplicate object keys from the deliberate server-owned-override spread; `tests/unit/buildResumeLogic.unit.test.js` calls an undefined `shouldStepCompleted`).
-- The gate's own MariaDB steps cannot be exercised in this sandbox (no database, no root); only static verification of the new assertion logic was possible here.
+### Final state of the gate
+
+Run `39550089666` on `39c082c` — **success**, all eight steps green (migrations, dependencies, schema, lint, security+backend, product, build, audit), 3 m 53 s.
+
+Locally, `npm run test:product` is 0 failures, `test:security:static` 67/0, `npm run build` succeeds, and `npm ci` succeeds for both dependency trees. `backend`'s Node suite is 876 pass / 14 fail in this sandbox, where all 14 are `ECONNREFUSED 127.0.0.1:3306` — the gate proves them against a live MariaDB, which is the only environment where they can mean anything.
+
+The Playwright matrix was re-run **after** the dependency bump: 107 passed / 5 skipped / 0 failed in 6.6 minutes, i.e. the upgrades did not move a single pixel or break a single contract.
 
 ## 7. Remaining, explicitly out of scope
 
