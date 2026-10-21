@@ -16,6 +16,7 @@
 const express = require('express');
 const { getRepository } = require('../repositories');
 const { requireAuth, requirePermission } = require('../security/auth');
+const { isPubliclyVisibleJob } = require('./jobsData');
 
 const router = express.Router();
 
@@ -32,19 +33,72 @@ router.use((req, res, next) => {
 // Favourites (authenticated, owner-scoped)
 // ───────────────────────────────────────────────────────────────────────────
 
+const plainObject = value => (value && typeof value === 'object' && !Array.isArray(value) ? value : {});
+
+function isoOrNull(value) {
+    if (!value) return null;
+    const date = value instanceof Date ? value : new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+/**
+ * One favourite as its owner sees it (P002 C15).
+ *  - The saved payload first (older clients read its fields at the top level),
+ *    then the stored columns, so a payload can never pose as them. `data` is the
+ *    payload exactly as it was saved, which is what Undo saves again.
+ *  - `job`: a saved job's current title, company and location, only while
+ *    GET /api/jobs-data/:id would show that job to the same caller (open on the
+ *    job board, or the caller's own listing). POST accepts any id, so a closed,
+ *    draft, expired or missing job all answer `null` alike.
+ *  - `document`: a saved resume's or cover letter's title while the caller owns it.
+ */
+function favouriteView(row = {}, uid, now = Date.now()) {
+    const data = plainObject(row.data);
+    const job = row.job && typeof row.job === 'object' ? row.job : null;
+    const listed = job ? isPubliclyVisibleJob({ status: job.status, expires_at: job.expiresAt }, now) : false;
+    const owned = Boolean(job && uid && String(job.employerId || '') === String(uid));
+    const document = row.document && typeof row.document === 'object' ? row.document : null;
+    return {
+        ...data,
+        id: String(row.id || ''),
+        itemId: String(row.itemId || ''),
+        itemType: String(row.itemType || ''),
+        createdAt: isoOrNull(row.createdAt),
+        data,
+        job: job && (listed || owned) ? {
+            title: String(job.title || ''),
+            company: String(job.company || ''),
+            location: String(job.location || ''),
+            listed,
+        } : null,
+        document: document ? { title: String(document.title || '') } : null,
+    };
+}
+
+// A database outage is reported as one (503), never as an empty or failed list.
+function replyFavouritesError(res, err, message) {
+    if (Number(err?.status) === 503) {
+        return res.status(503).json({ success: false, code: 'DATABASE_UNAVAILABLE', error: 'Saved items are temporarily unavailable' });
+    }
+    return res.status(500).json({ success: false, error: message });
+}
+
 // GET /api/favourites?type=resume|job — list the current user's favourites
 router.get('/favourites', requireAuth, async (req, res) => {
     try {
         const itemType = String(req.query.type || '').slice(0, 50);
-        let items = await req.repository.getFavourites(req.user.uid);
+        const now = Date.now();
+        const rows = await req.repository.getFavouritesWithItems(req.user.uid);
+        let items = rows.map(row => favouriteView(row, req.user.uid, now));
         if (itemType) items = items.filter(item => item.itemType === itemType);
         return res.json({ success: true, favourites: items });
-    } catch (_err) {
-        return res.status(500).json({ success: false, error: 'Failed to load favourites' });
+    } catch (err) {
+        return replyFavouritesError(res, err, 'Failed to load favourites');
     }
 });
 
-// POST /api/favourites — add a favourite { itemId, itemType, data }
+// POST /api/favourites — add a favourite { itemId, itemType, data }. Saving an
+// item again updates its payload; the answer is the stored favourite.
 router.post('/favourites', requireAuth, express.json({ limit: '512kb' }), async (req, res) => {
     try {
         const itemId = String(req.body.itemId || req.body.item_id || '').trim();
@@ -52,21 +106,22 @@ router.post('/favourites', requireAuth, express.json({ limit: '512kb' }), async 
             return res.status(400).json({ success: false, error: 'itemId is required' });
         }
         const itemType = String(req.body.itemType || req.body.item_type || 'resume').slice(0, 50);
-        const data = (req.body.data && typeof req.body.data === 'object') ? req.body.data : {};
+        const data = plainObject(req.body.data);
         const favourite = await req.repository.addFavourite(req.user.uid, itemId, itemType, data);
         return res.json({ success: true, favourite });
-    } catch (_err) {
-        return res.status(500).json({ success: false, error: 'Failed to save favourite' });
+    } catch (err) {
+        return replyFavouritesError(res, err, 'Failed to save favourite');
     }
 });
 
-// DELETE /api/favourites/:itemId — remove a favourite (owner-scoped)
+// DELETE /api/favourites/:itemId — remove a favourite (owner-scoped). `removed`
+// says whether one was removed; removing again is not an error.
 router.delete('/favourites/:itemId', requireAuth, async (req, res) => {
     try {
-        await req.repository.removeFavourite(req.user.uid, req.params.itemId);
-        return res.json({ success: true, isFavourite: false });
-    } catch (_err) {
-        return res.status(500).json({ success: false, error: 'Failed to remove favourite' });
+        const removed = await req.repository.removeFavourite(req.user.uid, req.params.itemId);
+        return res.json({ success: true, isFavourite: false, removed: Boolean(removed) });
+    } catch (err) {
+        return replyFavouritesError(res, err, 'Failed to remove favourite');
     }
 });
 

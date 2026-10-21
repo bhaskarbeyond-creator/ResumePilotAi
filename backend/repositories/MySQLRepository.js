@@ -2145,41 +2145,114 @@ class MySQLRepository {
     // ==========================================
     // 9b. FAVOURITES (MySQL authoritative; formerly Firestore users/{uid}/favourites)
     // ==========================================
+    /** The payload a client saved with the favourite: always a plain object. */
+    _favouritePayload(raw) {
+        let payload = raw;
+        if (typeof raw === 'string') {
+            try { payload = JSON.parse(raw); } catch { payload = null; }
+        }
+        return payload && typeof payload === 'object' && !Array.isArray(payload) ? payload : {};
+    }
+
+    /**
+     * One stored favourite. The saved payload comes first and the stored
+     * columns last, so a payload can never pose as them (P002 C15, FV-3).
+     */
+    _favouriteFromRow(row) {
+        return {
+            ...this._favouritePayload(row.data),
+            id: row.id,
+            itemId: row.item_id,
+            itemType: row.item_type,
+            createdAt: row.created_at ? new Date(row.created_at).toISOString() : null,
+        };
+    }
+
     async getFavourites(userId) {
         const pool = this._getPool();
         const [rows] = await pool.query(
             'SELECT id, item_id, item_type, data, created_at FROM favourites WHERE user_id = ? ORDER BY created_at DESC',
             [userId]
         );
-        return rows.map(r => {
-            let payload = {};
-            try { payload = r.data && typeof r.data === 'string' ? JSON.parse(r.data) : (r.data || {}); } catch { /* ignore */ }
+        return rows.map(row => this._favouriteFromRow(row));
+    }
+
+    /**
+     * The owner's favourites, each with what it points at: a saved job with its
+     * job row (LEFT JOIN, so a favourite outlives its job), a saved resume or
+     * cover letter with its title while the caller still owns it. One query.
+     * The job's stored state is returned as it is; the route decides how much of
+     * it the caller may see.
+     */
+    async getFavouritesWithItems(userId) {
+        const [rows] = await this._getPool().query(
+            `SELECT f.id, f.item_id, f.item_type, f.data, f.created_at,
+                    j.title AS job_title, j.company_name AS job_company, j.location AS job_location,
+                    j.status AS job_status, j.expires_at AS job_expires_at, j.employer_id AS job_employer_id,
+                    r.title AS resume_title, c.title AS cover_title
+               FROM favourites f
+               LEFT JOIN jobs j ON f.item_type = 'job' AND j.id = f.item_id
+               LEFT JOIN resumes r ON f.item_type = 'resume' AND r.id = f.item_id AND r.user_id = f.user_id
+               LEFT JOIN covers c ON f.item_type IN ('cover', 'coverletter', 'cover-letter', 'cover_letter') AND c.id = f.item_id AND c.user_id = f.user_id
+              WHERE f.user_id = ?
+              ORDER BY f.created_at DESC, f.id DESC`,
+            [userId]
+        );
+        const iso = (value) => {
+            if (!value) return null;
+            const date = new Date(value);
+            return Number.isNaN(date.getTime()) ? null : date.toISOString();
+        };
+        const present = value => value !== null && value !== undefined;
+        return rows.map(row => {
+            // jobs.title, resumes.title and covers.title are NOT NULL, so a null title means no row.
+            const documentTitle = present(row.resume_title) ? row.resume_title : row.cover_title;
             return {
-                id: r.id,
-                itemId: r.item_id,
-                itemType: r.item_type,
-                createdAt: r.created_at ? new Date(r.created_at).toISOString() : null,
-                ...payload,
+                id: row.id,
+                itemId: row.item_id,
+                itemType: row.item_type,
+                createdAt: iso(row.created_at),
+                data: this._favouritePayload(row.data),
+                job: present(row.job_title) ? {
+                    title: row.job_title,
+                    company: row.job_company || '',
+                    location: row.job_location || '',
+                    status: row.job_status || '',
+                    expiresAt: iso(row.job_expires_at),
+                    employerId: row.job_employer_id || '',
+                } : null,
+                document: present(documentTitle) ? { title: documentTitle } : null,
             };
         });
     }
 
+    /**
+     * Saves (or saves again) one favourite. (user_id, item_id) is unique, so a
+     * repeated save updates the payload only; the answer is the stored row, with
+     * its own id and type, not the values of this request.
+     */
     async addFavourite(userId, itemId, itemType = 'resume', data = {}) {
         const pool = this._getPool();
         const id = `fav_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+        const payload = this._favouritePayload(data);
         await pool.query(
             `INSERT INTO favourites (id, user_id, item_id, item_type, data)
              VALUES (?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE data = VALUES(data)`,
-            [id, userId, String(itemId), String(itemType).slice(0, 50), JSON.stringify(data || {})]
+            [id, userId, String(itemId), String(itemType).slice(0, 50), JSON.stringify(payload)]
         );
-        return { id, itemId, itemType, ...data };
+        const [rows] = await pool.query(
+            'SELECT id, item_id, item_type, data, created_at FROM favourites WHERE user_id = ? AND item_id = ? LIMIT 1',
+            [userId, String(itemId)]
+        );
+        return rows.length ? this._favouriteFromRow(rows[0]) : { ...payload, id, itemId: String(itemId), itemType: String(itemType).slice(0, 50) };
     }
 
+    /** Owner-scoped. Resolves true when a favourite was removed, false when there was none. */
     async removeFavourite(userId, itemId) {
         const pool = this._getPool();
-        await pool.query('DELETE FROM favourites WHERE user_id = ? AND item_id = ?', [userId, String(itemId)]);
-        return true;
+        const [result] = await pool.query('DELETE FROM favourites WHERE user_id = ? AND item_id = ?', [userId, String(itemId)]);
+        return Number(result?.affectedRows || 0) > 0;
     }
 
     async isFavourite(userId, itemId) {
