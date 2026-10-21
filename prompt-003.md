@@ -3,10 +3,10 @@
 
 **Document Type:** Mandatory Engineering Operating Directive  
 **Project:** IME365 — Interview Made Easy  
-**Execution Mode:** Autonomous Remote Development (Codex CLI / Cline / Claude Code)  
+**Execution Mode:** Autonomous Remote Development (Codex CLI / Cline / Claude Code / Arena Agent)  
 **Executive Engineering Lead:** Antigravity (Google DeepMind)  
-**Target Baseline Commit:** `1d67bc8052f503ecc81e6aa7c56c52f3b7ee7a3f` (short SHA: `1d67bc80`)  
-**Target Branch:** `main`  
+**Baseline Commit:** `af29c220a2730cf95379ad4b7fb20c32729a6e03` (ancestor: `1d67bc80`)  
+**Assigned Working Branch:** Work directly on your current assigned branch (e.g. `arena/44410862-resumepilotai`) — **DO NOT SWITCH BRANCHES**  
 **Remote Repository:** `git@github.com:bhaskarbeyond-creator/ResumePilotAi.git`  
 **Reference Source (STRICTLY REFERENCE ONLY):** `freellmapi-0.16.6/` (Root directory)  
 **Active Production Subsystem:** `backend/freellmapi/` (Pure CommonJS, zero external daemon)  
@@ -21,7 +21,7 @@
 You are assigned as the **Senior Staff Implementation & Verification Engineer**.
 
 ### 1.1 Core Mission
-The local development suite has completed the architectural migration of the core FreeLLMAPI engine into [`backend/freellmapi/`](file:///d:/xampp/htdocs/IME365/backend/freellmapi/), safely archived the legacy `aiRouting` infrastructure into [`backend/archive/legacy-aiRouting/`](file:///d:/xampp/htdocs/IME365/backend/archive/legacy-aiRouting/), merged Candidate Suite C15 (Saved Favorites), and pushed the synchronized baseline to `origin/main` at commit `1d67bc80`.
+The local development suite has completed the architectural migration of the core FreeLLMAPI engine into [`backend/freellmapi/`](file:///d:/xampp/htdocs/IME365/backend/freellmapi/), safely archived the legacy `aiRouting` infrastructure into [`backend/archive/legacy-aiRouting/`](file:///d:/xampp/htdocs/IME365/backend/archive/legacy-aiRouting/), merged Candidate Suite C15 (Saved Favorites), and pushed the synchronized baseline to `origin/main` at commit `af29c220`.
 
 Your objective is to **autonomously elevate [`backend/freellmapi/`](file:///d:/xampp/htdocs/IME365/backend/freellmapi/) to complete 10/10 feature parity with the reference implementation (`freellmapi-0.16.6/`)**, resolve all architectural gaps identified in the forensic audit, implement real-time Server-Sent Events (SSE) streaming, add prompt compression, expose the standard public `/v1/chat/completions` surface, and prove end-to-end operational excellence with automated Playwright browser tests across 5 viewports.
 
@@ -33,32 +33,32 @@ Your objective is to **autonomously elevate [`backend/freellmapi/`](file:///d:/x
 
 ---
 
-# SECTION 2 — MANDATORY PRE-FLIGHT REPOSITORY VERIFICATION
+# SECTION 2 — BRANCH & REPOSITORY CONTEXT FOR CLOUD DEVELOPERS
 
-Before writing or modifying any code, establish your workspace and verify sync against `origin/main`:
-
+### 2.1 Branch Discipline (STAY ON YOUR CURRENT BRANCH)
+- **Do NOT switch branches or reset to main:** If you are working on an assigned Arena branch (such as `arena/44410862-resumepilotai` or your active workspace branch), **remain strictly on that branch**. Arena governance forbids switching branches or resetting `main`.
+- **Active Commit:** Your branch is already synchronized with commit `af29c220` (which sits directly on top of `1d67bc80` and includes Candidate Suite C15, FreeLLMAPI baseline, and this directive).
+- **Working Tree Check:** Run non-destructive checks to verify your environment:
 ```bash
-git fetch origin
-git checkout main
-git reset --hard 1d67bc80
-git status
-git log -1 --stat
+git status --short
+git branch --show-current
+git log -3 --oneline
 ```
-
-Confirm that the HEAD commit is exactly:
-`1d67bc8052f503ecc81e6aa7c56c52f3b7ee7a3f` (`Merge branch 'origin/arena/994d7b67-resumepilotai' (Candidate Suite: Saved Favorites C15)`).
+Confirm that commit `af29c220` (or `1d67bc80`) is in your history, and proceed with implementation directly on your current branch.
 
 ---
 
 # SECTION 3 — FORENSIC GAPS TO RESOLVE (THE 7 PILLARS OF 10/10 PARITY)
 
 ### 🔴 Pillar 1: Public `POST /v1/chat/completions` HTTP Endpoint
+- **Affected File:** `backend/index.js`
 - **Gap:** Currently, `backend/freellmapi` is only callable internally via Node function calls (`completeChat`). Coding agents (Cursor, Cline, Roo Code, Aider, Python/Node OpenAI SDKs) pointing to `http://localhost/v1/chat/completions` receive `HTTP 404 Not Found`.
 - **Requirement:** 
   1. Mount `app.post('/v1/chat/completions', ...)` in `backend/index.js`.
   2. Accept standard OpenAI request body: `messages`, `model`, `temperature`, `max_tokens`, `stream`, `tools`, `response_format`.
   3. Validate Bearer token (accepting Firebase auth tokens or platform API keys).
-  4. Return standard OpenAI completion response structure:
+  4. Route requests through `freellm.completeChat` (or streaming generator if `stream: true`).
+  5. Return standard OpenAI completion response structure:
      ```json
      {
        "id": "chatcmpl-...",
@@ -71,6 +71,7 @@ Confirm that the HEAD commit is exactly:
      ```
 
 ### 🔴 Pillar 2: Server-Sent Events (SSE) Streaming Generator
+- **Affected Files:** `backend/freellmapi/providers/openaiCompat.js`, `backend/freellmapi/providers/googleGemini.js`, `backend/freellmapi/services/router.js`, `backend/index.js`
 - **Gap:** Both `openaiCompat.js` and `googleGemini.js` execute synchronous `await res.json()`. If a client passes `stream: true`, the engine fails or buffers the entire response.
 - **Requirement:**
   1. Implement streaming async generator inside `backend/freellmapi/providers/openaiCompat.js` and `googleGemini.js` when `stream: true`.
@@ -83,6 +84,7 @@ Confirm that the HEAD commit is exactly:
   3. In `POST /v1/chat/completions` and `POST /v1/messages`, pipe chunks with `res.setHeader('Content-Type', 'text/event-stream')`, `res.setHeader('Cache-Control', 'no-cache')`, and `res.flushHeaders()`.
 
 ### 🔴 Pillar 3: Search & Media Provider Isolation
+- **Affected Files:** `backend/freellmapi/providers/registry.js`, `backend/freellmapi/services/router.js`, `backend/freellmapi/services/search.js` (NEW), `backend/index.js`
 - **Gap:** In `backend/freellmapi/providers/registry.js`, Tavily, Firecrawl, Exa, Linkup, Parallel, and SerpSearch are cataloged with `type: 'search'`, but `router.js` sends them to `callOpenAiCompat`, which issues `POST https://api.tavily.com/chat/completions` and crashes with 404/422.
 - **Requirement:**
   1. Filter out all `type: 'search'` and `type: 'media'` providers from the chat completions cascade in `router.js` (`buildCandidateList`).
@@ -90,22 +92,25 @@ Confirm that the HEAD commit is exactly:
   3. Mount `app.post('/v1/search', ...)` in `backend/index.js` for agent web search tools.
 
 ### 🔴 Pillar 4: Pure-JS Multi-Stage Prompt Compression Pipeline
+- **Affected Files:** `backend/freellmapi/services/compression/` (NEW directory: `index.js`, `jsoncompact.js`, `dedup.js`, `hardBudget.js`), `backend/freellmapi/services/router.js`
 - **Gap:** The reference contains a 9-engine compression pipeline (`server/src/services/compression/`) saving 30–70% of tokens to prevent hitting free-tier TPM/RPM limits. The current system has zero compression.
 - **Requirement:**
   1. Create `backend/freellmapi/services/compression/` in pure CommonJS.
   2. Implement the three most critical compression engines from reference:
      - `jsoncompact.js`: Strips formatting whitespace and unnecessary keys from JSON prompts.
      - `dedup.js`: Deduplicates repeated messages and overlapping context.
-     - `hard-budget.js`: Truncates least-informative history turns when total prompt exceeds model context limits.
+     - `hardBudget.js`: Truncates least-informative history turns when total prompt exceeds model context limits.
   3. Integrate compression into `router.js` prior to dispatching upstream requests.
 
 ### 🔴 Pillar 5: Plaintext Tool-Calling Rescuing & Schema Repair
+- **Affected Files:** `backend/freellmapi/lib/toolRescue.js` (NEW), `backend/freellmapi/services/router.js`
 - **Gap:** Budget free models frequently output function calls as markdown blocks (` ```json {"name": "saveResume"} ````) instead of native `tool_calls`.
 - **Requirement:**
   1. Port `rescueInlineToolCalls` from `freellmapi-0.16.6/server/src/lib/tool-call-rescue.ts` into `backend/freellmapi/lib/toolRescue.js`.
   2. If `tools` were provided in the request and the model returned plaintext containing tool markers or JSON function calls, extract and populate `message.tool_calls` so callers receive valid structured output.
 
 ### 🔴 Pillar 6: Multi-Key Pooling & Rotation per Provider
+- **Affected Files:** `backend/freellmapi/services/router.js`, `backend/services/aiAdmin.js`, `frontend/src/components/admin/AdminAiSettingsTab.tsx`
 - **Gap:** `system_settings` and `router.js` only support a single string key per provider. When a key is rate-limited (HTTP 429), the entire provider goes onto cooldown.
 - **Requirement:**
   1. Support `key: string | string[]` in provider configuration.
@@ -113,6 +118,7 @@ Confirm that the HEAD commit is exactly:
   3. Update Super Admin UI (`AdminAiSettingsTab.tsx`) to support entering multiple comma-separated keys or key chips for high-volume providers (Groq, Cerebras, Gemini).
 
 ### 🔴 Pillar 7: Node 22+ Built-in `node:sqlite` Persistence
+- **Affected Files:** `backend/freellmapi/services/persistence.js` (NEW), `backend/freellmapi/services/cooldown.js`, `backend/freellmapi/services/health.js`
 - **Gap:** Cooldowns and latency records live purely in volatile RAM `new Map()`, wiped out whenever Node restarts.
 - **Requirement:**
   1. Create `backend/freellmapi/services/persistence.js` using Node.js built-in `node:sqlite` (fallback to in-memory Map if `node:sqlite` is unavailable).
@@ -191,6 +197,6 @@ Conclude your implementation with:
 2. **Git Diff Audit:** Summary of files modified and created.
 3. **Test Logs:** Full console output proving all unit, integration, and build gates passed.
 4. **Playwright Evidence Bundle:** Directory of screenshot artifacts proving multi-viewport visual perfection and error-free operation.
-5. **Updated Repository Push:** Pushed to `origin/main` with updated commit SHA and branch ID.
+5. **Updated Repository Push:** Pushed to your working branch with updated commit SHA and branch ID.
 
 **Proceed autonomously with plan formulation, implementation, testing, and evidence certification.**

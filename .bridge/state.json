@@ -1,7 +1,7 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-21T04:37:10.794Z",
-  "eventCount": 4160,
+  "updatedAt": "2026-10-21T11:02:06.099Z",
+  "eventCount": 4191,
   "activeDirectiveId": "DIR-011",
   "activeDirectiveTitle": "DIR-011: Complete Replacement of [AI Multi-Provider Engine] with Native FreeLLMAPI Core & Admin-Only BYOK Governance",
   "activeDirectiveStatus": "CHANGES_REQUESTED",
@@ -10,7 +10,7 @@
   "awaitingHumanSince": null,
   "stallDeadline": "2026-10-18T20:31:44.876Z",
   "unreadForLead": 34,
-  "unreadForDev": 195,
+  "unreadForDev": 226,
   "pendingBlockers": 0,
   "latestHeartbeat": {
     "timestamp": "2026-10-18T20:31:44.876Z",
@@ -19,7 +19,7 @@
   },
   "integrity": {
     "ok": true,
-    "checked": 4160,
+    "checked": 4191,
     "legacy": 0,
     "bad": 0
   }
