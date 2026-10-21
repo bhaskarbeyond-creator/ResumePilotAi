@@ -77,10 +77,18 @@ function accountRateLimit({ namespace, limit, windowMs, failClosed = true }) {
   }
   return async (req, res, next) => {
     if (
-      process.env.NODE_ENV === 'test' ||
+      // The suite-wide bypass: most backend tests issue many requests from one
+      // identity and must not trip a limiter. Tests that assert the limiter's
+      // OWN behaviour opt back in with RATE_LIMIT_ENFORCE=1, otherwise they
+      // would be measuring a middleware that returned early.
+      (process.env.NODE_ENV === 'test' && process.env.RATE_LIMIT_ENFORCE !== '1') ||
       req?.headers?.['x-e2e-test'] === '1' ||
-      String(req?.user?.email || '').toLowerCase().endsWith('.test') ||
-      String(req?.body?.email || '').toLowerCase().endsWith('.test')
+      // Only an AUTHENTICATED test identity may skip throttling. The previous
+      // version also honoured a `.test` address in the request BODY, which made
+      // every public form (contact, password reset, …) exempt from its own
+      // per-source budget: anyone could send unlimited submissions simply by
+      // putting `@example.test` in the email field.
+      String(req?.user?.email || '').toLowerCase().endsWith('.test')
     ) {
       return next();
     }

@@ -1,4 +1,8 @@
 process.env.NODE_ENV = 'test';
+// This file asserts limiter-driven behaviour (per-source throttling on the public
+// contact endpoint), so it opts back INTO the enforcement the suite-wide test
+// bypass normally disables.
+process.env.RATE_LIMIT_ENFORCE = '1';
 process.env.CORS_ALLOWED_ORIGINS = 'https://app.example.com';
 process.env.SMTP_USER = 'mailer@example.com';
 process.env.SMTP_PASS = 'fixture-mail-password';

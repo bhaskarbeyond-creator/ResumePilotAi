@@ -1,4 +1,7 @@
 process.env.NODE_ENV = 'test';
+// This file asserts the limiter's own behaviour, so it opts back INTO the
+// enforcement that the suite-wide test bypass normally disables.
+process.env.RATE_LIMIT_ENFORCE = '1';
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { isPrivateIp, isPrivateV4, assertHttpsUrl, assertPublicNetworkTarget } = require('../security/network');
