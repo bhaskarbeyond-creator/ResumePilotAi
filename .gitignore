@@ -142,3 +142,7 @@ archive_list.txt
 /.bridge/evidence/*-artifacts/
 tests/screenshots/
 
+
+# FreeLLMAPI durable runtime metrics (created on first AI request; never source)
+/data/
+backend/data/
