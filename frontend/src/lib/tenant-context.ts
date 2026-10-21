@@ -66,9 +66,20 @@ export function resolveActiveTenantId(): string | null {
     // sessionStorage (highest priority persistent source)
     if (typeof sessionStorage !== 'undefined') {
       const explicit = sessionStorage.getItem('activeTenantId') || sessionStorage.getItem('selectedTenantId');
-      if (explicit) return explicit;
-      const simulated = sessionStorage.getItem('superadmin_enterprise_tenant');
-      if (simulated) return simulated;
+      if (explicit) {
+        const clean = explicit.trim().toLowerCase();
+        if (clean === 'personal' || clean === 'individual' || clean === 'none') return null;
+        return explicit;
+      }
+      // Only check simulated superadmin enterprise tenant if explicitly on enterprise routes
+      const isEnterpriseRoute = typeof window !== 'undefined' && (
+        window.location?.pathname?.startsWith('/enterprise') ||
+        window.location?.pathname?.startsWith('/admin/enterprise')
+      );
+      if (isEnterpriseRoute) {
+        const simulated = sessionStorage.getItem('superadmin_enterprise_tenant');
+        if (simulated) return simulated;
+      }
       for (let i = 0; i < sessionStorage.length; i++) {
         const key = sessionStorage.key(i);
         if (key?.startsWith('enterprise_context_request:')) {
@@ -81,7 +92,11 @@ export function resolveActiveTenantId(): string | null {
     // localStorage fallback
     if (typeof localStorage !== 'undefined') {
       const explicit = localStorage.getItem('activeTenantId') || localStorage.getItem('selectedTenantId');
-      if (explicit) return explicit;
+      if (explicit) {
+        const clean = explicit.trim().toLowerCase();
+        if (clean === 'personal' || clean === 'individual' || clean === 'none') return null;
+        return explicit;
+      }
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key?.startsWith('enterprise_context_request:')) {
@@ -110,7 +125,7 @@ export async function autoResolveTenantFromError(
     primaryTenantId?: string;
     availableTenants?: Array<{ tenantId?: string }>;
   },
-  getAuthHeader?: () => Promise<string | null>,
+  authHeaderOrGetter?: (() => Promise<string | null>) | string,
 ): Promise<string | null> {
   // Try the hint from the error payload first
   let candidate = errorData?.primaryTenantId
@@ -121,8 +136,8 @@ export async function autoResolveTenantFromError(
   if (!candidate && typeof fetch !== 'undefined') {
     try {
       const headers: Record<string, string> = { 'Accept': 'application/json' };
-      if (getAuthHeader) {
-        const auth = await getAuthHeader();
+      if (authHeaderOrGetter) {
+        const auth = typeof authHeaderOrGetter === 'function' ? await authHeaderOrGetter() : authHeaderOrGetter;
         if (auth) headers['Authorization'] = auth;
       }
       const res = await fetch('/api/enterprise/tenants', {

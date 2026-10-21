@@ -38,10 +38,11 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const request = require('supertest');
 
-const { InMemoryTenantRegistry } = require('./helpers/inMemoryTenantRegistry');
+const { InMemoryTenantRegistry, membershipDocumentId } = require('./helpers/inMemoryTenantRegistry');
 const { InMemoryEnterpriseRepository } = require('./helpers/inMemoryEnterpriseRepository');
 const { TenantService } = require('../enterprise/tenantService');
 const { setTokenVerifierForTests } = require('../security/auth');
+const { stablePrincipalHash } = require('../enterprise/tenantContext');
 const {
   clearProviderConfigurationCache,
   resetSharedAiRouterForTests,
@@ -79,6 +80,7 @@ const aiContract = installAiRouteContract({
       groq: { apiKey: PLATFORM_GROQ_KEY, model: 'llama-3.3-70b-versatile' },
     },
     public_config: { ai: { provider: 'openai', temperature: 0.3, maxTokens: 2000, enableFallback: true } },
+    feature_flags: { ENTERPRISE_TENANCY_ENABLED: true },
   },
 });
 
@@ -89,6 +91,45 @@ function installTestTenantService() {
   activeRegistry = new InMemoryTenantRegistry();
   activeRepository = new InMemoryEnterpriseRepository();
   app.set('tenantService', new TenantService({ registry: activeRegistry, repository: activeRepository }));
+}
+
+function syncAiContractWithTenant(tenantId, principalId, aiPolicy) {
+  // Sync the aiRouteContract mock with the tenant/membership data
+  // This is needed because aiGovernance.js queries the MariaDB pool directly
+  const contract = aiContract;
+
+  // Get the tenant data from the registry
+  const tenant = activeRegistry.tenants.get(tenantId);
+  const membershipKey = membershipDocumentId(tenantId, principalId);
+  const membership = activeRegistry.memberships.get(membershipKey);
+  const config = activeRegistry.configurations.get(tenantId);
+
+  if (tenant && membership) {
+    contract.tenants.set(tenantId, {
+      id: tenant.id,
+      slug: tenant.slug,
+      lifecycleState: tenant.lifecycleState,
+      decommissionedAt: tenant.decommissionedAt,
+      policyVersion: tenant.policyVersion,
+    });
+
+    contract.memberships.set(membershipKey, {
+      tenantId: membership.tenantId,
+      principalId: membership.principalId,
+      workspaceId: membership.workspaceId,
+      status: membership.status,
+      personalTenant: membership.personalTenant || false,
+      updatedAt: membership.updatedAt || new Date().toISOString(),
+    });
+
+    if (config) {
+      contract.tenantConfigs.set(tenantId, {
+        aiPolicy: config.aiPolicy || {},
+        quotaPolicy: config.quotaPolicy || {},
+        revision: config.revision || 1,
+      });
+    }
+  }
 }
 
 async function provisionTenant({ slug, displayName, principalId, aiPolicy }) {
@@ -104,6 +145,10 @@ async function provisionTenant({ slug, displayName, principalId, aiPolicy }) {
     .set('X-Tenant-Id', tenantId)
     .send({ principalId, workspaceId: res.body.workspace.id, roles: ['MEMBER'] });
   await activeRegistry.updateTenantConfiguration({ tenantId, input: { aiPolicy }, expectedRevision: 1 });
+
+  // Sync the aiRouteContract mock for aiGovernance.js
+  syncAiContractWithTenant(tenantId, principalId, aiPolicy);
+
   return tenantId;
 }
 

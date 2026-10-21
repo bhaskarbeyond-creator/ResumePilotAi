@@ -524,6 +524,12 @@ export const enterpriseApi = {
       tenantId,
     }),
 
+  getPlatformStatus: (tenantId: string) =>
+    enterpriseRequest<{ success: boolean; hasDedicatedBYOK: boolean; credentialCount: number; providers: string[] }>('/api/platform/status', {
+      tenantId,
+      params: { tenantId },
+    }),
+
   getServiceAccounts: (tenantId: string) =>
     enterpriseRequest<{ serviceAccounts: EnterpriseServiceAccount[] }>('/api/enterprise/service-accounts', {
       tenantId,

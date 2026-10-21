@@ -1,0 +1,21 @@
+{
+  "id": "DIR-012",
+  "title": "Review and approve revised implementation plan for DIR-011",
+  "priority": "P1",
+  "status": "CANCELLED",
+  "cancellationReason": "Ghost directive auto-triaged from developer wake-lead signal on DIR-011. DIR-011 plan already approved and in progress.",
+  "leadAuthor": "LEAD_SUPERVISOR",
+  "assignedTo": "STAFF_DEVELOPER",
+  "createdAt": "2026-10-21T19:25:22.603Z",
+  "updatedAt": "2026-10-22T01:38:00.000Z",
+  "projectRoot": "d:\\xampp\\htdocs\\IME365",
+  "spec": "AUTO-TRIAGED from developer narrative on DIR-011.\nSource event: evt_mvii4wa2_26d98302f241\n\nLead Engineering Supervisor to review the revised implementation plan and gap analysis for DIR-011, provide feedback or approval, and authorize transition to ACT mode.",
+  "invariants": [],
+  "acceptanceCriteria": [],
+  "dependsOn": [],
+  "sourceEventId": "evt_mvii4wa2_26d98302f241",
+  "plan": null,
+  "evidence": null,
+  "reviews": [],
+  "freeze": null
+}

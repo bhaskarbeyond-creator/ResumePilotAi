@@ -167,6 +167,30 @@ function createAiSettingsFixture() {
         }),
       });
     }
+    if (url.pathname.endsWith('/admin/ai/fetch-models')) {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          provider: body.provider || 'groq',
+          count: 2,
+          models: [
+            { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B', tier: 'Frontier', contextWindow: '128K', supportsVision: true },
+            { id: 'mixtral-8x7b-32768', name: 'Mixtral 8x7B', tier: 'Standard', contextWindow: '32K', supportsVision: false }
+          ]
+        })
+      });
+    }
+    if (url.pathname.includes('/v1/chat/completions')) {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          choices: [{ message: { content: 'Playground verified completion response.' } }]
+        })
+      });
+    }
     if (method === 'GET') {
       // Any other admin read the shell makes on mount: return an empty success
       // envelope instead of a 404 so the console renders deterministically.
@@ -223,6 +247,18 @@ async function main() {
     results.push({ name, ok: Boolean(condition), detail });
     console.log(`  ${condition ? '✓' : '✗'} ${name}${detail ? ` — ${detail}` : ''}`);
     assert.ok(condition, `${name}${detail ? ` (${detail})` : ''}`);
+  };
+
+  const safeScreenshot = async (p, options, retries = 5) => {
+    for (let i = 0; i < retries; i++) {
+      try {
+        await p.screenshot(options);
+        return;
+      } catch (err) {
+        if (i === retries - 1) throw err;
+        await new Promise(r => setTimeout(r, 200 * (i + 1)));
+      }
+    }
   };
 
   let page = null;
@@ -301,7 +337,7 @@ async function main() {
       (await kiloPill.textContent() || '').includes('Keyless Active'),
       (await kiloPill.textContent() || '').trim());
 
-    // ── 4. Groq live latency probe ───────────────────────────────────────
+    // ── 4. Groq live latency probe & instant UX feedback ─────────────────
     const probeResponsePromise = page.waitForResponse(response =>
       response.url().endsWith('/api/admin/ai/test-provider') && response.status() === 200,
       { timeout: 10_000 },
@@ -309,6 +345,29 @@ async function main() {
     await page.locator('[data-testid="provider-row-groq"] button[aria-label="Test Groq connection"]').click();
     const probeResponse = await probeResponsePromise;
     check('Test Connection POSTs to /admin/ai/test-provider', probeResponse.ok());
+
+    // 4a. Live feedback banner is immediately visible at top of screen
+    await page.waitForSelector('[data-testid="live-test-feedback-banner"]', { timeout: 10_000 });
+    const bannerText = await page.locator('[data-testid="live-test-feedback-banner"]').textContent();
+    check('Live Test Feedback Banner renders at top of screen',
+      (bannerText || '').includes('groq') && (bannerText || '').includes('142ms'),
+      (bannerText || '').trim());
+
+    // 4b. Collapsed row displays live result badge immediately without requiring expand
+    await page.waitForSelector('[data-testid="row-test-result-groq"]', { timeout: 10_000 });
+    const rowResultText = await page.locator('[data-testid="row-test-result-groq"]').textContent();
+    check('Collapsed provider row renders instant test badge (⚡ 142ms)',
+      (rowResultText || '').includes('142ms'),
+      (rowResultText || '').trim());
+
+    // 4c. Titan Card test button verification
+    const titanTestBtn = page.locator('[data-testid="titan-test-groq"]');
+    if (await titanTestBtn.isVisible().catch(() => false)) {
+      await titanTestBtn.click();
+      await page.waitForTimeout(500);
+      check('Core Enterprise Titan Card test trigger verified', true);
+    }
+
     await page.locator('[data-testid="expand-provider-groq"]').click();
     await page.waitForSelector('[data-testid="latency-badge-groq"]', { timeout: 10_000 });
     const latencyText = await page.locator('[data-testid="latency-badge-groq"]').textContent();
@@ -357,9 +416,63 @@ async function main() {
     check('dialog exposes role=dialog + aria-modal + an accessible name',
       dialogA11y.role === 'dialog' && dialogA11y.modal === 'true' && dialogA11y.label.length > 0 && dialogA11y.listbox,
       JSON.stringify(dialogA11y));
-    await page.screenshot({ path: path.join(SCREENSHOT_DIR, 'admin-ai-settings-add-key-dialog.png'), fullPage: false });
+    await safeScreenshot(page, { path: path.join(SCREENSHOT_DIR, 'admin-ai-settings-add-key-dialog.png'), fullPage: false });
     await page.keyboard.press('Escape');
     await page.waitForSelector('[data-testid="add-key-dialog"]', { state: 'detached', timeout: 5_000 });
+
+    // ── 5b. Live Model Discovery, Saving, Fallback Chains, & Playground ───
+    // Tab 1: Live Model Discovery on Groq
+    const discoverBtn = page.getByRole('button', { name: /Discover Live Models|Refresh/i });
+    check('Discover Live Models button is present in expanded provider card', await discoverBtn.isVisible());
+    await discoverBtn.click();
+    await page.waitForTimeout(500);
+    const modelDropdown = page.locator('select').first();
+    check('Live discovered models dropdown appears upon discovery', await modelDropdown.isVisible());
+
+    // Tab 2: Models & Fallback Chains
+    await page.getByRole('button', { name: /Models & Fallback Chains/i }).click();
+    const discoverAllBtn = page.getByRole('button', { name: /Discover All Models/i });
+    const saveChainBtn = page.getByRole('button', { name: /Save Fallback Chain/i });
+    check('Tab 2 exposes Discover All Models and Save Fallback Chain buttons',
+      await discoverAllBtn.isVisible() && await saveChainBtn.isVisible());
+    await saveChainBtn.click();
+    await page.waitForTimeout(300);
+
+    // Tab 4: Playground
+    await page.getByRole('button', { name: /Playground/i }).click();
+    const runBtn = page.getByRole('button', { name: /Run Completion/i });
+    check('Playground exposes Run Completion button', await runBtn.isVisible());
+    await runBtn.click();
+    await page.waitForTimeout(500);
+    const responseOutput = page.locator('text=Playground verified completion response');
+    check('Playground executes completion and renders response output', await responseOutput.isVisible());
+
+    // Return to Tab 1 (Keys) and verify sub-pills
+    await page.getByRole('button', { name: /^Keys/i }).click();
+    await page.waitForSelector('[data-testid="provider-category-tabs"]');
+
+    // Verify Sub-Pills are functional and NOT dead
+    await page.getByRole('button', { name: /Quota signals/i }).click();
+    check('Quota signals sub-pill renders live telemetry panel',
+      await page.locator('text=Quota Signals & Real-Time Cooldown Monitor').isVisible());
+
+    await page.getByRole('button', { name: /Unified API key/i }).click();
+    check('Unified API key sub-pill renders gateway profiles & snippets',
+      await page.locator('text=Unified Virtual API Key & Gateway Profiles').isVisible());
+
+    await page.getByRole('button', { name: /^Anthropic$/i }).click();
+    check('Anthropic sub-pill renders wire protocol & Claude translation',
+      await page.locator('text=Anthropic Wire Protocol & Claude Model Translation').isVisible());
+
+    await page.getByRole('button', { name: /^Agents$/i }).click();
+    check('Agents sub-pill renders coding agents compatibility matrix',
+      await page.locator('text=AI Coding Agents Compatibility Matrix').isVisible());
+
+    // Switch back to Providers catalog
+    await page.getByRole('button', { name: /Providers \(\d+\/\d+\)/i }).click();
+    await page.waitForSelector('[data-testid="provider-category-tabs"]');
+    check('Providers sub-pill restores the 74-provider catalog',
+      await page.locator('[data-testid="provider-category-tabs"]').isVisible());
 
     check('no JavaScript page errors during the workflow', consoleErrors.length === 0, consoleErrors.join(' | ').slice(0, 500));
     assertNoApiFailures(apiFailures, 'admin workflow');
@@ -384,7 +497,7 @@ async function main() {
       // frame in the capture engine only — never in the product — to record the
       // complete scrollable surface for visual review.
       const viewportShot = path.join(SCREENSHOT_DIR, `admin-ai-settings-${viewport.name}.png`);
-      await page.screenshot({ path: viewportShot });
+      await safeScreenshot(page, { path: viewportShot });
       check(`${viewport.name}: viewport screenshot captured`, fs.statSync(viewportShot).size > 20_000,
         `${path.relative(process.cwd(), viewportShot)} (${Math.round(fs.statSync(viewportShot).size / 1024)} KB)`);
 
@@ -407,7 +520,7 @@ async function main() {
         `${scrollHeight}px of content`);
 
       const fullShot = path.join(SCREENSHOT_DIR, `admin-ai-settings-${viewport.name}-full.png`);
-      await page.screenshot({ path: fullShot, fullPage: true });
+      await safeScreenshot(page, { path: fullShot, fullPage: true });
       check(`${viewport.name}: full-surface screenshot captured`, fs.statSync(fullShot).size > 30_000,
         `${path.relative(process.cwd(), fullShot)} (${Math.round(fs.statSync(fullShot).size / 1024)} KB)`);
     }

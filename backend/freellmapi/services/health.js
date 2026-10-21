@@ -54,7 +54,7 @@ async function probeProviderConnection({
     if (meta?.type === 'google' || providerId === 'gemini') {
       result = await callGoogleGemini({
         baseUrl: targetBaseUrl || 'https://generativelanguage.googleapis.com/v1beta',
-        apiKey,
+        apiKey: effectiveKey,
         model: targetModel,
         messages: testMessages,
         maxTokens: 10,
@@ -65,7 +65,7 @@ async function probeProviderConnection({
     } else {
       result = await callOpenAiCompat({
         baseUrl: targetBaseUrl,
-        apiKey,
+        apiKey: effectiveKey,
         model: targetModel,
         messages: testMessages,
         maxTokens: 10,

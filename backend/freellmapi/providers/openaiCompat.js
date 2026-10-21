@@ -237,8 +237,18 @@ async function callOpenAiCompat({
   });
 
   const controller = new AbortController();
-  const effectiveSignal = signal || controller.signal;
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const onAbort = () => controller.abort(signal?.reason);
+  if (signal) {
+    if (signal.aborted) {
+      controller.abort(signal.reason);
+    } else {
+      signal.addEventListener('abort', onAbort, { once: true });
+    }
+  }
+  const timer = setTimeout(() => {
+    controller.abort(new Error(`Timeout of ${timeoutMs}ms exceeded`));
+  }, timeoutMs);
+  const effectiveSignal = controller.signal;
 
   const startTime = Date.now();
   try {
@@ -315,6 +325,9 @@ async function callOpenAiCompat({
       throw err;
     }
     throw error;
+  } finally {
+    clearTimeout(timer);
+    if (signal) signal.removeEventListener('abort', onAbort);
   }
 }
 
@@ -356,8 +369,18 @@ async function* streamOpenAiCompat({
   });
 
   const controller = new AbortController();
-  const effectiveSignal = signal || controller.signal;
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const onAbort = () => controller.abort(signal?.reason);
+  if (signal) {
+    if (signal.aborted) {
+      controller.abort(signal.reason);
+    } else {
+      signal.addEventListener('abort', onAbort, { once: true });
+    }
+  }
+  const timer = setTimeout(() => {
+    controller.abort(new Error(`Timeout of ${timeoutMs}ms exceeded`));
+  }, timeoutMs);
+  const effectiveSignal = controller.signal;
 
   try {
     const res = await fetchImpl(url, {
@@ -499,6 +522,7 @@ async function* streamOpenAiCompat({
     throw error;
   } finally {
     clearTimeout(timer);
+    if (signal) signal.removeEventListener('abort', onAbort);
   }
 }
 

@@ -1,25 +1,25 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-21T11:02:06.099Z",
-  "eventCount": 4191,
+  "updatedAt": "2026-10-21T21:41:20.636Z",
+  "eventCount": 4264,
   "activeDirectiveId": "DIR-011",
   "activeDirectiveTitle": "DIR-011: Complete Replacement of [AI Multi-Provider Engine] with Native FreeLLMAPI Core & Admin-Only BYOK Governance",
-  "activeDirectiveStatus": "CHANGES_REQUESTED",
+  "activeDirectiveStatus": "IN_PROGRESS",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
-  "stallDeadline": "2026-10-18T20:31:44.876Z",
-  "unreadForLead": 34,
-  "unreadForDev": 226,
+  "stallDeadline": "2026-10-21T20:53:35.196Z",
+  "unreadForLead": 45,
+  "unreadForDev": 288,
   "pendingBlockers": 0,
   "latestHeartbeat": {
-    "timestamp": "2026-10-18T20:31:44.876Z",
-    "status": "Starting Phase 1: Creating 11 missing enterprise sub-components from src/enterprise/components/ to frontend/src/components/enterprise/",
-    "percent": 5
+    "timestamp": "2026-10-21T20:53:35.196Z",
+    "status": "Step 2: Deep Link & URL State Hardening - Implementing 5 subtabs with filter deep links",
+    "percent": 20
   },
   "integrity": {
     "ok": true,
-    "checked": 4191,
+    "checked": 4264,
     "legacy": 0,
     "bad": 0
   }

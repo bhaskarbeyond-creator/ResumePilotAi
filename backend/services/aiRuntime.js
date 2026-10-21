@@ -6,9 +6,9 @@ const {
     summaryEvidenceLength,
 } = require('./candidateContext');
 
-// Provider/model orchestration lives in ./aiRouting. This module keeps the
+// Provider/model orchestration lives in ./aiGateway/compat. This module keeps the
 // legacy runtime API (prompts, parsing, safe fallbacks) and delegates model
-// selection + execution to the dynamic router.
+// selection + execution to the FreeLLMAPI native router.
 const {
     getAdapter,
     listAdapterIds,
@@ -19,7 +19,9 @@ const {
     deriveRequirementProfile,
     selectModels,
     classifyProviderError,
-} = require('./aiRouting');
+    classifyThrownError,
+    RETRYABLE_CLASSES,
+} = require('./aiGateway/compat/aiRoutingCompat');
 
 const PROVIDERS = Object.freeze(['nvidia', 'gemini', 'openai', 'groq', 'openrouter', 'deepseek']);
 // Configuration SEEDS only: used when the operator/tenant has not configured a
@@ -1649,6 +1651,21 @@ async function loadProviderConfiguration(environment = process.env) {
             enabled: effectiveAi[ENABLE_FIELDS[provider]] !== false && Boolean(key),
         };
     }
+    // Also include verified keyless mesh providers as safety fallbacks
+    try {
+        const { PROVIDER_REGISTRY } = require('../freellmapi/providers/registry');
+        for (const [id, meta] of Object.entries(PROVIDER_REGISTRY)) {
+            if (meta?.keyless && !providers[id] && providerSecrets[id]?.enabled !== false) {
+                providers[id] = {
+                    key: 'keyless',
+                    model: meta.defaultModel || 'default',
+                    baseUrl: meta.baseUrl || '',
+                    enabled: true,
+                    keyless: true,
+                };
+            }
+        }
+    } catch { /* best-effort keyless mesh */ }
     const configuration = {
         primary: PROVIDERS.includes(effectiveAi.provider) ? effectiveAi.provider : (providers.nvidia?.enabled ? 'nvidia' : 'gemini'),
         enableFallback: effectiveAi.enableFallback !== false,
@@ -1735,7 +1752,7 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
     }
 
     try {
-        const freellm = require('../freellmapi');
+        const freellm = require('./aiGateway');
         const isJson = CONTENT_OPERATIONS.has(operation) || operation === 'parse-resume';
         const result = await freellm.completeChat({
             prompt,
@@ -1771,10 +1788,23 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
         };
     } catch (freellmErr) {
         if (freellmErr.code === 'ALL_PROVIDERS_FAILED') {
+            // Transform FreeLLMAPI fallback structure to match legacy contract expected by tests
+            const transformedFailures = (freellmErr.fallbacksAttempted || []).map(f => ({
+                provider: f.provider,
+                model: f.model,
+                message: f.error,
+                code: f.code,
+                status: f.status,
+                latencyMs: f.latencyMs,
+            }));
             throw Object.assign(new Error(freellmErr.message), {
                 code: 'AI_PROVIDER_ERROR',
                 status: 502,
-                failures: freellmErr.fallbacksAttempted,
+                failures: transformedFailures,
+                routing: {
+                    attempts: transformedFailures.length,
+                    fallbacksAttempted: transformedFailures,
+                },
             });
         }
         if (freellmErr.code === 'AI_PROVIDER_UNAVAILABLE' || freellmErr.status === 503) {

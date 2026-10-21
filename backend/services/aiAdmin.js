@@ -100,7 +100,13 @@ function secretPatch(input = {}, existing = {}, legacy = {}) {
     // clearSecrets flag removes it; this prevents a reload/save from erasing a
     // working provider while still giving operators a deliberate revocation path.
     const finalKey = explicitlyCleared ? '' : ((!isMasked && rawKey) ? rawKey : existingKey);
-    const model = String(input[MODEL_FIELDS[provider]] || '').trim();
+    const model = String(
+      input[MODEL_FIELDS[provider]] ||
+      input[`${provider}Model`] ||
+      input[provider]?.model ||
+      ((input.provider === provider || input.providerId === provider) ? input.model : '') ||
+      ''
+    ).trim();
     // Optional operator endpoint override (self-hosted / private AI gateway).
     // Blank preserves the existing value; 'none' clears it.
     const rawBaseUrl = String(input[`${provider}BaseUrl`] || '').trim();
@@ -151,7 +157,12 @@ function secretPatch(input = {}, existing = {}, legacy = {}) {
       }
     }
     const finalKey = explicitlyCleared ? '' : ((!isMasked && rawKey) ? rawKey : existingKey);
-    const model = String(input[`${pId}Model`] || input[pId]?.model || '').trim();
+    const model = String(
+      input[`${pId}Model`] ||
+      input[pId]?.model ||
+      ((input.provider === pId || input.providerId === pId) ? input.model : '') ||
+      ''
+    ).trim();
     const isExplicitlyActivated = input[`enable${pId.charAt(0).toUpperCase() + pId.slice(1)}`] === true || input[pId]?.enabled === true || rawKey === 'keyless';
     const nextPool = explicitlyCleared ? [] : (pool.length > 0 ? pool : (finalKey ? [finalKey] : existingPool));
     if (nextPool.length > 0 || existing[pId] || explicitlyCleared || (isKeyless && isExplicitlyActivated)) {
@@ -282,7 +293,7 @@ async function loadAiAdminSettings(environment = process.env) {
           : legacyKey.length > 0 ? 'mariadb-legacy-setting' : (meta.keyless ? 'keyless' : 'none'),
       docUrl: meta.docUrl || '',
       baseUrl: meta.baseUrl || '',
-      defaultModel: meta.defaultModel || '',
+      defaultModel: providerSecrets[meta.id]?.model || publicAi[MODEL_FIELDS[meta.id]] || legacyAi[MODEL_FIELDS[meta.id]] || meta.defaultModel || '',
       recommendedModels: meta.recommendedModels || [meta.defaultModel || 'default'],
       intelligenceScore: meta.intelligenceScore || 85,
       speedScore: meta.speedScore || 85,
@@ -357,8 +368,11 @@ async function saveAiAdminSettings({ input, expectedRevision = 0, actorUid, requ
     const currentRevision = Math.max(
       Number(currentPublic.aiRevision || 0), Number(currentSecrets._revision || 0),
     );
-    if (expectedRevision !== undefined && Number(expectedRevision) !== currentRevision) {
-      throw errorWith('AI_SETTINGS_CONFLICT', 'AI settings changed after this panel loaded. Refresh before saving.', 409);
+    const isBypass = expectedRevision === undefined || expectedRevision === null || expectedRevision === -1 || input.force === true;
+    if (!isBypass && Number(expectedRevision) !== currentRevision) {
+      const conflictErr = errorWith('AI_SETTINGS_CONFLICT', 'AI settings changed after this panel loaded. Refresh before saving.', 409);
+      conflictErr.currentRevision = currentRevision;
+      throw conflictErr;
     }
     const providerPatch = secretPatch(input, currentSecrets, legacyAi);
     const clearSecrets = input.clearSecrets && typeof input.clearSecrets === 'object' ? input.clearSecrets : {};
@@ -460,10 +474,12 @@ async function testAiProvider({ environment = process.env, provider, model, apiK
   if (!key) throw errorWith('AI_PROVIDER_NOT_CONFIGURED', `${normProvider} has no server-side credential configured.`, 400);
   if (!modelPattern.test(selectedModel)) throw errorWith('AI_SETTINGS_VALIDATION_ERROR', `Invalid ${normProvider} model.`, 400);
   try {
+    const startTime = Date.now();
     const outputResult = await requestProvider(normProvider, { ...base, key, model: selectedModel }, 'Reply with exactly OK.', { temperature: 0, maxTokens: 10 }, { fetchImpl, timeoutMs });
     const output = typeof outputResult === 'string' ? outputResult : outputResult?.content;
     if (!String(output || '').trim()) throw errorWith('AI_PROVIDER_UNAVAILABLE', `${normProvider} returned an empty response.`, 503);
-    return { provider: normProvider, model: selectedModel, message: `${normProvider} provider connection verified.` };
+    const latencyMs = Math.max(1, Date.now() - startTime);
+    return { provider: normProvider, model: selectedModel, latencyMs, message: `${normProvider} provider connection verified (${latencyMs}ms).` };
   } catch (error) {
     if (error.code && error.status) throw error;
     if (error.name === 'AbortError' || /timeout/i.test(error.message || '')) throw errorWith('AI_PROVIDER_TIMEOUT', `${normProvider} provider timed out (${timeoutMs}ms).`, 504);
@@ -515,14 +531,15 @@ async function fetchProviderModels({ environment = process.env, provider, apiKey
       fetchImpl,
       timeoutMs,
     });
-    if (discovery && Array.isArray(discovery.models) && discovery.models.length > 0) {
-      const models = discovery.models.map(m => ({
+    const rawList = Array.isArray(discovery) ? discovery : (discovery?.models || []);
+    if (rawList.length > 0) {
+      const models = rawList.map(m => ({
         id: m.id,
         name: m.name || m.id,
-        tier: m.tier,
-        contextWindow: m.contextWindow,
-        supportsVision: m.supportsVision,
-        pricing: m.pricing,
+        tier: m.intelligenceTier || m.tier || 'Frontier',
+        contextWindow: m.contextWindow || '128K',
+        supportsVision: Boolean(m.vision || m.supportsVision),
+        pricing: m.pricing || null,
       })).sort((a, b) => a.id.localeCompare(b.id));
       return { provider: normProvider, count: models.length, models };
     }

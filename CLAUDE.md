@@ -105,6 +105,18 @@ If a required tool, external service, test dependency, browser, or approval mech
 
 A successful build is not proof of functional correctness. Passing unit tests is not proof of end-to-end correctness. A completed directive is not proof of production readiness.
 
+### 2.8 Single Source of Truth & Zero Code Duplication (Anti-Cloning Mandate)
+
+Before porting, creating, or implementing any module requested by a directive, verify if an equivalent or identical implementation already exists in the workspace. If an equivalent module already exists (e.g. `backend/freellmapi/`), NEVER copy, clone, or duplicate those files into another directory. Instead, expose a clean, minimal re-export adapter (e.g. `module.exports = require('../../freellmapi');`). Duplicating files that contain in-memory state, caches, cooldown timers, or singletons creates split-brain state corruption, breaks tests, and is strictly prohibited.
+
+### 2.9 Post-Verification Clean Archival Protocol (Zero Dead or Legacy Code in Production)
+
+Production source trees must remain lean, pristine, and single-source-of-truth. Never leave deprecated, dead, or duplicate legacy implementations active alongside new replacement modules in production paths:
+1. **Verification Before Deprecation**: Ensure all replacement modules are fully implemented and verified with 100% passing tests across all quality layers (tsc, build, unit, integration, and Playwright DOM crawls).
+2. **Clean Archival**: Once verified, safely move deprecated modules (e.g. `backend/services/aiRouting/` or legacy provider form components) out of the active production tree into `backend/archive/<module-name>-deprecated/`.
+3. **Archival Manifest**: Every archived directory must include an `ARCHIVE_MANIFEST.json` documenting the deprecation date, replacing module path, git commit hash, and migration notes.
+4. **Zero Dead Code in Production**: Production bundles must never ship unreachable, obsolete, or duplicate legacy engines. All imports across all consumers (Resume Builder, Interview Coach, Admin, Enterprise) must point exclusively to the canonical replacement.
+
 ---
 
 # 3. MANDATORY BRIDGE DIRECTIVE LIFECYCLE

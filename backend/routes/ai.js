@@ -148,7 +148,12 @@ async function resolveEffectiveAiConfiguration(req, res) {
     // one serial DB hop from the critical path of every tenant AI request.
     const baseConfigPromise = loadProviderConfiguration();
     const requestedTenantId = req?.get?.('x-tenant-id') || req?.body?.tenantId || req?.query?.tenantId;
-    if (!requestedTenantId) {
+    const reqStr = String(requestedTenantId || '').trim().toLowerCase();
+    const isPersonalScope = reqStr === 'personal' || reqStr === 'individual' || reqStr === 'none'
+        || req?.aiGovernance?.quota?.scope === 'INDIVIDUAL'
+        || (req?.aiGovernance && !req?.aiGovernance?.tenant);
+
+    if (!requestedTenantId || isPersonalScope) {
         return {
             configuration: await baseConfigPromise,
             tenantContext: null,

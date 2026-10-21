@@ -13,6 +13,7 @@ const {
   normalizeCurrencyCode,
   formatCurrencyAmount,
 } = require('../services/platformCurrency');
+const { createEncryptionProvider } = require('../enterprise/encryptionProvider');
 const { getGlobalAiDashboardData } = require('../services/adminAiEntitlement');
 const { getPool } = require('../database/mysql');
 const { resolveAssignableWorkspace } = require('../enterprise/workspaceResolution');
@@ -393,15 +394,29 @@ router.patch('/platform/tenants/:tenantId/ai-policy', requirePermission('system.
   try {
     const tenantId = assertTenantId(req.params.tenantId);
     const revision = expectedRevision(req.body);
-    if (req.body?.customProviderKeys && Object.keys(req.body.customProviderKeys).length) {
-      throw Object.assign(
-        new Error('Dedicated tenant provider credentials are unavailable until the encrypted credential adapter is configured.'),
-        { code: 'TENANT_PROVIDER_CREDENTIALS_UNSUPPORTED', status: 501 }
-      );
-    }
     const service = requireTenantService(req);
-    const current = await service.registry.getTenantConfiguration(tenantId);
-    const configuration = await service.registry.updateTenantConfiguration({
+    const registry = service.registry;
+    const current = await registry.getTenantConfiguration(tenantId);
+
+    // Persist BYOK credentials via the AES-256-GCM encrypted credential store.
+    // customProviderKeys is intentionally NOT stored in the aiPolicy — it lives
+    // only in the encrypted enterprise_tenant_credentials table. When present,
+    // we delegate to setTenantCredentials/deleteTenantCredentials per provider.
+    const customProviderKeys = (req.body && typeof req.body.customProviderKeys === 'object' && req.body.customProviderKeys) || {};
+    const credentialResults = [];
+    for (const [providerId, value] of Object.entries(customProviderKeys)) {
+      if (value === null || value === undefined || (typeof value === 'string' && value.trim() === '')) {
+        // Empty/null value => delete the stored credential (clear BYOK key)
+        await registry.deleteTenantCredentials({ tenantId, providerId });
+        credentialResults.push({ providerId, action: 'deleted' });
+      } else {
+        const credentials = typeof value === 'object' ? value : { apiKey: String(value) };
+        await registry.setTenantCredentials({ tenantId, providerId, credentials });
+        credentialResults.push({ providerId, action: 'stored' });
+      }
+    }
+
+    const configuration = await registry.updateTenantConfiguration({
       tenantId,
       expectedRevision: revision,
       input: {
@@ -420,10 +435,129 @@ router.patch('/platform/tenants/:tenantId/ai-policy', requirePermission('system.
       success: true,
       message: 'Tenant AI policy updated.',
       aiPolicy: { ...configuration.aiPolicy, dailyLimit: configuration.quotaPolicy.aiRequestsPerDay, customProviderKeys: {} },
+      credentials: credentialResults,
       revision: configuration.revision,
     });
   } catch (error) {
     return sendTenantError(res, error, 'AI_POLICY_UPDATE_FAILED', 'Tenant AI policy could not be updated.');
+  }
+});
+
+/**
+ * POST /api/platform/tenants/:tenantId/ai-keys/test
+ * Test tenant BYOK credentials against the provider's live API.
+ * Super Admin only - requires system.config.write + recent admin auth.
+ */
+router.post('/platform/tenants/:tenantId/ai-keys/test', requirePermission('system.config.write'), requireRecentAdminAuthentication, async (req, res) => {
+  try {
+    const tenantId = assertTenantId(req.params.tenantId);
+    const { providerId, model } = req.body || {};
+
+    if (!providerId || typeof providerId !== 'string') {
+      return res.status(400).json({ success: false, code: 'PROVIDER_ID_REQUIRED', error: 'providerId is required.' });
+    }
+
+    const service = requireTenantService(req);
+    const registry = service.registry;
+
+    // Check if tenant has credentials for this provider
+    const credentials = await registry.getTenantCredentials({ tenantId, providerId });
+    if (!credentials) {
+      return res.status(404).json({ success: false, code: 'CREDENTIALS_NOT_FOUND', error: 'No credentials found for this provider.' });
+    }
+
+    // Test the credentials using FreeLLMAPI health probe
+    const { probeProviderConnection } = require('../freellmapi/services/health');
+    const providerMeta = require('../freellmapi/providers/registry').getProviderMeta(providerId);
+    const targetModel = model || providerMeta?.defaultModel;
+
+    const start = Date.now();
+    let success = false;
+    let latencyMs = null;
+    let errorCode = null;
+    let errorMessage = null;
+    let modelTested = targetModel;
+
+    try {
+      const result = await probeProviderConnection({
+        providerId,
+        apiKey: credentials.apiKey || credentials.key,
+        baseUrl: credentials.baseUrl,
+        model: targetModel,
+      });
+      success = result.ok === true;
+      latencyMs = result.latencyMs || (Date.now() - start);
+      if (!success) {
+        errorCode = result.code || 'TEST_FAILED';
+        errorMessage = result.error || 'Provider test failed';
+      }
+      modelTested = result.model || targetModel;
+    } catch (err) {
+      latencyMs = Date.now() - start;
+      success = false;
+      errorCode = err.code || 'TEST_ERROR';
+      errorMessage = err.message || 'Provider test encountered an error';
+    }
+
+    // Record test result in database
+    const pool = getPool();
+    await pool.query(
+      `INSERT INTO enterprise_tenant_credential_tests (tenantId, providerId, testedAt, testedBy, success, latencyMs, errorCode, errorMessage, modelTested)
+       VALUES (?, ?, NOW(6), ?, ?, ?, ?, ?, ?)`,
+      [tenantId, providerId, req.user.uid, success, latencyMs, errorCode, errorMessage, modelTested]
+    );
+
+    return res.json({
+      success,
+      latencyMs,
+      errorCode,
+      errorMessage,
+      modelTested,
+      testedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('[Admin tenant AI key test]', { code: error.code, requestId: res.locals.requestId });
+    return res.status(error.status || 503).json({
+      success: false,
+      code: error.code || 'AI_KEY_TEST_FAILED',
+      error: 'AI key test is unavailable.',
+      requestId: res.locals.requestId,
+    });
+  }
+});
+
+/**
+ * GET /api/platform/status
+ * Returns platform-wide AI status for a tenant (dedicated BYOK vs shared gateway).
+ * Super Admin only - requires system.config.read.
+ */
+router.get('/platform/status', requirePermission('system.config.read'), requireRecentAdminAuthentication, async (req, res) => {
+  try {
+    const tenantId = req.query.tenantId;
+    if (!tenantId || typeof tenantId !== 'string') {
+      return res.status(400).json({ success: false, code: 'TENANT_ID_REQUIRED', error: 'tenantId query parameter is required.' });
+    }
+
+    const service = requireTenantService(req);
+    const registry = service.registry;
+
+    const credentials = await registry.listTenantCredentialProviders({ tenantId });
+    const hasDedicatedBYOK = credentials.length > 0;
+
+    return res.json({
+      success: true,
+      hasDedicatedBYOK,
+      credentialCount: credentials.length,
+      providers: credentials.map(c => c.providerId),
+    });
+  } catch (error) {
+    console.error('[Admin platform AI status]', { code: error.code, requestId: res.locals.requestId });
+    return res.status(error.status || 503).json({
+      success: false,
+      code: error.code || 'PLATFORM_STATUS_FAILED',
+      error: 'Platform status is unavailable.',
+      requestId: res.locals.requestId,
+    });
   }
 });
 

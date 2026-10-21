@@ -173,10 +173,15 @@ export function AdminConsolePage() {
 
   // Resolve active tab from URL path segment (/admin/:tab) or query param (?tab=...)
   const resolveTab = useCallback((): AdminTabId => {
-    // 1. Check ?tab= query parameter
-    const tabFromQuery = searchParams.get('tab') as AdminTabId;
-    if (tabFromQuery && allowedTabs.includes(tabFromQuery)) {
-      return tabFromQuery;
+    // 1. Check ?tab= query parameter with alias handling
+    const rawQueryTab = (searchParams.get('tab') || '').toLowerCase().trim();
+    if (rawQueryTab) {
+      if (['ai', 'aisettings', 'ai-settings', 'ai_settings', 'aimodels'].includes(rawQueryTab)) {
+        if (allowedTabs.includes('ai-settings')) return 'ai-settings';
+      }
+      if (allowedTabs.includes(rawQueryTab as AdminTabId)) {
+        return rawQueryTab as AdminTabId;
+      }
     }
 
     // 2. Check path segment (/admin/:section)
@@ -192,6 +197,7 @@ export function AdminConsolePage() {
       else if (section === 'settings') mappedTab = 'settings';
       else if (section === 'modules' || section === 'addon-modules') mappedTab = 'modules';
       else if (section === 'command-center' || section === 'dashboard') mappedTab = 'dashboard';
+      else if (['ai', 'ai-settings', 'aisettings', 'ai_settings'].includes(section)) mappedTab = 'ai-settings';
       else if (VALID_TABS.includes(section as AdminTabId)) {
         mappedTab = section as AdminTabId;
       }

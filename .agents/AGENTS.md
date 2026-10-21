@@ -401,6 +401,14 @@ Therefore:
 >
 > **Done = Requirement + Correctness + Verification + Evidence + Regression Safety.**
 
+## 4.1 Zero Dead Code, Single Source of Truth & Clean Archival Protocol
+
+Production source trees must remain lean, pristine, and single-source-of-truth. Never leave deprecated, duplicate, or dead code active in production paths:
+1. **Single Source of Truth**: Modules with in-memory state, caches, cooldowns, or singletons must exist in exactly ONE canonical path. Never duplicate code. Expose clean re-export facades if alternative namespace access is required.
+2. **Post-Verification Archival**: Once a replacement module or subsystem is fully implemented, verified, and all quality gates pass (Layer 1–5 gates: tsc, build, unit, integration, Playwright DOM crawls), deprecated legacy modules (e.g. `backend/services/aiRouting/` or legacy provider form components) must be safely moved out of the active production tree into `backend/archive/<module-name>-deprecated/`.
+3. **Archival Manifest**: Every archived directory must include an `ARCHIVE_MANIFEST.json` documenting the deprecation timestamp, replacing canonical path, git commit hash, and migration notes.
+4. **No Legacy Ghosts in Production Bundles**: Production builds must never package, import, or execute unreachable, obsolete, or duplicate legacy code. All dependent consumers across the application must point exclusively to the canonical replacement.
+
 ---
 
 # 5. PROJECT-SPECIFIC SECURITY INVARIANTS

@@ -69,7 +69,7 @@ async function loadApplicableTenantMembership(uid, requestedTenantId, { allowAmb
     const [rows] = await pool().query(
         `SELECT m.tenantId, m.workspaceId, m.status AS membershipStatus, m.personalTenant,
                 m.updated_at AS membershipUpdatedAt,
-                t.lifecycleState, t.decommissionedAt, t.policyVersion,
+                t.slug, t.lifecycleState, t.decommissionedAt, t.policyVersion,
                 c.aiPolicy, c.quotaPolicy, c.revision AS configRevision
            FROM enterprise_memberships m
            JOIN enterprise_tenants t ON t.id = m.tenantId
@@ -79,8 +79,27 @@ async function loadApplicableTenantMembership(uid, requestedTenantId, { allowAmb
         [uid],
     );
 
+    // If an explicit tenant is requested, check if it's the user's personal workspace
+    if (requestedTenantId) {
+        const reqStr = String(requestedTenantId).trim().toLowerCase();
+        if (reqStr === 'personal' || reqStr === 'individual' || reqStr === 'none') {
+            return { membership: null, reason: 'PERSONAL_WORKSPACE_SELECTED', isPersonal: true };
+        }
+        const personalRow = rows.find(r =>
+            (r.personalTenant === 1 || r.personalTenant === true)
+            && (String(r.tenantId).toLowerCase() === reqStr || (r.slug && String(r.slug).toLowerCase() === reqStr))
+        );
+        if (personalRow) {
+            return { membership: null, reason: 'PERSONAL_WORKSPACE_SELECTED', isPersonal: true };
+        }
+    }
+
     const organizational = rows.filter(row => row.personalTenant !== 1 && row.personalTenant !== true);
-    if (!organizational.length) return { membership: null, reason: 'NO_ORGANIZATION_MEMBERSHIP' };
+    if (!organizational.length) {
+        return requestedTenantId
+            ? { membership: null, reason: 'REQUESTED_TENANT_NOT_ELIGIBLE' }
+            : { membership: null, reason: 'NO_ORGANIZATION_MEMBERSHIP' };
+    }
 
     const eligible = organizational.filter(row => (
         MEMBERSHIP_ACTIVE_STATUSES.has(String(row.membershipStatus || '').toUpperCase())
@@ -90,7 +109,11 @@ async function loadApplicableTenantMembership(uid, requestedTenantId, { allowAmb
     if (!eligible.length) return { membership: null, reason: 'MEMBERSHIP_NOT_ACTIVE' };
 
     if (requestedTenantId) {
-        const requested = eligible.find(row => String(row.tenantId) === String(requestedTenantId));
+        const reqStr = String(requestedTenantId).trim().toLowerCase();
+        const requested = eligible.find(row =>
+            String(row.tenantId).toLowerCase() === reqStr
+            || (row.slug && String(row.slug).toLowerCase() === reqStr)
+        );
         return requested
             ? { membership: requested, reason: null }
             : { membership: null, reason: 'REQUESTED_TENANT_NOT_ELIGIBLE' };
@@ -129,6 +152,7 @@ async function loadApplicableTenantMembership(uid, requestedTenantId, { allowAmb
  */
 async function resolveAiGovernance(req, { allowAmbiguousSelection = false } = {}) {
     const uid = req?.user?.uid;
+    console.log('[resolveAiGovernance] uid:', uid);
     if (!uid) {
         return { source: QUOTA_SOURCE.NONE, reason: 'AUTH_REQUIRED', entitlement: null, quota: null, tenant: null };
     }
@@ -137,11 +161,15 @@ async function resolveAiGovernance(req, { allowAmbiguousSelection = false } = {}
         pool().query('SELECT * FROM users WHERE id = ? LIMIT 1', [uid]),
         pool().query("SELECT data FROM system_settings WHERE category = 'ai_quota' LIMIT 1"),
     ]);
+    console.log('[resolveAiGovernance] userRows:', userRows.length, 'quotaRows:', quotaRows.length);
     const userData = userRows[0] || {};
     const quotaConfig = parseJson(quotaRows[0]?.data, {});
+    console.log('[resolveAiGovernance] userData:', Object.keys(userData), 'quotaConfig:', Object.keys(quotaConfig));
 
     const requestedTenantId = req.get?.('x-tenant-id') || req.query?.tenantId || null;
+    console.log('[resolveAiGovernance] requestedTenantId:', requestedTenantId);
     const lookup = await loadApplicableTenantMembership(uid, requestedTenantId, { allowAmbiguousSelection });
+    console.log('[resolveAiGovernance] lookup:', JSON.stringify(lookup, null, 2));
 
     const membership = lookup.membership;
     const aiPolicy = parseJson(membership?.aiPolicy, {});

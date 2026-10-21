@@ -214,8 +214,20 @@ class ModelDiscoveryService {
   }) {
     const meta = getProviderMeta(providerId);
     const targetBaseUrl = baseUrl || meta?.baseUrl;
+    const isKeyless = Boolean(meta?.keyless);
 
-    if (!apiKey || !String(apiKey).trim()) {
+    if (!isKeyless && (!apiKey || !String(apiKey).trim() || apiKey === 'keyless')) {
+      if (meta && Array.isArray(meta.recommendedModels) && meta.recommendedModels.length > 0) {
+        return meta.recommendedModels.map(id => ({
+          id,
+          name: id,
+          intelligenceTier: classifyIntelligence(id),
+          contextWindow: '128K',
+          vision: false,
+          pricing: { isFree: isKeyless, priceNote: isKeyless ? 'free' : undefined },
+          ownedBy: providerId,
+        }));
+      }
       throw new Error(`API key required to discover models for ${providerId}`);
     }
 
@@ -228,11 +240,13 @@ class ModelDiscoveryService {
 
       if (meta?.type === 'google' || providerId === 'gemini') {
         const cleanBase = (targetBaseUrl || 'https://generativelanguage.googleapis.com/v1beta').replace(/\/+$/, '');
-        url = `${cleanBase}/models?key=${encodeURIComponent(apiKey.trim())}`;
+        url = `${cleanBase}/models?key=${encodeURIComponent((apiKey || '').trim())}`;
       } else {
         const cleanBase = (targetBaseUrl || '').replace(/\/+$/, '');
         url = `${cleanBase}/models`;
-        headers['Authorization'] = `Bearer ${apiKey.trim()}`;
+        if (apiKey && apiKey !== 'keyless') {
+          headers['Authorization'] = `Bearer ${String(apiKey).trim()}`;
+        }
         if (providerId === 'openrouter') {
           headers['HTTP-Referer'] = 'https://ime365.com';
           headers['X-Title'] = 'IME365 Career Suite';
@@ -346,6 +360,18 @@ class ModelDiscoveryService {
       // If discovery fails but we had prior cached models, serve stale cache
       if (existing?.models?.length) {
         return existing.models;
+      }
+      const meta = getProviderMeta(providerId);
+      if (meta && Array.isArray(meta.recommendedModels) && meta.recommendedModels.length > 0) {
+        return meta.recommendedModels.map(id => ({
+          id,
+          name: id,
+          intelligenceTier: classifyIntelligence(id),
+          contextWindow: '128K',
+          vision: false,
+          pricing: { isFree: Boolean(meta.keyless), priceNote: meta.keyless ? 'free' : undefined },
+          ownedBy: providerId,
+        }));
       }
       throw err;
     }

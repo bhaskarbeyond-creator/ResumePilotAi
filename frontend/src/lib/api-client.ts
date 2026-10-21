@@ -12,7 +12,7 @@ import axios, {
 } from 'axios';
 import { auth } from '@/lib/firebase';
 import { readPreviewSession } from '@/lib/preview-session';
-import { resolveActiveTenantId, autoResolveTenantFromError } from '@/lib/tenant-context';
+import { resolveActiveTenantId, setActiveTenantId, autoResolveTenantFromError } from '@/lib/tenant-context';
 
 /** Standardized API error shape */
 export interface ApiError {
@@ -92,7 +92,7 @@ async function getAuthHeader(): Promise<string | null> {
 function createApiClient(): AxiosInstance {
   const client = axios.create({
     baseURL: '/api',
-    timeout: 30000,
+    timeout: 60000,
     headers: {
       'Content-Type': 'application/json',
     },
@@ -112,7 +112,7 @@ function createApiClient(): AxiosInstance {
     // Only attach when not already set (enterprise-api.ts manages its own tenant headers)
     // and only for non-enterprise, non-platform-admin routes (per LEGACY ISOLATION invariant).
     // Platform-wide admin and platform routes must NOT receive tenant context.
-    const isPlatformAdmin = config.url && (/^\/?(api\/)?(admin|platform)\b/i.test(config.url));
+    const isPlatformAdmin = config.url && (/^\/?(api\/)?(admin|platform|v1)\b/i.test(config.url));
     if (!config.headers['X-Tenant-Id'] && !isPlatformAdmin) {
       const tenantId = resolveActiveTenantId();
       if (tenantId) {
@@ -182,6 +182,36 @@ function createApiClient(): AxiosInstance {
         }
       }
 
+      // TENANT_ACCESS_DENIED auto-healing:
+      // When a request fails with 403 TENANT_ACCESS_DENIED (e.g. stored tenant is
+      // a personal workspace or user no longer has membership in that tenant),
+      // purge the invalid tenant from storage and retry once WITHOUT X-Tenant-Id.
+      // This immediately unblocks candidate dashboard requests and lets them use
+      // their individual entitlement cleanly.
+      if (
+        error.response?.status === 403 &&
+        !originalRequest._tenantRetry &&
+        originalRequest.url
+      ) {
+        const data = error.response?.data as {
+          error?: {
+            code?: string;
+            message?: string;
+          };
+        } | undefined;
+        const errorInfo = data?.error;
+        if (
+          errorInfo?.code === 'TENANT_ACCESS_DENIED' ||
+          (typeof errorInfo?.message === 'string' &&
+            errorInfo.message.includes('not active or accessible'))
+        ) {
+          originalRequest._tenantRetry = true;
+          setActiveTenantId(null);
+          delete originalRequest.headers['X-Tenant-Id'];
+          return client(originalRequest);
+        }
+      }
+
       return Promise.reject(error);
     },
   );
@@ -198,8 +228,8 @@ export async function get<T>(url: string, params?: Record<string, unknown>): Pro
   return response.data;
 }
 
-export async function post<T>(url: string, data?: unknown): Promise<T> {
-  const response = await apiClient.post<T>(url, data);
+export async function post<T>(url: string, data?: unknown, config?: import('axios').AxiosRequestConfig): Promise<T> {
+  const response = await apiClient.post<T>(url, data, config);
   return response.data;
 }
 

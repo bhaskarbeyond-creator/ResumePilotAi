@@ -19,6 +19,7 @@ const {
   normalizeRequestedWorkspaceId,
   stablePrincipalHash,
 } = require('./tenantContext');
+const { createEncryptionProvider } = require('./encryptionProvider');
 
 const DEFAULT_DATA_PLANE = Object.freeze({
   id: 'mysql-primary',
@@ -139,9 +140,10 @@ function normalizeTenantConfiguration(tenantId, input = {}, existing = defaultTe
   }
   const hasAiPolicy = Object.hasOwn(input, 'aiPolicy');
   const aiPolicy = hasAiPolicy && input.aiPolicy && typeof input.aiPolicy === 'object' ? input.aiPolicy : existing.aiPolicy;
-  if (Object.hasOwn(aiPolicy || {}, 'customProviderKeys')) {
-    throw Object.assign(new Error('Tenant provider credentials require the encrypted credential store'), { code: 'TENANT_PROVIDER_CREDENTIALS_UNSUPPORTED', status: 501 });
-  }
+  // Allow customProviderKeys in aiPolicy input but do NOT store them in the configuration.
+  // Tenant BYOK credentials are stored exclusively in the encrypted credential store
+  // (enterprise_tenant_credentials table) via setTenantCredentials/getTenantCredentials.
+  // The aiPolicy.customProviderKeys field is ignored on write and returns empty on read.
   const allowedProviders = Array.isArray(aiPolicy.allowedProviders)
     ? [...new Set(aiPolicy.allowedProviders.map(provider => String(provider).toLowerCase()).filter(provider => /^[a-z0-9_-]{2,40}$/.test(provider)))].slice(0, 10)
     : [...(existing.aiPolicy?.allowedProviders || [])];
@@ -299,13 +301,14 @@ function personalTenantName(profile = {}) {
 }
 
 class MySqlTenantRegistry {
-  constructor({ pool }) {
+  constructor({ pool, encryptionProvider = null }) {
     if (!pool) {
       const { getPool } = require('../database/mysql');
       this.pool = getPool();
     } else {
       this.pool = pool;
     }
+    this.encryptionProvider = encryptionProvider;
   }
 
   assertAvailable() {
@@ -1634,7 +1637,215 @@ class MySqlTenantRegistry {
       conn.release();
     }
   }
-}
+
+  /**
+   * Encryption helper - lazily creates encryption provider if not already set.
+   * Used for BYOK credential storage.
+   */
+  _getEncryptionProvider() {
+    if (this.encryptionProvider) return this.encryptionProvider;
+    // Create from environment
+    this.encryptionProvider = createEncryptionProvider(process.env);
+    return this.encryptionProvider;
+  }
+
+  /**
+   * Store encrypted tenant AI provider credentials (BYOK).
+   * Uses envelope encryption via ServerKeyEncryptionProvider (AES-256-GCM).
+   */
+  async setTenantCredentials({ tenantId, providerId, credentials }) {
+    this.assertAvailable();
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    providerId = String(providerId || '').toLowerCase().trim();
+    if (!providerId || !/^[a-z0-9_-]{2,40}$/.test(providerId)) {
+      throw Object.assign(new Error('Provider identifier is invalid'), { code: 'INVALID_PROVIDER_ID', status: 400 });
+    }
+    if (!credentials || typeof credentials !== 'object') {
+      throw Object.assign(new Error('Credentials must be an object'), { code: 'INVALID_CREDENTIALS', status: 400 });
+    }
+
+    const encryptionProvider = this._getEncryptionProvider();
+    if (!encryptionProvider) {
+      throw Object.assign(new Error('Enterprise encryption is not configured; cannot store credentials'), {
+        code: 'ENTERPRISE_ENCRYPTION_UNAVAILABLE', status: 503,
+      });
+    }
+
+    const envelope = encryptionProvider.encryptValue(credentials);
+    const keyVersion = envelope.keyVersion;
+    const algorithm = envelope.alg;
+
+    const connection = await this.pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      await connection.query(
+        `INSERT INTO enterprise_tenant_credentials (tenantId, providerId, credentialEnvelope, keyVersion, algorithm)
+         VALUES (?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE
+           credentialEnvelope = VALUES(credentialEnvelope),
+           keyVersion = VALUES(keyVersion),
+           algorithm = VALUES(algorithm),
+           updated_at = CURRENT_TIMESTAMP(3)`,
+        [tenantId, providerId, JSON.stringify(envelope), keyVersion, algorithm]
+      );
+      await connection.commit();
+      return { success: true, providerId, keyVersion };
+    } catch (error) {
+      await connection.rollback().catch(() => {});
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
+
+  /**
+   * Retrieve and decrypt tenant AI provider credentials.
+   */
+  async getTenantCredentials({ tenantId, providerId }) {
+    this.assertAvailable();
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    providerId = String(providerId || '').toLowerCase().trim();
+
+    const encryptionProvider = this._getEncryptionProvider();
+    if (!encryptionProvider) {
+      throw Object.assign(new Error('Enterprise encryption is not configured; cannot retrieve credentials'), {
+        code: 'ENTERPRISE_ENCRYPTION_UNAVAILABLE', status: 503,
+      });
+    }
+
+    const [rows] = await this.pool.query(
+      'SELECT credentialEnvelope, keyVersion, algorithm FROM enterprise_tenant_credentials WHERE tenantId = ? AND providerId = ?',
+      [tenantId, providerId]
+    );
+
+    if (!rows.length) return null;
+
+    const envelope = rows[0].credentialEnvelope;
+    const envelopeObj = typeof envelope === 'string' ? JSON.parse(envelope) : envelope;
+    return encryptionProvider.decryptValue(envelopeObj);
+  }
+
+  /**
+   * List all credential providers for a tenant (metadata only, no secrets).
+   */
+  async listTenantCredentialProviders({ tenantId }) {
+    this.assertAvailable();
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+
+    const [rows] = await this.pool.query(
+      'SELECT providerId, keyVersion, algorithm, created_at, updated_at FROM enterprise_tenant_credentials WHERE tenantId = ? ORDER BY providerId',
+      [tenantId]
+    );
+
+    return rows.map(r => ({
+      providerId: r.providerId,
+      keyVersion: r.keyVersion,
+      algorithm: r.algorithm,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+    }));
+  }
+
+  /**
+   * Delete tenant AI provider credentials.
+   */
+  async deleteTenantCredentials({ tenantId, providerId }) {
+    this.assertAvailable();
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    providerId = String(providerId || '').toLowerCase().trim();
+
+    const [result] = await this.pool.query(
+      'DELETE FROM enterprise_tenant_credentials WHERE tenantId = ? AND providerId = ?',
+      [tenantId, providerId]
+    );
+
+    return { success: result.affectedRows > 0 };
+  }
+
+  /**
+   * Test tenant BYOK credentials against the provider's live API.
+   * Returns latency, success status, and any error details.
+   */
+  async testTenantCredentials({ tenantId, providerId, model = null, testedBy }) {
+    this.assertAvailable();
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    providerId = String(providerId || '').toLowerCase().trim();
+    testedBy = String(testedBy || '').trim();
+
+    const credentials = await this.getTenantCredentials({ tenantId, providerId });
+    if (!credentials) {
+      throw Object.assign(new Error('No credentials found for this provider'), { code: 'CREDENTIALS_NOT_FOUND', status: 404 });
+    }
+
+    const { freeLlmRouter } = require('../services/aiGateway');
+    const start = Date.now();
+    let success = false;
+    let latencyMs = null;
+    let errorCode = null;
+    let errorMessage = null;
+    let modelTested = model;
+
+    try {
+      // Use FreeLLMAPI to test the provider with the tenant's dedicated key
+      const result = await freeLlmRouter.testProvider({
+        providerId,
+        apiKey: credentials.apiKey || credentials.key,
+        baseUrl: credentials.baseUrl,
+        model: modelTested,
+      });
+      success = result.ok === true;
+      latencyMs = Date.now() - start;
+      if (!success) {
+        errorCode = result.error?.code || 'TEST_FAILED';
+        errorMessage = result.error?.message || 'Provider test failed';
+      }
+      modelTested = result.model || modelTested;
+    } catch (err) {
+      latencyMs = Date.now() - start;
+      success = false;
+      errorCode = err.code || 'TEST_ERROR';
+      errorMessage = err.message || 'Provider test encountered an error';
+    }
+
+    // Record test result
+    const connection = await this.pool.getConnection();
+    try {
+      await connection.query(
+        `INSERT INTO enterprise_tenant_credential_tests (tenantId, providerId, testedAt, testedBy, success, latencyMs, errorCode, errorMessage, modelTested)
+         VALUES (?, ?, NOW(6), ?, ?, ?, ?, ?, ?)`,
+        [tenantId, providerId, testedBy, success, latencyMs, errorCode, errorMessage, modelTested]
+      );
+    } finally {
+      connection.release();
+    }
+
+    return {
+      success,
+      latencyMs,
+      errorCode,
+      errorMessage,
+      modelTested,
+      testedAt: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Get recent credential test history for a tenant.
+   */
+  async getCredentialTestHistory({ tenantId, limit = 50 }) {
+    this.assertAvailable();
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    const bounded = Math.max(1, Math.min(Number(limit) || 50, 200));
+
+    const [rows] = await this.pool.query(
+      'SELECT * FROM enterprise_tenant_credential_tests WHERE tenantId = ? ORDER BY testedAt DESC LIMIT ?',
+      [tenantId, bounded]
+    );
+
+    return rows;
+  }
+
+} // class MySqlTenantRegistry
 
 module.exports = {
   MySqlTenantRegistry,

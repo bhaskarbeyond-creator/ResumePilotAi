@@ -43,6 +43,38 @@ const PROVIDERS: ProviderMeta[] = [
   { key: 'deepseek', label: 'DeepSeek', blurb: 'Cost-efficient deep reasoning engine', model: 'deepseek-chat' },
 ];
 
+interface ModelMeta {
+  id: string;
+  providerKey: string;
+  providerLabel: string;
+}
+
+const MODEL_CATALOG: ModelMeta[] = [
+  // NVIDIA NIM
+  { id: 'meta/llama-3.2-11b-vision-instruct', providerKey: 'nvidia', providerLabel: 'NVIDIA NIM' },
+  { id: 'meta/llama-3.2-90b-vision-instruct', providerKey: 'nvidia', providerLabel: 'NVIDIA NIM' },
+  { id: 'meta/llama-3.3-70b-instruct', providerKey: 'nvidia', providerLabel: 'NVIDIA NIM' },
+  // Google Gemini
+  { id: 'gemini-2.0-flash', providerKey: 'gemini', providerLabel: 'Google Gemini' },
+  { id: 'gemini-1.5-pro', providerKey: 'gemini', providerLabel: 'Google Gemini' },
+  { id: 'gemini-1.5-flash', providerKey: 'gemini', providerLabel: 'Google Gemini' },
+  // OpenAI
+  { id: 'gpt-4o-mini', providerKey: 'openai', providerLabel: 'OpenAI GPT' },
+  { id: 'gpt-4o', providerKey: 'openai', providerLabel: 'OpenAI GPT' },
+  { id: 'gpt-3.5-turbo', providerKey: 'openai', providerLabel: 'OpenAI GPT' },
+  // Groq
+  { id: 'llama-3.3-70b-versatile', providerKey: 'groq', providerLabel: 'Groq LPU' },
+  { id: 'llama-3.1-70b-versatile', providerKey: 'groq', providerLabel: 'Groq LPU' },
+  { id: 'llama-3.2-90b-vision-preview', providerKey: 'groq', providerLabel: 'Groq LPU' },
+  // OpenRouter
+  { id: 'meta-llama/llama-3.3-70b-instruct:free', providerKey: 'openrouter', providerLabel: 'OpenRouter' },
+  { id: 'google/gemini-2.0-flash-exp:free', providerKey: 'openrouter', providerLabel: 'OpenRouter' },
+  { id: 'mistralai/mistral-large:free', providerKey: 'openrouter', providerLabel: 'OpenRouter' },
+  // DeepSeek
+  { id: 'deepseek-chat', providerKey: 'deepseek', providerLabel: 'DeepSeek' },
+  { id: 'deepseek-reasoner', providerKey: 'deepseek', providerLabel: 'DeepSeek' },
+];
+
 export function EnterpriseAiTab() {
   const { tenant, hasPermission } = useEnterprise();
   const [config, setConfig] = useState<EnterpriseConfiguration | null>(null);
@@ -64,6 +96,25 @@ export function EnterpriseAiTab() {
 
   const canManageAi = hasPermission('tenant.ai.manage');
 
+  // Platform status (dedicated BYOK vs shared gateway)
+  const [platformStatus, setPlatformStatus] = useState<{ hasDedicatedBYOK: boolean; credentialCount: number; providers: string[] } | null>(null);
+
+  const loadPlatformStatus = useCallback(async () => {
+    if (!tenant?.id) return;
+    try {
+      const res = await enterpriseApi.getPlatformStatus(tenant.id);
+      if (res.success) {
+        setPlatformStatus({
+          hasDedicatedBYOK: res.hasDedicatedBYOK,
+          credentialCount: res.credentialCount,
+          providers: res.providers || [],
+        });
+      }
+    } catch {
+      // Silently ignore platform status errors
+    }
+  }, [tenant?.id]);
+
   const loadConfig = useCallback(async () => {
     if (!tenant?.id) {
       setLoading(false);
@@ -72,19 +123,30 @@ export function EnterpriseAiTab() {
     setLoading(true);
     setError(null);
     try {
-      const res = await enterpriseApi.getConfiguration(tenant.id);
-      const c = res.configuration || {};
+      const [configRes, statusRes] = await Promise.all([
+        enterpriseApi.getConfiguration(tenant.id),
+        enterpriseApi.getPlatformStatus(tenant.id),
+      ]);
+      const c = configRes.configuration || {};
       setConfig(c);
 
       const providers = new Set((c.aiPolicy?.allowedProviders || ['nvidia', 'gemini']).map((p) => String(p).toLowerCase()));
       setAllowedProviders(providers);
 
-      const models = new Set(c.aiPolicy?.allowedModels || PROVIDERS.map((p) => p.model));
+      const models = new Set(c.aiPolicy?.allowedModels || MODEL_CATALOG.map((m) => m.id));
       setAllowedModels(models);
 
-      setPrimaryModel(c.aiPolicy?.primaryModel || PROVIDERS[0].model);
+      setPrimaryModel(c.aiPolicy?.primaryModel || MODEL_CATALOG[0].id);
       setRequestsPerMinute(Number(c.quotaPolicy?.aiRequestsPerMinute ?? 12));
       setRequestsPerDay(Number(c.quotaPolicy?.aiRequestsPerDay ?? 100));
+
+      if (statusRes.success) {
+        setPlatformStatus({
+          hasDedicatedBYOK: statusRes.hasDedicatedBYOK,
+          credentialCount: statusRes.credentialCount,
+          providers: statusRes.providers || [],
+        });
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load AI configuration');
     } finally {
@@ -168,6 +230,31 @@ export function EnterpriseAiTab() {
 
   return (
     <div className="space-y-6">
+      {/* ─── SLA Status Badge ─── */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className={cn(
+            'flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold border',
+            platformStatus?.hasDedicatedBYOK
+              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
+              : 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300',
+          )}>
+            <Shield className="size-3.5" />
+            {platformStatus?.hasDedicatedBYOK
+              ? '✓ Dedicated Enterprise Gateway Active'
+              : 'Platform High-Availability Shared Gateway'}
+            {platformStatus?.hasDedicatedBYOK && platformStatus.credentialCount > 0 && (
+              <span className="font-mono text-[10px] opacity-70">
+                ({platformStatus.credentialCount} provider{platformStatus.credentialCount === 1 ? '' : 's'})
+              </span>
+            )}
+          </div>
+          <span className="text-[11px] text-ink-muted">
+            AI routing governance is enforced server-side with tenant isolation.
+          </span>
+        </div>
+      </div>
+
       {/* ─── Top Quota & Live Test Row ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Quota Ring Card */}
@@ -285,20 +372,77 @@ export function EnterpriseAiTab() {
               })}
             </div>
 
+            {/* Per-Model Governance Allowlist */}
+            <div className="space-y-2 pt-2 border-t border-edge">
+              <div className="flex items-center justify-between gap-3">
+                <label className="text-xs font-bold text-ink block" id="enterprise-model-allowlist-label">
+                  Per-Model Governance Allowlist
+                </label>
+                <span className="text-[11px] text-ink-muted font-mono">
+                  {allowedModels.size} / {MODEL_CATALOG.length} models authorized
+                </span>
+              </div>
+              <p className="text-[11px] text-ink-muted">
+                Model governance is enforced server-side. A provider is only reachable when its effective model is
+                allowlisted here, so an approved provider can never reach an unapproved model.
+              </p>
+              <div
+                role="group"
+                aria-labelledby="enterprise-model-allowlist-label"
+                className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2"
+              >
+                {MODEL_CATALOG.map((model) => {
+                  const isAllowed = allowedModels.has(model.id);
+                  return (
+                    <button
+                      key={model.id}
+                      type="button"
+                      onClick={() => canManageAi && toggleModel(model.id)}
+                      disabled={!canManageAi}
+                      aria-pressed={isAllowed}
+                      data-testid={`enterprise-model-toggle-${model.id}`}
+                      className={cn(
+                        'flex items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-all',
+                        isAllowed
+                          ? 'border-accent bg-accent-soft/30'
+                          : 'border-edge bg-surface hover:bg-surface-raised/60 opacity-60',
+                        !canManageAi && 'cursor-not-allowed',
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'size-4 shrink-0 rounded flex items-center justify-center border',
+                          isAllowed ? 'bg-accent border-accent text-white' : 'border-edge bg-surface',
+                        )}
+                        aria-hidden="true"
+                      >
+                        {isAllowed && <Check className="size-3 stroke-[3]" />}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-[11px] font-bold text-ink truncate">{model.id}</span>
+                        <span className="block text-[10px] text-ink-muted truncate">{model.providerLabel}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Primary Model Selection */}
             <div className="space-y-2 pt-2 border-t border-edge">
-              <label className="text-xs font-bold text-ink block">
+              <label className="text-xs font-bold text-ink block" htmlFor="enterprise-primary-model">
                 Primary Synthesis Model
               </label>
               <select
+                id="enterprise-primary-model"
                 value={primaryModel}
                 onChange={(e) => setPrimaryModel(e.target.value)}
                 disabled={!canManageAi}
                 className="w-full max-w-md h-9 px-3 rounded-lg bg-surface border border-edge text-xs text-ink focus:outline-none focus:ring-1 focus:ring-accent"
               >
-                {PROVIDERS.map((p) => (
-                  <option key={p.model} value={p.model}>
-                    {p.label} — {p.model}
+                {MODEL_CATALOG.map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.providerLabel} — {model.id}
                   </option>
                 ))}
               </select>
