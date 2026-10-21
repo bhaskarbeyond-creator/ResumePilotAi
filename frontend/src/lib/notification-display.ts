@@ -42,6 +42,9 @@ export function notificationKind(item: Pick<NotificationItem, 'type'>): Notifica
   return KIND_BY_TYPE[item.type] ?? 'update';
 }
 
+/** Rows about the reader's own application, written by the apply and employer workflows. */
+const APPLICANT_ROW_TYPES = new Set(['job_application', 'application_status_update', 'application_accepted', 'application_rejected']);
+
 export interface NotificationDestination {
   href: string;
   label: string;
@@ -52,9 +55,10 @@ export interface NotificationDestination {
  * honest target link anywhere:
  *  - message rows (written before DIR-072) open their conversation; the Messages
  *    page reads ?conversationId= (pages/dashboard/messages.tsx);
- *  - an interview invitation opens the Interview Coach to prepare.
- * Application rows have no target: /dashboard/applied-jobs renders the Job
- * Tracker, which lists the user's own tracked jobs, not their applications.
+ *  - an interview invitation opens the Interview Coach to prepare;
+ *  - the candidate's own application rows (submitted, accepted, not selected and
+ *    other status changes) open Applied Jobs, which lists their applications
+ *    (P002 C14). The employer's "New job application" row has no candidate target.
  */
 export function notificationDestination(item: Pick<NotificationItem, 'type' | 'data'>): NotificationDestination | null {
   if (notificationKind(item) === 'message') {
@@ -65,6 +69,7 @@ export function notificationDestination(item: Pick<NotificationItem, 'type' | 'd
       : { href: '/dashboard/messages', label: 'Open messages' };
   }
   if (item.type === 'application_interview') return { href: '/dashboard/interviews', label: 'Prepare with Interview Coach' };
+  if (APPLICANT_ROW_TYPES.has(item.type)) return { href: '/dashboard/applied-jobs', label: 'View your applications' };
   return null;
 }
 

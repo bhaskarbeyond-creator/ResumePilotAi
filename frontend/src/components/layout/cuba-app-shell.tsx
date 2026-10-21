@@ -20,6 +20,7 @@ import {
   LayoutDashboard,
   FileText,
   Briefcase,
+  Send,
   MessageSquare,
   Settings,
   LogOut,
@@ -109,6 +110,7 @@ const candidateNavGroups: NavGroup[] = [
     items: [
       { id: 'jobs', label: 'Browse Job Portal', href: '/dashboard/jobs', icon: Search, matchPaths: ['/dashboard/jobs', '/jobs'] },
       { id: 'tracker', label: 'Job Tracker', href: '/dashboard/job-tracker', icon: Briefcase, matchPaths: ['/dashboard/job-tracker'] },
+      { id: 'applied', label: 'Applied Jobs', href: '/dashboard/applied-jobs', icon: Send, matchPaths: ['/dashboard/applied-jobs'] },
       { id: 'interview', label: 'AI Interview Coach', href: '/dashboard/interviews', icon: GraduationCap, matchPaths: ['/dashboard/interviews', '/dashboard/interview'] },
       { id: 'messages', label: 'Messages & Chat', href: '/dashboard/messages', icon: MessageSquare, matchPaths: ['/dashboard/messages'] },
       { id: 'ai', label: 'AI Career Assistant', href: '/dashboard/ai', icon: Sparkles, matchPaths: ['/dashboard/ai'] },
@@ -470,6 +472,8 @@ export function CubaAppShell({
         crumbs.push({ label: 'Interview Coach', href: '/dashboard/interviews', isLast: true });
       } else if (segments[1] === 'job-tracker') {
         crumbs.push({ label: 'Job Tracker', href: '/dashboard/job-tracker', isLast: true });
+      } else if (segments[1] === 'applied-jobs') {
+        crumbs.push({ label: 'Applied Jobs', href: '/dashboard/applied-jobs', isLast: true });
       } else if (segments[1] === 'jobs') {
         crumbs.push({ label: 'Browse Jobs', href: '/dashboard/jobs', isLast: true });
       } else if (segments[1] === 'ats-score' || segments[1] === 'ats') {

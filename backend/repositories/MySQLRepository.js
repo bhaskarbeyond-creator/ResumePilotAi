@@ -1536,6 +1536,67 @@ class MySQLRepository {
         return rows;
     }
 
+    /**
+     * The applicant's own applications with the job each was made for (P002 C14).
+     * One owner-scoped query. The employer's columns (rating, notes, employer_id,
+     * extra_json) and the stored resume URL are not selected.
+     */
+    async getApplicantApplications({ applicantId } = {}) {
+        if (!applicantId) return [];
+        const [rows] = await this._getPool().query(
+            `SELECT a.id, a.job_id, a.status, a.applicant_name, a.applicant_email, a.applicant_phone,
+                    a.resume_id, a.cover_letter, a.created_at, a.updated_at,
+                    j.title AS job_title, j.company_name AS job_company, j.location AS job_location,
+                    j.status AS job_status, j.expires_at AS job_expires_at
+               FROM applications a
+               LEFT JOIN jobs j ON j.id = a.job_id
+              WHERE a.applicant_id = ?
+              ORDER BY a.created_at DESC, a.id DESC`,
+            [applicantId]
+        );
+        const iso = (value) => {
+            if (!value) return null;
+            const date = new Date(value);
+            return Number.isNaN(date.getTime()) ? null : date.toISOString();
+        };
+        return rows.map(row => ({
+            id: row.id,
+            jobId: row.job_id,
+            status: row.status,
+            applicantName: row.applicant_name || '',
+            applicantEmail: row.applicant_email || '',
+            applicantPhone: row.applicant_phone || '',
+            resumeId: row.resume_id || null,
+            coverLetter: row.cover_letter || '',
+            createdAt: iso(row.created_at),
+            updatedAt: iso(row.updated_at),
+            // jobs.title is NOT NULL, so a null title means the job row is missing.
+            job: row.job_title === null || row.job_title === undefined ? null : {
+                title: row.job_title,
+                company: row.job_company || '',
+                location: row.job_location || '',
+                status: row.job_status || '',
+                expiresAt: iso(row.job_expires_at),
+            },
+        }));
+    }
+
+    /**
+     * Corrects the applicant's own contact details on their application. One
+     * UPDATE scoped to the application and its applicant; nothing the employer
+     * decides (status, rating, notes) and neither the job nor the employer is touched.
+     */
+    async updateApplicantContact(appId, applicantId, fields = {}) {
+        const columns = [['applicantName', 'applicant_name'], ['applicantPhone', 'applicant_phone']]
+            .filter(([key]) => fields[key] !== undefined);
+        if (!appId || !applicantId || !columns.length) return false;
+        const [result] = await this._getPool().query(
+            `UPDATE applications SET ${columns.map(([, column]) => `${column} = ?`).join(', ')} WHERE id = ? AND applicant_id = ?`,
+            [...columns.map(([key]) => fields[key]), appId, applicantId]
+        );
+        return Number(result?.affectedRows || 0) === 1;
+    }
+
     async saveApplication(appId, data) {
         const pool = this._getPool();
         let empId = data.employerId || data.employer_id;
@@ -1551,7 +1612,8 @@ class MySQLRepository {
             applicant_id: data.applicantId || data.applicant_id,
             applicant_name: data.applicantName || data.applicant_name || '',
             applicant_email: data.applicantEmail || data.applicant_email || '',
-            applicant_phone: data.applicantPhone || data.applicant_phone || '',
+            // The apply workflow sends the phone as `phone` (P002 C14: it was stored empty).
+            applicant_phone: data.applicantPhone || data.applicant_phone || data.phone || '',
             resume_id: data.resumeId || data.resume_id || null,
             resume_url: data.resumeUrl || data.resume_url || null,
             cover_letter: data.coverLetter || data.cover_letter || '',

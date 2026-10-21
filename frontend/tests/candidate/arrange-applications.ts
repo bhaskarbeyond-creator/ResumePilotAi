@@ -135,3 +135,98 @@ export async function notificationsOf(request: APIRequestContext, token: string)
   expect(response.status()).toBe(200);
   return ((await response.json()) as { notifications: ApiNotification[] }).notifications;
 }
+
+// ── Applied Jobs (P002 C14) ──────────────────────────────────────────────────
+
+export interface ArrangedJob { id: string; title: string; company: string }
+
+/** Three jobs with distinct titles and companies, so search and sort have something to tell apart. */
+export const APPLIED_JOBS = {
+  platform: { id: 'job_e2e_msg_c14_platform', title: 'Platform Engineer', company: 'Example Test Co' },
+  analyst: { id: 'job_e2e_msg_c14_analyst', title: 'Data Analyst', company: 'Northwind Test Labs' },
+  designer: { id: 'job_e2e_msg_c14_designer', title: 'Product Designer', company: 'Contoso Test Studio' },
+} as const satisfies Record<string, ArrangedJob>;
+
+/** Inserts one job row owned by the test employer (the only step not done through the API). */
+async function createJob(request: APIRequestContext, job: ArrangedJob): Promise<Owner> {
+  const args = (uid: string) => ['--create', '--job-id', job.id, '--owner-uid', uid, '--title', job.title, '--company', job.company];
+  let owner = await ownerSession(request);
+  try {
+    runArrange(args(owner.uid));
+  } catch (error) {
+    if ((error as { status?: number }).status !== 4) throw error;
+    owner = await ownerSession(request, true);
+    runArrange(args(owner.uid));
+  }
+  return owner;
+}
+
+export const coverLetterFor = (job: ArrangedJob) =>
+  `I would like to apply for the ${job.title} role at ${job.company}.\nThis cover letter exists only for the candidate end-to-end suite.`;
+
+/** Applies as candidate A or B through POST /api/jobs/:jobId/applications. */
+export async function applyAs(request: APIRequestContext, account: 'a' | 'b', job: ArrangedJob, resumeId?: string): Promise<string> {
+  const applied = await request.post(`/api/jobs/${job.id}/applications`, {
+    headers: bearer(tokenFor(account)),
+    data: {
+      fullName: account === 'a' ? 'Avery Tester' : 'Blake Tester',
+      phone: account === 'a' ? '+1 555 0100' : '+1 555 0101',
+      coverLetter: coverLetterFor(job),
+      ...(resumeId ? { resumeId } : {}),
+    },
+  });
+  expect(applied.status(), `candidate ${account.toUpperCase()} applies to ${job.id}`).toBe(201);
+  return ((await applied.json()) as { applicationId: string }).applicationId;
+}
+
+/** The employer's status change (PATCH /api/job-applications/:id/status). The stored revision is always 1 (finding F-5). */
+export async function setApplicationStatus(request: APIRequestContext, owner: Owner, applicationId: string, status: 'interview' | 'accepted' | 'rejected') {
+  const moved = await request.patch(`/api/job-applications/${encodeURIComponent(applicationId)}/status`, {
+    headers: bearer(owner.token),
+    data: { status, expectedRevision: 1 },
+  });
+  expect(moved.status(), `the employer moves ${applicationId} to ${status}`).toBe(200);
+}
+
+/** The employer closes the job through the owner-scoped job route (read, then saved with status closed). */
+export async function closeJob(request: APIRequestContext, owner: Owner, job: ArrangedJob) {
+  const read = await request.get(`/api/jobs-data/${job.id}`, { headers: bearer(owner.token) });
+  expect(read.status(), `the employer reads ${job.id}`).toBe(200);
+  const { job: stored } = (await read.json()) as { job: Record<string, unknown> };
+  const saved = await request.post(`/api/jobs-data/${job.id}`, { headers: bearer(owner.token), data: { ...stored, status: 'closed' } });
+  expect(saved.status(), `the employer closes ${job.id}`).toBe(200);
+}
+
+export interface AppliedJobsArrangement {
+  owner: Owner;
+  /** Candidate A's application ids. */
+  ids: { platform: string; analyst: string; designer: string };
+  /** Candidate B's application to the platform job. */
+  blake: string;
+}
+
+/**
+ * Fresh state, then candidate A applies to the platform, analyst and designer
+ * jobs in that order (a second apart: created_at has one-second resolution);
+ * candidate B applies to the platform job. The employer invites A to interview
+ * for the designer role, then (a second later) does not select A for the
+ * analyst role and closes that job. A's platform application stays Submitted.
+ */
+export async function arrangeAppliedJobs(request: APIRequestContext, options: { resumeId?: string } = {}): Promise<AppliedJobsArrangement> {
+  removeArranged();
+  let owner = await createJob(request, APPLIED_JOBS.platform);
+  owner = await createJob(request, APPLIED_JOBS.analyst);
+  owner = await createJob(request, APPLIED_JOBS.designer);
+  const pause = () => new Promise((resolve) => setTimeout(resolve, 1_100));
+  const platform = await applyAs(request, 'a', APPLIED_JOBS.platform, options.resumeId);
+  await pause();
+  const analyst = await applyAs(request, 'a', APPLIED_JOBS.analyst);
+  await pause();
+  const designer = await applyAs(request, 'a', APPLIED_JOBS.designer);
+  const blake = await applyAs(request, 'b', APPLIED_JOBS.platform);
+  await setApplicationStatus(request, owner, designer, 'interview');
+  await pause();
+  await setApplicationStatus(request, owner, analyst, 'rejected');
+  await closeJob(request, owner, APPLIED_JOBS.analyst);
+  return { owner, ids: { platform, analyst, designer }, blake };
+}

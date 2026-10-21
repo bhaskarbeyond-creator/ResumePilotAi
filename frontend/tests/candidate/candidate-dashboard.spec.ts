@@ -81,9 +81,11 @@ test.describe('Candidate Dashboard — Job Tracker Surface', () => {
   });
 
   test('applied-jobs and job-matching route aliases resolve correctly', async ({ page }) => {
-    // /dashboard/applied-jobs displays Job Tracker
+    // /dashboard/applied-jobs lists the candidate's submitted applications again,
+    // as in legacy (P002 C14; tests/candidate/applied-jobs.spec.ts covers the page).
     await page.goto('/dashboard/applied-jobs');
-    await expect(page.getByRole('heading', { name: 'Job Tracker' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Applied Jobs' })).toBeVisible();
+    await expect(page).toHaveURL(/\/dashboard\/applied-jobs$/);
 
     // /dashboard/job-matching redirects to /dashboard/job-tracker
     await page.goto('/dashboard/job-matching');

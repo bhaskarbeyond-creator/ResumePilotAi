@@ -276,47 +276,133 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
+// ——— Submitted applications: the applicant's side (P002 C14) ———
+// Applying goes through POST /api/jobs/:jobId/applications (an open job, one
+// application per job, the employer notified), and the employer moves the
+// status through PATCH /api/job-applications/:id/status. Here applicants list
+// their own applications, withdraw one, and may correct the contact details
+// they gave. Status, rating and notes are the employer's; the job and the
+// employer are fixed when the application is made.
+
+function isoOrNull(value) {
+    if (!value) return null;
+    const date = value instanceof Date ? value : new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+/** One application as its applicant sees it: their submission and the job applied to. */
+function applicantApplicationView(row = {}, now = Date.now()) {
+    const job = row.job && typeof row.job === 'object' ? row.job : null;
+    return {
+        id: String(row.id || ''),
+        jobId: String(row.jobId || ''),
+        status: String(row.status || 'pending').trim().toLowerCase(),
+        createdAt: isoOrNull(row.createdAt),
+        updatedAt: isoOrNull(row.updatedAt),
+        applicantName: String(row.applicantName || ''),
+        applicantEmail: String(row.applicantEmail || ''),
+        applicantPhone: String(row.applicantPhone || ''),
+        resumeId: row.resumeId ? String(row.resumeId) : null,
+        coverLetter: String(row.coverLetter || ''),
+        job: {
+            title: String(job?.title || ''),
+            company: String(job?.company || ''),
+            location: String(job?.location || ''),
+            // Listed: open on the public job board now (the rule GET /:id applies to everyone else).
+            listed: job ? isPubliclyVisibleJob({ status: job.status, expires_at: job.expiresAt }, now) : false,
+        },
+    };
+}
+
+/** The same view of a single record from getApplication(), without the job summary. */
+function applicantRecordView(record = {}) {
+    const { job: _job, ...view } = applicantApplicationView({ ...record, job: null });
+    return view;
+}
+
+// The contact details an applicant gave, under the names the apply form and the
+// stored record use. Nothing else on a sent application is theirs to change.
+const APPLICANT_CONTACT_FIELDS = Object.freeze({
+    applicantName: 'applicantName', fullName: 'applicantName',
+    applicantPhone: 'applicantPhone', phone: 'applicantPhone',
+});
+
+function applicationRequestError(code, message, field) {
+    return Object.assign(new Error(message), { status: 400, code, ...(field ? { field } : {}) });
+}
+
+/** Validated like POST /api/jobs/:jobId/applications validates the apply form. */
+function applicantContactUpdate(body) {
+    const entries = Object.entries(body && typeof body === 'object' && !Array.isArray(body) ? body : {});
+    const refused = entries.find(([key]) => !Object.hasOwn(APPLICANT_CONTACT_FIELDS, key));
+    if (refused) {
+        throw applicationRequestError('APPLICATION_FIELD_NOT_EDITABLE',
+            'Only your name and phone number can be changed on an application you have sent.', refused[0]);
+    }
+    const fields = {};
+    for (const [key, value] of entries) {
+        if (APPLICANT_CONTACT_FIELDS[key] === 'applicantName') {
+            const name = String(value ?? '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 120);
+            if (!name) throw applicationRequestError('APPLICATION_VALIDATION_ERROR', 'Enter your name.', key);
+            fields.applicantName = name;
+        } else {
+            const phone = String(value ?? '').replace(/\p{Cc}/gu, '').trim().slice(0, 30);
+            if (!/^\+?[0-9 ()-]{7,30}$/.test(phone)) {
+                throw applicationRequestError('APPLICATION_VALIDATION_ERROR', 'Enter a valid phone number.', key);
+            }
+            fields.applicantPhone = phone;
+        }
+    }
+    if (!Object.keys(fields).length) {
+        throw applicationRequestError('APPLICATION_VALIDATION_ERROR', 'Send applicantName or applicantPhone to update.');
+    }
+    return fields;
+}
+
 // GET /api/jobs-data/applications/list - My applications (owner-scoped; zero-trust)
 router.get('/applications/list', async (req, res) => {
     try {
         // The current user's own applications; applicantId is never client-controlled.
-        const apps = await req.repository.getApplications({ applicantId: req.user.uid });
-        return res.json({ success: true, applications: apps });
+        const rows = await req.repository.getApplicantApplications({ applicantId: req.user.uid });
+        const now = Date.now();
+        return res.json({ success: true, applications: rows.map(row => applicantApplicationView(row, now)) });
     } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to fetch applications' });
     }
 });
 
-// POST /api/jobs-data/applications/:id - Apply or update application (owner-scoped)
-router.post('/applications/:id', async (req, res) => {
-    try {
-        const appData = { ...req.body, applicantId: req.user.uid, applicant_id: req.user.uid };
-        delete appData.userId;
-        const saved = await req.repository.saveApplication(req.params.id, appData);
-        return res.json({ success: true, application: saved });
-    } catch (_err) {
-        return res.status(500).json({ success: false, error: 'Failed to save application' });
-    }
-});
-
-// PATCH /api/jobs-data/applications/:id - Update my application (owner-scoped)
-router.patch('/applications/:id', async (req, res) => {
+/** Owner-only correction of the applicant's own contact details. */
+async function updateOwnApplication(req, res) {
     try {
         const existing = await req.repository.getApplication(req.params.id);
-        if (!existing) return res.status(404).json({ success: false, error: 'Application not found' });
+        if (!existing) {
+            return res.status(404).json({
+                success: false, code: 'APPLICATION_NOT_FOUND',
+                error: 'Application not found. Apply to a job through POST /api/jobs/:jobId/applications.',
+            });
+        }
         if (String(existing.applicant_id || existing.applicantId || '') !== req.user.uid) {
             return res.status(403).json({ success: false, error: 'Access denied' });
         }
-        const patch = { ...req.body };
-        delete patch.applicantId;
-        delete patch.applicant_id;
-        delete patch.userId;
-        const saved = await req.repository.saveApplication(req.params.id, { ...existing, ...patch, applicantId: req.user.uid });
-        return res.json({ success: true, application: saved });
-    } catch (_err) {
+        const fields = applicantContactUpdate(req.body);
+        const updated = await req.repository.updateApplicantContact(req.params.id, req.user.uid, fields);
+        if (!updated) return res.status(404).json({ success: false, code: 'APPLICATION_NOT_FOUND', error: 'Application not found.' });
+        const saved = await req.repository.getApplication(req.params.id);
+        return res.json({ success: true, application: applicantRecordView(saved || { ...existing, ...fields }) });
+    } catch (error) {
+        if (error?.status === 400) {
+            return res.status(400).json({ success: false, code: error.code, error: error.message, ...(error.field ? { field: error.field } : {}) });
+        }
         return res.status(500).json({ success: false, error: 'Failed to update application' });
     }
-});
+}
+
+// POST /api/jobs-data/applications/:id - Update my application (owner-scoped). It
+// no longer creates one: a missing id is 404, another applicant's is 403.
+router.post('/applications/:id', updateOwnApplication);
+
+// PATCH /api/jobs-data/applications/:id - Update my application (owner-scoped)
+router.patch('/applications/:id', updateOwnApplication);
 
 // DELETE /api/jobs-data/applications/:id - Remove my application (owner-scoped)
 router.delete('/applications/:id', async (req, res) => {

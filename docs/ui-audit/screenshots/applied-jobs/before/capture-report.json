@@ -1,0 +1,92 @@
+{
+  "surface": "applied-jobs",
+  "phase": "before",
+  "capturedAt": "2026-10-20T22:32:12.237Z",
+  "baseURL": "http://127.0.0.1:4000",
+  "pages": [
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/applied-jobs",
+      "click": null,
+      "label": "route",
+      "finalUrl": "/dashboard/applied-jobs",
+      "file": "desktop-1920__dashboard_applied_jobs__route.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/applied-jobs",
+      "click": null,
+      "label": "route",
+      "finalUrl": "/dashboard/applied-jobs",
+      "file": "laptop-1366__dashboard_applied_jobs__route.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/applied-jobs",
+      "click": null,
+      "label": "route",
+      "finalUrl": "/dashboard/applied-jobs",
+      "file": "tablet-1024__dashboard_applied_jobs__route.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/applied-jobs",
+      "click": null,
+      "label": "route",
+      "finalUrl": "/dashboard/applied-jobs",
+      "file": "mobile-390__dashboard_applied_jobs__route.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/applied-jobs",
+      "click": null,
+      "label": "route",
+      "finalUrl": "/dashboard/applied-jobs",
+      "file": "mobile-320__dashboard_applied_jobs__route.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/notifications",
+      "click": null,
+      "label": "application-notifications",
+      "finalUrl": "/dashboard/notifications",
+      "file": "laptop-1366__dashboard_notifications__application-notifications.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/notifications",
+      "click": null,
+      "label": "application-notifications",
+      "finalUrl": "/dashboard/notifications",
+      "file": "mobile-390__dashboard_notifications__application-notifications.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    }
+  ]
+}

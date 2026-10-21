@@ -404,7 +404,13 @@ test('removes a job only after confirming; Cancel and Escape keep it, and focus 
 test('a failed removal keeps the job and says so (FAULT INJECTION: HTTP 503); a job removed elsewhere is reported', async ({ page, apiAs, guard }) => {
   const api = apiAs('a');
   const job = await arrange(api, { title: `BI Analyst ${tag}`, company: `Wingtip ${tag}`, status: 'wishlist' });
-  await openTracker(page);
+  // Another tracked job, outside the search below, so the tracker is not empty after
+  // the removal and focus goes to the heading. (The test used to rely on other jobs
+  // happening to be in candidate A's tracker; with an empty tracker focus goes to
+  // "Track a job" instead. P002 C14.)
+  await arrange(api, { title: `Other role ${tag}`, company: `Fabrikam ${tag}`, status: 'applied' });
+  await openTracker(page, `/dashboard/job-tracker?q=${encodeURIComponent(job.title)}`);
+  await expect(entry(page, `Other role ${tag}`)).toHaveCount(0);
   guard.expectApiStatuses(503, 404);
   await page.route('**/api/jobs-data/tracker/*', (route) => (route.request().method() === 'DELETE'
     ? route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: 'Service unavailable' }) })
