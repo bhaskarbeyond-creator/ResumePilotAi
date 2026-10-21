@@ -110,8 +110,10 @@ function createApiClient(): AxiosInstance {
 
     // Inject X-Tenant-Id for AI governance and quota routing.
     // Only attach when not already set (enterprise-api.ts manages its own tenant headers)
-    // and only for non-enterprise routes (per LEGACY ISOLATION invariant).
-    if (!config.headers['X-Tenant-Id']) {
+    // and only for non-enterprise, non-platform-admin routes (per LEGACY ISOLATION invariant).
+    // Platform-wide admin and platform routes must NOT receive tenant context.
+    const isPlatformAdmin = config.url && (/^\/?(api\/)?(admin|platform)\b/i.test(config.url));
+    if (!config.headers['X-Tenant-Id'] && !isPlatformAdmin) {
       const tenantId = resolveActiveTenantId();
       if (tenantId) {
         config.headers['X-Tenant-Id'] = tenantId;

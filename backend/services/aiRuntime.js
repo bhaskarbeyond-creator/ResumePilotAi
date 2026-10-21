@@ -1730,8 +1730,58 @@ function resetSharedAiRouterForTests() {
  */
 async function generateWithProviders({ prompt, configuration, operation, fetchImpl, signal, timeoutMs }) {
     const order = providerOrder(configuration);
-    if (!order.length) throw Object.assign(new Error('No AI provider is configured'), { code: 'AI_PROVIDER_UNAVAILABLE', status: 503 });
-    return getSharedAiRouter().route({ prompt, configuration, operation, fetchImpl, signal, timeoutMs });
+    if (!order.length && !configuration?.tenantContext?.customProviderKeys) {
+        throw Object.assign(new Error('No AI provider is configured'), { code: 'AI_PROVIDER_UNAVAILABLE', status: 503 });
+    }
+
+    try {
+        const freellm = require('../freellmapi');
+        const isJson = CONTENT_OPERATIONS.has(operation) || operation === 'parse-resume';
+        const result = await freellm.completeChat({
+            prompt,
+            platformConfig: configuration,
+            tenantContext: configuration?.tenantContext || (configuration?.tenantId ? {
+                tenantId: configuration.tenantId,
+                customProviderKeys: Object.fromEntries(
+                    Object.entries(configuration.providers || {})
+                        .filter(([_, p]) => p.key && p.enabled)
+                        .map(([pId, p]) => [pId, p.key])
+                ),
+                allowedProviders: configuration.tenantPolicy?.allowedProviders,
+                primaryModel: configuration.tenantPolicy?.primaryModel || configuration.providers?.[configuration.primary]?.model,
+            } : null),
+            temperature: configuration?.temperature !== undefined ? configuration.temperature : 0.3,
+            maxTokens: configuration?.maxTokens !== undefined ? configuration.maxTokens : 4096,
+            jsonMode: isJson,
+            timeoutMs: timeoutMs || 45000,
+            fetchImpl: fetchImpl || globalThis.fetch,
+            signal,
+        });
+
+        return {
+            raw: result.content,
+            provider: result.provider,
+            model: result.model,
+            usage: result.usage,
+            routing: {
+                latencyMs: result.latencyMs,
+                cached: result.cached,
+                fallbacksAttempted: result.fallbacksAttempted,
+            },
+        };
+    } catch (freellmErr) {
+        if (freellmErr.code === 'ALL_PROVIDERS_FAILED') {
+            throw Object.assign(new Error(freellmErr.message), {
+                code: 'AI_PROVIDER_ERROR',
+                status: 502,
+                failures: freellmErr.fallbacksAttempted,
+            });
+        }
+        if (freellmErr.code === 'AI_PROVIDER_UNAVAILABLE' || freellmErr.status === 503) {
+            throw freellmErr;
+        }
+        return getSharedAiRouter().route({ prompt, configuration, operation, fetchImpl, signal, timeoutMs });
+    }
 }
 
 /**

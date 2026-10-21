@@ -34,7 +34,7 @@ async function main() {
     '-czf', '-',
     '-C', path.join(root, 'backend'),
     'index.js', 'COMMIT_SHA',
-    'routes', 'services', 'security', 'enterprise', 'repositories', 'database'
+    'routes', 'services', 'security', 'enterprise', 'repositories', 'database', 'freellmapi'
   ];
   const backendTar = spawnSync('tar', backendTarArgs, { cwd: root, maxBuffer: 100 * 1024 * 1024 });
   if (backendTar.status !== 0) {

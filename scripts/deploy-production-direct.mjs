@@ -68,7 +68,7 @@ async function main() {
     '-czf', '-',
     '-C', path.join(root, 'backend'),
     'index.js', 'package.json', 'package-lock.json', 'COMMIT_SHA',
-    'routes', 'services', 'security', 'enterprise', 'repositories', 'database', 'fonts'
+    'routes', 'services', 'security', 'enterprise', 'repositories', 'database', 'fonts', 'freellmapi'
   ];
   const backendTar = spawnSync('tar', backendTarArgs, { cwd: root, maxBuffer: 100 * 1024 * 1024 });
   if (backendTar.status !== 0) {

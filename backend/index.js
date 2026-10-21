@@ -14,7 +14,7 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const EmailNotifier = require('./services/emailNotifier');
 const { processOutboxOnce } = require('./services/notificationOutbox');
 const { createResumeDocx, resolveExportTemplate } = require('./services/docxExport');
-const { generateWithProviders } = require('./services/aiRuntime');
+const { generateWithProviders, loadProviderConfiguration } = require('./services/aiRuntime');
 const { buildCoverLetterPrompt, coverLetterFields, validateCoverLetterOutput } = require('./services/coverLetterAi');
 const { loadAiAdminSettings, saveAiAdminSettings, testAiProvider, fetchProviderModels } = require('./services/aiAdmin');
 const { getGlobalAiDashboardData, setGlobalAiQuotaLimits, resetUserAiQuota, resetAllAiQuota } = require('./services/adminAiEntitlement');
@@ -529,6 +529,8 @@ app.use('/api/admin/database-settings', databaseAdminRouter);
 app.use('/api', async (req, res, next) => {
     const asksForTenantContext = Boolean(req.get('x-tenant-id') || req.get('x-workspace-id'));
     const isTenantAwareRoute = req.path.startsWith('/enterprise/')
+        || req.path.startsWith('/admin/')
+        || req.path.startsWith('/platform/')
         || req.path === '/generate-interview'
         || req.path.startsWith('/live-interview')
         || req.path === '/generate-content'
@@ -2540,6 +2542,10 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
                 '--ignore-certificate-errors'
             ]
         };
+        const customChromium = process.env.CHROMIUM_PATH || process.env.PUPPETEER_EXECUTABLE_PATH;
+        if (customChromium && fs.existsSync(customChromium)) {
+            launchOptions.executablePath = customChromium;
+        }
         browser = await chromium.launch(launchOptions);
         const context = await browser.newContext({
             viewport: { width: 794, height: 1123 },
@@ -2650,6 +2656,52 @@ const emailRoutes = require('./routes/email');
 // namespace so it cannot shadow unrelated /api/admin/* or /api/templates routes.
 app.use('/api', aiRoutes);
 app.use('/api/email', emailRoutes);
+
+// ---------------------------------------------------------------------------
+// FreeLLMAPI Unified Coding Agent & Wire Endpoints (Claude Code, Codex, Cline, Roo)
+// Runs 100% in-process over standard HTTPS.
+// Works seamlessly on both Windows Dev & Hostinger Shared Linux Hosting with ZERO extra ports.
+// ---------------------------------------------------------------------------
+const freellm = require('./freellmapi');
+
+app.post('/v1/messages', async (req, res) => {
+    try {
+        const configuration = await loadProviderConfiguration(process.env);
+        const result = await freellm.handleAnthropicMessages(req.body, { platformConfig: configuration });
+        return res.json(result);
+    } catch (err) {
+        return res.status(err.status || 500).json({
+            type: 'error',
+            error: {
+                type: 'api_error',
+                message: err.message || 'FreeLLMAPI Provider Error',
+            },
+        });
+    }
+});
+
+app.get('/v1/models', async (_req, res) => {
+    try {
+        const status = freellm.getEngineStatus();
+        return res.json({
+            object: 'list',
+            data: status.supportedProviders.map(p => ({
+                id: p.id,
+                object: 'model',
+                owned_by: p.id,
+                name: p.name,
+                intelligenceScore: p.intelligenceScore,
+                freeTierAvailable: p.freeTierAvailable,
+            })),
+        });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.get(['/v1/status', '/api/freellmapi/status'], async (_req, res) => {
+    return res.json({ success: true, ...freellm.getEngineStatus() });
+});
 
 // Enterprise tenancy APIs are feature-gated at the client, server-authorized, and
 // deliberately isolated from existing certified UID-scoped module routes. The
@@ -4773,6 +4825,9 @@ if (require.main === module) {
     // operational on first boot; a MySQL outage degrades instead of crash-looping.
     runSchemaBootstrap().catch(() => {});
 
+    // FreeLLMAPI autonomous background maintenance cycle (unref'd timer)
+    freellm.startAutonomousMaintenance();
+
     // Live sessions contain short-lived candidate context and transcripts. This
     // bounded worker complements on-access cleanup so abandoned browser tabs do
     // not leave that data retained indefinitely.
@@ -5041,9 +5096,16 @@ if (require.main === module) {
                 console.error('[HTTP Server Error]', err);
             }
         });
-        httpServer.listen(port, '0.0.0.0', () => {
-            console.log('HTTP Server running on port ' + port);
-        });
+        const isSocket = typeof port === 'string' && Number.isNaN(Number(port));
+        if (isSocket) {
+            httpServer.listen(port, () => {
+                console.log(`HTTP Server listening on passenger socket: ${port}`);
+            });
+        } else {
+            httpServer.listen(Number(port), '0.0.0.0', () => {
+                console.log('HTTP Server running on port ' + port);
+            });
+        }
     }
 
     let isShuttingDown = false;
@@ -5051,6 +5113,7 @@ if (require.main === module) {
         if (isShuttingDown) return;
         isShuttingDown = true;
         console.log(`[Shutdown] ${signal} received — draining connections...`);
+        try { freellm.stopAutonomousMaintenance(); } catch (_) {}
         if (httpServer && httpServer.listening) {
             httpServer.close(async () => {
                 try {

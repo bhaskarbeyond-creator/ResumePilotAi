@@ -220,6 +220,17 @@ export function EnterpriseRolesTab() {
     });
   };
 
+  useEffect(() => {
+    if (!showCustomModal) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isSubmitting) {
+        setShowCustomModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showCustomModal, isSubmitting]);
+
   const handleCreateCustomRole = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!tenant?.id) return;

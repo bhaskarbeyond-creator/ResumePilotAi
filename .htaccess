@@ -14,12 +14,12 @@
   RewriteEngine On
   RewriteBase /
 
-  # Route /api/* requests through the PHP reverse proxy to Node.js backend
-  RewriteCond %{REQUEST_URI} ^/api/ [NC]
-  RewriteRule ^api/(.*)$ api/index.php [QSA,L]
+  # Route /api/* and /v1/* (FreeLLMAPI & Claude Code wire endpoints) through PHP reverse proxy to Node.js backend
+  RewriteCond %{REQUEST_URI} ^/(api|v1)(/|$) [NC]
+  RewriteRule ^(api|v1)(.*)$ api/index.php [QSA,L]
 
-  # Route healthz, readyz, llms.txt, and public backend endpoints to api/index.php
-  RewriteRule ^(healthz|readyz|llms\.txt|public/.*\.json)$ api/index.php [QSA,L]
+  # Route healthz, readyz, llms.txt, sitemap.xml, and public backend endpoints to api/index.php
+  RewriteRule ^(healthz|readyz|llms\.txt|llms-full\.txt|sitemap\.xml|public/.*\.json)$ api/index.php [QSA,L]
 
   # SPA Routing — all other routes serve index.html
   RewriteCond %{REQUEST_FILENAME} !-f
