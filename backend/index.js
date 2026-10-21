@@ -2666,6 +2666,10 @@ app.use('/api/email', emailRoutes);
 //   POST /v1/search             Agent web search / extraction (Tavily, Exa, …)
 //   GET  /v1/models             Advertised model + engine catalog
 //   GET  /v1/status             Engine health, cooldowns, compression + metrics
+//
+// There is deliberately NO /api/v1 alias: the shared /api auth stage speaks
+// Firebase bearer tokens only, so an alias would 401 platform-key clients and
+// advertise a route that cannot serve them. Clients configure <host>/v1.
 // ---------------------------------------------------------------------------
 const freellm = require('./freellmapi');
 const { loadFreeLlmPlatformConfig, platformApiKeys } = require('./services/freellmConfig');
@@ -2778,7 +2782,7 @@ function openAiUsage(usage, messages, content) {
 }
 
 // ─── POST /v1/chat/completions — OpenAI SDK / Cursor / Cline / Roo / Aider ───
-app.post(['/v1/chat/completions', '/api/v1/chat/completions'], optionalAuth, async (req, res) => {
+app.post('/v1/chat/completions', optionalAuth, async (req, res) => {
     const principal = resolveV1Principal(req);
     if (!principal.ok) return sendV1AuthError(res, principal);
 
@@ -2964,7 +2968,7 @@ app.post(['/v1/chat/completions', '/api/v1/chat/completions'], optionalAuth, asy
 });
 
 // ─── POST /v1/messages — Anthropic SDK / Claude Code CLI ───
-app.post(['/v1/messages', '/api/v1/messages'], optionalAuth, async (req, res) => {
+app.post('/v1/messages', optionalAuth, async (req, res) => {
     const principal = resolveV1Principal(req);
     if (!principal.ok) return sendV1AuthError(res, principal);
 
@@ -3024,7 +3028,7 @@ app.post(['/v1/messages', '/api/v1/messages'], optionalAuth, async (req, res) =>
 });
 
 // ─── POST /v1/search — agent web search / extraction tools ───
-app.post(['/v1/search', '/api/v1/search'], optionalAuth, async (req, res) => {
+app.post('/v1/search', optionalAuth, async (req, res) => {
     const principal = resolveV1Principal(req);
     if (!principal.ok) return sendV1AuthError(res, principal);
 
