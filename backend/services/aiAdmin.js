@@ -14,6 +14,26 @@ const ENABLE_FIELDS = Object.freeze({
   gemini: 'enableGemini', nvidia: 'enableNvidia', openai: 'enableOpenai', groq: 'enableGroq',
   openrouter: 'enableOpenrouter', deepseek: 'enableDeepseek',
 });
+function splitKeyPoolInput(value) {
+  const keys = [];
+  const push = entry => {
+    for (const part of String(entry || '').split(/[\n,]+/)) {
+      const key = part.trim();
+      if (key && !keys.includes(key)) keys.push(key);
+    }
+  };
+  if (Array.isArray(value)) value.forEach(push);
+  else if (value) push(value);
+  return keys;
+}
+
+/** Mask every key in a pool, never returning more than a hint per key. */
+function maskKeyPool(keys) {
+  const list = Array.isArray(keys) ? keys.filter(Boolean) : [];
+  if (list.length === 0) return '';
+  if (list.length === 1) return maskApiKey(list[0]);
+  return `${maskApiKey(list[0])} +${list.length - 1}`;
+}
 const modelPattern = /^[A-Za-z0-9._:/-]{1,150}$/;
 const MASKED_PATTERN = /[•*]/;
 
@@ -58,12 +78,20 @@ function secretPatch(input = {}, existing = {}, legacy = {}) {
   const clearSecrets = input.clearSecrets && typeof input.clearSecrets === 'object' ? input.clearSecrets : {};
   for (const provider of PROVIDERS) {
     const rawKey = String(input[SECRET_FIELDS[provider]] || '').trim();
+    const rawPool = splitKeyPoolInput(input[`${provider}ApiKeys`] ?? input[provider]?.apiKeys);
+    const pool = rawPool.filter(key => !MASKED_PATTERN.test(key));
     const isMasked = MASKED_PATTERN.test(rawKey);
     const explicitlyCleared = clearSecrets[provider] === true;
     const existingKey = existing[provider]?.apiKey || legacy[SECRET_FIELDS[provider]] || '';
+    const existingPool = splitKeyPoolInput(existing[provider]?.apiKeys);
 
-    if (rawKey && !isMasked) {
+    if (rawKey && !isMasked && pool.length === 0) {
       if (rawKey.length < 12 || rawKey.length > 512) {
+        throw errorWith('AI_SETTINGS_VALIDATION_ERROR', `Invalid ${provider} API key format.`, 400);
+      }
+    }
+    for (const candidate of pool) {
+      if (candidate.length < 12 || candidate.length > 512) {
         throw errorWith('AI_SETTINGS_VALIDATION_ERROR', `Invalid ${provider} API key format.`, 400);
       }
     }
@@ -86,13 +114,17 @@ function secretPatch(input = {}, existing = {}, legacy = {}) {
     } else if (rawBaseUrl.toLowerCase() === 'none') {
       baseUrl = '';
     }
+    const nextPool = explicitlyCleared ? [] : (pool.length > 0 ? pool : (finalKey ? [finalKey] : existingPool));
     patch[provider] = {
       ...(existing[provider] || {}),
-      ...(finalKey ? { apiKey: finalKey } : {}),
+      ...(nextPool.length > 0 ? { apiKey: nextPool[0], apiKeys: nextPool } : {}),
       ...(model ? { model } : {}),
       ...(baseUrl ? { baseUrl } : {}),
     };
-    if (explicitlyCleared) delete patch[provider].apiKey;
+    if (explicitlyCleared) {
+      delete patch[provider].apiKey;
+      delete patch[provider].apiKeys;
+    }
     if (!baseUrl) delete patch[provider].baseUrl;
   }
 
@@ -101,27 +133,39 @@ function secretPatch(input = {}, existing = {}, legacy = {}) {
   for (const [pId, meta] of Object.entries(PROVIDER_REGISTRY)) {
     if (PROVIDERS.includes(pId)) continue;
     const rawKey = String(input[`${pId}ApiKey`] || input[pId]?.apiKey || '').trim();
+    const rawPool = splitKeyPoolInput(input[`${pId}ApiKeys`] ?? input[pId]?.apiKeys);
+    const pool = rawPool.filter(key => !MASKED_PATTERN.test(key));
     const isMasked = MASKED_PATTERN.test(rawKey);
     const explicitlyCleared = clearSecrets[pId] === true;
     const existingKey = existing[pId]?.apiKey || '';
+    const existingPool = splitKeyPoolInput(existing[pId]?.apiKeys);
     const isKeyless = Boolean(meta.keyless);
-    if (rawKey && !isMasked) {
+    if (rawKey && !isMasked && pool.length === 0) {
       if (!isKeyless && (rawKey.length < 4 || rawKey.length > 512)) {
+        throw errorWith('AI_SETTINGS_VALIDATION_ERROR', `Invalid ${meta.name} API key format.`, 400);
+      }
+    }
+    for (const candidate of pool) {
+      if (!isKeyless && (candidate.length < 4 || candidate.length > 512)) {
         throw errorWith('AI_SETTINGS_VALIDATION_ERROR', `Invalid ${meta.name} API key format.`, 400);
       }
     }
     const finalKey = explicitlyCleared ? '' : ((!isMasked && rawKey) ? rawKey : existingKey);
     const model = String(input[`${pId}Model`] || input[pId]?.model || '').trim();
     const isExplicitlyActivated = input[`enable${pId.charAt(0).toUpperCase() + pId.slice(1)}`] === true || input[pId]?.enabled === true || rawKey === 'keyless';
-    if (finalKey || existing[pId] || explicitlyCleared || (isKeyless && isExplicitlyActivated)) {
+    const nextPool = explicitlyCleared ? [] : (pool.length > 0 ? pool : (finalKey ? [finalKey] : existingPool));
+    if (nextPool.length > 0 || existing[pId] || explicitlyCleared || (isKeyless && isExplicitlyActivated)) {
       patch[pId] = {
         ...(existing[pId] || {}),
-        ...(finalKey ? { apiKey: finalKey } : (isKeyless ? { apiKey: 'keyless' } : {})),
+        ...(nextPool.length > 0
+          ? { apiKey: nextPool[0], apiKeys: nextPool }
+          : (isKeyless ? { apiKey: 'keyless', apiKeys: ['keyless'] } : {})),
         ...(model ? { model } : {}),
         ...(isKeyless ? { keyless: true } : {}),
       };
       if (explicitlyCleared) {
         delete patch[pId].apiKey;
+        delete patch[pId].apiKeys;
         delete patch[pId].keyless;
       }
     }
@@ -194,23 +238,48 @@ async function loadAiAdminSettings(environment = process.env) {
   // Build complete 74-platform provider catalog for the FreeLLMAPI-grade executive UI
   const { listSupportedProviders } = require('../freellmapi/providers/registry');
   const allProvidersList = listSupportedProviders();
+  // Durable cooldown ledger: a benched provider must render as such, not as a
+  // healthy one. The engine is the single source of truth for this state.
+  const freellmEngine = require('../freellmapi');
+  const activeCooldowns = freellmEngine.cooldownManager.getStatus();
+  const cooldowns = {};
+  for (const entry of activeCooldowns) {
+    cooldowns[entry.provider] = {
+      remainingSeconds: entry.remainingSeconds,
+      reason: entry.reason,
+      strikeCount: entry.strikeCount,
+    };
+  }
+
   const catalog = allProvidersList.map(meta => {
     const envKeyName = meta.envKey || `${meta.id.toUpperCase()}_API_KEY`;
-    const hasEnv = Boolean(environment[envKeyName]);
-    const storedSecret = providerSecrets[meta.id]?.apiKey || legacyAi[SECRET_FIELDS[meta.id]] || '';
-    const hasSecret = Boolean(storedSecret);
-    const hasKey = hasEnv || hasSecret;
+    const stored = providerSecrets[meta.id] || {};
+    const storedPool = splitKeyPoolInput(stored.apiKeys);
+    if (storedPool.length === 0 && stored.apiKey) storedPool.push(String(stored.apiKey));
+    const envPool = splitKeyPoolInput(environment[envKeyName]);
+    const legacyKey = splitKeyPoolInput(legacyAi[SECRET_FIELDS[meta.id]]);
+    const poolSize = Math.max(storedPool.length, envPool.length, legacyKey.length);
+    const hasKey = poolSize > 0;
     const isConfigured = Boolean(meta.keyless || hasKey || configuredProviders[meta.id]);
+    const cooldown = cooldowns[meta.id];
+    const isSearch = meta.type === 'search';
+    const status = cooldown ? 'cooldown' : (hasKey || meta.keyless) ? 'healthy' : 'disabled';
     return {
       id: meta.id,
       name: meta.name,
       label: meta.label,
       type: meta.type || 'openai-compat',
+      group: isSearch || meta.type === 'media' ? 'search' : 'models',
       keyless: Boolean(meta.keyless),
       configuredOnServer: isConfigured,
       hasKey,
-      keysCount: meta.keyless ? 1 : (hasKey ? 1 : 0),
-      status: meta.keyless ? 'healthy' : (isConfigured ? 'healthy' : 'disabled'),
+      keysCount: meta.keyless ? 1 : poolSize,
+      status,
+      cooldownRemainingSeconds: cooldown?.remainingSeconds || 0,
+      cooldownReason: cooldown?.reason || null,
+      credentialSource: envPool.length > 0 ? 'environment'
+        : storedPool.length > 0 ? 'mariadb-secret-store'
+          : legacyKey.length > 0 ? 'mariadb-legacy-setting' : (meta.keyless ? 'keyless' : 'none'),
       docUrl: meta.docUrl || '',
       baseUrl: meta.baseUrl || '',
       defaultModel: meta.defaultModel || '',
@@ -225,7 +294,11 @@ async function loadAiAdminSettings(environment = process.env) {
   for (const item of catalog) {
     configuredProviders[item.id] = item.configuredOnServer;
     if (item.hasKey) {
-      maskedKeys[item.id] = maskedKeys[item.id] || maskApiKey(providerSecrets[item.id]?.apiKey || '');
+      const sourcePool = splitKeyPoolInput(providerSecrets[item.id]?.apiKeys);
+      if (sourcePool.length === 0 && providerSecrets[item.id]?.apiKey) sourcePool.push(providerSecrets[item.id].apiKey);
+      if (sourcePool.length > 0) {
+        maskedKeys[item.id] = maskKeyPool(sourcePool);
+      }
     }
   }
 
@@ -251,6 +324,12 @@ async function loadAiAdminSettings(environment = process.env) {
   return {
     settings, configuredProviders, credentialSources, maskedKeys,
     catalog,
+    cooldowns,
+    engine: {
+      version: freellmEngine.ENGINE_VERSION,
+      capabilities: freellmEngine.getEngineStatus().capabilities,
+      persistence: freellmEngine.getEngineStatus().persistence,
+    },
     fallbackChains,
     curatedModels: CURATED_MODELS_CATALOG,
     revision: Number(publicConfig.aiRevision || providerSecrets._revision || 0),
@@ -320,6 +399,7 @@ async function saveAiAdminSettings({ input, expectedRevision = 0, actorUid, requ
     connection.release();
   }
   clearProviderConfigurationCache();
+  try { require('./freellmConfig').clearFreeLlmConfigCache(); } catch { /* optional */ }
   const loaded = await loadAiAdminSettings();
   return { ...loaded, revision: nextRevision };
 }
