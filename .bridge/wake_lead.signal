@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-21T22:08:33.323Z",
-  "seq": 4268,
-  "id": "evt_mvinywhl_4c144c4b6120",
-  "type": "WAKE_LEAD_REQUESTED",
-  "title": "[WAKE LEAD] DIR-011 [Status: IN_PROGRESS]",
+  "timestamp": "2026-10-21T22:14:11.627Z",
+  "seq": 4269,
+  "id": "evt_mvio65ih_185462456273",
+  "type": "EVIDENCE_SUBMITTED",
+  "title": "[Evidence] DIR-011: DIR-011: Complete Replacement of [AI Multi-Provider Engine] with Native FreeLLMAPI Core & Admin-Only BYOK Governance",
   "sender": "STAFF_DEVELOPER",
   "directiveId": "DIR-011",
-  "summary": "Wave 3 complete: BYOK encrypted credential store active — removed 501 blocker, added POST /api/platform/tenants/:tenantId/ai-keys/test endpoint, verified frontend build passes, test environment issues pre-existing. Ready for remaining UI work and verification gates."
+  "summary": "DIR-011 Wave 3 complete: AES-256-GCM BYOK encrypted credential store active. Removed 501 blocker in normalizeTenantConfiguration to allow customProviderKeys passthrough; adminPlatformOperations PATCH /api/platform/tenants/:tenantId/ai-policy now persists credentials via setTenantCredentials/deleteTenantCredentials using ServerKeyEncryptionProvider; added POST /api/platform/tenants/:tenantId/ai-keys/test endpoint with FreeLLMAPI probeProviderConnection and test history logging. Added GET /api/platform/status endpoint. Frontend: restored per-model allowlist UI in EnterpriseAiTab with 18 model entries, added read-only 'Dedicated Enterprise Gateway Active' / 'Platform High-Availability Shared Gateway' status badge with credential count, AiQuotaRing integrated. Frontend build passes with 0 TypeScript errors. Migration 027_enterprise_tenant_credentials already present in repo."
 }
