@@ -217,7 +217,9 @@ test('DOCX export renders distinct layout structures for all 5 archetypes', asyn
 
   const bufCv8 = await createResumeDocx({ ...sampleData, template: 'Cv8' });
   const xmlCv8 = (await loadDoc(bufCv8)).documentXml;
-  assert.match(xmlCv8, /<w:shd w:fill="1E293B"\/>/i);
+  // Attribute order is not significant in OOXML: docx >=9.13 also emits
+  // w:val="clear" alongside the fill, so match the fill within the element.
+  assert.match(xmlCv8, /<w:shd[^>]*\bw:fill="1E293B"[^>]*\/>/i);
 
   const bufCv4 = await createResumeDocx({ ...sampleData, template: 'Cv4' });
   const xmlCv4 = (await loadDoc(bufCv4)).documentXml;
