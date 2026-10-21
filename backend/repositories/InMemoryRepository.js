@@ -233,20 +233,20 @@ class InMemoryRepository {
         }
         const now = new Date().toISOString();
         const saved = {
-            id: resumeId,
             title: data.title || existing?.title || 'Untitled Resume',
             template: data.template || existing?.template || 'modern',
             content: data.content || existing?.content || {},
             createdAt: existing?.createdAt || now,
             updatedAt: now,
-            revision: currentRev + 1,
             publicationRevision: existing?.publicationRevision || 0,
             isPublished: existing?.isPublished || false,
             pbId: existing?.pbId || null,
             ...existing,
             ...data,
             // Server-owned fields are enforced last: ownership and revision can
-            // never be set or rewound by a client payload.
+            // never be set or rewound by a client payload. They are declared
+            // only here — a duplicate declaration before the spreads is both a
+            // lint error and a silent-override trap.
             id: resumeId,
             userId,
             revision: currentRev + 1,
