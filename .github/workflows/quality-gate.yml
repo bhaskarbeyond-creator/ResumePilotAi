@@ -32,6 +32,11 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
+          # The DIR-021 freeze check diffs the working tree against a pinned
+          # baseline commit (e314f715). A depth-1 checkout does not contain that
+          # object, so the check failed with "bad revision" rather than measuring
+          # anything. History is read-only here and no credentials are persisted.
+          fetch-depth: 0
 
       - name: Start isolated MariaDB with ephemeral credentials
         run: scripts/start-ci-mariadb.sh

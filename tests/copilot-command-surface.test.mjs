@@ -267,6 +267,15 @@ describe('DIR-021 INV-1/2/3/4: frozen surfaces, leakage, quota and contrast', ()
         // SHARED utility that a directive may legitimately change (DIR-071 enforces
         // global photo-visibility suppression there), so it is asserted separately
         // below instead of silently widening the freeze.
+        // A shallow clone does not contain the baseline object. Try once to
+        // deepen rather than reporting a freeze VIOLATION that never happened.
+        try {
+            execFileSync('git', ['cat-file', '-e', 'e314f715'], { stdio: 'ignore' });
+        } catch {
+            try {
+                execFileSync('git', ['fetch', '--deepen=500', 'origin'], { stdio: 'ignore', timeout: 60_000 });
+            } catch { /* offline: the assertion below reports the missing object */ }
+        }
         const diff = execFileSync('git', [
             '--no-pager', 'diff', 'e314f715', '--',
             'src/cv-templates/cv*', 'src/cv-templates/cover*',
