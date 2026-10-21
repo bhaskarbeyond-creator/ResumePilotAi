@@ -66,8 +66,22 @@ try {
 
   const clean = await runMigrations(pool, { mode: 'apply', appliedBy: 'isolated-ci-verifier' });
   const discovered = discoverMigrations();
-  const latestMigrationVersion = discovered.at(-1)?.version;
-  if (!clean.current || latestMigrationVersion !== '017') throw new Error(`Clean-state migration application did not reach version 017 (observed ${latestMigrationVersion || 'none'})`);
+  if (discovered.length === 0) throw new Error('No database migrations were discovered');
+  // Never hard-code the head version: it goes stale the moment a migration is
+  // added (this check kept expecting 017 after the chain reached 026, failing
+  // every run on every branch). Assert that the runner applied the complete
+  // discovered chain instead, which is stricter and self-maintaining.
+  const headVersion = discovered[discovered.length - 1].version;
+  const appliedVersions = new Set(clean.applied.map(migration => migration.version));
+  const skipped = discovered.filter(migration => !appliedVersions.has(migration.version));
+  if (!clean.current || clean.pending.length > 0 || skipped.length > 0) {
+    throw new Error(
+      `Clean-state migration application did not apply the full chain through ${headVersion} `
+      + `(discovered=${discovered.length}, applied=${clean.applied.length}, `
+      + `pending=${(clean.pending || []).map(migration => migration.version).join(',') || 'none'}, `
+      + `skipped=${skipped.map(migration => migration.version).join(',') || 'none'})`,
+    );
+  }
 
   const invitationTableCount = await scalar(pool,
     `SELECT COUNT(*) AS count FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'enterprise_membership_invitations'`,
