@@ -124,7 +124,11 @@ describe('DIR-006 AC-3: Authentic API Endpoint Contracts & Zero Phantom Routes',
 
   it('binds AI multi-provider settings strictly to /admin/ai-settings (under /api)', () => {
     assert.match(API_HOOKS_TS, /\/admin\/ai-settings/);
-    assert.match(AI_SETTINGS_TAB, /\/api\/admin\/ai\/test-provider/, 'Live provider reachability test endpoint');
+    // The tab posts through the shared axios client (baseURL '/api'), so the
+    // call site is the /admin/ai/test-provider route and must never hard-code
+    // a second /api prefix that would resolve to /api/api/...
+    assert.match(AI_SETTINGS_TAB, /\/admin\/ai\/test-provider/, 'Live provider reachability test endpoint');
+    assert.doesNotMatch(AI_SETTINGS_TAB, /['"`]\/api\/admin\/ai\//, 'Must not double-prefix the API baseURL in a call site');
   });
 
   it('binds support tickets messages strictly to /admin/support/tickets/:id/messages, banning /reply', () => {

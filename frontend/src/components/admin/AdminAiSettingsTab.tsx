@@ -35,8 +35,6 @@ import { cn } from '@/lib/utils';
 import { get, post } from '@/lib/api-client';
 import {
   ALL_74_PROVIDERS_CATALOG,
-  SEARCH_PROVIDERS_LIST,
-  MODEL_PROVIDERS_LIST,
   type ProviderCatalogEntry,
 } from './freellmapi-catalog';
 import {
@@ -72,6 +70,25 @@ import {
   Upload,
   FileText,
 } from 'lucide-react';
+
+/**
+ * Provider tiers used by the Keys screen category tabs.
+ *
+ * FRONTIER — paid-adjacent free tiers with flagship intelligence (Llama 3.3 70B,
+ *            Gemini 2.0 Flash, Mistral Large, DeepSeek V3, GPT-4o-mini …).
+ * MESH     — community/aggregator gateways with generous free quotas.
+ * SEARCH   — agent web-search & extraction tools (never chat candidates).
+ */
+const FRONTIER_PROVIDER_IDS = new Set<string>([
+  'groq', 'cerebras', 'gemini', 'mistral', 'nvidia', 'openrouter', 'deepseek',
+  'openai', 'cloudflare', 'cohere', 'siliconflow', 'modelscope', 'huggingface',
+]);
+
+function isSearchProvider(provider: Pick<ProviderCatalogEntry, 'group' | 'type'>): boolean {
+  return provider.group === 'search' || provider.type === 'search' || provider.type === 'media';
+}
+
+type ProviderTier = 'all' | 'frontier' | 'mesh' | 'search';
 
 export interface ProviderItem extends ProviderCatalogEntry {}
 
@@ -111,8 +128,12 @@ export function AdminAiSettingsTab() {
   const [providers, setProviders] = useState<ProviderItem[]>(ALL_74_PROVIDERS_CATALOG);
   const [subPill, setSubPill] = useState<'providers' | 'quota' | 'unified' | 'anthropic' | 'agents'>('providers');
   const [statusFilter, setStatusFilter] = useState<'all' | 'healthy' | 'issues' | 'disabled'>('all');
+  const [tierFilter, setTierFilter] = useState<ProviderTier>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedProvider, setExpandedProvider] = useState<string | null>(null);
+  const [cooldowns, setCooldowns] = useState<Record<string, { remainingSeconds: number; reason: string }>>({});
+  const [keyPoolDrafts, setKeyPoolDrafts] = useState<Record<string, string>>({});
+  const modalRef = useRef<HTMLDivElement>(null);
 
   // Global settings
   const [primaryProvider, setPrimaryProvider] = useState('nvidia');
@@ -182,6 +203,45 @@ export function AdminAiSettingsTab() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Modal accessibility: focus trap + Escape dismiss + initial focus.
+  // Required by WCAG 2.1 AA (2.1.2 No Keyboard Trap) because the dialog is a
+  // full-screen overlay: without this, Tab can reach the page behind it.
+  useEffect(() => {
+    if (!isAddKeyOpen) return;
+    const node = modalRef.current;
+    const focusables = () => Array.from(
+      node?.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      ) || []
+    );
+    const initial = focusables()[0];
+    initial?.focus();
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setIsAddKeyOpen(false);
+        setIsComboboxOpen(false);
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const list = focusables();
+      if (list.length === 0) return;
+      const firstEl = list[0];
+      const lastEl = list[list.length - 1];
+      if (event.shiftKey && document.activeElement === firstEl) {
+        event.preventDefault();
+        lastEl.focus();
+      } else if (!event.shiftKey && document.activeElement === lastEl) {
+        event.preventDefault();
+        firstEl.focus();
+      }
+    }
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isAddKeyOpen]);
+
   // Load configuration on mount
   useEffect(() => {
     loadSettings();
@@ -197,9 +257,11 @@ export function AdminAiSettingsTab() {
       curatedModels?: CuratedModel[];
       configuredProviders?: Record<string, boolean>;
       maskedKeys?: Record<string, string>;
+      cooldowns?: Record<string, { remainingSeconds: number; reason: string }>;
     }>('/admin/ai-settings')
       .then((res) => {
         if (res.revision) setRevision(res.revision);
+        setCooldowns(res.cooldowns || {});
         if (res.fallbackChains && Array.isArray(res.fallbackChains)) {
           setChains(res.fallbackChains);
         }
@@ -228,12 +290,15 @@ export function AdminAiSettingsTab() {
               configuredMap[p.id] ||
               maskedMap[p.id]
             );
+            const isCoolingDown = Boolean(res.cooldowns?.[p.id]);
             return {
               ...p,
               configuredOnServer: isConfigured,
               hasKey: Boolean(serverItem?.hasKey || configuredMap[p.id] || maskedMap[p.id]),
               keysCount: p.keyless ? 1 : (serverItem?.keysCount || (isConfigured ? 1 : 0)),
-              status: isConfigured ? 'healthy' : 'disabled',
+              // 'issues' is the existing three-state union; the precise
+              // "⊘ Rate-Limited Cooldown" label comes from `cooldowns`.
+              status: isCoolingDown ? 'issues' : (isConfigured ? 'healthy' : 'disabled'),
               latencyMs: serverItem?.latencyMs || p.latencyMs,
               defaultModel: serverItem?.defaultModel || p.defaultModel,
             };
@@ -252,6 +317,11 @@ export function AdminAiSettingsTab() {
       // Sub-pill filter
       if (subPill === 'providers' && p.group !== 'models' && p.group !== 'search') return false;
 
+      // Provider tier filter (Frontier / Community Mesh / Agent Search)
+      if (tierFilter === 'frontier' && !FRONTIER_PROVIDER_IDS.has(p.id)) return false;
+      if (tierFilter === 'mesh' && (isSearchProvider(p) || FRONTIER_PROVIDER_IDS.has(p.id))) return false;
+      if (tierFilter === 'search' && !isSearchProvider(p)) return false;
+
       // Status filter
       if (statusFilter === 'healthy' && p.status !== 'healthy') return false;
       if (statusFilter === 'issues' && p.status !== 'issues') return false;
@@ -269,7 +339,7 @@ export function AdminAiSettingsTab() {
       }
       return true;
     });
-  }, [providers, statusFilter, searchQuery, subPill]);
+  }, [providers, statusFilter, searchQuery, subPill, tierFilter]);
 
   // Providers list for Add Key Modal Combobox
   const filteredModalPlatforms = useMemo(() => {
@@ -308,12 +378,70 @@ export function AdminAiSettingsTab() {
     return providers.reduce((acc, p) => acc + (p.hasKey ? 1 : p.keyless ? 1 : 0), 0);
   }, [providers]);
 
+  const tierCounts = useMemo(() => {
+    const frontier = providers.filter((p) => FRONTIER_PROVIDER_IDS.has(p.id)).length;
+    const search = providers.filter((p) => isSearchProvider(p)).length;
+    const mesh = providers.length - frontier - search;
+    return { all: providers.length, frontier, mesh, search };
+  }, [providers]);
+
+  const splitKeyPool = (value: string): string[] => {
+    const seen = new Set<string>();
+    return String(value || '')
+      .split(/[\n,]+/)
+      .map((key) => key.trim())
+      .filter((key) => {
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+  };
+
+  /**
+   * The four operational states mandated by the FreeLLMAPI parity audit.
+   * Exact strings are part of the UI contract (Playwright asserts them).
+   */
+  const providerStatePill = (p: ProviderItem) => {
+    const cooling = cooldowns[p.id];
+    if (cooling) {
+      return {
+        label: '⊘ Rate-Limited Cooldown',
+        tone: 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:border-amber-800',
+        detail: `${cooling.remainingSeconds}s · ${cooling.reason}`,
+        state: 'cooldown',
+      };
+    }
+    if (p.keyless) {
+      return {
+        label: '○ Keyless Active',
+        tone: 'bg-sky-50 text-sky-800 border-sky-200 dark:bg-sky-950/40 dark:text-sky-200 dark:border-sky-800',
+        detail: 'no credential required',
+        state: 'keyless',
+      };
+    }
+    if (p.configuredOnServer || p.hasKey) {
+      return {
+        label: '● Live & Active',
+        tone: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-200 dark:border-emerald-800',
+        detail: `${p.keysCount || 1} ${(p.keysCount || 1) === 1 ? 'key' : 'keys'} · ${p.latencyMs}ms`,
+        state: 'healthy',
+      };
+    }
+    return {
+      label: '— Not Configured',
+      tone: 'bg-surface-secondary text-ink-muted border-border',
+      detail: 'add a key to activate',
+      state: 'disabled',
+    };
+  };
+
   // Test Provider Reachability
   const handleTestProvider = async (providerId: string, customKey?: string) => {
     setTestingId(providerId);
     setTestStatus((prev) => ({ ...prev, [providerId]: undefined as any }));
     try {
       const p = providers.find((item) => item.id === providerId);
+      // Resolves to /api/admin/ai/test-provider through the shared axios baseURL.
       const res = await post<{ success?: boolean; latencyMs?: number; message?: string }>(
         '/admin/ai/test-provider',
         {
@@ -323,20 +451,24 @@ export function AdminAiSettingsTab() {
         }
       );
 
-      const lat = res.latencyMs || Math.floor(Math.random() * 80 + 140);
+      // Never invent a latency: the badge must reflect a real probe or the
+      // server's own message. `latencyMs` stays undefined when unreported.
+      const lat = Number(res.latencyMs) > 0 ? Number(res.latencyMs) : undefined;
       setTestStatus((prev) => ({
         ...prev,
         [providerId]: {
           ok: res.success !== false,
-          latencyMs: lat,
-          message: res.message || `Connected in ${lat}ms`,
+          ...(lat ? { latencyMs: lat } : {}),
+          message: res.message || (lat ? `Connected in ${lat}ms` : 'Connection verified'),
         },
       }));
 
       // Update provider status in local view
       setProviders((prev) =>
         prev.map((item) =>
-          item.id === providerId ? { ...item, status: 'healthy', latencyMs: lat } : item
+          item.id === providerId
+            ? { ...item, status: 'healthy', ...(lat ? { latencyMs: lat } : {}) }
+            : item
         )
       );
     } catch (err: any) {
@@ -373,17 +505,20 @@ export function AdminAiSettingsTab() {
   const handleSaveSingleKey = async (providerId: string) => {
     const key = (secretInputs[providerId] || '').trim();
     if (!key) return;
+    const pool = splitKeyPool(key);
+    if (pool.length === 0) return;
     setSaving(true);
     try {
       const payload: Record<string, any> = { expectedRevision: revision };
-      payload[`${providerId}ApiKey`] = key;
+      payload[`${providerId}ApiKey`] = pool[0];
+      if (pool.length > 1) payload[`${providerId}ApiKeys`] = pool;
       const res = await post<{ revision?: number }>('/admin/ai-settings', payload);
       if (res?.revision) setRevision(res.revision);
 
       setProviders((prev) =>
         prev.map((p) =>
           p.id === providerId
-            ? { ...p, configuredOnServer: true, hasKey: true, status: 'healthy', keysCount: 1 }
+            ? { ...p, configuredOnServer: true, hasKey: true, status: 'healthy', keysCount: pool.length }
             : p
         )
       );
@@ -393,6 +528,37 @@ export function AdminAiSettingsTab() {
       handleTestProvider(providerId, key).catch(() => {});
     } catch (err: any) {
       alert(`Save failed: ${err.message || 'Unknown error'}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Save a pooled set of keys for a high-volume provider (Groq/Cerebras/Gemini)
+  const handleSaveKeyPool = async (providerId: string) => {
+    const pool = splitKeyPool(keyPoolDrafts[providerId] || '');
+    if (pool.length === 0) return;
+    setSaving(true);
+    try {
+      const payload: Record<string, any> = {
+        expectedRevision: revision,
+        [`${providerId}ApiKeys`]: pool,
+        [`${providerId}ApiKey`]: pool[0],
+      };
+      const res = await post<{ revision?: number }>('/admin/ai-settings', payload);
+      if (res?.revision) setRevision(res.revision);
+      setProviders((prev) =>
+        prev.map((p) =>
+          p.id === providerId
+            ? { ...p, configuredOnServer: true, hasKey: true, status: 'healthy', keysCount: pool.length }
+            : p
+        )
+      );
+      setKeyPoolDrafts((prev) => ({ ...prev, [providerId]: '' }));
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 3000);
+      handleTestProvider(providerId, pool[0]).catch(() => {});
+    } catch (err: any) {
+      alert(`Key pool save failed: ${err.message || 'Unknown error'}`);
     } finally {
       setSaving(false);
     }
@@ -499,8 +665,14 @@ export function AdminAiSettingsTab() {
         expectedRevision: currentRev,
       };
 
+      const pool = splitKeyPool(key);
       if (providerId === 'cloudflare' && modalAccountId.trim()) {
         payload[`${providerId}ApiKey`] = `${modalAccountId.trim()}:${key}`;
+      } else if (pool.length > 1) {
+        // Multi-key pooling: the server stores the whole pool and rotates it
+        // round-robin, benching only a key that is throttled.
+        payload[`${providerId}ApiKeys`] = pool;
+        payload[`${providerId}ApiKey`] = pool[0];
       } else {
         payload[`${providerId}ApiKey`] = key || (isKeyless ? 'keyless' : '');
       }
@@ -522,7 +694,7 @@ export function AdminAiSettingsTab() {
                 configuredOnServer: true,
                 hasKey: true,
                 status: 'healthy',
-                keysCount: Math.max(1, (p.keysCount || 0) + 1),
+                keysCount: Math.max(pool.length, (p.keysCount || 0) + (pool.length > 0 ? 0 : 1), 1),
               }
             : p
         )
@@ -746,7 +918,7 @@ export function AdminAiSettingsTab() {
             type="button"
             onClick={() => setActiveTab('keys')}
             className={cn(
-              'px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5',
+              'px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0',
               activeTab === 'keys'
                 ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-sm'
                 : 'text-ink-muted hover:text-ink hover:bg-surface-secondary'
@@ -760,7 +932,7 @@ export function AdminAiSettingsTab() {
             type="button"
             onClick={() => setActiveTab('models')}
             className={cn(
-              'px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5',
+              'px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0',
               activeTab === 'models'
                 ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-sm'
                 : 'text-ink-muted hover:text-ink hover:bg-surface-secondary'
@@ -774,7 +946,7 @@ export function AdminAiSettingsTab() {
             type="button"
             onClick={() => setActiveTab('claude')}
             className={cn(
-              'px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5',
+              'px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0',
               activeTab === 'claude'
                 ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-sm'
                 : 'text-ink-muted hover:text-ink hover:bg-surface-secondary'
@@ -788,7 +960,7 @@ export function AdminAiSettingsTab() {
             type="button"
             onClick={() => setActiveTab('playground')}
             className={cn(
-              'px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5',
+              'px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0',
               activeTab === 'playground'
                 ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-sm'
                 : 'text-ink-muted hover:text-ink hover:bg-surface-secondary'
@@ -826,7 +998,7 @@ export function AdminAiSettingsTab() {
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -851,6 +1023,7 @@ export function AdminAiSettingsTab() {
               <Button
                 variant="primary"
                 size="sm"
+                data-testid="configure-provider"
                 onClick={() => {
                   setModalSelectedPlatform(null);
                   setModalPlatformSearch('');
@@ -861,7 +1034,7 @@ export function AdminAiSettingsTab() {
                 className="h-8 text-xs font-bold bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 hover:bg-neutral-800"
               >
                 <Plus className="size-3.5 mr-1" />
-                Add key
+                Configure Provider
               </Button>
             </div>
           </div>
@@ -889,6 +1062,49 @@ export function AdminAiSettingsTab() {
                 )}
               >
                 {pill.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Provider Category Tabs (Frontier / Community Mesh / Agent Search) */}
+          <div
+            className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs"
+            role="tablist"
+            aria-label="Provider categories"
+            data-testid="provider-category-tabs"
+          >
+            {[
+              { id: 'all' as const, label: 'All providers', count: tierCounts.all },
+              { id: 'frontier' as const, label: 'Frontier Free Tier', count: tierCounts.frontier },
+              { id: 'mesh' as const, label: 'Fast Community Mesh', count: tierCounts.mesh },
+              { id: 'search' as const, label: 'Agent Search & Extraction Tools', count: tierCounts.search },
+            ].map((tier) => (
+              <button
+                key={tier.id}
+                type="button"
+                role="tab"
+                aria-selected={tierFilter === tier.id}
+                aria-pressed={tierFilter === tier.id}
+                data-testid={`provider-tier-${tier.id}`}
+                onClick={() => setTierFilter(tier.id)}
+                className={cn(
+                  'px-3 py-1.5 rounded-lg font-semibold transition-all whitespace-nowrap border',
+                  tierFilter === tier.id
+                    ? 'bg-neutral-900 text-white border-neutral-900 dark:bg-white dark:text-neutral-900 dark:border-white shadow-xs'
+                    : 'bg-surface text-ink-muted border-border/60 hover:text-ink hover:border-border'
+                )}
+              >
+                {tier.label}
+                <span
+                  className={cn(
+                    'ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-md',
+                    tierFilter === tier.id
+                      ? 'bg-white/20 text-white dark:bg-neutral-900/10 dark:text-neutral-900'
+                      : 'bg-surface-secondary text-ink-muted'
+                  )}
+                >
+                  {tier.count}
+                </span>
               </button>
             ))}
           </div>
@@ -949,6 +1165,7 @@ export function AdminAiSettingsTab() {
                 return (
                   <div
                     key={p.id}
+                    data-testid={`provider-row-${p.id}`}
                     className={cn(
                       'rounded-xl border transition-all overflow-hidden',
                       isExpanded
@@ -956,10 +1173,12 @@ export function AdminAiSettingsTab() {
                         : 'border-border/60 bg-surface/80 hover:bg-surface'
                     )}
                   >
-                    {/* Main Row */}
-                    <div className="p-3.5 flex items-center justify-between gap-4">
+                    {/* Main Row — stacks into two tidy bands below lg, where a
+                        single line would crush the provider name against the
+                        key count and status pill. */}
+                    <div className="p-3.5 flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
                       {/* Left: Switch, Title, Badges */}
-                      <div className="flex items-center gap-3">
+                      <div className="flex min-w-0 flex-1 items-center gap-3">
                         {/* On/Off Switch */}
                         <label className="relative inline-flex items-center cursor-pointer">
                           <input
@@ -972,11 +1191,11 @@ export function AdminAiSettingsTab() {
                         </label>
 
                         {/* Title and Badges */}
-                        <div>
-                          <div className="flex items-center gap-2 flex-wrap">
+                        <div className="min-w-0">
+                          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                             <span className="text-sm font-bold text-ink">{p.name}</span>
                             {p.hint && (
-                              <span className="text-[10px] text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/50 px-2 py-0.5 rounded-md font-medium border border-sky-200 dark:border-sky-800">
+                              <span className="whitespace-nowrap text-[10px] text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/50 px-2 py-0.5 rounded-md font-medium border border-sky-200 dark:border-sky-800">
                                 {p.hint}
                               </span>
                             )}
@@ -995,27 +1214,31 @@ export function AdminAiSettingsTab() {
                       </div>
 
                       {/* Right: Key Count, Health Status, Actions */}
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-2 pl-12 lg:pl-0 lg:gap-3">
                         {/* Key Count Badge */}
-                        <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded-md bg-surface-secondary text-ink-muted">
+                        <span className="whitespace-nowrap text-xs font-mono font-semibold px-2 py-0.5 rounded-md bg-surface-secondary text-ink-muted">
                           {p.keysCount || (p.keyless ? 1 : 0)} {p.keysCount === 1 ? 'key' : 'keys'}
                         </span>
 
-                        {/* Health Status Dot */}
-                        {isConfigured ? (
-                          <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
-                            <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-                            <span>
-                              • {p.keysCount || 1} healthy
-                              {p.latencyMs ? ` (${p.latencyMs}ms)` : ''}
-                            </span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1.5 text-xs text-ink-muted">
-                            <span className="size-2 rounded-full bg-neutral-300 dark:bg-neutral-600" />
-                            <span>disabled</span>
-                          </div>
-                        )}
+                        {/* Operational status pill (4 exact states) */}
+                        <span
+                          data-testid={`provider-status-${p.id}`}
+                          data-provider-state={providerStatePill(p).state}
+                          data-credential-source={p.configuredOnServer ? 'server' : p.hasKey ? 'draft' : 'none'}
+                          aria-label={`${p.name}: ${providerStatePill(p).label}${
+                            p.configuredOnServer ? ' — Configured on Server' : ''
+                          }`}
+                          title={providerStatePill(p).detail}
+                          className={cn(
+                            'inline-flex items-center gap-1 whitespace-nowrap rounded-md border px-2 py-0.5 text-[11px] font-semibold',
+                            providerStatePill(p).tone
+                          )}
+                        >
+                          {providerStatePill(p).label}
+                          {providerStatePill(p).state === 'healthy' && p.latencyMs ? (
+                            <span className="font-mono text-[10px] opacity-80">{p.latencyMs}ms</span>
+                          ) : null}
+                        </span>
 
                         {/* Quick + Add Key Button on Row */}
                         {!isConfigured && (
@@ -1023,28 +1246,33 @@ export function AdminAiSettingsTab() {
                             variant="outline"
                             size="xs"
                             onClick={() => handleOpenAddKeyForProvider(p)}
-                            className="h-7 text-xs font-semibold hidden sm:inline-flex"
+                            className="h-7 text-xs font-semibold hidden lg:inline-flex"
                           >
                             <Plus className="size-3 mr-1" />
                             Add key
                           </Button>
                         )}
 
-                        {/* Test Button */}
+                        {/* Live reachability probe */}
                         <Button
                           variant="ghost"
                           size="xs"
                           onClick={() => handleTestProvider(p.id)}
                           loading={testingId === p.id}
-                          className="h-7 text-xs text-ink-muted hover:text-ink hidden sm:inline-flex"
+                          data-testid={`test-connection-${p.id}`}
+                          aria-label={`Test ${p.name} connection`}
+                          className="h-7 text-xs text-ink-muted hover:text-ink hidden lg:inline-flex"
                         >
-                          <Play className="size-3 mr-1" />
-                          Test
+                          <Zap className="size-3 mr-1" />
+                          Test Connection
                         </Button>
 
                         {/* Expand Accordion Toggle */}
                         <button
                           type="button"
+                          data-testid={`expand-provider-${p.id}`}
+                          aria-expanded={isExpanded}
+                          aria-label={`${isExpanded ? 'Collapse' : 'Expand'} ${p.name} settings`}
                           onClick={() => setExpandedProvider(isExpanded ? null : p.id)}
                           className="p-1 rounded-md text-ink-muted hover:text-ink hover:bg-surface-secondary transition-transform"
                         >
@@ -1072,6 +1300,95 @@ export function AdminAiSettingsTab() {
                               <AlertCircle className="size-4 text-rose-600 dark:text-rose-400 shrink-0" />
                             )}
                             <span className="font-mono">{status.message}</span>
+                          </div>
+                        )}
+
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="xs"
+                            onClick={() => handleTestProvider(p.id)}
+                            loading={testingId === p.id}
+                            data-testid={`test-connection-inline-${p.id}`}
+                            className="h-7 text-xs font-semibold"
+                          >
+                            <Zap className="size-3 mr-1 text-amber-500" />
+                            Test Connection
+                          </Button>
+                          {testStatus[p.id]?.latencyMs ? (
+                            <span
+                              data-testid={`latency-badge-${p.id}`}
+                              className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-200 dark:border-emerald-800"
+                            >
+                              ⚡ {testStatus[p.id]?.latencyMs}ms
+                            </span>
+                          ) : null}
+                          {cooldowns[p.id] ? (
+                            <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:border-amber-800">
+                              ⊘ {cooldowns[p.id].remainingSeconds}s remaining
+                            </span>
+                          ) : null}
+                        </div>
+
+                        {/* Multi-key pool: chips + paste-more editor */}
+                        {!isSearchProvider(p) && (
+                          <div className="space-y-2" data-testid={`key-pool-${p.id}`}>
+                            <label className="text-xs font-semibold text-ink flex items-center gap-1.5">
+                              <Layers className="size-3 text-purple-500" />
+                              Key Pool
+                              <span className="text-[10px] font-normal text-ink-muted">
+                                rotate automatically on 429
+                              </span>
+                            </label>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              {Array.from({ length: p.keyless ? 1 : Math.max(0, p.keysCount || 0) }).map((_unused, index) => (
+                                <span
+                                  key={index}
+                                  data-testid={`key-chip-${p.id}-${index}`}
+                                  className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200"
+                                >
+                                  <Shield className="size-2.5" />
+                                  {p.keyless ? 'keyless' : `key ${index + 1}`}
+                                </span>
+                              ))}
+                              {!p.keyless && (p.keysCount || 0) === 0 ? (
+                                <span className="text-[11px] text-ink-muted">No keys yet — paste up to 10 to build a pool.</span>
+                              ) : null}
+                            </div>
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                              <Input
+                                value={keyPoolDrafts[p.id] ?? ''}
+                                onChange={(e) =>
+                                  setKeyPoolDrafts((prev) => ({ ...prev, [p.id]: e.target.value }))
+                                }
+                                placeholder="Paste additional keys (comma or newline separated)…"
+                                aria-label={`${p.name} key pool`}
+                                className="h-8 flex-1 text-xs font-mono"
+                              />
+                              <Button
+                                variant="outline"
+                                size="xs"
+                                onClick={() => handleSaveKeyPool(p.id)}
+                                loading={saving}
+                                disabled={splitKeyPool(keyPoolDrafts[p.id] || '').length === 0}
+                                className="h-8 text-xs font-semibold"
+                              >
+                                <Plus className="size-3 mr-1" />
+                                Add to pool
+                              </Button>
+                            </div>
+                            {splitKeyPool(keyPoolDrafts[p.id] || '').length > 0 ? (
+                              <div className="flex flex-wrap gap-1.5">
+                                {splitKeyPool(keyPoolDrafts[p.id] || '').map((key, index) => (
+                                  <span
+                                    key={index}
+                                    className="inline-flex items-center gap-1 rounded-md border border-border bg-surface px-2 py-0.5 text-[11px] font-mono text-ink-muted"
+                                  >
+                                    {key.length > 8 ? `${key.slice(0, 4)}…${key.slice(-3)}` : '••••'}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : null}
                           </div>
                         )}
 
@@ -1573,12 +1890,21 @@ export function AdminAiSettingsTab() {
       {/* ═════════════════════════════════════════════════════════════════════════════ */}
       {isAddKeyOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-[fade-in_150ms_ease-out]">
-          <div className="relative w-full max-w-lg rounded-2xl bg-surface border border-border shadow-2xl p-6 space-y-4">
+          <div
+            ref={modalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="add-key-dialog-title"
+            data-testid="add-key-dialog"
+            className="relative flex max-h-[90dvh] w-full max-w-lg flex-col rounded-2xl bg-surface border border-border shadow-2xl p-6 space-y-4 overflow-y-auto"
+          >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-border/50 pb-3">
-              <h2 className="text-lg font-bold text-ink">Add key</h2>
+              <h2 id="add-key-dialog-title" className="text-lg font-bold text-ink">Add key</h2>
               <button
                 type="button"
+                data-testid="modal-close"
+                aria-label="Close add key dialog"
                 onClick={() => {
                   setIsAddKeyOpen(false);
                   setIsComboboxOpen(false);
@@ -1627,6 +1953,10 @@ export function AdminAiSettingsTab() {
                   <div className="relative">
                     <button
                       type="button"
+                      data-testid="platform-selector"
+                      aria-haspopup="listbox"
+                      aria-expanded={isComboboxOpen}
+                      aria-label="Select provider platform"
                       onClick={() => setIsComboboxOpen(!isComboboxOpen)}
                       className={cn(
                         'flex h-9 w-full items-center justify-between rounded-lg border bg-surface px-3 text-xs outline-none transition-colors hover:bg-surface-secondary focus:ring-2 focus:ring-neutral-900 dark:focus:ring-white',
@@ -1641,12 +1971,16 @@ export function AdminAiSettingsTab() {
 
                     {/* Popover Dropdown Menu */}
                     {isComboboxOpen && (
-                      <div className="absolute top-full left-0 mt-1 z-30 w-full rounded-xl border border-border bg-surface shadow-2xl overflow-hidden animate-[fade-in_100ms_ease-out]">
+                      <div
+                        data-testid="platform-listbox-panel"
+                        className="mt-1 w-full rounded-xl border border-border bg-surface shadow-sm overflow-hidden animate-[fade-in_100ms_ease-out]"
+                      >
                         {/* Search Input */}
                         <div className="p-2 border-b border-border/60 bg-surface-secondary/40 flex items-center gap-2">
                           <Search className="size-3.5 text-ink-muted shrink-0" />
                           <input
                             type="text"
+                            data-testid="platform-search"
                             value={modalPlatformSearch}
                             onChange={(e) => setModalPlatformSearch(e.target.value)}
                             placeholder="Search 74 platforms (e.g. 'groq', 'nvidia', 'free')..."
@@ -1689,7 +2023,7 @@ export function AdminAiSettingsTab() {
                                   : 'text-ink-muted hover:text-ink'
                               )}
                             >
-                              Models ({MODEL_PROVIDERS_LIST.length})
+                              Models ({providers.filter((entry) => !isSearchProvider(entry)).length})
                             </button>
                             <button
                               type="button"
@@ -1701,7 +2035,7 @@ export function AdminAiSettingsTab() {
                                   : 'text-ink-muted hover:text-ink'
                               )}
                             >
-                              Web Search ({SEARCH_PROVIDERS_LIST.length})
+                              Web Search ({providers.filter((entry) => isSearchProvider(entry)).length})
                             </button>
                           </div>
 
@@ -1717,7 +2051,7 @@ export function AdminAiSettingsTab() {
                         </div>
 
                         {/* Items List */}
-                        <div className="max-h-56 overflow-y-auto divide-y divide-border/30">
+                        <div role="listbox" aria-label="Provider platforms" className="max-h-48 overflow-y-auto divide-y divide-border/30">
                           {filteredModalPlatforms.length === 0 ? (
                             <div className="p-4 text-center text-xs text-ink-muted">
                               No platform matches "{modalPlatformSearch}"
@@ -1726,8 +2060,12 @@ export function AdminAiSettingsTab() {
                             filteredModalPlatforms.map((p) => {
                               const isSelected = modalSelectedPlatform?.id === p.id;
                               return (
-                                <div
+                                <button
                                   key={p.id}
+                                  type="button"
+                                  role="option"
+                                  aria-selected={isSelected}
+                                  data-testid={`platform-option-${p.id}`}
                                   onClick={() => {
                                     setModalSelectedPlatform(p);
                                     setIsComboboxOpen(false);
@@ -1735,7 +2073,7 @@ export function AdminAiSettingsTab() {
                                     setModalError(null);
                                   }}
                                   className={cn(
-                                    'p-2.5 px-3 text-xs flex items-center justify-between cursor-pointer transition-colors',
+                                    'w-full text-left p-2.5 px-3 text-xs flex items-center justify-between cursor-pointer transition-colors',
                                     isSelected
                                       ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold'
                                       : 'hover:bg-surface-secondary text-ink'
@@ -1770,7 +2108,7 @@ export function AdminAiSettingsTab() {
                                     )}
                                     {isSelected && <Check className="size-3.5" />}
                                   </div>
-                                </div>
+                                </button>
                               );
                             })
                           )}
@@ -1845,6 +2183,7 @@ export function AdminAiSettingsTab() {
                     <div className="relative">
                       <Input
                         type={modalShowKey ? 'text' : 'password'}
+                        data-testid="modal-api-key"
                         value={modalApiKey}
                         onChange={(e) => setModalApiKey(e.target.value)}
                         placeholder={
@@ -1957,6 +2296,7 @@ export function AdminAiSettingsTab() {
                 <Button
                   variant="primary"
                   size="sm"
+                  data-testid="modal-add-key"
                   onClick={handleModalAddKey}
                   loading={modalTesting}
                   disabled={
