@@ -409,6 +409,52 @@ test('streamed tool calls are emitted as OpenAI function deltas', async () => {
   }
 });
 
+test('repeated context is deduplicated before it reaches the provider', async () => {
+  const nonce = `run-${Date.now()}`;
+  const block = [
+    `Pasted job description for ${nonce}:`,
+    'We are hiring a senior backend engineer to own the billing platform.',
+    'You will design idempotent payment pipelines, own the outbox worker,',
+    'and partner with the data team on reconciliation dashboards.',
+    'This block is intentionally long so the lossless dedup engine engages.',
+  ].join('\n');
+
+  const stub = stubFetch(() => jsonResponse(openAiCompletion({ content: 'Summarised.' })));
+  try {
+    const response = await request(app)
+      .post('/v1/chat/completions')
+      .set(bearer(PLATFORM_KEY))
+      .send({
+        // The engine freezes the most recent turns (recency wins), so the
+        // duplicate pair sits ahead of them: message 1 survives, message 0 is
+        // replaced by a pointer — the model can still read the original.
+        messages: [
+          { role: 'user', content: block },
+          { role: 'user', content: block },
+          { role: 'assistant', content: 'Noted.' },
+          { role: 'user', content: 'Summarise the role in one line.' },
+        ],
+      })
+      .expect(200);
+
+    const compression = response.body._freellmapi.compression;
+    assert.ok(compression, 'compression stats must be reported');
+    assert.equal(compression.enabled, true);
+    assert.ok(compression.tokensSaved > 0, `expected savings, got ${JSON.stringify(compression)}`);
+    assert.ok(compression.beforeChars > compression.afterChars);
+
+    const upstreamMessages = completionCalls(stub.calls)[0].body.messages;
+    const stubbed = upstreamMessages.filter(message => /not repeated/.test(String(message.content)));
+    assert.equal(stubbed.length, 1, 'exactly one duplicate block must be replaced');
+    assert.match(String(stubbed[0].content), /same content as message 2/);
+    assert.equal(upstreamMessages[1].content, block, 'the retained copy must stay verbatim');
+    // The final instruction always survives untouched.
+    assert.equal(upstreamMessages[3].content, 'Summarise the role in one line.');
+  } finally {
+    stub.restore();
+  }
+});
+
 test('/api/v1 is not aliased: the shared /api auth stage is Firebase-only', async () => {
   const stub = stubFetch(() => jsonResponse(openAiCompletion()));
   try {
