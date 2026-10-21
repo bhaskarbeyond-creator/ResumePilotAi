@@ -146,6 +146,23 @@ test('AI quota fails closed when its authoritative MariaDB store is unavailable'
   assert.equal(result.res.body.error.code, 'AI_QUOTA_UNAVAILABLE');
 });
 
+/**
+ * `accountRateLimit` deliberately bypasses itself when NODE_ENV is 'test' so
+ * that unrelated suites never trip a limiter. These three cases exist to prove
+ * the limiter's real behaviour, so they run with that bypass switched off and
+ * restore it afterwards — otherwise the middleware short-circuits and the
+ * assertion measures nothing.
+ */
+async function withoutTestBypass(body) {
+  const previous = process.env.NODE_ENV;
+  process.env.NODE_ENV = 'development';
+  try {
+    return await body();
+  } finally {
+    process.env.NODE_ENV = previous;
+  }
+}
+
 test('burst limiter cannot be bypassed by changing source address for one account', async () => {
   configureAbuseCounterStoreForTests(new InMemoryAtomicCounterStore());
   const middleware = accountRateLimit({ namespace: 'ai-test', limit: 2, windowMs: 60_000 });
@@ -156,11 +173,13 @@ test('burst limiter cannot be bypassed by changing source address for one accoun
     await middleware(req, res, () => { continued = true; });
     return { res, continued };
   };
-  assert.equal((await invoke('203.0.113.1')).continued, true);
-  assert.equal((await invoke('203.0.113.2')).continued, true);
-  const blocked = await invoke('203.0.113.3');
-  assert.equal(blocked.continued, false);
-  assert.equal(blocked.res.statusCode, 429);
+  await withoutTestBypass(async () => {
+    assert.equal((await invoke('203.0.113.1')).continued, true);
+    assert.equal((await invoke('203.0.113.2')).continued, true);
+    const blocked = await invoke('203.0.113.3');
+    assert.equal(blocked.continued, false);
+    assert.equal(blocked.res.statusCode, 429);
+  });
 });
 
 test('burst limiter fails closed when the durable counter store is unavailable', async () => {
@@ -168,7 +187,9 @@ test('burst limiter fails closed when the durable counter store is unavailable',
   const middleware = accountRateLimit({ namespace: 'ai-test-failure', limit: 2, windowMs: 60_000 });
   const res = responseRecorder();
   let continued = false;
-  await middleware({ user: { uid: 'same-account' }, ip: '203.0.113.1' }, res, () => { continued = true; });
+  await withoutTestBypass(async () => {
+    await middleware({ user: { uid: 'same-account' }, ip: '203.0.113.1' }, res, () => { continued = true; });
+  });
   assert.equal(continued, false);
   assert.equal(res.statusCode, 503);
   assert.equal(res.body.error.code, 'RATE_LIMIT_UNAVAILABLE');

@@ -36,8 +36,28 @@ class AiRouteMariaDbContract {
     });
   }
 
+  /**
+   * Direct (non-transactional) pool queries.
+   *
+   * DIR-106 moved AI entitlement resolution ahead of the quota gate, so the
+   * governance middleware now reads the account row and the stored quota policy
+   * on the POOL rather than inside a transaction. Both reads are handled here so
+   * the contract models the real schema shape instead of throwing on a query the
+   * production code legitimately issues.
+   */
   async query(sql, params = []) {
     const normalized = String(sql).replace(/\s+/g, ' ').trim();
+    if (/^SELECT \* FROM users WHERE id = \? LIMIT 1$/i.test(normalized)) {
+      const configured = this.users.get(String(params[0]));
+      return [[configured || { id: params[0], membership: 'Premium', paymentStatus: 'ACTIVE' }], []];
+    }
+    if (/^SELECT data FROM system_settings WHERE category = 'ai_quota' LIMIT 1$/i.test(normalized)) {
+      const data = this.settings.ai_quota;
+      return [data ? [{ data }] : [], []];
+    }
+    if (/FROM enterprise_memberships/i.test(normalized)) {
+      return [[], []];
+    }
     if (/^INSERT INTO notification_outbox /i.test(normalized)) {
       this.notifications.push({ sql: normalized, params: [...params] });
       return [{ affectedRows: 1 }, []];
