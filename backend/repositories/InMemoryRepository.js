@@ -48,7 +48,7 @@ class InMemoryRepository {
         this._reviews = new Map();
         this._documents = new Map();
         this._trackedJobs = new Map();
-        this._favourites = new Map(); // userId -> Set of ids
+        this._favourites = new Map(); // userId -> Map(itemId -> stored favourite)
         this._stats = new Map();
         this._contactMessages = [];
         this._adminAuditLogs = [];
@@ -763,18 +763,69 @@ class InMemoryRepository {
         return this._reviews.get(id);
     }
     async deleteReview(id) { this._reviews.delete(id); return true; }
-    async getFavourites(userId) { return Array.from(this._favourites.get(userId) || []); }
-    async addFavourite(userId, itemId) {
-        if (!this._favourites.has(userId)) this._favourites.set(userId, new Set());
-        this._favourites.get(userId).add(itemId);
-        return true;
+    // Favourites, with the MariaDB contract: (user, item) is unique, a repeated
+    // save updates the payload only, and the stored columns win over the payload.
+    _favouritePayload(data) {
+        return data && typeof data === 'object' && !Array.isArray(data) ? { ...data } : {};
+    }
+    _favouriteRecord(row) {
+        return { ...row.data, id: row.id, itemId: row.itemId, itemType: row.itemType, createdAt: row.createdAt };
+    }
+    _sortedFavourites(userId) {
+        return Array.from((this._favourites.get(userId) || new Map()).values())
+            .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)) || String(b.id).localeCompare(String(a.id)));
+    }
+    async getFavourites(userId) {
+        return this._sortedFavourites(userId).map(row => this._favouriteRecord(row));
+    }
+    /** Same contract as MySQLRepository.getFavouritesWithItems. */
+    async getFavouritesWithItems(userId) {
+        const coverTypes = ['cover', 'coverletter', 'cover-letter', 'cover_letter'];
+        return this._sortedFavourites(userId).map((row) => {
+            const type = String(row.itemType || '').toLowerCase();
+            const job = type === 'job' ? this._jobs.get(row.itemId) || null : null;
+            const candidates = [type === 'resume' ? this._resumes.get(row.itemId) : null, coverTypes.includes(type) ? this._covers.get(row.itemId) : null];
+            const document = candidates.find(item => item && item.userId === userId) || null;
+            return {
+                id: row.id,
+                itemId: row.itemId,
+                itemType: row.itemType,
+                createdAt: row.createdAt,
+                data: { ...row.data },
+                job: job ? {
+                    title: job.title || '',
+                    company: job.companyName || job.company_name || job.company || '',
+                    location: job.location || '',
+                    status: job.status || '',
+                    expiresAt: job.expiresAt || job.expires_at || null,
+                    employerId: String(job.employerId || job.employer_id || job.userId || ''),
+                } : null,
+                document: document ? { title: document.title || '' } : null,
+            };
+        });
+    }
+    async addFavourite(userId, itemId, itemType = 'resume', data = {}) {
+        if (!this._favourites.has(userId)) this._favourites.set(userId, new Map());
+        const rows = this._favourites.get(userId);
+        const key = String(itemId);
+        const existing = rows.get(key);
+        const row = existing
+            ? { ...existing, data: this._favouritePayload(data) }
+            : {
+                id: `fav_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`,
+                itemId: key,
+                itemType: String(itemType).slice(0, 50),
+                data: this._favouritePayload(data),
+                createdAt: new Date().toISOString(),
+            };
+        rows.set(key, row);
+        return this._favouriteRecord(row);
     }
     async removeFavourite(userId, itemId) {
-        this._favourites.get(userId)?.delete(itemId);
-        return true;
+        return this._favourites.get(userId)?.delete(String(itemId)) === true;
     }
     async isFavourite(userId, itemId) {
-        return (this._favourites.get(userId) || new Set()).has(itemId);
+        return this._favourites.get(userId)?.has(String(itemId)) === true;
     }
     async getStats() { return Object.fromEntries(this._stats); }
     async incrementStat(key, amount = 1) {

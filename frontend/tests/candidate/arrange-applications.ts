@@ -20,7 +20,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { APIRequestContext } from '@playwright/test';
-import { AUTH_DIR, expect, tokenFor } from './fixtures';
+import { AUTH_DIR, expect, tokenFor, uidFor } from './fixtures';
 
 const repoRoot = path.resolve(process.cwd(), '..');
 const dbEnv = {
@@ -148,7 +148,7 @@ export const APPLIED_JOBS = {
 } as const satisfies Record<string, ArrangedJob>;
 
 /** Inserts one job row owned by the test employer (the only step not done through the API). */
-async function createJob(request: APIRequestContext, job: ArrangedJob): Promise<Owner> {
+export async function createJob(request: APIRequestContext, job: ArrangedJob): Promise<Owner> {
   const args = (uid: string) => ['--create', '--job-id', job.id, '--owner-uid', uid, '--title', job.title, '--company', job.company];
   let owner = await ownerSession(request);
   try {
@@ -229,4 +229,38 @@ export async function arrangeAppliedJobs(request: APIRequestContext, options: { 
   await setApplicationStatus(request, owner, analyst, 'rejected');
   await closeJob(request, owner, APPLIED_JOBS.analyst);
   return { owner, ids: { platform, analyst, designer }, blake };
+}
+
+// ── Saved Favorites (P002 C15) ──────────────────────────────────────────────
+
+/** Jobs candidate A saves: two stay open on the job board, the employer closes the third. */
+export const SAVED_JOBS = {
+  researcher: { id: 'job_e2e_msg_c15_researcher', title: 'UX Researcher', company: 'Northwind Test Labs' },
+  engineer: { id: 'job_e2e_msg_c15_engineer', title: 'Machine Learning Engineer', company: 'Contoso Test AI' },
+  reliability: { id: 'job_e2e_msg_c15_reliability', title: 'Site Reliability Engineer', company: 'Fabrikam Test Ops' },
+} as const satisfies Record<string, ArrangedJob>;
+
+/** Fresh job rows: the three saved jobs, owned by the test employer, with the reliability job closed. */
+export async function arrangeSavedJobs(request: APIRequestContext): Promise<Owner> {
+  removeArranged();
+  await createJob(request, SAVED_JOBS.researcher);
+  await createJob(request, SAVED_JOBS.engineer);
+  const owner = await createJob(request, SAVED_JOBS.reliability);
+  await closeJob(request, owner, SAVED_JOBS.reliability);
+  return owner;
+}
+
+/** The employer edits a job through the owner-scoped job route (read, then saved with the changes). */
+export async function updateJob(request: APIRequestContext, owner: Owner, job: ArrangedJob, changes: Record<string, unknown>) {
+  const read = await request.get(`/api/jobs-data/${job.id}`, { headers: bearer(owner.token) });
+  expect(read.status(), `the employer reads ${job.id}`).toBe(200);
+  const { job: stored } = (await read.json()) as { job: Record<string, unknown> };
+  const saved = await request.post(`/api/jobs-data/${job.id}`, { headers: bearer(owner.token), data: { ...stored, ...changes } });
+  expect(saved.status(), `the employer edits ${job.id}`).toBe(200);
+}
+
+/** A job candidate A posted themself (any account can own a job row), closed through the owner-scoped job route. */
+export async function arrangeOwnClosedJob(request: APIRequestContext, job: ArrangedJob): Promise<void> {
+  runArrange(['--create', '--job-id', job.id, '--owner-uid', uidFor('a'), '--title', job.title, '--company', job.company]);
+  await closeJob(request, { email: '', name: '', uid: uidFor('a'), token: tokenFor('a') }, job);
 }

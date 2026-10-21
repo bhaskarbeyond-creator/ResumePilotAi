@@ -9,7 +9,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
-import { get, post, patch, del, normalizeError } from '@/lib/api-client';
+import { get, post, patch, normalizeError } from '@/lib/api-client';
 import {
   fetchNotifications,
   markAllNotificationsRead,
@@ -157,22 +157,7 @@ export type AuditRecord = z.infer<typeof AuditRecordSchema>;
 
 /** Dashboard: notifications are typed by @/lib/notifications (NotificationItem). */
 
-/** Dashboard: Favourite Item */
-export const FavouriteItemSchema = z.object({
-  key: z.string(),
-  kind: z.enum(['job', 'document']),
-  documentType: z.enum(['resume', 'cover']).nullable(),
-  id: z.string(),
-  createdAt: z.string().nullable(),
-  title: z.string(),
-  company: z.string().nullable(),
-  location: z.string(),
-  salary: z.string(),
-  summary: z.string().nullable(),
-  badge: z.string(),
-  badgeTone: z.string(),
-});
-export type FavouriteItem = z.infer<typeof FavouriteItemSchema>;
+/** Dashboard: favourites are typed and read by @/lib/favourites (P002 C15). */
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Query Keys Factory
@@ -197,7 +182,6 @@ export const queryKeys = {
   },
   dashboard: {
     notifications: ['dashboard', 'notifications'] as const,
-    favourites: ['dashboard', 'favourites'] as const,
     supportTickets: ['dashboard', 'supportTickets'] as const,
     profile: ['dashboard', 'profile'] as const,
   },
@@ -594,29 +578,6 @@ export function useMarkAllNotificationsRead() {
     // Not awaited: the control is free again once the server has confirmed the
     // write; a later write cancels this refetch before applying its own change.
     onSettled: () => { void queryClient.invalidateQueries({ queryKey }); },
-  });
-}
-
-export function useFavourites() {
-  return useQuery({
-    queryKey: queryKeys.dashboard.favourites,
-    queryFn: async () => {
-      const data = await get<{ favourites: FavouriteItem[] }>('/favourites');
-      return z.array(FavouriteItemSchema).parse(data.favourites ?? []);
-    },
-    staleTime: 60_000,
-  });
-}
-
-export function useRemoveFavourite() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (itemId: string) => {
-      await del(`/favourites/${itemId}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.favourites });
-    },
   });
 }
 

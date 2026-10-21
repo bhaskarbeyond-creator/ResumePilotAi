@@ -39,6 +39,8 @@ const READ_METHODS = new Set([
     'listSubscriptionsForReconciliation', 'getSubscriptionAuditLog',
     'getCompany', 'getCompanies',
     'getApplication', 'getDocument', 'listDocuments', 'getReview',
+    // P002 C15: favourites are reads and writes like every other owner-scoped record.
+    'getFavourites', 'getFavouritesWithItems', 'isFavourite',
 ]);
 
 const WRITE_METHODS = new Set([
@@ -64,6 +66,7 @@ const WRITE_METHODS = new Set([
     'reconcileSubscriptionAtomic',
     'deleteApplication', 'saveDocument', 'deleteDocument',
     'saveReview', 'deleteReview',
+    'addFavourite', 'removeFavourite',
 ]);
 
 function classifyUnavailable(err) {

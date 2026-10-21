@@ -1,0 +1,98 @@
+{
+  "surface": "favourites",
+  "phase": "before",
+  "capturedAt": "2026-10-21T02:03:51.037Z",
+  "baseURL": "http://127.0.0.1:4000",
+  "pages": [
+    {
+      "profile": "desktop-1920",
+      "route": "/dashboard/favourites",
+      "click": null,
+      "label": "with-three-saved-jobs",
+      "finalUrl": "/dashboard/favourites",
+      "file": "desktop-1920__dashboard_favourites__with-three-saved-jobs.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/favourites",
+      "click": null,
+      "label": "with-three-saved-jobs",
+      "finalUrl": "/dashboard/favourites",
+      "file": "laptop-1366__dashboard_favourites__with-three-saved-jobs.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "tablet-1024",
+      "route": "/dashboard/favourites",
+      "click": null,
+      "label": "with-three-saved-jobs",
+      "finalUrl": "/dashboard/favourites",
+      "file": "tablet-1024__dashboard_favourites__with-three-saved-jobs.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/favourites",
+      "click": null,
+      "label": "with-three-saved-jobs",
+      "finalUrl": "/dashboard/favourites",
+      "file": "mobile-390__dashboard_favourites__with-three-saved-jobs.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-320",
+      "route": "/dashboard/favourites",
+      "click": null,
+      "label": "with-three-saved-jobs",
+      "finalUrl": "/dashboard/favourites",
+      "file": "mobile-320__dashboard_favourites__with-three-saved-jobs.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "laptop-1366",
+      "route": "/dashboard/favourites",
+      "click": null,
+      "steps": [
+        "wait:5000"
+      ],
+      "label": "settled-after-retry",
+      "finalUrl": "/dashboard/favourites",
+      "file": "laptop-1366__dashboard_favourites__settled-after-retry.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    },
+    {
+      "profile": "mobile-390",
+      "route": "/dashboard/favourites",
+      "click": null,
+      "steps": [
+        "wait:5000"
+      ],
+      "label": "settled-after-retry",
+      "finalUrl": "/dashboard/favourites",
+      "file": "mobile-390__dashboard_favourites__settled-after-retry.jpg",
+      "horizontalOverflowPx": 0,
+      "consoleErrors": [],
+      "failedRequests": [],
+      "failedApi": []
+    }
+  ]
+}

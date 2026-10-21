@@ -196,23 +196,16 @@ test.describe('Candidate Dashboard — Support & Favourites Surfaces', () => {
     await expect(page.getByRole('heading', { name: 'Support Center' })).toBeVisible();
   });
 
-  test('saved favourites renders filters, view toggle, and zero overflow', async ({ page }) => {
+  // Saved Favorites' behaviour (filters, search, removal and Undo, states, isolation) is covered by
+  // favourites.spec.ts (P002 C15); the grid/list toggle and bulk selection were removed there.
+  test('saved favourites renders its heading without overflow, and the /dashboard/favorites alias opens it', async ({ page }) => {
     await page.goto('/dashboard/favourites');
-    await expect(page.getByRole('heading', { name: 'Saved Items', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Saved Favorites', exact: true })).toBeVisible();
     await expectNoHorizontalOverflow(page);
-
-    // Filter toggles
-    await page.getByRole('button', { name: 'all' }).click();
-    await page.getByRole('button', { name: 'jobs' }).click();
-    await page.getByRole('button', { name: 'documents' }).click();
-    await page.getByRole('button', { name: 'all' }).click();
-
-    // View toggle (grid / list)
-    await page.getByLabel('Switch to list view').click();
-    await page.getByLabel('Switch to grid view').click();
 
     // /dashboard/favorites alias redirects to /dashboard/favourites
     await page.goto('/dashboard/favorites');
     await expect(page).toHaveURL(/\/dashboard\/favourites/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Saved Favorites', exact: true })).toBeVisible();
   });
 });

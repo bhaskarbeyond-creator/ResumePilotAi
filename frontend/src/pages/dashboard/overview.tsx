@@ -215,20 +215,22 @@ export function DashboardOverview() {
     const isFav = favourites.has(jobId);
     try {
       if (isFav) {
-        await del(`/favourites/${jobId}`);
+        await del(`/favourites/${encodeURIComponent(jobId)}`);
         setFavourites((prev) => {
           const next = new Set(prev);
           next.delete(jobId);
           return next;
         });
       } else {
+        // Only what the listing says: a missing company or location is left out, never invented.
+        const company = job.company_name || job.company || '';
         await post('/favourites', {
           itemId: jobId,
           itemType: 'job',
           data: {
             title: job.title,
-            company: job.company_name || job.company || 'Confidential',
-            location: job.location || 'Remote',
+            ...(company ? { company } : {}),
+            ...(job.location ? { location: job.location } : {}),
           },
         });
         setFavourites((prev) => new Set(prev).add(jobId));
@@ -342,13 +344,15 @@ export function DashboardOverview() {
     // Add Favourites / Bookmarks
     favouritesList.forEach((f) => {
       const stamp = f.created_at || f.createdAt;
-      const jobTitle = f.data?.title || f.title || 'Saved Position';
-      const company = f.data?.company || 'Company';
+      // The job's current details when the job board shows it, otherwise what was saved with it (P002 C15).
+      const isJob = String(f.itemType || '').toLowerCase() === 'job';
+      const savedTitle = f.job?.title || f.document?.title || f.data?.title || (isJob ? 'Saved job' : 'Saved item');
+      const company = isJob ? f.job?.company || f.data?.company || '' : '';
       events.push({
         id: `fav-${f.id || f.itemId}`,
         type: 'favourite',
-        title: jobTitle,
-        action: `Bookmarked job at ${company}`,
+        title: savedTitle,
+        action: isJob ? (company ? `Bookmarked a job at ${company}` : 'Bookmarked a job') : 'Saved to your favorites',
         timestamp: stamp || new Date().toISOString(),
         href: '/dashboard/favourites',
         badge: 'Bookmark',
@@ -1043,7 +1047,9 @@ export function DashboardOverview() {
                             'rounded-lg p-2 transition-colors hover:bg-neutral-100',
                             isFav ? 'text-amber-500' : 'text-ink-subtle hover:text-ink'
                           )}
-                          aria-label={isFav ? 'Remove from saved' : 'Save job to favourites'}
+                          // A toggle named after its job, so each one is distinct for assistive technology.
+                          aria-label={`Save ${job.title}`}
+                          aria-pressed={isFav}
                           title={isFav ? 'Saved' : 'Save job'}
                         >
                           <Bookmark className={cn('size-4', isFav && 'fill-current')} />

@@ -1,479 +1,295 @@
 /**
- * Favourites Dashboard
+ * Saved Favorites (/dashboard/favourites, alias /dashboard/favorites), candidate
+ * dashboard.
  *
- * Saved jobs and documents that the candidate has bookmarked.
- * Supports filtering by type (jobs vs documents), search, and bulk actions.
+ * The jobs and documents the candidate saved, each with where it stands now: a
+ * job's current listing while the job board shows it, a document's current
+ * title while it is still theirs (the server decides both). A document opens in
+ * its builder. Removing takes effect at once and can be undone (the item is
+ * saved again). Data: /api/favourites (lib/favourites.ts).
+ *
+ * The type filter and the search live in the URL (?type=&q=), so they survive a
+ * reload and Back/Forward. Saving happens elsewhere (the Dashboard's job
+ * matches), so the list is read again on every visit and on Refresh.
  */
-
-import { useState, useMemo } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { AlertTriangle, Loader2, RefreshCw, Search, Undo2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/loading';
+import { NoticeRegions, type Notice } from '@/components/settings/notice-regions';
+import { SavedItem, titleId } from '@/components/favourites/saved-item';
 import { cn } from '@/lib/utils';
+import { FAVOURITES_QUERY_KEY, listFavourites, removeFavourite, restoreFavourite, type Favourite } from '@/lib/favourites';
 import {
-  Star,
-  Briefcase,
-  FileText,
-  Search,
-  Trash2,
-  Filter,
-  ChevronRight,
-  MapPin,
-  DollarSign,
-  Building2,
-  Clock,
-  CheckCircle2,
-  XCircle,
-} from 'lucide-react';
-import { useFavourites, useRemoveFavourite, type FavouriteItem } from '@/hooks/use-api-hooks';
+  describeFavourite, FAVOURITE_FILTERS, favouriteName, filterCounts, matchesFilter, matchesQuery, parseFilter,
+  type FavouriteFilter, type FavouriteView,
+} from '@/lib/favourite-display';
 
-type FavouriteFilter = 'all' | 'jobs' | 'documents';
+const HEADING_ID = 'favourites-heading';
+const UNDO_ID = 'favourites-undo';
 
-const badgeConfigs: Record<string, string> = {
-  green: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
-  blue: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
-  purple: 'bg-purple-500/10 text-purple-600 border-purple-500/20',
-  amber: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
-  red: 'bg-red-500/10 text-red-600 border-red-500/20',
-  gray: 'bg-neutral-200 text-neutral-600 border-neutral-300',
+const countLabel = (count: number) => (count === 1 ? '1 saved item' : `${count} saved items`);
+
+const EMPTY_FILTER_COPY: Record<Exclude<FavouriteFilter, 'all'>, string> = {
+  jobs: 'You haven’t saved any jobs.',
+  documents: 'You haven’t saved any resumes or cover letters.',
 };
 
-function getBadgeConfig(_badge: string, tone: string) {
-  return badgeConfigs[tone] || badgeConfigs.gray;
-}
-
 export function FavouritesPage() {
-  const { data: favourites = [], isLoading, error, refetch } = useFavourites();
-  const [activeFilter, setActiveFilter] = useState<FavouriteFilter>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const removeMutation = useRemoveFavourite();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filter = parseFilter(searchParams.get('type'));
+  const query = searchParams.get('q') ?? '';
+  const filtering = filter !== 'all' || query.trim() !== '';
 
-  const filteredFavourites = useMemo(() => {
-    return favourites.filter((item) => {
-      // Type filter
-      if (activeFilter === 'jobs' && item.kind !== 'job') return false;
-      if (activeFilter === 'documents' && item.kind !== 'document') return false;
+  const queryClient = useQueryClient();
+  // Favourites are saved from other pages, so the list is read on every visit.
+  const list = useQuery({ queryKey: FAVOURITES_QUERY_KEY, queryFn: listFavourites, staleTime: 0 });
+  const loaded = list.data !== undefined;
+  const entries = useMemo(() => (list.data ?? []).map((item) => ({ item, view: describeFavourite(item) })), [list.data]);
+  const visible = useMemo(
+    () => entries.filter(({ view }) => matchesFilter(view, filter) && matchesQuery(view, query)),
+    [entries, filter, query],
+  );
+  const counts = filterCounts(entries.map(({ view }) => view));
 
-      // Search query
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        const matchesTitle = item.title.toLowerCase().includes(query);
-        const matchesCompany = item.company?.toLowerCase().includes(query) ?? false;
-        const matchesLocation = item.location.toLowerCase().includes(query);
-        if (!matchesTitle && !matchesCompany && !matchesLocation) return false;
+  const [notice, setNotice] = useState<Notice | null>(null);
+  // The last removal, which Undo saves again. It belongs to the notice next to it.
+  const [undo, setUndo] = useState<{ item: Favourite; name: string } | null>(null);
+  const [restoring, setRestoring] = useState(false);
+  const [removingIds, setRemovingIds] = useState<ReadonlySet<string>>(new Set());
+  const removingRef = useRef(new Set<string>());
+  const announce = (next: Notice, nextUndo: { item: Favourite; name: string } | null = null) => {
+    setNotice(next);
+    setUndo(nextUndo);
+  };
+
+  // Ids to focus after the DOM updates, first existing wins (the heading otherwise).
+  const pendingFocus = useRef<string[] | null>(null);
+  useEffect(() => {
+    if (!pendingFocus.current) return;
+    const target = pendingFocus.current.map((id) => document.getElementById(id)).find(Boolean) ?? document.getElementById(HEADING_ID);
+    pendingFocus.current = null;
+    target?.focus();
+  });
+
+  const setParam = (key: 'type' | 'q', value: string, fallback: string) => {
+    // Start from the address bar, not this render's copy: two quick changes in a
+    // row (before React re-renders) must not drop the first one.
+    const next = new URLSearchParams(window.location.search);
+    if (!value || value === fallback) next.delete(key);
+    else next.set(key, value);
+    setSearchParams(next, { replace: true });
+  };
+  const clearFilters = () => {
+    const next = new URLSearchParams(window.location.search);
+    next.delete('type');
+    next.delete('q');
+    setSearchParams(next, { replace: true });
+  };
+
+  const refresh = async () => {
+    if (list.isFetching) return;
+    const result = await list.refetch();
+    // A failure keeps the list shown earlier and is reported by the alert below.
+    if (!result.isError) announce({ tone: 'info', text: 'Your saved items are up to date.' });
+  };
+
+  const remove = async (item: Favourite, view: FavouriteView) => {
+    if (removingRef.current.has(item.itemId)) return;
+    removingRef.current.add(item.itemId);
+    setRemovingIds(new Set(removingRef.current));
+    const name = favouriteName(view);
+    try {
+      const outcome = await removeFavourite(item);
+      const index = visible.findIndex((entry) => entry.item.itemId === item.itemId);
+      const neighbour = visible[index + 1] ?? visible[index - 1];
+      queryClient.setQueryData<Favourite[]>(FAVOURITES_QUERY_KEY, (current) => (current ?? []).filter((row) => row.itemId !== item.itemId));
+      if (outcome === 'removed') {
+        announce({ tone: 'success', text: `Removed ${name} from your saved items.` }, { item, name });
+        pendingFocus.current = [UNDO_ID];
+      } else {
+        announce({ tone: 'info', text: `${name} had already been removed from your saved items.` });
+        pendingFocus.current = neighbour && neighbour.item.itemId !== item.itemId ? [titleId(neighbour.item)] : [HEADING_ID];
       }
-
-      return true;
-    });
-  }, [favourites, activeFilter, searchQuery]);
-
-  const jobs = filteredFavourites.filter((f) => f.kind === 'job');
-  const documents = filteredFavourites.filter((f) => f.kind === 'document');
-
-  const toggleSelect = (id: string) => {
-    setSelectedItems((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const toggleSelectAll = () => {
-    if (selectedItems.size === filteredFavourites.length) {
-      setSelectedItems(new Set());
-    } else {
-      setSelectedItems(new Set(filteredFavourites.map((f) => f.id)));
+    } catch {
+      setNotice({ tone: 'error', text: `${name} wasn’t removed. Check your connection and try again.` });
+    } finally {
+      removingRef.current.delete(item.itemId);
+      setRemovingIds(new Set(removingRef.current));
     }
   };
 
-  const handleBulkRemove = async () => {
-    for (const id of selectedItems) {
-      await removeMutation.mutateAsync(id);
+  const restore = async () => {
+    if (!undo || restoring) return;
+    const { item, name } = undo;
+    setRestoring(true);
+    try {
+      await restoreFavourite(item);
+      // It counts as saved now; the list is read again so it shows the stored row.
+      await queryClient.invalidateQueries({ queryKey: FAVOURITES_QUERY_KEY });
+      announce({ tone: 'success', text: `${name} is back in your saved items.` });
+      pendingFocus.current = [titleId(item)];
+    } catch {
+      // Undo stays available, so the candidate can try again.
+      setNotice({ tone: 'error', text: `${name} couldn’t be saved again. Check your connection and try again.` });
+    } finally {
+      setRestoring(false);
     }
-    setSelectedItems(new Set());
-    refetch();
   };
 
-  const handleRemove = async (id: string, e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    await removeMutation.mutateAsync(id);
-    refetch();
-  };
+  const emptyFilterText = query.trim()
+    ? `No saved items match “${query.trim()}”${filter === 'all' ? '' : ` in ${FAVOURITE_FILTERS.find((option) => option.value === filter)?.label.toLowerCase()}`}.`
+    : filter === 'all' ? '' : EMPTY_FILTER_COPY[filter];
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto pb-16">
-      {/* ─── Header ─── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-edge pb-5">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-ink flex items-center gap-2">
-            <Star className="size-6 fill-amber-400 text-amber-500" />
-            Saved Items
-          </h1>
-          <p className="text-sm text-ink-muted mt-1">
-            Your bookmarked job opportunities and resume documents. {favourites.length} total saved.
+    <div className="relative p-4 lg:p-6 xl:p-8">
+      <header className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 id={HEADING_ID} tabIndex={-1} className="text-2xl font-bold text-ink focus:outline-none">Saved Favorites</h1>
+          <p className="mt-1 text-sm text-ink-muted">
+            The jobs and documents you’ve saved, and where each one stands now.
           </p>
         </div>
-
-        <div className="flex items-center gap-2">
+        {loaded && (
           <Button
             variant="outline"
-            size="sm"
-            onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-            className="text-xs gap-1.5"
-            aria-label={viewMode === 'grid' ? 'Switch to list view' : 'Switch to grid view'}
+            className="shrink-0 self-start"
+            onClick={() => void refresh()}
+            aria-busy={list.isFetching || undefined}
+            aria-disabled={list.isFetching || undefined}
           >
-            {viewMode === 'grid' ? (
-              <>
-                <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="3" width="7" height="9" rx="1" />
-                  <rect x="14" y="3" width="7" height="9" rx="1" />
-                  <rect x="3" y="15" width="7" height="9" rx="1" />
-                  <rect x="14" y="15" width="7" height="9" rx="1" />
-                </svg>
-                List
-              </>
-            ) : (
-              <>
-                <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="3" y1="12" x2="21" y2="12" />
-                  <line x1="3" y1="6" x2="21" y2="6" />
-                  <line x1="3" y1="18" x2="21" y2="18" />
-                </svg>
-                Grid
-              </>
-            )}
+            <RefreshCw className={cn(list.isFetching && 'animate-spin')} aria-hidden="true" /> Refresh
           </Button>
+        )}
+      </header>
 
-          {selectedItems.size > 0 && (
-            <Button variant="outline" size="sm" onClick={handleBulkRemove} className="text-xs gap-1.5" disabled={removeMutation.isPending}>
-              <Trash2 className="size-3.5" />
-              Remove Selected ({selectedItems.size})
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* ─── Error State ─── */}
-      {error && (
-        <div className="flex items-center gap-2 rounded-lg border border-error-200 bg-error-50 p-3 text-sm text-error-700" role="alert">
-          <XCircle className="size-4 shrink-0" />
-          Failed to load favourites. Please check your connection and try again.
-        </div>
-      )}
-
-      {/* ─── Filter & Search Bar ─── */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
-          {(['all', 'jobs', 'documents'] as FavouriteFilter[]).map((filter) => {
-            const count = filter === 'all' ? favourites.length : filter === 'jobs' ? jobs.length : documents.length;
-            return (
-              <button
-                key={filter}
-                onClick={() => setActiveFilter(filter)}
-                className={cn(
-                  'rounded-lg px-3 py-1.5 font-medium text-xs transition-colors whitespace-nowrap flex items-center gap-1.5',
-                  activeFilter === filter
-                    ? 'bg-accent text-white'
-                    : 'text-ink-muted hover:bg-canvas bg-transparent'
-                )}
-              >
-                <span className="capitalize">{filter}</span>
-                <span className="inline-flex items-center justify-center size-5 rounded-full text-[10px] font-bold bg-black/10">
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="relative flex-1 max-w-md">
-          <Search className="size-4 text-ink-muted absolute left-3 top-1/2 -translate-y-1/2" />
-          <Input
-            placeholder="Search by title, company, location..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 text-xs h-9"
-          />
-        </div>
-      </div>
-
-      {/* ─── Content ─── */}
-      {isLoading && favourites.length === 0 ? (
-        <div className="space-y-4">
-          {Array.from({ length: viewMode === 'grid' ? 6 : 8 }).map((_, i) => (
-            <Skeleton key={i} className={viewMode === 'grid' ? 'h-48' : 'h-20'} />
-          ))}
-        </div>
-      ) : filteredFavourites.length === 0 ? (
-        <div className="border border-edge rounded-2xl bg-surface p-12 text-center">
-          <Star className="size-16 text-ink-muted mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-ink mb-2">
-            {searchQuery ? 'No matches found' : 'No saved items yet'}
-          </h3>
-          <p className="text-sm text-ink-muted mb-6 max-w-md mx-auto">
-            {searchQuery
-              ? 'Try adjusting your search or filter criteria.'
-              : 'Bookmark jobs from the job board or save resume versions from the builder to see them here.'}
-          </p>
-          {!searchQuery && (
-            <Button size="sm" asChild className="text-xs gap-1.5">
-              <a href="/jobs">
-                <Briefcase className="size-3.5" />
-                Browse Jobs
-              </a>
-            </Button>
-          )}
-        </div>
-      ) : (
-        <>
-          {/* Jobs Section */}
-          {jobs.length > 0 && (
-            <div className="space-y-4">
-              <h2 className="text-sm font-semibold text-ink-muted flex items-center gap-2">
-                <Briefcase className="size-4 text-accent" />
-                Saved Jobs ({jobs.length})
-              </h2>
-
-              {viewMode === 'grid' ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {jobs.map((job) => (
-                    <FavouriteJobCard key={job.id} job={job} selected={selectedItems.has(job.id)} onToggleSelect={toggleSelect} onRemove={handleRemove} />
-                  ))}
-                </div>
-              ) : (
-                <div className="border border-edge rounded-xl bg-surface overflow-hidden shadow-sm">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="border-b border-edge bg-canvas-soft/70">
-                        <th className="p-3 w-10 text-center">
-                          <input
-                            type="checkbox"
-                            checked={selectedItems.size === jobs.length && selectedItems.size > 0}
-                            onChange={toggleSelectAll}
-                            className="size-4 text-accent rounded"
-                          />
-                        </th>
-                        <th className="p-3.5 font-semibold text-ink">Position</th>
-                        <th className="p-3.5 font-semibold text-ink">Company</th>
-                        <th className="p-3.5 font-semibold text-ink">Location</th>
-                        <th className="p-3.5 font-semibold text-ink">Salary</th>
-                        <th className="p-3.5 font-semibold text-ink">Saved</th>
-                        <th className="p-3.5 font-semibold text-ink text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-edge/60">
-                      {jobs.map((job) => (
-                        <tr key={job.id} className="hover:bg-canvas-soft/20 transition-colors">
-                          <td className="p-3 text-center">
-                            <input
-                              type="checkbox"
-                              checked={selectedItems.has(job.id)}
-                              onChange={() => toggleSelect(job.id)}
-                              className="size-4 text-accent rounded mx-auto"
-                            />
-                          </td>
-                          <td className="p-3.5 font-medium text-ink">{job.title}</td>
-                          <td className="p-3.5 text-ink-muted">{job.company}</td>
-                          <td className="p-3.5 flex items-center gap-1 text-ink-muted text-[11px]">
-                            <MapPin className="size-3" />
-                            {job.location}
-                          </td>
-                          <td className="p-3.5 text-ink">{job.salary}</td>
-                          <td className="p-3.5 text-ink-muted text-[11px]">{job.createdAt}</td>
-                          <td className="p-3.5 text-right">
-                            <Button variant="ghost" size="sm" className="h-7 text-xs text-ink-muted hover:text-red-500" onClick={(e) => handleRemove(job.id, e)} disabled={removeMutation.isPending}>
-                              Remove
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Documents Section */}
-          {documents.length > 0 && (
-            <div className="space-y-4 pt-4 border-t border-edge">
-              <h2 className="text-sm font-semibold text-ink-muted flex items-center gap-2">
-                <FileText className="size-4 text-accent" />
-                Saved Documents ({documents.length})
-              </h2>
-
-              {viewMode === 'grid' ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {documents.map((doc) => (
-                    <FavouriteDocCard key={doc.id} doc={doc} selected={selectedItems.has(doc.id)} onToggleSelect={toggleSelect} onRemove={handleRemove} />
-                  ))}
-                </div>
-              ) : (
-                <div className="border border-edge rounded-xl bg-surface overflow-hidden shadow-sm">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="border-b border-edge bg-canvas-soft/70">
-                        <th className="p-3 w-10 text-center">
-                          <input
-                            type="checkbox"
-                            checked={selectedItems.size === documents.length && selectedItems.size > 0}
-                            onChange={toggleSelectAll}
-                            className="size-4 text-accent rounded"
-                          />
-                        </th>
-                        <th className="p-3.5 font-semibold text-ink">Document</th>
-                        <th className="p-3.5 font-semibold text-ink">Type</th>
-                        <th className="p-3.5 font-semibold text-ink">Status</th>
-                        <th className="p-3.5 font-semibold text-ink">Saved</th>
-                        <th className="p-3.5 font-semibold text-ink text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-edge/60">
-                      {documents.map((doc) => (
-                        <tr key={doc.id} className="hover:bg-canvas-soft/20 transition-colors">
-                          <td className="p-3 text-center">
-                            <input
-                              type="checkbox"
-                              checked={selectedItems.has(doc.id)}
-                              onChange={() => toggleSelect(doc.id)}
-                              className="size-4 text-accent rounded mx-auto"
-                            />
-                          </td>
-                          <td className="p-3.5 font-medium text-ink">{doc.title}</td>
-                          <td className="p-3.5 capitalize">{doc.documentType}</td>
-                          <td className="p-3.5">
-                            <span className={cn('inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border', getBadgeConfig(doc.badge, doc.badgeTone))}>
-                              {doc.badge}
-                            </span>
-                          </td>
-                          <td className="p-3.5 text-ink-muted text-[11px]">{doc.createdAt}</td>
-                          <td className="p-3.5 text-right">
-                            <Button variant="ghost" size="sm" className="h-7 text-xs text-ink-muted hover:text-red-500" onClick={(e) => handleRemove(doc.id, e)} disabled={removeMutation.isPending}>
-                              Remove
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
-
-/* ─── Job Card Component ─── */
-function FavouriteJobCard({
-  job,
-  selected,
-  onToggleSelect,
-  onRemove,
-}: {
-  job: FavouriteItem;
-  selected: boolean;
-  onToggleSelect: (id: string) => void;
-  onRemove: (id: string, e?: React.MouseEvent) => void;
-}) {
-  return (
-    <Card className={cn('border-edge shadow-sm flex flex-col', selected && 'ring-2 ring-accent/50')}>
-      <div className="p-4 flex flex-col h-full">
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-ink truncate">{job.title}</h3>
-            <p className="text-xs text-ink-muted truncate">{job.company}</p>
+      {loaded && entries.length > 0 && (
+        <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center">
+          <div role="group" aria-label="Show" className="flex flex-wrap gap-2">
+            {FAVOURITE_FILTERS.map((option) => {
+              const pressed = filter === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  aria-pressed={pressed}
+                  onClick={() => setParam('type', option.value, 'all')}
+                  className={cn(
+                    'inline-flex h-9 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500',
+                    pressed ? 'border-brand-600 bg-brand-600 text-white' : 'border-border bg-surface text-ink-secondary hover:bg-canvas-soft hover:text-ink',
+                  )}
+                >
+                  {/* The name is the visible text, "Jobs 3": the space keeps label and count apart. */}
+                  {option.label}{' '}
+                  <span className={cn('text-xs', pressed ? 'text-white/85' : 'text-ink-muted')}>{counts[option.value]}</span>
+                </button>
+              );
+            })}
           </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <input
-              type="checkbox"
-              checked={selected}
-              onChange={() => onToggleSelect(job.id)}
-              className="size-4 text-accent rounded"
+          <form role="search" className="relative min-w-0 md:max-w-md md:flex-1" onSubmit={(event) => event.preventDefault()}>
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-muted" aria-hidden="true" />
+            <Input
+              type="search"
+              value={query}
+              onChange={(event) => setParam('q', event.target.value, '')}
+              aria-label="Search saved items"
+              placeholder="Title, company or location"
+              className={cn('pl-9', query ? 'pr-9' : 'pr-3')}
             />
-          </div>
+            {query && (
+              <button
+                type="button"
+                onClick={() => setParam('q', '', '')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-ink-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-brand-500"
+                aria-label="Clear search"
+              >
+                <X className="size-4" aria-hidden="true" />
+              </button>
+            )}
+          </form>
         </div>
+      )}
 
-        <div className="flex items-center gap-3 text-[11px] text-ink-muted mb-3">
-          <span className="flex items-center gap-1">
-            <MapPin className="size-3" />
-            {job.location}
-          </span>
-          <span className="flex items-center gap-1">
-            <DollarSign className="size-3" />
-            {job.salary}
-          </span>
+      {/* The live regions are always rendered, so a message is announced when it appears. */}
+      <div className={cn('flex flex-col gap-2 sm:flex-row sm:items-start', (notice || undo) && 'mb-4')}>
+        <div className="min-w-0 flex-1">
+          <NoticeRegions notice={notice} />
         </div>
+        {undo && (
+          <Button
+            id={UNDO_ID}
+            variant="outline"
+            className="shrink-0 self-start"
+            onClick={() => void restore()}
+            aria-label={`Undo: save ${undo.name} again`}
+            aria-busy={restoring || undefined}
+            aria-disabled={restoring || undefined}
+          >
+            <Undo2 aria-hidden="true" /> {restoring ? 'Saving…' : 'Undo'}
+          </Button>
+        )}
+      </div>
 
-        {job.summary && (
-          <p className="text-xs text-ink-muted line-clamp-2 mb-3 flex-1">{job.summary}</p>
+      <section aria-labelledby="favourites-results-heading" aria-busy={list.isPending || undefined}>
+        <h2 id="favourites-results-heading" className="sr-only">Your saved items</h2>
+
+        {list.isPending && (
+          <p className="flex items-center justify-center gap-2 py-16 text-sm text-ink-muted">
+            <Loader2 className="size-4 animate-spin" aria-hidden="true" /> Loading your saved items…
+          </p>
         )}
 
-        <div className="flex items-center justify-between pt-2 border-t border-edge/50">
-          <span className={cn('inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border', getBadgeConfig(job.badge, job.badgeTone))}>
-            {job.badge}
-          </span>
-          <Button variant="ghost" size="sm" className="h-7 text-xs text-ink-muted hover:text-red-500" onClick={(e) => onRemove(job.id, e)}>
-            Remove
-          </Button>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-/* ─── Document Card Component ─── */
-function FavouriteDocCard({
-  doc,
-  selected,
-  onToggleSelect,
-  onRemove,
-}: {
-  doc: FavouriteItem;
-  selected: boolean;
-  onToggleSelect: (id: string) => void;
-  onRemove: (id: string, e?: React.MouseEvent) => void;
-}) {
-  return (
-    <Card className={cn('border-edge shadow-sm flex flex-col', selected && 'ring-2 ring-accent/50')}>
-      <div className="p-4 flex flex-col h-full">
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className="size-10 rounded-lg bg-accent-soft text-accent flex items-center justify-center shrink-0">
-              {doc.documentType === 'resume' ? <FileText className="size-5" /> : <FileText className="size-5" />}
-            </div>
-            <div className="min-w-0">
-              <h3 className="font-semibold text-ink truncate">{doc.title}</h3>
-              <p className="text-xs text-ink-muted capitalize">{doc.documentType}</p>
-            </div>
+        {list.isError && (
+          <div role="alert" className="mb-4 flex flex-col items-start gap-3 rounded-xl border border-error-100 bg-error-50 p-4 text-sm text-error-700 sm:flex-row sm:items-center">
+            <AlertTriangle className="size-5 shrink-0" aria-hidden="true" />
+            <span className="flex-1">
+              {loaded
+                ? 'The latest version of your saved items couldn’t be loaded, so the list below may be out of date.'
+                : 'Your saved items couldn’t be loaded. Check your connection and try again.'}
+            </span>
+            <Button variant="outline" size="sm" onClick={() => void list.refetch()} aria-busy={list.isFetching || undefined}>
+              <RefreshCw aria-hidden="true" /> Try again
+            </Button>
           </div>
-          <input
-            type="checkbox"
-            checked={selected}
-            onChange={() => onToggleSelect(doc.id)}
-            className="size-4 text-accent rounded shrink-0"
-          />
-        </div>
-
-        {doc.summary && (
-          <p className="text-xs text-ink-muted line-clamp-2 mb-3 flex-1">{doc.summary}</p>
         )}
 
-        <div className="flex items-center justify-between pt-2 border-t border-edge/50">
-          <span className={cn('inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border', getBadgeConfig(doc.badge, doc.badgeTone))}>
-            {doc.badge}
-          </span>
-          <Button variant="ghost" size="sm" className="h-7 text-xs text-ink-muted hover:text-red-500" onClick={(e) => onRemove(doc.id, e)}>
-            Remove
-          </Button>
-        </div>
-      </div>
-    </Card>
+        {loaded && entries.length === 0 && (
+          <div className="flex flex-col items-center rounded-2xl border border-dashed border-border bg-surface px-6 py-14 text-center">
+            <h3 className="text-lg font-semibold text-ink">Nothing saved yet</h3>
+            <p className="mt-1 max-w-md text-sm text-ink-muted">
+              Save a job with the bookmark next to it in Top Job Matches on your Dashboard, and it appears here.
+            </p>
+            <Button asChild variant="outline" className="mt-5">
+              <Link to="/dashboard">Go to your Dashboard</Link>
+            </Button>
+          </div>
+        )}
+
+        {loaded && entries.length > 0 && (
+          <p className="mb-3 text-xs text-ink-muted" role="status">
+            {filtering ? `Showing ${visible.length} of ${countLabel(entries.length)}` : countLabel(entries.length)}
+          </p>
+        )}
+
+        {loaded && entries.length > 0 && visible.length === 0 && (
+          <div className="rounded-2xl border border-dashed border-border bg-surface px-6 py-10 text-center">
+            <p className="text-sm text-ink">{emptyFilterText}</p>
+            <Button variant="outline" size="sm" className="mt-3" onClick={clearFilters}>Show all saved items</Button>
+          </div>
+        )}
+
+        {loaded && visible.length > 0 && (
+          <ul role="list" aria-label="Saved items" className="space-y-3">
+            {visible.map(({ item, view }) => (
+              <li key={item.itemId}>
+                <SavedItem item={item} view={view} removing={removingIds.has(item.itemId)} onRemove={(target, targetView) => void remove(target, targetView)} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
   );
 }

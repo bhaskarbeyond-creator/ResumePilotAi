@@ -419,4 +419,5 @@ router.delete('/applications/:id', async (req, res) => {
     }
 });
 
-module.exports = { jobsDataRouter: router };
+// isPubliclyVisibleJob: the favourites list (routes/miscData.js) applies the same rule as GET /:id.
+module.exports = { jobsDataRouter: router, isPubliclyVisibleJob };
