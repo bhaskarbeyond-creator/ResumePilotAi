@@ -1,14 +1,16 @@
 # FINAL API INVENTORY
 
-**Generated:** 2026-10-04T09:00:57.678Z
-**Source commit:** `dacd526f307ec0435459dd81466144d53b4c76ce`
+**Generated:** 2026-10-21T12:23:47.000Z
+**Source commit:** `c62a556648908a3502918dba760c08a075252f00`
 **Authority:** Express runtime routing table collected by `backend/services/platformHealth.js`.
 
 > This is a source/release manifest, not live production evidence. `LIVE` remains `NOT VERIFIED` until the local/live runbook is executed against the deployed SHA.
 
 ## 1. Reconciled source counts
 
-- Unique reachable `METHOD + path` entries: **328**.
+- Unique reachable `METHOD + path` entries: **338**.
+- The FreeLLMAPI gateway adds ten entries: five under `/v1` (OpenAI-compatible chat, Anthropic messages, search, model catalog, public engine status) and five platform/user routes (`/api/ai-usage`, the two `/api/freellmapi` observability reads, the conversation read cursor, and the public DOCX export).
+- `/v1` authenticates with the engine bearer key (`FREELMAPI_API_KEY`), never a Firebase session; `/api` stays Firebase-bearer-only. There is deliberately no `/api/v1` alias.
 - The count includes dual-mounted email aliases and the `/api/enterprise/m2m` service-key namespace.
 - Parameterised routes are legitimate but require a disposable fixture id; they are not probed with guessed ids.
 - No source count is presented as a production count.
@@ -117,6 +119,7 @@ npm run certify:ui
 | GET | `/api/admin/twilio-settings` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
 | POST | `/api/admin/twilio-settings` | BEARER_ADMIN | SUPER_ADMIN | PLATFORM | YES | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |
 | POST | `/api/admin/website-meta` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |
+| GET | `/api/ai-usage` | BEARER_USER | AUTHENTICATED | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
 | POST | `/api/auth/custom-password-reset` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
 | GET | `/api/auth/github` | BEARER_USER | AUTHENTICATED | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
 | GET | `/api/auth/github/callback` | BEARER_USER | AUTHENTICATED | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
@@ -234,6 +237,8 @@ npm run certify:ui
 | POST | `/api/export` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
 | POST | `/api/export-docx` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
 | GET | `/api/export-render-data` | BEARER_USER | AUTHENTICATED | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
+| GET | `/api/freellmapi/metrics` | BEARER_ADMIN | SUPER_ADMIN | PLATFORM | YES | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
+| GET | `/api/freellmapi/status` | PUBLIC | PUBLIC | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | - | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
 | POST | `/api/generate-ai-cover-letter` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
 | POST | `/api/generate-content` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
 | POST | `/api/generate-education-description` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
@@ -277,6 +282,7 @@ npm run certify:ui
 | POST | `/api/messages/conversations` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
 | GET | `/api/messages/conversations/:conversationId/messages` | BEARER_USER | AUTHENTICATED | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
 | GET | `/api/messages/conversations/:conversationId/participant-profile` | BEARER_USER | AUTHENTICATED | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
+| POST | `/api/messages/conversations/:conversationId/read` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
 | POST | `/api/messages/send` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
 | POST | `/api/notify/email-otp` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
 | POST | `/api/notify/job-application` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
@@ -345,6 +351,7 @@ npm run certify:ui
 | POST | `/api/platform/tenants/garbage-collect` | BEARER_ADMIN | SUPER_ADMIN | PLATFORM | YES | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |
 | GET | `/api/platform/version` | PUBLIC | PUBLIC | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
 | POST | `/api/public-export` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
+| POST | `/api/public-export-docx` | PUBLIC | PUBLIC | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
 | GET | `/api/public/blog/:slug/og.png` | PUBLIC | PUBLIC | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
 | GET | `/api/public/custom-pages` | PUBLIC | PUBLIC | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
 | GET | `/api/public/custom-pages/:slug` | PUBLIC | PUBLIC | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
@@ -376,9 +383,16 @@ npm run certify:ui
 | GET | `/readyz` | PUBLIC | PUBLIC | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | - | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
 | GET | `/sitemap.xml` | PUBLIC | PUBLIC | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | - | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
 | GET | `/trusted-by.json` | BEARER_USER | AUTHENTICATED | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | - | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
+| POST | `/v1/chat/completions` | BEARER_ENGINE | API_CLIENT | - | - | 200/201/202/204 | 400/401/404/429/500/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
+| POST | `/v1/messages` | BEARER_ENGINE | API_CLIENT | - | - | 200/201/202/204 | 400/401/404/429/500/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
+| GET | `/v1/models` | PUBLIC | PUBLIC | - | - | 200 | 400/404/429/500/502/503 | - | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
+| POST | `/v1/search` | BEARER_ENGINE | API_CLIENT | - | - | 200/201/202/204 | 400/401/404/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
+| GET | `/v1/status` | PUBLIC | PUBLIC | - | - | 200 | 400/404/500 | - | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
 
 ## 6. Change log
 
+- Regenerated against the FreeLLMAPI in-process engine: the routing table now reconciles at 338 unique entries, including the `/v1` gateway surface and the `/api/freellmapi` observability reads.
+- `/v1/chat/completions`, `/v1/messages`, `/v1/search`, `/v1/models`, and `/v1/status` documented with the engine-bearer auth class. `/v1/models` and `/v1/status` stay unauthenticated read surfaces that expose provider catalog metadata only — never credentials, key pools, or prompt content.
 - Added source-generated `/api/platform/version` deployment identity.
 - Added authoritative Admin user, collection, payment-ledger, tenant-detail, and tenant-rename routes.
 - Added explicit machine-readable disabled/unavailable states for Enterprise and provider integrations.
