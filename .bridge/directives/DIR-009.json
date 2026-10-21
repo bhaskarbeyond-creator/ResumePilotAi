@@ -2,11 +2,11 @@
   "id": "DIR-009",
   "title": "DIR-009: Three Dashboards Flawless 10/10 Polish & Multi-Portal Synchronization (Admin, Enterprise, Employer)",
   "priority": "P0",
-  "status": "APPROVED",
+  "status": "APPROVED_FROZEN",
   "leadAuthor": "LEAD_SUPERVISOR",
   "assignedTo": "STAFF_DEVELOPER",
   "createdAt": "2026-10-20T00:23:49.089Z",
-  "updatedAt": "2026-10-21T04:08:54.442Z",
+  "updatedAt": "2026-10-21T04:08:59.352Z",
   "projectRoot": "d:\\xampp\\htdocs\\IME365",
   "spec": "# EXECUTIVE ENGINEERING DIRECTIVE: DIR-009 (UPDATED)\nTitle: DIR-009: Three Dashboards Flawless 10/10 Polish & Multi-Portal Synchronization (Admin, Enterprise, Employer)\nTarget Workspace: d:\\xampp\\htdocs\\IME365\nLead: Antigravity (Google DeepMind)\nDeveloper Engine: Cline\nPriority: P0\n\n## Objective\nElevate the 3 non-candidate dashboards (Super Admin Console, Enterprise Console, Employer Portal) from 8.4/10 to a verified 10/10 production standard by systematically resolving all identified clipping, layout shifts, route aliasing, dark mode contrast regressions, unsaved states, formula injection risks, and mock data discrepancies.\n\n## Scope & Target Files (Zero Solo Coding on Candidate Dashboard):\n1. Super Admin Console:\n   - frontend/src/pages/admin/console.tsx: add flex-wrap and shrink-0 to header container.\n   - frontend/src/components/admin/AdminUsersTab.tsx: replace overflow-hidden with overflow-x-auto; add dark mode tokens to status badges.\n   - frontend/src/components/admin/AdminModerationTab.tsx: replace overflow-hidden with overflow-x-auto on both sub-section tables; add dark mode tokens to badges.\n   - frontend/src/components/admin/AdminBlogManagementTab.tsx: replace overflow-hidden with overflow-x-auto; add dark mode tokens.\n   - frontend/src/components/admin/AdminDashboardTab.tsx: format KPI metric numbers using .toLocaleString().\n   - frontend/src/components/admin/AdminHealthTab.tsx: add dark:ring-emerald-950/60 to health pulse; add title={s.engine} to truncated models.\n   - frontend/src/components/admin/AdminQueuesTab.tsx: add dark mode classes to Replay/Purge buttons.\n   - frontend/src/components/admin/AdminAiSettingsTab.tsx: add dark mode classes to status badges and test alerts.\n   - frontend/src/components/admin/AdminHelpDeskTab.tsx: add dark mode classes to ticket status badges.\n2. Enterprise Console:\n   - frontend/src/pages/enterprise/console.tsx: add semantic query and route alias dictionary mapping iam/users -> members, sso/saml/m2m -> security, roles/rbac -> access, quotas/billing -> usage, logs -> audit, tickets -> support, preferences -> settings; add shrink-0 to <Building2> icon.\n   - frontend/src/components/enterprise/EnterpriseSettingsTab.tsx: add form submit handler and save action to persist SSO & Authentication Security settings via enterpriseApi.\n   - frontend/src/components/enterprise/EnterpriseAuditTab.tsx: add safe formula neutralization (=, +, -, @) to CSV export.\n   - frontend/src/components/enterprise/EnterpriseEmailTab.tsx: add input fields to configure sender display name and footer text with save handler.\n   - frontend/src/components/enterprise/EnterpriseTeamsTab.tsx, EnterpriseRolesTab.tsx, EnterpriseSecurityTab.tsx: add Escape key listeners to modal dialogs.\n3. Employer Portal:\n   - frontend/src/pages/employer/portal.tsx: replace overflow-hidden with overflow-x-auto on Candidate Pipeline list table; key candidate messages and metadata by active candidate.\n   - frontend/src/components/employer/TeamSeats.tsx: wrap permissions matrix table in overflow-x-auto; bind active user dynamically from useAuth(); add responsive wrapping (flex-col sm:flex-row) to team member rows on mobile.\n\nSTRICT EXCLUSION:\nUnder NO circumstances touch any files under frontend/src/pages/dashboard/* or frontend/src/components/Dashboard/* as remote developer is actively working on them.\n\n## Verification:\n- npx tsc -b in frontend/ must pass with 0 errors.\n- npm run build in frontend/ must compile cleanly under 3.0s.\n- Playwright responsive audit must pass with 0 clipping issues across Mobile (375px), Tablet (768px), and Desktop (1280px).\n- Playwright three-dashboard-deep-audit.spec.js passes 3/3.",
   "invariants": [
@@ -111,8 +111,31 @@
       }
     }
   ],
-  "freeze": null,
-  "lastTransitionReason": "lead review",
+  "freeze": {
+    "freezeHash": "448f7a7814a1b877b61ee7535c0a838ebafedbfc",
+    "certifiedAt": "2026-10-21T04:08:59.352Z",
+    "certifiedBy": "LEAD_SUPERVISOR",
+    "notes": "Autonomous Lead (Antigravity): evidence audit passed, all criteria verified.",
+    "evidenceHash": "c4b86c4a1d0c0c135ce0b59643a6971f4fe1fd772ba3c92e5978f9bac9424b86",
+    "automated": true,
+    "certificationKind": "automated",
+    "provenance": {
+      "actor": "LEAD_SUPERVISOR",
+      "invocation": "daemon:lead_watcher_session",
+      "automated": true,
+      "reasons": [
+        "declared",
+        "daemon-parent:lead_watcher_session",
+        "non-tty"
+      ],
+      "pid": 30012,
+      "parentPid": 11244,
+      "tty": false,
+      "at": "2026-10-21T04:08:58.509Z",
+      "explicitlyAllowed": true
+    }
+  },
+  "lastTransitionReason": "gatekeeper certification",
   "continuationPending": false,
   "revisionTarget": null,
   "planApproval": {

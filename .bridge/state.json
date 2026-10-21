@@ -1,16 +1,16 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-21T03:52:26.179Z",
-  "eventCount": 4145,
-  "activeDirectiveId": "DIR-009",
-  "activeDirectiveTitle": "DIR-009: Three Dashboards Flawless 10/10 Polish & Multi-Portal Synchronization (Admin, Enterprise, Employer)",
-  "activeDirectiveStatus": "ISSUED",
+  "updatedAt": "2026-10-21T04:09:17.275Z",
+  "eventCount": 4158,
+  "activeDirectiveId": "DIR-011",
+  "activeDirectiveTitle": "DIR-011: Complete Replacement of [AI Multi-Provider Engine] with Native FreeLLMAPI Core & Admin-Only BYOK Governance",
+  "activeDirectiveStatus": "CHANGES_REQUESTED",
   "awaitingHuman": false,
   "awaitingHumanReason": null,
   "awaitingHumanSince": null,
   "stallDeadline": "2026-10-18T20:31:44.876Z",
-  "unreadForLead": 31,
-  "unreadForDev": 183,
+  "unreadForLead": 34,
+  "unreadForDev": 193,
   "pendingBlockers": 0,
   "latestHeartbeat": {
     "timestamp": "2026-10-18T20:31:44.876Z",
@@ -19,7 +19,7 @@
   },
   "integrity": {
     "ok": true,
-    "checked": 4145,
+    "checked": 4158,
     "legacy": 0,
     "bad": 0
   }
