@@ -29,6 +29,7 @@ These documents are actively used by the CI/CD pipeline, operational scripts, an
 - [`docs/SAFE_PRODUCTION_WORKFLOW.md`](file:///d:/xampp/htdocs/ai-resume-builder/docs/SAFE_PRODUCTION_WORKFLOW.md) — Production release and deployment protocol.
 - [`docs/PRODUCTION_RUNBOOK.md`](file:///d:/xampp/htdocs/ai-resume-builder/docs/PRODUCTION_RUNBOOK.md) — Operational maintenance, recovery, and service management.
 - [`docs/FINAL_API_INVENTORY.md`](file:///d:/xampp/htdocs/ai-resume-builder/docs/FINAL_API_INVENTORY.md) — Authoritative endpoint inventory.
+- [`docs/FREELLMAPI_ENGINE.md`](FREELLMAPI_ENGINE.md) — In-process 74-provider engine: `/v1` gateway, streaming, search isolation, compression, key pools, persistence.
 - [`docs/I18N_UI_STRING_INVENTORY.json`](file:///d:/xampp/htdocs/ai-resume-builder/docs/I18N_UI_STRING_INVENTORY.json) — UI string census for localization.
 - [`docs/ci-templates/`](file:///d:/xampp/htdocs/ai-resume-builder/docs/ci-templates/) — CI/CD workflows (`security-ci.yml`, `codeql.yml`).
 
