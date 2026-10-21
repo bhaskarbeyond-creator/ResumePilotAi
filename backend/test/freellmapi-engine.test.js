@@ -129,7 +129,7 @@ test('FreeLLMAPI: Tenant Dedicated BYOK strictly isolates routing to tenant key'
   const tenantContext = {
     tenantId: 'tenant-enterprise-uuid-1',
     customProviderKeys: {
-      nvidia: 'nvapi-dedicated-tenant-key-999',
+      nvidia: 'fake-nvidia-tenant-credential-999',
     },
     primaryModel: 'meta/llama-3.2-11b-vision-instruct',
   };
@@ -150,7 +150,7 @@ test('FreeLLMAPI: Tenant Dedicated BYOK strictly isolates routing to tenant key'
 
   assert.equal(result.provider, 'nvidia');
   assert.equal(result.isDedicatedByok, true);
-  assert.equal(capturedAuthHeader, 'Bearer nvapi-dedicated-tenant-key-999');
+  assert.equal(capturedAuthHeader, 'Bearer fake-nvidia-tenant-credential-999');
   // Shared Groq key was never touched!
   assert.ok(!capturedAuthHeader.includes('gsk-shared-master-key'));
 });
