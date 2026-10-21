@@ -67,7 +67,24 @@ try {
   const clean = await runMigrations(pool, { mode: 'apply', appliedBy: 'isolated-ci-verifier' });
   const discovered = discoverMigrations();
   const latestMigrationVersion = discovered.at(-1)?.version;
-  if (!clean.current || latestMigrationVersion !== '017') throw new Error(`Clean-state migration application did not reach version 017 (observed ${latestMigrationVersion || 'none'})`);
+  // The expectation is derived from the checked-in migration set, never from a
+  // baked-in version literal. A fixed version silently went stale once newer
+  // migrations landed, which turned the whole quality gate red for a reason
+  // unrelated to any change under review. A clean database must apply EVERY
+  // discovered migration and finish with nothing pending.
+  if (!latestMigrationVersion) throw new Error('No database migrations were discovered');
+  if (!clean.current || clean.pending.length > 0) {
+    throw new Error(`Clean-state migration application left ${clean.pending.length} pending migration(s)`);
+  }
+  if (clean.applied.length !== discovered.length) {
+    throw new Error(
+      `Clean-state migration application applied ${clean.applied.length} of ${discovered.length} migrations ` +
+        `(latest applied: ${clean.applied.at(-1)?.version || 'none'})`,
+    );
+  }
+  if (clean.applied.at(-1)?.version !== latestMigrationVersion) {
+    throw new Error(`Clean-state migration application did not reach the newest migration ${latestMigrationVersion} (last applied ${clean.applied.at(-1)?.version || 'none'})`);
+  }
 
   const invitationTableCount = await scalar(pool,
     `SELECT COUNT(*) AS count FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'enterprise_membership_invitations'`,

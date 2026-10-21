@@ -90,6 +90,8 @@
     "test:enterprise": "npm --prefix backend run test:enterprise && node --test tests/enterprise-ui.test.mjs",
     "test:enterprise:browser": "node tests/test-enterprise-browser.mjs",
     "test:enterprise:e2e": "playwright test",
+    "test:ai-engine:browser": "playwright test --config=playwright.ai-engine.config.js",
+    "test:ai-engine:browser:fast": "playwright test --config=playwright.ai-engine.config.js --grep \"@smoke|@responsive\"",
     "test:enterprise:visuals": "node tests/capture-enterprise-visuals.mjs",
     "test:dir024:browser": "playwright test --config=playwright.dir024.config.js",
     "test:dir026:browser": "playwright test --config=playwright.dir026.config.js",

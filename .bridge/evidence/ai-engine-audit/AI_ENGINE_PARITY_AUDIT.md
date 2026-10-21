@@ -82,7 +82,7 @@ Nothing in the console upgrades a "cannot read" into a "0".
 
 ## 4. Test matrix
 
-`playwright.ai-engine.config.js` — 5 projects (375 / 414 / 768 / 1280 / 1920), 98 scheduled tests, **93 passed, 5 skipped, 0 failed** (5.4 min).
+`playwright.ai-engine.config.js` — 5 projects (375 / 414 / 768 / 1280 / 1920), 112 scheduled tests, **107 passed, 5 skipped, 0 failed** (6.3 min).
 
 Tag policy keeps mobile coverage real without a 15-minute run:
 
@@ -99,6 +99,7 @@ Coverage highlights:
 - Popups: reauth retry of the exact pending save (produced with a real 403 body), revision conflict (409), model-detail dialog + Escape, focus trap and focus restoration.
 - Failure honesty: 503 settings read produces a retryable error and **no** provider cards; dead beacon produces no invented uptime.
 - Responsive: zero horizontal overflow on all five sections × five viewports, control boxes non-degenerate, sticky bar clears the last card at max scroll, dialogs fit the viewport, 36 px targets on phones.
+- **Popups (external references):** all six provider documentation links and the key-console links open a real browser popup (`target="_blank"`, `rel="noopener noreferrer"`, `window.opener === null`), the console URL and section never change, and a staged-but-unsaved API key survives the round trip. The sandbox has no egress, so the provider *hosts* are fulfilled at origin level only — the console's own data is untouched.
 
 ### Reproduce
 
@@ -127,7 +128,22 @@ The config boots the Vite app on `:4000` and the backend on `:8080` in certifica
 
 ---
 
-## 6. Remaining, explicitly out of scope
+## 6. CI gate repair (adjacent, blocking)
+
+The PR's quality gate was red before this branch existed, at the step **before** lint:
+
+```
+Clean-state migration application did not reach version 017 (observed 026)
+```
+
+`scripts/verify-mariadb-migrations.mjs` asserted a literal end-version that went stale when migrations 018–026 landed — 026 being the AI quota counter migration that this console's usage panel reads. The expectation is now derived from `discoverMigrations()`: a clean database must apply **every** checked-in migration and finish with nothing pending. `backend/test/migration-verifier-expectation.test.js` pins that derivation DB-free so the literal cannot return.
+
+Two further pre-existing red marks remain and were deliberately **not** touched, because they belong to other workstreams:
+
+- `eslint .` reports 9 errors in unmodified files (`backend/repositories/InMemoryRepository.js` duplicate object keys from the deliberate server-owned-override spread; `tests/unit/buildResumeLogic.unit.test.js` calls an undefined `shouldStepCompleted`).
+- The gate's own MariaDB steps cannot be exercised in this sandbox (no database, no root); only static verification of the new assertion logic was possible here.
+
+## 7. Remaining, explicitly out of scope
 
 - **Live provider traffic.** This sandbox cannot reach `api.openai.com` (TLS reset). Connectivity and discovery therefore demonstrate the *failure* path end-to-end; the success path is covered structurally (the same code renders either branch) but cannot be photographed here.
 - **MariaDB persistence.** `persistence: "mariadb"` requires a database; the in-memory certification store exercises the same projection and revision semantics.
