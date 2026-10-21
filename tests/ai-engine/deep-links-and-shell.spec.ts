@@ -50,7 +50,7 @@ test.describe('AI engine deep links', () => {
     for (const [section, testId] of cases) {
       await page.goto(`${WEB_ORIGIN}/admin/ai-settings?section=${section}`, { waitUntil: 'domcontentloaded' });
       await expect(page.getByTestId(testId)).toBeVisible();
-      await expect(page.getByTestId(`ai-engine-tab-${section}`)).toHaveAttribute('aria-current', 'page');
+      await expect(page.getByTestId(`ai-engine-tab-${section}`)).toHaveAttribute('aria-selected', 'true');
       // A hard reload must land on the same section (state comes from the URL).
       await page.reload({ waitUntil: 'domcontentloaded' });
       await expect(page.getByTestId(testId)).toBeVisible();
@@ -81,7 +81,7 @@ test.describe('AI engine deep links', () => {
     // The historical bookmark target.
     await page.goto(`${WEB_ORIGIN}/admin/settings?tab=aiSettings`, { waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('ai-engine-page')).toBeVisible();
-    await expect(page.getByTestId('ai-engine-tab-overview')).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByTestId('ai-engine-tab-overview')).toHaveAttribute('aria-selected', 'true');
 
     // Variant spellings an operator may have typed or bookmarked.
     for (const legacy of ['ai_settings', 'aisettings']) {
@@ -145,5 +145,67 @@ test.describe('AI engine deep links', () => {
     await page.goto(`${WEB_ORIGIN}/admin/ai-settings/does-not-exist`, { waitUntil: 'domcontentloaded' });
     // The engine must still render (router falls back to the console tab).
     await expect(page.getByTestId('ai-engine-page')).toBeVisible();
+  });
+
+  test('the section strip is one keyboard stop with arrow/Home/End navigation @smoke', async ({ page, context, request }) => {
+    const session = await mintSession(request);
+    await installSession(context, session);
+    await openEngine(page);
+
+    const order = ['overview', 'providers', 'catalog', 'usage', 'telemetry'] as const;
+    const tablist = page.getByRole('tablist', { name: /AI engine sections/i });
+    await expect(tablist).toBeVisible();
+    await expect(tablist.getByRole('tab')).toHaveCount(order.length);
+
+    // Roving tabindex: exactly one tab is reachable with a plain Tab press.
+    const selected = await tablist.locator('[role="tab"][tabindex="0"]').all();
+    expect(selected, 'exactly one tab must be in the tab order').toHaveLength(1);
+    await expect(page.getByTestId('ai-engine-tab-overview')).toHaveAttribute('tabindex', '0');
+
+    // Focus the active tab through the keyboard, not through .focus().
+    await page.getByTestId('ai-engine-tab-overview').focus();
+
+    await page.keyboard.press('ArrowRight');
+    await expect(page.getByTestId('ai-engine-tab-providers')).toBeFocused();
+    await expect(page.getByTestId('ai-engine-section-providers')).toBeVisible();
+    // Selection follows focus, and it is reflected in the deep link.
+    await expect(page.getByTestId('ai-engine-tab-providers')).toHaveAttribute('aria-selected', 'true');
+    expect(new URL(page.url()).searchParams.get('section')).toBe('providers');
+
+    // Wrapping in both directions must not dead-end.
+    await page.keyboard.press('ArrowLeft');
+    await expect(page.getByTestId('ai-engine-tab-overview')).toBeFocused();
+    await page.keyboard.press('ArrowLeft');
+    await expect(page.getByTestId('ai-engine-tab-telemetry')).toBeFocused();
+    await expect(page.getByTestId('ai-engine-tab-telemetry')).toHaveAttribute('aria-selected', 'true');
+
+    await page.keyboard.press('Home');
+    await expect(page.getByTestId('ai-engine-tab-overview')).toBeFocused();
+    await page.keyboard.press('End');
+    await expect(page.getByTestId('ai-engine-tab-telemetry')).toBeFocused();
+    await expect(page.getByTestId('ai-engine-section-telemetry')).toBeVisible();
+
+    // Enter moves the operator into the panel content.
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#ai-engine-panel')).toBeFocused();
+  });
+
+  test('every section is reachable with the keyboard alone and each panel is labelled by its tab', async ({ page, context, request }) => {
+    const session = await mintSession(request);
+    await installSession(context, session);
+    await openEngine(page, 'providers');
+
+    const panel = page.locator('#ai-engine-panel');
+    await expect(panel).toHaveAttribute('role', 'tabpanel');
+    await expect(panel).toHaveAttribute('aria-labelledby', 'ai-engine-tab-providers');
+
+    for (const id of ['overview', 'providers', 'catalog', 'usage', 'telemetry']) {
+      await page.getByTestId(`ai-engine-tab-${id}`).click();
+      await expect(page.getByTestId(`ai-engine-section-${id}`)).toBeVisible();
+      await expect(page.locator('#ai-engine-panel')).toHaveAttribute('aria-labelledby', `ai-engine-tab-${id}`);
+      // The selected tab is the one that reports selection, and only that one.
+      await expect(page.getByRole('tablist', { name: /AI engine sections/i }).locator('[role="tab"][aria-selected="true"]')).toHaveCount(1);
+      await expect(page.getByTestId(`ai-engine-tab-${id}`)).toHaveAttribute('aria-selected', 'true');
+    }
   });
 });

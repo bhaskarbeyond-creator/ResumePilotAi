@@ -23,12 +23,10 @@
     "exactOptionalPropertyTypes": false,
     "forceConsistentCasingInFileNames": true,
 
-    /* Path aliases */
-    "baseUrl": ".",
+    /* Path aliases — relative `paths` need no deprecated `baseUrl`. */
     "paths": {
       "@/*": ["./src/*"]
-    },
-    "ignoreDeprecations": "6.0"
+    }
   },
   "include": ["src"]
 }

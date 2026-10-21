@@ -13,6 +13,7 @@
 | Entry point | `/admin/settings?tab=aiSettings` (grid hub → panel) | `/admin?tab=ai-settings`, `/admin/ai-settings`, and the legacy URL (aliased) |
 | Sections | 1 long scroll | 5 addressable sections: `overview`, `providers`, `catalog`, `usage`, `telemetry` |
 | Deep links | `?tab=aiSettings` only | `?section=<id>` + aliases (`routing`, `credentials`, `models`, `quota`, `health`, …) |
+| Section navigation | five-item tab `<select>`-less strip; no keyboard model | `role="tablist"` with roving tabindex: Arrow/Home/End move selection, Enter drops focus into the panel, and `aria-selected`/`aria-controls`/`aria-labelledby` keep the two halves of a tab pair in sync |
 | Rear space | Unused column, `max-w-7xl` at 1920 | `max-w-7xl` → `xl:max-w-[1600px]` admin canvas |
 | Render health at 1440 | Panel content mounts but is clipped below the first provider card; the hub's own navigator consumes the viewport | Full page renders, no clipping, no horizontal overflow at any of the five widths |
 
@@ -82,7 +83,7 @@ Nothing in the console upgrades a "cannot read" into a "0".
 
 ## 4. Test matrix
 
-`playwright.ai-engine.config.js` — 5 projects (375 / 414 / 768 / 1280 / 1920), 112 scheduled tests, **107 passed, 5 skipped, 0 failed** (6.3 min).
+`playwright.ai-engine.config.js` — 5 projects (375 / 414 / 768 / 1280 / 1920), 119 scheduled tests, **114 passed, 5 skipped, 0 failed** (7.2 min).
 
 Tag policy keeps mobile coverage real without a 15-minute run:
 
@@ -95,11 +96,23 @@ Skips are all environment-conditional and self-documenting: quota mutations when
 Coverage highlights:
 
 - Deep links: canonical, five sections, six aliases, unknown alias, legacy `?tab=aiSettings` (+ two variant spellings), `/adm` & `/platform` redirects, unknown sub-path, sidebar/tab navigation.
+- Keyboard: the strip is a real `tablist` — exactly one tab in the tab order, Arrow/Home/End move selection and the deep link with it, wrap-around in both directions, Enter lands focus on the panel, and `aria-labelledby` tracks the selected tab on every section.
 - Write path: staged key is write-only (asserted against `localStorage`), masked server-side after save, revision advances, revoke → confirm → cancel → confirm → discard → confirm → save, cleanup back to the original state.
 - Popups: reauth retry of the exact pending save (produced with a real 403 body), revision conflict (409), model-detail dialog + Escape, focus trap and focus restoration.
 - Failure honesty: 503 settings read produces a retryable error and **no** provider cards; dead beacon produces no invented uptime.
 - Responsive: zero horizontal overflow on all five sections × five viewports, control boxes non-degenerate, sticky bar clears the last card at max scroll, dialogs fit the viewport, 36 px targets on phones.
 - **Popups (external references):** all six provider documentation links and the key-console links open a real browser popup (`target="_blank"`, `rel="noopener noreferrer"`, `window.opener === null`), the console URL and section never change, and a staged-but-unsaved API key survives the round trip. The sandbox has no egress, so the provider *hosts* are fulfilled at origin level only — the console's own data is untouched.
+
+### What the keyboard tests caught
+
+The first version of the tablist moved selection from the rendered `section` value. React commits that state asynchronously, so a fast second arrow press still saw the previous section and moved the operator **backwards** — the test failed with "expected telemetry to be focused, received inactive", and a 50 ms-per-key probe reproduced it every time. The origin is now read from the focused tab (`tabRefs.current.indexOf(event.target)`), which is the same element the operator is looking at, so held keys and key repeats track the eye:
+
+```
+ArrowRight → providers   ArrowLeft → overview   ArrowLeft → telemetry (wraps)
+ArrowRight → overview    End → telemetry        Home → overview
+```
+
+That is also why the roving-tabindex assertions are written as "exactly one tab is in the tab order" rather than "the active tab exists": the failure mode this prevents is a keyboard user tabbing five times through a strip that should cost one stop.
 
 ### Reproduce
 
@@ -118,7 +131,7 @@ The config boots the Vite app on `:4000` and the backend on `:8080` in certifica
 
 ## 5. Visual evidence
 
-`evidence/ai-engine-audit/v2/` — 25 full-page captures, five viewports × five sections, plus the legacy baseline:
+`evidence/ai-engine-audit/v2/` — 25 full-page captures, five viewports × five sections, the legacy baseline, and two keyboard-state captures (`keyboard-tablist-375.png`, `keyboard-tablist-1920.png`) showing the focus ring on the arrow-key-reached tab:
 
 | | 375 | 414 | 768 | 1280 | 1920 |
 |---|---|---|---|---|---|
@@ -154,7 +167,7 @@ Run `39550089666` on `39c082c` — **success**, all eight steps green (migration
 
 Locally, `npm run test:product` is 0 failures, `test:security:static` 67/0, `npm run build` succeeds, and `npm ci` succeeds for both dependency trees. `backend`'s Node suite is 876 pass / 14 fail in this sandbox, where all 14 are `ECONNREFUSED 127.0.0.1:3306` — the gate proves them against a live MariaDB, which is the only environment where they can mean anything.
 
-The Playwright matrix was re-run **after** the dependency bump: 107 passed / 5 skipped / 0 failed in 6.6 minutes, i.e. the upgrades did not move a single pixel or break a single contract.
+The Playwright matrix was re-run **after** the dependency bump: 107 passed / 5 skipped / 0 failed in 6.6 minutes, i.e. the upgrades did not move a single pixel or break a single contract. It was then re-run again after the keyboard work below: **114 passed / 5 skipped / 0 failed in 7.2 minutes**.
 
 ## 7. Remaining, explicitly out of scope
 

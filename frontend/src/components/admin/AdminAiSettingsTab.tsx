@@ -26,6 +26,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AlertTriangle, Brain, CloudOff, Lock, RefreshCw, Save, Undo2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -167,6 +168,41 @@ export function AdminAiSettingsTab() {
       setSearchParams(params, { replace: true });
     },
     [searchParams, setSearchParams],
+  );
+
+  /**
+   * Tablist keyboard contract (WAI-ARIA authoring practices): Left/Right move
+   * between sections, Home/End jump to the ends, and selection follows focus so
+   * the deep link stays in sync with what the operator is looking at. Focus is
+   * moved *to the panel* only on Enter/Space, so arrow-key scrubbing does not
+   * yank the viewport on tall sections.
+   */
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const handleTabKeyDown = useCallback(
+    (event: ReactKeyboardEvent<HTMLElement>) => {
+      const order = SECTIONS.map((item) => item.id);
+      // Derive the origin from the focused tab, not from the rendered `section`.
+      // Selection follows focus, and React commits that state asynchronously —
+      // so during a fast key repeat the closure's `section` is still the previous
+      // value and would send the operator backwards instead of onwards.
+      const focusedIndex = tabRefs.current.indexOf(event.target as HTMLButtonElement);
+      const current = focusedIndex >= 0 ? focusedIndex : Math.max(0, order.indexOf(section));
+      let next = current;
+      if (event.key === 'ArrowRight') next = (current + 1) % order.length;
+      else if (event.key === 'ArrowLeft') next = (current - 1 + order.length) % order.length;
+      else if (event.key === 'Home') next = 0;
+      else if (event.key === 'End') next = order.length - 1;
+      else if (event.key === 'Enter' || event.key === ' ') {
+        document.getElementById('ai-engine-panel')?.focus();
+        return;
+      } else {
+        return;
+      }
+      event.preventDefault();
+      setSection(order[next]);
+      tabRefs.current[next]?.focus();
+    },
+    [section, setSection],
   );
 
   const reloadAll = useCallback(() => {
@@ -556,18 +592,29 @@ export function AdminAiSettingsTab() {
 
       {/* ── Section navigation (deep-linkable) ─────────────────────────── */}
       <nav
+        role="tablist"
         aria-label="AI engine sections"
+        aria-orientation="horizontal"
         className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         data-testid="ai-engine-tabs"
+        onKeyDown={handleTabKeyDown}
       >
-        {SECTIONS.map((item) => {
+        {SECTIONS.map((item, index) => {
           const active = section === item.id;
           return (
             <button
               key={item.id}
+              ref={(node) => {
+                tabRefs.current[index] = node;
+              }}
               type="button"
+              role="tab"
+              id={`ai-engine-tab-${item.id}`}
+              aria-selected={active}
+              aria-controls="ai-engine-panel"
+              // Roving tabindex: one stop for the whole tablist, arrow keys inside.
+              tabIndex={active ? 0 : -1}
               onClick={() => setSection(item.id)}
-              aria-current={active ? 'page' : undefined}
               title={item.hint}
               data-testid={`ai-engine-tab-${item.id}`}
               className={cn(
@@ -625,7 +672,15 @@ export function AdminAiSettingsTab() {
       </div>
 
       {/* ── Active section ─────────────────────────────────────────────── */}
-      <main className="min-w-0">
+      <main
+        className="min-w-0"
+        id="ai-engine-panel"
+        role="tabpanel"
+        aria-labelledby={`ai-engine-tab-${section}`}
+        // The panel is programmatically focusable so a keyboard operator lands on
+        // the content (not back in the tablist) after arrow-key navigation.
+        tabIndex={-1}
+      >
         {section === 'overview' && (
           <OverviewSection
             draft={draft}
