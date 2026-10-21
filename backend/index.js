@@ -2659,20 +2659,420 @@ app.use('/api/email', emailRoutes);
 // FreeLLMAPI Unified Coding Agent & Wire Endpoints (Claude Code, Codex, Cline, Roo)
 // Runs 100% in-process over standard HTTPS.
 // Works seamlessly on both Windows Dev & Hostinger Shared Linux Hosting with ZERO extra ports.
+//
+// Public surface (OpenAI / Anthropic SDK compatible):
+//   POST /v1/chat/completions   OpenAI Chat Completions (+ SSE when stream:true)
+//   POST /v1/messages           Anthropic Messages (+ SSE when stream:true)
+//   POST /v1/search             Agent web search / extraction (Tavily, Exa, …)
+//   GET  /v1/models             Advertised model + engine catalog
+//   GET  /v1/status             Engine health, cooldowns, compression + metrics
 // ---------------------------------------------------------------------------
 const freellm = require('./freellmapi');
+const { loadFreeLlmPlatformConfig, platformApiKeys } = require('./services/freellmConfig');
 
-app.post('/v1/messages', async (req, res) => {
-    try {
-        const configuration = await loadProviderConfiguration(process.env);
-        const result = await freellm.handleAnthropicMessages(req.body, { platformConfig: configuration });
-        return res.json(result);
-    } catch (err) {
-        return res.status(err.status || 500).json({
-            type: 'error',
+const V1_SSE_HEADERS = Object.freeze({
+    'Content-Type': 'text/event-stream; charset=utf-8',
+    'Cache-Control': 'no-cache, no-transform',
+    Connection: 'keep-alive',
+    // Shared-hosting reverse proxies (Apache/Passenger) buffer responses unless
+    // told otherwise; X-Accel-Buffering=no keeps SSE genuinely live.
+    'X-Accel-Buffering': 'no',
+});
+
+function safeTokenEquals(expected, received) {
+    const a = Buffer.from(String(expected));
+    const b = Buffer.from(String(received));
+    if (a.length !== b.length) return false;
+    try { return cryptoRandom.timingSafeEqual(a, b); } catch { return false; }
+}
+
+/**
+ * Authenticate a `/v1/*` caller.
+ *
+ * Accepts either a platform API key (FREELMAPI_API_KEYS, comma-separated) or a
+ * Firebase ID token (already verified by `optionalAuth`). When NO platform keys
+ * are configured and the process is not production, anonymous access is allowed
+ * so a local XAMPP checkout works out of the box.
+ */
+function resolveV1Principal(req) {
+    const header = String(req.get('authorization') || '');
+    const bearer = /^Bearer\s+(\S+)$/i.exec(header);
+    const token = bearer ? bearer[1] : String(req.get('x-api-key') || '').trim();
+    const configuredKeys = platformApiKeys(process.env);
+
+    if (token) {
+        if (configuredKeys.some(key => safeTokenEquals(key, token))) {
+            return { ok: true, kind: 'platform-key' };
+        }
+        if (req.user?.uid) {
+            return { ok: true, kind: 'user', uid: req.user.uid };
+        }
+        return { ok: false, status: 401, code: 'invalid_api_key', message: 'Invalid API key or Firebase token.' };
+    }
+
+    if (configuredKeys.length === 0 && process.env.NODE_ENV !== 'production') {
+        return { ok: true, kind: 'anonymous-local' };
+    }
+    return { ok: false, status: 401, code: 'missing_api_key', message: 'Provide a Bearer token (platform API key or Firebase ID token).' };
+}
+
+function sendV1AuthError(res, principal) {
+    return res.status(principal.status).json({
+        error: { message: principal.message, type: 'invalid_request_error', code: principal.code, param: null },
+    });
+}
+
+function openAiErrorBody(err) {
+    const status = Number(err?.status) || 502;
+    const type = status === 401 ? 'authentication_error'
+        : status === 429 ? 'rate_limit_error'
+            : status === 400 || status === 404 ? 'invalid_request_error'
+                : 'api_error';
+    return {
+        status,
+        body: {
             error: {
+                message: err?.message || 'FreeLLMAPI provider error',
+                type,
+                code: err?.code || 'ALL_PROVIDERS_FAILED',
+                param: null,
+            },
+        },
+    };
+}
+
+function anthropicErrorBody(err) {
+    const status = Number(err?.status) || 502;
+    const type = status === 401 ? 'authentication_error'
+        : status === 429 ? 'rate_limit_error'
+            : status === 400 ? 'invalid_request_error'
+                : 'api_error';
+    return {
+        status,
+        body: {
+            type: 'error',
+            error: { type, message: err?.message || 'FreeLLMAPI provider error' },
+        },
+    };
+}
+
+function estimateMessageTokens(messages) {
+    const chars = (Array.isArray(messages) ? messages : []).reduce((sum, message) => {
+        if (typeof message?.content === 'string') return sum + message.content.length;
+        if (Array.isArray(message?.content)) {
+            return sum + message.content.reduce((n, block) => n + (typeof block?.text === 'string' ? block.text.length : 0), 0);
+        }
+        return sum;
+    }, 0);
+    return Math.ceil(chars / 4);
+}
+
+function openAiUsage(usage, messages, content) {
+    const promptTokens = usage?.promptTokens || estimateMessageTokens(messages);
+    const completionTokens = usage?.completionTokens || Math.ceil(String(content || '').length / 4);
+    return {
+        prompt_tokens: promptTokens,
+        completion_tokens: completionTokens,
+        total_tokens: usage?.totalTokens || promptTokens + completionTokens,
+    };
+}
+
+// ─── POST /v1/chat/completions — OpenAI SDK / Cursor / Cline / Roo / Aider ───
+app.post(['/v1/chat/completions', '/api/v1/chat/completions'], optionalAuth, async (req, res) => {
+    const principal = resolveV1Principal(req);
+    if (!principal.ok) return sendV1AuthError(res, principal);
+
+    const body = req.body || {};
+    if (!Array.isArray(body.messages) || body.messages.length === 0) {
+        return res.status(400).json({
+            error: { message: '`messages` must be a non-empty array.', type: 'invalid_request_error', code: 'invalid_messages', param: 'messages' },
+        });
+    }
+
+    let configuration;
+    try {
+        configuration = await loadFreeLlmPlatformConfig({ environment: process.env });
+    } catch (error) {
+        return res.status(503).json({
+            error: { message: `AI configuration is unavailable: ${error.message}`, type: 'api_error', code: 'AI_CONFIG_UNAVAILABLE', param: null },
+        });
+    }
+
+    const requestedModel = String(body.model || 'auto').trim() || 'auto';
+    const options = {
+        messages: body.messages,
+        platformConfig: configuration,
+        temperature: typeof body.temperature === 'number' ? body.temperature : configuration.temperature,
+        maxTokens: Number(body.max_tokens || body.max_completion_tokens || configuration.maxTokens) || 2048,
+        jsonMode: body.response_format?.type === 'json_object',
+        responseFormat: body.response_format,
+        tools: Array.isArray(body.tools) && body.tools.length > 0 ? body.tools : undefined,
+        toolChoice: body.tool_choice,
+        compression: { engines: ['dedup', 'jsoncompact'] },
+        timeoutMs: Number(process.env.FREELMAPI_REQUEST_TIMEOUT_MS || 60000),
+    };
+
+    // A concrete `model` that names a known provider wins; otherwise the router
+    // uses the platform's primary + failover cascade.
+    if (requestedModel !== 'auto' && freellm.getProviderMeta(requestedModel)) {
+        const providerConfig = configuration.providers[requestedModel];
+        if (!providerConfig) {
+            return res.status(503).json({
+                error: {
+                    message: `Provider "${requestedModel}" is not configured. Add a key in Super Admin → AI keys, or request model "auto".`,
+                    type: 'invalid_request_error', code: 'PROVIDER_NOT_CONFIGURED', param: 'model',
+                },
+            });
+        }
+        options.platformConfig = { ...configuration, primary: requestedModel, enableFallback: configuration.enableFallback };
+        options.model = body.model;
+    }
+
+    // ─── Streaming path ───
+    if (body.stream === true) {
+        res.status(200);
+        for (const [name, value] of Object.entries(V1_SSE_HEADERS)) res.setHeader(name, value);
+        if (typeof res.flushHeaders === 'function') res.flushHeaders();
+
+        const id = `chatcmpl-${cryptoRandom.randomUUID().replace(/-/g, '').slice(0, 24)}`;
+        const created = Math.floor(Date.now() / 1000);
+        let model = requestedModel;
+        let sentRole = false;
+        let sentAnything = false;
+        const sentToolArgs = new Map();
+        const includeUsage = body.stream_options?.include_usage === true;
+        let finalUsage = null;
+
+        const writeChunk = (delta, finishReason = null, extraChoices = undefined) => {
+            const chunk = {
+                id,
+                object: 'chat.completion.chunk',
+                created,
+                model,
+                choices: extraChoices || [{ index: 0, delta, finish_reason: finishReason }],
+            };
+            res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+        };
+
+        try {
+            const stream = freellm.streamChat(options);
+            for await (const event of stream) {
+                if (event.type === 'meta') {
+                    model = event.model || model;
+                    continue;
+                }
+                if (event.type === 'text') {
+                    if (!sentRole) {
+                        sentRole = true;
+                        writeChunk({ role: 'assistant', content: '' });
+                    }
+                    sentAnything = true;
+                    writeChunk({ content: event.text });
+                    continue;
+                }
+                if (event.type === 'tool_call') {
+                    if (!sentRole) {
+                        sentRole = true;
+                        writeChunk({ role: 'assistant', content: null });
+                    }
+                    sentAnything = true;
+                    const index = Number(event.index) || 0;
+                    const previous = sentToolArgs.get(index) || { args: '', id: null, name: '' };
+                    const fullArgs = typeof event.arguments === 'string' ? event.arguments : '';
+                    const deltaArgs = fullArgs.startsWith(previous.args) ? fullArgs.slice(previous.args.length) : fullArgs;
+                    sentToolArgs.set(index, { args: fullArgs, id: event.id || previous.id, name: event.name || previous.name });
+                    writeChunk({
+                        tool_calls: [{
+                            index,
+                            ...(!previous.id && event.id ? { id: event.id } : {}),
+                            type: 'function',
+                            function: {
+                                ...(!previous.name && event.name ? { name: event.name } : {}),
+                                arguments: deltaArgs,
+                            },
+                        }],
+                    });
+                    continue;
+                }
+                if (event.type === 'usage') {
+                    finalUsage = event.usage;
+                    continue;
+                }
+                if (event.type === 'finish') {
+                    writeChunk({}, event.finishReason || 'stop');
+                    if (includeUsage && event.usage) finalUsage = event.usage;
+                }
+            }
+
+            if (includeUsage && finalUsage) {
+                res.write(`data: ${JSON.stringify({
+                    id, object: 'chat.completion.chunk', created, model, choices: [],
+                    usage: { prompt_tokens: finalUsage.promptTokens || 0, completion_tokens: finalUsage.completionTokens || 0, total_tokens: finalUsage.totalTokens || 0 },
+                })}\n\n`);
+            }
+            if (!sentAnything) {
+                res.write(`data: ${JSON.stringify({ error: { message: 'The model returned no content.', type: 'api_error', code: 'EMPTY_COMPLETION' } })}\n\n`);
+            }
+            res.write('data: [DONE]\n\n');
+            return res.end();
+        } catch (error) {
+            if (!res.headersSent) {
+                const { status, body: errorBody } = openAiErrorBody(error);
+                return res.status(status).json(errorBody);
+            }
+            res.write(`data: ${JSON.stringify({
+                error: { message: error.message || 'Stream failure', type: 'api_error', code: error.code || 'STREAM_ERROR' },
+            })}\n\n`);
+            res.write('data: [DONE]\n\n');
+            return res.end();
+        }
+    }
+
+    // ─── Non-streaming path ───
+    try {
+        const result = await freellm.completeChat(options);
+        const usage = openAiUsage(result.usage, body.messages, result.content);
+        const message = { role: 'assistant', content: result.toolCalls ? (result.content || null) : result.content };
+        if (result.toolCalls) message.tool_calls = result.toolCalls;
+
+        res.setHeader('Cache-Control', 'no-store');
+        return res.json({
+            id: `chatcmpl-${cryptoRandom.randomUUID().replace(/-/g, '').slice(0, 24)}`,
+            object: 'chat.completion',
+            created: Math.floor(Date.now() / 1000),
+            model: body.model && body.model !== 'auto' ? body.model : result.model,
+            choices: [{
+                index: 0,
+                message,
+                finish_reason: result.finishReason || (result.toolCalls ? 'tool_calls' : 'stop'),
+                logprobs: null,
+            }],
+            usage,
+            _freellmapi: {
+                provider: result.provider,
+                actual_model: result.model,
+                latency_ms: result.latencyMs,
+                cached: Boolean(result.cached),
+                compression: result.compression || null,
+                fallbacks: result.fallbacksAttempted || [],
+            },
+        });
+    } catch (error) {
+        const { status, body: errorBody } = openAiErrorBody(error);
+        return res.status(status).json(errorBody);
+    }
+});
+
+// ─── POST /v1/messages — Anthropic SDK / Claude Code CLI ───
+app.post(['/v1/messages', '/api/v1/messages'], optionalAuth, async (req, res) => {
+    const principal = resolveV1Principal(req);
+    if (!principal.ok) return sendV1AuthError(res, principal);
+
+    const body = req.body || {};
+    if (!Array.isArray(body.messages) || body.messages.length === 0) {
+        return res.status(400).json({
+            type: 'error',
+            error: { type: 'invalid_request_error', message: '`messages` must be a non-empty array.' },
+        });
+    }
+
+    let configuration;
+    try {
+        configuration = await loadFreeLlmPlatformConfig({ environment: process.env });
+    } catch (error) {
+        return res.status(503).json({
+            type: 'error',
+            error: { type: 'api_error', message: `AI configuration is unavailable: ${error.message}` },
+        });
+    }
+
+    if (body.stream === true) {
+        res.status(200);
+        for (const [name, value] of Object.entries(V1_SSE_HEADERS)) res.setHeader(name, value);
+        if (typeof res.flushHeaders === 'function') res.flushHeaders();
+
+        try {
+            const stream = freellm.streamAnthropicMessages(body, { platformConfig: configuration });
+            for await (const event of stream) {
+                // `_meta` carries provider/latency telemetry for logs; the
+                // Anthropic wire only receives real protocol events.
+                if (event.type === '_meta') continue;
+                res.write(`event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`);
+            }
+            return res.end();
+        } catch (error) {
+            if (!res.headersSent) {
+                const { status, body: errorBody } = anthropicErrorBody(error);
+                return res.status(status).json(errorBody);
+            }
+            res.write(`event: error\ndata: ${JSON.stringify({
+                type: 'error',
+                error: { type: 'api_error', message: error.message || 'Stream failure' },
+            })}\n\n`);
+            return res.end();
+        }
+    }
+
+    try {
+        const result = await freellm.handleAnthropicMessages(body, { platformConfig: configuration });
+        res.setHeader('Cache-Control', 'no-store');
+        return res.json(result);
+    } catch (error) {
+        const { status, body: errorBody } = anthropicErrorBody(error);
+        return res.status(status).json(errorBody);
+    }
+});
+
+// ─── POST /v1/search — agent web search / extraction tools ───
+app.post(['/v1/search', '/api/v1/search'], optionalAuth, async (req, res) => {
+    const principal = resolveV1Principal(req);
+    if (!principal.ok) return sendV1AuthError(res, principal);
+
+    const body = req.body || {};
+    const query = typeof body.query === 'string' ? body.query : '';
+    if (!query.trim()) {
+        return res.status(400).json({
+            error: { message: '`query` is required.', type: 'invalid_request_error', code: 'invalid_search_query', param: 'query' },
+        });
+    }
+
+    let configuration;
+    try {
+        configuration = await loadFreeLlmPlatformConfig({ environment: process.env });
+    } catch (error) {
+        return res.status(503).json({
+            error: { message: `Search configuration is unavailable: ${error.message}`, type: 'api_error', code: 'AI_CONFIG_UNAVAILABLE' },
+        });
+    }
+
+    try {
+        const result = await freellm.searchWeb({
+            query,
+            maxResults: body.max_results ?? body.maxResults,
+            topic: body.topic === 'news' ? 'news' : undefined,
+            includeAnswer: body.include_answer ?? body.includeAnswer,
+            engine: body.engine || body.provider || 'auto',
+            platformConfig: configuration,
+            environment: process.env,
+        });
+        res.setHeader('Cache-Control', 'no-store');
+        return res.json({
+            object: 'search.result',
+            source: 'FreeLLMAPI Native Search',
+            query: result.query,
+            ...(result.answer ? { answer: result.answer } : {}),
+            provider: result.provider,
+            engine: result.engine,
+            latency_ms: result.latencyMs,
+            results: result.results,
+            fallbacks: result.fallbacks || [],
+        });
+    } catch (error) {
+        return res.status(Number(error.status) || 502).json({
+            error: {
+                message: error.message || 'All search providers failed',
                 type: 'api_error',
-                message: err.message || 'FreeLLMAPI Provider Error',
+                code: error.code || 'ALL_SEARCH_PROVIDERS_FAILED',
             },
         });
     }
@@ -2688,9 +3088,19 @@ app.get('/v1/models', async (_req, res) => {
                 object: 'model',
                 owned_by: p.id,
                 name: p.name,
+                type: p.type,
+                keyless: p.keyless,
                 intelligenceScore: p.intelligenceScore,
                 freeTierAvailable: p.freeTierAvailable,
             })),
+            _freellmapi: {
+                version: status.version,
+                chat_providers: status.chatProvidersCount,
+                search_providers: status.searchProvidersCount,
+                media_providers: status.mediaProvidersCount,
+                streaming: true,
+                compression_engines: status.capabilities.promptCompressionEngines,
+            },
         });
     } catch (err) {
         return res.status(500).json({ error: err.message });
@@ -2699,6 +3109,15 @@ app.get('/v1/models', async (_req, res) => {
 
 app.get(['/v1/status', '/api/freellmapi/status'], async (_req, res) => {
     return res.json({ success: true, ...freellm.getEngineStatus() });
+});
+
+// Durable provider metrics & cooldown ledger (Super Admin observability).
+app.get('/api/freellmapi/metrics', requireSuperAdmin, async (_req, res) => {
+    try {
+        return res.json({ success: true, ...freellm.getMetrics() });
+    } catch (error) {
+        return res.status(503).json({ success: false, error: error.message });
+    }
 });
 
 // Enterprise tenancy APIs are feature-gated at the client, server-authorized, and
