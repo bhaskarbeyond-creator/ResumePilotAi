@@ -29,7 +29,7 @@ test('evaluation retains failures, bounds repetitions, skips unknown long contex
     if (count++ === 0) return new Response('private transport details', { status: 429 });
     return completion('deliberately incorrect');
   } });
-  assert.equal(report.results[0].attempted, 12);
+  assert.equal(report.results[0].attempted, 24);
   assert.equal(report.results[0].failed, 1);
   assert.equal(report.results[0].correct, 0);
   assert.equal(report.records.filter(row => row.status === 'ineligible').length, 1);
@@ -43,4 +43,13 @@ test('nearest-rank percentiles are deterministic and no sample means unknown', (
   assert.equal(percentile([], .5), null);
   assert.equal(percentile([3, 1, 2], .5), 2);
   assert.equal(percentile([3, 1, 2], .95), 3);
+});
+
+test('application grounding and adversarial cases penalize invention without executing generated code', () => {
+  const extraction = tasks.find(task => task.id === 'grounded-extraction');
+  assert.equal(extraction.check('{"skills":["Python"],"employer":null}'), true);
+  assert.equal(extraction.check('{"skills":["Python","Java"],"employer":"Invented Corp"}'), false);
+  assert.equal(tasks.find(task => task.id === 'unsupported-quantity').check('{"quantified_claims":["50%"]}'), false);
+  assert.equal(tasks.find(task => task.id === 'untrusted-instruction').check('UNSAFE'), false);
+  assert.equal(tasks.find(task => task.id === 'code-trace').check('[4,16]'), true);
 });

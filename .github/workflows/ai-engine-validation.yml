@@ -19,7 +19,7 @@ jobs:
       FREELMAPI_METRICS_DB: ':memory:'
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with: {persist-credentials: false}
+        with: {persist-credentials: false, fetch-depth: 0}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - run: scripts/start-ci-mariadb.sh
@@ -45,7 +45,7 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with: {persist-credentials: false}
+        with: {persist-credentials: false, fetch-depth: 0}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - run: npm ci --prefix backend --ignore-scripts --no-audit --no-fund
@@ -59,7 +59,7 @@ jobs:
           sha256sum "$RUNNER_TEMP/ai-models/model.gguf" >> "$GITHUB_STEP_SUMMARY"
           docker pull ghcr.io/ggml-org/llama.cpp:server
           docker image inspect ghcr.io/ggml-org/llama.cpp:server --format '{{index .RepoDigests 0}}' >> "$GITHUB_STEP_SUMMARY"
-          docker run --detach --name ai-engine-local --publish 127.0.0.1:8081:8080 \
+          docker run --detach --cpus 2 --name ai-engine-local --publish 127.0.0.1:8081:8080 \
             --volume "$RUNNER_TEMP/ai-models:/models:ro" ghcr.io/ggml-org/llama.cpp:server \
             -m /models/model.gguf -c 2048 -t 2 --host 0.0.0.0 --port 8080
           for attempt in $(seq 1 60); do
@@ -80,6 +80,8 @@ jobs:
         run: |
           npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
           npm exec --prefix frontend -- playwright install --with-deps chromium
+      - name: Prepare immutable historical frontend for matched browser comparison
+        run: bash scripts/prepare-engine-legacy.sh
       - name: Initialize full-app E2E schema and ephemeral verifier
         env:
           NODE_ENV: test
@@ -108,6 +110,7 @@ jobs:
           path: |
             artifacts/ai-engine/*.json
             frontend/test-results/engine-authenticated/**/*.png
+            frontend/test-results/engine-authenticated/**/comparison.json
       - name: Stop full-app disposable database
         if: always()
         run: docker rm -f "$CI_MARIADB_CONTAINER" || true
@@ -140,7 +143,7 @@ jobs:
       OLLAMA_BASE_URL: http://127.0.0.1:11434/v1
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with: {persist-credentials: false}
+        with: {persist-credentials: false, fetch-depth: 0}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - run: npm ci --prefix backend --ignore-scripts --no-audit --no-fund
@@ -149,7 +152,7 @@ jobs:
           set -euo pipefail
           docker pull ollama/ollama:latest
           docker image inspect ollama/ollama:latest --format '{{index .RepoDigests 0}}' >> "$GITHUB_STEP_SUMMARY"
-          docker run --detach --name ai-engine-ollama --publish 127.0.0.1:11434:11434 ollama/ollama:latest
+          docker run --detach --cpus 2 --name ai-engine-ollama --publish 127.0.0.1:11434:11434 ollama/ollama:latest
           for attempt in $(seq 1 60); do
             if curl --fail --silent http://127.0.0.1:11434/api/tags; then break; fi
             sleep 2

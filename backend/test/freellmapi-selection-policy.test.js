@@ -152,3 +152,14 @@ for (const streaming of [false, true]) {
     assert.equal(cooled, 0);
   });
 }
+
+for (const selectionMode of ['auto', 'quality', 'speed', 'balanced']) {
+  test(`${selectionMode}: speed cannot qualify unknown structured-output support for candidate generation`, async () => {
+    const router = new FreeLlmRouter();
+    router.modelDiscovery = { getOrDiscover: async () => [{ id: 'fast-unqualified', capabilities: { json: null } }] };
+    const result = await router.buildCandidateList({ platformConfig: { selectionMode, primary: 'llamacpp', providers: {
+      llamacpp: { enabled: true, model: 'auto' },
+    } }, requirements: { json: true } });
+    assert.deepEqual(result, []);
+  });
+}
