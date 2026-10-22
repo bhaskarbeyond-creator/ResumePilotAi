@@ -35,6 +35,9 @@ test('evaluation retains failures, bounds repetitions, skips unknown long contex
   assert.equal(report.records.filter(row => row.status === 'ineligible').length, 1);
   assert.equal(report.records[0].error, 'HTTP_429');
   assert.equal(report.cost, null);
+  assert.deepEqual(report.results[0].byTask.find(row => row.task === 'reasoning').failureCategories, { 'transport-or-schema': 1, 'reference-or-format': 1 });
+  assert.equal(report.results[0].byTask.find(row => row.task === 'long-context').ineligible, 1);
+  assert.equal(report.results[0].byTask.reduce((total, row) => total + row.generated + row.failed, 0), 24);
   assert.ok(!JSON.stringify(report).includes('deliberately incorrect'));
   assert.ok(!JSON.stringify(report).includes('private transport details'));
   await assert.rejects(benchmark({ baseUrl: endpoint, models: [{ id: 'fixture-model' }], repeats: 1 }));

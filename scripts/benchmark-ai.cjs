@@ -96,7 +96,12 @@ async function benchmark({ baseUrl, models, repeats = 3, fetchImpl = fetch, prov
   return { schemaVersion: 2, measuredAt: new Date().toISOString(), provider, settings: { temperature: 0, maxTokens: 96, repeats, concurrency: 1, cache: 'direct inference; no application cache' }, methodology: 'Protocol v2: twelve synthetic reference/format tasks, not general intelligence or validated human semantic quality. Semantic quality is unmeasured. No warmup exclusion. TTFT includes transport and prompt processing. Long context requires verified catalog support.', cost: null, results: models.map(model => {
     const attempted = records.filter(row => row.model === model.id && row.status !== 'ineligible');
     const generated = attempted.filter(row => row.status === 'generated');
-    return { model: model.id, attempted: attempted.length, generated: generated.length, correct: generated.filter(row => row.correct).length, failed: attempted.length - generated.length, latencyP50Ms: percentile(generated.map(row => row.latencyMs), .5), latencyP95Ms: percentile(generated.map(row => row.latencyMs), .95), ttftP50Ms: percentile(generated.map(row => row.ttftMs), .5), repeatability: tasks.map(task => ({ task: task.id, distinctGeneratedOutputs: new Set(generated.filter(row => row.task === task.id).map(row => row.outputHash)).size })) };
+    return { model: model.id, attempted: attempted.length, generated: generated.length, correct: generated.filter(row => row.correct).length, failed: attempted.length - generated.length, latencyP50Ms: percentile(generated.map(row => row.latencyMs), .5), latencyP95Ms: percentile(generated.map(row => row.latencyMs), .95), ttftP50Ms: percentile(generated.map(row => row.ttftMs), .5), byTask: tasks.map(task => {
+      const rows = records.filter(row => row.model === model.id && row.task === task.id);
+      const failureCategories = {};
+      for (const row of rows) if (row.failureCategory) failureCategories[row.failureCategory] = (failureCategories[row.failureCategory] || 0) + 1;
+      return { task: task.id, generated: rows.filter(row => row.status === 'generated').length, correct: rows.filter(row => row.correct).length, failed: rows.filter(row => row.status === 'failed').length, ineligible: rows.filter(row => row.status === 'ineligible').length, failureCategories };
+    }), repeatability: tasks.map(task => ({ task: task.id, distinctGeneratedOutputs: new Set(generated.filter(row => row.task === task.id).map(row => row.outputHash)).size })) };
   }), records };
 }
 async function main() {
