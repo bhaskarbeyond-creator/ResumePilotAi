@@ -7,6 +7,8 @@ if (process.env.LEGACY_FRONTEND_DIR) {
       const response = await request.post('/api/auth/preview-login', { data: { email: 'superadmin@resumepilot.test', password: 'ephemeral-e2e-only' } });
       expect(response.ok()).toBe(true);
       const session = await response.json();
+      const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${session.token}` } });
+      expect(profile.ok()).toBe(true);
       await page.addInitScript(value => localStorage.setItem('ime_dev_user', JSON.stringify(value)), session);
       await page.setViewportSize({ width, height });
       const observations = [];
