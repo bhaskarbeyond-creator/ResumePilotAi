@@ -1,331 +1,1241 @@
 {
-  "sourceCommit": "64617a9a6342364d4c35944f8eb7c7edc7d40a5d",
-  "evidence": "https://github.com/bhaskarbeyond-creator/ResumePilotAi/actions/runs/39780575734/job/119831024083",
-  "note": "Actual initial plain-JSON screen; 11cases x3 repeats each model, 768–1536tokens. Semantic quality null, no production approvals. Subsequent paired format screening is a separate protocol, not substituted for these failures.",
-  "models": [
+  "sourceCommit": "8204930b10e2f968fe3b94c5982bf6178bf8c33d",
+  "evidence": "https://github.com/bhaskarbeyond-creator/ResumePilotAi/actions/runs/39784981061/job/119846183658",
+  "note": "Actual paired screen; semantic quality unreviewed, model-level latency combines formats; no production approvals. Qwen3 control transport stalls exhausted18min resource budget; incomplete cases explicitly ineligible, never passes. Subsequent scheduling/raw-output improvements require new measurements.",
+  "summaries": [
     {
-      "latencyP50Ms": 597.4974400000065,
-      "latencyP95Ms": 3582.1260630000033,
-      "measuredAt": "2026-10-22T12:48:11.057Z",
+      "columns": [
+        "task",
+        "caseId",
+        "budget",
+        "samples",
+        "ineligible",
+        "passed",
+        "failures",
+        "distinctOutputs"
+      ],
+      "formatMode": "provider-json-object",
+      "latencyP50Ms": 4045.785365999909,
+      "latencyP95Ms": 5652.631144000101,
+      "measuredAt": "2026-10-22T13:36:30.094Z",
+      "model": "qwen3:4b",
+      "provider": "ollama",
+      "semanticReview": null,
+      "status": "tested-unqualified",
+      "taskRows": [
+        [
+          "resume-write",
+          "resume-write",
+          768,
+          3,
+          0,
+          3,
+          {},
+          1
+        ],
+        [
+          "resume-extract",
+          "resume-extract",
+          768,
+          3,
+          0,
+          3,
+          {},
+          1
+        ],
+        [
+          "job-match",
+          "job-match",
+          1024,
+          0,
+          3,
+          0,
+          {
+            "evaluation-time-budget": 3
+          },
+          0
+        ],
+        [
+          "ats-format",
+          "ats-format",
+          1024,
+          0,
+          3,
+          0,
+          {
+            "evaluation-time-budget": 3
+          },
+          0
+        ],
+        [
+          "groundedness",
+          "groundedness",
+          768,
+          0,
+          3,
+          0,
+          {
+            "evaluation-time-budget": 3
+          },
+          0
+        ],
+        [
+          "injection",
+          "injection",
+          768,
+          0,
+          3,
+          0,
+          {
+            "evaluation-time-budget": 3
+          },
+          0
+        ],
+        [
+          "grammar",
+          "grammar",
+          768,
+          0,
+          3,
+          0,
+          {
+            "evaluation-time-budget": 3
+          },
+          0
+        ],
+        [
+          "multilingual",
+          "multilingual",
+          768,
+          0,
+          3,
+          0,
+          {
+            "evaluation-time-budget": 3
+          },
+          0
+        ],
+        [
+          "interview",
+          "interview",
+          1024,
+          0,
+          3,
+          0,
+          {
+            "evaluation-time-budget": 3
+          },
+          0
+        ],
+        [
+          "resume-write",
+          "complete-resume",
+          1536,
+          0,
+          3,
+          0,
+          {
+            "evaluation-time-budget": 3
+          },
+          0
+        ],
+        [
+          "job-match",
+          "job-tailoring",
+          1536,
+          0,
+          3,
+          0,
+          {
+            "evaluation-time-budget": 3
+          },
+          0
+        ]
+      ],
+      "ttftP50Ms": 198.15708300005645
+    },
+    {
+      "columns": [
+        "task",
+        "caseId",
+        "budget",
+        "samples",
+        "ineligible",
+        "passed",
+        "failures",
+        "distinctOutputs"
+      ],
+      "formatMode": "plain-requested-json",
+      "latencyP50Ms": 4045.785365999909,
+      "latencyP95Ms": 5652.631144000101,
+      "measuredAt": "2026-10-22T13:36:30.094Z",
+      "model": "qwen3:4b",
+      "provider": "ollama",
+      "semanticReview": null,
+      "status": "tested-unqualified",
+      "taskRows": [
+        [
+          "resume-write",
+          "resume-write",
+          768,
+          3,
+          0,
+          0,
+          {
+            "transport-or-schema": 3
+          },
+          0
+        ],
+        [
+          "resume-extract",
+          "resume-extract",
+          768,
+          3,
+          0,
+          0,
+          {
+            "transport-or-schema": 3
+          },
+          0
+        ],
+        [
+          "job-match",
+          "job-match",
+          1024,
+          2,
+          1,
+          0,
+          {
+            "evaluation-time-budget": 1,
+            "transport-or-schema": 2
+          },
+          0
+        ],
+        [
+          "ats-format",
+          "ats-format",
+          1024,
+          0,
+          3,
+          0,
+          {
+            "evaluation-time-budget": 3
+          },
+          0
+        ],
+        [
+          "groundedness",
+          "groundedness",
+          768,
+          0,
+          3,
+          0,
+          {
+            "evaluation-time-budget": 3
+          },
+          0
+        ],
+        [
+          "injection",
+          "injection",
+          768,
+          0,
+          3,
+          0,
+          {
+            "evaluation-time-budget": 3
+          },
+          0
+        ],
+        [
+          "grammar",
+          "grammar",
+          768,
+          0,
+          3,
+          0,
+          {
+            "evaluation-time-budget": 3
+          },
+          0
+        ],
+        [
+          "multilingual",
+          "multilingual",
+          768,
+          0,
+          3,
+          0,
+          {
+            "evaluation-time-budget": 3
+          },
+          0
+        ],
+        [
+          "interview",
+          "interview",
+          1024,
+          0,
+          3,
+          0,
+          {
+            "evaluation-time-budget": 3
+          },
+          0
+        ],
+        [
+          "resume-write",
+          "complete-resume",
+          1536,
+          0,
+          3,
+          0,
+          {
+            "evaluation-time-budget": 3
+          },
+          0
+        ],
+        [
+          "job-match",
+          "job-tailoring",
+          1536,
+          0,
+          3,
+          0,
+          {
+            "evaluation-time-budget": 3
+          },
+          0
+        ]
+      ],
+      "ttftP50Ms": 198.15708300005645
+    },
+    {
+      "columns": [
+        "task",
+        "caseId",
+        "budget",
+        "samples",
+        "ineligible",
+        "passed",
+        "failures",
+        "distinctOutputs"
+      ],
+      "formatMode": "provider-json-object",
+      "latencyP50Ms": 1001.6840240000165,
+      "latencyP95Ms": 5463.729018000013,
+      "measuredAt": "2026-10-22T13:36:30.094Z",
       "model": "qwen2.5:0.5b",
       "provider": "ollama",
       "semanticReview": null,
       "status": "tested-unqualified",
-      "tasks": [
-        {
-          "budget": 768,
-          "caseId": "resume-write",
-          "distinctOutputs": 1,
-          "failures": [
-            "invalid-format",
-            "invalid-format",
-            "invalid-format"
-          ],
-          "ineligible": 0,
-          "passed": 0,
-          "samples": 3,
-          "task": "resume-write"
-        },
-        {
-          "budget": 768,
-          "caseId": "resume-extract",
-          "distinctOutputs": 1,
-          "failures": [
-            "invalid-format",
-            "invalid-format",
-            "invalid-format"
-          ],
-          "ineligible": 0,
-          "passed": 0,
-          "samples": 3,
-          "task": "resume-extract"
-        },
-        {
-          "budget": 1024,
-          "caseId": "job-match",
-          "distinctOutputs": 1,
-          "failures": [
-            "invalid-format",
-            "invalid-format",
-            "invalid-format"
-          ],
-          "ineligible": 0,
-          "passed": 0,
-          "samples": 3,
-          "task": "job-match"
-        },
-        {
-          "budget": 1024,
-          "caseId": "ats-format",
-          "distinctOutputs": 1,
-          "failures": [
-            "invalid-format",
-            "invalid-format",
-            "invalid-format"
-          ],
-          "ineligible": 0,
-          "passed": 0,
-          "samples": 3,
-          "task": "ats-format"
-        },
-        {
-          "budget": 768,
-          "caseId": "groundedness",
-          "distinctOutputs": 1,
-          "failures": [
-            "invalid-format",
-            "invalid-format",
-            "invalid-format"
-          ],
-          "ineligible": 0,
-          "passed": 0,
-          "samples": 3,
-          "task": "groundedness"
-        },
-        {
-          "budget": 768,
-          "caseId": "injection",
-          "distinctOutputs": 1,
-          "failures": [
-            "unsupported-fact-or-grounding-contract",
-            "unsupported-fact-or-grounding-contract",
-            "unsupported-fact-or-grounding-contract"
-          ],
-          "ineligible": 0,
-          "passed": 0,
-          "samples": 3,
-          "task": "injection"
-        },
-        {
-          "budget": 768,
-          "caseId": "grammar",
-          "distinctOutputs": 1,
-          "failures": [],
-          "ineligible": 0,
-          "passed": 3,
-          "samples": 3,
-          "task": "grammar"
-        },
-        {
-          "budget": 768,
-          "caseId": "multilingual",
-          "distinctOutputs": 1,
-          "failures": [
-            "incorrect-reference-constraint",
-            "incorrect-reference-constraint",
-            "incorrect-reference-constraint"
-          ],
-          "ineligible": 0,
-          "passed": 0,
-          "samples": 3,
-          "task": "multilingual"
-        },
-        {
-          "budget": 1024,
-          "caseId": "interview",
-          "distinctOutputs": 2,
-          "failures": [
-            "invalid-format",
-            "invalid-format",
-            "invalid-format"
-          ],
-          "ineligible": 0,
-          "passed": 0,
-          "samples": 3,
-          "task": "interview"
-        },
-        {
-          "budget": 1536,
-          "caseId": "complete-resume",
-          "distinctOutputs": 2,
-          "failures": [
-            "invalid-format",
-            "invalid-format",
-            "invalid-format"
-          ],
-          "ineligible": 0,
-          "passed": 0,
-          "samples": 3,
-          "task": "resume-write"
-        },
-        {
-          "budget": 1536,
-          "caseId": "job-tailoring",
-          "distinctOutputs": 2,
-          "failures": [
-            "incorrect-reference-constraint",
-            "incorrect-reference-constraint",
-            "incorrect-reference-constraint"
-          ],
-          "ineligible": 0,
-          "passed": 0,
-          "samples": 3,
-          "task": "job-match"
-        }
+      "taskRows": [
+        [
+          "resume-write",
+          "resume-write",
+          768,
+          3,
+          0,
+          3,
+          {},
+          1
+        ],
+        [
+          "resume-extract",
+          "resume-extract",
+          768,
+          3,
+          0,
+          0,
+          {
+            "unsupported-fact-or-grounding-contract": 3
+          },
+          1
+        ],
+        [
+          "job-match",
+          "job-match",
+          1024,
+          3,
+          0,
+          0,
+          {
+            "incorrect-reference-constraint": 3
+          },
+          1
+        ],
+        [
+          "ats-format",
+          "ats-format",
+          1024,
+          3,
+          0,
+          3,
+          {},
+          1
+        ],
+        [
+          "groundedness",
+          "groundedness",
+          768,
+          3,
+          0,
+          3,
+          {},
+          1
+        ],
+        [
+          "injection",
+          "injection",
+          768,
+          3,
+          0,
+          0,
+          {
+            "unsupported-fact-or-grounding-contract": 3
+          },
+          1
+        ],
+        [
+          "grammar",
+          "grammar",
+          768,
+          3,
+          0,
+          3,
+          {},
+          1
+        ],
+        [
+          "multilingual",
+          "multilingual",
+          768,
+          3,
+          0,
+          0,
+          {
+            "incorrect-reference-constraint": 3
+          },
+          1
+        ],
+        [
+          "interview",
+          "interview",
+          1024,
+          3,
+          0,
+          0,
+          {
+            "incorrect-reference-constraint": 3
+          },
+          1
+        ],
+        [
+          "resume-write",
+          "complete-resume",
+          1536,
+          3,
+          0,
+          0,
+          {
+            "unsupported-fact-or-grounding-contract": 3
+          },
+          1
+        ],
+        [
+          "job-match",
+          "job-tailoring",
+          1536,
+          3,
+          0,
+          0,
+          {
+            "incorrect-reference-constraint": 3
+          },
+          1
+        ]
       ],
-      "ttftP50Ms": 24.87656999999308
+      "ttftP50Ms": 46.51857400004519
     },
     {
-      "latencyP50Ms": 1304.5201340000003,
-      "latencyP95Ms": 5011.319409999996,
-      "measuredAt": "2026-10-22T12:48:11.057Z",
+      "columns": [
+        "task",
+        "caseId",
+        "budget",
+        "samples",
+        "ineligible",
+        "passed",
+        "failures",
+        "distinctOutputs"
+      ],
+      "formatMode": "plain-requested-json",
+      "latencyP50Ms": 1001.6840240000165,
+      "latencyP95Ms": 5463.729018000013,
+      "measuredAt": "2026-10-22T13:36:30.094Z",
+      "model": "qwen2.5:0.5b",
+      "provider": "ollama",
+      "semanticReview": null,
+      "status": "tested-unqualified",
+      "taskRows": [
+        [
+          "resume-write",
+          "resume-write",
+          768,
+          3,
+          0,
+          0,
+          {
+            "invalid-format": 3
+          },
+          2
+        ],
+        [
+          "resume-extract",
+          "resume-extract",
+          768,
+          3,
+          0,
+          0,
+          {
+            "invalid-format": 3
+          },
+          1
+        ],
+        [
+          "job-match",
+          "job-match",
+          1024,
+          3,
+          0,
+          0,
+          {
+            "invalid-format": 3
+          },
+          1
+        ],
+        [
+          "ats-format",
+          "ats-format",
+          1024,
+          3,
+          0,
+          0,
+          {
+            "invalid-format": 3
+          },
+          1
+        ],
+        [
+          "groundedness",
+          "groundedness",
+          768,
+          3,
+          0,
+          0,
+          {
+            "invalid-format": 3
+          },
+          1
+        ],
+        [
+          "injection",
+          "injection",
+          768,
+          3,
+          0,
+          0,
+          {
+            "unsupported-fact-or-grounding-contract": 3
+          },
+          1
+        ],
+        [
+          "grammar",
+          "grammar",
+          768,
+          3,
+          0,
+          3,
+          {},
+          1
+        ],
+        [
+          "multilingual",
+          "multilingual",
+          768,
+          3,
+          0,
+          0,
+          {
+            "incorrect-reference-constraint": 3
+          },
+          1
+        ],
+        [
+          "interview",
+          "interview",
+          1024,
+          3,
+          0,
+          0,
+          {
+            "invalid-format": 3
+          },
+          1
+        ],
+        [
+          "resume-write",
+          "complete-resume",
+          1536,
+          3,
+          0,
+          0,
+          {
+            "invalid-format": 3
+          },
+          2
+        ],
+        [
+          "job-match",
+          "job-tailoring",
+          1536,
+          3,
+          0,
+          0,
+          {
+            "incorrect-reference-constraint": 3
+          },
+          1
+        ]
+      ],
+      "ttftP50Ms": 46.51857400004519
+    },
+    {
+      "columns": [
+        "task",
+        "caseId",
+        "budget",
+        "samples",
+        "ineligible",
+        "passed",
+        "failures",
+        "distinctOutputs"
+      ],
+      "formatMode": "provider-json-object",
+      "latencyP50Ms": 2321.220888,
+      "latencyP95Ms": 10971.187584999978,
+      "measuredAt": "2026-10-22T13:36:30.094Z",
       "model": "qwen2.5:1.5b",
       "provider": "ollama",
       "semanticReview": null,
       "status": "tested-unqualified",
-      "tasks": [
-        {
-          "budget": 768,
-          "caseId": "resume-write",
-          "distinctOutputs": 1,
-          "failures": [
-            "invalid-format",
-            "invalid-format",
-            "invalid-format"
-          ],
-          "ineligible": 0,
-          "passed": 0,
-          "samples": 3,
-          "task": "resume-write"
-        },
-        {
-          "budget": 768,
-          "caseId": "resume-extract",
-          "distinctOutputs": 2,
-          "failures": [
-            "invalid-format",
-            "invalid-format",
-            "invalid-format"
-          ],
-          "ineligible": 0,
-          "passed": 0,
-          "samples": 3,
-          "task": "resume-extract"
-        },
-        {
-          "budget": 1024,
-          "caseId": "job-match",
-          "distinctOutputs": 2,
-          "failures": [
-            "invalid-format",
-            "invalid-format",
-            "invalid-format"
-          ],
-          "ineligible": 0,
-          "passed": 0,
-          "samples": 3,
-          "task": "job-match"
-        },
-        {
-          "budget": 1024,
-          "caseId": "ats-format",
-          "distinctOutputs": 1,
-          "failures": [
-            "invalid-format",
-            "invalid-format",
-            "invalid-format"
-          ],
-          "ineligible": 0,
-          "passed": 0,
-          "samples": 3,
-          "task": "ats-format"
-        },
-        {
-          "budget": 768,
-          "caseId": "groundedness",
-          "distinctOutputs": 1,
-          "failures": [
-            "invalid-format",
-            "invalid-format",
-            "invalid-format"
-          ],
-          "ineligible": 0,
-          "passed": 0,
-          "samples": 3,
-          "task": "groundedness"
-        },
-        {
-          "budget": 768,
-          "caseId": "injection",
-          "distinctOutputs": 1,
-          "failures": [
-            "invalid-format",
-            "invalid-format",
-            "invalid-format"
-          ],
-          "ineligible": 0,
-          "passed": 0,
-          "samples": 3,
-          "task": "injection"
-        },
-        {
-          "budget": 768,
-          "caseId": "grammar",
-          "distinctOutputs": 1,
-          "failures": [],
-          "ineligible": 0,
-          "passed": 3,
-          "samples": 3,
-          "task": "grammar"
-        },
-        {
-          "budget": 768,
-          "caseId": "multilingual",
-          "distinctOutputs": 1,
-          "failures": [
-            "incorrect-reference-constraint",
-            "incorrect-reference-constraint",
-            "incorrect-reference-constraint"
-          ],
-          "ineligible": 0,
-          "passed": 0,
-          "samples": 3,
-          "task": "multilingual"
-        },
-        {
-          "budget": 1024,
-          "caseId": "interview",
-          "distinctOutputs": 2,
-          "failures": [
-            "invalid-format",
-            "invalid-format",
-            "invalid-format"
-          ],
-          "ineligible": 0,
-          "passed": 0,
-          "samples": 3,
-          "task": "interview"
-        },
-        {
-          "budget": 1536,
-          "caseId": "complete-resume",
-          "distinctOutputs": 2,
-          "failures": [
-            "invalid-format",
-            "invalid-format",
-            "invalid-format"
-          ],
-          "ineligible": 0,
-          "passed": 0,
-          "samples": 3,
-          "task": "resume-write"
-        },
-        {
-          "budget": 1536,
-          "caseId": "job-tailoring",
-          "distinctOutputs": 2,
-          "failures": [
-            "invalid-format",
-            "invalid-format",
-            "invalid-format"
-          ],
-          "ineligible": 0,
-          "passed": 0,
-          "samples": 3,
-          "task": "job-match"
-        }
+      "taskRows": [
+        [
+          "resume-write",
+          "resume-write",
+          768,
+          3,
+          0,
+          0,
+          {
+            "unsupported-fact-or-grounding-contract": 3
+          },
+          1
+        ],
+        [
+          "resume-extract",
+          "resume-extract",
+          768,
+          3,
+          0,
+          3,
+          {},
+          1
+        ],
+        [
+          "job-match",
+          "job-match",
+          1024,
+          3,
+          0,
+          0,
+          {
+            "incorrect-reference-constraint": 3
+          },
+          1
+        ],
+        [
+          "ats-format",
+          "ats-format",
+          1024,
+          3,
+          0,
+          3,
+          {},
+          1
+        ],
+        [
+          "groundedness",
+          "groundedness",
+          768,
+          3,
+          0,
+          3,
+          {},
+          1
+        ],
+        [
+          "injection",
+          "injection",
+          768,
+          3,
+          0,
+          3,
+          {},
+          1
+        ],
+        [
+          "grammar",
+          "grammar",
+          768,
+          3,
+          0,
+          3,
+          {},
+          1
+        ],
+        [
+          "multilingual",
+          "multilingual",
+          768,
+          3,
+          0,
+          0,
+          {
+            "incorrect-reference-constraint": 3
+          },
+          1
+        ],
+        [
+          "interview",
+          "interview",
+          1024,
+          3,
+          0,
+          3,
+          {},
+          1
+        ],
+        [
+          "resume-write",
+          "complete-resume",
+          1536,
+          3,
+          0,
+          0,
+          {
+            "unsupported-fact-or-grounding-contract": 3
+          },
+          1
+        ],
+        [
+          "job-match",
+          "job-tailoring",
+          1536,
+          3,
+          0,
+          0,
+          {
+            "incorrect-reference-constraint": 3
+          },
+          1
+        ]
       ],
-      "ttftP50Ms": 41.4553689999957
+      "ttftP50Ms": 96.37575799999468
+    },
+    {
+      "columns": [
+        "task",
+        "caseId",
+        "budget",
+        "samples",
+        "ineligible",
+        "passed",
+        "failures",
+        "distinctOutputs"
+      ],
+      "formatMode": "plain-requested-json",
+      "latencyP50Ms": 2321.220888,
+      "latencyP95Ms": 10971.187584999978,
+      "measuredAt": "2026-10-22T13:36:30.094Z",
+      "model": "qwen2.5:1.5b",
+      "provider": "ollama",
+      "semanticReview": null,
+      "status": "tested-unqualified",
+      "taskRows": [
+        [
+          "resume-write",
+          "resume-write",
+          768,
+          3,
+          0,
+          0,
+          {
+            "unsupported-fact-or-grounding-contract": 3
+          },
+          1
+        ],
+        [
+          "resume-extract",
+          "resume-extract",
+          768,
+          3,
+          0,
+          0,
+          {
+            "invalid-format": 3
+          },
+          1
+        ],
+        [
+          "job-match",
+          "job-match",
+          1024,
+          3,
+          0,
+          0,
+          {
+            "invalid-format": 3
+          },
+          2
+        ],
+        [
+          "ats-format",
+          "ats-format",
+          1024,
+          3,
+          0,
+          0,
+          {
+            "invalid-format": 3
+          },
+          1
+        ],
+        [
+          "groundedness",
+          "groundedness",
+          768,
+          3,
+          0,
+          0,
+          {
+            "invalid-format": 3
+          },
+          1
+        ],
+        [
+          "injection",
+          "injection",
+          768,
+          3,
+          0,
+          0,
+          {
+            "invalid-format": 3
+          },
+          1
+        ],
+        [
+          "grammar",
+          "grammar",
+          768,
+          3,
+          0,
+          3,
+          {},
+          1
+        ],
+        [
+          "multilingual",
+          "multilingual",
+          768,
+          3,
+          0,
+          0,
+          {
+            "incorrect-reference-constraint": 3
+          },
+          1
+        ],
+        [
+          "interview",
+          "interview",
+          1024,
+          3,
+          0,
+          0,
+          {
+            "invalid-format": 3
+          },
+          2
+        ],
+        [
+          "resume-write",
+          "complete-resume",
+          1536,
+          3,
+          0,
+          0,
+          {
+            "invalid-format": 3
+          },
+          1
+        ],
+        [
+          "job-match",
+          "job-tailoring",
+          1536,
+          3,
+          0,
+          0,
+          {
+            "invalid-format": 3
+          },
+          2
+        ]
+      ],
+      "ttftP50Ms": 96.37575799999468
     }
-  ]
+  ],
+  "initialPlainScreen": {
+    "sourceCommit": "64617a9a6342364d4c35944f8eb7c7edc7d40a5d",
+    "evidence": "https://github.com/bhaskarbeyond-creator/ResumePilotAi/actions/runs/39780575734/job/119831024083",
+    "note": "Actual initial plain-JSON screen; 11cases x3 repeats each model, 768–1536tokens. Semantic quality null, no production approvals. Subsequent paired format screening is a separate protocol, not substituted for these failures.",
+    "models": [
+      {
+        "latencyP50Ms": 597.4974400000065,
+        "latencyP95Ms": 3582.1260630000033,
+        "measuredAt": "2026-10-22T12:48:11.057Z",
+        "model": "qwen2.5:0.5b",
+        "provider": "ollama",
+        "semanticReview": null,
+        "status": "tested-unqualified",
+        "tasks": [
+          {
+            "budget": 768,
+            "caseId": "resume-write",
+            "distinctOutputs": 1,
+            "failures": [
+              "invalid-format",
+              "invalid-format",
+              "invalid-format"
+            ],
+            "ineligible": 0,
+            "passed": 0,
+            "samples": 3,
+            "task": "resume-write"
+          },
+          {
+            "budget": 768,
+            "caseId": "resume-extract",
+            "distinctOutputs": 1,
+            "failures": [
+              "invalid-format",
+              "invalid-format",
+              "invalid-format"
+            ],
+            "ineligible": 0,
+            "passed": 0,
+            "samples": 3,
+            "task": "resume-extract"
+          },
+          {
+            "budget": 1024,
+            "caseId": "job-match",
+            "distinctOutputs": 1,
+            "failures": [
+              "invalid-format",
+              "invalid-format",
+              "invalid-format"
+            ],
+            "ineligible": 0,
+            "passed": 0,
+            "samples": 3,
+            "task": "job-match"
+          },
+          {
+            "budget": 1024,
+            "caseId": "ats-format",
+            "distinctOutputs": 1,
+            "failures": [
+              "invalid-format",
+              "invalid-format",
+              "invalid-format"
+            ],
+            "ineligible": 0,
+            "passed": 0,
+            "samples": 3,
+            "task": "ats-format"
+          },
+          {
+            "budget": 768,
+            "caseId": "groundedness",
+            "distinctOutputs": 1,
+            "failures": [
+              "invalid-format",
+              "invalid-format",
+              "invalid-format"
+            ],
+            "ineligible": 0,
+            "passed": 0,
+            "samples": 3,
+            "task": "groundedness"
+          },
+          {
+            "budget": 768,
+            "caseId": "injection",
+            "distinctOutputs": 1,
+            "failures": [
+              "unsupported-fact-or-grounding-contract",
+              "unsupported-fact-or-grounding-contract",
+              "unsupported-fact-or-grounding-contract"
+            ],
+            "ineligible": 0,
+            "passed": 0,
+            "samples": 3,
+            "task": "injection"
+          },
+          {
+            "budget": 768,
+            "caseId": "grammar",
+            "distinctOutputs": 1,
+            "failures": [],
+            "ineligible": 0,
+            "passed": 3,
+            "samples": 3,
+            "task": "grammar"
+          },
+          {
+            "budget": 768,
+            "caseId": "multilingual",
+            "distinctOutputs": 1,
+            "failures": [
+              "incorrect-reference-constraint",
+              "incorrect-reference-constraint",
+              "incorrect-reference-constraint"
+            ],
+            "ineligible": 0,
+            "passed": 0,
+            "samples": 3,
+            "task": "multilingual"
+          },
+          {
+            "budget": 1024,
+            "caseId": "interview",
+            "distinctOutputs": 2,
+            "failures": [
+              "invalid-format",
+              "invalid-format",
+              "invalid-format"
+            ],
+            "ineligible": 0,
+            "passed": 0,
+            "samples": 3,
+            "task": "interview"
+          },
+          {
+            "budget": 1536,
+            "caseId": "complete-resume",
+            "distinctOutputs": 2,
+            "failures": [
+              "invalid-format",
+              "invalid-format",
+              "invalid-format"
+            ],
+            "ineligible": 0,
+            "passed": 0,
+            "samples": 3,
+            "task": "resume-write"
+          },
+          {
+            "budget": 1536,
+            "caseId": "job-tailoring",
+            "distinctOutputs": 2,
+            "failures": [
+              "incorrect-reference-constraint",
+              "incorrect-reference-constraint",
+              "incorrect-reference-constraint"
+            ],
+            "ineligible": 0,
+            "passed": 0,
+            "samples": 3,
+            "task": "job-match"
+          }
+        ],
+        "ttftP50Ms": 24.87656999999308
+      },
+      {
+        "latencyP50Ms": 1304.5201340000003,
+        "latencyP95Ms": 5011.319409999996,
+        "measuredAt": "2026-10-22T12:48:11.057Z",
+        "model": "qwen2.5:1.5b",
+        "provider": "ollama",
+        "semanticReview": null,
+        "status": "tested-unqualified",
+        "tasks": [
+          {
+            "budget": 768,
+            "caseId": "resume-write",
+            "distinctOutputs": 1,
+            "failures": [
+              "invalid-format",
+              "invalid-format",
+              "invalid-format"
+            ],
+            "ineligible": 0,
+            "passed": 0,
+            "samples": 3,
+            "task": "resume-write"
+          },
+          {
+            "budget": 768,
+            "caseId": "resume-extract",
+            "distinctOutputs": 2,
+            "failures": [
+              "invalid-format",
+              "invalid-format",
+              "invalid-format"
+            ],
+            "ineligible": 0,
+            "passed": 0,
+            "samples": 3,
+            "task": "resume-extract"
+          },
+          {
+            "budget": 1024,
+            "caseId": "job-match",
+            "distinctOutputs": 2,
+            "failures": [
+              "invalid-format",
+              "invalid-format",
+              "invalid-format"
+            ],
+            "ineligible": 0,
+            "passed": 0,
+            "samples": 3,
+            "task": "job-match"
+          },
+          {
+            "budget": 1024,
+            "caseId": "ats-format",
+            "distinctOutputs": 1,
+            "failures": [
+              "invalid-format",
+              "invalid-format",
+              "invalid-format"
+            ],
+            "ineligible": 0,
+            "passed": 0,
+            "samples": 3,
+            "task": "ats-format"
+          },
+          {
+            "budget": 768,
+            "caseId": "groundedness",
+            "distinctOutputs": 1,
+            "failures": [
+              "invalid-format",
+              "invalid-format",
+              "invalid-format"
+            ],
+            "ineligible": 0,
+            "passed": 0,
+            "samples": 3,
+            "task": "groundedness"
+          },
+          {
+            "budget": 768,
+            "caseId": "injection",
+            "distinctOutputs": 1,
+            "failures": [
+              "invalid-format",
+              "invalid-format",
+              "invalid-format"
+            ],
+            "ineligible": 0,
+            "passed": 0,
+            "samples": 3,
+            "task": "injection"
+          },
+          {
+            "budget": 768,
+            "caseId": "grammar",
+            "distinctOutputs": 1,
+            "failures": [],
+            "ineligible": 0,
+            "passed": 3,
+            "samples": 3,
+            "task": "grammar"
+          },
+          {
+            "budget": 768,
+            "caseId": "multilingual",
+            "distinctOutputs": 1,
+            "failures": [
+              "incorrect-reference-constraint",
+              "incorrect-reference-constraint",
+              "incorrect-reference-constraint"
+            ],
+            "ineligible": 0,
+            "passed": 0,
+            "samples": 3,
+            "task": "multilingual"
+          },
+          {
+            "budget": 1024,
+            "caseId": "interview",
+            "distinctOutputs": 2,
+            "failures": [
+              "invalid-format",
+              "invalid-format",
+              "invalid-format"
+            ],
+            "ineligible": 0,
+            "passed": 0,
+            "samples": 3,
+            "task": "interview"
+          },
+          {
+            "budget": 1536,
+            "caseId": "complete-resume",
+            "distinctOutputs": 2,
+            "failures": [
+              "invalid-format",
+              "invalid-format",
+              "invalid-format"
+            ],
+            "ineligible": 0,
+            "passed": 0,
+            "samples": 3,
+            "task": "resume-write"
+          },
+          {
+            "budget": 1536,
+            "caseId": "job-tailoring",
+            "distinctOutputs": 2,
+            "failures": [
+              "invalid-format",
+              "invalid-format",
+              "invalid-format"
+            ],
+            "ineligible": 0,
+            "passed": 0,
+            "samples": 3,
+            "task": "job-match"
+          }
+        ],
+        "ttftP50Ms": 41.4553689999957
+      }
+    ]
+  }
 }
