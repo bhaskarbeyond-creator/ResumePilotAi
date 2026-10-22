@@ -73,3 +73,9 @@ Full route inventory, legacy parity, real public/local inference, credentialed i
 ## Git ledger
 - `039a392fda09f3fc72d0c45a380bd6a10b52cdaa`: discovery integrity/cooldown fixes; remote session-branch hash independently verified after push.
 - Subsequent implementation and final report: see Git history and final GitHub PR; never pushed directly to dev or main.
+
+## Final upstream reconciliation and post-merge evidence
+- Upstream dev/main advanced during work to `800b7c56a3c1cfc5d1cefc8d3fbc1d1be1438e22` (bridge ledger only). Merged origin/dev into the fixed session branch via `26eda37`; no history rewrite.
+- Post-merge final backend run: **998 total, 941 passed, 57 failed**. Failure names saved in backend-failure-register.json; no new names vs diagnostic exported baseline. Full-suite gate remains failed.
+- Post-merge TypeScript/Vite build, admin-settings 13 tests and Playwright 37 tests reran successfully.
+- Draft PR #45 targets dev: https://github.com/bhaskarbeyond-creator/ResumePilotAi/pull/45 . See FINAL_REPORT.md for full limitations and A–K report.
