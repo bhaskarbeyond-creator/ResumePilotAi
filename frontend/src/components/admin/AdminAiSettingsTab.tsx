@@ -1067,7 +1067,7 @@ export function AdminAiSettingsTab() {
             </label>
           </>}
         </div>
-        <p className="text-xs text-ink-muted">Automatic modes use current catalog capabilities and recent service observations. Quality First prioritizes documented capability fit; no response-quality benchmark is available. Manual pins never silently fall back.</p>
+        <p className="text-xs text-ink-muted">Live catalog entries are discovered, not task-qualified. Automatic product recommendations require fresh, scoped independent task approval. Quality First uses capability and service evidence, not a semantic-quality guarantee. Manual pins may have unknown qualification; known critical failures are blocked and pins never silently switch.</p>
       </CardContent></Card>
       {/* ═════════════════════════════════════════════════════════════════════════════ */}
       {/* ─── MASTER TOP TAB BAR ─── */}

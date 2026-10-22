@@ -54,3 +54,10 @@ test('reviewed scoped evidence permits all intelligent modes; failed evidence bl
   fs.rmSync(dir, { recursive: true, force: true });
  }
 });
+test('legacy automatic models and provider-only automatic pins cannot bypass task qualification', async () => {
+ const router = new FreeLlmRouter();
+ router.modelDiscovery = { getOrDiscover: async () => [{ id: 'fixture', capabilities: { json: true }, contextWindow: 32768, outputLimit: 4096 }] };
+ const configuration = { primary: 'ollama', providers: { ollama: { enabled: true, model: 'auto' } } };
+ assert.deepEqual(await router.buildCandidateList({ requirements: { task: 'resume-write' }, platformConfig: configuration }), []);
+ assert.deepEqual(await router.buildCandidateList({ requirements: { task: 'resume-write' }, requestedModel: 'ollama', platformConfig: { ...configuration, selectionMode: 'auto' } }), []);
+});

@@ -197,7 +197,10 @@ class FreeLlmRouter {
     const mode = platformConfig.selectionMode;
     if (!mode) {
       if (!requirements.task) return candidates.filter(modelPermitted);
-      return candidates.filter(modelPermitted).map(candidate => ({ ...candidate,
+      return candidates.filter(modelPermitted).filter(candidate => {
+        const pin = requestedModel && !getProviderMeta(requestedModel) ? requestedModel : candidate.isDedicatedByok ? tenantContext?.primaryModel : platformConfig.providers?.[candidate.provider]?.model;
+        return typeof pin === 'string' && !['auto', 'dynamic'].includes(pin) && !pin.startsWith('auto:') && pin === candidate.model;
+      }).map(candidate => ({ ...candidate,
         keys: candidate.keys.filter(key => qualificationFor({ ...candidate, key }, { ...requirements, tenantContext }).status !== 'failed'),
         routingDecision: { mode: 'manual-legacy', qualityEvidence: 'unknown', taskQualification: { task: requirements.task, status: 'unknown', warning: 'Legacy pins are not task qualification' } },
       })).filter(candidate => candidate.keys.length > 0);
@@ -228,7 +231,7 @@ class FreeLlmRouter {
           const taskQualification = qualificationFor(selected, { ...requirements, tenantContext });
           if (taskQualification.status === 'failed') continue;
           // Automatic product recommendations require reviewed task evidence, not model names or speed.
-          if (requirements.task && mode !== 'manual' && !explicit && !explicitProvider && taskQualification.status !== 'qualified') continue;
+          if (requirements.task && mode !== 'manual' && !explicit && taskQualification.status !== 'qualified') continue;
           if (requirements.task && mode !== 'manual' && (!metadata.contextWindow || !metadata.outputLimit)) continue;
           expanded.push({ ...selected, taskQualification });
         }
