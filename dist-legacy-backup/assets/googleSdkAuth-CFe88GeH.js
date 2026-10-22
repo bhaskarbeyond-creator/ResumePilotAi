@@ -1,1 +1,0 @@
-async function e(e,t){let n=`Google sign-in is temporarily unavailable. The Firebase Google provider must be configured by an administrator.`;if(t)return t(n),!1;throw Error(n)}export{e as directGoogleAuthFallback};

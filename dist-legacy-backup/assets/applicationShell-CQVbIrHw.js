@@ -1,1 +1,0 @@
-function e(e){let t=e?.authReady===!0,n=e?.user?.uid||e?.userId||null;return t?n?{phase:`authenticated`,mountShell:!0,userId:n}:{phase:`guest`,mountShell:!1,userId:null}:{phase:`wait`,mountShell:!1,userId:null}}function t(e=``){let t=String(e).toLowerCase();return t.startsWith(`/build-resume`)||t.startsWith(`/create-resume`)}export{e as n,t};
