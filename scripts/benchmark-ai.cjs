@@ -102,7 +102,17 @@ async function main() {
   const report = await benchmark({ baseUrl, models: models.slice(0, 4), provider });
   fs.mkdirSync('artifacts/ai-engine', { recursive: true });
   fs.writeFileSync('artifacts/ai-engine/benchmark.json', JSON.stringify(report, null, 2) + '\n');
-  console.log(`::notice title=Synthetic benchmark results::${JSON.stringify(report).replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A')}`);
+  const { records, ...summary } = report;
+  for (const result of report.results) {
+    const message = JSON.stringify({ ...summary, results: [result] }).replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+    console.log(`::notice title=Synthetic benchmark results::${message}`);
+  }
+  for (const task of tasks) {
+    for (const result of report.results) {
+      const message = JSON.stringify({ provider: report.provider, task: task.id, records: records.filter(row => row.model === result.model && row.task === task.id) }).replace(/%/g, '%25');
+      console.log(`::notice title=Synthetic benchmark case::${message}`);
+    }
+  }
   if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `\n### Synthetic benchmark (not a general quality score)\n\n\`\`\`json\n${JSON.stringify(report, null, 2)}\n\`\`\`\n`);
   if (report.results.some(result => result.generated === 0)) process.exitCode = 1;
 }
