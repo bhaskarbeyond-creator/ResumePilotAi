@@ -16,10 +16,26 @@ if (process.env.LEGACY_FRONTEND_DIR) {
       for (const [name, origin] of [['historical', 'http://127.0.0.1:4001'], ['current', 'http://127.0.0.1:4000']]) {
         await page.goto(`${origin}/admin?tab=ai-settings&subtab=providers`);
         await expect(page.getByRole('button', { name: 'Save All Changes', exact: true })).toBeVisible();
+        const headers = { Authorization: `Bearer ${session.token}` };
+        const before = await (await request.get('/api/admin/ai-settings', { headers })).json();
+        const saved = page.waitForResponse(response => response.url().endsWith('/admin/ai-settings') && response.request().method() === 'POST');
+        await page.getByRole('button', { name: 'Save All Changes', exact: true }).click();
+        expect((await saved).ok()).toBe(true);
+        const after = await (await request.get('/api/admin/ai-settings', { headers })).json();
+        expect(after.revision).toBeGreaterThan(before.revision);
+        for (const field of ['provider', 'temperature', 'maxTokens']) expect(after.settings[field]).toEqual(before.settings[field]);
         await page.reload();
         await expect(page.getByRole('button', { name: 'Save All Changes', exact: true })).toBeVisible();
         await page.screenshot({ path: test.info().outputPath(`${name}-${width}x${height}.png`), fullPage: true });
-        observations.push({ source: name, width, height, documentWidth: await page.evaluate(() => document.documentElement.scrollWidth), viewportWidth: width, saveControlVisible: true });
+        await page.getByRole('button', { name: 'Configure Provider', exact: true }).click();
+        const dialog = page.getByRole('dialog');
+        await expect(dialog).toBeVisible();
+        await page.keyboard.press('Tab');
+        expect(await dialog.evaluate(element => element.contains(document.activeElement))).toBe(true);
+        await page.screenshot({ path: test.info().outputPath(`${name}-configure-${width}x${height}.png`), fullPage: true });
+        await page.keyboard.press('Escape');
+        await expect(dialog).toHaveCount(0);
+        observations.push({ persistenceVerified: true, configureDialogVerified: true, source: name, width, height, documentWidth: await page.evaluate(() => document.documentElement.scrollWidth), viewportWidth: width, saveControlVisible: true });
         await page.goto(`${origin}/adm?tab=ai-settings&subtab=metrics`);
         await expect(page).toHaveURL(/\/admin\?tab=ai-settings&subtab=metrics/);
         await page.goBack();

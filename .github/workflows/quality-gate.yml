@@ -94,6 +94,9 @@ jobs:
       - name: Production dependency audit
         run: npm run audit:production
 
+      - name: Full dependency graph audit (no ignored development findings)
+        run: npm run audit:all
+
       - name: Stop isolated MariaDB
         if: always()
         run: docker rm -f "$CI_MARIADB_CONTAINER" >/dev/null 2>&1 || true
