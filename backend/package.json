@@ -7,7 +7,7 @@
     "test": "node scripts/run-tests-with-annotations.js",
     "test:payments": "node --test --test-concurrency=1 --test-force-exit test/payment-reconciliation.test.js test/payments.test.js test/payment-activation.test.js",
     "start": "node index.js",
-    "dev": "nodemon index.js",
+    "dev": "node --watch index.js",
     "test:enterprise": "node --test --test-concurrency=1 --test-force-exit enterprise-test/*.test.js"
   },
   "author": "",
@@ -23,8 +23,7 @@
     "multer": "^2.4.0",
     "mysql2": "^3.24.2",
     "node-fetch": "^2.7.0",
-    "nodemailer": "9.0.5",
-    "nodemon": "3.1.14",
+    "nodemailer": "10.2.0",
     "paytmchecksum": "1.5.1",
     "playwright": "^1.62.1",
     "sharp": "^0.35.5",
