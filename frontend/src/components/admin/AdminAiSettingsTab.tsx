@@ -2392,13 +2392,17 @@ export function AdminAiSettingsTab() {
                 variant="outline"
                 size="sm"
                 onClick={async () => {
-                  if (!modalSelectedPlatform || (!modalSelectedPlatform.keyless && !modalApiKey.trim())) return;
+                  if (modalTab !== 'key' || modalCustomEndpoint.trim() || !modalSelectedPlatform || (!modalSelectedPlatform.keyless && !modalApiKey.trim())) return;
                   setModalTesting(true);
                   setModalError(null);
                   try {
+                    const firstKey = splitKeyPool(modalApiKey)[0] || '';
+                    const apiKey = modalSelectedPlatform.keyless ? ''
+                      : modalSelectedPlatform.id === 'cloudflare' && modalAccountId.trim()
+                        ? `${modalAccountId.trim()}:${firstKey}` : firstKey;
                     const res = await post<{ ok?: boolean; latencyMs?: number; message?: string }>(
                       '/admin/ai/test-provider',
-                      { provider: modalSelectedPlatform.id, model: modalCustomModel || modalSelectedPlatform.defaultModel, apiKey: modalSelectedPlatform.keyless ? '' : modalApiKey }
+                      { provider: modalSelectedPlatform.id, model: modalSelectedPlatform.defaultModel, apiKey }
                     );
                     if (res.ok) setModalError(`✓ Connection verified${res.latencyMs ? ` (${res.latencyMs}ms)` : ''}`);
                     else setModalError(`✗ Test failed: ${res.message || 'Connection test failed'}`);
@@ -2409,6 +2413,8 @@ export function AdminAiSettingsTab() {
                   }
                 }}
                 loading={modalTesting}
+                disabled={modalTab !== 'key' || Boolean(modalCustomEndpoint.trim()) || !modalSelectedPlatform || (!modalSelectedPlatform.keyless && !modalApiKey.trim())}
+                title="Tests the first entered key at the saved provider endpoint. Save endpoint changes before testing them."
                 className="h-8 text-xs font-semibold text-sky-800 dark:text-sky-300 border-sky-200 dark:border-sky-800 hover:bg-sky-50 dark:hover:bg-sky-950/20"
               >
                 {modalTesting ? <Activity className="size-3.5 mr-1.5 animate-spin" /> : <Zap className="size-3 mr-1" />}

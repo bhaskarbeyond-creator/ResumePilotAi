@@ -128,6 +128,18 @@ test('five real dialogs open, trap focus, close on Escape, and preserve route st
     await page.getByRole('button', { name, exact: true }).click();
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
+    if (name === 'Configure Provider') {
+      await dialog.getByRole('button', { name: 'Provider key', exact: true }).click();
+      await dialog.getByTestId('platform-selector').click();
+      await dialog.getByTestId('platform-option-ollama').click();
+      const probe = dialog.getByRole('button', { name: 'Test Key Before Saving', exact: true });
+      await expect(probe).toBeEnabled();
+      await dialog.getByRole('button', { name: 'Custom endpoint', exact: true }).click();
+      await expect(probe).toBeDisabled();
+      await dialog.getByPlaceholder('https://my-openai-gateway.com/v1').fill('https://unsaved.example/v1');
+      await dialog.getByRole('button', { name: 'Provider key', exact: true }).click();
+      await expect(probe).toBeDisabled();
+    }
     await page.keyboard.press('Tab');
     expect(await dialog.evaluate(el => el.contains(document.activeElement))).toBe(true);
     await page.keyboard.press('Escape');
