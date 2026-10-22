@@ -280,27 +280,51 @@ export async function fetchAiUsage(): Promise<AiUsageData> {
  * Extract clean plaintext from a user-supplied file (.docx, .txt, .rtf, .pdf).
  */
 export async function extractFileText(file: File): Promise<string> {
+  if (file.size > 12 * 1024 * 1024) throw new Error('Resume file exceeds the 12 MB limit.');
   const name = file.name.toLowerCase();
-
-  // DOCX files using mammoth
+  if (name.endsWith('.pdf')) {
+    const pdfjs = await import('pdfjs-dist');
+    const worker = await import('pdfjs-dist/build/pdf.worker.min.mjs?url');
+    pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
+    const task = pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()), useWorkerFetch: false, disableFontFace: true });
+    const timeout = setTimeout(() => { void task.destroy(); }, 30000);
+    try {
+      const document = await task.promise;
+      if (document.numPages > 50) throw new Error('PDF exceeds the 50-page limit.');
+      const pages: string[] = [];
+      let length = 0;
+      for (let index = 1; index <= document.numPages; index++) {
+        const page = await document.getPage(index);
+        const content = await page.getTextContent();
+        const text = content.items.map(item => 'str' in item ? item.str : '').join(' ');
+        length += text.length;
+        if (length > 100000) throw new Error('Extracted resume exceeds the 100,000-character limit.');
+        pages.push(text);
+        page.cleanup();
+      }
+      const text = pages.join('\n').trim();
+      if (text.length < 20) throw new Error('PDF has no usable text. Export a text-based PDF or use OCR first.');
+      return text;
+    } catch {
+      throw new Error('Unable to extract PDF text. Use a valid text-based PDF of at most 50 pages and 100,000 characters.');
+    } finally {
+      clearTimeout(timeout);
+      await task.destroy();
+    }
+  }
   if (name.endsWith('.docx')) {
     try {
       const mammoth = await import('mammoth');
-      const arrayBuffer = await file.arrayBuffer();
-      const result = await mammoth.extractRawText({ arrayBuffer });
-      if (result && result.value && result.value.trim().length > 20) {
-        return result.value.trim();
-      }
-    } catch (err) {
-      console.warn('[DOCX Extraction fallback]', err);
+      const result = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+      if (!result.value || result.value.trim().length < 20) throw new Error('No usable text');
+      if (result.value.length > 100000) throw new Error('Text too large');
+      return result.value.trim();
+    } catch {
+      throw new Error('Unable to extract DOCX text. Export a valid DOCX or plain text file.');
     }
   }
-
-  // Standard text formats (.txt, .rtf, .md, .csv)
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || '').trim());
-    reader.onerror = () => reject(new Error('Failed to read file contents.'));
-    reader.readAsText(file);
-  });
+  if (!/\.(txt|rtf|md|csv)$/.test(name)) throw new Error('Unsupported file format. Export DOC as DOCX, PDF or plain text first.');
+  const text = (await file.text()).trim();
+  if (text.length > 100000) throw new Error('Extracted resume exceeds the 100,000-character limit.');
+  return text;
 }

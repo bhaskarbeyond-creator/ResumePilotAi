@@ -1,0 +1,4 @@
+
+# Synthetic document fixtures are binary formats, including ASCII PDF xref tables.
+frontend/tests/fixtures/*.pdf binary
+frontend/tests/fixtures/*.docx binary

@@ -1,6 +1,6 @@
 import { defineConfig } from '@playwright/test';
 export default defineConfig({
-  testDir: '.', testMatch: ['engine-authenticated.spec.ts', 'engine-legacy-comparison.spec.ts'], workers: 1, timeout: 90000,
+  testDir: '.', testMatch: ['engine-authenticated.spec.ts', 'engine-import.spec.ts', 'engine-legacy-comparison.spec.ts'], workers: 1, timeout: 90000,
   reporter: process.env.CI ? [['list'], ['github']] : 'list',
   outputDir: '../test-results/engine-authenticated',
   use: { baseURL: 'http://127.0.0.1:4000', trace: 'retain-on-failure', screenshot: 'only-on-failure',
