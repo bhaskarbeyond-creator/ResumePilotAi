@@ -45,6 +45,7 @@ for (const [width, height] of viewports) {
     await expect(page.getByRole('combobox', { name: 'Selection mode' })).toBeVisible();
     await page.goForward();
     await expect(page).toHaveURL(/subtab=providers/);
+    await page.screenshot({ path: test.info().outputPath(`engine-${width}x${height}.png`), fullPage: true });
     expect(errors).toEqual([]);
   });
 }

@@ -100,3 +100,29 @@ test('a tenant manual pin is not replaced by an unrelated platform primary or it
   assert.equal(result[0].provider, 'groq');
   assert.equal(result[0].model, 'tenant-pin');
 });
+
+test('intelligent discovery survives an expired first credential without borrowing its catalog', async () => {
+  const router = new FreeLlmRouter();
+  router.modelDiscovery = { getOrDiscover: async ({ apiKey }) => {
+    if (apiKey === 'expired-fixture-key') throw new Error('revoked');
+    return [{ id: 'second-credential-model', capabilities: { tools: true } }];
+  } };
+  const candidates = await router.buildCandidateList({ platformConfig: { selectionMode: 'balanced', primary: 'kilo', providers: {
+    kilo: { enabled: true, key: ['expired-fixture-key', 'valid-fixture-key'], model: 'auto' },
+  } }, requirements: { tools: true } });
+  assert.equal(candidates.length, 1);
+  assert.equal(candidates[0].model, 'second-credential-model');
+  assert.deepEqual(candidates[0].keys, ['valid-fixture-key']);
+});
+test('a discovered capability cannot authorize a different credential; manual destinations stay pinned', async () => {
+  const router = new FreeLlmRouter();
+  router.modelDiscovery = { getOrDiscover: async ({ apiKey }) => [{ id: 'pinned', capabilities: { tools: apiKey === 'tools-fixture-key' } }] };
+  const platformConfig = { selectionMode: 'manual', primary: 'groq', providers: {
+    groq: { enabled: true, key: ['plain-fixture-key', 'tools-fixture-key'], model: 'pinned' },
+  } };
+  const candidates = await router.buildCandidateList({ platformConfig, requirements: { tools: true } });
+  assert.deepEqual(candidates.map(candidate => candidate.keys), [['tools-fixture-key']]);
+  const ordinary = await router.buildCandidateList({ platformConfig });
+  assert.equal(ordinary.length, 2);
+  assert.ok(ordinary.every(candidate => candidate.model === 'pinned' && candidate.provider === 'groq'));
+});

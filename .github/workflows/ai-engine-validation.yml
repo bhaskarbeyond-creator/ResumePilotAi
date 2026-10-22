@@ -99,6 +99,15 @@ jobs:
           LLAMACPP_BASE_URL: http://127.0.0.1:8081/v1
           CORS_ALLOWED_ORIGINS: http://127.0.0.1:4000,http://localhost:4000
         run: npm exec --prefix frontend -- playwright test --config=frontend/tests/engine-authenticated.config.ts
+      - name: Preserve actual benchmark records and responsive screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: engine-local-benchmark-and-browser
+          retention-days: 14
+          path: |
+            artifacts/ai-engine/*.json
+            frontend/test-results/engine-authenticated/**/*.png
       - name: Stop full-app disposable database
         if: always()
         run: docker rm -f "$CI_MARIADB_CONTAINER" || true
@@ -151,6 +160,13 @@ jobs:
         run: node scripts/verify-local-inference.cjs
       - name: Comparable synthetic quality and streaming speed measurements
         run: node scripts/benchmark-ai.cjs
+      - name: Preserve complete Ollama benchmark records
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: engine-ollama-benchmark
+          path: artifacts/ai-engine/*.json
+          retention-days: 14
       - name: Stop model server
         if: always()
         run: docker rm -f ai-engine-ollama

@@ -6,11 +6,11 @@ const fs = require('node:fs');
 const tasks = [
   { id: 'reasoning', prompt: 'What is 19 plus 23? Reply only with the integer.', check: text => text.trim() === '42' },
   { id: 'instruction', prompt: 'Reply with exactly this lowercase word and nothing else: orbit', check: text => text.trim() === 'orbit' },
-  { id: 'technical', prompt: 'What is the worst-case time complexity of binary search on a sorted array? Reply only O(log n).', check: text => /^O\(log\s*n\)$/i.test(text.trim()) },
-  { id: 'summary', prompt: 'Summarize in one sentence, preserving all three facts: The fictional Luma train leaves at noon. It carries seven crates. It travels to Mira.', check: text => /noon/i.test(text) && /seven|\b7\b/i.test(text) && /Mira/.test(text) && text.trim().split(/[.!?]+/).filter(Boolean).length === 1 },
+  { id: 'technical', prompt: 'State the worst-case time complexity of binary search on a sorted array. Use only Big-O notation, no explanation.', check: text => /^O\(log\s*n\)$/i.test(text.trim()) },
+  { id: 'summary', prompt: 'Summarize in one sentence, preserving all three facts: The fictional Luma train leaves at noon. It carries seven crates. It travels to Mira.', check: text => /\bLuma\b/i.test(text) && /\bnoon\b/i.test(text) && /\b(?:seven|7)\s+crates?\b/i.test(text) && /\bMira\b/.test(text) && text.trim().split(/[.!?]+/).filter(Boolean).length === 1 },
   { id: 'json', prompt: 'Return only valid JSON, no markdown, containing exactly one property named items with the array [1,2,3].', check: text => { try { return JSON.stringify(JSON.parse(text.trim())) === '{"items":[1,2,3]}'; } catch { return false; } } },
   { id: 'multilingual', prompt: 'Translate the English word apple into Spanish. Reply only with the Spanish word, lowercase.', check: text => text.trim() === 'manzana' },
-  { id: 'long-context', contextTokens: 8192, prompt: `${'Synthetic filler without facts. '.repeat(700)}\nThe secret synthetic marker is violet-731. Reply only with that marker.`, check: text => text.trim() === 'violet-731' },
+  { id: 'long-context', contextTokens: 8192, prompt: `${'Synthetic filler without facts. '.repeat(350)}\nThe secret synthetic marker is violet-731.\n${'Synthetic filler without facts. '.repeat(350)}\nReply only with the secret synthetic marker.`, check: text => text.trim() === 'violet-731' },
 ];
 function loopbackEndpoint(value) {
   const url = new URL(value);
