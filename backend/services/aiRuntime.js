@@ -1598,7 +1598,7 @@ function parseAiResponse(operation, rawContent, context = {}) {
 function cloneConfiguration(configuration) {
     return {
         ...configuration,
-        providers: Object.fromEntries(Object.entries(configuration.providers).map(([provider, value]) => [provider, { ...value }])),
+        providers: Object.fromEntries(Object.entries(configuration.providers).map(([provider, value]) => [provider, { ...value, ...(Array.isArray(value.key) ? { key: [...value.key] } : {}), ...(Array.isArray(value.apiKeys) ? { apiKeys: [...value.apiKeys] } : {}) }])),
     };
 }
 
@@ -1651,24 +1651,12 @@ async function loadProviderConfiguration(environment = process.env) {
             enabled: effectiveAi[ENABLE_FIELDS[provider]] !== false && Boolean(key),
         };
     }
-    // Also include verified keyless mesh providers as safety fallbacks
-    try {
-        const { PROVIDER_REGISTRY } = require('../freellmapi/providers/registry');
-        for (const [id, meta] of Object.entries(PROVIDER_REGISTRY)) {
-            if (meta?.keyless && !providers[id] && providerSecrets[id]?.enabled !== false &&
-                (!meta.optIn || providerSecrets[id]?.enabled === true || environment[`${id.toUpperCase()}_ENABLED`] === 'true')) {
-                providers[id] = {
-                    key: 'keyless',
-                    model: providerSecrets[id]?.model || 'auto',
-                    baseUrl: meta.baseUrl || '',
-                    enabled: true,
-                    keyless: true,
-                };
-            }
-        }
-    } catch { /* best-effort keyless mesh */ }
+    const mesh = require('./freellmConfig').buildFreeLlmPlatformConfig({ environment, secrets, publicConfig, systemSettings });
+    for (const [id, provider] of Object.entries(mesh.providers)) {
+        if (!providers[id]) providers[id] = { ...provider, model: provider.model || 'auto' };
+    }
     const configuration = {
-        primary: providers[effectiveAi.provider]?.enabled ? effectiveAi.provider : (providers.nvidia?.enabled ? 'nvidia' : 'gemini'),
+        primary: providers[effectiveAi.provider]?.enabled ? effectiveAi.provider : (providers.nvidia?.enabled ? 'nvidia' : providers.gemini?.enabled ? 'gemini' : mesh.primary),
         ...(effectiveAi.selectionMode ? { selectionMode: effectiveAi.selectionMode } : {}),
         enableFallback: effectiveAi.enableFallback !== false,
         temperature: clampNumber(effectiveAi.temperature, 0, 1, 0.7),

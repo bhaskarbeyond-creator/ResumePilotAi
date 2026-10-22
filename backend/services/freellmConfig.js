@@ -69,6 +69,14 @@ async function loadFreeLlmPlatformConfig({ environment = process.env, repository
     repo.getSetting('system_settings').catch(() => null),
   ]);
 
+  const configuration = buildFreeLlmPlatformConfig({ environment, secrets, publicConfig, systemSettings });
+  configCache = { value: configuration, expiresAt: Date.now() + CONFIG_CACHE_MS };
+  return configuration;
+}
+
+// Pure builder shared with product content/parse operations. No second cache,
+// repository read or provider-normalization implementation is introduced.
+function buildFreeLlmPlatformConfig({ environment = process.env, secrets, publicConfig, systemSettings } = {}) {
   const providerSecrets = secrets || {};
   const publicAi = publicConfig?.ai || {};
   const legacyAi = systemSettings?.ai || {};
@@ -113,7 +121,6 @@ async function loadFreeLlmPlatformConfig({ environment = process.env, repository
     providers,
     source: 'MARIADB_AND_DEPLOYMENT_ENVIRONMENT',
   };
-  configCache = { value: configuration, expiresAt: Date.now() + CONFIG_CACHE_MS };
   return configuration;
 }
 
@@ -123,6 +130,7 @@ function platformApiKeys(environment = process.env) {
 }
 
 module.exports = {
+  buildFreeLlmPlatformConfig,
   loadFreeLlmPlatformConfig,
   clearFreeLlmConfigCache,
   platformApiKeys,

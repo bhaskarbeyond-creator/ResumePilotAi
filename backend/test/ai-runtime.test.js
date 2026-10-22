@@ -429,3 +429,25 @@ test('executeContentOperation gracefully falls back on provider failure without 
   );
 });
 
+
+test('registered account-required providers use the same saved credentials/models/endpoints in product runtime', async () => {
+  await seedRuntimeSettings({ secrets: { kilo: { enabled: true, apiKey: 'account-required-fixture-key', model: 'account-model', baseUrl: 'https://fixture.invalid/v1' } },
+    publicAi: { provider: 'kilo', selectionMode: 'manual', enableFallback: false } });
+  const configuration = await loadProviderConfiguration({});
+  assert.equal(configuration.primary, 'kilo');
+  assert.equal(configuration.providers.kilo.enabled, true);
+  assert.equal(configuration.providers.kilo.key, 'account-required-fixture-key');
+  assert.equal(configuration.providers.kilo.model, 'account-model');
+  assert.equal(configuration.providers.kilo.baseUrl, 'https://fixture.invalid/v1');
+  assert.equal(configuration.selectionMode, 'manual');
+  assert.deepEqual(providerOrder(configuration), ['kilo']);
+});
+test('registered credential pools cannot be mutated across cached runtime callers', async () => {
+  await seedRuntimeSettings({ secrets: { cerebras: { apiKeys: ['fixture-pool-a', 'fixture-pool-b'] } } });
+  const first = await loadProviderConfiguration({});
+  first.providers.cerebras.key[0] = 'mutated';
+  first.providers.cerebras.apiKeys[0] = 'mutated';
+  const second = await loadProviderConfiguration({});
+  assert.deepEqual(second.providers.cerebras.key, ['fixture-pool-a', 'fixture-pool-b']);
+  assert.deepEqual(second.providers.cerebras.apiKeys, ['fixture-pool-a', 'fixture-pool-b']);
+});
