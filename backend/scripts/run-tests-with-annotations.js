@@ -50,6 +50,9 @@ function annotationSafe(text, limit = 1800) {
 child.stdout.on('data', chunk => capture(chunk, process.stdout));
 child.stderr.on('data', chunk => capture(chunk, process.stderr));
 child.on('exit', (code, signal) => {
+  const totals = buffer.split(/\r?\n/).filter(line => /^# (tests|pass|fail|skipped) /.test(line)).join('; ');
+  if (process.env.GITHUB_ACTIONS) console.log(`::notice title=Full backend suite totals::${annotationSafe(totals)}`);
+  if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `\nFull backend suite: ${totals}\n`);
   if ((code || signal) && process.env.GITHUB_ACTIONS) {
     const lines = buffer.split(/\r?\n/);
     const notOk = lines

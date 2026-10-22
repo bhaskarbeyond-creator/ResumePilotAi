@@ -59,7 +59,7 @@ const DEFAULT_PRIORITY_ORDER = Object.freeze([
  * `/chat/completions` request returns 404/422 from upstream (the bug fixed in
  * freellmapi 0.16.6).
  */
-const CHAT_PROVIDER_TYPES = Object.freeze(['openai-compat', 'google']);
+const CHAT_PROVIDER_TYPES = Object.freeze(['openai-compat', 'google', 'horde']);
 
 function isChatCapableMeta(meta) {
   if (!meta) return false;
@@ -194,8 +194,9 @@ class FreeLlmRouter {
     if (!mode) return candidates; // Preserve legacy pinned configurations until migrated by an authorized save.
     validateMode(mode);
     const explicit = requestedModel && !['auto', 'dynamic'].includes(requestedModel) && !requestedModel.startsWith('auto:') && !getProviderMeta(requestedModel);
-    const primary = platformConfig.primary || candidates[0]?.provider;
-    const chosen = mode === 'manual' ? candidates.filter(candidate => candidate.provider === primary) : candidates;
+    const explicitProvider = getProviderMeta(requestedModel);
+    const primary = explicitProvider ? requestedModel : platformConfig.primary || candidates[0]?.provider;
+    const chosen = mode === 'manual' || explicitProvider ? candidates.filter(candidate => candidate.provider === primary) : candidates;
     const expanded = [];
     for (const candidate of chosen) {
       let catalog;
@@ -216,7 +217,7 @@ class FreeLlmRouter {
     const recent = !tenantContext ? getMetricsPersistence()?.getRecentRequests({ limit: 100 }) || [] : [];
     const ordered = rankCandidates(expanded, { mode, primary, observationFor: candidate => recent.find(row => row.provider === candidate.provider && row.model === candidate.model) });
     // Manual pins never silently cross provider/model boundaries, even with platform fallback enabled.
-    return mode === 'manual' || explicit || platformConfig.enableFallback === false ? ordered.slice(0, 1) : ordered.slice(0, 12);
+    return mode === 'manual' || explicit || explicitProvider || platformConfig.enableFallback === false ? ordered.slice(0, 1) : ordered.slice(0, 12);
   }
 
   /**
@@ -487,6 +488,12 @@ class FreeLlmRouter {
       fetchImpl,
       signal,
     };
+    if (meta?.type === 'horde') {
+      if (jsonMode || responseFormat || tools?.length || messages.some(message => typeof message.content !== 'string') || maxTokens < 16 || maxTokens > 128 || estimateTokens(messages) + maxTokens > 2048) {
+        throw Object.assign(new Error('Anonymous AI Horde supports plain text only (16–128 output tokens, 2048 context); no JSON/tools/vision guarantee'), { status: 400, code: 'UNSUPPORTED_CAPABILITY' });
+      }
+      return require('../providers/aiHorde').callAiHorde({ ...shared, baseUrl: candidate.baseUrl });
+    }
     if (meta?.type === 'google' || candidate.provider === 'gemini') {
       return callGoogleGemini({
         ...shared,
@@ -766,6 +773,7 @@ class FreeLlmRouter {
             fetchImpl,
             signal,
           };
+          if (meta?.type === 'horde') throw Object.assign(new Error('AI Horde has no supported streaming API'), { status: 400, code: 'UNSUPPORTED_CAPABILITY' });
           const events = (meta?.type === 'google' || candidate.provider === 'gemini')
             ? streamGoogleGemini({ ...shared, baseUrl: candidate.baseUrl || 'https://generativelanguage.googleapis.com/v1beta' })
             : streamOpenAiCompat({ ...shared, baseUrl: candidate.baseUrl, providerId: candidate.provider });

@@ -16,9 +16,10 @@ const { ModelDiscoveryService } = require('../backend/freellmapi/services/modelD
   assert.ok(models.length, 'real service must expose a loaded model');
   const result = await router.routeCompletion({
     prompt: 'Write a single short sentence about a tree.',
-    platformConfig: { enableFallback: false, providers: { llamacpp: { enabled: true, baseUrl } } },
+    platformConfig: { selectionMode: 'balanced', primary: 'llamacpp', enableFallback: false, providers: { llamacpp: { enabled: true, baseUrl } } },
     maxTokens: 32, temperature: 0, timeoutMs: 60_000, bypassCache: true,
   });
+  assert.equal(result.routingDecision.mode, 'balanced');
   assert.equal(result.provider, 'llamacpp');
   assert.ok(models.some(model => model.id === result.model), 'executed model must be in the discovered catalog');
   assert.ok(typeof result.content === 'string' && result.content.trim().length > 0, 'real model must generate nonempty text');

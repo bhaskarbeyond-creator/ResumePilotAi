@@ -67,7 +67,7 @@ try {
   const clean = await runMigrations(pool, { mode: 'apply', appliedBy: 'isolated-ci-verifier' });
   const discovered = discoverMigrations();
   const latestMigrationVersion = discovered.at(-1)?.version;
-  if (!clean.current || latestMigrationVersion !== '017') throw new Error(`Clean-state migration application did not reach version 017 (observed ${latestMigrationVersion || 'none'})`);
+  if (!clean.current || !latestMigrationVersion || !discovered.some(item => item.version === '017')) throw new Error(`Clean-state migration application did not reach the discovered head (observed ${latestMigrationVersion || 'none'})`);
 
   const invitationTableCount = await scalar(pool,
     `SELECT COUNT(*) AS count FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'enterprise_membership_invitations'`,
@@ -313,6 +313,10 @@ try {
 
   const connection = await pool.getConnection();
   try {
+    // Reverse newer migrations first; rolling 017 back beneath 018+ violates dependency ordering.
+    for (const migration of discovered.filter(item => item.version > '017').reverse()) {
+      await executeFile(connection, path.join(ROOT, 'backend/database/migrations', migration.file.replace(/\.sql$/, '.down.sql')));
+    }
     await executeFile(connection, path.join(ROOT, 'backend/database/migrations/017_live_interview_sessions.down.sql'));
     if (await scalar(connection,
       `SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'live_interview_sessions'`, [databaseName])) {
@@ -380,14 +384,14 @@ try {
        )`, [databaseName])) {
       throw new Error('Migration 013 rollback did not remove CMS relational metadata');
     }
-    await connection.query("DELETE FROM schema_migrations WHERE version IN ('005', '006', '007', '008', '009', '010', '011', '012', '013', '014', '015', '016', '017')");
+    await connection.query("DELETE FROM schema_migrations WHERE version >= ?", ['005']);
   } finally {
     connection.release();
   }
 
   const reapplied = await runMigrations(pool, { mode: 'apply', appliedBy: 'isolated-ci-rollback-verifier' });
-  if (!reapplied.current || !['005', '006', '007', '008', '009', '010', '011', '012', '013', '014', '015', '016', '017'].every(version => reapplied.applied.some(item => item.version === version))) {
-    throw new Error('Migrations 005 through 017 did not reapply after rollback');
+  if (!reapplied.current || !discovered.filter(item => item.version >= '005').every(migration => reapplied.applied.some(item => item.version === migration.version))) {
+    throw new Error('Discovered migrations from 005 through head did not reapply after rollback');
   }
 
   // Migration 008 must reject historical unknown states instead of silently

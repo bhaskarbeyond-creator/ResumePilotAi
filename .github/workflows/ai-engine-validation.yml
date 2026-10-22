@@ -73,3 +73,20 @@ jobs:
       - name: Stop model server
         if: always()
         run: docker rm -f ai-engine-local
+
+  real-public-anonymous-inference:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    # Community capacity is external. A failed attempt stays visibly failed, never certifies a provider.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: npm ci --prefix backend --ignore-scripts --no-audit --no-fund
+      - name: Actual official anonymous API inference (one bounded submission)
+        run: node scripts/verify-public-anonymous-inference.cjs
+      - name: Publish sanitized evidence
+        if: success()
+        run: cat artifacts/ai-engine/public-anonymous-inference.json >> "$GITHUB_STEP_SUMMARY"

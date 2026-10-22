@@ -122,22 +122,10 @@ export interface FallbackChain {
 const AI_ENGINE_SUBTABS = ['providers', 'key-pool', 'metrics', 'unified-gateway', 'discovery'] as const;
 type AiEngineSubtab = (typeof AI_ENGINE_SUBTABS)[number];
 
-export interface CuratedModel {
-  id: string;
-  name: string;
-  providerCount: number;
-  providersText: string;
-  rpm: string;
-  contextWindow: string;
-  supportsVision: boolean;
-  supportsTools: boolean;
-  reliabilityScore: number;
-  speedScore: number;
-  intelligenceScore: number;
-  guardrails: string;
-  compositeScore: number;
-  scoreSubtitle?: string;
-  enabled: boolean;
+export interface CatalogModel {
+  id: string; name?: string; providerId: string;
+  contextWindow?: number; capabilities?: { vision?: boolean; tools?: boolean; json?: boolean };
+  catalogStatus?: string; lastSuccessfulRefresh?: number;
 }
 
 export function AdminAiSettingsTab() {
@@ -208,8 +196,7 @@ export function AdminAiSettingsTab() {
     { id: 'default', name: 'Default', alias: 'auto:default', isDefault: true, isActive: true, modelsCount: 22 },
     { id: 'free-claude-code', name: 'free-claude-code', alias: 'auto:free-claude-code', isCurated: true, isActive: true, modelsCount: 22 },
   ]);
-  const [activeChainId, setActiveChainId] = useState('auto:free-claude-code');
-  const [curatedModels, setCuratedModels] = useState<CuratedModel[]>([]);
+  const [catalogModels, setCatalogModels] = useState<CatalogModel[]>([]);
   const [modelSearch, setModelSearch] = useState('');
   const [filterVision, setFilterVision] = useState(false);
   const [filterTools, setFilterTools] = useState(false);
@@ -265,7 +252,7 @@ export function AdminAiSettingsTab() {
 
   // Playground state
   const [playgroundPrompt, setPlaygroundPrompt] = useState('Explain the difference between a process and a thread in 2 sentences.');
-  const [playgroundModel, setPlaygroundModel] = useState('auto:free-claude-code');
+  const [playgroundModel, setPlaygroundModel] = useState('auto');
   const [playgroundOutput, setPlaygroundOutput] = useState('');
   const [playgroundLoading, setPlaygroundLoading] = useState(false);
 
@@ -379,7 +366,7 @@ export function AdminAiSettingsTab() {
       revision?: number;
       catalog?: ProviderItem[];
       fallbackChains?: FallbackChain[];
-      curatedModels?: CuratedModel[];
+      discoveredModels?: CatalogModel[];
       configuredProviders?: Record<string, boolean>;
       maskedKeys?: Record<string, string>;
       cooldowns?: Record<string, { remainingSeconds: number; reason: string }>;
@@ -390,9 +377,7 @@ export function AdminAiSettingsTab() {
         if (res.fallbackChains && Array.isArray(res.fallbackChains)) {
           setChains(res.fallbackChains);
         }
-        if (res.curatedModels && Array.isArray(res.curatedModels)) {
-          setCuratedModels(res.curatedModels);
-        }
+        setCatalogModels(res.discoveredModels || []);
         if (res.settings) {
           const cfg = res.settings;
           setPrimaryProvider(cfg.provider || 'nvidia');
@@ -606,7 +591,7 @@ export function AdminAiSettingsTab() {
       setProviders((prev) =>
         prev.map((p) =>
           p.id === providerId
-            ? { ...p, configuredOnServer: true, hasKey: true, status: 'healthy', keysCount: pool.length }
+            ? { ...p, configuredOnServer: true, hasKey: true, status: 'unverified', keysCount: pool.length }
             : p
         )
       );
@@ -660,6 +645,7 @@ export function AdminAiSettingsTab() {
         provider: providerId,
         ...(selectedProviderId ? {} : { apiKey: modalApiKey }),
       });
+      setCatalogModels(prev => [...prev.filter(m => m.providerId !== providerId), ...(res.models || []).map(m => ({ ...m, providerId }))]);
       setDiscoveryResults((prev) => ({
         ...prev,
         [providerId]: res.models || [],
@@ -712,7 +698,7 @@ export function AdminAiSettingsTab() {
       setProviders((prev) =>
         prev.map((p) =>
           p.id === providerId
-            ? { ...p, configuredOnServer: true, hasKey: true, status: 'healthy', keysCount: pool.length }
+            ? { ...p, configuredOnServer: true, hasKey: true, status: 'unverified', keysCount: pool.length }
             : p
         )
       );
@@ -743,7 +729,7 @@ export function AdminAiSettingsTab() {
       setProviders((prev) =>
         prev.map((p) =>
           p.id === providerId
-            ? { ...p, configuredOnServer: true, hasKey: true, status: 'healthy', keysCount: pool.length }
+            ? { ...p, configuredOnServer: true, hasKey: true, status: 'unverified', keysCount: pool.length }
             : p
         )
       );
@@ -887,7 +873,7 @@ export function AdminAiSettingsTab() {
                 ...p,
                 configuredOnServer: true,
                 hasKey: true,
-                status: 'healthy',
+                status: 'unverified',
                 keysCount: Math.max(pool.length, (p.keysCount || 0) + (pool.length > 0 ? 0 : 1), 1),
               }
             : p
@@ -1043,38 +1029,23 @@ export function AdminAiSettingsTab() {
 
   // Filtered models for Screen 2
   const filteredModels = useMemo(() => {
-    return curatedModels.filter((m) => {
-      if (filterVision && !m.supportsVision) return false;
-      if (filterTools && !m.supportsTools) return false;
-      if (contextFilter === '32k' && !m.contextWindow.includes('32K') && !m.contextWindow.includes('64K') && !m.contextWindow.includes('128K') && !m.contextWindow.includes('1M') && !m.contextWindow.includes('512K') && !m.contextWindow.includes('262K')) return false;
-      if (contextFilter === '128k' && !m.contextWindow.includes('128K') && !m.contextWindow.includes('1M') && !m.contextWindow.includes('512K') && !m.contextWindow.includes('262K')) return false;
-      if (contextFilter === '1m' && !m.contextWindow.includes('1M')) return false;
+    return catalogModels.filter((m) => {
+      if (filterVision && m.capabilities?.vision !== true) return false;
+      if (filterTools && m.capabilities?.tools !== true) return false;
+      const minContext = contextFilter === '32k' ? 32768 : contextFilter === '128k' ? 131072 : contextFilter === '1m' ? 1048576 : 0;
+      if (minContext && (!m.contextWindow || m.contextWindow < minContext)) return false;
 
       if (modelSearch.trim()) {
         const q = modelSearch.toLowerCase().trim();
         return (
-          m.name.toLowerCase().includes(q) ||
-          m.providersText.toLowerCase().includes(q) ||
+          (m.name || m.id).toLowerCase().includes(q) ||
+          m.providerId.toLowerCase().includes(q) ||
           m.id.toLowerCase().includes(q)
         );
       }
       return true;
     });
-  }, [curatedModels, filterVision, filterTools, contextFilter, modelSearch]);
-
-  const toggleModelInChain = (modelId: string) => {
-    setCuratedModels((prev) =>
-      prev.map((m) => (m.id === modelId ? { ...m, enabled: !m.enabled } : m))
-    );
-  };
-
-  const handleEnableAllModels = () => {
-    setCuratedModels((prev) => prev.map((m) => ({ ...m, enabled: true })));
-  };
-
-  const handleDisableAllModels = () => {
-    setCuratedModels((prev) => prev.map((m) => ({ ...m, enabled: false })));
-  };
+  }, [catalogModels, filterVision, filterTools, contextFilter, modelSearch]);
 
   // Handle Playground Run
   const handleRunPlayground = async () => {
@@ -1514,6 +1485,8 @@ export function AdminAiSettingsTab() {
                     {/* Expandable Settings & Direct Inline Key Configuration */}
                     {isExpanded && (
                       <div className="p-4 bg-surface-secondary/40 border-t border-border/50 space-y-4 animate-[fade-in_150ms_ease-out]">
+                        {p.privacy && <p role="note" className="text-xs text-amber-700">Privacy: {p.privacy}</p>}
+                        {p.quota && <p className="text-xs text-ink-muted">Access limits: {p.quota}</p>}
                         {/* Reachability Result */}
                         {status && (
                           <div
@@ -1804,27 +1777,7 @@ export function AdminAiSettingsTab() {
                 </div>
               </div>
 
-              {/* Chain Pills */}
-              <div className="flex items-center gap-2 flex-wrap">
-                {chains.map((chain) => (
-                  <button
-                    key={chain.id}
-                    type="button"
-                    onClick={() => setActiveChainId(chain.alias)}
-                    className={cn(
-                      'px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all border flex items-center gap-2',
-                      activeChainId === chain.alias
-                        ? 'border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900 shadow-sm'
-                        : 'border-border bg-surface text-ink hover:bg-surface-secondary'
-                    )}
-                  >
-                    <span>{chain.alias}</span>
-                    <span className="text-[10px] opacity-75 font-mono">
-                      ({chain.modelsCount} models)
-                    </span>
-                  </button>
-                ))}
-              </div>
+              <p className="text-xs">Policy: {selectionMode}. Discovered models: {catalogModels.length}. Configure model selection above; this catalog is read-only.</p>
             </CardContent>
           </Card>
 
@@ -1896,135 +1849,22 @@ export function AdminAiSettingsTab() {
 
               <div className="h-4 w-px bg-border mx-1" />
 
-              <Button variant="ghost" size="xs" onClick={handleEnableAllModels} className="h-7 text-xs">
-                Enable all
-              </Button>
-              <Button variant="ghost" size="xs" onClick={handleDisableAllModels} className="h-7 text-xs">
-                Disable all
-              </Button>
+
             </div>
           </div>
 
-          {/* Multi-Metric Model Table */}
-          <div className="rounded-xl border border-border bg-surface overflow-hidden shadow-xs">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-surface-secondary/60 text-ink-muted uppercase tracking-wider text-[10px] font-bold border-b border-border">
-                  <tr>
-                    <th className="py-3 px-4 w-12 text-center">On</th>
-                    <th className="py-3 px-4">Model</th>
-                    <th className="py-3 px-3">RPM</th>
-                    <th className="py-3 px-3">Context</th>
-                    <th className="py-3 px-4 min-w-[130px]">Reliability</th>
-                    <th className="py-3 px-4 min-w-[130px]">Speed</th>
-                    <th className="py-3 px-4 min-w-[130px]">Intelligence</th>
-                    <th className="py-3 px-3">Guardrails</th>
-                    <th className="py-3 px-4 text-right">Score</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/50">
-                  {filteredModels.map((m) => (
-                    <tr
-                      key={m.id}
-                      className={cn(
-                        'hover:bg-surface-secondary/40 transition-colors',
-                        !m.enabled && 'opacity-60 bg-surface-secondary/10'
-                      )}
-                    >
-                      {/* On Switch */}
-                      <td className="py-3 px-4 text-center">
-                        <input
-                          type="checkbox"
-                          checked={m.enabled}
-                          onChange={() => toggleModelInChain(m.id)}
-                          className="size-4 rounded text-neutral-900 cursor-pointer"
-                        />
-                      </td>
-
-                      {/* Model & Providers */}
-                      <td className="py-3 px-4">
-                        <div className="font-bold text-ink">{m.name}</div>
-                        <div className="text-[11px] text-ink-muted flex items-center gap-1.5 mt-0.5">
-                          <span>{m.providersText}</span>
-                          {m.supportsVision && (
-                            <span className="text-[9px] px-1 rounded bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 font-semibold">
-                              vision
-                            </span>
-                          )}
-                          {m.supportsTools && (
-                            <span className="text-[9px] px-1 rounded bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 font-semibold">
-                              tools
-                            </span>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* RPM */}
-                      <td className="py-3 px-3 font-mono text-[11px] text-ink">{m.rpm}</td>
-
-                      {/* Context Window */}
-                      <td className="py-3 px-3 font-mono text-[11px] text-ink">{m.contextWindow}</td>
-
-                      {/* Reliability Progress Bar */}
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-2 rounded-full bg-neutral-200 dark:bg-neutral-800 overflow-hidden">
-                            <div
-                              className="h-full bg-emerald-500 rounded-full transition-all"
-                              style={{ width: `${m.reliabilityScore}%` }}
-                            />
-                          </div>
-                          <span className="font-mono text-[10px] w-7 text-right text-ink-muted">
-                            {m.reliabilityScore}%
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Speed Progress Bar */}
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-2 rounded-full bg-neutral-200 dark:bg-neutral-800 overflow-hidden">
-                            <div
-                              className="h-full bg-sky-500 rounded-full transition-all"
-                              style={{ width: `${m.speedScore}%` }}
-                            />
-                          </div>
-                          <span className="font-mono text-[10px] w-7 text-right text-ink-muted">
-                            {m.speedScore}%
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Intelligence Progress Bar */}
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-2 rounded-full bg-neutral-200 dark:bg-neutral-800 overflow-hidden">
-                            <div
-                              className="h-full bg-purple-500 rounded-full transition-all"
-                              style={{ width: `${m.intelligenceScore}%` }}
-                            />
-                          </div>
-                          <span className="font-mono text-[10px] w-7 text-right text-ink-muted">
-                            {m.intelligenceScore}%
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Guardrails */}
-                      <td className="py-3 px-3 text-ink-muted font-mono">{m.guardrails}</td>
-
-                      {/* Composite Score */}
-                      <td className="py-3 px-4 text-right">
-                        <div className="font-mono font-bold text-ink">{m.compositeScore.toFixed(3)}</div>
-                        {m.scoreSubtitle && (
-                          <div className="text-[10px] text-ink-muted">{m.scoreSubtitle}</div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          <div className="rounded-xl border border-border bg-surface overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead><tr>{['Model', 'Provider', 'Context', 'Capabilities', 'Catalog', 'Quality'].map(label => <th key={label} className="p-3">{label}</th>)}</tr></thead>
+              <tbody>{filteredModels.map(m => <tr key={`${m.providerId}:${m.id}`} className="border-t border-border">
+                <td className="p-3">{m.name || m.id}</td><td className="p-3">{m.providerId}</td>
+                <td className="p-3">{m.contextWindow ? `${m.contextWindow.toLocaleString()} tokens` : 'Unknown'}</td>
+                <td className="p-3">{Object.entries(m.capabilities || {}).filter(([, supported]) => supported === true).map(([name]) => name).join(', ') || 'Unknown'}</td>
+                <td className="p-3">{m.catalogStatus || 'Unknown'}{m.lastSuccessfulRefresh && <span className="block text-ink-muted">{new Date(m.lastSuccessfulRefresh).toLocaleString()}</span>}</td>
+                <td className="p-3">Unknown — no benchmark</td>
+              </tr>)}</tbody>
+            </table>
+            {!filteredModels.length && <p className="p-4 text-xs text-ink-muted">No matching discovered models. Refresh a configured provider’s catalog; registry hints are not proof of model availability.</p>}
           </div>
         </div>
       )}
@@ -2111,8 +1951,8 @@ export function AdminAiSettingsTab() {
                     onChange={(e) => setPlaygroundModel(e.target.value)}
                     className="h-8 text-xs font-semibold rounded-lg border border-border bg-surface px-2.5 text-ink"
                   >
-                    <option value="auto:free-claude-code">auto:free-claude-code (Curated Chain)</option>
-                    <option value="auto:default">auto:default (Default Chain)</option>
+                    <option value="auto">Auto (saved runtime policy)</option>
+
                     {providers
                       .filter((p) => p.configuredOnServer || p.keyless)
                       .map((p) => (

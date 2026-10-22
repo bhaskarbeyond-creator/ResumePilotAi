@@ -152,7 +152,6 @@ async function loadApplicableTenantMembership(uid, requestedTenantId, { allowAmb
  */
 async function resolveAiGovernance(req, { allowAmbiguousSelection = false } = {}) {
     const uid = req?.user?.uid;
-    console.log('[resolveAiGovernance] uid:', uid);
     if (!uid) {
         return { source: QUOTA_SOURCE.NONE, reason: 'AUTH_REQUIRED', entitlement: null, quota: null, tenant: null };
     }
@@ -161,15 +160,11 @@ async function resolveAiGovernance(req, { allowAmbiguousSelection = false } = {}
         pool().query('SELECT * FROM users WHERE id = ? LIMIT 1', [uid]),
         pool().query("SELECT data FROM system_settings WHERE category = 'ai_quota' LIMIT 1"),
     ]);
-    console.log('[resolveAiGovernance] userRows:', userRows.length, 'quotaRows:', quotaRows.length);
     const userData = userRows[0] || {};
     const quotaConfig = parseJson(quotaRows[0]?.data, {});
-    console.log('[resolveAiGovernance] userData:', Object.keys(userData), 'quotaConfig:', Object.keys(quotaConfig));
 
     const requestedTenantId = req.get?.('x-tenant-id') || req.query?.tenantId || null;
-    console.log('[resolveAiGovernance] requestedTenantId:', requestedTenantId);
     const lookup = await loadApplicableTenantMembership(uid, requestedTenantId, { allowAmbiguousSelection });
-    console.log('[resolveAiGovernance] lookup:', JSON.stringify(lookup, null, 2));
 
     const membership = lookup.membership;
     const aiPolicy = parseJson(membership?.aiPolicy, {});

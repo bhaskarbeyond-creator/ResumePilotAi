@@ -53,7 +53,7 @@ function maskApiKey(key) {
 }
 
 function publicAiSettings(input = {}) {
-  if (input.provider && !['openai-compat', 'google'].includes(require('../freellmapi/providers/registry').getProviderMeta(input.provider)?.type)) throw errorWith('AI_SETTINGS_VALIDATION_ERROR', 'Unsupported primary AI provider.', 400);
+  if (input.provider && !['openai-compat', 'google', 'horde'].includes(require('../freellmapi/providers/registry').getProviderMeta(input.provider)?.type)) throw errorWith('AI_SETTINGS_VALIDATION_ERROR', 'Unsupported primary AI provider.', 400);
   const provider = input.provider || 'gemini';
   if (input.selectionMode !== undefined) require('../freellmapi/services/selectionPolicy').validateMode(input.selectionMode);
   const temperatureValue = Number(input.temperature ?? 0.7);
@@ -191,31 +191,6 @@ const { getRepository } = require('../repositories');
 const { getPool } = require('../database/mysql');
 const crypto = require('crypto');
 
-const CURATED_MODELS_CATALOG = [
-  { id: 'dots3-note-preview', name: 'Dots3 Note Preview', providerCount: 2, providersText: '2 providers', rpm: '20 RPM', contextWindow: '512K ctx', supportsVision: true, supportsTools: true, reliabilityScore: 94, speedScore: 55, intelligenceScore: 99, guardrails: '-', compositeScore: 0.881, scoreSubtitle: 'best of 2', enabled: true },
-  { id: 'nemotron-3-ultra-550b', name: 'Nemotron 3 Ultra 550B', providerCount: 2, providersText: '2 providers', rpm: '40 RPM', contextWindow: '1M ctx', supportsVision: false, supportsTools: true, reliabilityScore: 97, speedScore: 56, intelligenceScore: 74, guardrails: '-', compositeScore: 0.834, scoreSubtitle: 'best of 2', enabled: true },
-  { id: 'kilo-auto', name: 'Kilo Auto', providerCount: 1, providersText: 'kilo', rpm: '200/hr', contextWindow: '256K ctx', supportsVision: false, supportsTools: true, reliabilityScore: 96, speedScore: 34, intelligenceScore: 50, guardrails: '-', compositeScore: 0.650, enabled: true },
-  { id: 'poolside-laguna-s-2.1', name: 'Poolside Laguna S 2.1', providerCount: 2, providersText: '2 providers', rpm: '20 RPM', contextWindow: '262K ctx', supportsVision: false, supportsTools: true, reliabilityScore: 53, speedScore: 12, intelligenceScore: 74, guardrails: '-', compositeScore: 0.617, scoreSubtitle: 'best of 2', enabled: true },
-  { id: 'gemma-4-31b-heretic', name: 'Gemma 4 31B Heretic', providerCount: 1, providersText: 'aihorde', rpm: 'Kudos queue (no token cap)', contextWindow: '4K ctx', supportsVision: false, supportsTools: false, reliabilityScore: 0, speedScore: 0, intelligenceScore: 74, guardrails: '-', compositeScore: 0.615, enabled: true },
-  { id: 'poolside-laguna-xs-2.1', name: 'Poolside Laguna XS 2.1', providerCount: 3, providersText: '3 providers', rpm: '40 RPM', contextWindow: '262K ctx', supportsVision: false, supportsTools: true, reliabilityScore: 37, speedScore: 31, intelligenceScore: 73, guardrails: '-', compositeScore: 0.614, scoreSubtitle: 'best of 3', enabled: true },
-  { id: 'gpt-oss-120b', name: 'GPT-OSS 120B', providerCount: 1, providersText: 'ovh', rpm: '2 RPM', contextWindow: '131K ctx', supportsVision: false, supportsTools: true, reliabilityScore: 84, speedScore: 37, intelligenceScore: 50, guardrails: '-', compositeScore: 0.610, enabled: true },
-  { id: 'nemotron-3-super-120b', name: 'Nemotron 3 Super 120B', providerCount: 3, providersText: '3 providers', rpm: '3.0M/mo', contextWindow: '1M ctx', supportsVision: false, supportsTools: true, reliabilityScore: 80, speedScore: 33, intelligenceScore: 50, guardrails: '-', compositeScore: 0.605, scoreSubtitle: 'best of 3', enabled: true },
-  { id: 'nemotron-3.5-lightning-30b-a3b', name: 'Nemotron 3.5 Lightning 30B A3B', providerCount: 1, providersText: 'nvidia', rpm: '40 RPM', contextWindow: '1M ctx', supportsVision: false, supportsTools: true, reliabilityScore: 89, speedScore: 2, intelligenceScore: 50, guardrails: '-', compositeScore: 0.559, enabled: true },
-  { id: 'gpt-oss-20b', name: 'GPT-OSS 20B', providerCount: 2, providersText: '2 providers', rpm: '40 RPM', contextWindow: '131K ctx', supportsVision: false, supportsTools: true, reliabilityScore: 60, speedScore: 54, intelligenceScore: 50, guardrails: '-', compositeScore: 0.547, scoreSubtitle: 'best of 2', enabled: true },
-  { id: 'gemma-4-31b', name: 'Gemma 4 31B', providerCount: 1, providersText: 'openrouter', rpm: '20 RPM', contextWindow: '262K ctx', supportsVision: false, supportsTools: false, reliabilityScore: 31, speedScore: 60, intelligenceScore: 74, guardrails: '-', compositeScore: 0.540, enabled: true },
-  { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B Versatile', providerCount: 3, providersText: 'groq', rpm: '30 RPM', contextWindow: '128K ctx', supportsVision: false, supportsTools: true, reliabilityScore: 99, speedScore: 98, intelligenceScore: 95, guardrails: '-', compositeScore: 0.942, enabled: true },
-  { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', providerCount: 1, providersText: 'gemini', rpm: '15 RPM', contextWindow: '1M ctx', supportsVision: true, supportsTools: true, reliabilityScore: 99, speedScore: 94, intelligenceScore: 97, guardrails: '-', compositeScore: 0.965, enabled: true },
-  { id: 'llama-3.2-11b-vision', name: 'Llama 3.2 11B Vision Instruct', providerCount: 1, providersText: 'nvidia', rpm: '40 RPM', contextWindow: '128K ctx', supportsVision: true, supportsTools: true, reliabilityScore: 98, speedScore: 92, intelligenceScore: 92, guardrails: '-', compositeScore: 0.915, enabled: true },
-  { id: 'deepseek-chat', name: 'DeepSeek V3 (Chat)', providerCount: 2, providersText: 'deepseek', rpm: '60 RPM', contextWindow: '64K ctx', supportsVision: false, supportsTools: true, reliabilityScore: 97, speedScore: 88, intelligenceScore: 98, guardrails: '-', compositeScore: 0.950, enabled: true },
-  { id: 'deepseek-reasoner', name: 'DeepSeek R1 (Reasoner)', providerCount: 1, providersText: 'deepseek', rpm: '30 RPM', contextWindow: '64K ctx', supportsVision: false, supportsTools: true, reliabilityScore: 96, speedScore: 82, intelligenceScore: 99, guardrails: '-', compositeScore: 0.948, enabled: true },
-  { id: 'gpt-4o-mini', name: 'GPT-4o Mini', providerCount: 1, providersText: 'openai', rpm: '500 RPM', contextWindow: '128K ctx', supportsVision: true, supportsTools: true, reliabilityScore: 99, speedScore: 91, intelligenceScore: 97, guardrails: '-', compositeScore: 0.960, enabled: true },
-  { id: 'qwen-2.5-72b-instruct', name: 'Qwen 2.5 72B Instruct', providerCount: 2, providersText: 'modelscope', rpm: '30 RPM', contextWindow: '128K ctx', supportsVision: false, supportsTools: true, reliabilityScore: 95, speedScore: 86, intelligenceScore: 96, guardrails: '-', compositeScore: 0.920, enabled: true },
-  { id: 'cerebras-llama-3.3-70b', name: 'Cerebras Llama 3.3 70B', providerCount: 1, providersText: 'cerebras', rpm: '30 RPM', contextWindow: '8K ctx', supportsVision: false, supportsTools: true, reliabilityScore: 98, speedScore: 100, intelligenceScore: 94, guardrails: '-', compositeScore: 0.952, enabled: true },
-  { id: 'doubao-pro-32k', name: 'Doubao Pro 32K', providerCount: 1, providersText: 'volcengine', rpm: '60 RPM', contextWindow: '32K ctx', supportsVision: false, supportsTools: true, reliabilityScore: 96, speedScore: 90, intelligenceScore: 94, guardrails: '-', compositeScore: 0.918, enabled: true },
-  { id: 'ernie-speed-128k', name: 'Ernie Speed 128K', providerCount: 1, providersText: 'qianfan', rpm: '60 RPM', contextWindow: '128K ctx', supportsVision: false, supportsTools: true, reliabilityScore: 94, speedScore: 88, intelligenceScore: 92, guardrails: '-', compositeScore: 0.905, enabled: true },
-  { id: 'mistral-large-latest', name: 'Mistral Large 2', providerCount: 1, providersText: 'mistral', rpm: '60 RPM', contextWindow: '128K ctx', supportsVision: false, supportsTools: true, reliabilityScore: 98, speedScore: 89, intelligenceScore: 96, guardrails: '-', compositeScore: 0.945, enabled: true },
-  { id: 'glm-4-flash', name: 'GLM 4 Flash', providerCount: 1, providersText: 'zhipu', rpm: '60 RPM', contextWindow: '128K ctx', supportsVision: false, supportsTools: true, reliabilityScore: 95, speedScore: 92, intelligenceScore: 90, guardrails: '-', compositeScore: 0.912, enabled: true },
-];
 
 async function loadAiAdminSettings(environment = process.env) {
   const repo = getRepository();
@@ -285,6 +260,8 @@ async function loadAiAdminSettings(environment = process.env) {
       type: meta.type || 'openai-compat',
       group: isSearch || meta.type === 'media' ? 'search' : 'models',
       keyless: Boolean(meta.keyless),
+      privacy: meta.privacy || null,
+      quota: meta.quota || null,
       accessCategory: meta.accessCategory || (meta.keyless ? 'public-unverified' : 'credential-required'),
       configuredOnServer: isConfigured,
       hasKey,
@@ -299,10 +276,10 @@ async function loadAiAdminSettings(environment = process.env) {
       baseUrl: meta.baseUrl || '',
       defaultModel: providerSecrets[meta.id]?.model || publicAi[MODEL_FIELDS[meta.id]] || legacyAi[MODEL_FIELDS[meta.id]] || meta.defaultModel || '',
       recommendedModels: meta.recommendedModels || [meta.defaultModel || 'default'],
-      intelligenceScore: meta.intelligenceScore || 85,
-      speedScore: meta.speedScore || 85,
-      reliabilityScore: meta.reliabilityScore || 95,
-      latencyMs: meta.speedScore ? Math.round(1000 - meta.speedScore * 8) : 220,
+      intelligenceScore: null,
+      speedScore: null,
+      reliabilityScore: null,
+      latencyMs: null,
     };
   });
 
@@ -317,24 +294,13 @@ async function loadAiAdminSettings(environment = process.env) {
     }
   }
 
-  const fallbackChains = [
-    {
-      id: 'default',
-      name: 'Default',
-      alias: 'auto:default',
-      isDefault: true,
-      isActive: settings.provider !== 'free-claude-code',
-      modelsCount: CURATED_MODELS_CATALOG.length,
-    },
-    {
-      id: 'free-claude-code',
-      name: 'free-claude-code',
-      alias: 'auto:free-claude-code',
-      isCurated: true,
-      isActive: true,
-      modelsCount: CURATED_MODELS_CATALOG.length,
-    },
-  ];
+  const platform = await require('./freellmConfig').loadFreeLlmPlatformConfig({ environment, repository: repo, bypassCache: true });
+  const { modelDiscovery } = require('../freellmapi/services/modelDiscovery');
+  const discoveredModels = Object.entries(platform.providers).flatMap(([providerId, config]) =>
+    modelDiscovery.getCachedCatalog({ providerId, apiKey: config.apiKeys?.[0] || config.key, baseUrl: config.baseUrl })
+      .map(model => ({ ...model, providerId })));
+  const fallbackChains = [{ id: 'default', name: 'Runtime selection policy', alias: 'auto',
+    isDefault: true, isActive: true, modelsCount: discoveredModels.length }];
 
   return {
     settings, configuredProviders, credentialSources, maskedKeys,
@@ -346,7 +312,8 @@ async function loadAiAdminSettings(environment = process.env) {
       persistence: freellmEngine.getEngineStatus().persistence,
     },
     fallbackChains,
-    curatedModels: CURATED_MODELS_CATALOG,
+    curatedModels: [], // Legacy field kept empty; no hard-coded quality/latency/RPM claims.
+    discoveredModels,
     revision: Number(publicConfig.aiRevision || providerSecrets._revision || 0),
     source: 'MARIADB_AND_DEPLOYMENT_ENVIRONMENT',
   };
@@ -431,28 +398,18 @@ async function testAiProvider({ environment = process.env, provider, model, apiK
   if (!isLegacy && !registryMeta) throw errorWith('AI_SETTINGS_VALIDATION_ERROR', 'Unsupported AI provider.', 400);
 
   if (!isLegacy && registryMeta) {
+    const runtime = await require('./freellmConfig').loadFreeLlmPlatformConfig({ environment, repository: getRepository(), bypassCache: true });
+    const config = runtime.providers[normProvider] || {};
     const isMasked = MASKED_PATTERN.test(String(apiKey || ''));
-    let key = (!isMasked && apiKey) ? String(apiKey).trim() : '';
-    if (!key) {
-      const repo = getRepository();
-      const secrets = await repo.getSetting('ai_providers').catch(() => null);
-      key = secrets?.[normProvider]?.apiKey || environment[registryMeta.envKey || `${normProvider.toUpperCase()}_API_KEY`] || '';
-    }
-    if (registryMeta.keyless && !key) {
-      key = 'keyless';
-    }
-    if (!key && !registryMeta.keyless) {
-      throw errorWith('AI_PROVIDER_NOT_CONFIGURED', `${registryMeta.name} has no server-side credential configured.`, 400);
-    }
-    const selectedModel = model || registryMeta.defaultModel || 'default';
-    const freellm = require('../freellmapi');
-    const result = await freellm.testProvider({
-      providerId: normProvider,
-      apiKey: key,
-      model: selectedModel,
-      timeoutMs,
-      fetchImpl,
-    });
+    const key = (!isMasked && apiKey) ? String(apiKey).trim() : (config.apiKeys?.[0] || config.key || (registryMeta.keyless ? 'keyless' : ''));
+    if (!key) throw errorWith('AI_PROVIDER_NOT_CONFIGURED', `${registryMeta.name} has no server-side credential configured.`, 400);
+    const baseUrl = config.baseUrl || environment[`${normProvider.toUpperCase()}_BASE_URL`] || registryMeta.baseUrl;
+    const target = model || config.model;
+    const auto = !target || ['auto', 'dynamic', 'default'].includes(target);
+    const models = auto ? await require('../freellmapi/services/modelDiscovery').modelDiscovery.getOrDiscover({ providerId: normProvider, apiKey: key, baseUrl, fetchImpl, timeoutMs }) : [];
+    const selectedModel = auto ? models[0]?.id : target;
+    if (!selectedModel) throw errorWith('AI_PROVIDER_UNAVAILABLE', `${registryMeta.name} has no discovered model to test.`, 503);
+    const result = await require('../freellmapi').testProvider({ providerId: normProvider, apiKey: key, baseUrl, model: selectedModel, timeoutMs, fetchImpl });
     if (!result.ok) {
       const status = result.status || 503;
       if (status === 401 || status === 403) {
@@ -463,8 +420,8 @@ async function testAiProvider({ environment = process.env, provider, model, apiK
     return {
       provider: normProvider,
       model: selectedModel,
-      latencyMs: result.latencyMs || 220,
-      message: `${registryMeta.name} provider connection verified (${result.latencyMs || 220}ms).`,
+      latencyMs: Number(result.latencyMs) > 0 ? Number(result.latencyMs) : null,
+      message: `${registryMeta.name} inference returned nonempty text.`,
     };
   }
 

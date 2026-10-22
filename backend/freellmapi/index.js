@@ -103,8 +103,8 @@ function getEngineStatus() {
       defaultModel: p.defaultModel,
       freeTierAvailable: p.freeTierAvailable,
       keyless: Boolean(p.keyless),
-      intelligenceScore: p.intelligenceScore || 80,
-      speedScore: p.speedScore || 80,
+      intelligenceScore: null,
+      speedScore: null,
     })),
     capabilities: {
       openaiChatCompletions: true,

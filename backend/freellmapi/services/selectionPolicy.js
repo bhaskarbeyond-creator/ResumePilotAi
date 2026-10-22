@@ -11,6 +11,7 @@ function eligible(model, requirements = {}) {
   for (const name of ['vision', 'tools', 'json', 'streaming']) {
     if (requirements[name] && capabilities[name] !== true) return false;
   }
+  if (requirements.contextTokens && model.adapterContextLimit && requirements.contextTokens > model.adapterContextLimit) return false;
   if (requirements.outputTokens && model.outputLimit && requirements.outputTokens > model.outputLimit) return false;
   if (requirements.contextTokens && model.contextWindow && requirements.contextTokens > model.contextWindow) return false;
   // Unknown context is not proof of long-context support.

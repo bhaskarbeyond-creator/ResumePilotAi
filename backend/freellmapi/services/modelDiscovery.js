@@ -117,28 +117,7 @@ function detectVision(id, record = {}) {
   return undefined;
 }
 
-function classifyIntelligence(modelId) {
-  const m = String(modelId || '').toLowerCase();
-  // Frontier / High-Intelligence Tier (70B+, 72B+, Reasoning R1/V3, Claude 3.5 Sonnet, GPT-4o, Gemini 2.0 Pro/Flash)
-  if (
-    m.includes('70b') || m.includes('72b') || m.includes('405b') ||
-    m.includes('large') || m.includes('pro') || m.includes('gpt-4') ||
-    m.includes('o1') || m.includes('o3') || m.includes('r1') || m.includes('v3') ||
-    m.includes('opus') || m.includes('sonnet') || m.includes('nemotron') || m.includes('command-r-plus') ||
-    m.includes('deepseek-chat') || m.includes('deepseek-reasoner')
-  ) {
-    return 'Frontier';
-  }
-  // Medium / Standard Tier (8B - 34B, Flash, Mini, Nemo)
-  if (
-    m.includes('8b') || m.includes('11b') || m.includes('12b') ||
-    m.includes('14b') || m.includes('27b') || m.includes('32b') ||
-    m.includes('flash') || m.includes('mini') || m.includes('nemo') || m.includes('turbo')
-  ) {
-    return 'Standard';
-  }
-  return 'Lightweight';
-}
+function classifyIntelligence() { return 'Unknown'; }
 
 function findModelArray(payload) {
   if (Array.isArray(payload)) return payload;
@@ -204,8 +183,9 @@ class ModelDiscoveryService {
 
   _makeCacheKey(providerId, apiKey, baseUrl) {
     const p = String(providerId || '').toLowerCase().trim();
-    const k = createHash('sha256').update(String(apiKey || '').trim()).digest('hex');
-    const u = String(baseUrl || '').trim();
+    const credential = !apiKey || apiKey === 'keyless' ? '' : String(apiKey).trim();
+    const k = createHash('sha256').update(credential).digest('hex');
+    const u = String(baseUrl || getProviderMeta(p)?.baseUrl || '').trim().replace(/\/+$/, '');
     return `${p}:${k}:${u}`;
   }
 
@@ -231,7 +211,10 @@ class ModelDiscoveryService {
       let url;
       const headers = {};
 
-      if (meta?.type === 'google' || providerId === 'gemini') {
+      if (meta?.type === 'horde') {
+        url = `${targetBaseUrl.replace(/\/+$/, '')}/status/models?type=text`;
+        headers['Client-Agent'] = 'ResumePilotAI:1:https://github.com/bhaskarbeyond-creator/ResumePilotAi';
+      } else if (meta?.type === 'google' || providerId === 'gemini') {
         const cleanBase = (targetBaseUrl || 'https://generativelanguage.googleapis.com/v1beta').replace(/\/+$/, '');
         url = `${cleanBase}/models?key=${encodeURIComponent((apiKey || '').trim())}`;
       } else {
@@ -292,6 +275,7 @@ class ModelDiscoveryService {
 
         // Clean model id (e.g. Gemini returns 'models/gemini-2.0-flash')
         const id = rawId.replace(/^models\//, '');
+        if (meta?.type === 'horde' && !(Number(item.count) > 0)) continue;
         if (!id || item.deprecated === true || item.active === false) continue;
         if (seenIds.has(id)) continue;
         seenIds.add(id);
@@ -302,17 +286,18 @@ class ModelDiscoveryService {
         const contextWindow = extractContextWindow(item);
         const intelligenceTier = classifyIntelligence(id);
         const pricing = extractPricing(item);
-        const vision = detectVision(id, item);
+        const vision = detectVision('', item);
 
         discovered.push({
           id,
           name: typeof item.name === 'string' ? item.name : id,
           contextWindow,
+          ...(meta?.type === 'horde' ? { adapterContextLimit: 2048, limitSource: 'adapter-policy' } : {}),
           intelligenceTier,
           isFree: id.includes(':free') || pricing.isFree || Boolean(item.is_free),
           priceNote: pricing.priceNote,
           vision: vision || false,
-          outputLimit: Number.isFinite(Number(item.outputTokenLimit || item.max_output_tokens)) ? Number(item.outputTokenLimit || item.max_output_tokens) : undefined,
+          outputLimit: meta?.type === 'horde' ? 128 : Number.isFinite(Number(item.outputTokenLimit || item.max_output_tokens)) ? Number(item.outputTokenLimit || item.max_output_tokens) : undefined,
           capabilities: {
             vision: detectVision('', item) === true,
             tools: item.supports_tools === true || item.supports_tool_calling === true || (Array.isArray(item.supported_parameters) && item.supported_parameters.includes('tools')),
@@ -325,16 +310,18 @@ class ModelDiscoveryService {
         if (discovered.length >= MAX_DISCOVERED_MODELS) break;
       }
 
-      // Sort models: Frontier intelligence first, then Standard, then Lightweight
-      discovered.sort((a, b) => {
-        const rank = { Frontier: 3, Standard: 2, Lightweight: 1 };
-        return (rank[b.intelligenceTier] || 0) - (rank[a.intelligenceTier] || 0);
-      });
-
       return discovered;
     } finally {
       clearTimeout(timer);
     }
+  }
+
+  getCachedCatalog({ providerId, apiKey, baseUrl }) {
+    const entry = this.cache.get(this._makeCacheKey(providerId, apiKey, baseUrl));
+    if (!entry || Date.now() - entry.refreshedAt > this.maxStaleMs) return [];
+    return entry.models.map(model => ({ ...model, catalogSource: 'provider',
+      catalogStatus: entry.expiresAt > Date.now() ? 'fresh' : 'stale',
+      lastSuccessfulRefresh: entry.refreshedAt, catalogRefreshFailed: Boolean(entry.failed) }));
   }
 
   async getOrDiscover({

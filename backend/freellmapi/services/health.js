@@ -51,7 +51,9 @@ async function probeProviderConnection({
   const startTime = Date.now();
   try {
     let result;
-    if (meta?.type === 'google' || providerId === 'gemini') {
+    if (meta?.type === 'horde') {
+      result = await require('../providers/aiHorde').callAiHorde({ baseUrl: targetBaseUrl, apiKey: effectiveKey, model: targetModel, messages: testMessages, maxTokens: 16, timeoutMs, fetchImpl });
+    } else if (meta?.type === 'google' || providerId === 'gemini') {
       result = await callGoogleGemini({
         baseUrl: targetBaseUrl || 'https://generativelanguage.googleapis.com/v1beta',
         apiKey: effectiveKey,

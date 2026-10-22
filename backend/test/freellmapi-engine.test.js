@@ -199,9 +199,9 @@ test('FreeLLMAPI: Dynamic live model discovery pulls models from provider /model
   assert.ok(discovered.length >= 2);
   // Verify embedding model was filtered out
   assert.ok(!discovered.some(m => m.id.includes('bge')));
-  // Verify Frontier intelligence model is ranked first
+  // Provider ordering is preserved; model names are not a quality benchmark.
   assert.equal(discovered[0].id, 'llama-3.3-70b-versatile');
-  assert.equal(discovered[0].intelligenceTier, 'Frontier');
+  assert.equal(discovered[0].intelligenceTier, 'Unknown');
 });
 
 test('FreeLLMAPI: Claude Code Agent handles Anthropic /v1/messages wire format', async () => {
