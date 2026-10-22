@@ -9,7 +9,6 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { normalizeRevision } from '@/lib/revision';
 import {
   Building2,
   Globe,
@@ -181,7 +180,7 @@ export function CompanyProfile() {
     try {
       if (isEditing && activeCompany) {
         await patch(`/employer/companies/${activeCompany.id}`, {
-          expectedRevision: normalizeRevision(activeCompany.revision),
+          expectedRevision: activeCompany.revision || 1,
           data: formData,
         });
         setNotification({ type: 'success', message: `Company "${formData.name}" updated successfully.` });
@@ -352,7 +351,7 @@ export function CompanyProfile() {
                             <MapPin className="size-3" /> {activeCompany.location}
                           </span>
                         )}
-                        <span>Revision #{normalizeRevision(activeCompany.revision)}</span>
+                        <span>Revision #{activeCompany.revision || 1}</span>
                       </CardDescription>
                     </div>
                   </div>

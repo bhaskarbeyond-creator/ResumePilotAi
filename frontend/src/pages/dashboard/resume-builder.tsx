@@ -12,7 +12,6 @@
  */
 
 import { useState, useEffect, useMemo, useRef, useDeferredValue } from 'react';
-import { toastError, toastSuccess } from '@/components/ui/toast';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -436,9 +435,6 @@ function normalizeFromBackend(raw: any): ResumeData {
     revision: raw.revision,
   };
 }
-
-/** Profile photo ceiling enforced in the browser before an expensive base64 read. */
-const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
 
 const DEFAULT_SKILL_CATEGORY = 'Core Skills';
 
@@ -2566,28 +2562,16 @@ function HeadingStep({
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    // Reset the field immediately: otherwise re-selecting the SAME file after a
-    // rejection fires no change event and the control looks dead.
-    e.target.value = '';
     if (!file) return;
-    if (file.size > PHOTO_MAX_BYTES) {
-      toastError(
-        'Photo is too large',
-        `Choose an image under ${Math.round(PHOTO_MAX_BYTES / (1024 * 1024))}MB. The selected file was ${(file.size / (1024 * 1024)).toFixed(1)}MB.`,
-      );
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Photo must be under 5MB');
       return;
     }
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result === 'string') {
         update('photo', reader.result);
-        toastSuccess('Photo added', 'Your profile photo is ready to preview.');
       }
-    };
-    // A read failure previously ended silently, leaving the user believing the
-    // upload had succeeded.
-    reader.onerror = () => {
-      toastError('Photo could not be read', 'The file may be corrupt or unreadable. Try a different image.');
     };
     reader.readAsDataURL(file);
   };

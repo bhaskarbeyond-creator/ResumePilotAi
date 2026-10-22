@@ -28,9 +28,6 @@ import { Button } from '@/components/ui/button';
 import { useEnterprise } from './EnterpriseContext';
 import { HelpTooltip } from './HelpTooltip';
 import { enterpriseApi, type EnterpriseRolesMatrixResponse } from '@/lib/enterprise-api';
-import { ConfirmDialog } from '@/components/ui/alert-dialog';
-import { toastError, toastMessageFromError } from '@/components/ui/toast';
-import { normalizeRevision } from '@/lib/revision';
 import { cn } from '@/lib/utils';
 
 interface RoleTheme {
@@ -183,10 +180,6 @@ export function EnterpriseRolesTab() {
   const [selectedPerms, setSelectedPerms] = useState<Set<string>>(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  // Destructive actions are confirmed through an accessible dialog instead of
-  // window.confirm(), and stay visibly busy so they cannot be double-submitted.
-  const [pendingRoleDeletion, setPendingRoleDeletion] = useState<string | null>(null);
-  const [deletingRole, setDeletingRole] = useState(false);
 
   const fetchMatrix = useCallback(() => {
     if (!tenant?.id) {
@@ -269,7 +262,7 @@ export function EnterpriseRolesTab() {
         },
       };
 
-      await enterpriseApi.updateConfiguration(tenant.id, normalizeRevision(currentConfig.revision), {
+      await enterpriseApi.updateConfiguration(tenant.id, currentConfig.revision || 1, {
         customRoles: updatedCustom,
       });
 
@@ -291,37 +284,21 @@ export function EnterpriseRolesTab() {
     }
   };
 
-  const handleDeleteCustomRole = (roleId: string) => {
-    if (!tenant?.id) return;
-    setPendingRoleDeletion(roleId);
-  };
-
-  const confirmDeleteCustomRole = async () => {
-    const roleId = pendingRoleDeletion;
-    if (!roleId || !tenant?.id) {
-      setPendingRoleDeletion(null);
-      return;
-    }
-    setDeletingRole(true);
+  const handleDeleteCustomRole = async (roleId: string) => {
+    if (!tenant?.id || !confirm(`Are you sure you want to delete custom role ${roleId}?`)) return;
     try {
       const configRes = await enterpriseApi.getConfiguration(tenant.id);
       const currentConfig = configRes.configuration || {};
       const existingCustom = { ...((currentConfig.customRoles as Record<string, any>) || {}) };
       delete existingCustom[roleId];
 
-      await enterpriseApi.updateConfiguration(tenant.id, normalizeRevision(currentConfig.revision), {
+      await enterpriseApi.updateConfiguration(tenant.id, currentConfig.revision || 1, {
         customRoles: existingCustom,
       });
       fetchMatrix();
       if (selectedRole === roleId) setSelectedRole('TENANT_ADMIN');
-      setFeedback({ type: 'success', text: `Custom role ${roleId} deleted.` });
-      setPendingRoleDeletion(null);
     } catch (err: any) {
-      const message = toastMessageFromError(err, 'Failed to delete role.');
-      setFeedback({ type: 'error', text: message });
-      toastError('Could not delete role', message);
-    } finally {
-      setDeletingRole(false);
+      alert(err?.message || 'Failed to delete role.');
     }
   };
 
@@ -708,23 +685,6 @@ export function EnterpriseRolesTab() {
           </div>
         </div>
       )}
-
-      <ConfirmDialog
-        open={pendingRoleDeletion !== null}
-        onOpenChange={(open) => {
-          if (!open) setPendingRoleDeletion(null);
-        }}
-        title="Delete custom role?"
-        description={
-          pendingRoleDeletion
-            ? `Members assigned to \u201c${pendingRoleDeletion}\u201d fall back to the default tenant role. This cannot be undone.`
-            : undefined
-        }
-        confirmLabel="Delete role"
-        destructive
-        busy={deletingRole}
-        onConfirm={() => void confirmDeleteCustomRole()}
-      />
     </div>
   );
 }
