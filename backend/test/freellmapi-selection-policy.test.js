@@ -82,3 +82,21 @@ test('balanced fallback excludes incompatible models, records actual fallback, a
   assert.equal(result.fallbacksAttempted[0].model, 'a');
   assert.equal(router.cooldownManager.isOnCooldown('llamacpp', 'a').onCooldown, true);
 });
+
+test('discovery expansion cannot escape tenant model allowlists or denylists', async () => {
+  const router = new FreeLlmRouter();
+  router.modelDiscovery = { getOrDiscover: async () => [{ id: 'new-disallowed' }, { id: 'allowed' }, { id: 'retired' }] };
+  const result = await router.buildCandidateList({ platformConfig: { selectionMode: 'balanced', primary: 'groq', providers: {} },
+    tenantContext: { tenantId: 'tenant-A', customProviderKeys: { groq: 'tenant-fixture-key' }, primaryModel: 'allowed',
+      allowedModels: ['allowed', 'retired'], restrictedModels: ['retired'] } });
+  assert.deepEqual(result.map(candidate => candidate.model), ['allowed']);
+});
+test('a tenant manual pin is not replaced by an unrelated platform primary or its model', async () => {
+  const router = new FreeLlmRouter();
+  router.modelDiscovery = { getOrDiscover: async () => [{ id: 'tenant-pin' }, { id: 'platform-pin' }] };
+  const result = await router.buildCandidateList({ platformConfig: { selectionMode: 'manual', primary: 'llamacpp', providers: { groq: { model: 'platform-pin' } } },
+    tenantContext: { tenantId: 'tenant-A', customProviderKeys: { groq: 'tenant-fixture-key' }, primaryModel: 'tenant-pin' } });
+  assert.equal(result.length, 1);
+  assert.equal(result[0].provider, 'groq');
+  assert.equal(result[0].model, 'tenant-pin');
+});

@@ -1794,6 +1794,8 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
                         .map(([pId, p]) => [pId, p.key])
                 ),
                 allowedProviders: configuration.tenantPolicy?.allowedProviders,
+                allowedModels: configuration.tenantPolicy?.allowedModels,
+                restrictedModels: configuration.tenantPolicy?.restrictedModels,
                 primaryModel: configuration.tenantPolicy?.primaryModel || configuration.providers?.[configuration.primary]?.model,
             } : null),
             temperature: configuration?.temperature !== undefined ? configuration.temperature : 0.3,

@@ -99,3 +99,43 @@ test('manual pin for an environment-enabled local primary persists without copyi
   assert.equal(saved.catalog.find(provider => provider.id === 'llamacpp').defaultModel, '/models/local.gguf');
   assert.equal(settingsContract.settings.get('ai_providers').data.llamacpp.model, '/models/local.gguf');
 });
+
+test('credential-only saves preserve the locked manual policy, model pin, fallback and generation controls', async () => {
+  settingsContract.reset({
+    public_config: { aiRevision: 1, ai: { provider: 'llamacpp', selectionMode: 'manual', temperature: 0.7, maxTokens: 256, enableFallback: false } },
+    ai_providers: { _revision: 1, llamacpp: { apiKey: 'keyless', enabled: true, model: '/models/pin.gguf', baseUrl: 'http://127.0.0.1:8081/v1' } },
+  });
+  const saved = await saveAiAdminSettings({ input: { openaiApiKey: 'fixture-openai-secret' }, actorUid: 'super', expectedRevision: 1 });
+  assert.equal(saved.settings.provider, 'llamacpp');
+  assert.equal(saved.settings.selectionMode, 'manual');
+  assert.equal(saved.settings.temperature, 0.7);
+  assert.equal(saved.settings.maxTokens, 256);
+  assert.equal(saved.settings.enableFallback, false);
+  assert.equal(saved.catalog.find(p => p.id === 'llamacpp').defaultModel, '/models/pin.gguf');
+  assert.ok(!JSON.stringify(saved).includes('fixture-openai-secret'));
+});
+test('registered local endpoint overrides persist, blank preserves, none clears, and embedded credentials fail closed', async () => {
+  settingsContract.reset();
+  await saveAiAdminSettings({ input: { llamacppApiKey: 'keyless', llamacppBaseUrl: 'http://127.0.0.1:9090/v1/' }, actorUid: 'super', expectedRevision: 0 });
+  assert.equal(settingsContract.settings.get('ai_providers').data.llamacpp.baseUrl, 'http://127.0.0.1:9090/v1');
+  await saveAiAdminSettings({ input: { llamacppBaseUrl: '' }, actorUid: 'super', expectedRevision: 1 });
+  assert.equal(settingsContract.settings.get('ai_providers').data.llamacpp.baseUrl, 'http://127.0.0.1:9090/v1');
+  await saveAiAdminSettings({ input: { llamacppBaseUrl: 'none' }, actorUid: 'super', expectedRevision: 2 });
+  assert.equal(settingsContract.settings.get('ai_providers').data.llamacpp.baseUrl, undefined);
+  await assert.rejects(saveAiAdminSettings({ input: { llamacppBaseUrl: 'https://user:secret@example.test/v1' }, actorUid: 'super', expectedRevision: 3 }), { code: 'AI_SETTINGS_VALIDATION_ERROR' });
+});
+
+test('admin discovery honors configured endpoints and authoritative model removal rather than reviving static defaults', async () => {
+  settingsContract.reset({ ai_providers: { llamacpp: { enabled: true, apiKey: 'keyless', baseUrl: 'http://127.0.0.1:9090/v1' } } });
+  const { fetchProviderModels } = require('../services/aiAdmin');
+  const { modelDiscovery } = require('../freellmapi/services/modelDiscovery');
+  modelDiscovery.clear();
+  let rows = [{ id: 'live-first' }];
+  const fetchImpl = async url => {
+    assert.equal(url, 'http://127.0.0.1:9090/v1/models');
+    return Response.json({ data: rows });
+  };
+  assert.equal((await fetchProviderModels({ provider: 'llamacpp', environment: {}, fetchImpl })).models[0].id, 'live-first');
+  rows = [];
+  assert.deepEqual((await fetchProviderModels({ provider: 'llamacpp', environment: {}, fetchImpl })).models, []);
+});

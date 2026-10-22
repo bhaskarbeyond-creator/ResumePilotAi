@@ -154,8 +154,8 @@ const PROVIDER_REGISTRY = Object.freeze({
   },
 
   // ─── TIER 2: FREE RESEARCH & COMMUNITY GATEWAYS (DERIVED FROM FREELLMAPI) ───
-  kilo: { id: 'kilo', name: 'Kilo Gateway', label: 'Kilo Gateway (no key needed)', type: 'openai-compat', baseUrl: 'https://api.kilo.ai/api/gateway/v1', defaultModel: 'kilo-auto', freeTierAvailable: true, keyless: true, optIn: true, accessCategory: 'public-unverified', docUrl: 'https://app.kilo.ai' },
-  ovh: { id: 'ovh', name: 'OVH AI Endpoints', label: 'OVH AI Endpoints (no key needed)', type: 'openai-compat', baseUrl: 'https://oai.endpoints.kepler.ai.cloud.ovh.net/v1', defaultModel: 'Meta-Llama-3_3-70B-Instruct', recommendedModels: ['Meta-Llama-3_3-70B-Instruct', 'Mistral-Nemo-Instruct-2407', 'Qwen2.5-VL-72B-Instruct'], freeTierAvailable: true, keyless: true, optIn: true, accessCategory: 'public-unverified', docUrl: 'https://endpoints.ai.cloud.ovh.net' },
+  kilo: { id: 'kilo', name: 'Kilo Gateway', label: 'Kilo Gateway (account and API credits required)', type: 'openai-compat', baseUrl: 'https://ai-gateway.kilo.ai/api/v1', keyless: false, optIn: true, accessCategory: 'account-required', envKey: 'KILO_API_KEY', docUrl: 'https://github.com/Kilo-Org/kilocode/blob/main/packages/kilo-docs/pages/gateway/authentication.md' },
+  ovh: { id: 'ovh', name: 'OVH AI Endpoints', label: 'OVH AI Endpoints (access unverified; opt-in)', type: 'openai-compat', baseUrl: 'https://oai.endpoints.kepler.ai.cloud.ovh.net/v1', defaultModel: 'Meta-Llama-3_3-70B-Instruct', recommendedModels: ['Meta-Llama-3_3-70B-Instruct', 'Mistral-Nemo-Instruct-2407', 'Qwen2.5-VL-72B-Instruct'], freeTierAvailable: true, keyless: true, optIn: true, accessCategory: 'public-unverified', docUrl: 'https://endpoints.ai.cloud.ovh.net' },
   aihorde: {
     id: 'aihorde', name: 'AI Horde', label: 'AI Horde — anonymous community queue (opt-in)',
     baseUrl: 'https://aihorde.net/api/v2', type: 'horde', keyless: true, optIn: true,

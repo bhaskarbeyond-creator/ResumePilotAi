@@ -75,6 +75,17 @@ function publicAiSettings(input = {}) {
   return result;
 }
 
+function resolveAdminBaseUrl(value, existing = '') {
+  const raw = String(value || '').trim();
+  if (!raw) return existing;
+  if (raw.toLowerCase() === 'none') return '';
+  try {
+    const url = new URL(raw);
+    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.hash || url.search || raw.length > 300) throw new Error();
+    return raw.replace(/\/+$/, '');
+  } catch { throw errorWith('AI_SETTINGS_VALIDATION_ERROR', 'Invalid provider base URL; use HTTP(S) without embedded credentials, query, or fragment.', 400); }
+}
+
 function secretPatch(input = {}, existing = {}, legacy = {}) {
   const patch = {};
   const clearSecrets = input.clearSecrets && typeof input.clearSecrets === 'object' ? input.clearSecrets : {};
@@ -111,17 +122,7 @@ function secretPatch(input = {}, existing = {}, legacy = {}) {
     ).trim();
     // Optional operator endpoint override (self-hosted / private AI gateway).
     // Blank preserves the existing value; 'none' clears it.
-    const rawBaseUrl = String(input[`${provider}BaseUrl`] || '').trim();
-    const existingBaseUrl = existing[provider]?.baseUrl || '';
-    let baseUrl = existingBaseUrl;
-    if (rawBaseUrl && rawBaseUrl.toLowerCase() !== 'none') {
-      if (!/^https?:\/\/[A-Za-z0-9._:/-]{1,300}$/.test(rawBaseUrl)) {
-        throw errorWith('AI_SETTINGS_VALIDATION_ERROR', `Invalid ${provider} base URL.`, 400);
-      }
-      baseUrl = rawBaseUrl;
-    } else if (rawBaseUrl.toLowerCase() === 'none') {
-      baseUrl = '';
-    }
+    const baseUrl = resolveAdminBaseUrl(input[`${provider}BaseUrl`], existing[provider]?.baseUrl);
     const nextPool = explicitlyCleared ? [] : (pool.length > 0 ? pool : (finalKey ? [finalKey] : existingPool));
     patch[provider] = {
       ...(existing[provider] || {}),
@@ -165,6 +166,8 @@ function secretPatch(input = {}, existing = {}, legacy = {}) {
       ((input.provider === pId || input.providerId === pId) ? input.model : '') ||
       ''
     ).trim();
+    if (model && (model.length > 256 || /[\x00-\x1f\x7f]/.test(model))) throw errorWith('AI_SETTINGS_VALIDATION_ERROR', 'Invalid model identifier.', 400);
+    const baseUrl = resolveAdminBaseUrl(input[`${pId}BaseUrl`], existing[pId]?.baseUrl);
     const isExplicitlyActivated = input[`enable${pId.charAt(0).toUpperCase() + pId.slice(1)}`] === true || input[pId]?.enabled === true || rawKey === 'keyless' || (input.provider === pId && input.selectionMode === 'manual' && Boolean(model));
     const nextPool = explicitlyCleared ? [] : (pool.length > 0 ? pool : (finalKey ? [finalKey] : existingPool));
     if (nextPool.length > 0 || existing[pId] || explicitlyCleared || (!isKeyless && Boolean(model)) || (isKeyless && isExplicitlyActivated)) {
@@ -174,9 +177,11 @@ function secretPatch(input = {}, existing = {}, legacy = {}) {
           ? { apiKey: nextPool[0], apiKeys: nextPool }
           : (isKeyless ? { apiKey: 'keyless', apiKeys: ['keyless'] } : {})),
         ...(model ? { model } : {}),
+        ...(baseUrl ? { baseUrl } : {}),
         ...(isKeyless ? { keyless: true } : {}),
         ...(isExplicitlyActivated ? { enabled: true } : {}),
       };
+      if (!baseUrl) delete patch[pId].baseUrl;
       if (explicitlyCleared) {
         delete patch[pId].apiKey;
         delete patch[pId].apiKeys;
@@ -321,7 +326,7 @@ async function loadAiAdminSettings(environment = process.env) {
 }
 
 async function saveAiAdminSettings({ input, expectedRevision = 0, actorUid, requestId }) {
-  const safePublic = publicAiSettings(input);
+  publicAiSettings(input); // Validate before opening a transaction; normalization below uses the locked prior state.
   const pool = getPool();
   const connection = await pool.getConnection();
   let nextRevision;
@@ -336,6 +341,7 @@ async function saveAiAdminSettings({ input, expectedRevision = 0, actorUid, requ
     }]));
     const currentSecrets = byCategory.ai_providers?.data || {};
     const currentPublic = byCategory.public_config?.data || {};
+    const safePublic = publicAiSettings({ ...(currentPublic.ai || {}), ...input });
     const legacyAi = byCategory.system_settings?.data?.ai || {};
     const currentRevision = Math.max(
       Number(currentPublic.aiRevision || 0), Number(currentSecrets._revision || 0),
@@ -452,97 +458,30 @@ async function testAiProvider({ environment = process.env, provider, model, apiK
 }
 
 async function fetchProviderModels({ environment = process.env, provider, apiKey, fetchImpl = global.fetch, timeoutMs = 15000 }) {
-  const normProvider = String(provider || '').toLowerCase().trim();
-  const isLegacy = PROVIDERS.includes(normProvider);
-  const { getProviderMeta } = require('../freellmapi/providers/registry');
-  const registryMeta = getProviderMeta(normProvider);
-
-  if (!isLegacy && !registryMeta) throw errorWith('AI_SETTINGS_VALIDATION_ERROR', 'Unsupported AI provider.', 400);
-
-  let key = '';
-  let baseUrl = '';
-  let base = null;
-  if (isLegacy) {
-    const configuration = await loadProviderConfiguration(environment);
-    base = configuration.providers[normProvider];
-    const isMasked = MASKED_PATTERN.test(String(apiKey || ''));
-    key = String((!isMasked && apiKey) || base?.key || '').trim();
-    baseUrl = base?.baseUrl;
-  } else {
-    const isMasked = MASKED_PATTERN.test(String(apiKey || ''));
-    key = (!isMasked && apiKey) ? String(apiKey).trim() : '';
-    if (!key) {
-      const repo = getRepository();
-      const secrets = await repo.getSetting('ai_providers').catch(() => null);
-      key = secrets?.[normProvider]?.apiKey || environment[registryMeta.envKey || `${normProvider.toUpperCase()}_API_KEY`] || '';
-    }
-    if (registryMeta.keyless && !key) key = 'keyless';
-    baseUrl = registryMeta.baseUrl;
-  }
-
-  if (!key && !registryMeta?.keyless) throw errorWith('AI_PROVIDER_NOT_CONFIGURED', `${normProvider} has no server-side credential configured.`, 400);
-
-  // Prefer FreeLLMAPI dynamic discovery (supports live upstream models, tier tagging, and noise filtering)
+  const providerId = String(provider || '').toLowerCase().trim();
+  const meta = require('../freellmapi/providers/registry').getProviderMeta(providerId);
+  if (!meta || !['openai-compat', 'google', 'horde'].includes(meta.type)) throw errorWith('AI_SETTINGS_VALIDATION_ERROR', 'Unsupported chat provider.', 400);
+  const runtime = await require('./freellmConfig').loadFreeLlmPlatformConfig({ environment, repository: getRepository(), bypassCache: true });
+  const config = runtime.providers[providerId] || {};
+  const isMasked = MASKED_PATTERN.test(String(apiKey || ''));
+  const key = (!isMasked && apiKey) ? String(apiKey).trim() : (config.apiKeys?.[0] || config.key || (meta.keyless ? 'keyless' : ''));
+  if (!key) throw errorWith('AI_PROVIDER_NOT_CONFIGURED', `${meta.name} has no server-side credential configured.`, 400);
+  const baseUrl = config.baseUrl || environment[`${providerId.toUpperCase()}_BASE_URL`] || meta.baseUrl;
+  let discovery;
   try {
-    const freellm = require('../freellmapi');
-    const discovery = await freellm.discoverModels({
-      providerId: normProvider,
-      apiKey: key,
-      baseUrl,
-      forceRefresh: true,
-      fetchImpl,
-      timeoutMs,
-    });
-    const rawList = Array.isArray(discovery) ? discovery : (discovery?.models || []);
-    if (rawList.length > 0) {
-      const models = rawList.map(m => ({
-        id: m.id,
-        name: m.name || m.id,
-        tier: m.intelligenceTier || m.tier || 'Unknown',
-        contextWindow: m.contextWindow ?? null,
-        capabilities: m.capabilities || {},
-        outputLimit: m.outputLimit ?? null,
-        adapterContextLimit: m.adapterContextLimit ?? null,
-        limitSource: m.limitSource || null,
-        catalogStatus: m.catalogStatus || 'unverified',
-        catalogSource: m.catalogSource || 'unknown',
-        lastSuccessfulRefresh: m.lastSuccessfulRefresh || null,
-        catalogRefreshFailed: Boolean(m.catalogRefreshFailed),
-        supportsVision: Boolean(m.vision || m.supportsVision),
-        pricing: m.pricing || null,
-      })).sort((a, b) => a.id.localeCompare(b.id));
-      return { provider: normProvider, count: models.length, models };
-    }
-  } catch (err) {
-    console.warn(`[AI Admin] FreeLLMAPI discovery for ${normProvider} notice:`, err.message);
+    discovery = await require('../freellmapi/services/modelDiscovery').modelDiscovery.getOrDiscover({ providerId, apiKey: key, baseUrl, forceRefresh: true, fetchImpl, timeoutMs });
+  } catch {
+    throw errorWith('AI_MODELS_FETCH_FAILED', `${meta.name} catalog unavailable; no registry defaults are represented as live models.`, 503);
   }
-
-  if (registryMeta && Array.isArray(registryMeta.recommendedModels)) {
-    const models = registryMeta.recommendedModels.map(id => ({ id, name: id, catalogStatus: 'unverified', catalogSource: 'registry', lastSuccessfulRefresh: null }));
-    return { provider: normProvider, count: models.length, models };
-  }
-
-    // Discovery fallback via legacy provider adapter
-    const { getAdapter, fetchWithDeadline } = require('./aiRouting');
-    const adapter = getAdapter(provider);
-    if (!adapter || !adapter.discovery?.supported) return { provider, count: 0, models: [] };
-    const request = adapter.buildDiscoveryRequest({ providerConfig: { ...base, key, baseUrl: base?.baseUrl } });
-    const response = await fetchWithDeadline(fetchImpl, request.url, { method: request.method, headers: request.headers }, timeoutMs);
-    if (!response.ok) throw errorWith('AI_MODELS_FETCH_FAILED', `${adapter.name} API returned HTTP ${response.status}`, response.status);
-    const data = await response.json();
-    let entries;
-    try {
-      entries = adapter.normalizeDiscoveryResponse(data);
-    } catch {
-      return { provider, count: 0, models: [] };
-    }
-    const models = entries.map(entry => {
-        const raw = entry.raw || {};
-        if (provider === 'nvidia') return { id: entry.modelId, name: entry.modelId, owned_by: raw.owned_by || 'nvidia' };
-        if (provider === 'gemini') return { id: entry.modelId, name: raw.displayName || entry.modelId };
-        return { id: entry.modelId, name: entry.modelId };
-    }).sort((a, b) => a.id.localeCompare(b.id));
-    return { provider, count: models.length, models };
+  const models = discovery.map(m => ({
+    id: m.id, name: m.name || m.id, tier: 'Unknown', contextWindow: m.contextWindow ?? null,
+    capabilities: m.capabilities || {}, outputLimit: m.outputLimit ?? null,
+    adapterContextLimit: m.adapterContextLimit ?? null, limitSource: m.limitSource || null,
+    catalogStatus: m.catalogStatus || 'unverified', catalogSource: m.catalogSource || 'unknown',
+    lastSuccessfulRefresh: m.lastSuccessfulRefresh || null, catalogRefreshFailed: Boolean(m.catalogRefreshFailed),
+    supportsVision: m.capabilities?.vision ?? null, pricing: m.priceNote || null,
+  })).sort((a, b) => a.id.localeCompare(b.id));
+  return { provider: providerId, count: models.length, models };
 }
 
 module.exports = {

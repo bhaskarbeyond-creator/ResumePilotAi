@@ -45,11 +45,13 @@ jobs:
           cache-dependency-path: |
             package-lock.json
             backend/package-lock.json
+            frontend/package-lock.json
 
       - name: Install locked dependencies without lifecycle scripts
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
           npm --prefix backend ci --ignore-scripts --no-audit --no-fund
+          npm --prefix frontend ci --ignore-scripts --no-audit --no-fund
 
       - name: Install export regression browser
         run: npm exec --prefix backend -- playwright install --with-deps chromium

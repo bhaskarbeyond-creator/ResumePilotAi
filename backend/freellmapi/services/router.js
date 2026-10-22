@@ -189,12 +189,17 @@ class FreeLlmRouter {
   }
 
   async applySelectionPolicy(candidates, { platformConfig, requestedModel, requirements = {}, fetchImpl, tenantContext }) {
+    const policy = platformConfig.tenantPolicy || {};
+    const allowed = tenantContext?.allowedModels ?? policy.allowedModels;
+    const denied = new Set(tenantContext?.restrictedModels || policy.restrictedModels || []);
+    const modelPermitted = candidate => !denied.has(candidate.model) && (!Array.isArray(allowed) || allowed.length === 0 || allowed.includes(candidate.model));
     const mode = platformConfig.selectionMode;
-    if (!mode) return candidates; // Preserve legacy pinned configurations until migrated by an authorized save.
+    if (!mode) return candidates.filter(modelPermitted); // Preserve legacy pinned configurations until migrated by an authorized save.
     validateMode(mode);
     const explicit = requestedModel && !['auto', 'dynamic'].includes(requestedModel) && !requestedModel.startsWith('auto:') && !getProviderMeta(requestedModel);
     const explicitProvider = getProviderMeta(requestedModel);
-    const primary = explicitProvider ? requestedModel : platformConfig.primary || candidates[0]?.provider;
+    const configuredPrimary = platformConfig.primary;
+    const primary = explicitProvider ? requestedModel : candidates.some(candidate => candidate.provider === configuredPrimary) ? configuredPrimary : candidates[0]?.provider;
     const chosen = mode === 'manual' || explicitProvider ? candidates.filter(candidate => candidate.provider === primary) : candidates;
     const expanded = [];
     for (const candidate of chosen) {
@@ -205,10 +210,10 @@ class FreeLlmRouter {
         // Do not claim unknown capabilities or resurrect defaults after failed discovery in intelligent modes.
         continue;
       }
-      const pin = explicit ? requestedModel : mode === 'manual' ? platformConfig.providers?.[candidate.provider]?.model || candidate.model : null;
+      const pin = explicit ? requestedModel : mode === 'manual' ? (candidate.isDedicatedByok ? tenantContext?.primaryModel || candidate.model : platformConfig.providers?.[candidate.provider]?.model || candidate.model) : null;
       for (const metadata of catalog) {
         if (pin && metadata.id !== pin) continue;
-        if (!eligible(metadata, requirements)) continue;
+        if (!modelPermitted({ model: metadata.id }) || !eligible(metadata, requirements)) continue;
         if (this.cooldownManager.isOnCooldown(candidate.provider, metadata.id).onCooldown && !candidate.isDedicatedByok) continue;
         expanded.push({ ...candidate, model: metadata.id, metadata });
       }
