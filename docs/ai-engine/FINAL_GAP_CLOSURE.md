@@ -18,7 +18,7 @@ No installed Claude executable, Claude configuration directory or Claude/Anthrop
 ## Additional provider research (official sources)
 
 - Hugging Face Inference Providers: official `huggingface/huggingface_hub/docs/source/en/guides/inference.md`, authentication section documents HF access token or provider API key. Not another anonymous inference route; rejected as a keyless addition without authorized credentials.
-- Puter: official HeyPuter/puter source examined; absence of a caller-supplied API key is not itself evidence of anonymous, policy-permitted backend inference. No third-party proxy or guessed endpoint introduced. Further authenticated/user-pays access must not be classified as public anonymous.
+- Puter: official [User-Pays Model](https://github.com/HeyPuter/puter/blob/main/src/docs/src/user-pays-model.md) explicitly says users sign in with their own Puter account and cover their usage/allowance. No developer API key does not mean anonymous inference. Rejected as a public-anonymous expansion; no unapproved account/SDK/proxy introduced.
 - LocalAI: official mudler/LocalAI README documents local/self-hosted API compatibility. It is not a new public anonymous endpoint. Existing llama.cpp/Ollama paths already provide tested local serving; no registry-count-only addition or untested deployment claim.
 - Existing Horde: one bounded legitimate synthetic attempt per validation workflow, capacity failures preserved. Public/default-private separation remains mandatory. No confidential content is used in this expanded evaluation.
 
