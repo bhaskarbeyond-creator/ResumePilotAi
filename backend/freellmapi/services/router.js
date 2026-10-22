@@ -654,7 +654,7 @@ class FreeLlmRouter {
             latencyMs,
             fallbacksAttempted,
             compression: compressionStats,
-            keysAttempted: keyFailures + 1,
+            keysAttempted: fallbacksAttempted.filter(attempt => attempt.provider === candidate.provider && attempt.model === candidate.model).length + 1,
             toolCallsRescued: Boolean(rescued.toolCallsRescued),
             isDedicatedByok: Boolean(candidate.isDedicatedByok),
           };
@@ -681,7 +681,8 @@ class FreeLlmRouter {
       }
 
       // Only bench the *provider* once every key in its pool failed.
-      if (!candidate.isDedicatedByok && (sawRateLimit || keyFailures === candidate.keys.length)) {
+      const remainingCredential = candidates.slice(candidates.indexOf(candidate) + 1).some(next => next.provider === candidate.provider && next.model === candidate.model);
+      if (!candidate.isDedicatedByok && !remainingCredential && (sawRateLimit || keyFailures === candidate.keys.length)) {
         this.cooldownManager.setCooldown(
           candidate.provider,
           candidate.model,
@@ -893,7 +894,8 @@ class FreeLlmRouter {
         }
       }
 
-      if (!candidate.isDedicatedByok && (sawRateLimit || keyFailures === candidate.keys.length)) {
+      const remainingCredential = candidates.slice(candidates.indexOf(candidate) + 1).some(next => next.provider === candidate.provider && next.model === candidate.model);
+      if (!candidate.isDedicatedByok && !remainingCredential && (sawRateLimit || keyFailures === candidate.keys.length)) {
         this.cooldownManager.setCooldown(
           candidate.provider,
           candidate.model,

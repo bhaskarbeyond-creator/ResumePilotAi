@@ -126,3 +126,29 @@ test('a discovered capability cannot authorize a different credential; manual de
   assert.equal(ordinary.length, 2);
   assert.ok(ordinary.every(candidate => candidate.model === 'pinned' && candidate.provider === 'groq'));
 });
+for (const streaming of [false, true]) {
+  test(`credential-specific candidates do not bench the destination before remaining keys (${streaming ? 'stream' : 'completion'})`, async () => {
+    const router = new FreeLlmRouter();
+    let cooled = 0;
+    router.cooldownManager = { isOnCooldown: () => ({ onCooldown: false }), setCooldown: () => { cooled++; }, clearCooldown() {} };
+    router.modelDiscovery = { getOrDiscover: async () => [{ id: 'pinned' }] };
+    const options = { prompt: 'synthetic credential test', bypassCache: true, platformConfig: { selectionMode: 'manual', primary: 'groq', providers: {
+      groq: { key: ['rejected-fixture-key', 'working-fixture-key'], model: 'pinned' },
+    } }, fetchImpl: async (_url, request) => {
+      if (request.headers.Authorization.includes('rejected-fixture-key')) return new Response('{}', { status: 401 });
+      assert.equal(cooled, 0, 'no provider cooldown while another eligible key remains');
+      return streaming ? new Response('data: {"choices":[{"delta":{"content":"ok"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n', { headers: { 'Content-Type': 'text/event-stream' } })
+        : Response.json({ choices: [{ message: { content: 'ok' } }] });
+    } };
+    if (streaming) {
+      const events = [];
+      for await (const event of router.routeStream(options)) events.push(event);
+      assert.ok(events.some(event => event.type === 'text' && event.text === 'ok'));
+    } else {
+      const result = await router.routeCompletion(options);
+      assert.equal(result.content, 'ok');
+      assert.equal(result.keysAttempted, 2);
+    }
+    assert.equal(cooled, 0);
+  });
+}
