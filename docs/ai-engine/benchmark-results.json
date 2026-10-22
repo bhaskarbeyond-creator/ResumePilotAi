@@ -1,24 +1,359 @@
 {
-  "sourceCommit": "1e3ebd9de0dfecdc52dfaff0df14bff1714f8ce4",
-  "note": "Actual machine-readable hosted summaries; strict synthetic checks, not general intelligence or validated human quality. Full sanitized per-sample records retained in Actions artifacts.",
+  "sourceCommit": "aa7e76441e196f33e713ba191c4db834b05b9ddb",
+  "protocolVersion": 2,
+  "note": "Actual hosted synthetic reference/format checks. Semantic quality and cost unmeasured. Not production resume qualification. Full sanitized records in retained Actions artifacts; byTask aggregates include every workload despite check-annotation limits.",
   "evidence": {
-    "ollama": "https://github.com/bhaskarbeyond-creator/ResumePilotAi/actions/runs/39763574719/job/119773932878",
-    "llamacpp": "https://github.com/bhaskarbeyond-creator/ResumePilotAi/actions/runs/39763574719/job/119773932370"
+    "llamacpp": "https://github.com/bhaskarbeyond-creator/ResumePilotAi/actions/runs/39770826095/job/119797617837",
+    "ollama": "https://github.com/bhaskarbeyond-creator/ResumePilotAi/actions/runs/39770826095/job/119797617889"
   },
   "measurements": [
     {
       "cost": null,
-      "measuredAt": "2026-10-22T10:33:37.570Z",
-      "methodology": "Synthetic assertion checks, not a general intelligence score or validated human quality evaluation. No warmup exclusion. TTFT includes transport and prompt processing. Long context requires verified catalog support.",
+      "measuredAt": "2026-10-22T11:29:30.700Z",
+      "methodology": "Protocol v2: twelve synthetic reference/format tasks, not general intelligence or validated human semantic quality. Semantic quality is unmeasured. No warmup exclusion. TTFT includes transport and prompt processing. Long context requires verified catalog support.",
+      "provider": "llamacpp",
+      "results": [
+        {
+          "attempted": 36,
+          "byTask": [
+            {
+              "correct": 0,
+              "failed": 0,
+              "failureCategories": {
+                "reference-or-format": 3
+              },
+              "generated": 3,
+              "ineligible": 0,
+              "task": "reasoning"
+            },
+            {
+              "correct": 0,
+              "failed": 0,
+              "failureCategories": {
+                "reference-or-format": 3
+              },
+              "generated": 3,
+              "ineligible": 0,
+              "task": "instruction"
+            },
+            {
+              "correct": 0,
+              "failed": 0,
+              "failureCategories": {
+                "output-limit": 3
+              },
+              "generated": 3,
+              "ineligible": 0,
+              "task": "technical"
+            },
+            {
+              "correct": 0,
+              "failed": 0,
+              "failureCategories": {
+                "reference-or-format": 3
+              },
+              "generated": 3,
+              "ineligible": 0,
+              "task": "summary"
+            },
+            {
+              "correct": 0,
+              "failed": 0,
+              "failureCategories": {
+                "output-limit": 3
+              },
+              "generated": 3,
+              "ineligible": 0,
+              "task": "json"
+            },
+            {
+              "correct": 0,
+              "failed": 0,
+              "failureCategories": {
+                "reference-or-format": 3
+              },
+              "generated": 3,
+              "ineligible": 0,
+              "task": "multilingual"
+            },
+            {
+              "correct": 0,
+              "failed": 0,
+              "failureCategories": {
+                "output-limit": 3
+              },
+              "generated": 3,
+              "ineligible": 0,
+              "task": "code-trace"
+            },
+            {
+              "correct": 0,
+              "failed": 0,
+              "failureCategories": {
+                "output-limit": 3
+              },
+              "generated": 3,
+              "ineligible": 0,
+              "task": "grounded-extraction"
+            },
+            {
+              "correct": 0,
+              "failed": 0,
+              "failureCategories": {
+                "reference-or-format": 3
+              },
+              "generated": 3,
+              "ineligible": 0,
+              "task": "untrusted-instruction"
+            },
+            {
+              "correct": 0,
+              "failed": 0,
+              "failureCategories": {
+                "output-limit": 3
+              },
+              "generated": 3,
+              "ineligible": 0,
+              "task": "unsupported-quantity"
+            },
+            {
+              "correct": 0,
+              "failed": 0,
+              "failureCategories": {
+                "reference-or-format": 3
+              },
+              "generated": 3,
+              "ineligible": 0,
+              "task": "hindi"
+            },
+            {
+              "correct": 0,
+              "failed": 0,
+              "failureCategories": {
+                "reference-or-format": 3
+              },
+              "generated": 3,
+              "ineligible": 0,
+              "task": "reasoning-order"
+            },
+            {
+              "correct": 0,
+              "failed": 0,
+              "failureCategories": {},
+              "generated": 0,
+              "ineligible": 1,
+              "task": "long-context"
+            }
+          ],
+          "correct": 0,
+          "failed": 0,
+          "generated": 36,
+          "latencyP50Ms": 426.67576600000007,
+          "latencyP95Ms": 1120.3780860000006,
+          "model": "/models/model.gguf",
+          "repeatability": [
+            {
+              "distinctGeneratedOutputs": 1,
+              "task": "reasoning"
+            },
+            {
+              "distinctGeneratedOutputs": 1,
+              "task": "instruction"
+            },
+            {
+              "distinctGeneratedOutputs": 2,
+              "task": "technical"
+            },
+            {
+              "distinctGeneratedOutputs": 1,
+              "task": "summary"
+            },
+            {
+              "distinctGeneratedOutputs": 1,
+              "task": "json"
+            },
+            {
+              "distinctGeneratedOutputs": 1,
+              "task": "multilingual"
+            },
+            {
+              "distinctGeneratedOutputs": 1,
+              "task": "code-trace"
+            },
+            {
+              "distinctGeneratedOutputs": 1,
+              "task": "grounded-extraction"
+            },
+            {
+              "distinctGeneratedOutputs": 1,
+              "task": "untrusted-instruction"
+            },
+            {
+              "distinctGeneratedOutputs": 2,
+              "task": "unsupported-quantity"
+            },
+            {
+              "distinctGeneratedOutputs": 2,
+              "task": "hindi"
+            },
+            {
+              "distinctGeneratedOutputs": 1,
+              "task": "reasoning-order"
+            },
+            {
+              "distinctGeneratedOutputs": 0,
+              "task": "long-context"
+            }
+          ],
+          "ttftP50Ms": 18.04693599999996
+        }
+      ],
+      "schemaVersion": 2,
+      "settings": {
+        "cache": "direct inference; no application cache",
+        "concurrency": 1,
+        "maxTokens": 96,
+        "repeats": 3,
+        "temperature": 0
+      }
+    },
+    {
+      "cost": null,
+      "measuredAt": "2026-10-22T11:31:34.018Z",
+      "methodology": "Protocol v2: twelve synthetic reference/format tasks, not general intelligence or validated human semantic quality. Semantic quality is unmeasured. No warmup exclusion. TTFT includes transport and prompt processing. Long context requires verified catalog support.",
       "provider": "ollama",
       "results": [
         {
-          "attempted": 18,
-          "correct": 10,
+          "attempted": 36,
+          "byTask": [
+            {
+              "correct": 3,
+              "failed": 0,
+              "failureCategories": {},
+              "generated": 3,
+              "ineligible": 0,
+              "task": "reasoning"
+            },
+            {
+              "correct": 3,
+              "failed": 0,
+              "failureCategories": {},
+              "generated": 3,
+              "ineligible": 0,
+              "task": "instruction"
+            },
+            {
+              "correct": 0,
+              "failed": 0,
+              "failureCategories": {
+                "reference-or-format": 3
+              },
+              "generated": 3,
+              "ineligible": 0,
+              "task": "technical"
+            },
+            {
+              "correct": 3,
+              "failed": 0,
+              "failureCategories": {},
+              "generated": 3,
+              "ineligible": 0,
+              "task": "summary"
+            },
+            {
+              "correct": 0,
+              "failed": 0,
+              "failureCategories": {
+                "reference-or-format": 3
+              },
+              "generated": 3,
+              "ineligible": 0,
+              "task": "json"
+            },
+            {
+              "correct": 1,
+              "failed": 0,
+              "failureCategories": {
+                "reference-or-format": 2
+              },
+              "generated": 3,
+              "ineligible": 0,
+              "task": "multilingual"
+            },
+            {
+              "correct": 0,
+              "failed": 0,
+              "failureCategories": {
+                "reference-or-format": 3
+              },
+              "generated": 3,
+              "ineligible": 0,
+              "task": "code-trace"
+            },
+            {
+              "correct": 0,
+              "failed": 0,
+              "failureCategories": {
+                "output-limit": 3
+              },
+              "generated": 3,
+              "ineligible": 0,
+              "task": "grounded-extraction"
+            },
+            {
+              "correct": 0,
+              "failed": 0,
+              "failureCategories": {
+                "reference-or-format": 3
+              },
+              "generated": 3,
+              "ineligible": 0,
+              "task": "untrusted-instruction"
+            },
+            {
+              "correct": 0,
+              "failed": 0,
+              "failureCategories": {
+                "reference-or-format": 3
+              },
+              "generated": 3,
+              "ineligible": 0,
+              "task": "unsupported-quantity"
+            },
+            {
+              "correct": 0,
+              "failed": 0,
+              "failureCategories": {
+                "reference-or-format": 3
+              },
+              "generated": 3,
+              "ineligible": 0,
+              "task": "hindi"
+            },
+            {
+              "correct": 2,
+              "failed": 0,
+              "failureCategories": {
+                "reference-or-format": 1
+              },
+              "generated": 3,
+              "ineligible": 0,
+              "task": "reasoning-order"
+            },
+            {
+              "correct": 0,
+              "failed": 0,
+              "failureCategories": {},
+              "generated": 0,
+              "ineligible": 1,
+              "task": "long-context"
+            }
+          ],
+          "correct": 12,
           "failed": 0,
-          "generated": 18,
-          "latencyP50Ms": 716.9775419999933,
-          "latencyP95Ms": 3028.0894289999997,
+          "generated": 36,
+          "latencyP50Ms": 568.408076000007,
+          "latencyP95Ms": 3388.9661399999895,
           "model": "qwen2.5:0.5b",
           "repeatability": [
             {
@@ -46,14 +381,38 @@
               "task": "multilingual"
             },
             {
+              "distinctGeneratedOutputs": 1,
+              "task": "code-trace"
+            },
+            {
+              "distinctGeneratedOutputs": 1,
+              "task": "grounded-extraction"
+            },
+            {
+              "distinctGeneratedOutputs": 1,
+              "task": "untrusted-instruction"
+            },
+            {
+              "distinctGeneratedOutputs": 1,
+              "task": "unsupported-quantity"
+            },
+            {
+              "distinctGeneratedOutputs": 1,
+              "task": "hindi"
+            },
+            {
+              "distinctGeneratedOutputs": 2,
+              "task": "reasoning-order"
+            },
+            {
               "distinctGeneratedOutputs": 0,
               "task": "long-context"
             }
           ],
-          "ttftP50Ms": 42.30710900000122
+          "ttftP50Ms": 42.29662100000132
         }
       ],
-      "schemaVersion": 1,
+      "schemaVersion": 2,
       "settings": {
         "cache": "direct inference; no application cache",
         "concurrency": 1,
@@ -64,17 +423,133 @@
     },
     {
       "cost": null,
-      "measuredAt": "2026-10-22T10:33:37.570Z",
-      "methodology": "Synthetic assertion checks, not a general intelligence score or validated human quality evaluation. No warmup exclusion. TTFT includes transport and prompt processing. Long context requires verified catalog support.",
+      "measuredAt": "2026-10-22T11:31:34.018Z",
+      "methodology": "Protocol v2: twelve synthetic reference/format tasks, not general intelligence or validated human semantic quality. Semantic quality is unmeasured. No warmup exclusion. TTFT includes transport and prompt processing. Long context requires verified catalog support.",
       "provider": "ollama",
       "results": [
         {
-          "attempted": 18,
-          "correct": 15,
+          "attempted": 36,
+          "byTask": [
+            {
+              "correct": 3,
+              "failed": 0,
+              "failureCategories": {},
+              "generated": 3,
+              "ineligible": 0,
+              "task": "reasoning"
+            },
+            {
+              "correct": 3,
+              "failed": 0,
+              "failureCategories": {},
+              "generated": 3,
+              "ineligible": 0,
+              "task": "instruction"
+            },
+            {
+              "correct": 3,
+              "failed": 0,
+              "failureCategories": {},
+              "generated": 3,
+              "ineligible": 0,
+              "task": "technical"
+            },
+            {
+              "correct": 3,
+              "failed": 0,
+              "failureCategories": {},
+              "generated": 3,
+              "ineligible": 0,
+              "task": "summary"
+            },
+            {
+              "correct": 0,
+              "failed": 0,
+              "failureCategories": {
+                "reference-or-format": 3
+              },
+              "generated": 3,
+              "ineligible": 0,
+              "task": "json"
+            },
+            {
+              "correct": 3,
+              "failed": 0,
+              "failureCategories": {},
+              "generated": 3,
+              "ineligible": 0,
+              "task": "multilingual"
+            },
+            {
+              "correct": 0,
+              "failed": 0,
+              "failureCategories": {
+                "output-limit": 3
+              },
+              "generated": 3,
+              "ineligible": 0,
+              "task": "code-trace"
+            },
+            {
+              "correct": 0,
+              "failed": 0,
+              "failureCategories": {
+                "reference-or-format": 3
+              },
+              "generated": 3,
+              "ineligible": 0,
+              "task": "grounded-extraction"
+            },
+            {
+              "correct": 3,
+              "failed": 0,
+              "failureCategories": {},
+              "generated": 3,
+              "ineligible": 0,
+              "task": "untrusted-instruction"
+            },
+            {
+              "correct": 0,
+              "failed": 0,
+              "failureCategories": {
+                "reference-or-format": 3
+              },
+              "generated": 3,
+              "ineligible": 0,
+              "task": "unsupported-quantity"
+            },
+            {
+              "correct": 0,
+              "failed": 0,
+              "failureCategories": {
+                "reference-or-format": 3
+              },
+              "generated": 3,
+              "ineligible": 0,
+              "task": "hindi"
+            },
+            {
+              "correct": 3,
+              "failed": 0,
+              "failureCategories": {},
+              "generated": 3,
+              "ineligible": 0,
+              "task": "reasoning-order"
+            },
+            {
+              "correct": 0,
+              "failed": 0,
+              "failureCategories": {},
+              "generated": 0,
+              "ineligible": 1,
+              "task": "long-context"
+            }
+          ],
+          "correct": 21,
           "failed": 0,
-          "generated": 18,
-          "latencyP50Ms": 605.6689690000001,
-          "latencyP95Ms": 2581.970313,
+          "generated": 36,
+          "latencyP50Ms": 985.6581870000009,
+          "latencyP95Ms": 6852.20174,
           "model": "qwen2.5:1.5b",
           "repeatability": [
             {
@@ -102,70 +577,38 @@
               "task": "multilingual"
             },
             {
-              "distinctGeneratedOutputs": 0,
-              "task": "long-context"
-            }
-          ],
-          "ttftP50Ms": 80.95877199999995
-        }
-      ],
-      "schemaVersion": 1,
-      "settings": {
-        "cache": "direct inference; no application cache",
-        "concurrency": 1,
-        "maxTokens": 96,
-        "repeats": 3,
-        "temperature": 0
-      }
-    },
-    {
-      "cost": null,
-      "measuredAt": "2026-10-22T10:32:15.303Z",
-      "methodology": "Synthetic assertion checks, not a general intelligence score or validated human quality evaluation. No warmup exclusion. TTFT includes transport and prompt processing. Long context requires verified catalog support.",
-      "provider": "llamacpp",
-      "results": [
-        {
-          "attempted": 18,
-          "correct": 0,
-          "failed": 0,
-          "generated": 18,
-          "latencyP50Ms": 955.513848,
-          "latencyP95Ms": 1250.802439000001,
-          "model": "/models/model.gguf",
-          "repeatability": [
-            {
-              "distinctGeneratedOutputs": 1,
-              "task": "reasoning"
-            },
-            {
               "distinctGeneratedOutputs": 2,
-              "task": "instruction"
+              "task": "code-trace"
             },
             {
               "distinctGeneratedOutputs": 1,
-              "task": "technical"
+              "task": "grounded-extraction"
             },
             {
               "distinctGeneratedOutputs": 1,
-              "task": "summary"
+              "task": "untrusted-instruction"
             },
             {
               "distinctGeneratedOutputs": 1,
-              "task": "json"
+              "task": "unsupported-quantity"
             },
             {
               "distinctGeneratedOutputs": 1,
-              "task": "multilingual"
+              "task": "hindi"
+            },
+            {
+              "distinctGeneratedOutputs": 1,
+              "task": "reasoning-order"
             },
             {
               "distinctGeneratedOutputs": 0,
               "task": "long-context"
             }
           ],
-          "ttftP50Ms": 19.263934999999947
+          "ttftP50Ms": 79.02889500000038
         }
       ],
-      "schemaVersion": 1,
+      "schemaVersion": 2,
       "settings": {
         "cache": "direct inference; no application cache",
         "concurrency": 1,

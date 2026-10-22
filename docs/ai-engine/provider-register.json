@@ -179,11 +179,12 @@
       "integrationAuthentication": "no end-user API key; opt-in where configured",
       "documentation": "https://github.com/Haidra-Org/AI-Horde#anonymous-usage",
       "actualInference": {
-        "status": "prior real anonymous success; latest attempt timed out, not operational availability guarantee",
-        "lastVerifiedAt": null,
+        "status": "real anonymous generation verified at latest checkpoint; prior queue failures remain",
+        "lastVerifiedAt": "2026-10-22T11:28:50Z",
         "priorSuccessEvidence": "https://github.com/bhaskarbeyond-creator/ResumePilotAi/actions/runs/39762439305/job/119770097322",
-        "latestAttemptEvidence": "https://github.com/bhaskarbeyond-creator/ResumePilotAi/actions/runs/39763574719/job/119773932737",
-        "latestAttempt": "REQUEST_TIMEOUT 504; community queue"
+        "latestAttemptEvidence": "https://github.com/bhaskarbeyond-creator/ResumePilotAi/actions/runs/39770826095/job/119797617916",
+        "latestAttempt": "genuine nonempty synthetic generation; no availability guarantee",
+        "historicalQueueFailureEvidence": "https://github.com/bhaskarbeyond-creator/ResumePilotAi/actions/runs/39763574719/job/119773932737"
       },
       "privacy": "Confidential traffic blocked; trusted synthetic verification only"
     },
@@ -1061,6 +1062,31 @@
         "evidence": null
       },
       "privacy": "Operator-approved destination and tenant policy still required"
+    }
+  ],
+  "latestCheckpoint": {
+    "sourceCommit": "aa7e76441e196f33e713ba191c4db834b05b9ddb",
+    "evidence": "https://github.com/bhaskarbeyond-creator/ResumePilotAi/actions/runs/39770826095",
+    "note": "Registry source scope unchanged. Fresh actual local llama.cpp/Ollama and bounded anonymous Horde success; historical failures retained, not continuous availability."
+  },
+  "additionalOfficialResearch": [
+    {
+      "provider": "Puter",
+      "access": "account-required user-pays, no developer API key",
+      "source": "https://github.com/HeyPuter/puter/blob/main/src/docs/src/user-pays-model.md",
+      "actualInference": "not authorized or executed"
+    },
+    {
+      "provider": "Hugging Face Inference Providers",
+      "access": "HF token or provider key",
+      "source": "https://github.com/huggingface/huggingface_hub/blob/main/docs/source/en/guides/inference.md",
+      "actualInference": "not authorized or executed"
+    },
+    {
+      "provider": "LocalAI",
+      "access": "self-hosted; no public anonymous deployment verified",
+      "source": "https://github.com/mudler/LocalAI",
+      "actualInference": "not executed; no new adapter"
     }
   ]
 }

@@ -1,4 +1,9 @@
-# Legacy/current comparison boundaries
+# Legacy/current comparison boundaries — updated execution evidence
+
+At `aa7e76441e196f33e713ba191c4db834b05b9ddb`, [run](https://github.com/bhaskarbeyond-creator/ResumePilotAi/actions/runs/39770826095) passed **18 browser cases**, including **seven historical/current comparisons**. Historical frontend `2abbbe4401efd1945e2749127605bb7f80afe941` actually ran with current locked dependencies/current disposable backend; fourteen matched screenshots and seven JSON observations retained. Both sources showed Save All Changes, supported reload/alias/history, and documentWidth equaled viewportWidth at every listed size. Separate dependency links isolate Vite optimizer caches. No manual screenshot inspection or pixel equality is claimed. Historical save/dialog/error workflow equivalence remains partial; current-app tests, not matched historical interaction tests, cover those behaviors.
+
+The table below retains the earlier source-audit context; its old screenshot-only limitations are superseded **only for the executed route/reload/history/ready-layout comparisons** above.
+
 
 References inspected: historical `2abbbe4401efd1945e2749127605bb7f80afe941`, merged `25038dc`, and live baseline `e541b4d`. Historical code was retrieved with Git/GitHub API; no remote legacy production deployment was assumed. This continuation does not change AI panel styling or unrelated product/CV modules.
 
@@ -15,4 +20,4 @@ References inspected: historical `2abbbe4401efd1945e2749127605bb7f80afe941`, mer
 
 Viewports: 320×568, 390×844, 430×932, 768×1024, 1366×768, 1440×900, 1920×1080. Screenshots are from the actual app/DB/test identity, not static mockups. The deliberate single 503 transport injection is explicitly separate from ordinary live paths.
 
-**Unverified:** deployed legacy/production environment parity, pixel-matched old/new screenshots and full historical role/browser matrix. Historical source availability is not treated as execution proof. CI screenshots support current-layout review only; they cannot substitute for independent human/Opus acceptance.
+**Still unverified:** deployed legacy/production environment parity, pixel equality, full historical dialog/save/error and role/browser matrix, and independent human/Opus acceptance. Matched historical-source screenshots now exist; they do not reproduce historical deployed dependencies/backend.

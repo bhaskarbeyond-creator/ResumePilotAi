@@ -1,3 +1,23 @@
+# Current gap-closure checkpoint — 2026-10-22
+
+Current fixed branch `arena/12d75a56-resumepilotai`; draft PR #48→dev. PR #47 was merged on explicit owner authorization, not left draft; historical branch/status descriptions below are archived context, not current authority.
+
+|Requirement|Current evidence / remaining boundary|
+|---|---|
+|Final-head gates|Functional `aa7e76441e196f33e713ba191c4db834b05b9ddb`: hosted backend1080/0skip, browser18, both local servers and Horde, quality successful. Publication head needs its own fresh checks recorded in PR.|
+|Broader evaluation|Protocol2 twelve applicable cases × three repeats × three models=108 actual generations; per-task correctness, failure categories, TTFT/latency/repeatability; semantic quality null. Models not production-resume qualified.|
+|Five modes / isolation|Current-app live inference/persistence across all modes; four new regressions exclude unknown JSON support in intelligent structured selection; tenant/private-worker/key/cooldown/pin tests retained. No global benchmark ranking injection.|
+|Provider expansion|Official Puter account-required; HF authenticated; LocalAI self-hosted. No additional reliable anonymous provider validated, no speculative adapter.|
+|Security|Root prod/backend/frontend0; root all-tree3high dev Firebase chain persists. Latest supported metadata and concrete reachability/mitigation documented, no safe patch claimed.|
+|Historical comparison|Seven genuinely running matched historical/current source comparisons, 14 screenshots and JSON. Reload/aliases/history/ready layout verified; no pixel/deployed or exhaustive historical interaction parity claim.|
+|Independent highest Opus|Blocked: no authorized inventory/session; connector unsupported; no reinstall/repeated ineffective auth. Owner must securely provision reviewer, exact model ID/head/findings required.|
+|General candidate quality|Unverified. Strict fixture failures disclosed; realistic-budget model qualification and independent semantic evaluation remain. Unknown structured capability fails closed, not selected on speed alone.|
+
+See [current A–K report](FINAL_REPORT.md) for exact workflow/job IDs, security prerequisites and owner actions. **Not 10/10; keep draft; assignment active.**
+
+---
+## Historical prior-session matrix (not current branch/status)
+
 # Mandate gap matrix — 2026-10-22 continuation
 
 ## Verified live baseline / authority

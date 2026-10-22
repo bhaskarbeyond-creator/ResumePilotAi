@@ -4,8 +4,8 @@ Run `node scripts/benchmark-ai.cjs` against a **loopback, operator-owned model s
 
 ## Protocol
 
-- Same six applicable tasks × three repetitions per model; sequential requests, temperature 0, max 96 output tokens, streaming enabled. Up to four catalog-ordered loaded models.
-- Arithmetic/reference answer; exact instruction following; binary-search complexity without an answer supplied in the prompt; constrained summarization; strict JSON shape; Spanish translation.
+- Protocol 2: twelve applicable tasks × three repetitions per model; sequential requests, temperature 0, max 96 output tokens, streaming enabled. Up to four catalog-ordered loaded models.
+- Six original checks unchanged: arithmetic/reference answer; exact instruction following; binary-search complexity without an answer supplied in the prompt; constrained summarization; strict JSON shape; Spanish translation.
 - Separate 8192-token eligibility requirement for synthetic marker retrieval. When catalog context support is unknown/insufficient, record **ineligible**, not successful long-context processing. This does not imply the model cannot support it; this protocol has no verified catalog evidence.
 - Each successful sample requires a complete SSE stream, actual model identity matching the discovered/requested model, and nonempty generated text. HTTP errors, timeout, malformed/mismatched/truncated streams remain failed observations. No automatic inference retries.
 - TTFT is measured to the **first content token**, not the response headers; total latency to completion. Both include transport and prompt processing. No warm-up exclusion; prompt-prefix caches in the serving implementation may affect repetitions.
@@ -13,6 +13,9 @@ Run `node scripts/benchmark-ai.cjs` against a **loopback, operator-owned model s
 - Record actual token usage only if supplied as finite nonnegative values, finish reason, and response hashes for repeatability. Usage and cost remain **unknown** when not measured; no invented dollar costs or estimated speed.
 - Raw generated output and prompts are not published. Reference tasks are source-controlled synthetic content. Full sanitized records go to `artifacts/ai-engine/benchmark.json`, the job summary, per-task check notices, and retained Actions artifacts.
 - Assertions are deliberately strict. The summarization check verifies lexical facts/one-sentence format, not arbitrary semantic truth. This is **not** a comprehensive intelligence benchmark, human writing-quality score or validated judge model. It cannot justify an overall 10/10 or production quality ranking.
+
+- Six added checks: code tracing without executing generated code; reference-grounded skill/employer extraction; treating quoted instructions as untrusted; rejecting unsupported numeric claims; Hindi translation; ordering reasoning. `semanticQuality: null` explicitly distinguishes these reference checks from human semantic quality.
+- Per-model `byTask` aggregates preserve all failure categories even when GitHub truncates per-step case annotations. Each local inference container has a two-CPU quota; this does not standardize quantization, host load or serving caches.
 
 ## Actual execution / limitations
 
@@ -37,3 +40,7 @@ Machine-readable summaries: [benchmark-results.json](benchmark-results.json). Ea
 Measured `2026-10-22T10:32:15.303Z` (llama.cpp) and `10:33:37.570Z` (Ollama). Evidence: [llama.cpp job](https://github.com/bhaskarbeyond-creator/ResumePilotAi/actions/runs/39763574719/job/119773932370), [Ollama job](https://github.com/bhaskarbeyond-creator/ResumePilotAi/actions/runs/39763574719/job/119773932878). A 0/18 model is useful only as a transport/regression fixture here; it is **not** demonstrated suitable for candidate generation. The 15/18 model is better on these checks, not universally better. Temperature-zero output hashes still varied on some repeated tasks: determinism is not assumed.
 
 Raw token usage, finish reasons and per-task output hashes are available in retained sanitized records; no cost estimate is invented. No benchmark score is injected into production routing, and no tiny synthetic set is promoted to an authoritative global quality score.
+
+## Current measured checkpoint
+
+Protocol-v2 actual 108 generations at `aa7e76441e196f33e713ba191c4db834b05b9ddb`: SmolLM2 0/36, Qwen0.5B 12/36, Qwen1.5B 21/36, zero transport failures. See [actual summaries](benchmark-results.json) and [A–K assessment](FINAL_REPORT.md). No model qualified for production resume work; /36 totals are not directly comparable to historical /18 totals. Long context remains ineligible/unverified.

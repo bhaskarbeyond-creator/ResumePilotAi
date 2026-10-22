@@ -27,3 +27,7 @@ No installed Claude executable, Claude configuration directory or Claude/Anthrop
 Fresh npm metadata still reports Firebase CLI15.34.1 depending on chokidar^3.6.0, braces latest3.0.3. The previous incompatible override/downgrade is not applied. Runtime/deployment exposure and auth-only local emulator configuration remain as documented in FINAL_REPORT.md. Audits must report production and all-tree scopes separately; an unpatched dev-tool risk is not a patched finding.
 
 All new claims require current-head hosted runs; historical green1076/backend and11/browser counts do not certify this new protocol/comparison. Keep the new PR draft and assignment active pending actual results and independent acceptance.
+
+## Executed checkpoint
+
+`aa7e76441e196f33e713ba191c4db834b05b9ddb`: engine39770826095 and quality39770826094 succeeded; backend1080/0skip, browser18 including seven historical/current comparisons, actual three-model108 generations and Horde. Broad workload failures are retained in benchmark-results.json. Publication requires fresh head checks; [current A–K](FINAL_REPORT.md) supersedes prior-session statuses. Independent Opus access and semantic qualification remain blocked/unverified; draft PR48, not10/10.
