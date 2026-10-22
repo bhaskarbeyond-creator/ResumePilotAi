@@ -27,27 +27,26 @@ const { getMetricsPersistence } = require('./persistence');
 const { modelDiscovery } = require('./modelDiscovery');
 const { eligible, validateMode, rankCandidates } = require('./selectionPolicy');
 
-// Standard fallback priority order for platform free/budget mesh:
-// Strictly prioritized by High-Intelligence (70B+ / Frontier), Instant Availability & Ultra-Fast Latency
+// Stable compatibility order. Intelligent modes are ranked only from capability/service evidence.
 const DEFAULT_PRIORITY_ORDER = Object.freeze([
-  'ovh',         // Llama-3.3-70b @ 700ms (Frontier 70B, keyless instant-available)
-  'pollinations',// Fast OpenAI-compatible keyless instant-available
-  'groq',        // Llama-3.3-70b @ 140ms (High Intelligence + Ultra Fast)
-  'cerebras',    // Llama-3.3-70b @ 100ms (1,800 tok/sec)
-  'gemini',      // Gemini 2.0 Flash (Multimodal Frontier + Fast)
-  'mistral',     // Mistral Large (Frontier Intelligence)
-  'nvidia',      // Nemotron 70B / Llama 3.2 11B
-  'openrouter',  // Llama 3.3 70B:free
-  'deepseek',    // DeepSeek V3 / R1 (Frontier Reasoning)
-  'cloudflare',  // Llama 3.1 70B
-  'sambanova',   // Llama 3.3 70B
-  'cohere',      // Command R+
-  'siliconflow', // DeepSeek V3 / FLUX
-  'huggingface', // Llama 3.3 70B
-  'modelscope',  // Qwen 2.5 72B
-  'openai',      // GPT-4o-mini
-  'anyapi',      // Llama 3.3 70B
-  'airforce',    // Llama 3.3 70B
+  'ovh',
+  'pollinations',
+  'groq',
+  'cerebras',
+  'gemini',
+  'mistral',
+  'nvidia',
+  'openrouter',
+  'deepseek',
+  'cloudflare',
+  'sambanova',
+  'cohere',
+  'siliconflow',
+  'huggingface',
+  'modelscope',
+  'openai',
+  'anyapi',
+  'airforce',
   'sail',
   'typhoon',
   'kilo',
@@ -178,7 +177,7 @@ class FreeLlmRouter {
             if (liveModels.some(m => m.id === rec)) return rec;
           }
         }
-        // Otherwise use highest intelligence Frontier model discovered
+        // Otherwise preserve provider catalog ordering; names are not quality evidence.
         return liveModels[0].id;
       }
       // A successful empty catalog is authoritative: do not resurrect removed models.
@@ -564,6 +563,7 @@ class FreeLlmRouter {
           provider: cached.provider,
           model: cached.model,
           usage: cached.usage || { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+          routingDecision: cached.routingDecision || null,
           cached: true,
           latencyMs: 0,
           fallbacksAttempted: [],
@@ -615,6 +615,7 @@ class FreeLlmRouter {
               content: rescued.content,
               provider: candidate.provider,
               model: candidate.model,
+              routingDecision: candidate.routingDecision || null,
               usage: rescued.usage,
             });
           }

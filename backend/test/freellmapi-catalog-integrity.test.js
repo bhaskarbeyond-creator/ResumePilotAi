@@ -163,3 +163,24 @@ test('Pollinations is no longer eligible as an anonymous provider', async () => 
   const router = new FreeLlmRouter();
   assert.deepEqual(await router.buildCandidateList({ platformConfig: { providers: { pollinations: { enabled: true } } } }), []);
 });
+
+test('catalog stops streaming before buffering an oversized provider response', async () => {
+  let cancelled = false;
+  const body = new ReadableStream({
+    start(controller) { controller.enqueue(new Uint8Array(2 * 1024 * 1024 + 1)); },
+    cancel() { cancelled = true; },
+  });
+  const service = new ModelDiscoveryService();
+  await assert.rejects(service.discoverFromEndpoint({ ...params, fetchImpl: async () => new Response(body) }), /body limit/);
+  assert.equal(cancelled, true);
+});
+test('unknown capabilities are null, explicit evidence is retained, and name size never manufactures quality', async () => {
+  const service = new ModelDiscoveryService();
+  const models = await service.discoverFromEndpoint({ ...params, fetchImpl: async () => response([
+    { id: 'large-frontier-999b' }, { id: 'small', capabilities: { tools: true, json: false } },
+  ]) });
+  assert.equal(models[0].intelligenceTier, 'Unknown');
+  assert.equal(models[0].capabilities.tools, null);
+  assert.equal(models[1].capabilities.tools, true);
+  assert.equal(models[1].capabilities.json, false);
+});

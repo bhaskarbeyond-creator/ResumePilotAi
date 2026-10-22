@@ -31,6 +31,10 @@ for (const [width, height] of viewports) {
       expect(page.url()).toContain(`subtab=${subtab}`);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
     }
+    for (const name of ['Models & Fallback Chains', 'Claude Code & Agents', 'Playground']) {
+      await page.getByRole('button', { name, exact: true }).click();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+    }
     expect(errors).toEqual([]);
   });
 }

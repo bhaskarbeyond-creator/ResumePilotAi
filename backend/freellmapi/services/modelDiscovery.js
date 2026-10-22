@@ -240,26 +240,36 @@ class ModelDiscoveryService {
       }
 
       let json;
-      if (typeof res.text === 'function') {
-        const rawText = await res.text();
-        if (Buffer.byteLength(rawText, 'utf8') > MAX_CATALOG_BYTES) {
-          throw new Error(`Model catalog from ${providerId} exceeded ${MAX_CATALOG_BYTES / 1024 / 1024}MB limit`);
+      if (res.body?.getReader) {
+        const declared = Number(res.headers?.get?.('content-length'));
+        if (declared > MAX_CATALOG_BYTES) {
+          await res.body.cancel().catch(() => {});
+          throw new Error('Model catalog exceeded the configured body limit');
         }
+        const reader = res.body.getReader();
+        const chunks = [];
+        let size = 0;
         try {
-          json = JSON.parse(rawText);
-        } catch {
-          if (typeof res.json === 'function') {
-            try { json = await res.json(); } catch { json = null; }
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            size += value.byteLength;
+            if (size > MAX_CATALOG_BYTES) {
+              await reader.cancel().catch(() => {});
+              throw new Error('Model catalog exceeded the configured body limit');
+            }
+            chunks.push(Buffer.from(value));
           }
-          if (!json) {
-            throw new Error(`${providerId} /models did not return valid JSON`);
-          }
-        }
-      } else if (typeof res.json === 'function') {
-        json = await res.json();
-      } else {
-        throw new Error(`${providerId} /models returned an unreadable response body`);
-      }
+          json = JSON.parse(Buffer.concat(chunks, size).toString('utf8'));
+        } finally { reader.releaseLock(); }
+      } else if (typeof res.text === 'function') {
+        const rawText = await res.text(); // Compatibility for injected non-streaming fetch implementations.
+        if (Buffer.byteLength(rawText, 'utf8') > MAX_CATALOG_BYTES) throw new Error('Model catalog exceeded the configured body limit');
+        try { json = JSON.parse(rawText); }
+        catch { json = typeof res.json === 'function' ? await res.json() : null; }
+        if (!json) throw new Error('Model catalog did not return valid JSON');
+      } else if (typeof res.json === 'function') json = await res.json();
+      else throw new Error('Model catalog returned an unreadable response body');
 
       const rawList = findModelArray(json);
       if (!rawList) {
@@ -299,10 +309,10 @@ class ModelDiscoveryService {
           vision: vision || false,
           outputLimit: meta?.type === 'horde' ? 128 : Number.isFinite(Number(item.outputTokenLimit || item.max_output_tokens)) ? Number(item.outputTokenLimit || item.max_output_tokens) : undefined,
           capabilities: {
-            vision: detectVision('', item) === true,
-            tools: item.supports_tools === true || item.supports_tool_calling === true || (Array.isArray(item.supported_parameters) && item.supported_parameters.includes('tools')),
-            json: item.supports_json === true || (Array.isArray(item.supported_parameters) && item.supported_parameters.includes('response_format')),
-            streaming: item.supports_streaming === true,
+            vision: item.capabilities?.vision ?? detectVision('', item) ?? null,
+            tools: item.capabilities?.tools ?? item.capabilities?.function_calling ?? item.supports_tools ?? item.supports_tool_calling ?? (Array.isArray(item.supported_parameters) ? item.supported_parameters.includes('tools') : null),
+            json: item.capabilities?.json ?? item.supports_json ?? (Array.isArray(item.supported_parameters) ? item.supported_parameters.includes('response_format') : null),
+            streaming: item.capabilities?.streaming ?? item.supports_streaming ?? null,
           },
           ownedBy: item.owned_by || item.publisher || (typeof item.organization === 'string' ? item.organization : providerId),
         });

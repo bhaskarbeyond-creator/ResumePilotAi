@@ -15,7 +15,7 @@ test('no-Firebase public boot resolves as unauthenticated instead of stalling pu
 
 test('DIR-024 browser suite uses the live same-origin stack without API mocks', async () => {
   const [config, spec] = await Promise.all([
-    read('playwright.dir024.config.js'),
+    read('archive/probes/playwright.dir024.config.js'),
     read('tests/e2e/dir024-geo-seo.spec.js'),
   ]);
   assert.match(config, /testMatch: \/dir024-geo-seo/);

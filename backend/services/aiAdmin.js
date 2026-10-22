@@ -165,9 +165,9 @@ function secretPatch(input = {}, existing = {}, legacy = {}) {
       ((input.provider === pId || input.providerId === pId) ? input.model : '') ||
       ''
     ).trim();
-    const isExplicitlyActivated = input[`enable${pId.charAt(0).toUpperCase() + pId.slice(1)}`] === true || input[pId]?.enabled === true || rawKey === 'keyless';
+    const isExplicitlyActivated = input[`enable${pId.charAt(0).toUpperCase() + pId.slice(1)}`] === true || input[pId]?.enabled === true || rawKey === 'keyless' || (input.provider === pId && input.selectionMode === 'manual' && Boolean(model));
     const nextPool = explicitlyCleared ? [] : (pool.length > 0 ? pool : (finalKey ? [finalKey] : existingPool));
-    if (nextPool.length > 0 || existing[pId] || explicitlyCleared || (isKeyless && isExplicitlyActivated)) {
+    if (nextPool.length > 0 || existing[pId] || explicitlyCleared || (!isKeyless && Boolean(model)) || (isKeyless && isExplicitlyActivated)) {
       patch[pId] = {
         ...(existing[pId] || {}),
         ...(nextPool.length > 0
@@ -175,6 +175,7 @@ function secretPatch(input = {}, existing = {}, legacy = {}) {
           : (isKeyless ? { apiKey: 'keyless', apiKeys: ['keyless'] } : {})),
         ...(model ? { model } : {}),
         ...(isKeyless ? { keyless: true } : {}),
+        ...(isExplicitlyActivated ? { enabled: true } : {}),
       };
       if (explicitlyCleared) {
         delete patch[pId].apiKey;
@@ -217,7 +218,7 @@ async function loadAiAdminSettings(environment = process.env) {
   ]);
   const settings = Object.fromEntries(Object.entries(publicAi).filter(([key, value]) => publicFields.has(key)
     && ['string', 'number', 'boolean'].includes(typeof value)));
-  settings.provider = PROVIDERS.includes(settings.provider) ? settings.provider : runtime.primary;
+  settings.provider = require('../freellmapi/providers/registry').getProviderMeta(settings.provider) ? settings.provider : runtime.primary;
   settings.temperature = settings.temperature ?? runtime.temperature;
   settings.maxTokens = settings.maxTokens ?? runtime.maxTokens;
   settings.enableFallback = settings.enableFallback ?? runtime.enableFallback;

@@ -90,3 +90,12 @@ test('provider test distinguishes missing config, rejected credentials, invalid 
   await assert.rejects(() => testAiProvider({ provider: 'openai', model: 'gpt-4o-mini', apiKey: 'valid-credential', fetchImpl: aborting, timeoutMs: 5, environment: {} }), error => error.code === 'AI_PROVIDER_TIMEOUT');
   assert.equal(JSON.stringify([...unrelatedState.entries()]), before);
 });
+
+test('manual pin for an environment-enabled local primary persists without copying deployment credentials', async () => {
+  settingsContract.reset();
+  const saved = await saveAiAdminSettings({ input: { provider: 'llamacpp', selectionMode: 'manual', llamacpp: { model: '/models/local.gguf' } }, actorUid: 'super', expectedRevision: 0 });
+  assert.equal(saved.settings.provider, 'llamacpp');
+  assert.equal(saved.settings.selectionMode, 'manual');
+  assert.equal(saved.catalog.find(provider => provider.id === 'llamacpp').defaultModel, '/models/local.gguf');
+  assert.equal(settingsContract.settings.get('ai_providers').data.llamacpp.model, '/models/local.gguf');
+});

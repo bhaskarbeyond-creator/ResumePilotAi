@@ -11,7 +11,7 @@ import { defineConfig, devices } from '@playwright/test';
  * not valid evidence for this directive.
  */
 export default defineConfig({
-    testDir: './tests/e2e',
+    testDir: '../../tests/e2e',
     testMatch: /dir024-geo-seo\.spec\.js/,
     fullyParallel: false,
     workers: 1,

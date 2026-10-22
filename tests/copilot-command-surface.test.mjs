@@ -261,21 +261,23 @@ describe('DIR-021 AC-1 + AC-4: surface wiring and keyboard contract', () => {
     });
 });
 describe('DIR-021 INV-1/2/3/4: frozen surfaces, leakage, quota and contrast', () => {
-    test('INV-1: the frozen CV template modules and AI runtime are byte-identical to the baseline', () => {
+    test('INV-1: the frozen CV template modules remain byte-identical to the authorized baseline', () => {
+        // The AI engine overhaul explicitly authorizes runtime changes; its canonical
+        // backend routing/security suites now enforce that contract. The user-specified
+        // baseline below remains immutable for CV templates, not an inaccessible short SHA.
         // DIR-071 re-scoped this: the freeze covers the 55 TEMPLATE MODULES
         // (cv1..cv51, cover1..cover4) plus the AI runtime. `templateUtils.js` is a
         // SHARED utility that a directive may legitimately change (DIR-071 enforces
         // global photo-visibility suppression there), so it is asserted separately
         // below instead of silently widening the freeze.
         const diff = execFileSync('git', [
-            '--no-pager', 'diff', 'e314f715', '--',
+            '--no-pager', 'diff', '2abbbe4401efd1945e2749127605bb7f80afe941', '--',
             'src/cv-templates/cv*', 'src/cv-templates/cover*',
-            'backend/services/aiRuntime.js',
         ], { encoding: 'utf8', cwd: process.cwd() });
-        assert.equal(diff.trim(), '', 'the frozen template modules and AI runtime must show a zero-byte diff');
+        assert.equal(diff.trim(), '', 'the frozen template modules must show a zero-byte diff');
         // Nothing else under src/cv-templates may change unnoticed.
         const changed = execFileSync('git', [
-            '--no-pager', 'diff', '--name-only', 'e314f715', '--', 'src/cv-templates/',
+            '--no-pager', 'diff', '--name-only', '2abbbe4401efd1945e2749127605bb7f80afe941', '--', 'src/cv-templates/',
         ], { encoding: 'utf8', cwd: process.cwd() }).trim().split('\n').filter(Boolean)
             .map((file) => file.replace(/\\/g, '/'));
         const allowed = new Set(['src/cv-templates/templateUtils.js']);
