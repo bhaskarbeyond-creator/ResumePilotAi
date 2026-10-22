@@ -15,6 +15,8 @@ const { setRepositoryForTests, resetRepositoryCacheForTests } = require('../repo
 const { configureAbuseCounterStoreForTests } = require('../security/abuse');
 const { InMemoryAtomicCounterStore } = require('./helpers/inMemoryAtomicCounterStore');
 const app = require('../index');
+const { installAiRouteContract } = require('./helpers/aiRouteContract');
+let governanceContract;
 
 const PLATFORM_AI_PUBLIC = {
   ai: {
@@ -63,6 +65,7 @@ function installTestTenantService() {
   activeRepository = new InMemoryEnterpriseRepository();
   activeService = new TenantService({ registry: activeRegistry, repository: activeRepository });
   app.set('tenantService', activeService);
+  governanceContract.bindTenantRegistry(activeRegistry);
   return { registry: activeRegistry, repository: activeRepository, service: activeService };
 }
 
@@ -78,6 +81,7 @@ class TestAiRepository extends InMemoryRepository {
 
 test.beforeEach(() => {
   configureAbuseCounterStoreForTests(new InMemoryAtomicCounterStore());
+  governanceContract = installAiRouteContract({ settings: { ai_providers: PLATFORM_AI_SECRETS, public_config: PLATFORM_AI_PUBLIC } });
   setRepositoryForTests(new TestAiRepository());
   clearProviderConfigurationCache();
   generatedWithProvidersCalls = [];

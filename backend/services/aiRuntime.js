@@ -1655,7 +1655,8 @@ async function loadProviderConfiguration(environment = process.env) {
     try {
         const { PROVIDER_REGISTRY } = require('../freellmapi/providers/registry');
         for (const [id, meta] of Object.entries(PROVIDER_REGISTRY)) {
-            if (meta?.keyless && !providers[id] && providerSecrets[id]?.enabled !== false) {
+            if (meta?.keyless && !providers[id] && providerSecrets[id]?.enabled !== false &&
+                (!meta.optIn || providerSecrets[id]?.enabled === true || environment[`${id.toUpperCase()}_ENABLED`] === 'true')) {
                 providers[id] = {
                     key: 'keyless',
                     model: meta.defaultModel || 'default',
@@ -1733,6 +1734,11 @@ function getSharedAiRouter() {
 }
 function resetSharedAiRouterForTests() {
     if (sharedAiRouter) sharedAiRouter.reset();
+    const engine = require('../freellmapi');
+    engine.clearCache();
+    engine.resetCooldowns();
+    engine.modelDiscovery.clear();
+    engine.resetMetricsForTests();
 }
 
 /**
@@ -1797,6 +1803,10 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
             signal,
         });
 
+        for (const attempt of result.fallbacksAttempted || []) {
+            router.health?.record?.({ tenantId, provider: attempt.provider, model: attempt.model, ok: false, latencyMs: attempt.latencyMs, errorClass: attempt.code });
+            router.telemetry?.record?.({ tenantId, operation, selectedProvider: attempt.provider, selectedModel: attempt.model, outcome: 'failure', errorClass: attempt.code });
+        }
         router.telemetry?.record?.({
             tenantId,
             operation,

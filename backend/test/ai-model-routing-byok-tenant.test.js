@@ -85,6 +85,7 @@ function installTestTenantService() {
   const repository = new InMemoryEnterpriseRepository();
   const service = new TenantService({ registry: activeRegistry, repository });
   app.set('tenantService', service);
+  aiContract.bindTenantRegistry(activeRegistry);
   return { registry: activeRegistry, repository, service };
 }
 
@@ -328,8 +329,8 @@ test('4. User-controlled X-Tenant-Id naming another tenant fails closed (no cred
       .set('Authorization', bearer('alice'))
       .set('X-Tenant-Id', tenantB)
       .send({ operation: 'generate-summary', payload: summaryPayload('RUNBOOK-MARKER-X1') });
-    assert.equal(res.status, 404, `expected fail-closed 404, got ${res.status} ${JSON.stringify(res.body)}`);
-    assert.equal(res.body.error.code, 'TENANT_MEMBERSHIP_NOT_FOUND');
+    assert.equal(res.status, 403, `governance denies non-member before provider resolution: ${JSON.stringify(res.body)}`);
+    assert.equal(res.body.error.code, 'TENANT_ACCESS_DENIED');
 
     // Payload-embedded tenant hints are ignored as authority (context comes from auth+membership).
     const res2 = await request(app)

@@ -191,7 +191,7 @@ function mapUsage(metadata) {
 }
 
 async function readGeminiError(res, cleanModel) {
-  const rawText = await res.text().catch(() => '');
+  const rawText = typeof res.text === 'function' ? await res.text().catch(() => '') : JSON.stringify(await res.json().catch(() => ({})));
   let data = null;
   try { data = JSON.parse(rawText); } catch { data = null; }
   const errorMsg = data?.error?.message || String(rawText).slice(0, 300);
@@ -250,7 +250,7 @@ async function callGoogleGemini({
     const latencyMs = Date.now() - startTime;
     if (!res.ok) throw await readGeminiError(res, cleanModel);
 
-    const rawText = await res.text();
+    const rawText = typeof res.text === 'function' ? await res.text() : JSON.stringify(await res.json());
     let data = null;
     try { data = JSON.parse(rawText); } catch { data = null; }
 
@@ -348,7 +348,7 @@ async function* streamGoogleGemini({
     let finishReason = null;
 
     if (!contentType.includes('text/event-stream') || !res.body) {
-      const rawText = await res.text();
+      const rawText = typeof res.text === 'function' ? await res.text() : JSON.stringify(await res.json());
       let data = null;
       try { data = JSON.parse(rawText); } catch { data = null; }
       const parts = data?.candidates?.[0]?.content?.parts;

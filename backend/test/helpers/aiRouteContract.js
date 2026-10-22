@@ -24,6 +24,12 @@ class AiRouteMariaDbContract {
     this.memberships = new Map(Object.entries(memberships));
   }
 
+  bindTenantRegistry(registry) {
+    this.tenants = registry.tenants;
+    this.memberships = registry.memberships;
+    this.tenantConfigs = registry.configurations;
+  }
+
   resetAdmission() {
     this.usage.clear();
     configureAbuseCounterStoreForTests(new InMemoryAtomicCounterStore());

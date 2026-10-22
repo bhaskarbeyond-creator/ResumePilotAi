@@ -1,0 +1,73 @@
+name: AI engine validation
+on:
+  pull_request:
+    paths: ['backend/**', 'frontend/**', 'scripts/verify-local-inference.cjs', '.github/workflows/ai-engine-validation.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ai-engine-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  backend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      NODE_ENV: test
+      RUN_MARIADB_INTEGRATION: 'true'
+      MARIADB_TEST_ALLOW_RESET: 'true'
+      FREELMAPI_METRICS_DB: ':memory:'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - run: scripts/start-ci-mariadb.sh
+      - run: npm ci --prefix backend --ignore-scripts --no-audit --no-fund
+      - name: Initialize disposable schema
+        run: |
+          node - <<'NODE'
+          const db = require('./backend/database/mysql');
+          db.initializeSchema().then(result => { if (!result.success) throw new Error(result.error); return db.closePool(); }).catch(error => { console.error(error.message); process.exit(1); });
+          NODE
+      - name: Full backend regression (not targeted-only)
+        run: npm --prefix backend test
+      - name: Production security audit
+        if: always()
+        run: npm --prefix backend audit --omit=dev
+      - name: Stop disposable database
+        if: always()
+        run: docker rm -f "$CI_MARIADB_CONTAINER"
+  real-local-inference:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - run: npm ci --prefix backend --ignore-scripts --no-audit --no-fund
+      - name: Obtain licensed small model and official inference server
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ai-models"
+          curl --fail --location --retry 2 --max-time 180 \
+            https://huggingface.co/bartowski/SmolLM2-135M-Instruct-GGUF/resolve/main/SmolLM2-135M-Instruct-Q4_K_M.gguf \
+            -o "$RUNNER_TEMP/ai-models/model.gguf"
+          sha256sum "$RUNNER_TEMP/ai-models/model.gguf" >> "$GITHUB_STEP_SUMMARY"
+          docker pull ghcr.io/ggml-org/llama.cpp:server
+          docker image inspect ghcr.io/ggml-org/llama.cpp:server --format '{{index .RepoDigests 0}}' >> "$GITHUB_STEP_SUMMARY"
+          docker run --detach --name ai-engine-local --publish 127.0.0.1:8081:8080 \
+            --volume "$RUNNER_TEMP/ai-models:/models:ro" ghcr.io/ggml-org/llama.cpp:server \
+            -m /models/model.gguf -c 2048 -t 2 --host 0.0.0.0 --port 8080
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8081/health; then exit 0; fi
+            sleep 2
+          done
+          docker logs ai-engine-local
+          exit 1
+      - name: Actual catalog -> router -> model inference
+        run: node scripts/verify-local-inference.cjs | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Stop model server
+        if: always()
+        run: docker rm -f ai-engine-local
