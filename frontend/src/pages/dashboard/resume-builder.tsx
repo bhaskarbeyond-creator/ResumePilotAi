@@ -47,6 +47,7 @@ import { AiProcessingModal } from '@/components/ui/ai-processing-modal';
 import { ResumeImportModal } from '@/components/resume/resume-import-modal';
 import { RoleAiCopilotModal } from '@/components/resume/role-ai-copilot-modal';
 import { GrammarCheckModal } from '@/components/resume/grammar-check-modal';
+import { AutocompleteInput } from '@/components/ui/autocomplete-input';
 import type { ParsedResumeData } from '@/lib/ai-content';
 import { TEMPLATE_CATEGORIES, getTemplatesByCategory } from '@/lib/template-catalog';
 import {
@@ -632,9 +633,63 @@ export function ResumeBuilderPage() {
   // DIR-008 bands as the ATS Score, Resumes and Overview pages (so the numbers agree).
   const liveAtsScore = useMemo(() => resumeQualityScore(serializeToBackend(resume)), [resume]);
   const liveAtsTone = bucketTone(bucketForScore(liveAtsScore));
-  const saveStateLabel = saving ? 'Saving…' : !savedSnapshot ? 'Not saved yet' : isDirty ? 'Unsaved changes' : 'Saved';
+  // Save to backend with optimistic revision and MariaDB contract
+  const handleSave = async (options?: { isAutosave?: boolean } | boolean | React.MouseEvent) => {
+    const isAutosave = typeof options === 'boolean' ? options : Boolean(options && typeof options === 'object' && 'isAutosave' in options && options.isAutosave);
+    if (saving) return;
+    setSaving(true);
+    if (!isAutosave) setSaveMessage(null);
+    try {
+      const id = resume.id || parsedResumeId || `resume_${Date.now()}`;
+      const payload = serializeToBackend({ ...resume, id });
+      const result = await post<{ resume: any }>(`/resumes/${id}`, payload);
+      if (result.resume?.id && !resume.id) {
+        setResume((prev) => ({ ...prev, id: result.resume.id, revision: result.resume.revision }));
+        navigate(`/build-resume/${result.resume.id}/${currentStep}`, { replace: true });
+      } else if (result.resume?.revision) {
+        setResume((prev) => ({ ...prev, revision: result.resume.revision }));
+      }
+      setSavedSnapshot(resumeSnapshot({ ...resume, id: resume.id || result.resume?.id || id }));
+      setSaveMessage(isAutosave ? 'Autosaved ✓' : 'Saved successfully');
+      setTimeout(() => setSaveMessage(null), 3000);
+    } catch (err: any) {
+      if (!isAutosave) {
+        setSaveMessage(`Save failed: ${normalizeError(err).message}`);
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
 
-  // There is no autosave: warn before closing or reloading with unsaved edits.
+  const saveStateLabel = saving ? 'Saving…' : saveMessage ? saveMessage : !savedSnapshot ? 'Not saved yet' : isDirty ? 'Unsaved changes' : 'Saved ✓';
+
+  // Debounced Autosave (1500ms): saves edits in background without interrupting editing flow
+  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (loading) return;
+    const hasContent = Boolean(
+      resume.heading?.firstName ||
+      resume.heading?.title ||
+      resume.experience?.length ||
+      resume.education?.length ||
+      resume.skillCategories?.some((c) => c.skills.length > 0)
+    );
+    const needsAutosave = isDirty || (!savedSnapshot && hasContent);
+
+    if (!needsAutosave || saving) return;
+
+    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    autosaveTimerRef.current = setTimeout(() => {
+      void handleSave(true);
+    }, 1500);
+
+    return () => {
+      if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    };
+  }, [resume, isDirty, savedSnapshot, saving, loading]);
+
+  // Safety net: warn before closing or reloading if changes are currently unsaved
   useEffect(() => {
     if (!isDirty) return;
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -739,6 +794,9 @@ export function ResumeBuilderPage() {
 
   // Navigate to step and update browser URL without losing state
   const handleSelectStep = (step: BuilderStep) => {
+    if (isDirty && !saving) {
+      void handleSave(true);
+    }
     setCurrentStep(step);
     const activeId = resume.id || parsedResumeId;
     const targetPath = activeId ? `/build-resume/${activeId}/${step}` : `/build-resume/${step}`;
@@ -794,29 +852,6 @@ export function ResumeBuilderPage() {
     }
   };
 
-  // Save to backend with optimistic revision and MariaDB contract
-  const handleSave = async () => {
-    setSaving(true);
-    setSaveMessage(null);
-    try {
-      const id = resume.id || parsedResumeId || `resume_${Date.now()}`;
-      const payload = serializeToBackend({ ...resume, id });
-      const result = await post<{ resume: any }>(`/resumes/${id}`, payload);
-      if (result.resume?.id && !resume.id) {
-        setResume((prev) => ({ ...prev, id: result.resume.id, revision: result.resume.revision }));
-        navigate(`/build-resume/${result.resume.id}/${currentStep}`, { replace: true });
-      } else if (result.resume?.revision) {
-        setResume((prev) => ({ ...prev, revision: result.resume.revision }));
-      }
-      setSavedSnapshot(resumeSnapshot({ ...resume, id: resume.id || result.resume?.id || id }));
-      setSaveMessage('Saved successfully');
-      setTimeout(() => setSaveMessage(null), 3000);
-    } catch (err: any) {
-      setSaveMessage(`Save failed: ${normalizeError(err).message}`);
-    } finally {
-      setSaving(false);
-    }
-  };
 
   // Keyboard shortcut Ctrl+S / Cmd+S for instant manual save
   useEffect(() => {
@@ -1514,6 +1549,8 @@ export function ResumeBuilderPage() {
                   <SkillsStep
                     categories={resume.skillCategories}
                     targetRole={resume.heading.title || resume.heading.targetRole}
+                    experience={resume.experience}
+                    education={resume.education}
                     onChange={(skillCategories) => setResume((prev) => ({ ...prev, skillCategories }))}
                   />
                 )}
@@ -1539,6 +1576,7 @@ export function ResumeBuilderPage() {
                   <CertificationsStep
                     entries={resume.certifications}
                     targetRole={resume.heading.title || resume.heading.targetRole}
+                    experience={resume.experience}
                     onChange={(certifications) => setResume((prev) => ({ ...prev, certifications }))}
                   />
                 )}
@@ -1553,6 +1591,8 @@ export function ResumeBuilderPage() {
                   <ProjectsStep
                     entries={resume.projects}
                     targetRole={resume.heading.title || resume.heading.targetRole}
+                    experience={resume.experience}
+                    skillCategories={resume.skillCategories}
                     onChange={(projects) => setResume((prev) => ({ ...prev, projects }))}
                     onOpenGrammarCheck={handleOpenGrammarCheck}
                   />
@@ -2674,10 +2714,11 @@ function HeadingStep({
             </span>
           </div>
           <div className="relative">
-            <Input
+            <AutocompleteInput
               id="rb-title"
+              suggestionType="jobTitle"
               value={heading.title}
-              onChange={(e) => update('title', e.target.value)}
+              onChange={(val) => update('title', val)}
               placeholder="e.g. Senior Full-Stack Engineer | Systems Architect"
               className="text-sm font-medium pr-10"
             />
@@ -2689,7 +2730,7 @@ function HeadingStep({
                 }
               }}
               title="Enhance Title"
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-subtle hover:text-brand-600 p-1"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-subtle hover:text-brand-600 p-1 z-10"
             >
               <Sparkles className="size-3.5" />
             </button>
@@ -2730,12 +2771,13 @@ function HeadingStep({
             <label htmlFor="rb-location" className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-ink">
               <MapPin className="size-3.5 text-ink-muted" /> City / Region
             </label>
-            <Input
+            <AutocompleteInput
               id="rb-location"
+              suggestionType="city"
               value={heading.location || heading.city || ''}
-              onChange={(e) => {
-                update('location', e.target.value);
-                update('city', e.target.value);
+              onChange={(val) => {
+                update('location', val);
+                update('city', val);
               }}
               placeholder="San Francisco, CA"
               className="text-sm"
@@ -3059,9 +3101,10 @@ function ExperienceStep({
                     <label className="mb-1 block text-xs font-semibold text-ink">
                       Job title / Position <span className="text-error-500">*</span>
                     </label>
-                    <Input
+                    <AutocompleteInput
+                      suggestionType="jobTitle"
                       value={entry.position}
-                      onChange={(e) => updateEntry(entry.id, 'position', e.target.value)}
+                      onChange={(val) => updateEntry(entry.id, 'position', val)}
                       placeholder="e.g. Senior Software Engineer"
                       className="text-sm font-medium"
                     />
@@ -3070,9 +3113,10 @@ function ExperienceStep({
                     <label className="mb-1 block text-xs font-semibold text-ink">
                       Company / Organization <span className="text-error-500">*</span>
                     </label>
-                    <Input
+                    <AutocompleteInput
+                      suggestionType="company"
                       value={entry.company}
-                      onChange={(e) => updateEntry(entry.id, 'company', e.target.value)}
+                      onChange={(val) => updateEntry(entry.id, 'company', val)}
                       placeholder="e.g. Acme Corp"
                       className="text-sm font-medium"
                     />
@@ -3082,9 +3126,11 @@ function ExperienceStep({
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="mb-1 block text-xs font-semibold text-ink">Location</label>
-                    <Input aria-label="Location"
+                    <AutocompleteInput
+                      aria-label="Location"
+                      suggestionType="location"
                       value={entry.location}
-                      onChange={(e) => updateEntry(entry.id, 'location', e.target.value)}
+                      onChange={(val) => updateEntry(entry.id, 'location', val)}
                       placeholder="e.g. San Francisco, CA (or Remote)"
                       className="text-sm"
                     />
@@ -3265,16 +3311,36 @@ function EducationStep({
             <CardContent className="space-y-3 pt-0">
               <div>
                 <label className="mb-1 block text-xs font-medium text-ink">Institution *</label>
-                <Input aria-label="Institution" aria-required="true" value={entry.institution} onChange={(e) => updateEntry(entry.id, 'institution', e.target.value)} placeholder="Massachusetts Institute of Technology" />
+                <AutocompleteInput
+                  aria-label="Institution"
+                  aria-required="true"
+                  suggestionType="school"
+                  value={entry.institution}
+                  onChange={(val) => updateEntry(entry.id, 'institution', val)}
+                  placeholder="Massachusetts Institute of Technology"
+                />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ink">Degree *</label>
-                  <Input aria-label="Degree" aria-required="true" value={entry.degree} onChange={(e) => updateEntry(entry.id, 'degree', e.target.value)} placeholder="Bachelor of Science" />
+                  <AutocompleteInput
+                    aria-label="Degree"
+                    aria-required="true"
+                    suggestionType="degree"
+                    value={entry.degree}
+                    onChange={(val) => updateEntry(entry.id, 'degree', val)}
+                    placeholder="Bachelor of Science"
+                  />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ink">Field of study</label>
-                  <Input aria-label="Field of study" value={entry.field} onChange={(e) => updateEntry(entry.id, 'field', e.target.value)} placeholder="Computer Science" />
+                  <AutocompleteInput
+                    aria-label="Field of study"
+                    suggestionType="qualification"
+                    value={entry.field}
+                    onChange={(val) => updateEntry(entry.id, 'field', val)}
+                    placeholder="Computer Science"
+                  />
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-3">
@@ -3341,10 +3407,14 @@ function EducationStep({
 function SkillsStep({
   categories,
   targetRole,
+  experience,
+  education,
   onChange,
 }: {
   categories: SkillCategory[];
   targetRole?: string;
+  experience?: ExperienceEntry[];
+  education?: EducationEntry[];
   onChange: (c: SkillCategory[]) => void;
 }) {
   const [newSkill, setNewSkill] = useState<Record<string, string>>({});
@@ -3390,6 +3460,10 @@ function SkillsStep({
       const outcome = await runContentOperation('generate-skills', {
         jobTitle: targetRole || 'Software Engineer',
         experienceLevel: 'senior',
+        existingSkills: categories.flatMap((c) => c.skills),
+        recentRoles: experience?.map((e) => e.position).filter(Boolean),
+        companies: experience?.map((e) => e.company).filter(Boolean),
+        educationFields: education?.map((ed) => ed.field).filter(Boolean),
       });
       const rawList = outcome.kind === 'skills'
         ? outcome.skills.map((s) => s.name)
@@ -3541,10 +3615,11 @@ function SkillsStep({
 
               {/* Add skill input */}
               <div className="flex gap-2">
-                <Input
+                <AutocompleteInput
                   aria-label={`New skill for ${cat.category || 'this category'}`}
+                  suggestionType="skill"
                   value={newSkill[cat.id] ?? ''}
-                  onChange={(e) => setNewSkill((prev) => ({ ...prev, [cat.id]: e.target.value }))}
+                  onChange={(val) => setNewSkill((prev) => ({ ...prev, [cat.id]: val }))}
                   placeholder="Type a skill and press Enter…"
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSkill(cat.id); } }}
                   className="flex-1"
@@ -4216,10 +4291,12 @@ function TemplateStep({
 function CertificationsStep({
   entries,
   targetRole,
+  experience,
   onChange,
 }: {
   entries: CertificationEntry[];
   targetRole?: string;
+  experience?: ExperienceEntry[];
   onChange: (e: CertificationEntry[]) => void;
 }) {
   const [generatingCerts, setGeneratingCerts] = useState(false);
@@ -4245,6 +4322,8 @@ function CertificationsStep({
     try {
       const outcome = await runContentOperation('generate-certifications', {
         jobTitle: targetRole || 'Software Engineer',
+        recentRoles: experience?.map((e) => e.position).filter(Boolean),
+        companies: experience?.map((e) => e.company).filter(Boolean),
       });
       const certs = outcome.kind === 'certifications'
         ? outcome.certifications.map((c) => ({ name: c.title, issuer: c.issuer }))
@@ -4351,12 +4430,26 @@ function CertificationsStep({
             <CardContent className="space-y-3 pt-0">
               <div>
                 <label className="mb-1 block text-xs font-medium text-ink">Certification Name *</label>
-                <Input aria-label="Certification Name" aria-required="true" value={entry.name} onChange={(e) => updateEntry(entry.id, 'name', e.target.value)} placeholder="AWS Certified Solutions Architect" />
+                <AutocompleteInput
+                  aria-label="Certification Name"
+                  aria-required="true"
+                  suggestionType="certification"
+                  value={entry.name}
+                  onChange={(val) => updateEntry(entry.id, 'name', val)}
+                  placeholder="AWS Certified Solutions Architect"
+                />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ink">Issuing Organization *</label>
-                  <Input aria-label="Issuing Organization" aria-required="true" value={entry.issuer} onChange={(e) => updateEntry(entry.id, 'issuer', e.target.value)} placeholder="Amazon Web Services" />
+                  <AutocompleteInput
+                    aria-label="Issuing Organization"
+                    aria-required="true"
+                    suggestionType="issuer"
+                    value={entry.issuer}
+                    onChange={(val) => updateEntry(entry.id, 'issuer', val)}
+                    placeholder="Amazon Web Services"
+                  />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ink">Credential ID</label>
@@ -4490,11 +4583,15 @@ function AchievementsStep({
 function ProjectsStep({
   entries,
   targetRole,
+  experience,
+  skillCategories,
   onChange,
   onOpenGrammarCheck,
 }: {
   entries: ProjectEntry[];
   targetRole?: string;
+  experience?: ExperienceEntry[];
+  skillCategories?: SkillCategory[];
   onChange: (e: ProjectEntry[]) => void;
   onOpenGrammarCheck?: (text: string, onApply: (fixed: string) => void) => void;
 }) {
@@ -4520,6 +4617,9 @@ function ProjectsStep({
     try {
       const outcome = await runContentOperation('generate-projects', {
         jobTitle: targetRole || 'Software Engineer',
+        recentRoles: experience?.map((e) => e.position).filter(Boolean),
+        companies: experience?.map((e) => e.company).filter(Boolean),
+        skills: skillCategories?.flatMap((c) => c.skills),
       });
       const suggestions = outcome.kind === 'suggestions'
         ? outcome.suggestions
@@ -4711,7 +4811,14 @@ function LanguagesStep({ entries, onChange }: { entries: LanguageEntry[]; onChan
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ink">Language *</label>
-                  <Input aria-label="Language" aria-required="true" value={entry.language} onChange={(e) => updateEntry(entry.id, 'language', e.target.value)} placeholder="English" />
+                  <AutocompleteInput
+                    aria-label="Language"
+                    aria-required="true"
+                    suggestionType="language"
+                    value={entry.language}
+                    onChange={(val) => updateEntry(entry.id, 'language', val)}
+                    placeholder="English"
+                  />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ink">Proficiency *</label>
