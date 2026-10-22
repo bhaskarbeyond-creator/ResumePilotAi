@@ -1,3 +1,5 @@
+> **Historical incremental-delivery note, superseded 2026-10-22.** Current work is on draft PR #46, not PR #45. See [FINAL_REPORT.md](FINAL_REPORT.md), [CONTINUATION.md](CONTINUATION.md) and the per-failure register for current implemented fixes and executed evidence. The historical text below is not a completion or readiness claim.
+
 # AI engine engineering ledger — 2026-10-22
 
 ## Scope and plan

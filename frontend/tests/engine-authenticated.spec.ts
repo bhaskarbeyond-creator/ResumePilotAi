@@ -35,6 +35,16 @@ for (const [width, height] of viewports) {
       await page.getByRole('button', { name, exact: true }).click();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
     }
+    for (const [alias, subtab] of [['adm', 'metrics'], ['platform', 'providers']]) {
+      await page.goto(`/${alias}?tab=ai-settings&subtab=${subtab}`);
+      await expect(page).toHaveURL(new RegExp(`/admin\\?tab=ai-settings&subtab=${subtab}`));
+      await expect(page.getByRole('combobox', { name: 'Selection mode' })).toBeVisible();
+    }
+    await page.goBack();
+    await expect(page).toHaveURL(/subtab=metrics/);
+    await expect(page.getByRole('combobox', { name: 'Selection mode' })).toBeVisible();
+    await page.goForward();
+    await expect(page).toHaveURL(/subtab=providers/);
     expect(errors).toEqual([]);
   });
 }
