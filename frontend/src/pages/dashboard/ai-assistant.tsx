@@ -179,11 +179,11 @@ export function AIAssistantPage() {
     ? 'Generating…'
     : !visible
       ? ''
-      : visible.kind === 'text' || visible.kind === 'skills'
+      : visible.kind === 'text' || visible.kind === 'skills' || visible.kind === 'certifications' || visible.kind === 'suggestions'
         ? 'Suggestion ready. Review it before using it.'
         : visible.kind === 'questions'
           ? 'More detail is needed before a summary can be written. See the questions below.'
-          : visible.message;
+          : 'message' in visible ? visible.message : '';
   const statusIsProblem = !!visible && (visible.kind === 'unavailable' || visible.kind === 'rejected' || visible.kind === 'rate-limited' || visible.kind === 'error');
 
   const fieldProps = (field: FieldKey, hint?: string) => {
