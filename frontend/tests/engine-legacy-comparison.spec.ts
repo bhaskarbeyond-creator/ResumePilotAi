@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
 // This suite is explicitly opt-in outside hosted CI. Never silently certify an absent reference.
+if (process.env.CI && !process.env.LEGACY_FRONTEND_DIR) throw new Error('Hosted comparison requires the prepared immutable historical frontend');
 if (process.env.LEGACY_FRONTEND_DIR) {
   for (const [width, height] of [[320,568],[390,844],[430,932],[768,1024],[1366,768],[1440,900],[1920,1080]]) {
     test(`historical/current matched route and screenshot ${width}x${height}`, async ({ page, request }) => {
@@ -26,6 +27,7 @@ if (process.env.LEGACY_FRONTEND_DIR) {
         await page.goForward();
         await expect(page).toHaveURL(/subtab=metrics/);
       }
+      console.log(`::notice title=Historical UI comparison::${JSON.stringify({ width, height, observations, pixelEqualityAsserted: false })}`);
       await writeFile(test.info().outputPath('comparison.json'), JSON.stringify({ historicalCommit: '2abbbe4401efd1945e2749127605bb7f80afe941', backend: 'shared current disposable MariaDB/backend and signed test identity', dependencies: 'shared current locked frontend dependencies', pixelEqualityAsserted: false, observations }, null, 2));
     });
   }
