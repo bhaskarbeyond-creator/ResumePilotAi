@@ -52,10 +52,20 @@ export interface ClarifyingQuestion {
   starterChips?: string[];
 }
 
+export interface SuggestedProject {
+  title: string;
+  role?: string;
+  technologies?: string;
+  category?: string;
+  projectType?: string;
+  description?: string;
+}
+
 export type AiOutcome =
   | { kind: 'text'; text: string }
   | { kind: 'skills'; skills: SuggestedSkill[] }
   | { kind: 'certifications'; certifications: SuggestedCertification[] }
+  | { kind: 'projects'; projects: SuggestedProject[] }
   | { kind: 'suggestions'; suggestions: string[] }
   | { kind: 'questions'; questions: string[] }
   | { kind: 'unavailable'; message: string }
@@ -188,7 +198,21 @@ export interface AiUsageData {
 
 export const AI_UNAVAILABLE_MESSAGE = 'AI generation is unavailable right now. Nothing was generated, and your text has not changed.';
 
-const text = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
+const text = (value: unknown): string => {
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'object' && value !== null) {
+    const obj = value as Record<string, unknown>;
+    if (typeof obj.text === 'string') return obj.text.trim();
+    if (typeof obj.name === 'string') return obj.name.trim();
+    if (typeof obj.title === 'string') return obj.title.trim();
+    if (typeof obj.skill === 'string') return obj.skill.trim();
+    if (typeof obj.certification === 'string') return obj.certification.trim();
+    if (typeof obj.suggestion === 'string') return obj.suggestion.trim();
+    if (typeof obj.item === 'string') return obj.item.trim();
+    if (typeof obj.description === 'string') return obj.description.trim();
+  }
+  return '';
+};
 
 /** Split a comma- or newline-separated list typed by the candidate. */
 export function splitList(value: string, max = 40): string[] {
@@ -220,27 +244,64 @@ export async function runContentOperation(operation: AiOperation, payload: Recor
   if (operation === 'enhance-single-bullet' && text(data.enhancedBullet)) return { kind: 'text', text: text(data.enhancedBullet) };
   if (operation === 'generate-summary' && text(data.summary)) return { kind: 'text', text: text(data.summary) };
   
-  if (operation === 'generate-skills' && Array.isArray(data.skills)) {
-    const skills = data.skills
-      .map((item) => (typeof item === 'string' ? { name: item.trim(), basis: '' } : { name: text(item?.name), basis: text(item?.basis), category: text(item?.category) }))
-      .filter((item) => item.name);
-    if (skills.length) return { kind: 'skills', skills };
+  if (operation === 'generate-skills') {
+    const rawSkills = data.skills || data.suggestions || (data as Record<string, unknown>).keywords;
+    if (Array.isArray(rawSkills) && rawSkills.length > 0) {
+      const skills = rawSkills
+        .map((item) => (typeof item === 'string' ? { name: item.trim(), basis: '' } : { name: text(item?.name || item?.skill || item?.title), basis: text(item?.basis), category: text(item?.category) }))
+        .filter((item) => item.name);
+      if (skills.length) return { kind: 'skills', skills };
+    }
   }
 
-  if (operation === 'generate-certifications' && Array.isArray(data.certifications)) {
-    const certifications = data.certifications
-      .map((item) => ({
-        title: text(item.title),
-        issuer: text(item.issuer),
-        basis: text(item.basis),
-        category: text(item.category) || 'recommended',
-      }))
-      .filter((item) => item.title);
-    if (certifications.length) return { kind: 'certifications', certifications };
+  if (operation === 'generate-certifications') {
+    const rawCerts = data.certifications || data.suggestions || (data as Record<string, unknown>).certs;
+    if (Array.isArray(rawCerts) && rawCerts.length > 0) {
+      const certifications = rawCerts
+        .map((item) => (typeof item === 'string' ? { title: item.trim(), issuer: '', basis: '', category: 'recommended' } : {
+          title: text(item?.title || item?.name || item?.certification),
+          issuer: text(item?.issuer || item?.authority || item?.organization),
+          basis: text(item?.basis),
+          category: text(item?.category) || 'recommended',
+        }))
+        .filter((item) => item.title);
+      if (certifications.length) return { kind: 'certifications', certifications };
+    }
   }
 
-  if (['generate-work-description', 'generate-education-description', 'autocomplete'].includes(operation)) {
-    const rawSuggestions = data.suggestions || data.bullets || data.highlights || [];
+  if (operation === 'generate-projects') {
+    const rawProjects = (data as Record<string, unknown>).projects || data.suggestions;
+    if (Array.isArray(rawProjects) && rawProjects.length > 0) {
+      const projects: SuggestedProject[] = rawProjects
+        .map((p) => {
+          if (typeof p === 'string') {
+            const parts = p.split(':');
+            return {
+              title: parts[0]?.trim() || p.trim(),
+              description: parts.length > 1 ? parts.slice(1).join(':').trim() : '',
+              technologies: '',
+            };
+          }
+          if (typeof p === 'object' && p !== null) {
+            const rec = p as Record<string, unknown>;
+            const title = text(rec.name || rec.title);
+            const role = text(rec.role || rec.projectRole);
+            const technologies = text(rec.technologies || rec.tools || rec.stack);
+            const category = text(rec.category);
+            const projectType = text(rec.projectType);
+            const description = text(rec.description || rec.summary);
+            return { title, role, technologies, category, projectType, description };
+          }
+          return { title: '', technologies: '', description: '' };
+        })
+        .filter((p) => Boolean(p.title));
+
+      if (projects.length) return { kind: 'projects', projects };
+    }
+  }
+
+  if (['generate-work-description', 'generate-education-description', 'autocomplete', 'generate-projects'].includes(operation)) {
+    const rawSuggestions = data.suggestions || data.bullets || data.highlights || (data as Record<string, unknown>).items;
     if (Array.isArray(rawSuggestions) && rawSuggestions.length > 0) {
       const cleanList = rawSuggestions.map((s) => text(s)).filter(Boolean);
       if (cleanList.length) return { kind: 'suggestions', suggestions: cleanList };
@@ -248,6 +309,27 @@ export async function runContentOperation(operation: AiOperation, payload: Recor
   }
 
   return { kind: 'unavailable', message: 'The AI service returned no usable result. Nothing was generated.' };
+}
+
+/**
+ * Fetch autocomplete suggestions for an input field with debounced caching.
+ */
+export async function fetchAiAutocomplete(type: string, query: string, context?: Record<string, unknown>): Promise<string[]> {
+  const cleanQ = String(query || '').trim();
+  if (cleanQ.length < 2) return [];
+  try {
+    const outcome = await runContentOperation('autocomplete', {
+      type,
+      query: cleanQ,
+      ...(context ? { context } : {}),
+    });
+    if (outcome.kind === 'suggestions') {
+      return outcome.suggestions;
+    }
+    return [];
+  } catch {
+    return [];
+  }
 }
 
 /**

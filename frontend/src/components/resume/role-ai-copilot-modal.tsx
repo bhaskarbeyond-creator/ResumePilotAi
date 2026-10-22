@@ -9,7 +9,7 @@
  * - 1-Click insertion into the candidate's active work experience entry
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -54,16 +54,26 @@ export function RoleAiCopilotModal({
 }: RoleAiCopilotModalProps) {
   const [roleTitle, setRoleTitle] = useState(position || '');
   const [orgName, setOrgName] = useState(company || '');
-  const [roughNotes, setRoughNotes] = useState('');
+  const [roughNotes, setRoughNotes] = useState(existingDescription || '');
   const [selectedTone, setSelectedTone] = useState<AiTone>('metrics');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [generatedBullets, setGeneratedBullets] = useState<Array<{ text: string; selected: boolean }>>([]);
 
+  useEffect(() => {
+    if (isOpen) {
+      setRoleTitle(position || '');
+      setOrgName(company || '');
+      setRoughNotes(existingDescription || '');
+      setErrorMessage('');
+      setGeneratedBullets([]);
+    }
+  }, [isOpen, position, company, existingDescription]);
+
   const handleOpenSync = () => {
     setRoleTitle(position || '');
     setOrgName(company || '');
-    setRoughNotes('');
+    setRoughNotes(existingDescription || '');
     setErrorMessage('');
     setGeneratedBullets([]);
   };

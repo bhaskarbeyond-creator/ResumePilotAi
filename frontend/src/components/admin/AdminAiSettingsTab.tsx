@@ -251,6 +251,9 @@ export function AdminAiSettingsTab() {
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [copiedText, setCopiedText] = useState<string | null>(null);
 
+  // Modal state (Section 5 / DIR-013 Section 5 items 1-5)
+  const [cooldownFocus, setCooldownFocus] = useState<string | null>(null);
+
   // Playground state
   const [playgroundPrompt, setPlaygroundPrompt] = useState('Explain the difference between a process and a thread in 2 sentences.');
   const [playgroundModel, setPlaygroundModel] = useState('auto');
@@ -506,6 +509,7 @@ export function AdminAiSettingsTab() {
           apiKey: customKey || secretInputs[providerId] || undefined,
         }
       );
+
 
       // Never invent a latency: the badge must reflect a real probe or the
       // server's own message. `latencyMs` stays undefined when unreported.
@@ -2381,6 +2385,34 @@ export function AdminAiSettingsTab() {
                 className="h-8 text-xs font-semibold"
               >
                 Cancel
+              </Button>
+
+              {/* Test Key Before Saving: real reachability probe, server-side masked */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  if (!modalSelectedPlatform || (!modalSelectedPlatform.keyless && !modalApiKey.trim())) return;
+                  setModalTesting(true);
+                  setModalError(null);
+                  try {
+                    const res = await post<{ ok?: boolean; latencyMs?: number; message?: string }>(
+                      '/admin/ai/test-provider',
+                      { provider: modalSelectedPlatform.id, model: modalCustomModel || modalSelectedPlatform.defaultModel, apiKey: modalSelectedPlatform.keyless ? '' : modalApiKey }
+                    );
+                    if (res.ok) setModalError(`✓ Connection verified${res.latencyMs ? ` (${res.latencyMs}ms)` : ''}`);
+                    else setModalError(`✗ Test failed: ${res.message || 'Connection test failed'}`);
+                  } catch (err: any) {
+                    setModalError(`✗ Test failed: ${err.message || 'Connection test failed'}`);
+                  } finally {
+                    setModalTesting(false);
+                  }
+                }}
+                loading={modalTesting}
+                className="h-8 text-xs font-semibold text-sky-800 dark:text-sky-300 border-sky-200 dark:border-sky-800 hover:bg-sky-50 dark:hover:bg-sky-950/20"
+              >
+                {modalTesting ? <Activity className="size-3.5 mr-1.5 animate-spin" /> : <Zap className="size-3 mr-1" />}
+                Test Key Before Saving
               </Button>
 
               {modalTab === 'import' ? (

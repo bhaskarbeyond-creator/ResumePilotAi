@@ -9,7 +9,24 @@
 
 import { test, expect } from '@playwright/test';
 
-test.describe.configure({ retries: 0 });
+const path = '/admin?tab=ai-settings';
+
+// Authentication is through the actual non-production endpoint and server-side signed-token verifier.
+// No API mocking except the explicitly named single-response transport-failure recovery test.
+async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+  const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+  expect(res.status()).toBe(200);
+  const body = await res.json();
+  expect(body.token).toMatch(/^rptest\./);
+  const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+  expect(profile.ok()).toBe(true);
+  return body;
+}
+async function authenticate(page: Page, request: APIRequestContext) {
+  const body = await identity(request);
+  await page.addInitScript(session => localStorage.setItem('ime_dev_user', JSON.stringify(session)), body);
+  return body.token as string;
+}
 
 // Helper to wait for AI Settings page to load - specific to providers subtab
 async function waitForAiSettings(page) {
@@ -63,7 +80,8 @@ async function takeViewportScreenshot(page, viewportName) {
 test.describe('AI Multi-Provider Engine - Deep Links & Subtab Navigation', () => {
   const baseUrl = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173';
 
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, request }) => {
+    await authenticate(page, request);
     // Navigate to admin AI settings - base URL without subtab to get providers view
     await page.goto(`${baseUrl}/admin?tab=ai-settings`, { waitUntil: 'domcontentloaded' });
     // Wait for app to hydrate
@@ -151,7 +169,8 @@ test.describe('AI Multi-Provider Engine - Deep Links & Subtab Navigation', () =>
 test.describe('AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA', () => {
   const baseUrl = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173';
 
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, request }) => {
+    await authenticate(page, request);
     await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=providers`, { waitUntil: 'domcontentloaded' });
     await waitForAiSettings(page);
   });
@@ -261,7 +280,8 @@ test.describe('AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA', () => {
 test.describe('AI Multi-Provider Engine - Real Data Integration (No Fabrication)', () => {
   const baseUrl = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173';
 
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, request }) => {
+    await authenticate(page, request);
     await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=providers`, { waitUntil: 'domcontentloaded' });
     await waitForAiSettings(page);
   });
