@@ -44,7 +44,11 @@ import {
 } from '@/components/ui/dialog';
 import { FormattingToolbar } from '@/components/ui/formatting-toolbar';
 import { AiProcessingModal } from '@/components/ui/ai-processing-modal';
-import { TEMPLATES, TEMPLATE_CATEGORIES, getTemplatesByCategory } from '@/lib/template-catalog';
+import { ResumeImportModal } from '@/components/resume/resume-import-modal';
+import { RoleAiCopilotModal } from '@/components/resume/role-ai-copilot-modal';
+import { GrammarCheckModal } from '@/components/resume/grammar-check-modal';
+import type { ParsedResumeData } from '@/lib/ai-content';
+import { TEMPLATE_CATEGORIES, getTemplatesByCategory } from '@/lib/template-catalog';
 import {
   User,
   Briefcase,
@@ -72,7 +76,6 @@ import {
   Award,
   Languages,
   BookOpen,
-  Link as LinkIcon,
   ClipboardCheck,
   Copy,
   Settings,
@@ -85,7 +88,6 @@ import {
   Users,
   FolderPlus,
   BarChart3,
-  Globe as GlobeIcon,
   Search,
   Share2,
   Printer,
@@ -93,12 +95,9 @@ import {
   Camera,
   UploadCloud,
   CheckCircle2,
-  Clock,
   ChevronDown,
   ChevronUp,
-  TrendingUp,
   RefreshCw,
-  ExternalLink,
   LayoutGrid,
 } from 'lucide-react';
 
@@ -307,23 +306,6 @@ const STEPS: { id: BuilderStep; label: string; icon: typeof User; description: s
 
 /** "Finalize" is a review step that is never marked complete, so progress counts the content sections only. */
 const COMPLETABLE_STEP_COUNT = STEPS.filter((step) => step.id !== 'review').length;
-
-const PROFICIENCY_OPTIONS = [
-  { value: 'native', label: 'Native' },
-  { value: 'fluent', label: 'Fluent' },
-  { value: 'professional', label: 'Professional Working' },
-  { value: 'intermediate', label: 'Intermediate' },
-  { value: 'basic', label: 'Basic' },
-];
-
-const CEFR_OPTIONS = [
-  { value: 'C2', label: 'C2 - Mastery' },
-  { value: 'C1', label: 'C1 - Advanced' },
-  { value: 'B2', label: 'B2 - Upper Intermediate' },
-  { value: 'B1', label: 'B1 - Intermediate' },
-  { value: 'A2', label: 'A2 - Elementary' },
-  { value: 'A1', label: 'A1 - Beginner' },
-];
 
 const EMPTY_HEADING: ResumeHeading = {
   firstName: '', lastName: '', email: '', phone: '',
@@ -669,6 +651,27 @@ export function ResumeBuilderPage() {
   const [exportingDocx, setExportingDocx] = useState(false);
   const [syncingProfile, setSyncingProfile] = useState(false);
   const [syncToast, setSyncToast] = useState<string | null>(null);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [roleCopilotState, setRoleCopilotState] = useState<{
+    isOpen: boolean;
+    entryId: string | null;
+    position: string;
+    company: string;
+  }>({
+    isOpen: false,
+    entryId: null,
+    position: '',
+    company: '',
+  });
+  const [grammarModalState, setGrammarModalState] = useState<{
+    isOpen: boolean;
+    initialText: string;
+    onApply: (text: string) => void;
+  }>({
+    isOpen: false,
+    initialText: '',
+    onApply: () => {},
+  });
 
   const stepperScrollRef = useRef<HTMLDivElement>(null);
 
@@ -866,6 +869,153 @@ export function ResumeBuilderPage() {
       return;
     }
     setShowShare(true);
+  };
+
+  // AI Resume Import Handler
+  const handleApplyImportedResume = (parsed: ParsedResumeData) => {
+    setResume((prev) => {
+      const newHeading: ResumeHeading = {
+        ...prev.heading,
+        firstName: parsed.heading?.firstName || parsed.firstname || prev.heading.firstName,
+        lastName: parsed.heading?.lastName || parsed.lastname || prev.heading.lastName,
+        email: parsed.heading?.email || parsed.email || prev.heading.email,
+        phone: parsed.heading?.phone || parsed.phone || prev.heading.phone,
+        location: parsed.heading?.location || [parsed.city, parsed.country].filter(Boolean).join(', ') || parsed.address || prev.heading.location,
+        title: parsed.heading?.title || parsed.occupation || prev.heading.title,
+        website: parsed.heading?.website || parsed.website || prev.heading.website,
+        linkedin: parsed.heading?.linkedin || parsed.linkedin || prev.heading.linkedin,
+        github: parsed.heading?.github || parsed.github || prev.heading.github,
+      };
+
+      const rawExp = parsed.experience || parsed.employments || [];
+      const newExperience: ExperienceEntry[] = rawExp.length
+        ? rawExp.map((e, idx) => ({
+            id: `exp_imp_${Date.now()}_${idx}`,
+            company: e.company || e.employer || '',
+            position: e.position || e.jobTitle || '',
+            location: e.location || e.city || '',
+            startDate: e.startDate || '',
+            endDate: e.endDate || '',
+            current: e.current ?? (!e.endDate || e.endDate.toLowerCase().includes('present')),
+            description: e.description || '',
+          }))
+        : prev.experience;
+
+      const rawEdu = parsed.education || parsed.educations || [];
+      const newEducation: EducationEntry[] = rawEdu.length
+        ? rawEdu.map((ed, idx) => ({
+            id: `edu_imp_${Date.now()}_${idx}`,
+            institution: ed.institution || ed.school || '',
+            degree: ed.degree || '',
+            field: ed.field || '',
+            startDate: ed.startDate || '',
+            endDate: ed.endDate || '',
+            gpa: ed.gpa || '',
+            description: ed.description || '',
+          }))
+        : prev.education;
+
+      const rawSkills: string[] = Array.isArray(parsed.skills)
+        ? parsed.skills.map((s) => (typeof s === 'string' ? s : s?.skillName || s?.name || '')).filter(Boolean)
+        : [];
+
+      let newSkillCats = [...prev.skillCategories];
+      if (rawSkills.length) {
+        if (newSkillCats.length === 0) {
+          newSkillCats = [{ id: `cat_${Date.now()}`, category: 'Core Skills', skills: rawSkills }];
+        } else {
+          const existingSet = new Set(newSkillCats.flatMap((c) => c.skills.map((s) => s.toLowerCase())));
+          const added = rawSkills.filter((s) => !existingSet.has(s.toLowerCase()));
+          newSkillCats[0] = {
+            ...newSkillCats[0],
+            skills: [...newSkillCats[0].skills, ...added],
+          };
+        }
+      }
+
+      const rawCerts = parsed.certifications || [];
+      const newCerts: CertificationEntry[] = rawCerts.length
+        ? rawCerts.map((c, idx) => ({
+            id: `cert_imp_${Date.now()}_${idx}`,
+            name: c.name || c.title || '',
+            issuer: c.issuer || '',
+            issueDate: c.issueDate || '',
+            credentialId: '',
+            expiryDate: '',
+            credentialUrl: '',
+          }))
+        : prev.certifications;
+
+      const validLevels: LanguageEntry['proficiency'][] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2', 'Native'];
+      const mapProficiency = (val?: string): LanguageEntry['proficiency'] => {
+        if (!val) return 'C1';
+        const normalized = val.trim();
+        if (validLevels.includes(normalized as LanguageEntry['proficiency'])) {
+          return normalized as LanguageEntry['proficiency'];
+        }
+        if (/native|bilingual/i.test(normalized)) return 'Native';
+        if (/fluent|advanced|proficient|expert/i.test(normalized)) return 'C1';
+        if (/intermediate|conversational/i.test(normalized)) return 'B2';
+        if (/beginner|elementary|basic/i.test(normalized)) return 'A2';
+        return 'C1';
+      };
+
+      const rawLangs = parsed.languages || [];
+      const newLanguages: LanguageEntry[] = rawLangs.length
+        ? rawLangs.map((l, idx) => ({
+            id: `lang_imp_${Date.now()}_${idx}`,
+            language: l.language || '',
+            proficiency: mapProficiency(l.proficiency || l.level),
+          }))
+        : prev.languages;
+
+      return {
+        ...prev,
+        heading: newHeading,
+        summary: parsed.summary || prev.summary,
+        experience: newExperience,
+        education: newEducation,
+        skillCategories: newSkillCats,
+        certifications: newCerts,
+        languages: newLanguages,
+      };
+    });
+    setNotice({ tone: 'success', text: 'Resume imported and parsed successfully!' });
+    setTimeout(() => setNotice(null), 5000);
+  };
+
+  const handleOpenRoleCopilot = (entry: ExperienceEntry) => {
+    setRoleCopilotState({
+      isOpen: true,
+      entryId: entry.id,
+      position: entry.position,
+      company: entry.company,
+    });
+  };
+
+  const handleInsertCopilotBullets = (entryId: string | null, bullets: string | string[]) => {
+    if (!entryId) return;
+    const bulletList = Array.isArray(bullets) ? bullets : [bullets];
+    if (!bulletList.length) return;
+    setResume((prev) => ({
+      ...prev,
+      experience: prev.experience.map((e) => {
+        if (e.id !== entryId) return e;
+        const formattedBullets = bulletList.map((b) => (b.startsWith('•') ? b : `• ${b}`)).join('\n');
+        const newDesc = e.description.trim()
+          ? `${e.description.trim()}\n${formattedBullets}`
+          : formattedBullets;
+        return { ...e, description: newDesc };
+      }),
+    }));
+  };
+
+  const handleOpenGrammarCheck = (text: string, onApply: (fixed: string) => void) => {
+    setGrammarModalState({
+      isOpen: true,
+      initialText: text,
+      onApply,
+    });
   };
 
   // Section completion checks
@@ -1303,6 +1453,15 @@ export function ResumeBuilderPage() {
                 <Button
                   variant="outline"
                   size="sm"
+                  onClick={() => setShowImportModal(true)}
+                  className="gap-1.5 text-xs text-indigo-700 border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100 font-semibold shadow-2xs"
+                >
+                  <UploadCloud className="size-3.5 text-indigo-600" aria-hidden="true" />
+                  <span>Import CV / AI Parse</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => void handleSyncProfile()}
                   loading={syncingProfile}
                   className="gap-1.5 text-xs text-brand-700 border-brand-200 bg-brand-50/50 hover:bg-brand-100"
@@ -1332,6 +1491,7 @@ export function ResumeBuilderPage() {
                   <HeadingStep
                     heading={resume.heading}
                     onChange={(heading) => setResume((prev) => ({ ...prev, heading }))}
+                    onOpenImport={() => setShowImportModal(true)}
                   />
                 )}
                 {currentStep === 'experience' && (
@@ -1339,17 +1499,21 @@ export function ResumeBuilderPage() {
                     entries={resume.experience}
                     targetRole={resume.heading.title || resume.heading.targetRole}
                     onChange={(experience) => setResume((prev) => ({ ...prev, experience }))}
+                    onOpenRoleCopilot={handleOpenRoleCopilot}
+                    onOpenGrammarCheck={handleOpenGrammarCheck}
                   />
                 )}
                 {currentStep === 'education' && (
                   <EducationStep
                     entries={resume.education}
                     onChange={(education) => setResume((prev) => ({ ...prev, education }))}
+                    onOpenGrammarCheck={handleOpenGrammarCheck}
                   />
                 )}
                 {currentStep === 'skills' && (
                   <SkillsStep
                     categories={resume.skillCategories}
+                    targetRole={resume.heading.title || resume.heading.targetRole}
                     onChange={(skillCategories) => setResume((prev) => ({ ...prev, skillCategories }))}
                   />
                 )}
@@ -1361,6 +1525,7 @@ export function ResumeBuilderPage() {
                     skillCategories={resume.skillCategories}
                     targetJobDescription={resume.targetJobDescription}
                     onChange={(summary) => setResume((prev) => ({ ...prev, summary }))}
+                    onOpenGrammarCheck={handleOpenGrammarCheck}
                   />
                 )}
                 {currentStep === 'template' && (
@@ -1373,6 +1538,7 @@ export function ResumeBuilderPage() {
                 {currentStep === 'certifications' && (
                   <CertificationsStep
                     entries={resume.certifications}
+                    targetRole={resume.heading.title || resume.heading.targetRole}
                     onChange={(certifications) => setResume((prev) => ({ ...prev, certifications }))}
                   />
                 )}
@@ -1380,12 +1546,15 @@ export function ResumeBuilderPage() {
                   <AchievementsStep
                     entries={resume.achievements}
                     onChange={(achievements) => setResume((prev) => ({ ...prev, achievements }))}
+                    onOpenGrammarCheck={handleOpenGrammarCheck}
                   />
                 )}
                 {currentStep === 'projects' && (
                   <ProjectsStep
                     entries={resume.projects}
+                    targetRole={resume.heading.title || resume.heading.targetRole}
                     onChange={(projects) => setResume((prev) => ({ ...prev, projects }))}
+                    onOpenGrammarCheck={handleOpenGrammarCheck}
                   />
                 )}
                 {currentStep === 'languages' && (
@@ -1644,6 +1813,33 @@ export function ResumeBuilderPage() {
         resumeName={resume.name || 'Resume'}
         templateId={resume.template || 'Cv1'}
       />
+
+      {/* ─── 7. AI Resume Import Modal ─── */}
+      <ResumeImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onImportComplete={handleApplyImportedResume}
+      />
+
+      {/* ─── 8. Role AI Copilot Modal ─── */}
+      <RoleAiCopilotModal
+        isOpen={roleCopilotState.isOpen}
+        onClose={() => setRoleCopilotState({ isOpen: false, entryId: null, position: '', company: '' })}
+        position={roleCopilotState.position}
+        company={roleCopilotState.company}
+        onApplyBullets={(bullets) => handleInsertCopilotBullets(roleCopilotState.entryId, bullets)}
+      />
+
+      {/* ─── 9. Grammar & Polish Modal ─── */}
+      <GrammarCheckModal
+        isOpen={grammarModalState.isOpen}
+        onClose={() => setGrammarModalState({ isOpen: false, initialText: '', onApply: () => {} })}
+        text={grammarModalState.initialText}
+        onApplyCorrectedText={(fixed) => {
+          grammarModalState.onApply(fixed);
+          setGrammarModalState({ isOpen: false, initialText: '', onApply: () => {} });
+        }}
+      />
     </div>
   );
 }
@@ -1719,7 +1915,7 @@ export function ResumeGuidancePanel({
     return resume.experience.flatMap((exp, expIndex) => {
       const lines = (exp.description || '').split('\n').map((l) => l.trim()).filter(Boolean);
       return lines.map((text, bulletIndex) => ({
-        text: text.replace(/^[•\-\*]\s*/, ''),
+        text: text.replace(/^[•\-*]\s*/, ''),
         strength: calculateBulletStrength(text),
         expRole: exp.position || exp.company || 'Role',
         expIndex,
@@ -2304,7 +2500,15 @@ function calculateBulletStrength(bullet: string): number {
 
 /* ─── Step 1: Personal Info / Heading ─── */
 
-function HeadingStep({ heading, onChange }: { heading: ResumeHeading; onChange: (h: ResumeHeading) => void }) {
+function HeadingStep({
+  heading,
+  onChange,
+  onOpenImport,
+}: {
+  heading: ResumeHeading;
+  onChange: (h: ResumeHeading) => void;
+  onOpenImport?: () => void;
+}) {
   const [tailoringOpen, setTailoringOpen] = useState(Boolean(heading.targetRole || heading.jobDescription));
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -2337,6 +2541,30 @@ function HeadingStep({ heading, onChange }: { heading: ResumeHeading; onChange: 
 
   return (
     <div className="space-y-6">
+      {/* 0. AI Resume Import Hero Banner */}
+      {onOpenImport && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl border border-indigo-200/80 bg-linear-to-r from-indigo-50/70 via-purple-50/50 to-indigo-50/70 shadow-2xs">
+          <div className="flex items-center gap-3">
+            <div className="size-10 rounded-xl bg-linear-to-tr from-indigo-600 to-purple-600 text-white flex items-center justify-center shadow-xs shrink-0">
+              <UploadCloud className="size-5" />
+            </div>
+            <div>
+              <h3 className="text-xs sm:text-sm font-bold text-ink">Have an existing resume or LinkedIn profile?</h3>
+              <p className="text-[11px] text-ink-muted">Upload DOCX, PDF, or paste text to auto-fill your contact, experience, education &amp; skills in 1 click.</p>
+            </div>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            onClick={onOpenImport}
+            className="shrink-0 gap-1.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
+          >
+            <Sparkles className="size-3.5 text-amber-300" />
+            <span>Import with AI</span>
+          </Button>
+        </div>
+      )}
+
       {/* 1. Photo & Avatar Uploader Card */}
       <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 p-4 rounded-xl border border-border bg-neutral-50/70">
         <div className="relative group shrink-0">
@@ -2636,10 +2864,14 @@ function ExperienceStep({
   entries,
   targetRole,
   onChange,
+  onOpenRoleCopilot,
+  onOpenGrammarCheck,
 }: {
   entries: ExperienceEntry[];
   targetRole?: string;
   onChange: (e: ExperienceEntry[]) => void;
+  onOpenRoleCopilot?: (entry: ExperienceEntry) => void;
+  onOpenGrammarCheck?: (text: string, onApply: (fixed: string) => void) => void;
 }) {
   const addEntry = (customPosition: string = '') => {
     onChange([
@@ -2891,10 +3123,37 @@ function ExperienceStep({
                 </div>
 
                 <div>
-                  <div className="mb-1.5 flex items-center justify-between">
+                  <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
                     <label className="text-xs font-semibold text-ink">
-                      Responsibilities, Accomplishments & Quantifiable Metrics
+                      Responsibilities, Accomplishments &amp; Quantifiable Metrics
                     </label>
+                    <div className="flex items-center gap-1.5">
+                      {onOpenRoleCopilot && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onOpenRoleCopilot(entry)}
+                          className="h-7 px-2.5 gap-1 text-[11px] font-bold text-purple-700 bg-purple-50/70 border-purple-200 hover:bg-purple-100 shadow-2xs"
+                        >
+                          <Sparkles className="size-3 text-purple-600" />
+                          <span>AI Role Copilot</span>
+                        </Button>
+                      )}
+                      {onOpenGrammarCheck && entry.description.trim() && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onOpenGrammarCheck(entry.description, (fixed) => updateEntry(entry.id, 'description', fixed))}
+                          className="h-7 px-2 gap-1 text-[11px] text-ink-muted hover:text-ink hover:bg-neutral-100"
+                          title="Check grammar and spelling"
+                        >
+                          <ClipboardCheck className="size-3 text-emerald-600" />
+                          <span>Check Grammar</span>
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   <FormattingToolbar
                     value={entry.description}
@@ -2919,7 +3178,17 @@ function ExperienceStep({
 
 /* ─── Step 3: Education ─── */
 
-function EducationStep({ entries, onChange }: { entries: EducationEntry[]; onChange: (e: EducationEntry[]) => void }) {
+function EducationStep({
+  entries,
+  onChange,
+  onOpenGrammarCheck,
+}: {
+  entries: EducationEntry[];
+  onChange: (e: EducationEntry[]) => void;
+  onOpenGrammarCheck?: (text: string, onApply: (fixed: string) => void) => void;
+}) {
+  const [generatingEduId, setGeneratingEduId] = useState<string | null>(null);
+
   const addEntry = () => {
     onChange([...entries, {
       id: crypto.randomUUID(), institution: '', degree: '', field: '',
@@ -2935,12 +3204,37 @@ function EducationStep({ entries, onChange }: { entries: EducationEntry[]; onCha
     onChange(entries.filter((e) => e.id !== id));
   };
 
+  const handleGenerateEduDetails = async (entry: EducationEntry) => {
+    setGeneratingEduId(entry.id);
+    try {
+      const outcome = await runContentOperation('generate-education-description', {
+        degree: entry.degree || 'Bachelor of Science',
+        field: entry.field || 'Computer Science',
+        institution: entry.institution || 'University',
+      });
+      const suggestions = outcome.kind === 'suggestions'
+        ? outcome.suggestions
+        : outcome.kind === 'text'
+        ? [outcome.text]
+        : [];
+      if (suggestions.length) {
+        const bullets = suggestions.map((s) => (s.startsWith('•') ? s : `• ${s}`)).join('\n');
+        const newDesc = entry.description.trim() ? `${entry.description.trim()}\n${bullets}` : bullets;
+        updateEntry(entry.id, 'description', newDesc);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setGeneratingEduId(null);
+    }
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-ink">Education</h2>
-          <p className="mt-1 text-sm text-ink-muted">Add your educational background.</p>
+          <h2 className="text-xl font-bold text-ink">Education &amp; Academic History</h2>
+          <p className="mt-1 text-sm text-ink-muted">Add your academic background, degree programs &amp; verified coursework.</p>
         </div>
         <Button variant="outline" onClick={addEntry}>
           <Plus className="size-4" /> Add Education
@@ -2998,13 +3292,40 @@ function EducationStep({ entries, onChange }: { entries: EducationEntry[]; onCha
                 </div>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-ink">Additional details</label>
+                <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+                  <label className="text-xs font-medium text-ink">Relevant Coursework, Honors &amp; Achievements</label>
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => void handleGenerateEduDetails(entry)}
+                      loading={generatingEduId === entry.id}
+                      className="h-6 px-2 text-[11px] font-bold text-purple-700 bg-purple-50/70 border-purple-200 hover:bg-purple-100"
+                    >
+                      <Sparkles className="size-3 text-purple-600" />
+                      <span>AI Coursework &amp; Honors</span>
+                    </Button>
+                    {onOpenGrammarCheck && entry.description.trim() && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onOpenGrammarCheck(entry.description, (fixed) => updateEntry(entry.id, 'description', fixed))}
+                        className="h-6 px-2 text-[11px] text-ink-muted hover:text-ink hover:bg-neutral-100"
+                      >
+                        <ClipboardCheck className="size-3 text-emerald-600" />
+                        <span>Grammar</span>
+                      </Button>
+                    )}
+                  </div>
+                </div>
                 <textarea aria-label="Additional details"
                   value={entry.description}
                   onChange={(e) => updateEntry(entry.id, 'description', e.target.value)}
-                  rows={2}
+                  rows={3}
                   className="flex w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus-visible:outline-2 focus-visible:outline-brand-500 hover:border-neutral-400"
-                  placeholder="Relevant coursework, honors, activities…"
+                  placeholder="Relevant coursework, honors, Dean's List, research publications…"
                 />
               </div>
             </CardContent>
@@ -3017,8 +3338,23 @@ function EducationStep({ entries, onChange }: { entries: EducationEntry[]; onCha
 
 /* ─── Step 4: Skills ─── */
 
-function SkillsStep({ categories, onChange }: { categories: SkillCategory[]; onChange: (c: SkillCategory[]) => void }) {
+function SkillsStep({
+  categories,
+  targetRole,
+  onChange,
+}: {
+  categories: SkillCategory[];
+  targetRole?: string;
+  onChange: (c: SkillCategory[]) => void;
+}) {
   const [newSkill, setNewSkill] = useState<Record<string, string>>({});
+  const [generatingSkills, setGeneratingSkills] = useState(false);
+  const [suggestedSkills, setSuggestedSkills] = useState<string[]>([]);
+  const [skillSuggestionNotice, setSkillSuggestionNotice] = useState<string | null>(null);
+
+  const existingSkillsSet = useMemo(() => {
+    return new Set(categories.flatMap((c) => c.skills.map((s) => s.toLowerCase().trim())));
+  }, [categories]);
 
   const addCategory = () => {
     onChange([...categories, { id: crypto.randomUUID(), category: '', skills: [] }]);
@@ -3047,19 +3383,121 @@ function SkillsStep({ categories, onChange }: { categories: SkillCategory[]; onC
     ));
   };
 
+  const handleGenerateSkills = async () => {
+    setGeneratingSkills(true);
+    setSkillSuggestionNotice(null);
+    try {
+      const outcome = await runContentOperation('generate-skills', {
+        jobTitle: targetRole || 'Software Engineer',
+        experienceLevel: 'senior',
+      });
+      const rawList = outcome.kind === 'skills'
+        ? outcome.skills.map((s) => s.name)
+        : outcome.kind === 'suggestions'
+        ? outcome.suggestions
+        : [];
+      const filtered = rawList.filter((s) => !existingSkillsSet.has(s.toLowerCase().trim()));
+      setSuggestedSkills(filtered);
+      if (filtered.length === 0) {
+        setSkillSuggestionNotice('You already have all recommended skills in your resume!');
+      }
+    } catch {
+      setSkillSuggestionNotice('Could not generate skills right now. Try again later.');
+    } finally {
+      setGeneratingSkills(false);
+    }
+  };
+
+  const handleAddSuggestedSkill = (skill: string) => {
+    if (categories.length === 0) {
+      onChange([{ id: crypto.randomUUID(), category: 'Core Skills', skills: [skill] }]);
+    } else {
+      onChange(
+        categories.map((c, idx) => (idx === 0 ? { ...c, skills: [...c.skills, skill] } : c))
+      );
+    }
+    setSuggestedSkills((prev) => prev.filter((s) => s !== skill));
+  };
+
+  const handleAddAllSuggestedSkills = () => {
+    if (!suggestedSkills.length) return;
+    if (categories.length === 0) {
+      onChange([{ id: crypto.randomUUID(), category: 'Core Skills', skills: [...suggestedSkills] }]);
+    } else {
+      onChange(
+        categories.map((c, idx) => (idx === 0 ? { ...c, skills: [...c.skills, ...suggestedSkills] } : c))
+      );
+    }
+    setSuggestedSkills([]);
+  };
+
   return (
-    <div>
-      <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-ink">Skills</h2>
-          <p className="mt-1 text-sm text-ink-muted">Organize your skills by category.</p>
+          <h2 className="text-xl font-bold text-ink">Skills &amp; Core Competencies</h2>
+          <p className="mt-1 text-sm text-ink-muted">Organize your skills by category for ATS keyword matching.</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={addCategory}>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => void handleGenerateSkills()}
+            loading={generatingSkills}
+            className="gap-1.5 text-xs font-bold text-purple-700 bg-purple-50/70 border-purple-200 hover:bg-purple-100 shadow-2xs"
+          >
+            <Sparkles className="size-3.5 text-purple-600" />
+            <span>AI Suggest Skills</span>
+          </Button>
+          <Button variant="outline" size="sm" onClick={addCategory} className="gap-1.5 text-xs">
             <Plus className="size-4" /> Add Category
           </Button>
         </div>
       </div>
+
+      {/* Suggested Skills Banner */}
+      {suggestedSkills.length > 0 && (
+        <div className="p-4 rounded-2xl border border-purple-200/80 bg-purple-50/40 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="size-4 text-purple-600" />
+              <span className="text-xs font-bold text-ink">
+                Recommended Skills for {targetRole || 'Your Target Role'}
+              </span>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleAddAllSuggestedSkills}
+              className="text-xs text-purple-700 hover:text-purple-800 font-bold"
+            >
+              Add All ({suggestedSkills.length})
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {suggestedSkills.map((skill) => (
+              <button
+                key={skill}
+                type="button"
+                onClick={() => handleAddSuggestedSkill(skill)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-white border border-purple-200 text-purple-900 hover:bg-purple-600 hover:text-white transition-colors cursor-pointer shadow-2xs group"
+                title="Click to add to skills"
+              >
+                <Plus className="size-3 group-hover:scale-110" />
+                <span>{skill}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {skillSuggestionNotice && (
+        <div className="p-3 rounded-xl border border-border bg-neutral-50 text-xs font-medium text-ink-muted">
+          {skillSuggestionNotice}
+        </div>
+      )}
 
       {categories.length === 0 && (
         <div className="mt-8 flex flex-col items-center rounded-xl border-2 border-dashed border-border py-12 text-center">
@@ -3141,6 +3579,7 @@ function SummaryStep({
   skillCategories,
   targetJobDescription,
   onChange,
+  onOpenGrammarCheck,
 }: {
   summary: string;
   heading: ResumeHeading;
@@ -3148,6 +3587,7 @@ function SummaryStep({
   skillCategories?: SkillCategory[];
   targetJobDescription?: string;
   onChange: (s: string) => void;
+  onOpenGrammarCheck?: (text: string, onApply: (fixed: string) => void) => void;
 }) {
   const [generating, setGenerating] = useState(false);
   const [selectedTone, setSelectedTone] = useState('balanced');
@@ -3288,10 +3728,10 @@ function SummaryStep({
       ? 'A suggested executive summary is ready below. Your current summary was not overwritten.'
       : outcome.kind === 'questions'
         ? 'More career detail is needed for a grounded summary. Please answer below.'
-        : outcome.kind === 'skills'
+        : (outcome.kind === 'skills' || outcome.kind === 'certifications' || outcome.kind === 'suggestions')
           ? ''
-          : outcome.message;
-  const statusIsProblem = !!outcome && outcome.kind !== 'text' && outcome.kind !== 'questions' && outcome.kind !== 'skills';
+          : 'message' in outcome ? outcome.message : '';
+  const statusIsProblem = !!outcome && outcome.kind !== 'text' && outcome.kind !== 'questions' && outcome.kind !== 'skills' && outcome.kind !== 'certifications' && outcome.kind !== 'suggestions';
 
   return (
     <div className="space-y-6">
@@ -3573,7 +4013,21 @@ function SummaryStep({
 
       {/* ─── Summary Editor Area ─── */}
       <div className="space-y-2">
-        <FormattingToolbar value={summary} onChange={onChange} />
+        <div className="flex items-center justify-between gap-2">
+          <FormattingToolbar value={summary} onChange={onChange} />
+          {onOpenGrammarCheck && summary.trim() && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => onOpenGrammarCheck(summary, (fixed) => onChange(fixed))}
+              className="h-8 gap-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50/70 border-emerald-200 hover:bg-emerald-100 shadow-2xs"
+            >
+              <ClipboardCheck className="size-3.5 text-emerald-600" />
+              <span>Check Grammar</span>
+            </Button>
+          )}
+        </div>
         <textarea
           aria-labelledby="resume-summary-heading"
           value={summary}
@@ -3759,7 +4213,18 @@ function TemplateStep({
 
 /* ─── Step 7: Certifications ─── */
 
-function CertificationsStep({ entries, onChange }: { entries: CertificationEntry[]; onChange: (e: CertificationEntry[]) => void }) {
+function CertificationsStep({
+  entries,
+  targetRole,
+  onChange,
+}: {
+  entries: CertificationEntry[];
+  targetRole?: string;
+  onChange: (e: CertificationEntry[]) => void;
+}) {
+  const [generatingCerts, setGeneratingCerts] = useState(false);
+  const [suggestedCerts, setSuggestedCerts] = useState<Array<{ name: string; issuer: string }>>([]);
+
   const addEntry = () => {
     onChange([...entries, {
       id: crypto.randomUUID(), name: '', issuer: '', credentialId: '',
@@ -3775,17 +4240,91 @@ function CertificationsStep({ entries, onChange }: { entries: CertificationEntry
     onChange(entries.filter((e) => e.id !== id));
   };
 
+  const handleGenerateCerts = async () => {
+    setGeneratingCerts(true);
+    try {
+      const outcome = await runContentOperation('generate-certifications', {
+        jobTitle: targetRole || 'Software Engineer',
+      });
+      const certs = outcome.kind === 'certifications'
+        ? outcome.certifications.map((c) => ({ name: c.title, issuer: c.issuer }))
+        : outcome.kind === 'suggestions'
+        ? outcome.suggestions.map((s) => ({ name: s, issuer: '' }))
+        : [];
+      setSuggestedCerts(certs);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setGeneratingCerts(false);
+    }
+  };
+
+  const handleAddSuggestedCert = (cert: { name: string; issuer?: string }) => {
+    onChange([
+      ...entries,
+      {
+        id: crypto.randomUUID(),
+        name: cert.name,
+        issuer: cert.issuer || '',
+        credentialId: '',
+        issueDate: '',
+        expiryDate: '',
+        credentialUrl: '',
+      },
+    ]);
+    setSuggestedCerts((prev) => prev.filter((c) => c.name !== cert.name));
+  };
+
   return (
-    <div>
-      <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-ink">Certifications</h2>
-          <p className="mt-1 text-sm text-ink-muted">Add professional certifications and licenses.</p>
+          <h2 className="text-xl font-bold text-ink">Certifications &amp; Licenses</h2>
+          <p className="mt-1 text-sm text-ink-muted">Add industry certifications to validate your credentials for ATS parsing.</p>
         </div>
-        <Button variant="outline" onClick={addEntry}>
-          <Plus className="size-4" /> Add Certification
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => void handleGenerateCerts()}
+            loading={generatingCerts}
+            className="gap-1.5 text-xs font-bold text-purple-700 bg-purple-50/70 border-purple-200 hover:bg-purple-100 shadow-2xs"
+          >
+            <Sparkles className="size-3.5 text-purple-600" />
+            <span>AI Suggest Certifications</span>
+          </Button>
+          <Button variant="outline" size="sm" onClick={addEntry} className="gap-1.5 text-xs">
+            <Plus className="size-4" /> Add Certification
+          </Button>
+        </div>
       </div>
+
+      {suggestedCerts.length > 0 && (
+        <div className="p-4 rounded-2xl border border-purple-200/80 bg-purple-50/40 space-y-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="size-4 text-purple-600" />
+            <span className="text-xs font-bold text-ink">
+              Recommended Industry Certifications for {targetRole || 'Your Target Role'}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {suggestedCerts.map((cert) => (
+              <button
+                key={cert.name}
+                type="button"
+                onClick={() => handleAddSuggestedCert(cert)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white border border-purple-200 text-purple-900 hover:bg-purple-600 hover:text-white transition-colors cursor-pointer shadow-2xs group"
+                title="Click to add certification"
+              >
+                <Plus className="size-3.5 group-hover:scale-110" />
+                <span>{cert.name}</span>
+                {cert.issuer && <span className="opacity-70 text-[10px]">({cert.issuer})</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {entries.length === 0 && (
         <div className="mt-8 flex flex-col items-center rounded-xl border-2 border-dashed border-border py-12 text-center">
@@ -3848,7 +4387,15 @@ function CertificationsStep({ entries, onChange }: { entries: CertificationEntry
 
 /* ─── Step 8: Achievements ─── */
 
-function AchievementsStep({ entries, onChange }: { entries: AchievementEntry[]; onChange: (e: AchievementEntry[]) => void }) {
+function AchievementsStep({
+  entries,
+  onChange,
+  onOpenGrammarCheck,
+}: {
+  entries: AchievementEntry[];
+  onChange: (e: AchievementEntry[]) => void;
+  onOpenGrammarCheck?: (text: string, onApply: (fixed: string) => void) => void;
+}) {
   const addEntry = () => {
     onChange([...entries, {
       id: crypto.randomUUID(), title: '', description: '', date: '',
@@ -3867,7 +4414,7 @@ function AchievementsStep({ entries, onChange }: { entries: AchievementEntry[]; 
     <div>
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-ink">Achievements & Awards</h2>
+          <h2 className="text-xl font-bold text-ink">Achievements &amp; Awards</h2>
           <p className="mt-1 text-sm text-ink-muted">Highlight your key career accomplishments and recognition.</p>
         </div>
         <Button variant="outline" onClick={addEntry}>
@@ -3903,7 +4450,21 @@ function AchievementsStep({ entries, onChange }: { entries: AchievementEntry[]; 
                 <Input aria-label="Achievement Title" aria-required="true" value={entry.title} onChange={(e) => updateEntry(entry.id, 'title', e.target.value)} placeholder="Employee of the Year 2023" />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-ink">Description</label>
+                <div className="mb-1 flex items-center justify-between">
+                  <label className="text-xs font-medium text-ink">Description</label>
+                  {onOpenGrammarCheck && entry.description.trim() && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onOpenGrammarCheck(entry.description, (fixed) => updateEntry(entry.id, 'description', fixed))}
+                      className="h-6 px-2 text-[11px] text-ink-muted hover:text-ink hover:bg-neutral-100"
+                    >
+                      <ClipboardCheck className="size-3 text-emerald-600" />
+                      <span>Grammar</span>
+                    </Button>
+                  )}
+                </div>
                 <textarea aria-label="Description"
                   value={entry.description}
                   onChange={(e) => updateEntry(entry.id, 'description', e.target.value)}
@@ -3926,7 +4487,19 @@ function AchievementsStep({ entries, onChange }: { entries: AchievementEntry[]; 
 
 /* ─── Step 9: Projects ─── */
 
-function ProjectsStep({ entries, onChange }: { entries: ProjectEntry[]; onChange: (e: ProjectEntry[]) => void }) {
+function ProjectsStep({
+  entries,
+  targetRole,
+  onChange,
+  onOpenGrammarCheck,
+}: {
+  entries: ProjectEntry[];
+  targetRole?: string;
+  onChange: (e: ProjectEntry[]) => void;
+  onOpenGrammarCheck?: (text: string, onApply: (fixed: string) => void) => void;
+}) {
+  const [generatingProjects, setGeneratingProjects] = useState(false);
+
   const addEntry = () => {
     onChange([...entries, {
       id: crypto.randomUUID(), title: '', description: '', technologies: '',
@@ -3942,23 +4515,67 @@ function ProjectsStep({ entries, onChange }: { entries: ProjectEntry[]; onChange
     onChange(entries.filter((e) => e.id !== id));
   };
 
+  const handleSuggestProjects = async () => {
+    setGeneratingProjects(true);
+    try {
+      const outcome = await runContentOperation('generate-projects', {
+        jobTitle: targetRole || 'Software Engineer',
+      });
+      const suggestions = outcome.kind === 'suggestions'
+        ? outcome.suggestions
+        : outcome.kind === 'text'
+        ? [outcome.text]
+        : [];
+      if (suggestions.length) {
+        const newProjects = suggestions.map((s, idx) => ({
+          id: crypto.randomUUID(),
+          title: s.split(':')[0]?.trim() || `Project ${entries.length + idx + 1}`,
+          description: s.includes(':') ? s.split(':').slice(1).join(':').trim() : s,
+          technologies: 'React, TypeScript, Node.js, Cloud',
+          liveUrl: '',
+          githubUrl: '',
+          startDate: '',
+          endDate: '',
+        }));
+        onChange([...entries, ...newProjects]);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setGeneratingProjects(false);
+    }
+  };
+
   return (
-    <div>
-      <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-ink">Projects</h2>
-          <p className="mt-1 text-sm text-ink-muted">Showcase your key projects with technologies and links.</p>
+          <h2 className="text-xl font-bold text-ink">Projects &amp; Portfolio</h2>
+          <p className="mt-1 text-sm text-ink-muted">Showcase your key projects with technologies, architecture, and live demo links.</p>
         </div>
-        <Button variant="outline" onClick={addEntry}>
-          <Plus className="size-4" /> Add Project
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => void handleSuggestProjects()}
+            loading={generatingProjects}
+            className="gap-1.5 text-xs font-bold text-purple-700 bg-purple-50/70 border-purple-200 hover:bg-purple-100 shadow-2xs"
+          >
+            <Sparkles className="size-3.5 text-purple-600" />
+            <span>AI Project Ideas</span>
+          </Button>
+          <Button variant="outline" size="sm" onClick={addEntry} className="gap-1.5 text-xs">
+            <Plus className="size-4" /> Add Project
+          </Button>
+        </div>
       </div>
 
       {entries.length === 0 && (
         <div className="mt-8 flex flex-col items-center rounded-xl border-2 border-dashed border-border py-12 text-center">
           <Code2 className="mb-3 size-10 text-ink-subtle" />
           <p className="text-sm font-medium text-ink-secondary">No projects added yet</p>
-          <p className="mt-1 text-xs text-ink-muted">Add personal, academic, or professional projects.</p>
+          <p className="mt-1 text-xs text-ink-muted">Add personal, open-source, or client projects to demonstrate real-world impact.</p>
           <Button variant="outline" className="mt-4" onClick={addEntry}>
             <Plus className="size-4" /> Add First Project
           </Button>
@@ -3982,7 +4599,21 @@ function ProjectsStep({ entries, onChange }: { entries: ProjectEntry[]; onChange
                 <Input aria-label="Project Name" aria-required="true" value={entry.title} onChange={(e) => updateEntry(entry.id, 'title', e.target.value)} placeholder="E-commerce Platform Redesign" />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-ink">Description</label>
+                <div className="mb-1 flex items-center justify-between">
+                  <label className="text-xs font-medium text-ink">Description</label>
+                  {onOpenGrammarCheck && entry.description.trim() && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onOpenGrammarCheck(entry.description, (fixed) => updateEntry(entry.id, 'description', fixed))}
+                      className="h-6 px-2 text-[11px] text-ink-muted hover:text-ink hover:bg-neutral-100"
+                    >
+                      <ClipboardCheck className="size-3 text-emerald-600" />
+                      <span>Grammar</span>
+                    </Button>
+                  )}
+                </div>
                 <textarea aria-label="Description"
                   value={entry.description}
                   onChange={(e) => updateEntry(entry.id, 'description', e.target.value)}

@@ -8,9 +8,17 @@
  * presented as AI output. When the input is too thin to ground a summary, the
  * server asks clarifying questions (`requiresAnswer`) instead of generating.
  */
-import { normalizeError, post } from '@/lib/api-client';
+import { normalizeError, post, get } from '@/lib/api-client';
 
-export type AiOperation = 'enhance-single-bullet' | 'generate-summary' | 'generate-skills';
+export type AiOperation =
+  | 'enhance-single-bullet'
+  | 'generate-summary'
+  | 'generate-skills'
+  | 'generate-work-description'
+  | 'generate-education-description'
+  | 'generate-certifications'
+  | 'autocomplete'
+  | 'generate-projects';
 
 export type AiTone = 'balanced' | 'concise' | 'technical' | 'executive' | 'metrics' | 'leadership';
 
@@ -27,11 +35,28 @@ export const AI_TONES: ReadonlyArray<{ value: AiTone; label: string; hint: strin
 export interface SuggestedSkill {
   name: string;
   basis: string;
+  category?: string;
+}
+
+export interface SuggestedCertification {
+  title: string;
+  issuer: string;
+  basis: string;
+  category: string;
+}
+
+export interface ClarifyingQuestion {
+  id?: string;
+  question: string;
+  answerField?: string;
+  starterChips?: string[];
 }
 
 export type AiOutcome =
   | { kind: 'text'; text: string }
   | { kind: 'skills'; skills: SuggestedSkill[] }
+  | { kind: 'certifications'; certifications: SuggestedCertification[] }
+  | { kind: 'suggestions'; suggestions: string[] }
   | { kind: 'questions'; questions: string[] }
   | { kind: 'unavailable'; message: string }
   | { kind: 'rejected'; message: string }
@@ -41,10 +66,124 @@ export type AiOutcome =
 interface ContentResponse {
   aiUnavailable?: boolean;
   requiresAnswer?: boolean;
-  questions?: Array<{ question?: unknown } | string>;
+  questions?: Array<{ id?: string; question?: unknown; starterChips?: string[] } | string>;
   enhancedBullet?: unknown;
   summary?: unknown;
-  skills?: Array<{ name?: unknown; basis?: unknown } | string>;
+  skills?: Array<{ name?: unknown; basis?: unknown; category?: unknown } | string>;
+  certifications?: Array<{ title?: unknown; issuer?: unknown; basis?: unknown; category?: unknown }>;
+  suggestions?: string[];
+  bullets?: string[];
+  highlights?: string[];
+}
+
+export interface GrammarCorrection {
+  original: string;
+  suggestion: string;
+  type: 'grammar' | 'spelling' | 'punctuation' | 'style';
+  explanation: string;
+  startIndex: number;
+  endIndex: number;
+}
+
+export interface GrammarCheckResult {
+  hasErrors: boolean;
+  corrections: GrammarCorrection[];
+  overallSuggestion: string;
+  aiUnavailable?: boolean;
+}
+
+export interface ParsedResumeData {
+  firstname?: string;
+  lastname?: string;
+  email?: string;
+  phone?: string;
+  occupation?: string;
+  city?: string;
+  country?: string;
+  address?: string;
+  postalcode?: string;
+  website?: string;
+  linkedin?: string;
+  github?: string;
+  summary?: string;
+  employments?: Array<{
+    jobTitle?: string;
+    position?: string;
+    employer?: string;
+    company?: string;
+    city?: string;
+    location?: string;
+    startDate?: string;
+    endDate?: string;
+    current?: boolean;
+    description?: string;
+  }>;
+  experience?: Array<{
+    jobTitle?: string;
+    position?: string;
+    employer?: string;
+    company?: string;
+    city?: string;
+    location?: string;
+    startDate?: string;
+    endDate?: string;
+    current?: boolean;
+    description?: string;
+  }>;
+  educations?: Array<{
+    school?: string;
+    institution?: string;
+    degree?: string;
+    field?: string;
+    city?: string;
+    startDate?: string;
+    endDate?: string;
+    gpa?: string;
+    description?: string;
+  }>;
+  education?: Array<{
+    school?: string;
+    institution?: string;
+    degree?: string;
+    field?: string;
+    city?: string;
+    startDate?: string;
+    endDate?: string;
+    gpa?: string;
+    description?: string;
+  }>;
+  skills?: Array<string | { skillName?: string; name?: string; rating?: number | null }>;
+  certifications?: Array<{
+    name?: string;
+    title?: string;
+    issuer?: string;
+    issueDate?: string;
+  }>;
+  languages?: Array<{ language?: string; level?: string; proficiency?: string }>;
+  heading?: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+    location?: string;
+    title?: string;
+    website?: string;
+    linkedin?: string;
+    github?: string;
+  };
+}
+
+export interface AiUsageData {
+  plan: string;
+  usedToday: number;
+  effectiveLimit: number;
+  remainingToday: number;
+  isExhausted: boolean;
+  lastResetAt: string | null;
+  quotaScope: string;
+  tenantId: string | null;
+  orgDailyLimit: number | null;
+  ambiguousTenant: boolean;
 }
 
 export const AI_UNAVAILABLE_MESSAGE = 'AI generation is unavailable right now. Nothing was generated, and your text has not changed.';
@@ -63,9 +202,6 @@ export async function runContentOperation(operation: AiOperation, payload: Recor
   } catch (error) {
     const failure = normalizeError(error);
     if (failure.status === 429) return { kind: 'rate-limited', message: failure.message || 'Too many AI requests. Wait a minute, then try again.' };
-    // Tenant context errors surface as 400 with TENANT_CONTEXT_REQUIRED code.
-    // The api-client interceptor auto-retries once, but if it still fails,
-    // surface a clear message instead of a generic rejection.
     if (failure.status === 400 && failure.code === 'TENANT_CONTEXT_REQUIRED') {
       return { kind: 'unavailable', message: 'Your account belongs to multiple organizations. Please select a workspace from the sidebar, then try again.' };
     }
@@ -83,11 +219,88 @@ export async function runContentOperation(operation: AiOperation, payload: Recor
   }
   if (operation === 'enhance-single-bullet' && text(data.enhancedBullet)) return { kind: 'text', text: text(data.enhancedBullet) };
   if (operation === 'generate-summary' && text(data.summary)) return { kind: 'text', text: text(data.summary) };
+  
   if (operation === 'generate-skills' && Array.isArray(data.skills)) {
     const skills = data.skills
-      .map((item) => (typeof item === 'string' ? { name: item.trim(), basis: '' } : { name: text(item?.name), basis: text(item?.basis) }))
+      .map((item) => (typeof item === 'string' ? { name: item.trim(), basis: '' } : { name: text(item?.name), basis: text(item?.basis), category: text(item?.category) }))
       .filter((item) => item.name);
     if (skills.length) return { kind: 'skills', skills };
   }
+
+  if (operation === 'generate-certifications' && Array.isArray(data.certifications)) {
+    const certifications = data.certifications
+      .map((item) => ({
+        title: text(item.title),
+        issuer: text(item.issuer),
+        basis: text(item.basis),
+        category: text(item.category) || 'recommended',
+      }))
+      .filter((item) => item.title);
+    if (certifications.length) return { kind: 'certifications', certifications };
+  }
+
+  if (['generate-work-description', 'generate-education-description', 'autocomplete'].includes(operation)) {
+    const rawSuggestions = data.suggestions || data.bullets || data.highlights || [];
+    if (Array.isArray(rawSuggestions) && rawSuggestions.length > 0) {
+      const cleanList = rawSuggestions.map((s) => text(s)).filter(Boolean);
+      if (cleanList.length) return { kind: 'suggestions', suggestions: cleanList };
+    }
+  }
+
   return { kind: 'unavailable', message: 'The AI service returned no usable result. Nothing was generated.' };
+}
+
+/**
+ * Check grammar and copy quality across multiple languages via POST /api/check-grammar.
+ */
+export async function checkGrammar(content: string, language = 'en'): Promise<GrammarCheckResult> {
+  const safeText = String(content || '').trim();
+  if (!safeText) return { hasErrors: false, corrections: [], overallSuggestion: 'No content to check.' };
+  return post<GrammarCheckResult>('/check-grammar', { text: safeText, language });
+}
+
+/**
+ * Parse an uploaded resume text via POST /api/parse-resume into structured sections.
+ */
+export async function parseResumeDocument(rawText: string): Promise<{ data: ParsedResumeData }> {
+  const safeText = String(rawText || '').trim().slice(0, 40000);
+  if (!safeText) throw new Error('Resume text is empty.');
+  return post<{ data: ParsedResumeData }>('/parse-resume', { rawText: safeText });
+}
+
+/**
+ * Fetch authenticated daily AI quota usage via GET /api/ai-usage for menubar readout.
+ */
+export async function fetchAiUsage(): Promise<AiUsageData> {
+  const response = await get<{ success: boolean; usage: AiUsageData }>('/ai-usage');
+  return response.usage;
+}
+
+/**
+ * Extract clean plaintext from a user-supplied file (.docx, .txt, .rtf, .pdf).
+ */
+export async function extractFileText(file: File): Promise<string> {
+  const name = file.name.toLowerCase();
+
+  // DOCX files using mammoth
+  if (name.endsWith('.docx')) {
+    try {
+      const mammoth = await import('mammoth');
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      if (result && result.value && result.value.trim().length > 20) {
+        return result.value.trim();
+      }
+    } catch (err) {
+      console.warn('[DOCX Extraction fallback]', err);
+    }
+  }
+
+  // Standard text formats (.txt, .rtf, .md, .csv)
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || '').trim());
+    reader.onerror = () => reject(new Error('Failed to read file contents.'));
+    reader.readAsText(file);
+  });
 }

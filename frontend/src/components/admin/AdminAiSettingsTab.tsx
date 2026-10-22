@@ -269,45 +269,6 @@ export function AdminAiSettingsTab() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Modal accessibility: focus trap + Escape dismiss + initial focus.
-  // Required by WCAG 2.1 AA (2.1.2 No Keyboard Trap) because the dialog is a
-  // full-screen overlay: without this, Tab can reach the page behind it.
-  useEffect(() => {
-    if (!isAddKeyOpen) return;
-    const node = modalRef.current;
-    const focusables = () => Array.from(
-      node?.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-      ) || []
-    );
-    const initial = focusables()[0];
-    initial?.focus();
-
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        setIsAddKeyOpen(false);
-        setIsComboboxOpen(false);
-        return;
-      }
-      if (event.key !== 'Tab') return;
-      const list = focusables();
-      if (list.length === 0) return;
-      const firstEl = list[0];
-      const lastEl = list[list.length - 1];
-      if (event.shiftKey && document.activeElement === firstEl) {
-        event.preventDefault();
-        lastEl.focus();
-      } else if (!event.shiftKey && document.activeElement === lastEl) {
-        event.preventDefault();
-        firstEl.focus();
-      }
-    }
-
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [isAddKeyOpen]);
-
   // Reusable WCAG 2.1 AA modal focus trap hook (Section 5 / DIR-013)
   // Used by all 5 modals: Add Key, Key Pool Manager, Cooldown Flush,
   // Model Discovery, Code Snippets.
@@ -416,6 +377,17 @@ export function AdminAiSettingsTab() {
       if (tierFilter === 'frontier' && !FRONTIER_PROVIDER_IDS.has(p.id)) return false;
       if (tierFilter === 'mesh' && (isSearchProvider(p) || FRONTIER_PROVIDER_IDS.has(p.id))) return false;
       if (tierFilter === 'search' && !isSearchProvider(p)) return false;
+
+      // Filter deep-link: ?category=fast|frontier|mesh|search (DIR-013 Section 4)
+      if (categoryFilter === 'fast' || categoryFilter === 'frontier') {
+        if (!FRONTIER_PROVIDER_IDS.has(p.id)) return false;
+      }
+      if (categoryFilter === 'mesh') {
+        if (isSearchProvider(p) || FRONTIER_PROVIDER_IDS.has(p.id)) return false;
+      }
+      if (categoryFilter === 'search') {
+        if (!isSearchProvider(p)) return false;
+      }
 
       // Status filter
       if (statusFilter === 'healthy' && p.status !== 'healthy') return false;

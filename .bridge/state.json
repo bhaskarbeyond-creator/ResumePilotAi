@@ -1,7 +1,7 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-22T05:40:58.034Z",
-  "eventCount": 4314,
+  "updatedAt": "2026-10-22T11:16:56.786Z",
+  "eventCount": 4322,
   "activeDirectiveId": "DIR-013",
   "activeDirectiveTitle": "DIR-013: AI Multi-Provider Engine Modernization, Old-vs-New Parity, Deep Links, Modals, 5-Viewport Playwright E2E & Full Subsystem Integration",
   "activeDirectiveStatus": "CHANGES_REQUESTED",
@@ -10,7 +10,7 @@
   "awaitingHumanSince": null,
   "stallDeadline": "2026-10-22T03:27:53.972Z",
   "unreadForLead": 67,
-  "unreadForDev": 316,
+  "unreadForDev": 324,
   "pendingBlockers": 0,
   "latestHeartbeat": {
     "timestamp": "2026-10-22T03:27:53.972Z",
@@ -19,7 +19,7 @@
   },
   "integrity": {
     "ok": true,
-    "checked": 4314,
+    "checked": 4322,
     "legacy": 0,
     "bad": 0
   }

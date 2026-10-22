@@ -74,6 +74,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { useNotifications } from '@/hooks/use-api-hooks';
+import { AiQuotaBadge } from './ai-quota-badge';
 
 export interface NavItem {
   id: string;
@@ -1179,6 +1180,11 @@ export function CubaAppShell({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+
+              {/* Daily AI Quota Meter */}
+              <div className="flex items-center">
+                <AiQuotaBadge />
+              </div>
 
               {/* Theme Toggle */}
               <button
