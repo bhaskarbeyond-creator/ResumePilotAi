@@ -168,6 +168,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts/ai-engine
+          docker exec ai-engine-ollama ollama stop qwen2.5:0.5b
+          docker exec ai-engine-ollama ollama stop qwen2.5:1.5b
           available_kb=$(awk '/MemAvailable/ {print $2}' /proc/meminfo)
           disk_kb=$(df -Pk / | awk 'NR==2 {print $4}')
           if [ "$available_kb" -ge 5000000 ] && [ "$disk_kb" -ge 8000000 ]; then
@@ -180,7 +182,7 @@ jobs:
             fi
           else
             printf '{"model":"qwen3:4b","status":"resource-ineligible","inferenceVerified":false}\n' > artifacts/ai-engine/stronger-model-status.json
-            echo '::notice::Stronger model ineligible under explicit memory/disk budget'
+            echo "::notice::Stronger model ineligible: available memory ${available_kb}KiB, disk ${disk_kb}KiB"
           fi
           curl --fail --silent http://127.0.0.1:11434/api/tags >> "$GITHUB_STEP_SUMMARY"
       - name: Product workload screening at realistic output budgets

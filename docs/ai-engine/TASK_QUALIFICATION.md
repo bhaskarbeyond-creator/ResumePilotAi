@@ -10,16 +10,17 @@ Product operations in `aiRuntime` supply a server-owned task identifier. Four in
 
 A file contains `schemaVersion:1`, `records:[]`. Each record needs:
 - `scope`: `scopeFor(candidate, tenantContext)` from the server helper. Binds tenant ID (or explicit platform scope), provider, endpoint, actual model ID and credential hash. Unknown tenant identity cannot qualify.
+- `jsonMode`: boolean matching the actual request contract. Plain JSON prompting and provider-enforced JSON are not interchangeable evidence.
 - `task`: one of resume-write, resume-extract, job-match, ats-format, groundedness, injection, grammar, multilingual, interview.
 - `measuredAt`: finite epoch milliseconds, not future, at most24hours old; newest matching record wins, critical failure wins timestamp ties.
 - `criticalPassed`, `samples>=3`, `repeats>=3`, `outputBudget>=requested output budget`, `evidenceId` linking reproducible measurements.
 - `sourceCommit`: actual evaluated source SHA; `semanticReview` with `approved:true`, actual independent `reviewer` identity and matching `reviewedCommit` SHA. Operators must verify the review; a JSON assertion is not cryptographic reviewer attestation.
 
-Scope/TTL is not immutable weight attestation: endpoint owners must invalidate certificates whenever served weights, templates, quantization or deployment configuration change, including unchanged model aliases. The default remains unknown; do not manufacture approval records to bypass this gate. Independent Opus acceptance is still separately required when authorized.
+Scope/TTL is not immutable weight attestation: endpoint owners must invalidate certificates whenever served weights, templates, quantization or deployment configuration change, including unchanged model aliases. Malformed evidence rows cannot escape into a compatibility-router fallback; product routing errors fail closed. The default remains unknown; do not manufacture approval records to bypass this gate. Independent Opus acceptance is still separately required when authorized.
 
 ## Reproducible screening
 
-`node scripts/evaluate-product-suitability.cjs` runs eleven synthetic product cases (nine task families), three repetitions/model, temperature0 and768–1536 output tokens. It reuses the existing SSE identity/transport validator. Original protocol-v2 checks retain96 tokens and unchanged assertions. Original and product-suite totals must not be conflated.
+`node scripts/evaluate-product-suitability.cjs` runs eleven synthetic product cases (nine task families), paired plain-requested JSON and provider-enforced JSON on identical fixtures, three repetitions/model/format, temperature0 and768–1536 output tokens. It reuses the existing SSE identity/transport validator. Original protocol-v2 checks retain96 tokens and unchanged assertions. Original and product-suite totals must not be conflated.
 
 Contracts cover truthful resume rewriting, extraction, JD matching/gaps, ATS schema, unsupported facts/metrics/dates, quoted instruction injection, grammar, Hindi and junior interview constraints. Truncation, format, unsupported-fact/grounding-contract, reference-constraint and transport failures are separate. Lexical/reference constraints are intentionally limited: passing does not prove arbitrary semantic truth, writing clarity or real seniority suitability. Semantic quality remains null until independent review. No generated output or private resume is published. Hash repeatability, real identity, usage, TTFT and latency are retained.
 
@@ -32,3 +33,5 @@ Repository-wide usage inspection found Firebase CLI only in root devDependencies
 Replaced Mammoth's raw DOCX-text-only use with direct fflate ZIP extraction of only word/document.xml and native XML text parsing. Retains DOCX functionality without the CLI-only argparse/sprintf chain. Rejects duplicate/oversized XML entries, DTD/entities, wrong namespaces, corrupt archives and oversized extracted text; non-document ZIP parts are not inflated. PDF uses existing local PDF.js worker. Real browser fixtures cover ordinary documents, corrupt binaries, DTD/entity and oversized document entries. No broad HTML conversion/style fidelity is claimed.
 
 Fresh local audits after removal: root all/prod0; frontend all/prod0; backend all0. These are dependency-graph results, not universal vulnerability absence or deployed-image attestation. Hosted final-head browser/full regression remains required. Prior Firebase3high and frontend3moderate observations remain historical evidence, not current findings.
+
+Paired formatting runs do not loosen any checks or replace the original plain-mode results. They distinguish response-format compliance from the actual product JSON interface. Qualification must match the serving format. Initial64617a9 plain-only screening: each Qwen fixture passed3/33 contracts, not semantic qualification; stronger model was resource-ineligible. Next run releases idle model memory before the same resource guard rather than claiming unavailable hardware is success.

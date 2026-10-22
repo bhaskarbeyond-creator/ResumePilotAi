@@ -1768,12 +1768,13 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
         }
     }
 
+    const taskType = require('../freellmapi/services/taskQualification').OPERATION_TASK[operation] || (CONTENT_OPERATIONS.has(operation) ? 'resume-write' : null);
     try {
         const freellm = require('./aiGateway');
         const isJson = CONTENT_OPERATIONS.has(operation) || operation === 'parse-resume';
         const result = await freellm.completeChat({
             prompt,
-            taskType: require('../freellmapi/services/taskQualification').OPERATION_TASK[operation] || (CONTENT_OPERATIONS.has(operation) ? 'resume-write' : null),
+            taskType,
             platformConfig: configuration,
             tenantContext: configuration?.tenantContext || (configuration?.tenantId ? {
                 tenantId: configuration.tenantId,
@@ -1868,6 +1869,8 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
         if (freellmErr.code === 'AI_PROVIDER_UNAVAILABLE' || freellmErr.status === 503) {
             throw freellmErr;
         }
+        // A product qualification failure must never fall through to a second routing path.
+        if (taskType) throw freellmErr;
         return getSharedAiRouter().route({ prompt, configuration, operation, fetchImpl, signal, timeoutMs });
     }
 }

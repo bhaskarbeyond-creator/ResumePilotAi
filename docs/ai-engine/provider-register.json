@@ -179,12 +179,13 @@
       "integrationAuthentication": "no end-user API key; opt-in where configured",
       "documentation": "https://github.com/Haidra-Org/AI-Horde#anonymous-usage",
       "actualInference": {
-        "status": "real anonymous generation verified at latest checkpoint; prior queue failures remain",
+        "status": "prior actual success; latest checkpoint failed504, not continuously available",
         "lastVerifiedAt": "2026-10-22T11:28:50Z",
         "priorSuccessEvidence": "https://github.com/bhaskarbeyond-creator/ResumePilotAi/actions/runs/39762439305/job/119770097322",
-        "latestAttemptEvidence": "https://github.com/bhaskarbeyond-creator/ResumePilotAi/actions/runs/39770826095/job/119797617916",
-        "latestAttempt": "genuine nonempty synthetic generation; no availability guarantee",
-        "historicalQueueFailureEvidence": "https://github.com/bhaskarbeyond-creator/ResumePilotAi/actions/runs/39763574719/job/119773932737"
+        "latestAttemptEvidence": "https://github.com/bhaskarbeyond-creator/ResumePilotAi/actions/runs/39780575734/job/119831024156",
+        "latestAttempt": "REQUEST_TIMEOUT504; one bounded submission, no retry-to-green",
+        "historicalQueueFailureEvidence": "https://github.com/bhaskarbeyond-creator/ResumePilotAi/actions/runs/39763574719/job/119773932737",
+        "priorVerifiedSuccessEvidence": "https://github.com/bhaskarbeyond-creator/ResumePilotAi/actions/runs/39770826095/job/119797617916"
       },
       "privacy": "Confidential traffic blocked; trusted synthetic verification only"
     },
@@ -1065,9 +1066,9 @@
     }
   ],
   "latestCheckpoint": {
-    "sourceCommit": "aa7e76441e196f33e713ba191c4db834b05b9ddb",
-    "evidence": "https://github.com/bhaskarbeyond-creator/ResumePilotAi/actions/runs/39770826095",
-    "note": "Registry source scope unchanged. Fresh actual local llama.cpp/Ollama and bounded anonymous Horde success; historical failures retained, not continuous availability."
+    "sourceCommit": "64617a9a6342364d4c35944f8eb7c7edc7d40a5d",
+    "evidence": "https://github.com/bhaskarbeyond-creator/ResumePilotAi/actions/runs/39780575734",
+    "note": "Actual local llama.cpp and Ollama success; Horde504 failure retained. No additional anonymous service validated. 70configured-unverified entries remain unverified; count75 is not working-provider count."
   },
   "additionalOfficialResearch": [
     {

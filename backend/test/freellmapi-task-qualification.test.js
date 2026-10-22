@@ -6,7 +6,7 @@ const { FreeLlmRouter } = require('../freellmapi/services/router');
 const { cases, assess } = require('../../scripts/evaluate-product-suitability.cjs');
 const candidate = { provider: 'ollama', model: 'fixture', baseUrl: 'http://localhost:11434/v1', key: 'private-fixture' };
 const now = Date.now();
-const record = { scope: scopeFor(candidate), task: 'resume-write', sourceCommit: 'a'.repeat(40), measuredAt: now, criticalPassed: true, samples: 3, repeats: 3, outputBudget: 1024, evidenceId: 'synthetic-fixture-only', semanticReview: { approved: true, reviewer: 'independent-test-fixture', reviewedCommit: 'a'.repeat(40) } };
+const record = { scope: scopeFor(candidate), task: 'resume-write', jsonMode: false, sourceCommit: 'a'.repeat(40), measuredAt: now, criticalPassed: true, samples: 3, repeats: 3, outputBudget: 1024, evidenceId: 'synthetic-fixture-only', semanticReview: { approved: true, reviewer: 'independent-test-fixture', reviewedCommit: 'a'.repeat(40) } };
 test('qualification requires reviewed, fresh, task/tenant/credential/destination/budget-scoped evidence', () => {
  const options = { task: 'resume-write', records: [record], now, outputTokens: 768 };
  assert.equal(qualificationFor(candidate, options).status, 'qualified');
@@ -39,7 +39,7 @@ test('reviewed scoped evidence permits all intelligent modes; failed evidence bl
   delete process.env.FREELMAPI_QUALIFICATION_FILE;
   const pinned = await router.buildCandidateList({ requirements, platformConfig: config });
   assert.equal(pinned[0].routingDecision.taskQualification.status, 'unknown');
-  const scoped = { ...record, scope: scopeFor(pinned[0]), measuredAt: Date.now() };
+  const scoped = { ...record, jsonMode: true, scope: scopeFor(pinned[0]), measuredAt: Date.now() };
   fs.writeFileSync(file, JSON.stringify({ schemaVersion: 1, records: [scoped] }));
   process.env.FREELMAPI_QUALIFICATION_FILE = file;
   for (const mode of ['auto', 'quality', 'speed', 'balanced']) {
@@ -60,4 +60,23 @@ test('legacy automatic models and provider-only automatic pins cannot bypass tas
  const configuration = { primary: 'ollama', providers: { ollama: { enabled: true, model: 'auto' } } };
  assert.deepEqual(await router.buildCandidateList({ requirements: { task: 'resume-write' }, platformConfig: configuration }), []);
  assert.deepEqual(await router.buildCandidateList({ requirements: { task: 'resume-write' }, requestedModel: 'ollama', platformConfig: { ...configuration, selectionMode: 'auto' } }), []);
+});
+test('malformed evidence rows cannot throw into a compatibility routing bypass', () => {
+ assert.equal(qualificationFor(candidate, { task: 'resume-write', records: [null, false, 'bad'], now }).status, 'unknown');
+ assert.equal(qualificationFor(candidate, { task: 'resume-write', records: [{ ...record, outputBudget: '4096' }], now }).status, 'tested-unqualified');
+ assert.equal(qualificationFor(candidate, { task: 'resume-write', records: [{ ...record, sourceCommit: 'b'.repeat(40) }], now }).status, 'tested-unqualified');
+});
+test('unexpected product routing errors cannot fall back through the compatibility router', async () => {
+ const gateway = require('../services/aiGateway');
+ const runtime = require('../services/aiRuntime');
+ const shared = runtime.getSharedAiRouter();
+ const previousComplete = gateway.completeChat; const previousRoute = shared.route;
+ const failure = new Error('synthetic qualification read failure');
+ let bypassed = false;
+ try {
+  gateway.completeChat = async () => { throw failure; };
+  shared.route = async () => { bypassed = true; return {}; };
+  await assert.rejects(runtime.generateWithProviders({ prompt: 'synthetic', operation: 'generate-summary', configuration: { primary: 'gemini', provider: 'gemini', providers: { gemini: { enabled: true, key: 'synthetic-only' } } } }), error => error === failure);
+  assert.equal(bypassed, false);
+ } finally { gateway.completeChat = previousComplete; shared.route = previousRoute; }
 });
