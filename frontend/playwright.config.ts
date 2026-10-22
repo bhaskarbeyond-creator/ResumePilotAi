@@ -19,7 +19,7 @@ export default defineConfig({
   },
   projects: [
     {
-      name: 'chromium-mobile',
+      name: 'mobile-iphone-se',
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 375, height: 667 },
@@ -30,7 +30,7 @@ export default defineConfig({
       },
     },
     {
-      name: 'chromium-tablet',
+      name: 'tablet-ipad-portrait',
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 768, height: 1024 },
@@ -41,8 +41,16 @@ export default defineConfig({
       },
     },
     {
-      name: 'chromium-desktop',
+      name: 'small-laptop',
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1024, height: 768 } },
+    },
+    {
+      name: 'standard-desktop',
       use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } },
+    },
+    {
+      name: 'ultrawide-desktop',
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1920, height: 1080 } },
     },
   ],
   webServer: {

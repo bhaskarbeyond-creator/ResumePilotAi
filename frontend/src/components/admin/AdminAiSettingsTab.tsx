@@ -28,6 +28,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -69,6 +70,7 @@ import {
   CheckCheck,
   Upload,
   FileText,
+  Activity,
 } from 'lucide-react';
 
 /**
@@ -90,6 +92,23 @@ function isSearchProvider(provider: Pick<ProviderCatalogEntry, 'group' | 'type'>
 
 type ProviderTier = 'all' | 'frontier' | 'mesh' | 'search';
 
+/**
+ * Split a pasted credential blob into a de-duplicated key pool.
+ * FreeLLMAPI accepts comma- or newline-delimited multi-key pools and
+ * rotates them round-robin, benching only the key that is throttled.
+ */
+function splitKeyPool(value: string): string[] {
+  const seen = new Set<string>();
+  return String(value || '')
+    .split(/[\n,]+/)
+    .map((key) => key.trim())
+    .filter((key) => {
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
 export interface ProviderItem extends ProviderCatalogEntry {}
 
 export interface FallbackChain {
@@ -101,6 +120,10 @@ export interface FallbackChain {
   isActive: boolean;
   modelsCount: number;
 }
+
+/** Valid deep-link subtabs for the AI Multi-Provider Engine surface. */
+const AI_ENGINE_SUBTABS = ['providers', 'key-pool', 'metrics', 'unified-gateway', 'discovery'] as const;
+type AiEngineSubtab = (typeof AI_ENGINE_SUBTABS)[number];
 
 export interface CuratedModel {
   id: string;
@@ -123,6 +146,45 @@ export interface CuratedModel {
 export function AdminAiSettingsTab() {
   // Navigation tabs
   const [activeTab, setActiveTab] = useState<'keys' | 'models' | 'claude' | 'playground'>('keys');
+
+  // Deep link / URL state: subtab under ai-settings.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rawSubtab = searchParams.get('subtab');
+  const subtab: AiEngineSubtab = (AI_ENGINE_SUBTABS as readonly string[]).includes(rawSubtab || '')
+    ? (rawSubtab as AiEngineSubtab)
+    : 'providers';
+
+  // Filter deep-links: ?provider=<id> & ?category=<fast|frontier|mesh|search>
+  const [providerFilter, setProviderFilter] = useState<string>('');
+  const [categoryFilter, setCategoryFilter] = useState<'' | 'fast' | 'frontier' | 'mesh' | 'search'>('');
+
+  // Sync filter state from URL query params on mount
+  useEffect(() => {
+    const rawProvider = searchParams.get('provider');
+    const rawCategory = searchParams.get('category');
+    if (rawProvider) setProviderFilter(rawProvider);
+    if (['fast', 'frontier', 'mesh', 'search'].includes(rawCategory || '')) {
+      setCategoryFilter(rawCategory as '' | 'fast' | 'frontier' | 'mesh' | 'search');
+    }
+  }, [searchParams]);
+
+  // Sync filter query params when state changes
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams);
+    if (providerFilter) {
+      params.set('provider', providerFilter);
+    } else {
+      params.delete('provider');
+    }
+    if (categoryFilter) {
+      params.set('category', categoryFilter);
+    } else {
+      params.delete('category');
+    }
+    if (JSON.stringify(params) !== JSON.stringify(searchParams)) {
+      setSearchParams(params, { replace: false });
+    }
+  }, [providerFilter, categoryFilter, searchParams, setSearchParams]);
 
   // Keys tab state — ALWAYS PRE-POPULATED with all 74 providers
   const [providers, setProviders] = useState<ProviderItem[]>(ALL_74_PROVIDERS_CATALOG);
@@ -178,6 +240,22 @@ export function AdminAiSettingsTab() {
   const [modalTesting, setModalTesting] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
   const [modalShowKey, setModalShowKey] = useState(false);
+
+  // Section 5: Additional modal states (Key Pool Manager, Cooldown Flush,
+  // Model Discovery, Code Snippets).
+  const [isKeyPoolOpen, setIsKeyPoolOpen] = useState(false);
+  const [isCooldownOpen, setIsCooldownOpen] = useState(false);
+  const [isDiscoveryOpen, setIsDiscoveryOpen] = useState(false);
+  const [isCodeSnippetsOpen, setIsCodeSnippetsOpen] = useState(false);
+
+  const keyPoolRef = useRef<HTMLDivElement>(null);
+  const cooldownRef = useRef<HTMLDivElement>(null);
+  const discoveryRef = useRef<HTMLDivElement>(null);
+  const codeSnippetsRef = useRef<HTMLDivElement>(null);
+
+  // Discovery tab state (Section 5 / DIR-013 Section 5 item 4)
+  const [discoveryResults, setDiscoveryResults] = useState<Record<string, any>>({});
+  const [discoveryLoading, setDiscoveryLoading] = useState(false);
 
   // Operations state
   const [loading, setLoading] = useState(false);
@@ -241,6 +319,52 @@ export function AdminAiSettingsTab() {
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [isAddKeyOpen]);
+
+  // Reusable WCAG 2.1 AA modal focus trap hook (Section 5 / DIR-013)
+  // Used by all 5 modals: Add Key, Key Pool Manager, Cooldown Flush,
+  // Model Discovery, Code Snippets.
+  const useModalFocus = (isOpen: boolean, modalRef: React.RefObject<HTMLDivElement>) => {
+    useEffect(() => {
+      if (!isOpen) return;
+      const node = modalRef.current;
+      const focusables = () => Array.from(
+        node?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        ) || []
+      );
+      const initial = focusables()[0];
+      initial?.focus();
+
+      function onKeyDown(event: KeyboardEvent) {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          return;
+        }
+        if (event.key !== 'Tab') return;
+        const list = focusables();
+        if (list.length === 0) return;
+        const firstEl = list[0];
+        const lastEl = list[list.length - 1];
+        if (event.shiftKey && document.activeElement === firstEl) {
+          event.preventDefault();
+          lastEl.focus();
+        } else if (!event.shiftKey && document.activeElement === lastEl) {
+          event.preventDefault();
+          firstEl.focus();
+        }
+      }
+
+      document.addEventListener('keydown', onKeyDown);
+      return () => document.removeEventListener('keydown', onKeyDown);
+    }, [isOpen, modalRef]);
+  };
+
+  // Apply focus trap to all modals
+  useModalFocus(isAddKeyOpen, modalRef);
+  useModalFocus(isKeyPoolOpen, keyPoolRef);
+  useModalFocus(isCooldownOpen, cooldownRef);
+  useModalFocus(isDiscoveryOpen, discoveryRef);
+  useModalFocus(isCodeSnippetsOpen, codeSnippetsRef);
 
   // Load configuration on mount
   useEffect(() => {
@@ -385,18 +509,6 @@ export function AdminAiSettingsTab() {
     return { all: providers.length, frontier, mesh, search };
   }, [providers]);
 
-  const splitKeyPool = (value: string): string[] => {
-    const seen = new Set<string>();
-    return String(value || '')
-      .split(/[\n,]+/)
-      .map((key) => key.trim())
-      .filter((key) => {
-        if (!key || seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-  };
-
   /**
    * The four operational states mandated by the FreeLLMAPI parity audit.
    * Exact strings are part of the UI contract (Playwright asserts them).
@@ -485,6 +597,98 @@ export function AdminAiSettingsTab() {
     } finally {
       setTestingId(null);
     }
+  };
+
+  // Section 5: Modal handlers for Key Pool Manager, Cooldown Flush, Model Discovery, Code Snippets
+
+  // Key Pool Manager Modal
+  const handleOpenKeyPool = () => {
+    setIsKeyPoolOpen(true);
+  };
+
+  const handleKeyPoolSave = async (providerId: string) => {
+    const pool = splitKeyPool(keyPoolDrafts[providerId] || '');
+    if (pool.length === 0) return;
+    setSaving(true);
+    try {
+      const payload: Record<string, any> = {
+        expectedRevision: revision,
+        [`${providerId}ApiKeys`]: pool,
+        [`${providerId}ApiKey`]: pool[0],
+      };
+      const res = await post<{ revision?: number }>('/admin/ai-settings', payload);
+      if (res?.revision) setRevision(res.revision);
+      setProviders((prev) =>
+        prev.map((p) =>
+          p.id === providerId
+            ? { ...p, configuredOnServer: true, hasKey: true, status: 'healthy', keysCount: pool.length }
+            : p
+        )
+      );
+      setKeyPoolDrafts((prev) => ({ ...prev, [providerId]: '' }));
+      setIsKeyPoolOpen(false);
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 3000);
+    } catch (err: any) {
+      alert(`Key Pool save failed: ${err.message || 'Unknown error'}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Cooldown Flush Modal
+  const handleOpenCooldown = (_providerId: string) => {
+    setIsCooldownOpen(true);
+  };
+
+  const handleCooldownFlush = async (providerId: string) => {
+    try {
+      const payload: Record<string, any> = {
+        expectedRevision: revision,
+        [`${providerId}FlushCooldown`]: true,
+      };
+      const res = await post<{ revision?: number }>('/admin/ai-settings', payload);
+      if (res?.revision) setRevision(res.revision);
+      setIsCooldownOpen(false);
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 3000);
+    } catch (err: any) {
+      alert(`Cooldown flush failed: ${err.message || 'Unknown error'}`);
+    }
+  };
+
+  // Model Discovery Modal
+  const handleOpenDiscovery = () => {
+    setIsDiscoveryOpen(true);
+  };
+
+  const handleDiscoveryFetch = async () => {
+    if (!modalSelectedPlatform) {
+      setModalError('Please select a platform first.');
+      return;
+    }
+    setDiscoveryLoading(true);
+    setModalError(null);
+    try {
+      const providerId = modalSelectedPlatform.id;
+      const res = await post<{ models?: any[] }>('/admin/ai/fetch-models', {
+        provider: providerId,
+        apiKey: modalApiKey,
+      });
+      setDiscoveryResults((prev) => ({
+        ...prev,
+        [providerId]: res.models || [],
+      }));
+    } catch (err: any) {
+      setModalError(`Model discovery failed: ${err.message || 'Unknown error'}`);
+    } finally {
+      setDiscoveryLoading(false);
+    }
+  };
+
+  // Code Snippets Modal
+  const handleOpenCodeSnippets = () => {
+    setIsCodeSnippetsOpen(true);
   };
 
   // Handle Check All (Batch reachability)
@@ -1509,6 +1713,51 @@ export function AdminAiSettingsTab() {
       )}
 
       {/* ═════════════════════════════════════════════════════════════════════════════ */}
+      {/* ─── DEEP-LINK SUBTABS (Section 4) — real data-bound content for each      */}
+      {/*     of the 5 engine subtab surfaces. Only rendered when the deep-link     */}
+      {/*   URL ( ?subtab=... ) is active.                                        */}
+      {/* ═════════════════════════════════════════════════════════════════════════════ */}
+      {subtab === 'key-pool' && activeTab === 'keys' && (
+        <KeyPoolTab
+          providers={providers}
+          cooldowns={cooldowns}
+          keyPoolDrafts={keyPoolDrafts}
+          setKeyPoolDrafts={setKeyPoolDrafts}
+          saving={saving}
+          handleSaveKeyPool={handleSaveKeyPool}
+          providerStatePill={providerStatePill}
+        />
+      )}
+
+      {subtab === 'metrics' && activeTab === 'keys' && (
+        <MetricsTab
+          cooldowns={cooldowns}
+          tierCounts={tierCounts}
+          configuredCount={configuredCount}
+          healthyCount={healthyCount}
+        />
+      )}
+
+      {subtab === 'unified-gateway' && activeTab === 'keys' && (
+        <UnifiedGatewayTab
+          providers={providers}
+          primaryProvider={primaryProvider}
+          enableFallback={enableFallback}
+          temperature={temperature}
+          maxTokens={maxTokens}
+        />
+      )}
+
+      {subtab === 'discovery' && activeTab === 'keys' && (
+        <DiscoveryTab
+          providers={providers}
+          discoveryResults={discoveryResults}
+          discoveryLoading={discoveryLoading}
+          handleDiscoveryFetch={handleDiscoveryFetch}
+        />
+      )}
+
+      {/* ═════════════════════════════════════════════════════════════════════════════ */}
       {/* ─── TAB 2: MODELS & FALLBACK CHAINS (Matching FreeLLMAPI Screen 2) ─── */}
       {/* ═════════════════════════════════════════════════════════════════════════════ */}
       {activeTab === 'models' && (
@@ -2316,3 +2565,237 @@ export function AdminAiSettingsTab() {
     </div>
   );
 }
+
+// ═════════════════════════════════════════════════════════════════════════════
+// KEY POOL SUBTAB (DIR-013 Section 4: ?subtab=key-pool)
+// ═════════════════════════════════════════════════════════════════════════════
+const KeyPoolTab = ({ providers, cooldowns, keyPoolDrafts, setKeyPoolDrafts, saving, handleSaveKeyPool, providerStatePill }: {
+  providers: ProviderItem[];
+  cooldowns: Record<string, { remainingSeconds: number; reason: string }>;
+  keyPoolDrafts: Record<string, string>;
+  setKeyPoolDrafts: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  saving: boolean;
+  handleSaveKeyPool: (providerId: string) => Promise<void>;
+  providerStatePill: (p: ProviderItem) => { label: string; tone: string; detail: string; state: string };
+}) => {
+  const activeKeys = providers.filter((p) => (p.configuredOnServer || p.keyless) && p.hasKey);
+  return (
+    <div className="space-y-6">
+      <Card className="border-border/70">
+        <CardContent className="p-5 space-y-4">
+          <h3 className="text-base font-bold text-ink flex items-center gap-2">
+            <Layers className="size-4 text-purple-500" />
+            Key Pool Manager
+          </h3>
+          <p className="text-xs text-ink-muted">
+            Multi-key pooling with automatic rotation on 429 cooldowns. Keys are encrypted at rest in MariaDB.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {providers.filter((p) => !isSearchProvider(p)).map((p) => {
+              const keys = Array.from({ length: p.keyless ? 1 : Math.max(0, p.keysCount || 0) });
+              const cooldown = cooldowns[p.id];
+              const state = providerStatePill(p);
+              return (
+                <div
+                  key={p.id}
+                  data-testid={`key-pool-${p.id}`}
+                  className="p-4 rounded-xl border border-border/60 bg-surface/80 space-y-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-ink">{p.name}</span>
+                    <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-md border', state.tone)}>
+                      {state.label}
+                    </span>
+                  </div>
+                  {cooldown ? (
+                    <div className="text-xs text-amber-800 dark:text-amber-200">
+                      Cooldown: {cooldown.remainingSeconds}s remaining — {cooldown.reason}
+                    </div>
+                  ) : null}
+                  <div className="flex flex-wrap gap-1.5">
+                    {keys.map((_unused, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200"
+                      >
+                        <Shield className="size-2.5" />
+                        {p.keyless ? 'keyless' : `key ${index + 1}`}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    <Input
+                      value={keyPoolDrafts[p.id] ?? ''}
+                      onChange={(e) => setKeyPoolDrafts((prev) => ({ ...prev, [p.id]: e.target.value }))}
+                      placeholder="Paste additional keys (comma or newline separated)…"
+                      aria-label={`${p.name} key pool`}
+                      className="h-8 flex-1 text-xs font-mono"
+                    />
+                    <Button
+                      variant="outline"
+                      size="xs"
+                      onClick={() => handleSaveKeyPool(p.id)}
+                      loading={saving}
+                      disabled={splitKeyPool(keyPoolDrafts[p.id] || '').length === 0}
+                      className="h-8 text-xs font-semibold"
+                    >
+                      <Plus className="size-3 mr-1" />
+                      Add to pool
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+// ═════════════════════════════════════════════════════════════════════════════
+// METRICS SUBTAB (DIR-013 Section 4: ?subtab=metrics)
+// ═════════════════════════════════════════════════════════════════════════════
+const MetricsTab = ({ cooldowns, tierCounts, configuredCount, healthyCount }: {
+  cooldowns: Record<string, { remainingSeconds: number; reason: string }>;
+  tierCounts: { all: number; frontier: number; mesh: number; search: number };
+  configuredCount: number;
+  healthyCount: number;
+}) => {
+  return (
+    <div className="space-y-6">
+      <Card className="border-border/70">
+        <CardContent className="p-5 space-y-4">
+          <h3 className="text-base font-bold text-ink flex items-center gap-2">
+            <Activity className="size-4 text-brand-600" />
+            Engine Metrics
+          </h3>
+          <p className="text-xs text-ink-muted">
+            Real-time engine health, latency, error rates, and cooldowns from the live FreeLLMAPI backend.
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-4 rounded-xl border border-border/60 bg-surface/80 text-center">
+              <div className="text-2xl font-black text-ink">{tierCounts.all}</div>
+              <div className="text-[11px] font-semibold text-ink-muted uppercase">Total Providers</div>
+            </div>
+            <div className="p-4 rounded-xl border border-border/60 bg-surface/80 text-center">
+              <div className="text-2xl font-black text-ink">{configuredCount}</div>
+              <div className="text-[11px] font-semibold text-ink-muted uppercase">Configured</div>
+            </div>
+            <div className="p-4 rounded-xl border border-border/60 bg-surface/80 text-center">
+              <div className="text-2xl font-black text-ink">{healthyCount}</div>
+              <div className="text-[11px] font-semibold text-ink-muted uppercase">Healthy</div>
+            </div>
+            <div className="p-4 rounded-xl border border-border/60 bg-surface/80 text-center">
+              <div className="text-2xl font-black text-ink">{Object.keys(cooldowns).length}</div>
+              <div className="text-[11px] font-semibold text-ink-muted uppercase">Active Cooldowns</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+// ═════════════════════════════════════════════════════════════════════════════
+// UNIFIED GATEWAY SUBTAB (DIR-013 Section 4: ?subtab=unified-gateway)
+// ═════════════════════════════════════════════════════════════════════════════
+const UnifiedGatewayTab = ({ providers, primaryProvider, enableFallback, temperature, maxTokens }: {
+  providers: ProviderItem[];
+  primaryProvider: string;
+  enableFallback: boolean;
+  temperature: number;
+  maxTokens: number;
+}) => {
+  const gatewayProviders = providers.filter((p) => p.baseUrl || p.keyless);
+  return (
+    <div className="space-y-6">
+      <Card className="border-border/70">
+        <CardContent className="p-5 space-y-4">
+          <h3 className="text-base font-bold text-ink flex items-center gap-2">
+            <Zap className="size-4 text-brand-600" />
+            Unified Gateway
+          </h3>
+          <p className="text-xs text-ink-muted">
+            OpenAI &amp; Anthropic compatible /v1/* endpoints with unified model routing.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-4 rounded-xl border border-border/60 bg-surface/80">
+              <div className="text-xs font-bold text-ink">OpenAI Compatible</div>
+              <div className="text-[11px] font-mono text-ink-muted mt-1">/v1/chat/completions</div>
+              <div className="text-[11px] font-mono text-ink-muted">/v1/models</div>
+            </div>
+            <div className="p-4 rounded-xl border border-border/60 bg-surface/80">
+              <div className="text-xs font-bold text-ink">Anthropic Compatible</div>
+              <div className="text-[11px] font-mono text-ink-muted mt-1">/v1/messages</div>
+              <div className="text-[11px] font-mono text-ink-muted">/v1/models</div>
+            </div>
+          </div>
+          <div className="text-xs text-ink-muted">
+            Primary: {primaryProvider} · Fallback: {enableFallback ? 'enabled' : 'disabled'} · Temp: {temperature} · Max tokens: {maxTokens}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+// ═════════════════════════════════════════════════════════════════════════════
+// DISCOVERY SUBTAB (DIR-013 Section 4: ?subtab=discovery)
+// ═════════════════════════════════════════════════════════════════════════════
+const DiscoveryTab = ({ providers, discoveryResults, discoveryLoading, handleDiscoveryFetch }: {
+  providers: ProviderItem[];
+  discoveryResults: Record<string, any>;
+  discoveryLoading: boolean;
+  handleDiscoveryFetch: () => Promise<void>;
+}) => {
+  const [selectedId, setSelectedId] = React.useState<string>('');
+  const results = discoveryResults[selectedId];
+  return (
+    <div className="space-y-6">
+      <Card className="border-border/70">
+        <CardContent className="p-5 space-y-4">
+          <h3 className="text-base font-bold text-ink flex items-center gap-2">
+            <Sparkles className="size-4 text-brand-600" />
+            Dynamic Model Discovery
+          </h3>
+          <p className="text-xs text-ink-muted">
+            Live query of provider /models endpoints to sync available models into the catalog.
+          </p>
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedId}
+              onChange={(e) => setSelectedId(e.target.value)}
+              className="h-9 rounded-md border border-border bg-surface px-3 text-xs text-ink"
+            >
+              <option value="">Select a provider…</option>
+              {providers.filter((p) => !isSearchProvider(p)).map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => handleDiscoveryFetch()}
+              loading={discoveryLoading}
+              className="h-9 text-xs font-bold"
+            >
+              Fetch Models
+            </Button>
+          </div>
+          {results ? (
+            <div className="space-y-2">
+              <div className="text-xs font-bold text-ink">Discovered Models ({results.length})</div>
+              {results.map((m: any) => (
+                <div key={m.id} className="p-3 rounded-lg border border-border/60 bg-surface/80 text-xs">
+                  <div className="font-mono font-semibold text-ink">{m.id}</div>
+                  {m.contextWindow ? <div className="text-ink-muted mt-0.5">{m.contextWindow} context</div> : null}
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
