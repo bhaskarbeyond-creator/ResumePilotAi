@@ -712,11 +712,13 @@ export function ResumeBuilderPage() {
     entryId: string | null;
     position: string;
     company: string;
+    existingDescription?: string;
   }>({
     isOpen: false,
     entryId: null,
     position: '',
     company: '',
+    existingDescription: '',
   });
   const [grammarModalState, setGrammarModalState] = useState<{
     isOpen: boolean;
@@ -1025,6 +1027,7 @@ export function ResumeBuilderPage() {
       entryId: entry.id,
       position: entry.position,
       company: entry.company,
+      existingDescription: entry.description,
     });
   };
 
@@ -1864,9 +1867,10 @@ export function ResumeBuilderPage() {
       {/* ─── 8. Role AI Copilot Modal ─── */}
       <RoleAiCopilotModal
         isOpen={roleCopilotState.isOpen}
-        onClose={() => setRoleCopilotState({ isOpen: false, entryId: null, position: '', company: '' })}
+        onClose={() => setRoleCopilotState({ isOpen: false, entryId: null, position: '', company: '', existingDescription: '' })}
         position={roleCopilotState.position}
         company={roleCopilotState.company}
+        existingDescription={roleCopilotState.existingDescription}
         onApplyBullets={(bullets) => handleInsertCopilotBullets(roleCopilotState.entryId, bullets)}
       />
 
@@ -3803,10 +3807,10 @@ function SummaryStep({
       ? 'A suggested executive summary is ready below. Your current summary was not overwritten.'
       : outcome.kind === 'questions'
         ? 'More career detail is needed for a grounded summary. Please answer below.'
-        : (outcome.kind === 'skills' || outcome.kind === 'certifications' || outcome.kind === 'suggestions')
+        : (outcome.kind === 'skills' || outcome.kind === 'certifications' || outcome.kind === 'suggestions' || outcome.kind === 'projects')
           ? ''
           : 'message' in outcome ? outcome.message : '';
-  const statusIsProblem = !!outcome && outcome.kind !== 'text' && outcome.kind !== 'questions' && outcome.kind !== 'skills' && outcome.kind !== 'certifications' && outcome.kind !== 'suggestions';
+  const statusIsProblem = !!outcome && outcome.kind !== 'text' && outcome.kind !== 'questions' && outcome.kind !== 'skills' && outcome.kind !== 'certifications' && outcome.kind !== 'suggestions' && outcome.kind !== 'projects';
 
   return (
     <div className="space-y-6">
@@ -4621,23 +4625,41 @@ function ProjectsStep({
         companies: experience?.map((e) => e.company).filter(Boolean),
         skills: skillCategories?.flatMap((c) => c.skills),
       });
-      const suggestions = outcome.kind === 'suggestions'
-        ? outcome.suggestions
-        : outcome.kind === 'text'
-        ? [outcome.text]
-        : [];
-      if (suggestions.length) {
-        const newProjects = suggestions.map((s, idx) => ({
+      if (outcome.kind === 'projects' && outcome.projects.length) {
+        const newProjects = outcome.projects.map((p, idx) => ({
           id: crypto.randomUUID(),
-          title: s.split(':')[0]?.trim() || `Project ${entries.length + idx + 1}`,
-          description: s.includes(':') ? s.split(':').slice(1).join(':').trim() : s,
-          technologies: 'React, TypeScript, Node.js, Cloud',
+          title: p.title || `Project ${entries.length + idx + 1}`,
+          description: p.description || (p.role ? `Led initiative as ${p.role}` : ''),
+          technologies: p.technologies || '',
           liveUrl: '',
           githubUrl: '',
           startDate: '',
           endDate: '',
         }));
         onChange([...entries, ...newProjects]);
+      } else if (outcome.kind === 'suggestions' && outcome.suggestions.length) {
+        const newProjects = outcome.suggestions.map((s, idx) => ({
+          id: crypto.randomUUID(),
+          title: s.split(':')[0]?.trim() || `Project ${entries.length + idx + 1}`,
+          description: s.includes(':') ? s.split(':').slice(1).join(':').trim() : s,
+          technologies: '',
+          liveUrl: '',
+          githubUrl: '',
+          startDate: '',
+          endDate: '',
+        }));
+        onChange([...entries, ...newProjects]);
+      } else if (outcome.kind === 'text' && outcome.text) {
+        onChange([...entries, {
+          id: crypto.randomUUID(),
+          title: `Project ${entries.length + 1}`,
+          description: outcome.text,
+          technologies: '',
+          liveUrl: '',
+          githubUrl: '',
+          startDate: '',
+          endDate: '',
+        }]);
       }
     } catch (e) {
       console.error(e);

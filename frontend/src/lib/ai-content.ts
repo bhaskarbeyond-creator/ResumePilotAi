@@ -52,10 +52,20 @@ export interface ClarifyingQuestion {
   starterChips?: string[];
 }
 
+export interface SuggestedProject {
+  title: string;
+  role?: string;
+  technologies?: string;
+  category?: string;
+  projectType?: string;
+  description?: string;
+}
+
 export type AiOutcome =
   | { kind: 'text'; text: string }
   | { kind: 'skills'; skills: SuggestedSkill[] }
   | { kind: 'certifications'; certifications: SuggestedCertification[] }
+  | { kind: 'projects'; projects: SuggestedProject[] }
   | { kind: 'suggestions'; suggestions: string[] }
   | { kind: 'questions'; questions: string[] }
   | { kind: 'unavailable'; message: string }
@@ -262,18 +272,31 @@ export async function runContentOperation(operation: AiOperation, payload: Recor
   if (operation === 'generate-projects') {
     const rawProjects = (data as Record<string, unknown>).projects || data.suggestions;
     if (Array.isArray(rawProjects) && rawProjects.length > 0) {
-      const cleanList = rawProjects.map((p) => {
-        if (typeof p === 'string') return p.trim();
-        if (typeof p === 'object' && p !== null) {
-          const rec = p as Record<string, unknown>;
-          const name = text(rec.name || rec.title);
-          const role = text(rec.role);
-          const tech = text(rec.technologies || rec.tools);
-          return [name, role ? `(${role})` : '', tech ? `- ${tech}` : ''].filter(Boolean).join(' ');
-        }
-        return '';
-      }).filter(Boolean);
-      if (cleanList.length) return { kind: 'suggestions', suggestions: cleanList };
+      const projects: SuggestedProject[] = rawProjects
+        .map((p) => {
+          if (typeof p === 'string') {
+            const parts = p.split(':');
+            return {
+              title: parts[0]?.trim() || p.trim(),
+              description: parts.length > 1 ? parts.slice(1).join(':').trim() : '',
+              technologies: '',
+            };
+          }
+          if (typeof p === 'object' && p !== null) {
+            const rec = p as Record<string, unknown>;
+            const title = text(rec.name || rec.title);
+            const role = text(rec.role || rec.projectRole);
+            const technologies = text(rec.technologies || rec.tools || rec.stack);
+            const category = text(rec.category);
+            const projectType = text(rec.projectType);
+            const description = text(rec.description || rec.summary);
+            return { title, role, technologies, category, projectType, description };
+          }
+          return { title: '', technologies: '', description: '' };
+        })
+        .filter((p) => Boolean(p.title));
+
+      if (projects.length) return { kind: 'projects', projects };
     }
   }
 
