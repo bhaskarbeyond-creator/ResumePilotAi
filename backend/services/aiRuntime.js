@@ -1751,6 +1751,28 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
         throw Object.assign(new Error('No AI provider is configured'), { code: 'AI_PROVIDER_UNAVAILABLE', status: 503 });
     }
 
+    const router = getSharedAiRouter();
+    const tenantId = configuration?.tenantContext?.tenantId || configuration?.tenantId || null;
+
+    if (configuration?.discoveryEnabled === true && router?.discovery) {
+        for (const [pId, pConf] of Object.entries(configuration.providers || {})) {
+            if (!pConf?.enabled || !pConf?.key) continue;
+            const state = router.discovery.getCachedState(pId, tenantId);
+            if (state?.stale || state?.tenantAccess?.stale || !state?.tenantAccess?.credentialOk) {
+                const adapter = getAdapter(pId);
+                router.discovery.scheduleRefresh({
+                    providerId: pId,
+                    provider: pId,
+                    tenantId,
+                    providerConfig: pConf,
+                    adapter,
+                    fetchImpl: fetchImpl || globalThis.fetch,
+                    timeoutMs: 15000,
+                });
+            }
+        }
+    }
+
     try {
         const freellm = require('./aiGateway');
         const isJson = CONTENT_OPERATIONS.has(operation) || operation === 'parse-resume';
@@ -1775,6 +1797,22 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
             signal,
         });
 
+        router.telemetry?.record?.({
+            tenantId,
+            operation,
+            selectedProvider: result.provider,
+            selectedModel: result.model,
+            outcome: 'success',
+            executionLatencyMs: result.latencyMs,
+        });
+        router.health?.record?.({
+            tenantId,
+            provider: result.provider,
+            model: result.model,
+            ok: true,
+            latencyMs: result.latencyMs,
+        });
+
         return {
             raw: result.content,
             provider: result.provider,
@@ -1787,6 +1825,23 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
             },
         };
     } catch (freellmErr) {
+        router.telemetry?.record?.({
+            tenantId,
+            operation,
+            selectedProvider: freellmErr.provider || (configuration?.providers ? Object.keys(configuration.providers)[0] : 'unknown'),
+            selectedModel: freellmErr.model || 'default',
+            outcome: 'failure',
+            errorClass: freellmErr.code || 'provider_error',
+            rejectionSummary: freellmErr.message,
+        });
+        router.health?.record?.({
+            tenantId,
+            provider: freellmErr.provider || (configuration?.providers ? Object.keys(configuration.providers)[0] : 'unknown'),
+            model: freellmErr.model || 'default',
+            ok: false,
+            errorClass: freellmErr.code || 'provider_error',
+        });
+
         if (freellmErr.code === 'ALL_PROVIDERS_FAILED') {
             // Transform FreeLLMAPI fallback structure to match legacy contract expected by tests
             const transformedFailures = (freellmErr.fallbacksAttempted || []).map(f => ({

@@ -2,7 +2,7 @@ import { chromium } from 'playwright';
 import path from 'path';
 import fs from 'fs';
 
-const ARTIFACTS_DIR = 'C:/Users/mbhas/.gemini/antigravity-ide/brain/ecd8f8c1-83e8-4c24-8fb3-9ac4a3e782ad';
+const ARTIFACTS_DIR = 'C:/Users/mbhas/.gemini/antigravity-ide/brain/bf19b8e1-85f7-40ba-afa3-e1a98ffdb95b';
 const BASE_URL = process.env.BASE_URL || 'http://localhost';
 
 async function main() {
@@ -82,43 +82,33 @@ async function main() {
   await page.screenshot({ path: screen2Path });
   console.log('Saved modal screenshot to:', screen2Path);
 
-  // 5. Check provider selector dropdown
-  console.log('Step 4: Inspecting provider selector in modal...');
-  const selectTrigger = page.locator('select, [role="combobox"]').first();
-  const selectExists = await selectTrigger.isVisible().catch(() => false);
-  console.log('Select trigger visible:', selectExists);
+  // 5. Select platform and enter key using exact data-testids
+  console.log('Step 4: Selecting Groq platform and entering API key...');
+  const platformSelector = page.locator('[data-testid="platform-selector"]').first();
+  await platformSelector.waitFor({ state: 'visible', timeout: 5000 });
+  await platformSelector.click();
+  await page.waitForTimeout(300);
 
-  if (selectExists) {
-    const tagName = await selectTrigger.evaluate(el => el.tagName.toLowerCase());
-    if (tagName === 'select') {
-      const optionsCount = await selectTrigger.locator('option').count();
-      console.log(`Dropdown contains ${optionsCount} provider options.`);
-      
-      // Select kilo
-      await selectTrigger.selectOption('kilo');
-      console.log('Selected kilo provider.');
-    } else {
-      // Custom combobox/radix select
-      await selectTrigger.click();
-      await page.waitForTimeout(300);
-      const kiloOption = page.locator('[role="option"]:has-text("Kilo"), text=Kilo').first();
-      if (await kiloOption.isVisible().catch(() => false)) {
-        await kiloOption.click();
-        console.log('Selected Kilo option from custom dropdown.');
-      }
-    }
-  }
+  const groqOption = page.locator('[data-testid="platform-option-groq"]').first();
+  await groqOption.waitFor({ state: 'visible', timeout: 5000 });
+  await groqOption.click();
+  console.log('Selected Groq platform from listbox.');
+  await page.waitForTimeout(300);
 
-  await page.waitForTimeout(500);
+  const keyInput = page.locator('[data-testid="modal-api-key"]').first();
+  await keyInput.waitFor({ state: 'visible', timeout: 5000 });
+  await keyInput.fill('gsk_verifyTestKey1234567890abcdef');
+  console.log('Filled Groq API key.');
+  await page.waitForTimeout(300);
 
-  // Take screenshot with Kilo selected
-  const screen3Path = path.join(ARTIFACTS_DIR, 'ai_settings_kilo_selected.png');
+  // Take screenshot with Groq and key filled
+  const screen3Path = path.join(ARTIFACTS_DIR, 'ai_settings_key_filled.png');
   await page.screenshot({ path: screen3Path });
-  console.log('Saved Kilo selected screenshot to:', screen3Path);
+  console.log('Saved key filled screenshot to:', screen3Path);
 
   // 6. Click "Add key & Activate" button
   console.log('Step 5: Clicking Add key & Activate...');
-  const submitBtn = page.locator('button:has-text("Add key & Activate"), button:has-text("Save & Activate"), button:has-text("Activate")').first();
+  const submitBtn = page.locator('[data-testid="modal-add-key"]').first();
   await submitBtn.waitFor({ state: 'visible', timeout: 5000 });
   
   // Track network request to /api/admin/ai-settings

@@ -891,6 +891,8 @@ test('FreeLLMAPI: transparent 429 failover through the public HTTP surface', asy
   process.env.GROQ_API_KEY = 'gsk-failover-0001';
   process.env.CEREBRAS_API_KEY = 'csk-failover-0002';
   clearFreeLlmConfigCache();
+  const { getMetricsPersistence } = require('../freellmapi/services/persistence');
+  getMetricsPersistence().reset();
   freellm.resetCooldowns();
   freellm.clearCache();
 

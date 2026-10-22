@@ -275,7 +275,12 @@ class ModelDiscoveryService {
         try {
           json = JSON.parse(rawText);
         } catch {
-          throw new Error(`${providerId} /models did not return valid JSON`);
+          if (typeof res.json === 'function') {
+            try { json = await res.json(); } catch { json = null; }
+          }
+          if (!json) {
+            throw new Error(`${providerId} /models did not return valid JSON`);
+          }
         }
       } else if (typeof res.json === 'function') {
         json = await res.json();

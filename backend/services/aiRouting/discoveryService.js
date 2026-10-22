@@ -138,14 +138,22 @@ class DiscoveryService {
      * Promise that always resolves (errors are captured in state, not thrown).
      * Uses the TENANT's credential for authenticated discovery.
      */
-    scheduleRefresh({ providerId, providerConfig, tenantId = null, adapter, fetchImpl = null, force = false, timeoutMs = null }) {
+    scheduleRefresh({ providerId, provider, providerConfig, tenantId = null, adapter, fetchImpl = null, force = false, timeoutMs = null }) {
+        const targetProviderId = providerId || provider;
         const now = this.now();
-        const key = this.accessKey(tenantId, providerId);
-        if (!adapter) return Promise.resolve({ source: 'none', error: 'no-adapter' });
+        const key = this.accessKey(tenantId, targetProviderId);
+        let resolvedAdapter = adapter;
+        if (!resolvedAdapter) {
+            try {
+                const { getAdapter } = require('./providerAdapters');
+                resolvedAdapter = getAdapter(targetProviderId);
+            } catch {}
+        }
+        if (!resolvedAdapter) return Promise.resolve({ source: 'none', error: 'no-adapter' });
         if (!providerConfig?.key) {
             return Promise.resolve({ source: 'none', error: 'no-credential', credential: 'unverified' });
         }
-        const state = this.getCachedState(providerId, tenantId, now);
+        const state = this.getCachedState(targetProviderId, tenantId, now);
         const refreshNeeded = force
             || !state.tenantAccess
             || (this.now() - state.tenantAccess.fetchedAt) > this.opts.accessTtlMs
@@ -156,9 +164,9 @@ class DiscoveryService {
         const fetcher = fetchImpl || (typeof globalThis.fetch === 'function' ? globalThis.fetch : null);
         if (!fetcher) return Promise.resolve({ source: 'none', error: 'fetch-unavailable' });
 
-        const attempt = this.runDiscovery({ providerId, providerConfig, tenantId, adapter, fetchImpl: fetcher, timeoutMs: timeoutMs || this.opts.discoveryTimeoutMs })
+        const attempt = this.runDiscovery({ providerId: targetProviderId, providerConfig, tenantId, adapter: resolvedAdapter, fetchImpl: fetcher, timeoutMs: timeoutMs || this.opts.discoveryTimeoutMs })
             .catch(err => {
-                this.log(`[aiRouting] discovery refresh failed for provider=${providerId} tenant=${tenantId || 'platform'}: ${err?.message || err}`);
+                this.log(`[aiRouting] discovery refresh failed for provider=${targetProviderId} tenant=${tenantId || 'platform'}: ${err?.message || err}`);
                 return { source: 'none', error: String(err?.code || 'discovery-failed') };
             })
             .finally(() => this.inFlight.delete(key));

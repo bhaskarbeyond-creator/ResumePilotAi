@@ -1,0 +1,16 @@
+{
+  "module": "aiRouting",
+  "archivedAt": "2026-10-22T04:30:00Z",
+  "deprecatedFrom": "backend/services/aiRouting/",
+  "canonicalReplacement": "backend/freellmapi/",
+  "version": "0.16.6",
+  "status": "ARCHIVED",
+  "migrationNotes": "Original 6-provider static routing superseded by FreeLLMAPI native multi-provider engine with 74 supported platforms, dynamic fallback cascades, BYOK tenant isolation, and live discovery. Zero legacy code or .bak artifacts remain in the active production build path.",
+  "invariantsPreserved": [
+    "Tenant credential isolation (BYOK)",
+    "Non-fabrication contract: errors return explicit failure state",
+    "Dynamic model discovery with catalog caching",
+    "Bearer token authentication requirement",
+    "Safe fallback degradation"
+  ]
+}

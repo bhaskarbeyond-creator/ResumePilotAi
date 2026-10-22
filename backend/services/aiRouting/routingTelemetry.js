@@ -56,9 +56,9 @@ function safeReasons(reasons) {
 }
 
 class RoutingTelemetry {
-    constructor({ maxEntries = 500, now = Date.now() } = {}) {
+    constructor({ maxEntries = 500, now = Date.now } = {}) {
         this.maxEntries = Math.max(10, maxEntries);
-        this.now = now;
+        this.now = typeof now === 'function' ? now : () => (Number.isFinite(now) ? now : Date.now());
         this.entries = [];
     }
 

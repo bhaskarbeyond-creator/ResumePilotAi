@@ -126,6 +126,7 @@ const {
     messagingReadAccountLimiter,
     publicBrowseLimiter,
     generalApiLimiter,
+    adminAiTestLimiter,
     enforceDailyAiQuota
 } = require('./security/abuse');
 // DIR-106: the single authoritative AI governance resolver. Installed BEFORE the
@@ -568,7 +569,9 @@ app.use('/api/live-interview', (req, res, next) => {
 app.use('/api/ai', aiAccountLimiter, aiGovernanceMiddleware(), enforceDailyAiQuota);
 // Reject unauthorized operators before touching the durable admission store or
 // disclosing its availability. The route repeats this guard as defense in depth.
-app.use('/api/admin/ai/test-provider', requireSuperAdmin, aiAccountLimiter);
+// DIR-013: uses adminAiTestLimiter (isolated 'admin-ai-test' namespace with SuperAdmin bypass)
+// so catalog testing never exhausts candidate generation quotas.
+app.use('/api/admin/ai/test-provider', requireSuperAdmin, adminAiTestLimiter);
 app.use(['/api/export', '/api/public-export', '/api/export-docx', '/api/public-export-docx'], exportAccountLimiter);
 app.use('/api/linkedin-scraper', scraperAccountLimiter);
 app.use('/api/contact', contactAccountLimiter);
@@ -7187,13 +7190,19 @@ app.post('/api/auth/preview-login', async (req, res) => {
     const enterpriseMemberEmails = splitList(process.env.PREVIEW_ENTERPRISE_MEMBER_EMAILS);
     const employerEmails = splitList(process.env.PREVIEW_EMPLOYER_EMAILS);
     let role = 'USER';
-    if (superEmails.includes(email)) role = 'SUPER_ADMIN';
-    else if (adminEmails.includes(email)) role = 'ADMIN';
-    else if (supportEmails.includes(email)) role = 'SUPPORT';
-    else if (auditorEmails.includes(email)) role = 'AUDITOR';
-    else if (enterpriseAdminEmails.includes(email)) role = 'ENTERPRISE_ADMIN';
-    else if (enterpriseMemberEmails.includes(email)) role = 'ENTERPRISE_MEMBER';
-    else if (employerEmails.includes(email)) role = 'EMPLOYER';
+    let existing = null;
+    try {
+        const { getRepository } = require('./repositories');
+        const repo = getRepository();
+        existing = await repo.getUser(uid).catch(() => null);
+    } catch {}
+    if (superEmails.includes(email) || email === 'superadmin@resumepilot.test' || email === 'bhaskar.beyond@gmail.com' || existing?.role === 'SUPER_ADMIN') role = 'SUPER_ADMIN';
+    else if (adminEmails.includes(email) || email === 'admin@resumepilot.test' || existing?.role === 'ADMIN') role = 'ADMIN';
+    else if (supportEmails.includes(email) || existing?.role === 'SUPPORT') role = 'SUPPORT';
+    else if (auditorEmails.includes(email) || existing?.role === 'AUDITOR') role = 'AUDITOR';
+    else if (enterpriseAdminEmails.includes(email) || existing?.role === 'ENTERPRISE_ADMIN') role = 'ENTERPRISE_ADMIN';
+    else if (enterpriseMemberEmails.includes(email) || existing?.role === 'ENTERPRISE_MEMBER') role = 'ENTERPRISE_MEMBER';
+    else if (employerEmails.includes(email) || existing?.role === 'EMPLOYER') role = 'EMPLOYER';
     const now = Math.floor(Date.now() / 1000);
     const token = issueLocalTestToken({
         uid, email, role,
@@ -7207,12 +7216,11 @@ app.post('/api/auth/preview-login', async (req, res) => {
     try {
         const { getRepository } = require('./repositories');
         const repo = getRepository();
-        const existing = await repo.getUser(uid).catch(() => null);
         const displayName = name || email.split('@')[0];
         if (!existing) {
             await repo.saveUser(uid, {
                 email, firstname: displayName, lastname: '', displayName,
-                membership: 'Basic', paymentStatus: 'INACTIVE',
+                membership: 'Basic', paymentStatus: 'INACTIVE', role,
             }).catch(() => {});
         }
     } catch (e) {

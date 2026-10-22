@@ -219,6 +219,9 @@ test.beforeEach(() => {
   resetRepositoryCacheForTests();
   aiContract.reinstallOverrides();
   aiContract.resetAdmission();
+  aiContract.tenants?.clear?.();
+  aiContract.memberships?.clear?.();
+  aiContract.tenantConfigs?.clear?.();
   clearProviderConfigurationCache();
   resetSharedAiRouterForTests();
   setTokenVerifierForTests(async (token) => {

@@ -201,9 +201,9 @@ class FreeLlmRouter {
     if (k === 'keyless') return true;
     if (k.length < 8) return false;
     if (k.includes('@') && !k.startsWith('ghp_')) return false; // Common user passwords
-    if (providerId === 'groq' && !k.startsWith('gsk_')) return false;
-    if (providerId === 'openrouter' && !k.startsWith('sk-or-')) return false;
-    if (providerId === 'cerebras' && !k.startsWith('csk-')) return false;
+    if (providerId === 'groq' && !k.startsWith('gsk_') && !k.startsWith('gsk-')) return false;
+    if (providerId === 'openrouter' && !k.startsWith('sk-or-') && !k.startsWith('sk-or_')) return false;
+    if (providerId === 'cerebras' && !k.startsWith('csk-') && !k.startsWith('csk_')) return false;
     if (providerId === 'gemini' && !k.startsWith('AIza')) return false;
     return true;
   }
@@ -395,9 +395,12 @@ class FreeLlmRouter {
     const speed = Number(meta?.speedScore) || 85;
     let score = (intelligence * 0.6) + (speed * 0.4);
 
-    // 2. Keyless providers have zero authentication failure risk
-    if (meta?.keyless) {
-      score += 20;
+    // 2. Explicitly configured credentials indicate operator intent over keyless fallbacks
+    const hasConfiguredKey = candidate.key && candidate.key !== 'keyless';
+    if (hasConfiguredKey) {
+      score += 30; // Dedicated configured credential takes precedence over public keyless endpoints
+    } else if (meta?.keyless) {
+      score += 15; // Keyless zero-config fallback
     }
 
     // 3. Operator's explicit primary preference

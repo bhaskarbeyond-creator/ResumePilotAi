@@ -76,9 +76,9 @@ async function loadFreeLlmPlatformConfig({ environment = process.env, repository
 
   for (const [id, meta] of Object.entries(PROVIDER_REGISTRY)) {
     const stored = providerSecrets[id] || {};
-    let keys = splitKeyPool(stored.apiKeys);
+    let keys = splitKeyPool(environment[meta.envKey || `${id.toUpperCase()}_API_KEY`]);
+    if (keys.length === 0) keys = splitKeyPool(stored.apiKeys);
     if (keys.length === 0) keys = splitKeyPool(stored.apiKey);
-    if (keys.length === 0) keys = splitKeyPool(environment[meta.envKey || `${id.toUpperCase()}_API_KEY`]);
     if (keys.length === 0) keys = splitKeyPool(legacyAi[LEGACY_SECRET_FIELDS[id]]);
     if (keys.length === 0 && meta.keyless) keys = ['keyless'];
     if (keys.length === 0) continue;

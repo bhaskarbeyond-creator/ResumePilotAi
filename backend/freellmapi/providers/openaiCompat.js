@@ -261,13 +261,22 @@ async function callOpenAiCompat({
 
     clearTimeout(timer);
     const latencyMs = Date.now() - startTime;
-    const rawText = await res.text();
-
-    let data;
+    let rawText = '';
+    let data = null;
     try {
+      rawText = await res.text();
       data = JSON.parse(rawText);
     } catch {
-      data = null;
+      if (typeof res.json === 'function') {
+        try {
+          data = await res.json();
+          rawText = JSON.stringify(data);
+        } catch {
+          data = null;
+        }
+      } else {
+        data = null;
+      }
     }
 
     if (!res.ok) {

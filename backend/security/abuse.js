@@ -272,6 +272,22 @@ function withCoarseTierBypass(middleware) {
 const publicBrowseLimiter = withCoarseTierBypass(publicBrowseAccountLimiter);
 const generalApiLimiter = withCoarseTierBypass(generalApiAccountLimiter);
 
+/**
+ * DIR-013: dedicated administrative AI provider testing limiter.
+ * Isolates provider connection checks (74+ catalog providers) into 'admin-ai-test' namespace
+ * so diagnostic handshakes can NEVER exhaust the candidate inference burst budget ('ai' namespace).
+ * Wrapped in withCoarseTierBypass so verified SuperAdmins bypass this budget entirely.
+ */
+const adminAiTestAccountLimiter = accountRateLimit({
+  namespace: 'admin-ai-test',
+  limit: IS_TEST_ENV
+    ? Number(process.env.ADMIN_AI_TEST_MINUTE_LIMIT_TEST || 10000)
+    : Number(process.env.ADMIN_AI_TEST_MINUTE_LIMIT || 300),
+  windowMs: 60_000,
+  failClosed: false
+});
+const adminAiTestLimiter = withCoarseTierBypass(adminAiTestAccountLimiter);
+
 function dayKey(now = new Date()) {
   return now.toISOString().slice(0, 10);
 }
@@ -489,6 +505,8 @@ module.exports = {
   publicBrowseLimiter,
   generalApiAccountLimiter,
   generalApiLimiter,
+  adminAiTestAccountLimiter,
+  adminAiTestLimiter,
   superAdminExemption,
   withCoarseTierBypass,
   isInfraProbe,
