@@ -33,6 +33,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { ConfirmDialog } from '@/components/ui/alert-dialog';
 import { get, post, normalizeError } from '@/lib/api-client';
 import type { ProviderCatalogEntry } from './freellmapi-catalog';
 import {
@@ -247,6 +248,7 @@ export function AdminAiSettingsTab() {
   const [loading, setLoading] = useState(true);
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [pendingClearProvider, setPendingClearProvider] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [copiedText, setCopiedText] = useState<string | null>(null);
@@ -707,8 +709,16 @@ export function AdminAiSettingsTab() {
   };
 
   // Clear Key for a Single Provider (from expanded row)
-  const handleClearSingleKey = async (providerId: string) => {
-    if (!confirm(`Are you sure you want to clear the stored credential for ${providerId}?`)) return;
+  // Native window.confirm() blocked the main thread and exposed no busy state,
+  // so clearing a stored credential could be triggered twice. An accessible
+  // dialog now owns the confirmation and the in-flight indicator.
+  const handleClearSingleKey = (providerId: string) => {
+    setPendingClearProvider(providerId);
+  };
+
+  const confirmClearSingleKey = async () => {
+    const providerId = pendingClearProvider;
+    if (!providerId) return;
     setSaving(true);
     try {
       const payload: Record<string, any> = {
@@ -732,6 +742,7 @@ export function AdminAiSettingsTab() {
     } catch (err: any) {
       setActionError(`Clear failed: ${err.message || 'Unknown error'}`);
     } finally {
+      setPendingClearProvider(null);
       setSaving(false);
     }
   };
@@ -2452,6 +2463,23 @@ export function AdminAiSettingsTab() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={pendingClearProvider !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingClearProvider(null);
+        }}
+        title="Clear stored credential?"
+        description={
+          pendingClearProvider
+            ? `The stored API credential for ${pendingClearProvider} will be removed from the server. Routing falls back to the remaining healthy providers.`
+            : undefined
+        }
+        confirmLabel="Clear credential"
+        destructive
+        busy={saving}
+        onConfirm={() => void confirmClearSingleKey()}
+      />
     </div>
   );
 }

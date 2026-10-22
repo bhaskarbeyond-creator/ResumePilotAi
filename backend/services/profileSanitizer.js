@@ -1,4 +1,8 @@
-'use strict';
+require('./revision')
+
+// Client-visible revision projection must use the same floor as the CAS guards,
+// otherwise browsers echo a revision the server will never match (spurious 409).
+const { normalizeRevision } = require('./revision');
 
 const SIMPLE_LIMITS = Object.freeze({
   firstname: 120,
@@ -160,9 +164,9 @@ function projectEditableProfile(user = {}) {
   if (Array.isArray(user.hobbies)) projected.hobbies = sanitizeHobbies(user.hobbies);
   if (user.selectedImage) projected.selectedImage = safeImage(user.selectedImage);
   if (user.photoURL || user.photoUrl) projected.photoURL = safeImage(user.photoURL || user.photoUrl);
-  if (user.preferences) projected.preferences = { ...sanitizePreferences(user.preferences), revision: Number(user.revision || 0) };
+  if (user.preferences) projected.preferences = { ...sanitizePreferences(user.preferences), revision: normalizeRevision(user.revision) };
   projected.email = clean(user.email, 255);
-  projected.revision = Number(user.revision || 0);
+  projected.revision = normalizeRevision(user.revision);
   return projected;
 }
 

@@ -1,5 +1,8 @@
 'use strict';
 
+// Shared authoritative revision bounds (single source of truth).
+const { REVISION_FLOOR, REVISION_CEILING } = require('./revision');
+
 /**
  * Server-authoritative live interview orchestration.
  *
@@ -150,7 +153,9 @@ function normalizeIdempotencyKey(value) {
 
 function normalizeRevision(value) {
     const revision = Number(value);
-    if (!Number.isInteger(revision) || revision < 1 || revision > 1_000_000) {
+    // Bounds come from the shared authoritative revision contract so the
+    // interview session guard and the platform CAS guards can never drift apart.
+    if (!Number.isInteger(revision) || revision < REVISION_FLOOR || revision > REVISION_CEILING) {
         throw domainError('INVALID_SESSION_REVISION', 'Your interview view is out of date. Refresh it before answering.', 409);
     }
     return revision;

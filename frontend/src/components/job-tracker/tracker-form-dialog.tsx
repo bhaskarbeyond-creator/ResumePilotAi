@@ -7,6 +7,7 @@
  * newer revision is adopted, so saving again applies them on top of it.
  */
 import { useRef, useState, type ChangeEvent, type FormEvent, type ReactNode, type Ref } from 'react';
+import { normalizeRevision } from '@/lib/revision';
 import { AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,7 +51,7 @@ export function TrackerFormDialog({ open, request, onOpenChange, onSaved, onUnch
   const { mode, job } = request;
   const [baseline] = useState<TrackerFields>(() => (job ? fieldsOf(job) : { ...EMPTY_TRACKER_FIELDS, status: request.initialStatus ?? 'wishlist' }));
   const [draft, setDraft] = useState<TrackerFields>(baseline);
-  const [revision, setRevision] = useState(job?.revision ?? 1);
+  const [revision, setRevision] = useState(() => normalizeRevision(job?.revision));
   const [errors, setErrors] = useState<TrackerErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [missing, setMissing] = useState(false);

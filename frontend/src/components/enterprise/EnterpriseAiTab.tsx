@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { normalizeRevision } from '@/lib/revision';
 import {
   Zap,
   Cpu,
@@ -188,7 +189,7 @@ export function EnterpriseAiTab() {
     setBusy(true);
     setError(null);
     try {
-      await enterpriseApi.updateConfiguration(tenant.id, config.revision || 1, {
+      await enterpriseApi.updateConfiguration(tenant.id, normalizeRevision(config.revision), {
         aiPolicy: {
           allowedProviders: Array.from(allowedProviders),
           allowedModels: Array.from(allowedModels),

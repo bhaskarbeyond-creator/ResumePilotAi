@@ -1,4 +1,7 @@
-'use strict';
+require('./revision')
+
+// Authoritative optimistic-concurrency normalization (see services/revision.js).
+const { normalizeRevision, nextRevision, isSameRevision } = require('./revision');
 
 /**
  * MariaDB CAS mutations for remaining Super Admin / employer entities.
@@ -33,7 +36,7 @@ async function casWrite({
 }) {
     const current = await get(id);
     if (!current && !createIfMissing) throw fail('NOT_FOUND', 404, 'Record not found.');
-    const currentRev = Number(current?.revision || 0);
+    const currentRev = normalizeRevision(current?.revision);
     if (expectedRevision !== undefined && expectedRevision !== null && Number(expectedRevision) !== currentRev) {
         throw fail('CAS_CONFLICT', 409, 'This record changed after the page loaded. Refresh before saving.');
     }
@@ -123,7 +126,7 @@ async function deleteCompany({ repo, companyId, employerId, expectedRevision, ac
     if (!current || (employerId && current.employerId !== employerId && current.owner_id !== employerId)) {
         throw fail('NOT_FOUND', 404, 'Company not found.');
     }
-    if (Number(current.revision || 0) !== Number(expectedRevision)) {
+    if (!isSameRevision(current.revision, expectedRevision)) {
         throw fail('CAS_CONFLICT', 409, 'This company changed after the dashboard loaded. Refresh before deleting.');
     }
     if (requireNoJobs && typeof r.getJobs === 'function') {
@@ -146,7 +149,7 @@ async function moderateCompany({ repo, companyId, expectedStatus, expectedFeatur
     if (expectedFeatured !== undefined && Boolean(current.featured) !== Boolean(expectedFeatured)) {
         throw fail('ADMIN_TARGET_CHANGED', 409, 'This company changed after the page loaded. Refresh before changing it.');
     }
-    const revision = Number(current.revision || 0) + 1;
+    const revision = nextRevision(current.revision);
     const next = { ...current, ...patch, revision, updatedAt: nowIso() };
     await r.saveCompany(companyId, next);
     if (patch.status && current.employerId) {
@@ -193,10 +196,10 @@ async function updateJob({ repo, jobId, employerId, expectedRevision, patch, act
     if (!current || (employerId && current.employerId !== employerId && current.employer_id !== employerId)) {
         throw fail('NOT_FOUND', 404, 'Job not found.');
     }
-    if (Number(current.revision || 0) !== Number(expectedRevision)) {
+    if (!isSameRevision(current.revision, expectedRevision)) {
         throw fail('CAS_CONFLICT', 409, 'This job changed after the dashboard loaded. Refresh before saving.');
     }
-    const revision = Number(current.revision || 0) + 1;
+    const revision = nextRevision(current.revision);
     const next = { ...current, ...patch, revision, updatedAt: nowIso() };
     await r.saveJob(jobId, next);
     await audit(r, { action: action || 'EMPLOYER_JOB_EDITED', actorUid, jobId, revision, requestId });
@@ -209,7 +212,7 @@ async function deleteJob({ repo, jobId, employerId, expectedRevision, actorUid, 
     if (!current || (employerId && current.employerId !== employerId && current.employer_id !== employerId)) {
         throw fail('NOT_FOUND', 404, 'Job not found.');
     }
-    if (expectedRevision !== undefined && expectedRevision !== null && Number(current.revision || 0) !== Number(expectedRevision)) {
+    if (expectedRevision !== undefined && expectedRevision !== null && !isSameRevision(current.revision, expectedRevision)) {
         throw fail('CAS_CONFLICT', 409, 'This job changed after the dashboard loaded. Refresh before deleting.');
     }
     if (requireNoApplications && typeof r.getApplications === 'function') {
@@ -233,7 +236,7 @@ async function moderateJob({ repo, jobId, expectedStatus, expectedFeatured, patc
     if (expectedFeatured !== undefined && Boolean(current.isFeatured) !== Boolean(expectedFeatured)) {
         throw fail('ADMIN_TARGET_CHANGED', 409, 'This job changed after the page loaded. Refresh before changing it.');
     }
-    const revision = Number(current.revision || 0) + 1;
+    const revision = nextRevision(current.revision);
     const next = { ...current, ...patch, revision, updatedAt: nowIso() };
     await r.saveJob(jobId, next);
     if (patch.status && current.employerId) {
@@ -276,7 +279,7 @@ async function createApplication({ repo, applicationId, job, user, payload, acto
     await r.saveJob(job.id, {
         ...job,
         applicationsCount: Number(job.applicationsCount || job.applicants_count || 0) + 1,
-        revision: Number(job.revision || 0) + 1,
+        revision: nextRevision(job.revision),
         updatedAt: nowIso(),
     });
     await notify(r, user.uid, eventId('job_application_submitted', applicationId), {
@@ -313,7 +316,7 @@ async function updateApplicationStatus({
         throw fail('NOT_FOUND', 404, 'Application not found.');
     }
     const currentStatus = String(current.status || 'pending');
-    const currentRevision = Number(current.revision || 0);
+    const currentRevision = normalizeRevision(current.revision);
     if ((expectedStatus && expectedStatus !== currentStatus) || Number(expectedRevision) !== currentRevision) {
         throw fail('APPLICATION_CHANGED', 409, 'This application changed after the list loaded. Refresh before updating it.');
     }
@@ -403,7 +406,7 @@ async function deleteDocument({ repo, entityType, id, expectedRevision, actorUid
     const api = docApi(r, entityType);
     const current = await api.get(id);
     if (!current) throw fail('NOT_FOUND', 404, 'Record not found.');
-    if (expectedRevision !== undefined && expectedRevision !== null && Number(current.revision || 0) !== Number(expectedRevision)) {
+    if (expectedRevision !== undefined && expectedRevision !== null && !isSameRevision(current.revision, expectedRevision)) {
         throw fail('CAS_CONFLICT', 409, 'This record changed after the page loaded. Refresh before deleting.');
     }
     await api.remove(id, Number(current.revision || expectedRevision));
@@ -416,12 +419,12 @@ async function moderateBlogPost({ repo, postId, nextStatus, expectedRevision, sc
     const current = (await r.getBlogPosts({ publishedOnly: false, limit: 500 }) || []).find((post) => post.id === postId);
     const existing = current || (typeof r.getDocument === 'function' ? await r.getDocument('blog', postId) : null);
     if (!existing) throw fail('NOT_FOUND', 404, 'Post not found.');
-    if (Number(existing.revision || 0) !== Number(expectedRevision)) {
+    if (!isSameRevision(existing.revision, expectedRevision)) {
         throw fail('BLOG_CONFLICT', 409, 'This post changed after moderation loaded. Refresh before continuing.');
     }
     const allowed = nextStatus === 'rejected' || ((nextStatus === 'approved' || nextStatus === 'scheduled') && ['draft', 'pending', 'rejected'].includes(existing.status));
     if (!allowed) throw fail('INVALID_BLOG_TRANSITION', 400, `A ${existing.status} post cannot transition to ${nextStatus}.`);
-    const revision = Number(existing.revision || 0) + 1;
+    const revision = nextRevision(existing.revision);
     const next = {
         ...existing,
         status: nextStatus,
@@ -447,7 +450,7 @@ async function moderateBlogPost({ repo, postId, nextStatus, expectedRevision, sc
 async function saveSettingDocument({ repo, category, expectedRevision, patch, actorUid, requestId, action }) {
     const r = repoFor(repo);
     const current = (await r.getSetting(category)) || {};
-    const currentRev = Number(current.revision || 0);
+    const currentRev = normalizeRevision(current.revision);
     if (expectedRevision !== undefined && expectedRevision !== null && Number(expectedRevision) !== currentRev) {
         throw fail('ADMIN_TARGET_CHANGED', 409, 'This setting changed after the panel loaded. Refresh before saving.');
     }

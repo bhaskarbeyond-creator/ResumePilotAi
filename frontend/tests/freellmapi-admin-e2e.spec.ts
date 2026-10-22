@@ -96,8 +96,8 @@ test.describe('AI Multi-Provider Engine - Deep Links & Subtab Navigation', () =>
     const providersTab = page.locator('button:has-text("Providers"), [role="tab"]:has-text("Providers")').first();
     await expect(providersTab).toBeVisible();
 
-    // Verify provider cards are rendered
-    const providerCards = page.locator('[data-testid^="provider-card-"], .provider-card, [class*="provider-card"]').first();
+    // Verify provider cards are rendered (actual data-testid is "provider-row-{id}")
+    const providerCards = page.locator('[data-testid^="provider-row-"]').first();
     await expect(providerCards).toBeVisible({ timeout: 10000 });
   });
 
