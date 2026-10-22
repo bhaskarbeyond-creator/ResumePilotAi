@@ -88,3 +88,21 @@ test('product context checks use conservative UTF-8 size, not English-only chars
   platformConfig: { selectionMode: 'manual', primary: 'llamacpp', providers: { llamacpp: { enabled: true, model: 'fixture' } } } }), { code: 'AI_PROVIDER_UNAVAILABLE' });
  assert.equal(dispatched, false);
 });
+test('one request snapshots evidence once, not once per discovered model', async () => {
+ const fs = require('node:fs'); const os = require('node:os'); const path = require('node:path');
+ const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'qualification-io-')); const file = path.join(dir, 'evidence.json');
+ fs.writeFileSync(file, JSON.stringify({ schemaVersion: 1, records: [] }));
+ const previous = process.env.FREELMAPI_QUALIFICATION_FILE; const read = fs.readFileSync; let reads = 0;
+ try {
+  process.env.FREELMAPI_QUALIFICATION_FILE = file;
+  fs.readFileSync = function (input, ...args) { if (input === file) reads++; return read.call(this, input, ...args); };
+  const router = new FreeLlmRouter();
+  router.modelDiscovery = { getOrDiscover: async () => Array.from({ length: 100 }, (_, index) => ({ id: `fixture-${index}`, capabilities: { json: true }, contextWindow: 32768, outputLimit: 4096 })) };
+  assert.deepEqual(await router.buildCandidateList({ requirements: { task: 'resume-write', json: true }, platformConfig: { selectionMode: 'quality', primary: 'ollama', providers: { ollama: { enabled: true, model: 'auto' } } } }), []);
+  assert.equal(reads, 1);
+ } finally {
+  fs.readFileSync = read;
+  if (previous === undefined) delete process.env.FREELMAPI_QUALIFICATION_FILE; else process.env.FREELMAPI_QUALIFICATION_FILE = previous;
+  fs.rmSync(dir, { recursive: true, force: true });
+ }
+});

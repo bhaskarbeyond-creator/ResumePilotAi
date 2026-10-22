@@ -26,7 +26,7 @@ const { rescueInlineToolCalls, toolNamesFrom, normalizeTools } = require('../lib
 const { getMetricsPersistence } = require('./persistence');
 const { modelDiscovery } = require('./modelDiscovery');
 const { eligible, validateMode, rankCandidates } = require('./selectionPolicy');
-const { qualificationFor } = require('./taskQualification');
+const { qualificationFor, readEvidence } = require('./taskQualification');
 
 // Stable compatibility order. Intelligent modes are ranked only from capability/service evidence.
 const DEFAULT_PRIORITY_ORDER = Object.freeze([
@@ -190,6 +190,7 @@ class FreeLlmRouter {
   }
 
   async applySelectionPolicy(candidates, { platformConfig, requestedModel, requirements = {}, fetchImpl, tenantContext }) {
+    const qualificationRecords = requirements.task ? readEvidence() : [];
     const policy = platformConfig.tenantPolicy || {};
     const allowed = tenantContext?.allowedModels ?? policy.allowedModels;
     const denied = new Set(tenantContext?.restrictedModels || policy.restrictedModels || []);
@@ -201,7 +202,7 @@ class FreeLlmRouter {
         const pin = requestedModel && !getProviderMeta(requestedModel) ? requestedModel : candidate.isDedicatedByok ? tenantContext?.primaryModel : platformConfig.providers?.[candidate.provider]?.model;
         return typeof pin === 'string' && !['auto', 'dynamic'].includes(pin) && !pin.startsWith('auto:') && pin === candidate.model;
       }).map(candidate => ({ ...candidate,
-        keys: candidate.keys.filter(key => qualificationFor({ ...candidate, key }, { ...requirements, tenantContext }).status !== 'failed'),
+        keys: candidate.keys.filter(key => qualificationFor({ ...candidate, key }, { ...requirements, tenantContext, records: qualificationRecords }).status !== 'failed'),
         routingDecision: { mode: 'manual-legacy', qualityEvidence: 'unknown', taskQualification: { task: requirements.task, status: 'unknown', warning: 'Legacy pins are not task qualification' } },
       })).filter(candidate => candidate.keys.length > 0);
     } // Preserve legacy pinned configurations until migrated by an authorized save.
@@ -228,7 +229,7 @@ class FreeLlmRouter {
           if (!modelPermitted({ model: metadata.id }) || !eligible(metadata, requirements)) continue;
           if (this.cooldownManager.isOnCooldown(candidate.provider, metadata.id).onCooldown && !candidate.isDedicatedByok) continue;
           const selected = { ...candidate, model: metadata.id, metadata };
-          const taskQualification = qualificationFor(selected, { ...requirements, tenantContext });
+          const taskQualification = qualificationFor(selected, { ...requirements, tenantContext, records: qualificationRecords });
           if (taskQualification.status === 'failed') continue;
           // Automatic product recommendations require reviewed task evidence, not model names or speed.
           if (requirements.task && mode !== 'manual' && !explicit && taskQualification.status !== 'qualified') continue;
