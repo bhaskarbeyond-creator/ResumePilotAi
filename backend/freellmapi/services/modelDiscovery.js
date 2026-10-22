@@ -292,6 +292,7 @@ class ModelDiscoveryService {
 
         // Clean model id (e.g. Gemini returns 'models/gemini-2.0-flash')
         const id = rawId.replace(/^models\//, '');
+        if (!id || item.deprecated === true || item.active === false) continue;
         if (seenIds.has(id)) continue;
         seenIds.add(id);
 

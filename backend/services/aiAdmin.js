@@ -271,10 +271,11 @@ async function loadAiAdminSettings(environment = process.env) {
     const legacyKey = splitKeyPoolInput(legacyAi[SECRET_FIELDS[meta.id]]);
     const poolSize = Math.max(storedPool.length, envPool.length, legacyKey.length);
     const hasKey = poolSize > 0;
-    const isConfigured = Boolean(meta.keyless || hasKey || configuredProviders[meta.id]);
+    const localEnabled = !meta.optIn || stored.enabled === true || stored.apiKey === 'keyless' || environment[`${meta.id.toUpperCase()}_ENABLED`] === 'true';
+    const isConfigured = localEnabled && Boolean(meta.keyless || hasKey || configuredProviders[meta.id]);
     const cooldown = cooldowns[meta.id];
     const isSearch = meta.type === 'search';
-    const status = cooldown ? 'cooldown' : (hasKey || meta.keyless) ? 'healthy' : 'disabled';
+    const status = !isConfigured ? 'disabled' : cooldown ? 'cooldown' : 'unverified';
     return {
       id: meta.id,
       name: meta.name,
@@ -282,9 +283,10 @@ async function loadAiAdminSettings(environment = process.env) {
       type: meta.type || 'openai-compat',
       group: isSearch || meta.type === 'media' ? 'search' : 'models',
       keyless: Boolean(meta.keyless),
+      accessCategory: meta.accessCategory || (meta.keyless ? 'public-unverified' : 'credential-required'),
       configuredOnServer: isConfigured,
       hasKey,
-      keysCount: meta.keyless ? 1 : poolSize,
+      keysCount: meta.keyless ? 0 : poolSize,
       status,
       cooldownRemainingSeconds: cooldown?.remainingSeconds || 0,
       cooldownReason: cooldown?.reason || null,

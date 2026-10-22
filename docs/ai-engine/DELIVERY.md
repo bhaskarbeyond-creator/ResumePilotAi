@@ -47,3 +47,29 @@ Full route inventory, legacy parity, real public/local inference, credentialed i
 - Removed unsafe all-unhealthy cooldown bypass. Corrected invalid fixture keys exposed by that fix.
 - Discovery child selector now supplies the actual selected provider; fresh/stale metadata reaches UI; tab errors are visible; refresh disabled without a selection.
 - Catalog remains process-local (not durable/shared across workers); no completion claim for full catalog lifecycle or unified model-screen migration.
+
+## Checkpoint C/E/F — implementation evidence
+- Added opt-in `llamacpp`, reused OpenAI-compatible inference/streaming adapter and provider `/models` discovery. No hardcoded model ID. Restored keyless local Ollama with opt-in configuration, not an automatic localhost probe.
+- Retrieved official llama.cpp server README using GitHub API: API-key default is none; `/v1/models` and `/v1/chat/completions` documented. Retrieved LocalAI README as a research candidate, not integrated.
+- Retrieved official Pollinations README: current Quick Start requires signup/API key and uses gen.pollinations.ai. Removed anonymous eligibility, updated endpoint; authenticated inference is NOT verified.
+- Tenant allowlists now apply to the platform mesh, including explicit empty deny-all; cache lookup follows eligibility and keys bind tenant, eligible destinations, request semantics and credentials through SHA-256.
+- Ranking no longer consumes invented registry intelligence/speed scores. Only same-model service observations younger than 30 minutes affect measured ranking; influence decays to zero. Explicit primary and operator-managed credential preference remain policy heuristics, not benchmarks.
+- Removed permanent zero-success auth rejection gate so corrected credentials can recover after bounded cooldown.
+- Backend test runner uses in-memory metrics to prevent one test process's persisted cooldown from contaminating another. Runtime test fixture explicitly resets health/cache between scenarios.
+- Admin provider inventory now comes from the server, not a permanent frontend provider array. Configuration failures render an error/retry instead of zero-valued dashboards. Keyless does not mean healthy; inference verification badges require an explicit successful check in the current session.
+- Model discovery preserves last-known records with a warning on failed refresh; added/removed/deprecated records reconcile; hidden stale state and disconnected provider selection fixed.
+
+## Executed verification update
+- Final focused suites: **49/49 passed** (15 catalog-integrity, 28 engine, 6 admin).
+- `npm run test:ai-settings`: **13/13 passed** (overlaps admin tests; do not sum as unique coverage).
+- Full backend suite before final two catalog-only regressions: **996 tests, 939 passed, 57 failed**. Not a release pass. New failure-name comparison against exported baseline found no new names after isolating test metrics.
+- Baseline export run: **983 tests, 924 passed, 59 failed**. Static-source tests in export had incomplete ancillary paths: comparison is diagnostic, not a claim all 59 failures are equivalent or resolved.
+- Expanded real Chromium/Playwright component workflow suite: **37/37 passed**, using mocked admin APIs, all seven mandate viewports; covers five engine subtabs, discovery updates/stale/error/retry, refresh and overflow, and failure-vs-zero state. Not authenticated app E2E or real provider validation.
+- Default Playwright browser download failed (cdn.playwright.dev ECONNRESET). Recovered using external, untracked npm `@sparticuz/chromium` 153.0.0 with packaged libraries. No browser binary/dependency added to repository.
+- Build/TypeScript passed; frontend oxlint **0 errors, 313 warnings**. Preview host check HTTP 200 after scoped `.e2b.app` Vite allowlist.
+- Production dependency audits FAILED: frontend 4 high; backend 10 total (3 moderate, 6 high, 1 critical). Existing dependencies unchanged. Production certification is blocked.
+- No real public keyless, local-model, or credential-required inference was executed. Mocked provider execution is explicitly separate evidence.
+
+## Git ledger
+- `039a392fda09f3fc72d0c45a380bd6a10b52cdaa`: discovery integrity/cooldown fixes; remote session-branch hash independently verified after push.
+- Subsequent implementation and final report: see Git history and final GitHub PR; never pushed directly to dev or main.

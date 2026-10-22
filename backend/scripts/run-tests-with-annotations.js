@@ -13,6 +13,9 @@ const files = fs.readdirSync(testDir)
 const testEnv = {
   ...process.env,
   NODE_ENV: 'test',
+  // Provider health from one test process must not bench providers in another.
+  // Real durable metrics persistence has its own temporary-file contract tests.
+  FREELMAPI_METRICS_DB: ':memory:',
   RUN_MARIADB_INTEGRATION: process.env.RUN_MARIADB_INTEGRATION || 'true',
   DB_HOST: process.env.DB_HOST || '127.0.0.1',
   DB_PORT: process.env.DB_PORT || '3306',

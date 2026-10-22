@@ -76,6 +76,8 @@ async function loadFreeLlmPlatformConfig({ environment = process.env, repository
 
   for (const [id, meta] of Object.entries(PROVIDER_REGISTRY)) {
     const stored = providerSecrets[id] || {};
+    if (meta.optIn && stored.enabled !== true && stored.apiKey !== 'keyless' &&
+        environment[`${id.toUpperCase()}_ENABLED`] !== 'true') continue;
     let keys = splitKeyPool(environment[meta.envKey || `${id.toUpperCase()}_API_KEY`]);
     if (keys.length === 0) keys = splitKeyPool(stored.apiKeys);
     if (keys.length === 0) keys = splitKeyPool(stored.apiKey);
@@ -84,7 +86,7 @@ async function loadFreeLlmPlatformConfig({ environment = process.env, repository
     if (keys.length === 0) continue;
 
     const model = String(stored.model || '').trim();
-    const baseUrl = String(stored.baseUrl || '').trim();
+    const baseUrl = String(environment[`${id.toUpperCase()}_BASE_URL`] || stored.baseUrl || '').trim();
     const enabled = stored.disabled !== true && stored.enabled !== false;
     if (!enabled) continue;
 

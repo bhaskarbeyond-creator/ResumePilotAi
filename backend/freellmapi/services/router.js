@@ -15,6 +15,7 @@
  * 9. SSE streaming with provider failover before the first forwarded chunk
  */
 
+const { createHash } = require('node:crypto');
 const { getProviderMeta } = require('../providers/registry');
 const { callOpenAiCompat, streamOpenAiCompat } = require('../providers/openaiCompat');
 const { callGoogleGemini, streamGoogleGemini } = require('../providers/googleGemini');
@@ -194,13 +195,11 @@ class FreeLlmRouter {
   _isValidKeyFormat(providerId, key) {
     if (!key || typeof key !== 'string') return false;
     const k = key.trim();
-    if (k === 'keyless') return true;
+    if (k === 'keyless') return Boolean(getProviderMeta(providerId)?.keyless);
     if (k.length < 8) return false;
-    if (k.includes('@') && !k.startsWith('ghp_')) return false; // Common user passwords
-    if (providerId === 'groq' && !k.startsWith('gsk_') && !k.startsWith('gsk-')) return false;
-    if (providerId === 'openrouter' && !k.startsWith('sk-or-') && !k.startsWith('sk-or_')) return false;
-    if (providerId === 'cerebras' && !k.startsWith('csk-') && !k.startsWith('csk_')) return false;
-    if (providerId === 'gemini' && !k.startsWith('AIza')) return false;
+    // Provider prefixes change and compatible gateways use different key formats.
+    // Only reject explicit placeholder values; upstream authentication is authoritative.
+    if (/^(your[-_ ]|replace[-_ ]|placeholder|changeme|example[-_ ])/i.test(k)) return false;
     return true;
   }
 
@@ -226,7 +225,7 @@ class FreeLlmRouter {
         const pId = providerId.toLowerCase().trim();
         const meta = getProviderMeta(pId);
         if (isSearchOrMediaMeta(meta) || !isChatCapableMeta(meta)) continue;
-        if (allowed && allowed.size > 0 && !allowed.has(pId)) continue;
+        if (allowed && !allowed.has(pId)) continue;
 
         const keys = normalizeKeyPool({ key: rawKey });
         if (keys.length === 0) continue;
@@ -284,7 +283,10 @@ class FreeLlmRouter {
       }
     } catch { /* metrics are best-effort */ }
 
+    const allowedDestinations = Array.isArray(tenantContext?.allowedProviders)
+      ? new Set(tenantContext.allowedProviders.map(id => String(id).toLowerCase())) : null;
     for (const pId of orderedKeys) {
+      if (allowedDestinations && !allowedDestinations.has(pId)) continue;
       const conf = providers[pId];
       if (!conf || conf.enabled === false) continue;
 
@@ -295,16 +297,6 @@ class FreeLlmRouter {
       // explicit OpenAI-compatible endpoint.
       if (!meta && !conf?.baseUrl) continue;
       if (!isChatCapableMeta(meta) && !conf?.baseUrl) continue;
-
-      // Credential Integrity Gate: if a provider has zero recorded successes and its
-      // keys were actively rejected with HTTP 401/403, do not waste latency calling it
-      const recentReq = recentMap.get(pId);
-      if (recentReq && !recentReq.ok && (recentReq.status === 401 || recentReq.status === 403)) {
-        const metric = metricsMap.get(pId);
-        if (metric && metric.successes === 0 && metric.failures >= 1) {
-          continue;
-        }
-      }
 
       let keys = normalizeKeyPool(conf || {});
       if (keys.length === 0 && meta?.keyless) keys = ['keyless'];
@@ -357,61 +349,30 @@ class FreeLlmRouter {
   }
 
   _computeDynamicRankScore(candidate, platformConfig, metricsMap, recentMap, requestedModel) {
-    const meta = getProviderMeta(candidate.provider);
-    const m = metricsMap ? metricsMap.get(candidate.provider) : null;
-    const r = recentMap ? recentMap.get(candidate.provider) : null;
-    const isPrimary = platformConfig?.primary === candidate.provider;
+    const metric = metricsMap?.get(candidate.provider);
+    const recent = recentMap?.get(candidate.provider);
     const req = String(requestedModel || '').toLowerCase().trim();
-
-    // 0. If user specifically targeted this provider or model, it wins top priority
-    if (req && (req === candidate.provider.toLowerCase() || req === candidate.model.toLowerCase())) {
-      return 1000;
-    }
-
-    // 1. Intelligence & Speed capability baseline from curated catalog (0-100 scale)
-    const intelligence = Number(meta?.intelligenceScore) || 85;
-    const speed = Number(meta?.speedScore) || 85;
-    let score = (intelligence * 0.6) + (speed * 0.4);
-
-    // 2. Explicitly configured credentials indicate operator intent over keyless fallbacks
-    const hasConfiguredKey = candidate.key && candidate.key !== 'keyless';
-    if (hasConfiguredKey) {
-      score += 30; // Dedicated configured credential takes precedence over public keyless endpoints
-    } else if (meta?.keyless) {
-      score += 15; // Keyless zero-config fallback
-    }
-
-    // 3. Operator's explicit primary preference
-    if (isPrimary) {
-      score += 35;
-    }
-
-    // 4. Most recent live request (instant-realtime health signal)
-    if (r) {
-      const ageMs = Math.max(0, Date.now() - Number(r.createdAt || 0));
-      if (r.ok && r.status === 200) {
-        score += 120; // Proven active and working right now
-        if (r.latencyMs < 1000) {
-          score += 50; // Lightning-fast sub-second response
-        } else if (r.latencyMs < 2500) {
-          score += 25; // Smooth sub-2.5s response
-        } else if (r.latencyMs > 6000) {
-          score -= 30; // Sluggish response
+    if (req && (req === candidate.provider.toLowerCase() || req === candidate.model.toLowerCase())) return 1000;
+    // Registry marketing scores and model-name size heuristics are not quality evidence.
+    // Unknown performance adds zero; stable input order breaks ties deterministically.
+    let score = platformConfig?.primary === candidate.provider ? 35 : 0;
+    // Operator-managed credentials retain precedence over unconfigured public paths.
+    if (candidate.key && candidate.key !== 'keyless') score += 10;
+    const observation = recent?.model === candidate.model ? recent
+      : metric?.model === candidate.model ? {
+        ok: metric.lastStatus === 200, status: metric.lastStatus,
+        latencyMs: metric.lastLatencyMs, createdAt: metric.updatedAt,
+      } : null;
+    if (observation) {
+      const age = Date.now() - Number(observation.createdAt);
+      if (Number.isFinite(age) && age >= 0 && age < 30 * 60_000) {
+        const freshness = 1 - age / (30 * 60_000);
+        const successful = observation.ok && observation.status === 200;
+        score += (successful ? 60 : -100) * freshness;
+        const latency = Number(observation.latencyMs);
+        if (successful && Number.isFinite(latency) && latency > 0) {
+          score += 20 * Math.max(0, 1 - latency / 10_000) * freshness;
         }
-      } else if (!r.ok) {
-        // Decay penalty after 30 minutes
-        const penalty = ageMs > 30 * 60 * 1000 ? 80 : 250;
-        score -= penalty;
-      }
-    } else if (m) {
-      // 5. Aggregate metrics fallback when no recent log entry exists
-      if (m.lastStatus === 200) {
-        score += 80;
-        const latency = Number(m.lastLatencyMs || m.avgLatencyMs) || 2000;
-        if (latency < 1000) score += 30;
-        else if (latency < 2500) score += 15;
-      } else if (m.lastStatus && m.lastStatus !== 200) {
-        score -= 150;
       }
     }
 
@@ -534,9 +495,24 @@ class FreeLlmRouter {
     const normalizedTools = prepared.tools;
     const toolNames = prepared.toolNames;
 
+    // 2. Build Candidate Failover Cascade
+    const candidates = await this.buildCandidateList({ tenantContext, platformConfig, requestedModel, fetchImpl });
+
+    if (candidates.length === 0) {
+      const err = new Error('No enabled AI provider is configured or healthy');
+      err.code = 'AI_PROVIDER_UNAVAILABLE';
+      err.status = 503;
+      throw err;
+    }
+
+    // Cache identity binds tenant policy, eligible destinations and request semantics.
+    // Credentials are only hashed, never retained as plaintext cache keys.
+    const cacheIdentity = createHash('sha256').update(JSON.stringify({
+      tenantContext, candidates, maxTokens, jsonMode, responseFormat,
+    })).digest('hex');
     // 1. In-Memory LRU Cache Check (structured tool turns are never cached)
     if (!bypassCache && normalizedTools.length === 0) {
-      const cacheKeyModel = tenantContext?.primaryModel || requestedModel || 'default';
+      const cacheKeyModel = cacheIdentity;
       const cached = this.promptCache.get(messages, cacheKeyModel, temperature);
       if (cached) {
         return {
@@ -550,16 +526,6 @@ class FreeLlmRouter {
           compression: compressionStats,
         };
       }
-    }
-
-    // 2. Build Candidate Failover Cascade
-    const candidates = await this.buildCandidateList({ tenantContext, platformConfig, requestedModel, fetchImpl });
-
-    if (candidates.length === 0) {
-      const err = new Error('No enabled AI provider is configured or healthy');
-      err.code = 'AI_PROVIDER_UNAVAILABLE';
-      err.status = 503;
-      throw err;
     }
 
     const fallbacksAttempted = [];
@@ -601,7 +567,7 @@ class FreeLlmRouter {
 
           // Cache successful text-only responses in memory
           if (normalizedTools.length === 0 && !rescued.toolCalls) {
-            this.promptCache.set(messages, candidate.model, temperature, {
+            this.promptCache.set(messages, cacheIdentity, temperature, {
               content: rescued.content,
               provider: candidate.provider,
               model: candidate.model,

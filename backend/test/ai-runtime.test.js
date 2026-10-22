@@ -25,6 +25,10 @@ async function seedRuntimeSettings({ secrets = {}, publicAi = {}, legacyAi = {} 
     async getSetting(category) { return settings[category] || null; },
   });
   clearProviderConfigurationCache();
+  // Each scenario gets fresh health state; do not rely on bypassing real cooldowns.
+  require('../freellmapi').resetCooldowns();
+  require('../freellmapi').clearCache();
+  require('../freellmapi/services/persistence').getMetricsPersistence()?.reset();
 }
 
 const okJson = body => new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });

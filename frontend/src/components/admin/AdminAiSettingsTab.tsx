@@ -33,11 +33,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { get, post } from '@/lib/api-client';
-import {
-  ALL_74_PROVIDERS_CATALOG,
-  type ProviderCatalogEntry,
-} from './freellmapi-catalog';
+import { get, post, normalizeError } from '@/lib/api-client';
+import type { ProviderCatalogEntry } from './freellmapi-catalog';
 import {
   Brain,
   CheckCircle2,
@@ -186,8 +183,8 @@ export function AdminAiSettingsTab() {
     }
   }, [providerFilter, categoryFilter, searchParams, setSearchParams]);
 
-  // Keys tab state — ALWAYS PRE-POPULATED with all 74 providers
-  const [providers, setProviders] = useState<ProviderItem[]>(ALL_74_PROVIDERS_CATALOG);
+  // Provider catalog is loaded from the authoritative server registry.
+  const [providers, setProviders] = useState<ProviderItem[]>([]);
   const [subPill, setSubPill] = useState<'providers' | 'quota' | 'unified' | 'anthropic' | 'agents'>('providers');
   const [statusFilter, setStatusFilter] = useState<'all' | 'healthy' | 'issues' | 'disabled'>('all');
   const [tierFilter, setTierFilter] = useState<ProviderTier>('all');
@@ -258,7 +255,8 @@ export function AdminAiSettingsTab() {
   const [discoveryLoading, setDiscoveryLoading] = useState(false);
 
   // Operations state
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [copiedText, setCopiedText] = useState<string | null>(null);
@@ -373,6 +371,7 @@ export function AdminAiSettingsTab() {
 
   const loadSettings = () => {
     setLoading(true);
+    setSettingsError(null);
     get<{
       settings?: Record<string, any>;
       revision?: number;
@@ -400,37 +399,18 @@ export function AdminAiSettingsTab() {
           if (cfg.maxTokens !== undefined) setMaxTokens(Number(cfg.maxTokens));
         }
 
-        // Merge server configured status with the baseline 74 catalog
-        const serverCatalogMap = new Map((res.catalog || []).map((p) => [p.id, p]));
-        const configuredMap = res.configuredProviders || {};
-        const maskedMap = res.maskedKeys || {};
+        // Server registry is authoritative; new providers require no frontend release.
+        setProviders((res.catalog || []).map((p) => ({
+          ...p,
+          configuredOnServer: Boolean(p.configuredOnServer),
+          keysCount: p.keyless ? 0 : (p.keysCount || 0),
+          enabled: p.configuredOnServer,
+          status: res.cooldowns?.[p.id] ? 'issues' : p.configuredOnServer ? 'unverified' : 'disabled',
+        })));
 
-        setProviders((prev) =>
-          prev.map((p) => {
-            const serverItem = serverCatalogMap.get(p.id);
-            const isConfigured = Boolean(
-              p.keyless ||
-              serverItem?.configuredOnServer ||
-              configuredMap[p.id] ||
-              maskedMap[p.id]
-            );
-            const isCoolingDown = Boolean(res.cooldowns?.[p.id]);
-            return {
-              ...p,
-              configuredOnServer: isConfigured,
-              hasKey: Boolean(serverItem?.hasKey || configuredMap[p.id] || maskedMap[p.id]),
-              keysCount: p.keyless ? 1 : (serverItem?.keysCount || (isConfigured ? 1 : 0)),
-              // 'issues' is the existing three-state union; the precise
-              // "⊘ Rate-Limited Cooldown" label comes from `cooldowns`.
-              status: isCoolingDown ? 'issues' : (isConfigured ? 'healthy' : 'disabled'),
-              latencyMs: serverItem?.latencyMs || p.latencyMs,
-              defaultModel: serverItem?.defaultModel || p.defaultModel,
-            };
-          })
-        );
       })
       .catch((err) => {
-        console.warn('AI Admin settings fetch notice (catalog preserved):', err.message);
+        setSettingsError(normalizeError(err).message);
       })
       .finally(() => setLoading(false));
   };
@@ -491,15 +471,15 @@ export function AdminAiSettingsTab() {
 
   // Statistics
   const configuredCount = useMemo(() => {
-    return providers.filter((p) => p.configuredOnServer || p.keyless).length;
+    return providers.filter((p) => p.configuredOnServer).length;
   }, [providers]);
 
   const healthyCount = useMemo(() => {
-    return providers.filter((p) => (p.configuredOnServer || p.keyless) && p.status !== 'issues').length;
-  }, [providers]);
+    return providers.filter((p) => testStatus[p.id]?.ok === true && !cooldowns[p.id]).length;
+  }, [providers, testStatus, cooldowns]);
 
   const totalKeysCount = useMemo(() => {
-    return providers.reduce((acc, p) => acc + (p.hasKey ? 1 : p.keyless ? 1 : 0), 0);
+    return providers.reduce((acc, p) => acc + (p.keyless ? 0 : p.keysCount || 0), 0);
   }, [providers]);
 
   const tierCounts = useMemo(() => {
@@ -523,20 +503,21 @@ export function AdminAiSettingsTab() {
         state: 'cooldown',
       };
     }
-    if (p.keyless) {
+    const check = testStatus[p.id];
+    if (check?.ok) {
       return {
-        label: '○ Keyless Active',
-        tone: 'bg-sky-50 text-sky-800 border-sky-200 dark:bg-sky-950/40 dark:text-sky-200 dark:border-sky-800',
-        detail: 'no credential required',
-        state: 'keyless',
+        label: '● Inference Verified',
+        tone: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+        detail: check.latencyMs ? `${check.latencyMs}ms` : 'Inference succeeded this session',
+        state: 'healthy',
       };
     }
-    if (p.configuredOnServer || p.hasKey) {
+    if (p.configuredOnServer) {
       return {
-        label: '● Live & Active',
-        tone: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-200 dark:border-emerald-800',
-        detail: `${p.keysCount || 1} ${(p.keysCount || 1) === 1 ? 'key' : 'keys'} · ${p.latencyMs}ms`,
-        state: 'healthy',
+        label: check?.ok === false ? '⊘ Check Failed' : '○ Not Yet Verified',
+        tone: 'bg-sky-50 text-sky-800 border-sky-200',
+        detail: check?.message || (p.keyless ? 'No credential required; inference not checked' : 'Credential configured; inference not checked'),
+        state: check?.ok === false ? 'issues' : 'unverified',
       };
     }
     return {
@@ -569,7 +550,7 @@ export function AdminAiSettingsTab() {
       setTestStatus((prev) => ({
         ...prev,
         [providerId]: {
-          ok: res.success !== false,
+          ok: res.success === true,
           ...(lat ? { latencyMs: lat } : {}),
           message: res.message || (lat ? `Connected in ${lat}ms` : 'Connection verified'),
         },
@@ -579,7 +560,7 @@ export function AdminAiSettingsTab() {
       setProviders((prev) =>
         prev.map((item) =>
           item.id === providerId
-            ? { ...item, status: 'healthy', ...(lat ? { latencyMs: lat } : {}) }
+            ? { ...item, status: res.success === true ? 'healthy' : 'issues', ...(lat ? { latencyMs: lat } : {}) }
             : item
         )
       );
@@ -680,7 +661,12 @@ export function AdminAiSettingsTab() {
         [providerId]: res.models || [],
       }));
     } catch (err: any) {
-      setModalError(`Model discovery failed: ${err.message || 'Unknown error'}`);
+      setModalError(`Model discovery failed: ${normalizeError(err).message}`);
+      const providerId = selectedProviderId || modalSelectedPlatform?.id;
+      if (providerId) setDiscoveryResults(prev => ({
+        ...prev,
+        ...(prev[providerId] ? { [providerId]: prev[providerId].map((model: any) => ({ ...model, catalogStatus: 'stale' })) } : {}),
+      }));
     } finally {
       setDiscoveryLoading(false);
     }
@@ -1110,6 +1096,14 @@ export function AdminAiSettingsTab() {
       setPlaygroundLoading(false);
     }
   };
+
+  if (loading) return <p role="status" className="p-5 text-sm text-ink-muted">Loading engine configuration…</p>;
+  if (settingsError) return (
+    <div role="alert" className="space-y-3 p-5">
+      <p>Engine configuration could not be loaded: {settingsError}</p>
+      <Button onClick={loadSettings}>Retry configuration</Button>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -2672,7 +2666,7 @@ const MetricsTab = ({ cooldowns, tierCounts, configuredCount, healthyCount }: {
             Engine Metrics
           </h3>
           <p className="text-xs text-ink-muted">
-            Real-time engine health, latency, error rates, and cooldowns from the live FreeLLMAPI backend.
+            Configuration summary and cooldown snapshot. Verified counts reflect inference checks performed in this browser session.
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="p-4 rounded-xl border border-border/60 bg-surface/80 text-center">
@@ -2685,7 +2679,7 @@ const MetricsTab = ({ cooldowns, tierCounts, configuredCount, healthyCount }: {
             </div>
             <div className="p-4 rounded-xl border border-border/60 bg-surface/80 text-center">
               <div className="text-2xl font-black text-ink">{healthyCount}</div>
-              <div className="text-[11px] font-semibold text-ink-muted uppercase">Healthy</div>
+              <div className="text-[11px] font-semibold text-ink-muted uppercase">Verified this session</div>
             </div>
             <div className="p-4 rounded-xl border border-border/60 bg-surface/80 text-center">
               <div className="text-2xl font-black text-ink">{Object.keys(cooldowns).length}</div>

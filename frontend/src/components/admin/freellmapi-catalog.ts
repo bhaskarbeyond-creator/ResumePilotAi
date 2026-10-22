@@ -28,7 +28,7 @@ export interface ProviderCatalogEntry {
   configuredOnServer: boolean;
   hasKey?: boolean;
   keysCount: number;
-  status: 'healthy' | 'issues' | 'disabled';
+  status: 'healthy' | 'issues' | 'disabled' | 'unverified';
   enabled: boolean;
 }
 

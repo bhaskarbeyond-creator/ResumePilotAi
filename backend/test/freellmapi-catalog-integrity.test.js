@@ -85,3 +85,81 @@ test('discovery errors never echo provider response bodies', async () => {
   const service = new ModelDiscoveryService();
   await assert.rejects(service.discoverFromEndpoint({ ...params, fetchImpl: async () => ({ ok: false, status: 401, text: async () => 'sensitive-provider-content' }) }), error => !error.message.includes('sensitive'));
 });
+
+test('llama.cpp uses discovered model and the shared keyless inference adapter', async () => {
+  const router = new FreeLlmRouter();
+  router.modelDiscovery = new ModelDiscoveryService();
+  router.cooldownManager = { isOnCooldown: () => ({ onCooldown: false }), clearCooldown() {} };
+  const requests = [];
+  const fetchImpl = async (url, options) => {
+    requests.push({ url, options });
+    assert.equal(options.headers.Authorization, undefined);
+    if (url.endsWith('/models')) return response([{ id: 'locally-installed-model' }]);
+    assert.equal(JSON.parse(options.body).model, 'locally-installed-model');
+    return { ok: true, json: async () => ({ choices: [{ message: { content: 'local result' }, finish_reason: 'stop' }] }) };
+  };
+  const result = await router.routeCompletion({ prompt: 'minimal fixture', platformConfig: { providers: { llamacpp: { enabled: true } } }, fetchImpl, bypassCache: true });
+  assert.equal(result.provider, 'llamacpp');
+  assert.equal(result.model, 'locally-installed-model');
+  assert.equal(result.content, 'local result');
+  assert.equal(requests.length, 2);
+});
+
+test('local providers are opt-in and environment endpoints are used only when enabled', async () => {
+  const { loadFreeLlmPlatformConfig } = require('../services/freellmConfig');
+  const repository = { getSetting: async () => null };
+  const disabled = await loadFreeLlmPlatformConfig({ repository, environment: {}, bypassCache: true });
+  assert.equal(disabled.providers.llamacpp, undefined);
+  assert.equal(disabled.providers.ollama, undefined);
+  const enabled = await loadFreeLlmPlatformConfig({ repository, environment: { LLAMACPP_ENABLED: 'true', LLAMACPP_BASE_URL: 'http://127.0.0.1:9911/v1' }, bypassCache: true });
+  assert.equal(enabled.providers.llamacpp.key, 'keyless');
+  assert.equal(enabled.providers.llamacpp.baseUrl, 'http://127.0.0.1:9911/v1');
+});
+
+test('platform mesh enforces tenant destination restrictions including explicit deny-all', async () => {
+  const router = new FreeLlmRouter();
+  const platformConfig = { providers: { ovh: { model: 'pinned' } } };
+  assert.deepEqual(await router.buildCandidateList({ tenantContext: { allowedProviders: [] }, platformConfig }), []);
+  assert.deepEqual(await router.buildCandidateList({ tenantContext: { allowedProviders: ['groq'] }, platformConfig }), []);
+});
+
+test('cached completion cannot bypass changed tenant destination policy', async () => {
+  const router = new FreeLlmRouter();
+  const { LruPromptCache } = require('../freellmapi/services/cache');
+  router.promptCache = new LruPromptCache();
+  router.cooldownManager = { isOnCooldown: () => ({ onCooldown: false }), clearCooldown() {} };
+  let calls = 0;
+  const fetchImpl = async () => { calls++; return { ok: true, json: async () => ({ choices: [{ message: { content: 'ok' } }] }) }; };
+  const options = { prompt: 'fixture', model: 'pinned', platformConfig: { providers: { ovh: { model: 'pinned' } } }, fetchImpl };
+  await router.routeCompletion({ ...options, tenantContext: { tenantId: 'a' } });
+  assert.equal((await router.routeCompletion({ ...options, tenantContext: { tenantId: 'a' } })).cached, true);
+  assert.equal((await router.routeCompletion({ ...options, tenantContext: { tenantId: 'b' } })).cached, false);
+  await assert.rejects(router.routeCompletion({ ...options, tenantContext: { tenantId: 'a', allowedProviders: [] } }), { code: 'AI_PROVIDER_UNAVAILABLE' });
+  assert.equal(calls, 2);
+});
+
+test('ranking ignores unmeasured registry scores and expired or other-model observations', () => {
+  const router = new FreeLlmRouter();
+  const candidate = { provider: 'ovh', model: 'model-a' };
+  const score = recent => router._computeDynamicRankScore(candidate, {}, new Map(), new Map([['ovh', recent]]));
+  assert.equal(router._computeDynamicRankScore(candidate, {}, new Map(), new Map()), 0);
+  assert.equal(score({ model: 'model-a', ok: true, status: 200, latencyMs: 10, createdAt: Date.now() - 31 * 60_000 }), 0);
+  assert.equal(score({ model: 'different-model', ok: true, status: 200, latencyMs: 10, createdAt: Date.now() }), 0);
+  assert.ok(score({ model: 'model-a', ok: true, status: 200, latencyMs: 500, createdAt: Date.now() }) > 0);
+  assert.ok(score({ model: 'model-a', ok: false, status: 429, createdAt: Date.now() }) < 0);
+});
+
+test('upstream deprecated and explicitly inactive models are ineligible for new auto selection', async () => {
+  const service = new ModelDiscoveryService();
+  const models = await service.getOrDiscover({ ...params, fetchImpl: async () => response([
+    { id: 'old', deprecated: true }, { id: 'offline', active: false }, { id: 'current' }, { id: 'models/' },
+  ]) });
+  assert.deepEqual(models.map(model => model.id), ['current']);
+});
+
+test('Pollinations is no longer eligible as an anonymous provider', async () => {
+  const { getProviderMeta } = require('../freellmapi/providers/registry');
+  assert.equal(getProviderMeta('pollinations').keyless, false);
+  const router = new FreeLlmRouter();
+  assert.deepEqual(await router.buildCandidateList({ platformConfig: { providers: { pollinations: { enabled: true } } } }), []);
+});
