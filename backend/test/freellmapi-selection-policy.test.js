@@ -20,7 +20,8 @@ test('capability gates reject unknown tools/vision/JSON and incompatible context
 test('speed prefers measured latency, quality prefers documented capability fit without fabricated quality', () => {
   const fast = candidate('fast');
   const fit = candidate('fit', { tools: true, json: true, vision: true });
-  const observationFor = c => ({ ok: true, status: 200, createdAt: Date.now(), latencyMs: c.model === 'fast' ? 100 : 9000 });
+  const observedAt = Date.now() - 1000;
+  const observationFor = c => ({ ok: true, status: 200, createdAt: observedAt, latencyMs: c.model === 'fast' ? 100 : 9000 });
   assert.equal(rankCandidates([fit, fast], { mode: 'speed', observationFor })[0].model, 'fast');
   const quality = rankCandidates([fast, fit], { mode: 'quality', observationFor });
   assert.equal(quality[0].model, 'fit');

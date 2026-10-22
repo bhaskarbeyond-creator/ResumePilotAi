@@ -109,3 +109,16 @@ test('selection modes persist and manual model choices are sourced from discover
   await page.reload();
   await expect(mode).toHaveValue('manual');
 });
+
+test('all five dialogs render real content and close with Escape', async ({ page }) => {
+  await page.goto('/tests/harness/engine.html');
+  for (const name of ['Configure Provider', 'Manage key pools', 'Manage cooldowns', 'Discover models', 'Integration snippets']) {
+    await page.getByRole('button', { name, exact: true }).click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press('Tab');
+    expect(await dialog.evaluate(el => el.contains(document.activeElement))).toBe(true);
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+  }
+});

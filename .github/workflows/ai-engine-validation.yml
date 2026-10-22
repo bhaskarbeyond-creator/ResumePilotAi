@@ -70,6 +70,34 @@ jobs:
           exit 1
       - name: Actual catalog -> router -> model inference
         run: node scripts/verify-local-inference.cjs | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Start disposable MariaDB for authenticated full-app E2E
+        run: scripts/start-ci-mariadb.sh
+      - name: Install full-app browser dependencies
+        run: |
+          npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+          npm exec --prefix frontend -- playwright install --with-deps chromium
+      - name: Initialize full-app E2E schema and ephemeral verifier
+        env:
+          NODE_ENV: test
+        run: |
+          secret="$(openssl rand -hex 32)"
+          echo "::add-mask::$secret"
+          echo "TEST_AUTH_HMAC_SECRET=$secret" >> "$GITHUB_ENV"
+          node - <<'NODE'
+          const db = require('./backend/database/mysql');
+          db.initializeSchema().then(result => { if (!result.success) throw new Error(result.error); return db.closePool(); }).catch(error => { console.error(error.message); process.exit(1); });
+          NODE
+      - name: Authenticated full-app Playwright with real MariaDB and model inference
+        env:
+          NODE_ENV: test
+          CI: 'true'
+          LLAMACPP_ENABLED: 'true'
+          LLAMACPP_BASE_URL: http://127.0.0.1:8081/v1
+          CORS_ALLOWED_ORIGINS: http://127.0.0.1:4000,http://localhost:4000
+        run: npm exec --prefix frontend -- playwright test --config=frontend/tests/engine-authenticated.config.ts
+      - name: Stop full-app disposable database
+        if: always()
+        run: docker rm -f "$CI_MARIADB_CONTAINER" || true
       - name: Stop model server
         if: always()
         run: docker rm -f ai-engine-local

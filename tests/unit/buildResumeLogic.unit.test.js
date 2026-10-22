@@ -1,16 +1,20 @@
 import { describe, it, expect } from 'vitest';
-import { 
-  shouldRenderWatermark, 
-  resolvePreviewWatermark, 
-  readEntitlement 
-} from '../../src/utils/watermarkEntitlement.js';
+import fs from 'node:fs';
+import vm from 'node:vm';
+
+// Exercise the actual builder closure without importing the React/router tree.
+// This test previously called an undefined helper and used noncanonical employment fields.
+const shell = fs.readFileSync(new URL('../../src/components/BuildResume/BuildResume.jsx', import.meta.url), 'utf8');
+const source = shell.slice(shell.indexOf('    const isStepCompleted = '), shell.indexOf('    const getStepAiGuidance = '));
+const completionFactory = vm.runInNewContext(`(resumeData, orderedSteps) => { ${source}; return isStepCompleted; }`);
+const shouldStepCompleted = (stepId, data, stepPath) => completionFactory(data, [])(stepId, stepPath);
 
 describe('BuildResume core logic', () => {
   describe('isStepCompleted', () => {
     it('should return true for completed steps with substantive content', () => {
       const resumeData = {
         employments: [
-          { company: 'Google', position: 'Engineer', duration: '2020-2023' }
+          { employer: 'Google', jobTitle: 'Engineer', duration: '2020-2023' }
         ],
         educations: [],
         skills: []
@@ -42,7 +46,7 @@ describe('BuildResume core logic', () => {
       expect(result).toBe(false);
     });
 
-    it('should return false for completed step without substantive content', () => {
+    it('does not treat unmapped legacy-only employment as canonical substantive content', () => {
       const resumeData = {
         employments: [
           { company: 'Google', position: '', duration: '' }

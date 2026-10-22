@@ -25,7 +25,9 @@ const { ModelDiscoveryService } = require('../backend/freellmapi/services/modelD
   console.log(JSON.stringify(evidence));
   console.log(`::notice title=Public anonymous inference verified::AI Horde generated nonempty text through discovery and canonical manual routing. No content recorded.`);
 })().catch(error => {
-  console.error(`::warning title=Public anonymous inference NOT verified::${String(error.code || 'PUBLIC_INFERENCE_BLOCKED').replace(/[^a-zA-Z0-9_]/g, '')}. See job logs for controlled provider failures; no success is claimed.`);
+  const causes = (error.fallbacksAttempted || []).map(item => ({ provider: item.provider, code: item.code, status: item.status, reason: item.error })).slice(0, 3);
+  const detail = JSON.stringify({ code: error.code || 'PUBLIC_INFERENCE_BLOCKED', causes }).replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+  console.error(`::warning title=Public anonymous inference NOT verified::${detail}. No success is claimed.`);
   console.error(error.message);
   process.exitCode = 1;
 });

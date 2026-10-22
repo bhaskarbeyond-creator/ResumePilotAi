@@ -39,7 +39,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 22.18.0
+          node-version: '24'
           cache: npm
           cache-dependency-path: |
             package-lock.json
@@ -49,6 +49,9 @@ jobs:
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
           npm --prefix backend ci --ignore-scripts --no-audit --no-fund
+
+      - name: Install export regression browser
+        run: npm exec --prefix backend -- playwright install --with-deps chromium
 
       - name: Verify clean migrations, rollback, constraints, and duplicate preflight
         run: node scripts/verify-mariadb-migrations.mjs

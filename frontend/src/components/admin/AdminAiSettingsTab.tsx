@@ -246,6 +246,7 @@ export function AdminAiSettingsTab() {
   // Operations state
   const [loading, setLoading] = useState(true);
   const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [copiedText, setCopiedText] = useState<string | null>(null);
@@ -310,7 +311,7 @@ export function AdminAiSettingsTab() {
   // Reusable WCAG 2.1 AA modal focus trap hook (Section 5 / DIR-013)
   // Used by all 5 modals: Add Key, Key Pool Manager, Cooldown Flush,
   // Model Discovery, Code Snippets.
-  const useModalFocus = (isOpen: boolean, modalRef: React.RefObject<HTMLDivElement>) => {
+  const useModalFocus = (isOpen: boolean, modalRef: React.RefObject<HTMLDivElement>, setOpen: (open: boolean) => void) => {
     useEffect(() => {
       if (!isOpen) return;
       const node = modalRef.current;
@@ -325,6 +326,7 @@ export function AdminAiSettingsTab() {
       function onKeyDown(event: KeyboardEvent) {
         if (event.key === 'Escape') {
           event.preventDefault();
+          setOpen(false);
           return;
         }
         if (event.key !== 'Tab') return;
@@ -343,15 +345,15 @@ export function AdminAiSettingsTab() {
 
       document.addEventListener('keydown', onKeyDown);
       return () => document.removeEventListener('keydown', onKeyDown);
-    }, [isOpen, modalRef]);
+    }, [isOpen, modalRef, setOpen]);
   };
 
   // Apply focus trap to all modals
-  useModalFocus(isAddKeyOpen, modalRef);
-  useModalFocus(isKeyPoolOpen, keyPoolRef);
-  useModalFocus(isCooldownOpen, cooldownRef);
-  useModalFocus(isDiscoveryOpen, discoveryRef);
-  useModalFocus(isCodeSnippetsOpen, codeSnippetsRef);
+  useModalFocus(isAddKeyOpen, modalRef, setIsAddKeyOpen);
+  useModalFocus(isKeyPoolOpen, keyPoolRef, setIsKeyPoolOpen);
+  useModalFocus(isCooldownOpen, cooldownRef, setIsCooldownOpen);
+  useModalFocus(isDiscoveryOpen, discoveryRef, setIsDiscoveryOpen);
+  useModalFocus(isCodeSnippetsOpen, codeSnippetsRef, setIsCodeSnippetsOpen);
 
   // Load configuration on mount
   useEffect(() => {
@@ -600,7 +602,7 @@ export function AdminAiSettingsTab() {
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 3000);
     } catch (err: any) {
-      alert(`Key Pool save failed: ${err.message || 'Unknown error'}`);
+      setActionError(`Key Pool save failed: ${err.message || 'Unknown error'}`);
     } finally {
       setSaving(false);
     }
@@ -609,22 +611,6 @@ export function AdminAiSettingsTab() {
   // Cooldown Flush Modal
   const handleOpenCooldown = (_providerId: string) => {
     setIsCooldownOpen(true);
-  };
-
-  const handleCooldownFlush = async (providerId: string) => {
-    try {
-      const payload: Record<string, any> = {
-        expectedRevision: revision,
-        [`${providerId}FlushCooldown`]: true,
-      };
-      const res = await post<{ revision?: number }>('/admin/ai-settings', payload);
-      if (res?.revision) setRevision(res.revision);
-      setIsCooldownOpen(false);
-      setSavedSuccess(true);
-      setTimeout(() => setSavedSuccess(false), 3000);
-    } catch (err: any) {
-      alert(`Cooldown flush failed: ${err.message || 'Unknown error'}`);
-    }
   };
 
   // Model Discovery Modal
@@ -707,7 +693,7 @@ export function AdminAiSettingsTab() {
       setTimeout(() => setSavedSuccess(false), 3000);
       handleTestProvider(providerId, key).catch(() => {});
     } catch (err: any) {
-      alert(`Save failed: ${err.message || 'Unknown error'}`);
+      setActionError(`Save failed: ${err.message || 'Unknown error'}`);
     } finally {
       setSaving(false);
     }
@@ -738,7 +724,7 @@ export function AdminAiSettingsTab() {
       setTimeout(() => setSavedSuccess(false), 3000);
       handleTestProvider(providerId, pool[0]).catch(() => {});
     } catch (err: any) {
-      alert(`Key pool save failed: ${err.message || 'Unknown error'}`);
+      setActionError(`Key pool save failed: ${err.message || 'Unknown error'}`);
     } finally {
       setSaving(false);
     }
@@ -768,7 +754,7 @@ export function AdminAiSettingsTab() {
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 3000);
     } catch (err: any) {
-      alert(`Clear failed: ${err.message || 'Unknown error'}`);
+      setActionError(`Clear failed: ${err.message || 'Unknown error'}`);
     } finally {
       setSaving(false);
     }
@@ -957,7 +943,7 @@ export function AdminAiSettingsTab() {
 
   // Handle Save All
   const handleSaveAll = async () => {
-    if (selectionMode === 'manual' && !manualModel) { setModalError('Refresh the catalog and select a pinned model before saving.'); return; }
+    if (selectionMode === 'manual' && !manualModel) { setActionError('Refresh the catalog and select a pinned model before saving.'); return; }
     setSaving(true);
     setSavedSuccess(false);
     try {
@@ -985,7 +971,7 @@ export function AdminAiSettingsTab() {
       setTimeout(() => setSavedSuccess(false), 4000);
       loadSettings();
     } catch (err: any) {
-      alert(`Save failed: ${err.message || 'Unknown error'}`);
+      setActionError(`Save failed: ${err.message || 'Unknown error'}`);
     } finally {
       setSaving(false);
     }
@@ -1085,6 +1071,7 @@ export function AdminAiSettingsTab() {
 
   return (
     <div className="space-y-6">
+      {actionError && <div role="alert" className="rounded border border-rose-300 p-3 text-sm">{actionError}<Button variant="ghost" onClick={() => setActionError(null)}>Dismiss</Button></div>}
       <Card><CardContent className="p-4 space-y-3">
         <h2 className="text-sm font-bold">Runtime model selection</h2>
         <div className="flex flex-wrap gap-3">
@@ -1185,6 +1172,12 @@ export function AdminAiSettingsTab() {
         </div>
       </div>
 
+      <div className="flex flex-wrap gap-2" aria-label="Engine tools">
+        <Button size="sm" onClick={handleOpenKeyPool}>Manage key pools</Button>
+        <Button size="sm" onClick={() => handleOpenCooldown('')}>Manage cooldowns</Button>
+        <Button size="sm" onClick={handleOpenDiscovery}>Discover models</Button>
+        <Button size="sm" onClick={handleOpenCodeSnippets}>Integration snippets</Button>
+      </div>
       {/* ═════════════════════════════════════════════════════════════════════════════ */}
       {/* ─── TAB 1: KEYS (Matching FreeLLMAPI Screen 1) ─── */}
       {/* ═════════════════════════════════════════════════════════════════════════════ */}
@@ -2004,6 +1997,26 @@ export function AdminAiSettingsTab() {
       {/* ═════════════════════════════════════════════════════════════════════════════ */}
       {/* ─── ADD KEY MODAL (Matching FreeLLMAPI Screen 3 Exactly) ─── */}
       {/* ═════════════════════════════════════════════════════════════════════════════ */}
+      {isKeyPoolOpen && <EngineDialog title="Key Pool Manager" rootRef={keyPoolRef} onClose={() => setIsKeyPoolOpen(false)}>
+        <KeyPoolTab providers={providers} cooldowns={cooldowns} keyPoolDrafts={keyPoolDrafts} setKeyPoolDrafts={setKeyPoolDrafts} saving={saving} handleSaveKeyPool={handleKeyPoolSave} providerStatePill={providerStatePill} />
+      </EngineDialog>}
+      {isCooldownOpen && <EngineDialog title="Provider cooldowns" rootRef={cooldownRef} onClose={() => setIsCooldownOpen(false)}>
+        <p className="text-xs">Upstream quota and Retry-After restrictions cannot be reset here. Cooldowns expire automatically; refreshing reads current server state.</p>
+        {Object.entries(cooldowns).map(([provider, state]) => <p key={provider} className="text-xs">{provider}: {state.remainingSeconds}s — {state.reason}</p>)}
+        {!Object.keys(cooldowns).length && <p className="text-xs">No active platform cooldowns.</p>}
+        <Button onClick={loadSettings}>Refresh cooldown state</Button>
+      </EngineDialog>}
+      {isDiscoveryOpen && <EngineDialog title="Model Discovery" rootRef={discoveryRef} onClose={() => setIsDiscoveryOpen(false)}>
+        <DiscoveryTab providers={providers} discoveryResults={discoveryResults} discoveryLoading={discoveryLoading} handleDiscoveryFetch={handleDiscoveryFetch} error={modalError} />
+      </EngineDialog>}
+      {isCodeSnippetsOpen && <EngineDialog title="Integration snippets" rootRef={codeSnippetsRef} onClose={() => setIsCodeSnippetsOpen(false)}>
+        <p className="text-xs">Use your own authenticated token; credentials are never included in exports or examples.</p>
+        <pre className="text-xs overflow-auto p-3 bg-surface-secondary"><code>{`fetch('/api/v1/chat/completions', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json', Authorization: 'Bearer YOUR_TOKEN' },
+  body: JSON.stringify({ model: 'auto', messages: [{ role: 'user', content: 'Hello' }] })
+})`}</code></pre>
+      </EngineDialog>}
       {isAddKeyOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-[fade-in_150ms_ease-out]">
           <div
@@ -2431,6 +2444,17 @@ export function AdminAiSettingsTab() {
       )}
     </div>
   );
+}
+
+function EngineDialog({ title, rootRef, onClose, children }: {
+  title: string; rootRef: React.RefObject<HTMLDivElement>; onClose: () => void; children: React.ReactNode;
+}) {
+  return <div className="fixed inset-0 z-50 bg-black/40 p-3 flex items-center justify-center" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
+    <div ref={rootRef} role="dialog" aria-modal="true" aria-label={title} className="w-full max-w-3xl max-h-[90dvh] overflow-y-auto rounded-xl bg-surface border border-border p-4 space-y-4 shadow-xl">
+      <div className="flex items-center justify-between gap-2"><h2 className="font-bold">{title}</h2><Button onClick={onClose} aria-label={`Close ${title}`}>Close</Button></div>
+      {children}
+    </div>
+  </div>;
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
