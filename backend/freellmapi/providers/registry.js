@@ -202,7 +202,7 @@ const PROVIDER_REGISTRY = Object.freeze({
     docUrl: 'https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md',
   },
   ollama: { id: 'ollama', name: 'Ollama Local', label: 'Ollama (self-hosted, opt-in)', type: 'openai-compat', baseUrl: 'http://127.0.0.1:11434/v1', keyless: true, optIn: true, accessCategory: 'local', docUrl: 'https://github.com/ollama/ollama/blob/main/docs/api/openai-compatibility.mdx' },
-  llm7: { id: 'llm7', name: 'LLM7', label: 'LLM7 (anon ok)', type: 'openai-compat', baseUrl: 'https://api.llm7.io/v1', defaultModel: 'llm7-chat', freeTierAvailable: true, docUrl: 'https://llm7.io' },
+  llm7: { id: 'llm7', name: 'LLM7', label: 'LLM7 (access unverified)', type: 'openai-compat', baseUrl: 'https://api.llm7.io/v1', defaultModel: 'llm7-chat', freeTierAvailable: true, docUrl: 'https://llm7.io' },
   huggingface: { id: 'huggingface', name: 'HuggingFace', label: 'HuggingFace Router', type: 'openai-compat', baseUrl: 'https://router.huggingface.co/v1', defaultModel: 'meta-llama/Llama-3.3-70B-Instruct', freeTierAvailable: true, docUrl: 'https://huggingface.co/settings/tokens' },
   opencode: { id: 'opencode', name: 'OpenCode Zen', label: 'OpenCode Zen (paid models only)', type: 'openai-compat', baseUrl: 'https://api.opencode.ai/v1', defaultModel: 'opencode-zen', freeTierAvailable: true, docUrl: 'https://opencode.ai/auth' },
   agnes: { id: 'agnes', name: 'Agnes AI', label: 'Agnes AI (free key)', type: 'openai-compat', baseUrl: 'https://platform.agnes-ai.com/v1', defaultModel: 'agnes-chat', freeTierAvailable: true, docUrl: 'https://platform.agnes-ai.com' },
