@@ -1773,6 +1773,7 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
         const isJson = CONTENT_OPERATIONS.has(operation) || operation === 'parse-resume';
         const result = await freellm.completeChat({
             prompt,
+            taskType: require('../freellmapi/services/taskQualification').OPERATION_TASK[operation] || (CONTENT_OPERATIONS.has(operation) ? 'resume-write' : null),
             platformConfig: configuration,
             tenantContext: configuration?.tenantContext || (configuration?.tenantId ? {
                 tenantId: configuration.tenantId,
@@ -1822,6 +1823,7 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
             routing: {
                 latencyMs: result.latencyMs,
                 cached: result.cached,
+                decision: result.routingDecision || null,
                 fallbacksAttempted: result.fallbacksAttempted,
             },
         };

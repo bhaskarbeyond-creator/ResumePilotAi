@@ -314,11 +314,25 @@ export async function extractFileText(file: File): Promise<string> {
   }
   if (name.endsWith('.docx')) {
     try {
-      const mammoth = await import('mammoth');
-      const result = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
-      if (!result.value || result.value.trim().length < 20) throw new Error('No usable text');
-      if (result.value.length > 100000) throw new Error('Text too large');
-      return result.value.trim();
+      const { unzipSync } = await import('fflate');
+      let found = false;
+      const entries = unzipSync(new Uint8Array(await file.arrayBuffer()), { filter: entry => {
+        if (entry.name !== 'word/document.xml') return false;
+        if (found || entry.originalSize > 2 * 1024 * 1024) throw new Error('Invalid or oversized DOCX document');
+        found = true;
+        return true;
+      } });
+      const xmlBytes = entries['word/document.xml'];
+      if (!xmlBytes) throw new Error('Missing DOCX document');
+      const xml = new TextDecoder('utf-8', { fatal: true }).decode(xmlBytes);
+      if (/<!DOCTYPE|<!ENTITY/i.test(xml)) throw new Error('DOCX entities are not supported');
+      const document = new DOMParser().parseFromString(xml, 'application/xml');
+      const namespaces = ['http://schemas.openxmlformats.org/wordprocessingml/2006/main', 'http://purl.oclc.org/ooxml/wordprocessingml/main'];
+      const namespace = document.documentElement.namespaceURI;
+      if (document.querySelector('parsererror') || document.documentElement.localName !== 'document' || !namespace || !namespaces.includes(namespace)) throw new Error('Invalid DOCX XML');
+      const text = [...document.getElementsByTagNameNS(namespace, 'p')].map(paragraph => [...paragraph.getElementsByTagNameNS(namespace, 't')].map(node => node.textContent || '').join('')).join('\n').trim();
+      if (text.length < 20 || text.length > 100000) throw new Error('Invalid text length');
+      return text;
     } catch {
       throw new Error('Unable to extract DOCX text. Export a valid DOCX or plain text file.');
     }

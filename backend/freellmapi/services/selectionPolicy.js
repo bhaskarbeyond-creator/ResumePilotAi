@@ -36,7 +36,7 @@ function rankCandidates(candidates, { mode, primary, observationFor = () => null
     const score = (candidate.provider === primary ? 5 : 0) + Math.min(4, evidenceFit) * weights.fit / 4
       + decay * ((success ? 1 : -1) * weights.reliability + speed * weights.speed);
     return { ...candidate, routingDecision: {
-      mode, qualityEvidence: 'unknown', capabilityEvidence: metadata.catalogSource || 'unknown',
+      mode, taskQualification: candidate.taskQualification || { status: 'not-requested' }, qualityEvidence: 'unknown', capabilityEvidence: metadata.catalogSource || 'unknown',
       observedLatencyMs: fresh && success && latency > 0 ? latency : null,
       lastSuccessfulCatalogRefresh: metadata.lastSuccessfulRefresh || null,
     }, _score: score, _index: index };

@@ -13,6 +13,16 @@ test('real browser PDF/DOCX extraction stays local and corrupt binaries fail clo
     expect(text).toContain('Python developer');
     expect(text).not.toContain('%PDF');
   }
+  for (const fixture of ['entity-resume.docx', 'oversized-resume.docx']) {
+    const bytes = [...readFileSync(`frontend/tests/fixtures/${fixture}`)];
+    const rejected = await page.evaluate(async bytes => {
+      const modulePath = '/src/lib/ai-content.ts';
+      const { extractFileText } = await import(modulePath);
+      try { await extractFileText(new File([new Uint8Array(bytes)], 'unsafe.docx')); return false; }
+      catch { return true; }
+    }, bytes);
+    expect(rejected).toBe(true);
+  }
   for (const extension of ['pdf', 'docx', 'doc']) {
     const message = await page.evaluate(async extension => {
       const modulePath = '/src/lib/ai-content.ts';

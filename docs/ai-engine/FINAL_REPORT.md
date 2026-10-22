@@ -1,3 +1,13 @@
+## New acceptance increment (supersedes earlier current-risk/policy statements)
+
+See [task qualification policy](TASK_QUALIFICATION.md). Runtime product-task qualification now uses fresh operator-controlled, tenant/credential/endpoint/model/task-scoped reviewed evidence; automatic recommendations fail closed on unknown/unreviewed product suitability, known critical failure also blocks pins. No production approvals shipped; self-review is not approval. New product suite uses realistic budgets and preserves original benchmark assertions. Actual hosted results for the next head are pending, not borrowed from9b9f.
+
+Security re-investigation found no Firebase CLI usage beyond its devDependency; removed the unused CLI rather than unsafe override/obsolete downgrade. Removed Mammoth's vulnerable CLI chain by preserving DOCX text extraction via bounded fflate/native XML parsing. Fresh local root all/prod, frontend all/prod and backend all-tree audits are **zero findings**. Earlier3high/3moderate sections below are historical checkpoints, not remaining findings. Browser parser/regression validation of this replacement is mandatory before acceptance.
+
+Independent Opus review remains blocked: no authorized executable/session/model inventory in this environment; Claude connector unsupported. No reinstall/login retries or fabricated ID. Owner must securely provision authorized reviewer, select actual highest available Opus and publish exact model ID, reviewed final SHA, findings and retests; never paste secrets in chat. Prior model totals remain historical; last9b9f Qwen0.5B was9/36, not12/36. Horde's last504 is preserved; no availability inference from older success.
+
+---
+
 # AI engine — current A–K gap-closure report
 
 2026-10-22 · **Assignment active · Draft [PR #48 → dev](https://github.com/bhaskarbeyond-creator/ResumePilotAi/pull/48) · Not 10/10 certified**

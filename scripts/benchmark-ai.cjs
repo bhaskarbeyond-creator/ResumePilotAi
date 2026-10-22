@@ -23,7 +23,7 @@ function loopbackEndpoint(value) {
   if (!['http:', 'https:'].includes(url.protocol) || !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) || url.username || url.password || url.search || url.hash) throw new Error('Benchmark requires a credential-free loopback endpoint');
   return url.href.replace(/\/$/, '');
 }
-async function streamCompletion({ baseUrl, model, prompt, fetchImpl = fetch, timeoutMs = 60000 }) {
+async function streamCompletion({ baseUrl, model, prompt, fetchImpl = fetch, timeoutMs = 60000, maxTokens = 96, reasoningEffort }) {
   const start = performance.now();
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -32,7 +32,7 @@ async function streamCompletion({ baseUrl, model, prompt, fetchImpl = fetch, tim
     const response = await fetchImpl(`${loopbackEndpoint(baseUrl)}/chat/completions`, {
       method: 'POST', signal: controller.signal, redirect: 'error',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], temperature: 0, max_tokens: 96, stream: true, stream_options: { include_usage: true } }),
+      body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], temperature: 0, max_tokens: maxTokens, stream: true, stream_options: { include_usage: true }, ...(reasoningEffort ? { reasoning_effort: reasoningEffort } : {}) }),
     });
     if (!response.ok) throw new Error(`HTTP_${response.status}`);
     if (!response.headers.get('content-type')?.includes('text/event-stream')) throw new Error('EXPECTED_EVENT_STREAM');
@@ -66,7 +66,7 @@ async function streamCompletion({ baseUrl, model, prompt, fetchImpl = fetch, tim
     buffer += decoder.decode();
     if (buffer.trim()) consume(buffer.trim());
     if (!done) throw new Error('TRUNCATED_STREAM');
-    if (!content.trim()) throw new Error('EMPTY_GENERATION');
+    if (!content.trim()) throw new Error(finishReason === 'length' ? 'OUTPUT_LIMIT_WITHOUT_CONTENT' : 'EMPTY_GENERATION');
     if (actualModel !== model) throw new Error('EXECUTED_MODEL_MISMATCH');
     return { content, actualModel, ttftMs, latencyMs: performance.now() - start, usage, finishReason };
   } finally { clearTimeout(timer); if (reader) await reader.cancel().catch(() => {}); }

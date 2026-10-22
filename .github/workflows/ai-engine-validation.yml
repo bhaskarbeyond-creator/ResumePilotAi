@@ -137,7 +137,7 @@ jobs:
 
   real-ollama-inference:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 45
     env:
       LOCAL_INFERENCE_PROVIDER: ollama
       OLLAMA_BASE_URL: http://127.0.0.1:11434/v1
@@ -164,6 +164,27 @@ jobs:
         run: node scripts/verify-local-inference.cjs
       - name: Comparable synthetic quality and streaming speed measurements
         run: node scripts/benchmark-ai.cjs
+      - name: Obtain a stronger model when runner resources permit (one attempt)
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/ai-engine
+          available_kb=$(awk '/MemAvailable/ {print $2}' /proc/meminfo)
+          disk_kb=$(df -Pk / | awk 'NR==2 {print $4}')
+          if [ "$available_kb" -ge 5000000 ] && [ "$disk_kb" -ge 8000000 ]; then
+            if docker exec ai-engine-ollama ollama pull qwen3:4b; then
+              printf '{"model":"qwen3:4b","status":"obtained","access":"self-hosted"}\n' > artifacts/ai-engine/stronger-model-status.json
+              curl --fail --silent http://127.0.0.1:11434/api/show -d '{"model":"qwen3:4b"}' >> "$GITHUB_STEP_SUMMARY"
+            else
+              printf '{"model":"qwen3:4b","status":"pull-failed","inferenceVerified":false}\n' > artifacts/ai-engine/stronger-model-status.json
+              echo '::warning::Stronger model pull failed; no operation or quality claimed'
+            fi
+          else
+            printf '{"model":"qwen3:4b","status":"resource-ineligible","inferenceVerified":false}\n' > artifacts/ai-engine/stronger-model-status.json
+            echo '::notice::Stronger model ineligible under explicit memory/disk budget'
+          fi
+          curl --fail --silent http://127.0.0.1:11434/api/tags >> "$GITHUB_STEP_SUMMARY"
+      - name: Product workload screening at realistic output budgets
+        run: node scripts/evaluate-product-suitability.cjs
       - name: Preserve complete Ollama benchmark records
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

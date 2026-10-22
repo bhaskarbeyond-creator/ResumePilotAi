@@ -26,6 +26,7 @@ const { rescueInlineToolCalls, toolNamesFrom, normalizeTools } = require('../lib
 const { getMetricsPersistence } = require('./persistence');
 const { modelDiscovery } = require('./modelDiscovery');
 const { eligible, validateMode, rankCandidates } = require('./selectionPolicy');
+const { qualificationFor } = require('./taskQualification');
 
 // Stable compatibility order. Intelligent modes are ranked only from capability/service evidence.
 const DEFAULT_PRIORITY_ORDER = Object.freeze([
@@ -194,7 +195,13 @@ class FreeLlmRouter {
     const denied = new Set(tenantContext?.restrictedModels || policy.restrictedModels || []);
     const modelPermitted = candidate => !denied.has(candidate.model) && (!Array.isArray(allowed) || allowed.length === 0 || allowed.includes(candidate.model));
     const mode = platformConfig.selectionMode;
-    if (!mode) return candidates.filter(modelPermitted); // Preserve legacy pinned configurations until migrated by an authorized save.
+    if (!mode) {
+      if (!requirements.task) return candidates.filter(modelPermitted);
+      return candidates.filter(modelPermitted).map(candidate => ({ ...candidate,
+        keys: candidate.keys.filter(key => qualificationFor({ ...candidate, key }, { ...requirements, tenantContext }).status !== 'failed'),
+        routingDecision: { mode: 'manual-legacy', qualityEvidence: 'unknown', taskQualification: { task: requirements.task, status: 'unknown', warning: 'Legacy pins are not task qualification' } },
+      })).filter(candidate => candidate.keys.length > 0);
+    } // Preserve legacy pinned configurations until migrated by an authorized save.
     validateMode(mode);
     const explicit = requestedModel && !['auto', 'dynamic'].includes(requestedModel) && !requestedModel.startsWith('auto:') && !getProviderMeta(requestedModel);
     const explicitProvider = getProviderMeta(requestedModel);
@@ -217,7 +224,13 @@ class FreeLlmRouter {
           if (pin && metadata.id !== pin) continue;
           if (!modelPermitted({ model: metadata.id }) || !eligible(metadata, requirements)) continue;
           if (this.cooldownManager.isOnCooldown(candidate.provider, metadata.id).onCooldown && !candidate.isDedicatedByok) continue;
-          expanded.push({ ...candidate, model: metadata.id, metadata });
+          const selected = { ...candidate, model: metadata.id, metadata };
+          const taskQualification = qualificationFor(selected, { ...requirements, tenantContext });
+          if (taskQualification.status === 'failed') continue;
+          // Automatic product recommendations require reviewed task evidence, not model names or speed.
+          if (requirements.task && mode !== 'manual' && !explicit && !explicitProvider && taskQualification.status !== 'qualified') continue;
+          if (requirements.task && mode !== 'manual' && (!metadata.contextWindow || !metadata.outputLimit)) continue;
+          expanded.push({ ...selected, taskQualification });
         }
       }
     }
@@ -529,6 +542,7 @@ class FreeLlmRouter {
     systemPrompt,
     tenantContext = null,
     dataClassification = 'confidential',
+    taskType = null,
     platformConfig = {},
     temperature = 0.3,
     maxTokens = 4096,
@@ -554,13 +568,13 @@ class FreeLlmRouter {
 
     // 2. Build Candidate Failover Cascade
     const candidates = await this.buildCandidateList({ tenantContext, platformConfig, requestedModel, fetchImpl, dataClassification, requirements: {
-      tools: normalizedTools.length > 0, json: Boolean(jsonMode || responseFormat),
+      task: taskType, tools: normalizedTools.length > 0, json: Boolean(jsonMode || responseFormat),
       vision: messages.some(message => Array.isArray(message.content) && message.content.some(part => part.type === 'image_url')),
       outputTokens: maxTokens, contextTokens: estimateTokens(messages) + maxTokens,
     } });
 
     if (candidates.length === 0) {
-      const err = new Error('No enabled AI provider is configured or healthy');
+      const err = new Error(taskType ? 'No eligible provider satisfies the task qualification and capability policy' : 'No enabled AI provider is configured or healthy');
       err.code = 'AI_PROVIDER_UNAVAILABLE';
       err.status = 503;
       throw err;
@@ -719,6 +733,7 @@ class FreeLlmRouter {
     systemPrompt,
     tenantContext = null,
     dataClassification = 'confidential',
+    taskType = null,
     platformConfig = {},
     temperature = 0.3,
     maxTokens = 4096,
@@ -744,12 +759,12 @@ class FreeLlmRouter {
     const compressionStats = prepared.compression;
 
     const candidates = await this.buildCandidateList({ tenantContext, platformConfig, requestedModel, fetchImpl, dataClassification, requirements: {
-      tools: normalizedTools.length > 0, json: Boolean(jsonMode || responseFormat),
+      task: taskType, tools: normalizedTools.length > 0, json: Boolean(jsonMode || responseFormat),
       vision: messages.some(message => Array.isArray(message.content) && message.content.some(part => part.type === 'image_url')),
       outputTokens: maxTokens, contextTokens: estimateTokens(messages) + maxTokens,
     } });
     if (candidates.length === 0) {
-      const err = new Error('No enabled AI provider is configured or healthy');
+      const err = new Error(taskType ? 'No eligible provider satisfies the task qualification and capability policy' : 'No enabled AI provider is configured or healthy');
       err.code = 'AI_PROVIDER_UNAVAILABLE';
       err.status = 503;
       throw err;
