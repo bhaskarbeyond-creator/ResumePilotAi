@@ -1656,7 +1656,7 @@ async function loadProviderConfiguration(environment = process.env) {
         if (!providers[id]) providers[id] = { ...provider, model: provider.model || 'auto' };
     }
     const configuration = {
-        primary: providers[effectiveAi.provider]?.enabled ? effectiveAi.provider : (providers.nvidia?.enabled ? 'nvidia' : providers.gemini?.enabled ? 'gemini' : mesh.primary),
+        primary: providers[effectiveAi.provider]?.enabled ? effectiveAi.provider : (providers.nvidia?.enabled ? 'nvidia' : providers.gemini?.enabled ? 'gemini' : providers[mesh.primary]?.enabled ? mesh.primary : 'gemini'),
         ...(effectiveAi.selectionMode ? { selectionMode: effectiveAi.selectionMode } : {}),
         enableFallback: effectiveAi.enableFallback !== false,
         temperature: clampNumber(effectiveAi.temperature, 0, 1, 0.7),
