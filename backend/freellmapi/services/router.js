@@ -246,7 +246,7 @@ class FreeLlmRouter {
    * providers are filtered out here — the single choke point every completion
    * passes through.
    */
-  async buildCandidateList({ tenantContext, platformConfig = {}, requestedModel = null, fetchImpl, requirements = {} }) {
+  async buildCandidateList({ tenantContext, platformConfig = {}, requestedModel = null, fetchImpl, requirements = {}, dataClassification = 'confidential' }) {
     const customKeys = tenantContext?.customProviderKeys || {};
     const hasTenantByok = Object.keys(customKeys).some(k => Boolean(String(customKeys[k] || '').trim()));
 
@@ -260,6 +260,7 @@ class FreeLlmRouter {
       for (const [providerId, rawKey] of Object.entries(customKeys)) {
         const pId = providerId.toLowerCase().trim();
         const meta = getProviderMeta(pId);
+        if (meta?.keyless && meta.accessCategory !== 'local' && dataClassification !== 'public-synthetic') continue;
         if (isSearchOrMediaMeta(meta) || !isChatCapableMeta(meta)) continue;
         if (allowed && !allowed.has(pId)) continue;
 
@@ -327,6 +328,9 @@ class FreeLlmRouter {
       if (!conf || conf.enabled === false) continue;
 
       const meta = getProviderMeta(pId);
+      // Registry opt-in is not permission to send candidate/private data to public workers.
+      // Only trusted synthetic callers can opt in; HTTP request bodies never supply this flag.
+      if (meta?.keyless && meta.accessCategory !== 'local' && dataClassification !== 'public-synthetic') continue;
       // Pillar 3 — isolation: search/media providers are not chat models.
       if (isSearchOrMediaMeta(meta)) continue;
       // Unknown provider ids are only callable when the operator supplied an
@@ -516,6 +520,7 @@ class FreeLlmRouter {
     messages: explicitMessages,
     systemPrompt,
     tenantContext = null,
+    dataClassification = 'confidential',
     platformConfig = {},
     temperature = 0.3,
     maxTokens = 4096,
@@ -540,7 +545,7 @@ class FreeLlmRouter {
     const toolNames = prepared.toolNames;
 
     // 2. Build Candidate Failover Cascade
-    const candidates = await this.buildCandidateList({ tenantContext, platformConfig, requestedModel, fetchImpl, requirements: {
+    const candidates = await this.buildCandidateList({ tenantContext, platformConfig, requestedModel, fetchImpl, dataClassification, requirements: {
       tools: normalizedTools.length > 0, json: Boolean(jsonMode || responseFormat),
       vision: messages.some(message => Array.isArray(message.content) && message.content.some(part => part.type === 'image_url')),
       outputTokens: maxTokens, contextTokens: estimateTokens(messages) + maxTokens,
@@ -704,6 +709,7 @@ class FreeLlmRouter {
     messages: explicitMessages,
     systemPrompt,
     tenantContext = null,
+    dataClassification = 'confidential',
     platformConfig = {},
     temperature = 0.3,
     maxTokens = 4096,
@@ -728,7 +734,7 @@ class FreeLlmRouter {
     // reached the client by the time a stream can be inspected.
     const compressionStats = prepared.compression;
 
-    const candidates = await this.buildCandidateList({ tenantContext, platformConfig, requestedModel, fetchImpl, requirements: {
+    const candidates = await this.buildCandidateList({ tenantContext, platformConfig, requestedModel, fetchImpl, dataClassification, requirements: {
       tools: normalizedTools.length > 0, json: Boolean(jsonMode || responseFormat),
       vision: messages.some(message => Array.isArray(message.content) && message.content.some(part => part.type === 'image_url')),
       outputTokens: maxTokens, contextTokens: estimateTokens(messages) + maxTokens,
