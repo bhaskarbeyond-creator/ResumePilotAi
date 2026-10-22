@@ -29,8 +29,11 @@ if (process.env.LEGACY_FRONTEND_DIR) {
         await page.screenshot({ path: test.info().outputPath(`${name}-${width}x${height}.png`), fullPage: true });
         // Two bounded synthetic screenshots can be inspected through the check API without artifact redirects.
         if (width === 390 && height === 844) {
-          const preview = await page.screenshot({ type: 'jpeg', quality: 20, fullPage: false });
-          if (preview.length <= 40000) console.log(`::notice title=UI preview ${name} 390x844::${preview.toString('base64')}`);
+          let preview = await page.screenshot({ type: 'jpeg', quality: 12, clip: { x: 0, y: 0, width: 390, height: 600 } });
+          if (preview.length > 10500) preview = await page.screenshot({ type: 'jpeg', quality: 6, clip: { x: 0, y: 0, width: 390, height: 600 } });
+          const encoded = preview.toString('base64');
+          const parts = Math.ceil(encoded.length / 3500);
+          if (parts <= 4) for (let part = 0; part < parts; part++) console.log(`::notice title=UI preview ${name} part ${part + 1} of ${parts}::${encoded.slice(part * 3500, (part + 1) * 3500)}`);
         }
         await page.getByRole('button', { name: 'Configure Provider', exact: true }).click();
         const dialog = page.getByRole('dialog');
@@ -40,6 +43,7 @@ if (process.env.LEGACY_FRONTEND_DIR) {
         await page.screenshot({ path: test.info().outputPath(`${name}-configure-${width}x${height}.png`), fullPage: true });
         await page.keyboard.press('Escape');
         await expect(dialog).toHaveCount(0);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width + 1);
         observations.push({ persistenceVerified: true, configureDialogVerified: true, source: name, width, height, documentWidth: await page.evaluate(() => document.documentElement.scrollWidth), viewportWidth: width, saveControlVisible: true });
         await page.goto(`${origin}/adm?tab=ai-settings&subtab=metrics`);
         await expect(page).toHaveURL(/\/admin\?tab=ai-settings&subtab=metrics/);
@@ -48,7 +52,7 @@ if (process.env.LEGACY_FRONTEND_DIR) {
         await page.goForward();
         await expect(page).toHaveURL(/subtab=metrics/);
       }
-      console.log(`::notice title=Historical UI comparison::${JSON.stringify({ width, height, observations, pixelEqualityAsserted: false })}`);
+      console.log(`Historical UI comparison ${JSON.stringify({ width, height, observations, pixelEqualityAsserted: false })}`);
       await writeFile(test.info().outputPath('comparison.json'), JSON.stringify({ historicalCommit: '2abbbe4401efd1945e2749127605bb7f80afe941', backend: 'shared current disposable MariaDB/backend and signed test identity', dependencies: 'shared current locked frontend dependencies', pixelEqualityAsserted: false, observations }, null, 2));
     });
   }

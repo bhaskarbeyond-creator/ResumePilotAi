@@ -51,7 +51,17 @@ async function main() {
   const report = { schemaVersion: 1, measuredAt: new Date().toISOString(), provider, methodology: 'Synthetic product contract screening; paired plain requested JSON and provider response_format json_object on identical fixtures with unchanged checks; 3 repetitions per format; temp0; 768–1536 output tokens; Ollama reasoning_effort none requested for all models using official compatibility control; 18min total resource budget; semantic correctness unreviewed; no production qualification; no raw outputs or private inputs.', summary, records };
   fs.mkdirSync('artifacts/ai-engine', { recursive: true });
   fs.writeFileSync('artifacts/ai-engine/product-suitability.json', JSON.stringify(report, null, 2));
-  for (const result of summary) console.log(`::notice title=Product suitability screening::${JSON.stringify({ measuredAt: report.measuredAt, provider, ...result })}`);
+  // Runner annotation messages truncate at4096 characters. Named full records remain in artifacts.
+  for (const result of summary) for (const formatMode of ['plain-requested-json', 'provider-json-object']) {
+    const columns = ['task', 'caseId', 'budget', 'samples', 'ineligible', 'passed', 'failures', 'distinctOutputs'];
+    const taskRows = result.tasks.filter(row => row.formatMode === formatMode).map(row => columns.map(column => {
+      if (column !== 'failures') return row[column];
+      return row.failures.reduce((counts, failure) => { counts[failure] = (counts[failure] || 0) + 1; return counts; }, {});
+    }));
+    const message = JSON.stringify({ measuredAt: report.measuredAt, provider, model: result.model, status: result.status, formatMode, semanticReview: null, latencyP50Ms: result.latencyP50Ms, latencyP95Ms: result.latencyP95Ms, ttftP50Ms: result.ttftP50Ms, columns, taskRows });
+    if (message.length > 3800) throw new Error('Summary exceeds verified annotation budget; full artifact retained');
+    console.log(`::notice title=Product suitability screening::${message}`);
+  }
   if (records.every(row => row.failure === 'transport-or-schema')) process.exitCode = 1;
 }
 module.exports = { cases, assess };

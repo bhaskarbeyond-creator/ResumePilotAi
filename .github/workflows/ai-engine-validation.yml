@@ -178,7 +178,7 @@ jobs:
           docker exec ai-engine-ollama ollama stop qwen2.5:1.5b
           available_kb=$(awk '/MemAvailable/ {print $2}' /proc/meminfo)
           disk_kb=$(df -Pk / | awk 'NR==2 {print $4}')
-          if [ "$available_kb" -ge 5000000 ] && [ "$disk_kb" -ge 8000000 ]; then
+          if [ "$available_kb" -ge 5000000 ] && [ "$disk_kb" -ge 5000000 ]; then
             if docker exec ai-engine-ollama ollama pull qwen3:4b; then
               printf '{"model":"qwen3:4b","status":"obtained","access":"self-hosted"}\n' > artifacts/ai-engine/stronger-model-status.json
               curl --fail --silent http://127.0.0.1:11434/api/show -d '{"model":"qwen3:4b"}' >> "$GITHUB_STEP_SUMMARY"
