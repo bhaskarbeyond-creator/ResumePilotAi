@@ -118,7 +118,8 @@ test('local providers are opt-in and environment endpoints are used only when en
 
 test('platform mesh enforces tenant destination restrictions including explicit deny-all', async () => {
   const router = new FreeLlmRouter();
-  const platformConfig = { providers: { ovh: { model: 'pinned' } } };
+  const platformConfig = { providers: { ollama: { model: 'pinned' } } };
+  assert.equal((await router.buildCandidateList({ tenantContext: { allowedProviders: ['ollama'] }, platformConfig })).length, 1);
   assert.deepEqual(await router.buildCandidateList({ tenantContext: { allowedProviders: [] }, platformConfig }), []);
   assert.deepEqual(await router.buildCandidateList({ tenantContext: { allowedProviders: ['groq'] }, platformConfig }), []);
 });
@@ -130,7 +131,7 @@ test('cached completion cannot bypass changed tenant destination policy', async 
   router.cooldownManager = { isOnCooldown: () => ({ onCooldown: false }), clearCooldown() {} };
   let calls = 0;
   const fetchImpl = async () => { calls++; return { ok: true, json: async () => ({ choices: [{ message: { content: 'ok' } }] }) }; };
-  const options = { prompt: 'fixture', model: 'pinned', platformConfig: { providers: { ovh: { model: 'pinned' } } }, fetchImpl };
+  const options = { prompt: 'fixture', model: 'pinned', platformConfig: { providers: { ollama: { model: 'pinned' } } }, fetchImpl };
   await router.routeCompletion({ ...options, tenantContext: { tenantId: 'a' } });
   assert.equal((await router.routeCompletion({ ...options, tenantContext: { tenantId: 'a' } })).cached, true);
   assert.equal((await router.routeCompletion({ ...options, tenantContext: { tenantId: 'b' } })).cached, false);

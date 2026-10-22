@@ -202,26 +202,34 @@ class FreeLlmRouter {
     const primary = explicitProvider ? requestedModel : candidates.some(candidate => candidate.provider === configuredPrimary) ? configuredPrimary : candidates[0]?.provider;
     const chosen = mode === 'manual' || explicitProvider ? candidates.filter(candidate => candidate.provider === primary) : candidates;
     const expanded = [];
-    for (const candidate of chosen) {
-      let catalog;
-      try {
-        catalog = await this.modelDiscovery.getOrDiscover({ providerId: candidate.provider, apiKey: candidate.key, baseUrl: candidate.baseUrl, fetchImpl, timeoutMs: 5000 });
-      } catch {
-        // Do not claim unknown capabilities or resurrect defaults after failed discovery in intelligent modes.
-        continue;
-      }
-      const pin = explicit ? requestedModel : mode === 'manual' ? (candidate.isDedicatedByok ? tenantContext?.primaryModel || candidate.model : platformConfig.providers?.[candidate.provider]?.model || candidate.model) : null;
-      for (const metadata of catalog) {
-        if (pin && metadata.id !== pin) continue;
-        if (!modelPermitted({ model: metadata.id }) || !eligible(metadata, requirements)) continue;
-        if (this.cooldownManager.isOnCooldown(candidate.provider, metadata.id).onCooldown && !candidate.isDedicatedByok) continue;
-        expanded.push({ ...candidate, model: metadata.id, metadata });
+    for (const source of chosen) {
+      for (const key of source.keys) {
+        const candidate = { ...source, key, keys: [key] };
+        let catalog;
+        try {
+          catalog = await this.modelDiscovery.getOrDiscover({ providerId: candidate.provider, apiKey: candidate.key, baseUrl: candidate.baseUrl, fetchImpl, timeoutMs: 5000 });
+        } catch {
+          // Do not claim unknown capabilities or resurrect defaults after failed discovery in intelligent modes.
+          continue;
+        }
+        const pin = explicit ? requestedModel : mode === 'manual' ? (candidate.isDedicatedByok ? tenantContext?.primaryModel || candidate.model : platformConfig.providers?.[candidate.provider]?.model || candidate.model) : null;
+        for (const metadata of catalog) {
+          if (pin && metadata.id !== pin) continue;
+          if (!modelPermitted({ model: metadata.id }) || !eligible(metadata, requirements)) continue;
+          if (this.cooldownManager.isOnCooldown(candidate.provider, metadata.id).onCooldown && !candidate.isDedicatedByok) continue;
+          expanded.push({ ...candidate, model: metadata.id, metadata });
+        }
       }
     }
     const recent = !tenantContext ? getMetricsPersistence()?.getRecentRequests({ limit: 100 }) || [] : [];
     const ordered = rankCandidates(expanded, { mode, primary, observationFor: candidate => recent.find(row => row.provider === candidate.provider && row.model === candidate.model) });
     // Manual pins never silently cross provider/model boundaries, even with platform fallback enabled.
-    return mode === 'manual' || explicit || explicitProvider || platformConfig.enableFallback === false ? ordered.slice(0, 1) : ordered.slice(0, 12);
+    if (mode === 'manual' || explicit || explicitProvider || platformConfig.enableFallback === false) {
+      const first = ordered[0];
+      // A pin restricts destinations, not legitimate credentials for that same model.
+      return ordered.filter(candidate => candidate.provider === first?.provider && candidate.model === first?.model).slice(0, 12);
+    }
+    return ordered.slice(0, 12);
   }
 
   /**
@@ -246,7 +254,7 @@ class FreeLlmRouter {
    * providers are filtered out here — the single choke point every completion
    * passes through.
    */
-  async buildCandidateList({ tenantContext, platformConfig = {}, requestedModel = null, fetchImpl, requirements = {} }) {
+  async buildCandidateList({ tenantContext, platformConfig = {}, requestedModel = null, fetchImpl, requirements = {}, dataClassification = 'confidential' }) {
     const customKeys = tenantContext?.customProviderKeys || {};
     const hasTenantByok = Object.keys(customKeys).some(k => Boolean(String(customKeys[k] || '').trim()));
 
@@ -260,12 +268,13 @@ class FreeLlmRouter {
       for (const [providerId, rawKey] of Object.entries(customKeys)) {
         const pId = providerId.toLowerCase().trim();
         const meta = getProviderMeta(pId);
+        if (meta?.keyless && meta.accessCategory !== 'local' && dataClassification !== 'public-synthetic') continue;
         if (isSearchOrMediaMeta(meta) || !isChatCapableMeta(meta)) continue;
         if (allowed && !allowed.has(pId)) continue;
 
         const keys = normalizeKeyPool({ key: rawKey });
         if (keys.length === 0) continue;
-        const model = await this.resolveModelForCandidate(pId, keys[0], meta.baseUrl, tenantContext?.primaryModel || requestedModel, fetchImpl);
+        const model = platformConfig.selectionMode ? tenantContext?.primaryModel || requestedModel || 'auto' : await this.resolveModelForCandidate(pId, keys[0], meta.baseUrl, tenantContext?.primaryModel || requestedModel, fetchImpl);
 
         if (!model) continue;
         candidates.push({
@@ -327,6 +336,9 @@ class FreeLlmRouter {
       if (!conf || conf.enabled === false) continue;
 
       const meta = getProviderMeta(pId);
+      // Registry opt-in is not permission to send candidate/private data to public workers.
+      // Only trusted synthetic callers can opt in; HTTP request bodies never supply this flag.
+      if (meta?.keyless && meta.accessCategory !== 'local' && dataClassification !== 'public-synthetic') continue;
       // Pillar 3 — isolation: search/media providers are not chat models.
       if (isSearchOrMediaMeta(meta)) continue;
       // Unknown provider ids are only callable when the operator supplied an
@@ -346,13 +358,13 @@ class FreeLlmRouter {
       const modelTarget = (requestedModel && !requestedModel.startsWith('auto:') && requestedModel !== 'auto')
         ? requestedModel
         : conf?.model;
-      const model = await this.resolveModelForCandidate(pId, keys[0], baseUrl, modelTarget, fetchImpl);
+      const model = platformConfig.selectionMode ? modelTarget || 'auto' : await this.resolveModelForCandidate(pId, keys[0], baseUrl, modelTarget, fetchImpl);
 
       if (!model) continue;
 
       // Check if on active cooldown (provider-level or model-level)
       const cooldown = this.cooldownManager.isOnCooldown(pId, model);
-      if (cooldown.onCooldown) continue;
+      if (cooldown.onCooldown && !platformConfig.selectionMode) continue;
 
       candidates.push({
         provider: pId,
@@ -516,6 +528,7 @@ class FreeLlmRouter {
     messages: explicitMessages,
     systemPrompt,
     tenantContext = null,
+    dataClassification = 'confidential',
     platformConfig = {},
     temperature = 0.3,
     maxTokens = 4096,
@@ -540,7 +553,7 @@ class FreeLlmRouter {
     const toolNames = prepared.toolNames;
 
     // 2. Build Candidate Failover Cascade
-    const candidates = await this.buildCandidateList({ tenantContext, platformConfig, requestedModel, fetchImpl, requirements: {
+    const candidates = await this.buildCandidateList({ tenantContext, platformConfig, requestedModel, fetchImpl, dataClassification, requirements: {
       tools: normalizedTools.length > 0, json: Boolean(jsonMode || responseFormat),
       vision: messages.some(message => Array.isArray(message.content) && message.content.some(part => part.type === 'image_url')),
       outputTokens: maxTokens, contextTokens: estimateTokens(messages) + maxTokens,
@@ -641,7 +654,7 @@ class FreeLlmRouter {
             latencyMs,
             fallbacksAttempted,
             compression: compressionStats,
-            keysAttempted: keyFailures + 1,
+            keysAttempted: fallbacksAttempted.filter(attempt => attempt.provider === candidate.provider && attempt.model === candidate.model).length + 1,
             toolCallsRescued: Boolean(rescued.toolCallsRescued),
             isDedicatedByok: Boolean(candidate.isDedicatedByok),
           };
@@ -668,7 +681,8 @@ class FreeLlmRouter {
       }
 
       // Only bench the *provider* once every key in its pool failed.
-      if (!candidate.isDedicatedByok && (sawRateLimit || keyFailures === candidate.keys.length)) {
+      const remainingCredential = candidates.slice(candidates.indexOf(candidate) + 1).some(next => next.provider === candidate.provider && next.model === candidate.model);
+      if (!candidate.isDedicatedByok && !remainingCredential && (sawRateLimit || keyFailures === candidate.keys.length)) {
         this.cooldownManager.setCooldown(
           candidate.provider,
           candidate.model,
@@ -704,6 +718,7 @@ class FreeLlmRouter {
     messages: explicitMessages,
     systemPrompt,
     tenantContext = null,
+    dataClassification = 'confidential',
     platformConfig = {},
     temperature = 0.3,
     maxTokens = 4096,
@@ -728,7 +743,7 @@ class FreeLlmRouter {
     // reached the client by the time a stream can be inspected.
     const compressionStats = prepared.compression;
 
-    const candidates = await this.buildCandidateList({ tenantContext, platformConfig, requestedModel, fetchImpl, requirements: {
+    const candidates = await this.buildCandidateList({ tenantContext, platformConfig, requestedModel, fetchImpl, dataClassification, requirements: {
       tools: normalizedTools.length > 0, json: Boolean(jsonMode || responseFormat),
       vision: messages.some(message => Array.isArray(message.content) && message.content.some(part => part.type === 'image_url')),
       outputTokens: maxTokens, contextTokens: estimateTokens(messages) + maxTokens,
@@ -879,7 +894,8 @@ class FreeLlmRouter {
         }
       }
 
-      if (!candidate.isDedicatedByok && (sawRateLimit || keyFailures === candidate.keys.length)) {
+      const remainingCredential = candidates.slice(candidates.indexOf(candidate) + 1).some(next => next.provider === candidate.provider && next.model === candidate.model);
+      if (!candidate.isDedicatedByok && !remainingCredential && (sawRateLimit || keyFailures === candidate.keys.length)) {
         this.cooldownManager.setCooldown(
           candidate.provider,
           candidate.model,

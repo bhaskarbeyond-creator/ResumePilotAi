@@ -10,7 +10,7 @@ const { ModelDiscoveryService } = require('../backend/freellmapi/services/modelD
   router.modelDiscovery = new ModelDiscoveryService();
   const models = await router.modelDiscovery.getOrDiscover({ providerId: 'aihorde', timeoutMs: 10000 });
   assert.ok(models.length, 'No active text workers in the public catalog');
-  const result = await router.routeCompletion({ prompt: 'Complete this sentence with a few words: A tree has',
+  const result = await router.routeCompletion({ dataClassification: 'public-synthetic', prompt: 'Complete this sentence with a few words: A tree has',
     platformConfig: { selectionMode: 'manual', primary: 'aihorde', enableFallback: false,
       providers: { aihorde: { enabled: true, model: models[0].id } } },
     maxTokens: 32, temperature: 0.3, timeoutMs: 90000, bypassCache: true });
