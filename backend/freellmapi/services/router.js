@@ -157,11 +157,6 @@ class FreeLlmRouter {
       return req;
     }
 
-    // Use verified defaultModel instantly with zero network blocking
-    if (meta?.defaultModel) {
-      return meta.defaultModel;
-    }
-
     // Dynamic Discovery: Pull live models directly from the provider's /models endpoint
     try {
       const liveModels = await this.modelDiscovery.getOrDiscover({
@@ -184,11 +179,12 @@ class FreeLlmRouter {
         // Otherwise use highest intelligence Frontier model discovered
         return liveModels[0].id;
       }
+      // A successful empty catalog is authoritative: do not resurrect removed models.
+      return null;
     } catch {
-      // Fall back safely to registry default on discovery network error
+      // Bootstrap hint only when discovery is unavailable; inference still verifies it.
+      return meta?.defaultModel || null;
     }
-
-    return meta?.defaultModel || 'default';
   }
 
   /**
@@ -236,6 +232,7 @@ class FreeLlmRouter {
         if (keys.length === 0) continue;
         const model = await this.resolveModelForCandidate(pId, keys[0], meta.baseUrl, tenantContext?.primaryModel || requestedModel, fetchImpl);
 
+        if (!model) continue;
         candidates.push({
           provider: pId,
           keys,
@@ -323,6 +320,8 @@ class FreeLlmRouter {
         : conf?.model;
       const model = await this.resolveModelForCandidate(pId, keys[0], baseUrl, modelTarget, fetchImpl);
 
+      if (!model) continue;
+
       // Check if on active cooldown (provider-level or model-level)
       const cooldown = this.cooldownManager.isOnCooldown(pId, model);
       if (cooldown.onCooldown) continue;
@@ -339,27 +338,6 @@ class FreeLlmRouter {
       // If fallback is explicitly disabled, only retain the primary provider
       if (platformConfig?.enableFallback === false) {
         break;
-      }
-    }
-
-    // If all providers are on cooldown, fall back to testing the earliest expired one
-    if (candidates.length === 0) {
-      for (const pId of orderedKeys) {
-        const conf = providers[pId];
-        if (!conf || conf.enabled === false) continue;
-        const meta = getProviderMeta(pId);
-        if (isSearchOrMediaMeta(meta)) continue;
-        let keys = normalizeKeyPool(conf);
-        if (keys.length === 0 && meta?.keyless) keys = ['keyless'];
-        if (keys.length === 0) continue;
-        candidates.push({
-          provider: pId,
-          keys,
-          key: keys[0],
-          model: conf.model || meta?.defaultModel,
-          baseUrl: conf.baseUrl || meta?.baseUrl,
-          isDedicatedByok: false,
-        });
       }
     }
 

@@ -662,18 +662,18 @@ export function AdminAiSettingsTab() {
     setIsDiscoveryOpen(true);
   };
 
-  const handleDiscoveryFetch = async () => {
-    if (!modalSelectedPlatform) {
+  const handleDiscoveryFetch = async (selectedProviderId?: string) => {
+    if (!selectedProviderId && !modalSelectedPlatform) {
       setModalError('Please select a platform first.');
       return;
     }
     setDiscoveryLoading(true);
     setModalError(null);
     try {
-      const providerId = modalSelectedPlatform.id;
+      const providerId = selectedProviderId || modalSelectedPlatform!.id;
       const res = await post<{ models?: any[] }>('/admin/ai/fetch-models', {
         provider: providerId,
-        apiKey: modalApiKey,
+        ...(selectedProviderId ? {} : { apiKey: modalApiKey }),
       });
       setDiscoveryResults((prev) => ({
         ...prev,
@@ -1754,6 +1754,7 @@ export function AdminAiSettingsTab() {
           discoveryResults={discoveryResults}
           discoveryLoading={discoveryLoading}
           handleDiscoveryFetch={handleDiscoveryFetch}
+          error={modalError}
         />
       )}
 
@@ -2743,11 +2744,12 @@ const UnifiedGatewayTab = ({ providers, primaryProvider, enableFallback, tempera
 // ═════════════════════════════════════════════════════════════════════════════
 // DISCOVERY SUBTAB (DIR-013 Section 4: ?subtab=discovery)
 // ═════════════════════════════════════════════════════════════════════════════
-const DiscoveryTab = ({ providers, discoveryResults, discoveryLoading, handleDiscoveryFetch }: {
+const DiscoveryTab = ({ providers, discoveryResults, discoveryLoading, handleDiscoveryFetch, error }: {
   providers: ProviderItem[];
   discoveryResults: Record<string, any>;
   discoveryLoading: boolean;
-  handleDiscoveryFetch: () => Promise<void>;
+  handleDiscoveryFetch: (providerId: string) => Promise<void>;
+  error: string | null;
 }) => {
   const [selectedId, setSelectedId] = React.useState<string>('');
   const results = discoveryResults[selectedId];
@@ -2762,8 +2764,9 @@ const DiscoveryTab = ({ providers, discoveryResults, discoveryLoading, handleDis
           <p className="text-xs text-ink-muted">
             Live query of provider /models endpoints to sync available models into the catalog.
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <select
+              aria-label="Discovery provider"
               value={selectedId}
               onChange={(e) => setSelectedId(e.target.value)}
               className="h-9 rounded-md border border-border bg-surface px-3 text-xs text-ink"
@@ -2776,19 +2779,24 @@ const DiscoveryTab = ({ providers, discoveryResults, discoveryLoading, handleDis
             <Button
               variant="primary"
               size="sm"
-              onClick={() => handleDiscoveryFetch()}
+              onClick={() => handleDiscoveryFetch(selectedId)}
+              disabled={!selectedId || discoveryLoading}
               loading={discoveryLoading}
               className="h-9 text-xs font-bold"
             >
               Fetch Models
             </Button>
           </div>
+          {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
           {results ? (
-            <div className="space-y-2">
+            <div className="space-y-2" aria-live="polite">
+              {results.some((m: any) => m.catalogStatus !== "fresh") && (
+                <p role="status" className="text-xs text-amber-600">Catalog is stale or unverified. Model availability must be confirmed by inference.</p>
+              )}
               <div className="text-xs font-bold text-ink">Discovered Models ({results.length})</div>
               {results.map((m: any) => (
                 <div key={m.id} className="p-3 rounded-lg border border-border/60 bg-surface/80 text-xs">
-                  <div className="font-mono font-semibold text-ink">{m.id}</div>
+                  <div className="font-mono font-semibold text-ink break-all">{m.id}</div>
                   {m.contextWindow ? <div className="text-ink-muted mt-0.5">{m.contextWindow} context</div> : null}
                 </div>
               ))}

@@ -376,8 +376,8 @@ test('FreeLLMAPI: streaming fails over to the next provider before the first tok
     messages: [{ role: 'user', content: 'failover please' }],
     platformConfig: {
       providers: {
-        groq: { key: 'gsk-a', enabled: true, model: 'llama-3.3-70b-versatile' },
-        cerebras: { key: 'csk-b', enabled: true, model: 'llama3.3-70b' },
+        groq: { key: 'gsk-valid-fixture-a', enabled: true, model: 'llama-3.3-70b-versatile' },
+        cerebras: { key: 'csk-valid-fixture-b', enabled: true, model: 'llama3.3-70b' },
       },
     },
     fetchImpl: mockFetch,

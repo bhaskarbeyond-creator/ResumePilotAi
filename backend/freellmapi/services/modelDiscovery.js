@@ -8,6 +8,7 @@
  * Zero hardcoding — dynamically pulls, classifies, caches, and updates active models.
  */
 
+const { createHash } = require('node:crypto');
 const { getProviderMeta } = require('../providers/registry');
 
 /** Hard cap on catalog body: 2MB protects shared host memory */
@@ -196,11 +197,14 @@ class ModelDiscoveryService {
   constructor(ttlMs = 3600_000) { // 1 hour TTL
     this.cache = new Map(); // providerKey -> { models, expiresAt }
     this.ttlMs = ttlMs;
+    this.inFlight = new Map();
+    this.retryAfterMs = 30_000;
+    this.maxStaleMs = 24 * 3600_000;
   }
 
   _makeCacheKey(providerId, apiKey, baseUrl) {
     const p = String(providerId || '').toLowerCase().trim();
-    const k = String(apiKey || '').trim().slice(-8);
+    const k = createHash('sha256').update(String(apiKey || '').trim()).digest('hex');
     const u = String(baseUrl || '').trim();
     return `${p}:${k}:${u}`;
   }
@@ -217,17 +221,6 @@ class ModelDiscoveryService {
     const isKeyless = Boolean(meta?.keyless);
 
     if (!isKeyless && (!apiKey || !String(apiKey).trim() || apiKey === 'keyless')) {
-      if (meta && Array.isArray(meta.recommendedModels) && meta.recommendedModels.length > 0) {
-        return meta.recommendedModels.map(id => ({
-          id,
-          name: id,
-          intelligenceTier: classifyIntelligence(id),
-          contextWindow: '128K',
-          vision: false,
-          pricing: { isFree: isKeyless, priceNote: isKeyless ? 'free' : undefined },
-          ownedBy: providerId,
-        }));
-      }
       throw new Error(`API key required to discover models for ${providerId}`);
     }
 
@@ -259,11 +252,8 @@ class ModelDiscoveryService {
         signal: controller.signal,
       });
 
-      clearTimeout(timer);
-
       if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`HTTP ${res.status} from ${providerId} /models: ${text.slice(0, 200)}`);
+        throw new Error(`HTTP ${res.status} from ${providerId} /models`);
       }
 
       let json;
@@ -298,7 +288,7 @@ class ModelDiscoveryService {
 
       for (const item of rawList) {
         const rawId = extractModelId(item);
-        if (!rawId || rawId.length > MAX_MODEL_ID_LENGTH) continue;
+        if (!rawId || rawId.length > MAX_MODEL_ID_LENGTH || /[\x00-\x1f\x7f]/.test(rawId)) continue;
 
         // Clean model id (e.g. Gemini returns 'models/gemini-2.0-flash')
         const id = rawId.replace(/^models\//, '');
@@ -334,52 +324,56 @@ class ModelDiscoveryService {
       });
 
       return discovered;
-    } catch (err) {
+    } finally {
       clearTimeout(timer);
-      throw err;
     }
   }
 
   async getOrDiscover({
-    providerId,
-    apiKey,
-    baseUrl,
-    fetchImpl = globalThis.fetch,
-    forceRefresh = false,
+    providerId, apiKey, baseUrl, fetchImpl = globalThis.fetch,
+    forceRefresh = false, timeoutMs = 15000,
   }) {
     const key = this._makeCacheKey(providerId, apiKey, baseUrl);
     const existing = this.cache.get(key);
-
-    if (!forceRefresh && existing && existing.expiresAt > Date.now()) {
-      return existing.models;
+    const now = Date.now();
+    const snapshot = entry => entry.models.map(model => ({
+      ...model,
+      catalogSource: 'provider',
+      catalogStatus: entry.expiresAt > Date.now() ? 'fresh' : 'stale',
+      lastSuccessfulRefresh: entry.refreshedAt,
+      catalogRefreshFailed: Boolean(entry.failed),
+    }));
+    if (!forceRefresh && existing && existing.expiresAt > now) return snapshot(existing);
+    if (this.inFlight.has(key)) return this.inFlight.get(key);
+    // Even manual refresh must respect backoff after an upstream outage.
+    if (existing?.retryAt > now) {
+      if (now - existing.refreshedAt <= this.maxStaleMs) return snapshot(existing);
+      throw new Error(`Model discovery temporarily unavailable for ${providerId}`);
     }
-
-    try {
-      const models = await this.discoverFromEndpoint({ providerId, apiKey, baseUrl, fetchImpl });
-      this.cache.set(key, {
-        models,
-        expiresAt: Date.now() + this.ttlMs,
-      });
-      return models;
-    } catch (err) {
-      // If discovery fails but we had prior cached models, serve stale cache
-      if (existing?.models?.length) {
-        return existing.models;
+    const operation = (async () => {
+      try {
+        const models = await this.discoverFromEndpoint({ providerId, apiKey, baseUrl, fetchImpl, timeoutMs });
+        const refreshedAt = Date.now();
+        const entry = { models, refreshedAt, expiresAt: refreshedAt + this.ttlMs };
+        this.cache.set(key, entry);
+        return snapshot(entry);
+      } catch {
+        if (existing) {
+          existing.failed = true;
+          existing.retryAt = Date.now() + this.retryAfterMs;
+          // A failed forced refresh must never masquerade as fresh verification.
+          existing.expiresAt = Math.min(existing.expiresAt, Date.now());
+          if (Date.now() - existing.refreshedAt <= this.maxStaleMs) return snapshot(existing);
+        } else {
+          this.cache.set(key, { models: [], refreshedAt: 0, expiresAt: 0, failed: true, retryAt: Date.now() + this.retryAfterMs });
+        }
+        // Failure is not proof that registry defaults are available upstream.
+        throw new Error(`Model discovery unavailable for ${providerId}`);
       }
-      const meta = getProviderMeta(providerId);
-      if (meta && Array.isArray(meta.recommendedModels) && meta.recommendedModels.length > 0) {
-        return meta.recommendedModels.map(id => ({
-          id,
-          name: id,
-          intelligenceTier: classifyIntelligence(id),
-          contextWindow: '128K',
-          vision: false,
-          pricing: { isFree: Boolean(meta.keyless), priceNote: meta.keyless ? 'free' : undefined },
-          ownedBy: providerId,
-        }));
-      }
-      throw err;
-    }
+    })();
+    this.inFlight.set(key, operation);
+    try { return await operation; }
+    finally { this.inFlight.delete(key); }
   }
 
   clear() {

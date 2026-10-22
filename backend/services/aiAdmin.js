@@ -536,8 +536,12 @@ async function fetchProviderModels({ environment = process.env, provider, apiKey
       const models = rawList.map(m => ({
         id: m.id,
         name: m.name || m.id,
-        tier: m.intelligenceTier || m.tier || 'Frontier',
-        contextWindow: m.contextWindow || '128K',
+        tier: m.intelligenceTier || m.tier || 'Unknown',
+        contextWindow: m.contextWindow ?? null,
+        catalogStatus: m.catalogStatus || 'unverified',
+        catalogSource: m.catalogSource || 'unknown',
+        lastSuccessfulRefresh: m.lastSuccessfulRefresh || null,
+        catalogRefreshFailed: Boolean(m.catalogRefreshFailed),
         supportsVision: Boolean(m.vision || m.supportsVision),
         pricing: m.pricing || null,
       })).sort((a, b) => a.id.localeCompare(b.id));
@@ -548,7 +552,7 @@ async function fetchProviderModels({ environment = process.env, provider, apiKey
   }
 
   if (registryMeta && Array.isArray(registryMeta.recommendedModels)) {
-    const models = registryMeta.recommendedModels.map(id => ({ id, name: id }));
+    const models = registryMeta.recommendedModels.map(id => ({ id, name: id, catalogStatus: 'unverified', catalogSource: 'registry', lastSuccessfulRefresh: null }));
     return { provider: normProvider, count: models.length, models };
   }
 
