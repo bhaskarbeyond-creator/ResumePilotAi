@@ -80,3 +80,11 @@ test('unexpected product routing errors cannot fall back through the compatibili
   assert.equal(bypassed, false);
  } finally { gateway.completeChat = previousComplete; shared.route = previousRoute; }
 });
+test('product context checks use conservative UTF-8 size, not English-only chars/4', async () => {
+ const router = new FreeLlmRouter(); let dispatched = false;
+ router.modelDiscovery = { getOrDiscover: async () => [{ id: 'fixture', capabilities: { json: true }, contextWindow: 4096, outputLimit: 2048 }] };
+ await assert.rejects(router.routeCompletion({ prompt: '界'.repeat(2000), taskType: 'resume-write', jsonMode: true, maxTokens: 512, model: 'fixture',
+  fetchImpl: async () => { dispatched = true; throw new Error('must not dispatch'); },
+  platformConfig: { selectionMode: 'manual', primary: 'llamacpp', providers: { llamacpp: { enabled: true, model: 'fixture' } } } }), { code: 'AI_PROVIDER_UNAVAILABLE' });
+ assert.equal(dispatched, false);
+});

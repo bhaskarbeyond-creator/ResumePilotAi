@@ -573,7 +573,7 @@ class FreeLlmRouter {
     const candidates = await this.buildCandidateList({ tenantContext, platformConfig, requestedModel, fetchImpl, dataClassification, requirements: {
       task: taskType, tools: normalizedTools.length > 0, json: Boolean(jsonMode || responseFormat),
       vision: messages.some(message => Array.isArray(message.content) && message.content.some(part => part.type === 'image_url')),
-      outputTokens: maxTokens, contextTokens: estimateTokens(messages) + maxTokens,
+      outputTokens: maxTokens, contextTokens: (taskType ? Buffer.byteLength(JSON.stringify(messages), 'utf8') + Buffer.byteLength(JSON.stringify(normalizedTools), 'utf8') + 512 + messages.length * 64 : estimateTokens(messages)) + maxTokens,
     } });
 
     if (candidates.length === 0) {
@@ -764,7 +764,7 @@ class FreeLlmRouter {
     const candidates = await this.buildCandidateList({ tenantContext, platformConfig, requestedModel, fetchImpl, dataClassification, requirements: {
       task: taskType, tools: normalizedTools.length > 0, json: Boolean(jsonMode || responseFormat),
       vision: messages.some(message => Array.isArray(message.content) && message.content.some(part => part.type === 'image_url')),
-      outputTokens: maxTokens, contextTokens: estimateTokens(messages) + maxTokens,
+      outputTokens: maxTokens, contextTokens: (taskType ? Buffer.byteLength(JSON.stringify(messages), 'utf8') + Buffer.byteLength(JSON.stringify(normalizedTools), 'utf8') + 512 + messages.length * 64 : estimateTokens(messages)) + maxTokens,
     } });
     if (candidates.length === 0) {
       const err = new Error(taskType ? 'No eligible provider satisfies the task qualification and capability policy' : 'No enabled AI provider is configured or healthy');
