@@ -1,3 +1,19 @@
+# Current continuation — 2026-10-22 after external merge
+
+**Supersedes the historical ledger below.** PR #46 was merged externally at 10:05:23Z; the new fixed session branch is `arena/e677cdb3-resumepilotai`, and active follow-up is **draft PR #47 → dev**. No main/dev write or merge was performed by this continuation.
+
+- Production code `1e3ebd9de0dfecdc52dfaff0df14bff1714f8ce4`: full backend **1076/1076**, authenticated **11/11**, full quality passed; anonymous Horde **timeout 504**, not success.
+- Real revised benchmarks: 54 streamed responses, 18 per model. Strict correctness: SmolLM2-135M **0/18**, Qwen2.5 0.5B **10/18**, Qwen2.5 1.5B **15/18**. Actual TTFT/latencies/usage/repeatability recorded, no general-quality rating. See BENCHMARK.md and benchmark-results.json.
+- Implemented confidential-default public-worker exclusion, per-credential catalog/eligibility, and pooled-cooldown deferral. Existing local adapters reused; official Ollama CPU path now actually exercised.
+- Official Claude Code CLI **2.1.308** was installed transiently; auth status is **logged out / none**. Model selection/inventory/review remains blocked by authorized authentication, not merely missing installation. No Claude model ID or independent approval claimed.
+- Current screenshots retained in CI artifacts; no pixel-matched historical or deployed parity claim. Azure Blob artifact download is inaccessible from this sandbox; only artifact existence/check results, not manual image inspection, verified here.
+- Root dev-only Firebase findings remain: current parent still uses affected chokidar/braces, no safe published patch. All production audits0; backend/frontend all audits0; root all-tree3high. No unsafe override or dependency displacement.
+- Latest publication adds documentation and actual-panel readiness before screenshot capture. Read its current-head checks. Preserve draft status/active assignment; no 10/10 certification.
+
+Authoritative current A–K: FINAL_REPORT.md. Requirements: GAP_MATRIX.md. All75 entries: provider-register.json. Historical source comparison: LEGACY_PARITY.md.
+
+---
+
 # Continued engineering — 2026-10-22
 
 **Assignment remains active. PR #46 is draft; do not mark ready or close it.** PR #45 was merged externally while the work was unfinished; the agent neither marked it ready nor merged it. The fixed session branch remains `arena/11b0f680-resumepilotai`, targeting `dev`.
