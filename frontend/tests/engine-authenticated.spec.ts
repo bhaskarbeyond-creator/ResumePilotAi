@@ -52,6 +52,18 @@ test('real UI login, discovery, persisted modes and manual pin execute the actua
   expect(catalog.models.length).toBeGreaterThan(0);
   expect(catalog.models[0].catalogStatus).toBe('fresh');
   const model = catalog.models[0].id;
+  const session = await page.evaluate(() => JSON.parse(localStorage.getItem('ime_dev_user') || '{}'));
+  const assertInference = async (expectedMode: string) => {
+    const response = await request.post('/api/v1/chat/completions', { headers: { Authorization: `Bearer ${session.token}` },
+      data: { model: 'auto', messages: [{ role: 'user', content: 'Write one sentence about a tree.' }], max_tokens: 32 } });
+    expect(response.status()).toBe(200);
+    const result = await response.json();
+    expect(result.model).toBe(model);
+    expect(result._freellmapi.provider).toBe('llamacpp');
+    expect(result._freellmapi.actual_model).toBe(model);
+    expect(result._freellmapi.routing_decision.mode).toBe(expectedMode);
+    expect(result.choices[0].message.content.trim().length).toBeGreaterThan(0);
+  };
   const mode = page.getByRole('combobox', { name: 'Selection mode' });
   for (const value of ['auto','quality','speed','balanced']) {
     await mode.selectOption(value);
@@ -60,6 +72,7 @@ test('real UI login, discovery, persisted modes and manual pin execute the actua
     expect((await saved).ok()).toBe(true);
     await page.reload();
     await expect(mode).toHaveValue(value);
+    await assertInference(value);
   }
   await mode.selectOption('manual');
   await page.getByRole('combobox', { name: 'Pinned provider' }).selectOption('llamacpp');
@@ -71,15 +84,7 @@ test('real UI login, discovery, persisted modes and manual pin execute the actua
   await page.reload();
   await expect(mode).toHaveValue('manual');
   await expect(page.getByRole('combobox', { name: 'Pinned model' })).toHaveValue(model);
-  const session = await page.evaluate(() => JSON.parse(localStorage.getItem('ime_dev_user') || '{}'));
-  const inference = await request.post('/api/v1/chat/completions', { headers: { Authorization: `Bearer ${session.token}` },
-    data: { model: 'auto', messages: [{ role: 'user', content: 'Write one sentence about a tree.' }], max_tokens: 32 } });
-  expect(inference.status()).toBe(200);
-  const result = await inference.json();
-  expect(result.model).toBe(model);
-  expect(result._freellmapi.provider).toBe('llamacpp');
-  expect(result._freellmapi.actual_model).toBe(model);
-  expect(result.choices[0].message.content.trim().length).toBeGreaterThan(0);
+  await assertInference('manual');
 });
 test('ordinary identity is denied protected settings/discovery and redirected from console', async ({ page, request }) => {
   const body = await identity(request, 'ordinary-ai-e2e@resumepilot.test');

@@ -184,3 +184,34 @@ test('unknown capabilities are null, explicit evidence is retained, and name siz
   assert.equal(models[1].capabilities.tools, true);
   assert.equal(models[1].capabilities.json, false);
 });
+
+test('credential rotation cannot grow catalog cache without bound', async () => {
+  const service = new ModelDiscoveryService();
+  service.maxEntries = 2;
+  for (const apiKey of ['fixture-credential-a', 'fixture-credential-b', 'fixture-credential-c']) {
+    await service.getOrDiscover({ providerId: 'groq', apiKey, fetchImpl: async () => response([{ id: 'model' }]) });
+  }
+  assert.equal(service.cache.size, 2);
+  assert.deepEqual(service.getCachedCatalog({ providerId: 'groq', apiKey: 'fixture-credential-a' }), []);
+});
+test('malformed capability objects are unknown, not retained or treated as support', async () => {
+  const service = new ModelDiscoveryService();
+  const models = await service.discoverFromEndpoint({ ...params, fetchImpl: async () => response([{ id: 'model', name: 'x'.repeat(1000), capabilities: { tools: { untrusted: 'value' } } }]) });
+  assert.equal(models[0].capabilities.tools, null);
+  assert.equal(models[0].name.length, 512);
+});
+test('concurrent distinct-credential discovery is bounded while same-credential requests coalesce', async () => {
+  const service = new ModelDiscoveryService();
+  service.maxConcurrentDiscovery = 1;
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  let calls = 0;
+  const fetchImpl = async () => { calls++; await gate; return response([{ id: 'model' }]); };
+  const first = service.getOrDiscover({ providerId: 'groq', apiKey: 'fixture-a', fetchImpl });
+  const same = service.getOrDiscover({ providerId: 'groq', apiKey: 'fixture-a', fetchImpl });
+  await assert.rejects(service.getOrDiscover({ providerId: 'groq', apiKey: 'fixture-b', fetchImpl }), /concurrency limit/);
+  release();
+  await Promise.all([first, same]);
+  assert.equal(calls, 1);
+  assert.equal(service.inFlight.size, 0);
+});
