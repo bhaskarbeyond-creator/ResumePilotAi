@@ -1,8 +1,13 @@
 name: AI engine validation
 on:
   pull_request:
-    paths: ['backend/**', 'frontend/**', 'scripts/verify-local-inference.cjs', '.github/workflows/ai-engine-validation.yml']
+    paths: ['backend/**', 'frontend/**', 'scripts/verify-local-inference.cjs', 'scripts/benchmark-ai.cjs', 'scripts/evaluate-product-suitability.cjs', 'scripts/prepare-engine-legacy.sh', '.github/workflows/ai-engine-validation.yml']
   workflow_dispatch:
+    inputs:
+      verify_public_inference:
+        description: 'One explicitly requested anonymous availability observation (not a deterministic gate)'
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -119,6 +124,7 @@ jobs:
         run: docker rm -f ai-engine-local
 
   real-public-anonymous-inference:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.verify_public_inference }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     # Community capacity is external. A failed attempt stays visibly failed, never certifies a provider.

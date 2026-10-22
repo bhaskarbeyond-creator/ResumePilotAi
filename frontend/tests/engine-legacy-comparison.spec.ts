@@ -27,6 +27,11 @@ if (process.env.LEGACY_FRONTEND_DIR) {
         await page.reload();
         await expect(page.getByRole('button', { name: 'Save All Changes', exact: true })).toBeVisible();
         await page.screenshot({ path: test.info().outputPath(`${name}-${width}x${height}.png`), fullPage: true });
+        // Two bounded synthetic screenshots can be inspected through the check API without artifact redirects.
+        if (width === 390 && height === 844) {
+          const preview = await page.screenshot({ type: 'jpeg', quality: 20, fullPage: false });
+          if (preview.length <= 40000) console.log(`::notice title=UI preview ${name} 390x844::${preview.toString('base64')}`);
+        }
         await page.getByRole('button', { name: 'Configure Provider', exact: true }).click();
         const dialog = page.getByRole('dialog');
         await expect(dialog).toBeVisible();
