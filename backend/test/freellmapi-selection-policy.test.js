@@ -100,3 +100,55 @@ test('a tenant manual pin is not replaced by an unrelated platform primary or it
   assert.equal(result[0].provider, 'groq');
   assert.equal(result[0].model, 'tenant-pin');
 });
+
+test('intelligent discovery survives an expired first credential without borrowing its catalog', async () => {
+  const router = new FreeLlmRouter();
+  router.modelDiscovery = { getOrDiscover: async ({ apiKey }) => {
+    if (apiKey === 'expired-fixture-key') throw new Error('revoked');
+    return [{ id: 'second-credential-model', capabilities: { tools: true } }];
+  } };
+  const candidates = await router.buildCandidateList({ platformConfig: { selectionMode: 'balanced', primary: 'kilo', providers: {
+    kilo: { enabled: true, key: ['expired-fixture-key', 'valid-fixture-key'], model: 'auto' },
+  } }, requirements: { tools: true } });
+  assert.equal(candidates.length, 1);
+  assert.equal(candidates[0].model, 'second-credential-model');
+  assert.deepEqual(candidates[0].keys, ['valid-fixture-key']);
+});
+test('a discovered capability cannot authorize a different credential; manual destinations stay pinned', async () => {
+  const router = new FreeLlmRouter();
+  router.modelDiscovery = { getOrDiscover: async ({ apiKey }) => [{ id: 'pinned', capabilities: { tools: apiKey === 'tools-fixture-key' } }] };
+  const platformConfig = { selectionMode: 'manual', primary: 'groq', providers: {
+    groq: { enabled: true, key: ['plain-fixture-key', 'tools-fixture-key'], model: 'pinned' },
+  } };
+  const candidates = await router.buildCandidateList({ platformConfig, requirements: { tools: true } });
+  assert.deepEqual(candidates.map(candidate => candidate.keys), [['tools-fixture-key']]);
+  const ordinary = await router.buildCandidateList({ platformConfig });
+  assert.equal(ordinary.length, 2);
+  assert.ok(ordinary.every(candidate => candidate.model === 'pinned' && candidate.provider === 'groq'));
+});
+for (const streaming of [false, true]) {
+  test(`credential-specific candidates do not bench the destination before remaining keys (${streaming ? 'stream' : 'completion'})`, async () => {
+    const router = new FreeLlmRouter();
+    let cooled = 0;
+    router.cooldownManager = { isOnCooldown: () => ({ onCooldown: false }), setCooldown: () => { cooled++; }, clearCooldown() {} };
+    router.modelDiscovery = { getOrDiscover: async () => [{ id: 'pinned' }] };
+    const options = { prompt: 'synthetic credential test', bypassCache: true, platformConfig: { selectionMode: 'manual', primary: 'groq', providers: {
+      groq: { key: ['rejected-fixture-key', 'working-fixture-key'], model: 'pinned' },
+    } }, fetchImpl: async (_url, request) => {
+      if (request.headers.Authorization.includes('rejected-fixture-key')) return new Response('{}', { status: 401 });
+      assert.equal(cooled, 0, 'no provider cooldown while another eligible key remains');
+      return streaming ? new Response('data: {"choices":[{"delta":{"content":"ok"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n', { headers: { 'Content-Type': 'text/event-stream' } })
+        : Response.json({ choices: [{ message: { content: 'ok' } }] });
+    } };
+    if (streaming) {
+      const events = [];
+      for await (const event of router.routeStream(options)) events.push(event);
+      assert.ok(events.some(event => event.type === 'text' && event.text === 'ok'));
+    } else {
+      const result = await router.routeCompletion(options);
+      assert.equal(result.content, 'ok');
+      assert.equal(result.keysAttempted, 2);
+    }
+    assert.equal(cooled, 0);
+  });
+}

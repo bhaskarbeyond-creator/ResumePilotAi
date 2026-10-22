@@ -57,3 +57,22 @@ test('unsupported structured output is rejected before any community worker sees
   }), { code: 'UNSUPPORTED_CAPABILITY' });
   assert.equal(calls, 0);
 });
+
+test('private/default candidate traffic never reaches public community discovery or workers', async () => {
+  const router = new FreeLlmRouter();
+  let calls = 0;
+  const platformConfig = { primary: 'aihorde', providers: { aihorde: { enabled: true, model: 'live/model' } } };
+  const fetchImpl = async () => { calls++; throw new Error('must not contact community'); };
+  assert.deepEqual(await router.buildCandidateList({ platformConfig, fetchImpl }), []);
+  assert.deepEqual(await router.buildCandidateList({ platformConfig, fetchImpl, dataClassification: 'public' }), []);
+  await assert.rejects(router.routeCompletion({ platformConfig, fetchImpl, prompt: 'Private candidate record' }), { code: 'AI_PROVIDER_UNAVAILABLE' });
+  await assert.rejects(router.routeStream({ platformConfig, fetchImpl, prompt: 'Private candidate record' }).next(), { code: 'AI_PROVIDER_UNAVAILABLE' });
+  assert.equal(calls, 0);
+});
+test('trusted synthetic verification may explicitly use opted-in anonymous community workers', async () => {
+  const router = new FreeLlmRouter();
+  const candidates = await router.buildCandidateList({ dataClassification: 'public-synthetic', platformConfig: {
+    primary: 'aihorde', providers: { aihorde: { enabled: true, model: 'live/model' } },
+  } });
+  assert.equal(candidates[0].provider, 'aihorde');
+});

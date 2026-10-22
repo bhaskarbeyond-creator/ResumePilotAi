@@ -672,14 +672,21 @@
       "fixedAt": "05a1bc3",
       "status": "fixed; original default restored; full local suite returns to the same 34 database-environment failures, test unchanged",
       "tests": "backend/test/ai-adversarial-and-stress.test.js: Cache Invalidation"
+    },
+    {
+      "name": "Confidential-default public routing made an old public OVH cache fixture ineligible",
+      "introducedAt": "fce1f88",
+      "fixedAt": "828dd1f",
+      "status": "Changed only fixture destination to local Ollama, retained all tenant/cache denial checks and added positive eligibility assertion; full hosted suite passes",
+      "tests": "backend/test/freellmapi-catalog-integrity.test.js"
     }
   ],
   "latestFullHostedCheckpoint": {
-    "sha": "05a1bc33f6523b4070e5a1eb53933cf3a6bb5b1c",
-    "tests": 1070,
-    "pass": 1070,
+    "sha": "1e3ebd9de0dfecdc52dfaff0df14bff1714f8ce4",
+    "tests": 1076,
+    "pass": 1076,
     "fail": 0,
     "skipped": 0,
-    "url": "https://github.com/bhaskarbeyond-creator/ResumePilotAi/actions/runs/39733685543/job/119674534176"
+    "url": "https://github.com/bhaskarbeyond-creator/ResumePilotAi/actions/runs/39763574719/job/119773932773"
   }
 }

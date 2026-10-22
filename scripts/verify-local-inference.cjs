@@ -6,21 +6,23 @@ const fs = require('node:fs');
 const { FreeLlmRouter } = require('../backend/freellmapi/services/router');
 const { ModelDiscoveryService } = require('../backend/freellmapi/services/modelDiscovery');
 (async () => {
-  const baseUrl = process.env.LLAMACPP_BASE_URL || 'http://127.0.0.1:8081/v1';
+  const provider = process.env.LOCAL_INFERENCE_PROVIDER || 'llamacpp';
+  assert.ok(['llamacpp', 'ollama'].includes(provider));
+  const baseUrl = provider === 'ollama' ? process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434/v1' : process.env.LLAMACPP_BASE_URL || 'http://127.0.0.1:8081/v1';
   const target = new URL(baseUrl);
   // This is a local-inference gate, not an arbitrary remote probe/SSRF client.
   assert.ok(['127.0.0.1', 'localhost', '[::1]'].includes(target.hostname), 'gate requires loopback inference');
   const router = new FreeLlmRouter();
   router.modelDiscovery = new ModelDiscoveryService();
-  const models = await router.modelDiscovery.getOrDiscover({ providerId: 'llamacpp', baseUrl, timeoutMs: 10_000 });
+  const models = await router.modelDiscovery.getOrDiscover({ providerId: provider, baseUrl, timeoutMs: 10_000 });
   assert.ok(models.length, 'real service must expose a loaded model');
   const result = await router.routeCompletion({
     prompt: 'Write a single short sentence about a tree.',
-    platformConfig: { selectionMode: 'balanced', primary: 'llamacpp', enableFallback: false, providers: { llamacpp: { enabled: true, baseUrl } } },
+    platformConfig: { selectionMode: 'balanced', primary: provider, enableFallback: false, providers: { [provider]: { enabled: true, baseUrl } } },
     maxTokens: 32, temperature: 0, timeoutMs: 60_000, bypassCache: true,
   });
   assert.equal(result.routingDecision.mode, 'balanced');
-  assert.equal(result.provider, 'llamacpp');
+  assert.equal(result.provider, provider);
   assert.ok(models.some(model => model.id === result.model), 'executed model must be in the discovered catalog');
   assert.ok(typeof result.content === 'string' && result.content.trim().length > 0, 'real model must generate nonempty text');
   const evidence = { kind: 'real-local-inference', verifiedAt: new Date().toISOString(), provider: result.provider, model: result.model, latencyMs: result.latencyMs, usage: result.usage, cached: result.cached, catalogCount: models.length };
