@@ -1659,7 +1659,7 @@ async function loadProviderConfiguration(environment = process.env) {
                 (!meta.optIn || providerSecrets[id]?.enabled === true || environment[`${id.toUpperCase()}_ENABLED`] === 'true')) {
                 providers[id] = {
                     key: 'keyless',
-                    model: meta.defaultModel || 'default',
+                    model: providerSecrets[id]?.model || 'auto',
                     baseUrl: meta.baseUrl || '',
                     enabled: true,
                     keyless: true,
@@ -1668,7 +1668,8 @@ async function loadProviderConfiguration(environment = process.env) {
         }
     } catch { /* best-effort keyless mesh */ }
     const configuration = {
-        primary: PROVIDERS.includes(effectiveAi.provider) ? effectiveAi.provider : (providers.nvidia?.enabled ? 'nvidia' : 'gemini'),
+        primary: providers[effectiveAi.provider]?.enabled ? effectiveAi.provider : (providers.nvidia?.enabled ? 'nvidia' : 'gemini'),
+        ...(effectiveAi.selectionMode ? { selectionMode: effectiveAi.selectionMode } : {}),
         enableFallback: effectiveAi.enableFallback !== false,
         temperature: clampNumber(effectiveAi.temperature, 0, 1, 0.7),
         maxTokens: Math.floor(clampNumber(effectiveAi.maxTokens, 256, 4096, 2048)),

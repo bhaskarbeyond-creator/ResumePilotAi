@@ -25,7 +25,7 @@ test('AI Admin public settings preserve all six providers and fallback controls'
   assert.equal(result.temperature, 0.4);
   assert.equal(result.maxTokens, 3000);
   for (const field of ['enableGemini','enableNvidia','enableOpenai','enableGroq','enableOpenrouter','enableDeepseek']) assert.equal(result[field], true);
-  assert.throws(() => publicAiSettings({ provider: 'ollama' }), /Unsupported primary/);
+  assert.throws(() => publicAiSettings({ provider: 'unknown-unregistered' }), /Unsupported primary/);
 });
 
 test('authorized AI settings save is revisioned, audited, split, and never returns secrets', async () => {

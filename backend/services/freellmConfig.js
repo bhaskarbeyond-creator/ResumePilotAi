@@ -105,6 +105,7 @@ async function loadFreeLlmPlatformConfig({ environment = process.env, repository
 
   const configuration = {
     primary,
+    ...(publicAi.selectionMode ? { selectionMode: publicAi.selectionMode } : {}),
     enableFallback: publicAi.enableFallback !== false,
     temperature: Number.isFinite(Number(publicAi.temperature)) ? Number(publicAi.temperature) : 0.3,
     maxTokens: Number.isFinite(Number(publicAi.maxTokens)) ? Number(publicAi.maxTokens) : 4096,

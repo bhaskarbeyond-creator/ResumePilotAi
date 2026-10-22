@@ -25,7 +25,7 @@ const testEnv = {
   MARIADB_TEST_ALLOW_RESET: process.env.MARIADB_TEST_ALLOW_RESET || 'true',
 };
 
-const child = spawn(process.execPath, ['--test', '--test-concurrency=1', '--test-force-exit', ...files], {
+const child = spawn(process.execPath, ['--test', '--test-reporter=tap', '--test-concurrency=1', '--test-force-exit', ...files], {
   cwd: path.join(__dirname, '..'),
   env: testEnv,
   stdio: ['ignore', 'pipe', 'pipe'],
@@ -35,7 +35,7 @@ let buffer = '';
 function capture(chunk, stream) {
   const text = String(chunk);
   buffer += text;
-  if (buffer.length > 240_000) buffer = buffer.slice(-240_000);
+  if (buffer.length > 2_000_000) buffer = buffer.slice(-2_000_000);
   stream.write(chunk);
 }
 
@@ -56,8 +56,13 @@ child.on('exit', (code, signal) => {
       .map((line, index) => ({ line, index }))
       .filter(item => /^\s*not ok\b/.test(item.line));
     const failures = notOk.length ? notOk.slice(0, 8) : [{ line: `node --test exited ${code || signal}`, index: Math.max(0, lines.length - 60) }];
-    failures.forEach((item, failureIndex) => {
-      const excerpt = lines.slice(Math.max(0, item.index - 6), Math.min(lines.length, item.index + 28)).join('\n');
+    // Every failure name is available through the GitHub Checks API even when log downloads are blocked.
+    const summaryFailures = notOk.map(item => item.line.replace(/^\s*not ok \d+ - /, ''));
+    if (process.env.GITHUB_STEP_SUMMARY) {
+      fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `\n## Full backend suite\n${lines.filter(line => /^# (tests|pass|fail|skipped) /.test(line)).join('\n')}\n\n${summaryFailures.map(name => `- ${name}`).join('\n')}\n`);
+    }
+    (notOk.length ? notOk.slice(0, 50) : failures).forEach((item, failureIndex) => {
+      const excerpt = lines.slice(item.index, Math.min(lines.length, item.index + 26)).join('\n');
       console.error(`::error title=Backend node:test failure ${failureIndex + 1}::${annotationSafe(excerpt)}`);
     });
   }

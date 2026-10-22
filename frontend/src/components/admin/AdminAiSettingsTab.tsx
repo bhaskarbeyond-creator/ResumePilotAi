@@ -196,6 +196,8 @@ export function AdminAiSettingsTab() {
 
   // Global settings
   const [primaryProvider, setPrimaryProvider] = useState('nvidia');
+  const [selectionMode, setSelectionMode] = useState('balanced');
+  const [manualModel, setManualModel] = useState('');
   const [enableFallback, setEnableFallback] = useState(true);
   const [temperature, setTemperature] = useState(0.7);
   const [maxTokens, setMaxTokens] = useState(2048);
@@ -394,11 +396,13 @@ export function AdminAiSettingsTab() {
         if (res.settings) {
           const cfg = res.settings;
           setPrimaryProvider(cfg.provider || 'nvidia');
+          setSelectionMode(cfg.selectionMode || 'balanced');
           setEnableFallback(cfg.enableFallback !== false);
           if (cfg.temperature !== undefined) setTemperature(Number(cfg.temperature));
           if (cfg.maxTokens !== undefined) setMaxTokens(Number(cfg.maxTokens));
         }
 
+        setManualModel(res.catalog?.find(p => p.id === res.settings?.provider)?.defaultModel || '');
         // Server registry is authoritative; new providers require no frontend release.
         setProviders((res.catalog || []).map((p) => ({
           ...p,
@@ -967,12 +971,15 @@ export function AdminAiSettingsTab() {
 
   // Handle Save All
   const handleSaveAll = async () => {
+    if (selectionMode === 'manual' && !manualModel) { setModalError('Refresh the catalog and select a pinned model before saving.'); return; }
     setSaving(true);
     setSavedSuccess(false);
     try {
       const payload: Record<string, any> = {
         provider: primaryProvider,
         enableFallback,
+        selectionMode,
+        ...(selectionMode === 'manual' && manualModel ? { [primaryProvider]: { model: manualModel }, [`${primaryProvider}Model`]: manualModel } : {}),
         temperature,
         maxTokens,
         expectedRevision: revision,
@@ -1107,6 +1114,31 @@ export function AdminAiSettingsTab() {
 
   return (
     <div className="space-y-6">
+      <Card><CardContent className="p-4 space-y-3">
+        <h2 className="text-sm font-bold">Runtime model selection</h2>
+        <div className="flex flex-wrap gap-3">
+          <label className="text-xs">Selection mode
+            <select aria-label="Selection mode" value={selectionMode} onChange={e => setSelectionMode(e.target.value)} className="block border rounded p-2 bg-surface">
+              <option value="auto">Auto / Recommended</option><option value="quality">Quality First</option>
+              <option value="speed">Speed First</option><option value="balanced">Balanced</option><option value="manual">Manual</option>
+            </select>
+          </label>
+          {selectionMode === 'manual' && <>
+            <label className="text-xs">Pinned provider
+              <select aria-label="Pinned provider" value={primaryProvider} onChange={e => { setPrimaryProvider(e.target.value); setManualModel(''); }} className="block border rounded p-2 bg-surface">
+                <option value="">Select provider</option>{providers.filter(p => p.group === 'models').map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </label>
+            <Button onClick={() => handleDiscoveryFetch(primaryProvider)} disabled={!primaryProvider || discoveryLoading}>Refresh selectable models</Button>
+            <label className="text-xs">Pinned model
+              <select aria-label="Pinned model" value={manualModel} onChange={e => setManualModel(e.target.value)} className="block border rounded p-2 bg-surface max-w-full">
+                <option value="">Choose from live catalog</option>{manualModel && !(discoveryResults[primaryProvider] || []).some((m: any) => m.id === manualModel && m.catalogStatus === 'fresh') && <option value={manualModel} disabled>{manualModel} (saved — refresh to verify)</option>}{(discoveryResults[primaryProvider] || []).filter((m: any) => m.catalogStatus === 'fresh').map((m: any) => <option key={m.id} value={m.id}>{m.name || m.id}</option>)}
+              </select>
+            </label>
+          </>}
+        </div>
+        <p className="text-xs text-ink-muted">Automatic modes use current catalog capabilities and recent service observations. Quality First prioritizes documented capability fit; no response-quality benchmark is available. Manual pins never silently fall back.</p>
+      </CardContent></Card>
       {/* ═════════════════════════════════════════════════════════════════════════════ */}
       {/* ─── MASTER TOP TAB BAR ─── */}
       {/* ═════════════════════════════════════════════════════════════════════════════ */}

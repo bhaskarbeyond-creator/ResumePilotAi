@@ -20,7 +20,7 @@ const LIST_KEYS = ['data', 'models', 'result', 'results', 'items'];
 const ID_KEYS = ['id', 'name', 'model', 'model_id', 'modelId', 'slug'];
 const OWNER_KEYS = ['owned_by', 'ownedBy', 'organization', 'owner', 'provider', 'publisher'];
 const CONTEXT_KEYS = [
-  'context_length', 'context_window', 'max_model_len',
+  'context_length', 'context_window', 'inputTokenLimit', 'max_model_len',
   'max_context_length', 'max_context_tokens', 'ctx_len', 'contextWindow',
 ];
 const PRICE_KEYS = ['price', 'pricing'];
@@ -312,6 +312,13 @@ class ModelDiscoveryService {
           isFree: id.includes(':free') || pricing.isFree || Boolean(item.is_free),
           priceNote: pricing.priceNote,
           vision: vision || false,
+          outputLimit: Number.isFinite(Number(item.outputTokenLimit || item.max_output_tokens)) ? Number(item.outputTokenLimit || item.max_output_tokens) : undefined,
+          capabilities: {
+            vision: detectVision('', item) === true,
+            tools: item.supports_tools === true || item.supports_tool_calling === true || (Array.isArray(item.supported_parameters) && item.supported_parameters.includes('tools')),
+            json: item.supports_json === true || (Array.isArray(item.supported_parameters) && item.supported_parameters.includes('response_format')),
+            streaming: item.supports_streaming === true,
+          },
           ownedBy: item.owned_by || item.publisher || (typeof item.organization === 'string' ? item.organization : providerId),
         });
 

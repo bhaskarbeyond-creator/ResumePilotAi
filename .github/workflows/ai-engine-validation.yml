@@ -24,6 +24,8 @@ jobs:
         with: {node-version: '24'}
       - run: scripts/start-ci-mariadb.sh
       - run: npm ci --prefix backend --ignore-scripts --no-audit --no-fund
+      - name: Install browser for full export regression
+        run: npm exec --prefix backend -- playwright install --with-deps chromium
       - name: Initialize disposable schema
         run: |
           node - <<'NODE'

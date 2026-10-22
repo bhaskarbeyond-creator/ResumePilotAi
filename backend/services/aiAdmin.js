@@ -53,12 +53,14 @@ function maskApiKey(key) {
 }
 
 function publicAiSettings(input = {}) {
-  if (input.provider && !PROVIDERS.includes(input.provider)) throw errorWith('AI_SETTINGS_VALIDATION_ERROR', 'Unsupported primary AI provider.', 400);
-  const provider = PROVIDERS.includes(input.provider) ? input.provider : 'gemini';
+  if (input.provider && !['openai-compat', 'google'].includes(require('../freellmapi/providers/registry').getProviderMeta(input.provider)?.type)) throw errorWith('AI_SETTINGS_VALIDATION_ERROR', 'Unsupported primary AI provider.', 400);
+  const provider = input.provider || 'gemini';
+  if (input.selectionMode !== undefined) require('../freellmapi/services/selectionPolicy').validateMode(input.selectionMode);
   const temperatureValue = Number(input.temperature ?? 0.7);
   const maxTokensValue = Number(input.maxTokens ?? 2048);
   const result = {
     provider,
+    ...(input.selectionMode ? { selectionMode: input.selectionMode } : {}),
     temperature: Number.isFinite(temperatureValue) ? Math.max(0, Math.min(1, temperatureValue)) : 0.7,
     maxTokens: Number.isFinite(maxTokensValue) ? Math.max(256, Math.min(4096, Math.floor(maxTokensValue))) : 2048,
     enableFallback: input.enableFallback !== false,
@@ -235,7 +237,7 @@ async function loadAiAdminSettings(environment = process.env) {
   const runtime = await loadProviderConfiguration(environment);
   const maskedKeys = Object.fromEntries(PROVIDERS.map(provider => [provider, maskApiKey(runtime.providers[provider]?.key || '')]));
   const publicFields = new Set([
-    'provider', 'temperature', 'maxTokens', 'enableFallback', 'enableImportModule',
+    'provider', 'selectionMode', 'temperature', 'maxTokens', 'enableFallback', 'enableImportModule',
     ...Object.values(ENABLE_FIELDS), ...Object.values(MODEL_FIELDS),
   ]);
   const settings = Object.fromEntries(Object.entries(publicAi).filter(([key, value]) => publicFields.has(key)
@@ -390,7 +392,7 @@ async function saveAiAdminSettings({ input, expectedRevision = 0, actorUid, requ
     }
     nextRevision = currentRevision + 1;
     const mergedSecrets = { ...currentSecrets, ...providerPatch, _revision: nextRevision };
-    const mergedPublic = { ...currentPublic, ai: safePublic, aiRevision: nextRevision };
+    const mergedPublic = { ...currentPublic, ai: { ...safePublic, ...(safePublic.selectionMode || currentPublic.ai?.selectionMode ? { selectionMode: safePublic.selectionMode || currentPublic.ai.selectionMode } : {}) }, aiRevision: nextRevision };
     for (const [category, data] of [['ai_providers', mergedSecrets], ['public_config', mergedPublic]]) {
       await connection.query(
         `INSERT INTO system_settings (category, data, revision, updated_at) VALUES (?, ?, ?, NOW())

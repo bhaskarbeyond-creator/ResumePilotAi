@@ -25,6 +25,7 @@ const { compressMessages } = require('./compression');
 const { rescueInlineToolCalls, toolNamesFrom, normalizeTools } = require('../lib/toolRescue');
 const { getMetricsPersistence } = require('./persistence');
 const { modelDiscovery } = require('./modelDiscovery');
+const { eligible, validateMode, rankCandidates } = require('./selectionPolicy');
 
 // Standard fallback priority order for platform free/budget mesh:
 // Strictly prioritized by High-Intelligence (70B+ / Frontier), Instant Availability & Ultra-Fast Latency
@@ -188,6 +189,36 @@ class FreeLlmRouter {
     }
   }
 
+  async applySelectionPolicy(candidates, { platformConfig, requestedModel, requirements = {}, fetchImpl, tenantContext }) {
+    const mode = platformConfig.selectionMode;
+    if (!mode) return candidates; // Preserve legacy pinned configurations until migrated by an authorized save.
+    validateMode(mode);
+    const explicit = requestedModel && !['auto', 'dynamic'].includes(requestedModel) && !requestedModel.startsWith('auto:') && !getProviderMeta(requestedModel);
+    const primary = platformConfig.primary || candidates[0]?.provider;
+    const chosen = mode === 'manual' ? candidates.filter(candidate => candidate.provider === primary) : candidates;
+    const expanded = [];
+    for (const candidate of chosen) {
+      let catalog;
+      try {
+        catalog = await this.modelDiscovery.getOrDiscover({ providerId: candidate.provider, apiKey: candidate.key, baseUrl: candidate.baseUrl, fetchImpl, timeoutMs: 5000 });
+      } catch {
+        // Do not claim unknown capabilities or resurrect defaults after failed discovery in intelligent modes.
+        continue;
+      }
+      const pin = explicit ? requestedModel : mode === 'manual' ? platformConfig.providers?.[candidate.provider]?.model || candidate.model : null;
+      for (const metadata of catalog) {
+        if (pin && metadata.id !== pin) continue;
+        if (!eligible(metadata, requirements)) continue;
+        if (this.cooldownManager.isOnCooldown(candidate.provider, metadata.id).onCooldown && !candidate.isDedicatedByok) continue;
+        expanded.push({ ...candidate, model: metadata.id, metadata });
+      }
+    }
+    const recent = !tenantContext ? getMetricsPersistence()?.getRecentRequests({ limit: 100 }) || [] : [];
+    const ordered = rankCandidates(expanded, { mode, primary, observationFor: candidate => recent.find(row => row.provider === candidate.provider && row.model === candidate.model) });
+    // Manual pins never silently cross provider/model boundaries, even with platform fallback enabled.
+    return mode === 'manual' || explicit || platformConfig.enableFallback === false ? ordered.slice(0, 1) : ordered.slice(0, 12);
+  }
+
   /**
    * Fast credential sanity check to prevent trying placeholder passwords
    * or obviously malformed tokens that cause 401 failover latency loops.
@@ -210,7 +241,7 @@ class FreeLlmRouter {
    * providers are filtered out here — the single choke point every completion
    * passes through.
    */
-  async buildCandidateList({ tenantContext, platformConfig = {}, requestedModel = null, fetchImpl }) {
+  async buildCandidateList({ tenantContext, platformConfig = {}, requestedModel = null, fetchImpl, requirements = {} }) {
     const customKeys = tenantContext?.customProviderKeys || {};
     const hasTenantByok = Object.keys(customKeys).some(k => Boolean(String(customKeys[k] || '').trim()));
 
@@ -249,7 +280,7 @@ class FreeLlmRouter {
         throw err;
       }
 
-      return candidates;
+      return this.applySelectionPolicy(candidates, { platformConfig, requestedModel, requirements, fetchImpl, tenantContext });
     }
 
     // ─── TIER 1: PLATFORM FREE-POOL MESH ───
@@ -345,7 +376,7 @@ class FreeLlmRouter {
       });
     }
 
-    return candidates;
+    return this.applySelectionPolicy(candidates, { platformConfig, requestedModel, requirements, fetchImpl, tenantContext });
   }
 
   _computeDynamicRankScore(candidate, platformConfig, metricsMap, recentMap, requestedModel) {
@@ -432,7 +463,9 @@ class FreeLlmRouter {
     };
   }
 
-  _recordMetrics({ provider, model, ok, latencyMs, status }) {
+  _recordMetrics({ scoped = false, provider, model, ok, latencyMs, status }) {
+    // Tenant/BYOK service observations must not train the shared platform rank.
+    if (scoped) return;
     try {
       getMetricsPersistence().recordRequest({ provider, model, ok, latencyMs, status });
     } catch { /* metrics are best-effort */ }
@@ -496,7 +529,11 @@ class FreeLlmRouter {
     const toolNames = prepared.toolNames;
 
     // 2. Build Candidate Failover Cascade
-    const candidates = await this.buildCandidateList({ tenantContext, platformConfig, requestedModel, fetchImpl });
+    const candidates = await this.buildCandidateList({ tenantContext, platformConfig, requestedModel, fetchImpl, requirements: {
+      tools: normalizedTools.length > 0, json: Boolean(jsonMode || responseFormat),
+      vision: messages.some(message => Array.isArray(message.content) && message.content.some(part => part.type === 'image_url')),
+      outputTokens: maxTokens, contextTokens: estimateTokens(messages) + maxTokens,
+    } });
 
     if (candidates.length === 0) {
       const err = new Error('No enabled AI provider is configured or healthy');
@@ -576,8 +613,8 @@ class FreeLlmRouter {
           }
 
           // Clear cooldown strikes on successful execution
-          this.cooldownManager.clearCooldown(candidate.provider, candidate.model);
-          this._recordMetrics({ provider: candidate.provider, model: candidate.model, ok: true, latencyMs, status: 200 });
+          if (!candidate.isDedicatedByok) this.cooldownManager.clearCooldown(candidate.provider, candidate.model);
+          this._recordMetrics({ scoped: Boolean(tenantContext || candidate.isDedicatedByok), provider: candidate.provider, model: candidate.model, ok: true, latencyMs, status: 200 });
 
           return {
             content: rescued.content,
@@ -586,6 +623,7 @@ class FreeLlmRouter {
             provider: candidate.provider,
             model: candidate.model,
             usage: rescued.usage,
+            routingDecision: candidate.routingDecision || null,
             cached: false,
             latencyMs,
             fallbacksAttempted,
@@ -609,7 +647,7 @@ class FreeLlmRouter {
             status,
             latencyMs,
           });
-          this._recordMetrics({ provider: candidate.provider, model: candidate.model, ok: false, latencyMs, status });
+          this._recordMetrics({ scoped: Boolean(tenantContext || candidate.isDedicatedByok), provider: candidate.provider, model: candidate.model, ok: false, latencyMs, status });
 
           if (status === 429) sawRateLimit = true;
           if (status === 401 || status === 403) sawAuthFailure = true;
@@ -677,7 +715,11 @@ class FreeLlmRouter {
     // reached the client by the time a stream can be inspected.
     const compressionStats = prepared.compression;
 
-    const candidates = await this.buildCandidateList({ tenantContext, platformConfig, requestedModel, fetchImpl });
+    const candidates = await this.buildCandidateList({ tenantContext, platformConfig, requestedModel, fetchImpl, requirements: {
+      tools: normalizedTools.length > 0, json: Boolean(jsonMode || responseFormat),
+      vision: messages.some(message => Array.isArray(message.content) && message.content.some(part => part.type === 'image_url')),
+      outputTokens: maxTokens, contextTokens: estimateTokens(messages) + maxTokens,
+    } });
     if (candidates.length === 0) {
       const err = new Error('No enabled AI provider is configured or healthy');
       err.code = 'AI_PROVIDER_UNAVAILABLE';
@@ -733,6 +775,7 @@ class FreeLlmRouter {
               opened = true;
               yield {
                 type: 'meta',
+                routingDecision: candidate.routingDecision || null,
                 provider: candidate.provider,
                 model: candidate.model,
                 latencyMs: Date.now() - startTime,
@@ -782,8 +825,8 @@ class FreeLlmRouter {
           }
 
           const latencyMs = Date.now() - startTime;
-          this.cooldownManager.clearCooldown(candidate.provider, candidate.model);
-          this._recordMetrics({ provider: candidate.provider, model: candidate.model, ok: true, latencyMs, status: 200 });
+          if (!candidate.isDedicatedByok) this.cooldownManager.clearCooldown(candidate.provider, candidate.model);
+          this._recordMetrics({ scoped: Boolean(tenantContext || candidate.isDedicatedByok), provider: candidate.provider, model: candidate.model, ok: true, latencyMs, status: 200 });
 
           if (usage) yield { type: 'usage', usage };
           yield {
@@ -804,7 +847,7 @@ class FreeLlmRouter {
           if (opened || emitted) {
             // Mid-stream failure: the client already received partial content.
             // Surface it instead of replaying the answer from another provider.
-            this._recordMetrics({ provider: candidate.provider, model: candidate.model, ok: false, latencyMs: Date.now() - startTime, status });
+            this._recordMetrics({ scoped: Boolean(tenantContext || candidate.isDedicatedByok), provider: candidate.provider, model: candidate.model, ok: false, latencyMs: Date.now() - startTime, status });
             throw error;
           }
 
@@ -818,7 +861,7 @@ class FreeLlmRouter {
             status,
             latencyMs: Date.now() - startTime,
           });
-          this._recordMetrics({ provider: candidate.provider, model: candidate.model, ok: false, latencyMs: Date.now() - startTime, status });
+          this._recordMetrics({ scoped: Boolean(tenantContext || candidate.isDedicatedByok), provider: candidate.provider, model: candidate.model, ok: false, latencyMs: Date.now() - startTime, status });
         }
       }
 

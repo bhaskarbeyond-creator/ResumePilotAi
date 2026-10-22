@@ -82,3 +82,30 @@ test('configuration failure is not displayed as a successful zero-valued dashboa
   await expect(page.getByRole('alert')).toContainText('Storage unavailable');
   await expect(page.getByText('Total Providers', { exact: true })).toHaveCount(0);
 });
+
+test('selection modes persist and manual model choices are sourced from discovery, not frontend IDs', async ({ page }) => {
+  let saved: any;
+  await page.route('**/api/admin/ai-settings', async route => {
+    if (route.request().method() === 'POST') {
+      saved = route.request().postDataJSON();
+      await route.fulfill({ json: { revision: 2 } });
+    } else await route.fulfill({ json: { revision: saved ? 2 : 1, settings: saved || { provider: 'llamacpp' }, catalog: [provider], curatedModels: [] } });
+  });
+  await page.route('**/api/admin/ai/fetch-models', route => route.fulfill({ json: { models: [{ id: 'discovered-only', catalogStatus: 'fresh' }] } }));
+  await page.goto('/tests/harness/engine.html?subtab=providers');
+  const mode = page.getByRole('combobox', { name: 'Selection mode' });
+  for (const value of ['auto', 'quality', 'speed', 'balanced']) {
+    await mode.selectOption(value);
+    await page.getByRole('button', { name: 'Save All Changes', exact: true }).click();
+    await expect(mode).toHaveValue(value);
+    expect(saved.selectionMode).toBe(value);
+  }
+  await mode.selectOption('manual');
+  await page.getByRole('button', { name: 'Refresh selectable models' }).click();
+  await page.getByRole('combobox', { name: 'Pinned model' }).selectOption('discovered-only');
+  await page.getByRole('button', { name: 'Save All Changes', exact: true }).click();
+  expect(saved.selectionMode).toBe('manual');
+  expect(saved.llamacpp.model).toBe('discovered-only');
+  await page.reload();
+  await expect(mode).toHaveValue('manual');
+});

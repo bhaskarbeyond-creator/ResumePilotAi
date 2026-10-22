@@ -2946,7 +2946,7 @@ app.post(['/v1/chat/completions', '/api/v1/chat/completions'], optionalAuth, asy
             id: `chatcmpl-${cryptoRandom.randomUUID().replace(/-/g, '').slice(0, 24)}`,
             object: 'chat.completion',
             created: Math.floor(Date.now() / 1000),
-            model: body.model && body.model !== 'auto' ? body.model : result.model,
+            model: result.model,
             choices: [{
                 index: 0,
                 message,
@@ -2957,6 +2957,7 @@ app.post(['/v1/chat/completions', '/api/v1/chat/completions'], optionalAuth, asy
             _freellmapi: {
                 provider: result.provider,
                 actual_model: result.model,
+                routing_decision: result.routingDecision || null,
                 latency_ms: result.latencyMs,
                 cached: Boolean(result.cached),
                 compression: result.compression || null,
