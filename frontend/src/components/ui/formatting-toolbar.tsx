@@ -19,6 +19,7 @@ interface FormattingToolbarProps {
   textareaRef?: React.RefObject<HTMLTextAreaElement>;
   value: string;
   onChange: (val: string) => void;
+  onOpenAiCopilot?: () => void;
   className?: string;
 }
 
@@ -39,6 +40,7 @@ export function FormattingToolbar({
   textareaRef,
   value,
   onChange,
+  onOpenAiCopilot,
   className = '',
 }: FormattingToolbarProps) {
   const insertFormatting = (prefix: string, suffix: string = '') => {
@@ -151,9 +153,19 @@ export function FormattingToolbar({
         </Button>
       </div>
 
-      {/* Action Verbs Quick Helpers */}
-      <div className="flex items-center gap-1 text-[11px] text-ink-muted">
-        <Sparkles className="size-3 text-brand-600 hidden sm:inline" />
+      {/* Action Verbs Quick Helpers & AI Copilot Trigger */}
+      <div className="flex items-center gap-1.5 text-[11px] text-ink-muted">
+        {onOpenAiCopilot && (
+          <button
+            type="button"
+            onClick={onOpenAiCopilot}
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold text-[10px] text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200/90 transition-all shadow-2xs cursor-pointer active:scale-95"
+            title="Open AI Role Copilot to suggest bullet points"
+          >
+            <Sparkles className="size-2.5 text-purple-600" />
+            <span>Suggest with AI</span>
+          </button>
+        )}
         <span className="hidden md:inline font-medium text-[10px] uppercase tracking-wider text-ink-muted">Verbs:</span>
         <div className="flex items-center gap-1 overflow-x-auto max-w-[260px] sm:max-w-none">
           {POWER_ACTION_VERBS.slice(0, 4).map((verb) => (

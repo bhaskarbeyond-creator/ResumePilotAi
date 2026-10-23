@@ -46,6 +46,7 @@ import { FormattingToolbar } from '@/components/ui/formatting-toolbar';
 import { AiProcessingModal } from '@/components/ui/ai-processing-modal';
 import { ResumeImportModal } from '@/components/resume/resume-import-modal';
 import { RoleAiCopilotModal } from '@/components/resume/role-ai-copilot-modal';
+import { AiRecommendationModal, type RecommendationItem } from '@/components/resume/ai-recommendation-modal';
 import { GrammarCheckModal } from '@/components/resume/grammar-check-modal';
 import { AutocompleteInput } from '@/components/ui/autocomplete-input';
 import type { ParsedResumeData } from '@/lib/ai-content';
@@ -661,7 +662,7 @@ export function ResumeBuilderPage() {
     }
   };
 
-  const saveStateLabel = saving ? 'Saving…' : saveMessage ? saveMessage : !savedSnapshot ? 'Not saved yet' : isDirty ? 'Unsaved changes' : 'Saved ✓';
+  const saveStateLabel = saving ? 'Saving…' : saveMessage ? saveMessage : !savedSnapshot ? 'Not saved yet' : isDirty ? 'Unsaved changes' : 'Saved';
 
   // Debounced Autosave (1500ms): saves edits in background without interrupting editing flow
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -727,6 +728,21 @@ export function ResumeBuilderPage() {
   }>({
     isOpen: false,
     initialText: '',
+    onApply: () => {},
+  });
+  const [aiRecModalState, setAiRecModalState] = useState<{
+    isOpen: boolean;
+    title: string;
+    subtitle?: string;
+    type: 'skills' | 'certifications';
+    targetRole?: string;
+    items: RecommendationItem[];
+    onApply: (items: RecommendationItem[]) => void;
+  }>({
+    isOpen: false,
+    title: '',
+    type: 'skills',
+    items: [],
     onApply: () => {},
   });
 
@@ -1033,7 +1049,10 @@ export function ResumeBuilderPage() {
 
   const handleInsertCopilotBullets = (entryId: string | null, bullets: string | string[]) => {
     if (!entryId) return;
-    const bulletList = Array.isArray(bullets) ? bullets : [bullets];
+    const rawList = Array.isArray(bullets)
+      ? bullets
+      : String(bullets || '').split('\n');
+    const bulletList = rawList.map((b) => b.trim()).filter(Boolean);
     if (!bulletList.length) return;
     setResume((prev) => ({
       ...prev,
@@ -1204,7 +1223,7 @@ export function ResumeBuilderPage() {
               title="Click to edit resume title (press Ctrl+S to save anytime)"
             />
             {saving ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-700 border border-brand-200/60">
+              <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-700 border border-brand-200/60" data-testid="builder-save-state">
                 <RefreshCw className="size-3 animate-spin" /> Saving…
               </span>
             ) : saveMessage ? (
@@ -1213,7 +1232,7 @@ export function ResumeBuilderPage() {
                 saveMessage.includes('failed')
                   ? 'bg-rose-50 text-rose-700 border-rose-200'
                   : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-              )}>
+              )} data-testid="builder-save-state">
                 {saveMessage}
               </span>
             ) : !savedSnapshot ? (
@@ -1555,6 +1574,7 @@ export function ResumeBuilderPage() {
                     experience={resume.experience}
                     education={resume.education}
                     onChange={(skillCategories) => setResume((prev) => ({ ...prev, skillCategories }))}
+                    onOpenAiRecommendations={(config) => setAiRecModalState({ ...config, isOpen: true })}
                   />
                 )}
                 {currentStep === 'summary' && (
@@ -1581,6 +1601,7 @@ export function ResumeBuilderPage() {
                     targetRole={resume.heading.title || resume.heading.targetRole}
                     experience={resume.experience}
                     onChange={(certifications) => setResume((prev) => ({ ...prev, certifications }))}
+                    onOpenAiRecommendations={(config) => setAiRecModalState({ ...config, isOpen: true })}
                   />
                 )}
                 {currentStep === 'achievements' && (
@@ -1871,6 +1892,8 @@ export function ResumeBuilderPage() {
         position={roleCopilotState.position}
         company={roleCopilotState.company}
         existingDescription={roleCopilotState.existingDescription}
+        targetRole={resume.heading.title || resume.heading.targetRole}
+        targetJobDescription={resume.heading.jobDescription || resume.targetJobDescription}
         onApplyBullets={(bullets) => handleInsertCopilotBullets(roleCopilotState.entryId, bullets)}
       />
 
@@ -1883,6 +1906,18 @@ export function ResumeBuilderPage() {
           grammarModalState.onApply(fixed);
           setGrammarModalState({ isOpen: false, initialText: '', onApply: () => {} });
         }}
+      />
+
+      {/* ─── 10. AI Recommendation Modal (Skills & Certifications) ─── */}
+      <AiRecommendationModal
+        isOpen={aiRecModalState.isOpen}
+        onClose={() => setAiRecModalState((prev) => ({ ...prev, isOpen: false }))}
+        title={aiRecModalState.title}
+        subtitle={aiRecModalState.subtitle}
+        type={aiRecModalState.type}
+        targetRole={aiRecModalState.targetRole}
+        items={aiRecModalState.items}
+        onApply={(items) => aiRecModalState.onApply(items)}
       />
     </div>
   );
@@ -3187,7 +3222,7 @@ function ExperienceStep({
                           className="h-7 px-2.5 gap-1 text-[11px] font-bold text-purple-700 bg-purple-50/70 border-purple-200 hover:bg-purple-100 shadow-2xs"
                         >
                           <Sparkles className="size-3 text-purple-600" />
-                          <span>AI Role Copilot</span>
+                          <span>Suggest with AI</span>
                         </Button>
                       )}
                       {onOpenGrammarCheck && entry.description.trim() && (
@@ -3208,6 +3243,7 @@ function ExperienceStep({
                   <FormattingToolbar
                     value={entry.description}
                     onChange={(val) => updateEntry(entry.id, 'description', val)}
+                    onOpenAiCopilot={onOpenRoleCopilot ? () => onOpenRoleCopilot(entry) : undefined}
                   />
                   <textarea
                     value={entry.description}
@@ -3414,12 +3450,21 @@ function SkillsStep({
   experience,
   education,
   onChange,
+  onOpenAiRecommendations,
 }: {
   categories: SkillCategory[];
   targetRole?: string;
   experience?: ExperienceEntry[];
   education?: EducationEntry[];
   onChange: (c: SkillCategory[]) => void;
+  onOpenAiRecommendations?: (config: {
+    title: string;
+    subtitle?: string;
+    type: 'skills' | 'certifications';
+    targetRole?: string;
+    items: RecommendationItem[];
+    onApply: (items: RecommendationItem[]) => void;
+  }) => void;
 }) {
   const [newSkill, setNewSkill] = useState<Record<string, string>>({});
   const [generatingSkills, setGeneratingSkills] = useState(false);
@@ -3469,15 +3514,49 @@ function SkillsStep({
         companies: experience?.map((e) => e.company).filter(Boolean),
         educationFields: education?.map((ed) => ed.field).filter(Boolean),
       });
-      const rawList = outcome.kind === 'skills'
-        ? outcome.skills.map((s) => s.name)
+      const rawItems: RecommendationItem[] = outcome.kind === 'skills'
+        ? outcome.skills.map((s, idx) => ({
+            id: `skill_${idx}_${s.name}`,
+            name: s.name,
+            category: s.category || (idx < 6 ? 'Core Required' : 'Recommended'),
+            isCore: idx < 6,
+            matchReason: s.basis || `High-frequency ATS competency for ${targetRole || 'this role'}`,
+          }))
         : outcome.kind === 'suggestions'
-        ? outcome.suggestions
+        ? outcome.suggestions.map((s, idx) => ({
+            id: `skill_${idx}_${s}`,
+            name: s,
+            category: idx < 6 ? 'Core Required' : 'Recommended',
+            isCore: idx < 6,
+            matchReason: `High-frequency ATS competency for ${targetRole || 'this role'}`,
+          }))
         : [];
-      const filtered = rawList.filter((s) => !existingSkillsSet.has(s.toLowerCase().trim()));
-      setSuggestedSkills(filtered);
-      if (filtered.length === 0) {
+      const available = rawItems.filter((item) => !existingSkillsSet.has(item.name.toLowerCase().trim()));
+      if (available.length === 0) {
         setSkillSuggestionNotice('You already have all recommended skills in your resume!');
+        return;
+      }
+      if (onOpenAiRecommendations) {
+        onOpenAiRecommendations({
+          type: 'skills',
+          title: 'AI Skill Recommendations',
+          subtitle: `Discovered competencies for ${targetRole || 'your target role'}`,
+          targetRole: targetRole || 'Target Role',
+          items: available,
+          onApply: (selected) => {
+            if (!selected.length) return;
+            const toAdd = selected.map((s) => s.name);
+            if (categories.length === 0) {
+              onChange([{ id: crypto.randomUUID(), category: 'Core Skills', skills: toAdd }]);
+            } else {
+              onChange(
+                categories.map((c, idx) => (idx === 0 ? { ...c, skills: [...new Set([...c.skills, ...toAdd])] } : c))
+              );
+            }
+          },
+        });
+      } else {
+        setSuggestedSkills(available.map((i) => i.name));
       }
     } catch {
       setSkillSuggestionNotice('Could not generate skills right now. Try again later.');
@@ -3513,8 +3592,8 @@ function SkillsStep({
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-ink">Skills &amp; Core Competencies</h2>
-          <p className="mt-1 text-sm text-ink-muted">Organize your skills by category for ATS keyword matching.</p>
+          <h2 className="text-xl font-bold text-ink">Skills</h2>
+          <p className="mt-1 text-sm text-ink-muted">Organize your skills and competencies by category for ATS keyword matching.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button
@@ -3526,7 +3605,7 @@ function SkillsStep({
             className="gap-1.5 text-xs font-bold text-purple-700 bg-purple-50/70 border-purple-200 hover:bg-purple-100 shadow-2xs"
           >
             <Sparkles className="size-3.5 text-purple-600" />
-            <span>AI Suggest Skills</span>
+            <span>Suggest with AI</span>
           </Button>
           <Button variant="outline" size="sm" onClick={addCategory} className="gap-1.5 text-xs">
             <Plus className="size-4" /> Add Category
@@ -3582,9 +3661,21 @@ function SkillsStep({
           <Wrench className="mb-3 size-10 text-ink-subtle" />
           <p className="text-sm font-medium text-ink-secondary">No skills added yet</p>
           <p className="mt-1 text-xs text-ink-muted">Group your skills into categories like "Languages", "Frameworks", etc.</p>
-          <Button variant="outline" className="mt-4" onClick={addCategory}>
-            <Plus className="size-4" /> Add Skill Category
-          </Button>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+            <Button variant="outline" onClick={addCategory}>
+              <Plus className="size-4" /> Add Skill Category
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void handleGenerateSkills()}
+              loading={generatingSkills}
+              className="gap-1.5 text-xs font-bold text-purple-700 bg-purple-50/70 border-purple-200 hover:bg-purple-100"
+            >
+              <Sparkles className="size-3.5 text-purple-600" />
+              <span>Suggest with AI</span>
+            </Button>
+          </div>
         </div>
       )}
 
@@ -3781,7 +3872,7 @@ function SummaryStep({
       const skills = (skillCategories || []).flatMap((c) => c.skills || []);
 
       const payload: Record<string, unknown> = {
-        existingText: summary.trim(),
+        existingText: summary,
         name: `${heading.firstName} ${heading.lastName}`.trim(),
         ...(heading.title?.trim() ? { jobTitle: heading.title.trim() } : {}),
         workHistory,
@@ -3806,7 +3897,7 @@ function SummaryStep({
     : outcome.kind === 'text'
       ? 'A suggested executive summary is ready below. Your current summary was not overwritten.'
       : outcome.kind === 'questions'
-        ? 'More career detail is needed for a grounded summary. Please answer below.'
+        ? 'More detail is needed for a grounded summary. Please answer below.'
         : (outcome.kind === 'skills' || outcome.kind === 'certifications' || outcome.kind === 'suggestions' || outcome.kind === 'projects')
           ? ''
           : 'message' in outcome ? outcome.message : '';
@@ -3868,7 +3959,7 @@ function SummaryStep({
             className="gap-1.5 text-xs shadow-xs cursor-pointer bg-brand-600 hover:bg-brand-700 text-white"
           >
             <Sparkles className="size-3.5" />
-            Generate Executive Bio
+            Suggest a summary
           </Button>
         </div>
       </div>
@@ -4054,7 +4145,12 @@ function SummaryStep({
           <p className="text-xs text-ink-muted leading-relaxed">
             To ensure zero hallucination, please answer any of the questions below. Only your answers will be used.
           </p>
-          <div className="space-y-3">
+          <ol className="list-decimal space-y-1.5 pl-5 text-sm text-ink font-medium" aria-label="Details to add">
+            {outcome.questions.map((question) => (
+              <li key={question}>{question}</li>
+            ))}
+          </ol>
+          <div className="space-y-3 pt-2">
             {outcome.questions.map((question, index) => (
               <div key={index} className="space-y-1">
                 <label className="text-xs font-semibold text-ink">
@@ -4108,7 +4204,7 @@ function SummaryStep({
           )}
         </div>
         <textarea
-          aria-labelledby="resume-summary-heading"
+          aria-label="Professional Summary"
           value={summary}
           onChange={(e) => onChange(e.target.value)}
           rows={7}
@@ -4297,11 +4393,20 @@ function CertificationsStep({
   targetRole,
   experience,
   onChange,
+  onOpenAiRecommendations,
 }: {
   entries: CertificationEntry[];
   targetRole?: string;
   experience?: ExperienceEntry[];
   onChange: (e: CertificationEntry[]) => void;
+  onOpenAiRecommendations?: (config: {
+    title: string;
+    subtitle?: string;
+    type: 'skills' | 'certifications';
+    targetRole?: string;
+    items: RecommendationItem[];
+    onApply: (items: RecommendationItem[]) => void;
+  }) => void;
 }) {
   const [generatingCerts, setGeneratingCerts] = useState(false);
   const [suggestedCerts, setSuggestedCerts] = useState<Array<{ name: string; issuer: string }>>([]);
@@ -4329,12 +4434,51 @@ function CertificationsStep({
         recentRoles: experience?.map((e) => e.position).filter(Boolean),
         companies: experience?.map((e) => e.company).filter(Boolean),
       });
-      const certs = outcome.kind === 'certifications'
-        ? outcome.certifications.map((c) => ({ name: c.title, issuer: c.issuer }))
+      const existingNames = new Set(entries.map((e) => e.name.toLowerCase().trim()));
+      const certs: RecommendationItem[] = outcome.kind === 'certifications'
+        ? outcome.certifications.map((c, idx) => ({
+            id: `cert_${idx}_${c.title}`,
+            name: c.title,
+            issuer: c.issuer || '',
+            category: c.category || (idx < 3 ? 'Core Required' : 'Recommended'),
+            isCore: idx < 3,
+            matchReason: c.basis || `Recognized industry certification for ${targetRole || 'this role'}`,
+          }))
         : outcome.kind === 'suggestions'
-        ? outcome.suggestions.map((s) => ({ name: s, issuer: '' }))
+        ? outcome.suggestions.map((s, idx) => ({
+            id: `cert_${idx}_${s}`,
+            name: s,
+            issuer: '',
+            category: idx < 3 ? 'Core Required' : 'Recommended',
+            isCore: idx < 3,
+            matchReason: `Recognized industry certification for ${targetRole || 'this role'}`,
+          }))
         : [];
-      setSuggestedCerts(certs);
+      const available = certs.filter((c) => !existingNames.has(c.name.toLowerCase().trim()));
+      if (onOpenAiRecommendations && available.length > 0) {
+        onOpenAiRecommendations({
+          type: 'certifications',
+          title: 'AI Certification Recommendations',
+          subtitle: `Accredited credentials for ${targetRole || 'your target role'}`,
+          targetRole: targetRole || 'Target Role',
+          items: available,
+          onApply: (selected) => {
+            if (!selected.length) return;
+            const newEntries: CertificationEntry[] = selected.map((item) => ({
+              id: crypto.randomUUID(),
+              name: item.name,
+              issuer: item.issuer || '',
+              credentialId: '',
+              issueDate: '',
+              expiryDate: '',
+              credentialUrl: '',
+            }));
+            onChange([...entries, ...newEntries]);
+          },
+        });
+      } else {
+        setSuggestedCerts(available.map((c) => ({ name: c.name, issuer: c.issuer || '' })));
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -4375,7 +4519,7 @@ function CertificationsStep({
             className="gap-1.5 text-xs font-bold text-purple-700 bg-purple-50/70 border-purple-200 hover:bg-purple-100 shadow-2xs"
           >
             <Sparkles className="size-3.5 text-purple-600" />
-            <span>AI Suggest Certifications</span>
+            <span>Suggest with AI</span>
           </Button>
           <Button variant="outline" size="sm" onClick={addEntry} className="gap-1.5 text-xs">
             <Plus className="size-4" /> Add Certification
@@ -4414,9 +4558,21 @@ function CertificationsStep({
           <Award className="mb-3 size-10 text-ink-subtle" />
           <p className="text-sm font-medium text-ink-secondary">No certifications added yet</p>
           <p className="mt-1 text-xs text-ink-muted">Add certifications to validate your expertise.</p>
-          <Button variant="outline" className="mt-4" onClick={addEntry}>
-            <Plus className="size-4" /> Add First Certification
-          </Button>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+            <Button variant="outline" onClick={addEntry}>
+              <Plus className="size-4" /> Add First Certification
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void handleGenerateCerts()}
+              loading={generatingCerts}
+              className="gap-1.5 text-xs font-bold text-purple-700 bg-purple-50/70 border-purple-200 hover:bg-purple-100"
+            >
+              <Sparkles className="size-3.5 text-purple-600" />
+              <span>Suggest with AI</span>
+            </Button>
+          </div>
         </div>
       )}
 
