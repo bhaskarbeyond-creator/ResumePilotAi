@@ -393,6 +393,7 @@ async function saveAiAdminSettings({ input, expectedRevision = 0, actorUid, requ
   clearProviderConfigurationCache();
   try { require('./freellmConfig').clearFreeLlmConfigCache(); } catch { /* optional */ }
   const loaded = await loadAiAdminSettings();
+  clearProviderConfigurationCache();
   return { ...loaded, revision: nextRevision };
 }
 

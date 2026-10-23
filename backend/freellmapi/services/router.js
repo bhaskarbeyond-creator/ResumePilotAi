@@ -403,7 +403,7 @@ class FreeLlmRouter {
     if (req && (req === candidate.provider.toLowerCase() || req === candidate.model.toLowerCase())) return 1000;
     // Registry marketing scores and model-name size heuristics are not quality evidence.
     // Unknown performance adds zero; stable input order breaks ties deterministically.
-    let score = platformConfig?.primary === candidate.provider ? 35 : 0;
+    let score = platformConfig?.primary === candidate.provider ? 120 : 0;
     // Operator-managed credentials retain precedence over unconfigured public paths.
     if (candidate.key && candidate.key !== 'keyless') score += 10;
     const observation = recent?.model === candidate.model ? recent

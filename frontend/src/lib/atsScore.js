@@ -243,7 +243,7 @@ export function extractBullets(description) {
         : raw.split(/\n+|<(?:br|\/p|\/div)\s*\/?>/i);
     const bullets = chunks
         .map(stripHtml)
-        .map((item) => item.replace(/^[-*•–—]+\s*/, '').trim())
+        .map((item) => item.replace(/^(?:[-*•–—]|\(?\d+[.)])\s*/, '').trim())
         .filter((item) => item.length >= 18);
     return uniqueStrings(bullets);
 }

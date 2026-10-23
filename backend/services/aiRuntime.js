@@ -1604,6 +1604,7 @@ function cloneConfiguration(configuration) {
 
 function clearProviderConfigurationCache() {
     configurationCache = null;
+    try { require('./freellmConfig').clearFreeLlmConfigCache(); } catch { /* optional */ }
 }
 
 /**
@@ -1620,7 +1621,7 @@ function resolveDiscoveryEnabled(environment = {}) {
 }
 
 async function loadProviderConfiguration(environment = process.env) {
-    if (configurationCache && configurationCache.expiresAt > Date.now()) {
+    if (environment === process.env && configurationCache && configurationCache.expiresAt > Date.now()) {
         return cloneConfiguration(configurationCache.configuration);
     }
     const { getRepository } = require('../repositories');

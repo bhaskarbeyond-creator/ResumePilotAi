@@ -157,10 +157,36 @@ test('dedupeQuestions removes within-set duplicates and recent-history exact mat
     assert.ok(texts.includes('How do hooks work?'));
 });
 
-test('AI path is invoked and returns distinct sets across identical-input attempts', async () => {
-    const oldKey = process.env.GEMINI_API_KEY;
-    const oldFetch = global.fetch;
+const PROVIDER_ENV_KEYS = [
+    'NVIDIA_API_KEY', 'NVIDIA_API_KEYS', 'GEMINI_API_KEY', 'OPENAI_API_KEY',
+    'GROQ_API_KEY', 'OPENROUTER_API_KEY', 'DEEPSEEK_API_KEY', 'AIMLAPI_API_KEY',
+];
+
+function isolateGeminiProvider() {
+    const saved = {};
+    for (const key of PROVIDER_ENV_KEYS) {
+        if (Object.prototype.hasOwnProperty.call(process.env, key)) {
+            saved[key] = process.env[key];
+            delete process.env[key];
+        }
+    }
     process.env.GEMINI_API_KEY = 'test-key';
+    require('../services/aiRuntime').clearProviderConfigurationCache();
+    return () => {
+        for (const key of PROVIDER_ENV_KEYS) {
+            if (Object.prototype.hasOwnProperty.call(saved, key)) {
+                process.env[key] = saved[key];
+            } else {
+                delete process.env[key];
+            }
+        }
+        require('../services/aiRuntime').clearProviderConfigurationCache();
+    };
+}
+
+test('AI path is invoked and returns distinct sets across identical-input attempts', async () => {
+    const restoreProviders = isolateGeminiProvider();
+    const oldFetch = global.fetch;
     const calls = installMockProvider();
     const app = buildApp();
     const { server, base } = await startServer(app);
@@ -182,15 +208,14 @@ test('AI path is invoked and returns distinct sets across identical-input attemp
         assert.notDeepEqual(q1, q2, 'repeated attempts should produce distinct question sets');
     } finally {
         server.close();
-        if (oldKey === undefined) delete process.env.GEMINI_API_KEY; else process.env.GEMINI_API_KEY = oldKey;
         global.fetch = oldFetch;
+        restoreProviders();
     }
 });
 
 test('provider failure returns a recoverable error instead of predefined interview content', async () => {
-    const oldKey = process.env.GEMINI_API_KEY;
+    const restoreProviders = isolateGeminiProvider();
     const oldFetch = global.fetch;
-    process.env.GEMINI_API_KEY = 'test-key';
     mockProviderFailure();
     const app = buildApp();
     const { server, base } = await startServer(app);
@@ -202,7 +227,7 @@ test('provider failure returns a recoverable error instead of predefined intervi
         assert.notEqual(response.headers['x-ai-source'], 'fallback');
     } finally {
         server.close();
-        if (oldKey === undefined) delete process.env.GEMINI_API_KEY; else process.env.GEMINI_API_KEY = oldKey;
         global.fetch = oldFetch;
+        restoreProviders();
     }
 });

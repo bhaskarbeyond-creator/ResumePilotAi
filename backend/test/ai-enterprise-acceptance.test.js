@@ -7,6 +7,8 @@ const supertest = require('supertest');
 const {
   generateWithProviders,
   loadProviderConfiguration,
+  clearProviderConfigurationCache,
+  resetSharedAiRouterForTests,
 } = require('../services/aiRuntime');
 const {
   loadAiAdminSettings,
@@ -207,6 +209,8 @@ test('Acceptance Gate 3: 12 provider failure contracts fail over once without re
   ];
 
   for (const scenario of failureScenarios) {
+    resetSharedAiRouterForTests();
+    clearProviderConfigurationCache();
     seedMariaDbSettingsContract({
       nvidia: { apiKey: 'nvapi-failing', model: 'meta/llama-3.2-11b-vision-instruct' },
       gemini: { apiKey: 'gemini-backup', model: 'gemini-2.0-flash' },
@@ -286,7 +290,7 @@ test('Acceptance Gate 4: AI settings RBAC and secret-redaction boundaries are en
   assert.equal(unverifiedGen.body.error.code, 'EMAIL_VERIFICATION_REQUIRED');
 
   // 4. Admin loading settings receives masked status with ZERO plain-text secret keys
-  const adminLoaded = await loadAiAdminSettings();
+  const adminLoaded = await loadAiAdminSettings({});
   assert.equal(adminLoaded.configuredProviders.nvidia, true);
   assert.equal(adminLoaded.configuredProviders.openai, true);
   assert.equal(adminLoaded.credentialSources.nvidia, 'mariadb-secret-store');

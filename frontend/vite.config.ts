@@ -23,6 +23,10 @@ export default defineConfig({
       },
     },
   },
+  preview: {
+    port: 5173,
+    host: '127.0.0.1',
+  },
   build: {
     sourcemap: true,
   },

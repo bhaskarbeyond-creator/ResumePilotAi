@@ -351,6 +351,22 @@ class MetricsPersistence {
     }
   }
 
+  clearAllMetrics() {
+    if (!this.db) {
+      this.memoryRequests.clear();
+      this.memoryLog = [];
+      this.memoryCooldowns.clear();
+      return;
+    }
+    try {
+      this.db.prepare('DELETE FROM provider_metrics').run();
+      this.db.prepare('DELETE FROM request_log').run();
+      this.db.prepare('DELETE FROM provider_cooldowns').run();
+    } catch (error) {
+      this.error = error.message;
+    }
+  }
+
   close() {
     if (!this.db) return;
     try { this.db.close(); } catch { /* already closed */ }
@@ -368,6 +384,7 @@ function getMetricsPersistence(options) {
 
 function resetMetricsPersistenceForTests() {
   if (defaultStore) {
+    try { defaultStore.clearAllMetrics(); } catch { /* ignore */ }
     try { defaultStore.close(); } catch { /* ignore */ }
   }
   defaultStore = null;
