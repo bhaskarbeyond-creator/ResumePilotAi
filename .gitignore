@@ -145,6 +145,9 @@ tests/screenshots/
 .bridge/
 .claude/
 .github/
+.clinerules
+.roomodes
+AGENTS.md
 
 # FreeLLMAPI durable runtime metrics (created on first AI request; never source)
 /data/
