@@ -1,5 +1,0 @@
-[AI BRIDGE - ALL DIRECTIVES CLEARED BY USER]
-All directives have been cleared and developer execution has been stopped.
-Status: STOPPED / IDLE.
-Lead Takeover: ACTIVE (User-requested).
-The User will issue fresh directives tonight. Do not start any tasks or run modifications until new instructions are issued.

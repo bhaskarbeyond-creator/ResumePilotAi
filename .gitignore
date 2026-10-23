@@ -138,11 +138,15 @@ scripts/capture-user-dashboard-visuals.mjs
 dashboardTemplate/
 temp_inspect/
 archive_list.txt
-/.bridge/tmp/
-/.bridge/evidence/*-artifacts/
 tests/screenshots/
 
+# AI Agent orchestration, rules, developer CLI, and local bridge evidence
+.agents/
+.bridge/
+.claude/
+.github/
 
 # FreeLLMAPI durable runtime metrics (created on first AI request; never source)
 /data/
 backend/data/
+
