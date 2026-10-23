@@ -168,7 +168,7 @@ function secretPatch(input = {}, existing = {}, legacy = {}) {
     ).trim();
     if (model && (model.length > 256 || /[\x00-\x1f\x7f]/.test(model))) throw errorWith('AI_SETTINGS_VALIDATION_ERROR', 'Invalid model identifier.', 400);
     const baseUrl = resolveAdminBaseUrl(input[`${pId}BaseUrl`], existing[pId]?.baseUrl);
-    const isExplicitlyActivated = input[`enable${pId.charAt(0).toUpperCase() + pId.slice(1)}`] === true || input[pId]?.enabled === true || rawKey === 'keyless' || (input.provider === pId && input.selectionMode === 'manual' && Boolean(model));
+    const isExplicitlyActivated = input[`enable${pId.charAt(0).toUpperCase() + pId.slice(1)}`] === true || input[pId]?.enabled === true || rawKey === 'keyless' || input.provider === pId || (input.provider === pId && input.selectionMode === 'manual' && Boolean(model));
     const nextPool = explicitlyCleared ? [] : (pool.length > 0 ? pool : (finalKey ? [finalKey] : existingPool));
     if (nextPool.length > 0 || existing[pId] || explicitlyCleared || (!isKeyless && Boolean(model)) || (isKeyless && isExplicitlyActivated)) {
       patch[pId] = {

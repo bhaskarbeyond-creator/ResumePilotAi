@@ -612,6 +612,12 @@ export function AdminAiSettingsTab() {
         ...prev,
         [providerId]: res.models || [],
       }));
+      if (providerId) {
+        setPrimaryProvider(providerId);
+        if (res.models && res.models[0]?.id) {
+          setManualModel(res.models[0].id);
+        }
+      }
     } catch (err: any) {
       setModalError(`Model discovery failed: ${normalizeError(err).message}`);
       const providerId = selectedProviderId || modalSelectedPlatform?.id;
@@ -927,7 +933,11 @@ export function AdminAiSettingsTab() {
         provider: primaryProvider,
         enableFallback,
         selectionMode,
-        ...(selectionMode === 'manual' && manualModel ? { [primaryProvider]: { model: manualModel }, [`${primaryProvider}Model`]: manualModel } : {}),
+        ...(primaryProvider ? {
+          [primaryProvider]: { enabled: true, ...(manualModel ? { model: manualModel } : {}) },
+          [`enable${primaryProvider.charAt(0).toUpperCase() + primaryProvider.slice(1)}`]: true,
+        } : {}),
+        ...(manualModel ? { [`${primaryProvider}Model`]: manualModel } : {}),
         temperature,
         maxTokens,
         expectedRevision: revision,
@@ -945,7 +955,6 @@ export function AdminAiSettingsTab() {
       setSecretInputs({});
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 4000);
-      loadSettings();
     } catch (err: any) {
       setActionError(`Save failed: ${err.message || 'Unknown error'}`);
     } finally {
@@ -1048,31 +1057,207 @@ export function AdminAiSettingsTab() {
   return (
     <div className="space-y-6">
       {actionError && <div role="alert" className="rounded border border-rose-300 p-3 text-sm">{actionError}<Button variant="ghost" onClick={() => setActionError(null)}>Dismiss</Button></div>}
-      <Card><CardContent className="p-4 space-y-3">
-        <h2 className="text-sm font-bold">Runtime model selection</h2>
-        <div className="flex flex-wrap gap-3">
-          <label className="text-xs">Selection mode
-            <select aria-label="Selection mode" value={selectionMode} onChange={e => setSelectionMode(e.target.value)} className="block border rounded p-2 bg-surface">
-              <option value="auto">Auto / Recommended</option><option value="quality">Quality First</option>
-              <option value="speed">Speed First</option><option value="balanced">Balanced</option><option value="manual">Manual</option>
-            </select>
-          </label>
-          {selectionMode === 'manual' && <>
-            <label className="text-xs">Pinned provider
-              <select aria-label="Pinned provider" value={primaryProvider} onChange={e => { setPrimaryProvider(e.target.value); setManualModel(''); }} className="block border rounded p-2 bg-surface">
-                <option value="">Select provider</option>{providers.filter(p => p.group === 'models').map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-            </label>
-            <Button onClick={() => handleDiscoveryFetch(primaryProvider)} disabled={!primaryProvider || discoveryLoading}>Refresh selectable models</Button>
-            <label className="text-xs">Pinned model
-              <select aria-label="Pinned model" value={manualModel} onChange={e => setManualModel(e.target.value)} className="block border rounded p-2 bg-surface max-w-full">
-                <option value="">Choose from live catalog</option>{manualModel && !(discoveryResults[primaryProvider] || []).some((m: any) => m.id === manualModel && m.catalogStatus === 'fresh') && <option value={manualModel} disabled>{manualModel} (saved — refresh to verify)</option>}{(discoveryResults[primaryProvider] || []).filter((m: any) => m.catalogStatus === 'fresh').map((m: any) => <option key={m.id} value={m.id}>{m.name || m.id}</option>)}
-              </select>
-            </label>
-          </>}
-        </div>
-        <p className="text-xs text-ink-muted">Automatic modes use current catalog capabilities and recent service observations. Quality First prioritizes documented capability fit; no response-quality benchmark is available. Manual pins never silently fall back.</p>
-      </CardContent></Card>
+      {/* ─── EXECUTIVE COMMAND CONSOLE: RUNTIME MODEL SELECTION ─── */}
+      <Card className="rounded-2xl border border-border/70 bg-gradient-to-br from-surface via-surface/98 to-surface-secondary/40 shadow-xs backdrop-blur-md overflow-hidden">
+        <CardContent className="p-5 sm:p-6 space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/50 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-xl bg-brand-500/10 text-brand-600 flex items-center justify-center shrink-0 border border-brand-500/20 shadow-xs">
+                <Brain className="size-5" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-ink tracking-tight flex items-center gap-2">
+                  Runtime model selection
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                    <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Live Router
+                  </span>
+                </h2>
+                <p className="text-xs text-ink-muted">
+                  Multi-provider intelligent dispatch with automated fallback and zero-synthetic governance.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 text-xs text-ink-muted font-medium bg-surface-secondary/80 px-3 py-1.5 rounded-xl border border-border/60 self-start sm:self-auto">
+              <Activity className="size-3.5 text-brand-600 shrink-0" />
+              <span>Active: <strong className="text-ink uppercase font-bold">{selectionMode}</strong></span>
+              <span className="text-border">•</span>
+              <span>Primary: <strong className="text-ink font-semibold">{primaryProvider}</strong></span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Column 1: Mode Selection */}
+            <div className="space-y-2 p-3.5 rounded-xl bg-surface/60 border border-border/50">
+              <label className="text-xs font-bold text-ink flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <span>Selection mode</span>
+                  <span className="text-[10px] font-semibold text-brand-600 bg-brand-50 dark:bg-brand-950/40 px-1.5 py-0.5 rounded">
+                    {selectionMode === 'manual' ? 'Pinned Model' : 'Dynamic Cascade'}
+                  </span>
+                </div>
+                <select
+                  aria-label="Selection mode"
+                  value={selectionMode}
+                  onChange={(e) => setSelectionMode(e.target.value)}
+                  className="mt-1 block w-full h-10 rounded-lg border border-border bg-surface px-3 text-xs font-semibold text-ink shadow-xs focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+                >
+                  <option value="auto">Auto / Recommended</option>
+                  <option value="quality">Quality First</option>
+                  <option value="speed">Speed First</option>
+                  <option value="balanced">Balanced</option>
+                  <option value="manual">Manual</option>
+                </select>
+              </label>
+              <p className="text-[11px] text-ink-muted leading-relaxed">
+                {selectionMode === 'auto' && 'Dispatches across top frontier providers with automatic latency balancing.'}
+                {selectionMode === 'quality' && 'Maximizes verified reasoning capacity and capability alignment.'}
+                {selectionMode === 'speed' && 'Prioritizes lowest response latency (<300ms) with verified fast tokens.'}
+                {selectionMode === 'balanced' && 'Optimal trade-off between intelligence, speed, and reliability.'}
+                {selectionMode === 'manual' && 'Bypasses autonomous routing and locks execution strictly to your pinned model.'}
+              </p>
+            </div>
+
+            {/* Column 2: Pinned Provider & Model (When Manual) OR Hyperparameters */}
+            {selectionMode === 'manual' ? (
+              <div className="space-y-3 p-3.5 rounded-xl bg-surface/60 border border-border/50 col-span-1 lg:col-span-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-ink block mb-1">
+                      Pinned provider
+                      <select
+                        aria-label="Pinned provider"
+                        value={primaryProvider}
+                        onChange={(e) => {
+                          setPrimaryProvider(e.target.value);
+                          setManualModel('');
+                        }}
+                        className="mt-1 block w-full h-10 rounded-lg border border-border bg-surface px-3 text-xs font-semibold text-ink shadow-xs"
+                      >
+                        <option value="">Select provider</option>
+                        {providers.filter((p) => p.group === 'models').map((p) => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-ink block mb-1">
+                      Pinned model
+                      <select
+                        aria-label="Pinned model"
+                        value={manualModel}
+                        onChange={(e) => setManualModel(e.target.value)}
+                        className="mt-1 block w-full h-10 rounded-lg border border-border bg-surface px-3 text-xs font-semibold text-ink shadow-xs max-w-full"
+                      >
+                        <option value="">Choose from live catalog</option>
+                        {manualModel && !(discoveryResults[primaryProvider] || []).some((m: any) => m.id === manualModel && m.catalogStatus === 'fresh') && (
+                          <option value={manualModel} disabled>{manualModel} (saved — refresh to verify)</option>
+                        )}
+                        {(discoveryResults[primaryProvider] || []).filter((m: any) => m.catalogStatus === 'fresh').map((m: any) => (
+                          <option key={m.id} value={m.id}>{m.name || m.id}</option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between pt-1">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleDiscoveryFetch(primaryProvider)}
+                    disabled={!primaryProvider || discoveryLoading}
+                    loading={discoveryLoading}
+                    className="h-8 text-xs font-semibold gap-1.5"
+                  >
+                    <RefreshCw className={cn("size-3.5", discoveryLoading && "animate-spin")} />
+                    Refresh selectable models
+                  </Button>
+                  <span className="text-[11px] text-ink-muted">
+                    {discoveryResults[primaryProvider]?.length ? `${discoveryResults[primaryProvider].length} models discovered` : 'No models discovered yet'}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Column 2: Inference Hyperparameters */}
+                <div className="space-y-3 p-3.5 rounded-xl bg-surface/60 border border-border/50">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs font-bold text-ink">
+                      <span>Temperature</span>
+                      <span className="font-mono text-brand-600 bg-brand-50 dark:bg-brand-950/40 px-1.5 py-0.5 rounded text-[11px]">
+                        {temperature.toFixed(2)}
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0.0"
+                      max="1.0"
+                      step="0.05"
+                      value={temperature}
+                      onChange={(e) => setTemperature(parseFloat(e.target.value))}
+                      className="w-full accent-brand-600 h-1.5 bg-surface-secondary rounded-lg appearance-none cursor-pointer"
+                    />
+                    <div className="flex justify-between text-[10px] text-ink-muted">
+                      <span>0.0 (Precise)</span>
+                      <span>1.0 (Creative)</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 pt-1">
+                    <div className="flex items-center justify-between text-xs font-bold text-ink">
+                      <span>Max Tokens</span>
+                      <span className="font-mono text-brand-600 bg-brand-50 dark:bg-brand-950/40 px-1.5 py-0.5 rounded text-[11px]">
+                        {maxTokens} tok
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="256"
+                      max="4096"
+                      step="128"
+                      value={maxTokens}
+                      onChange={(e) => setMaxTokens(parseInt(e.target.value, 10))}
+                      className="w-full accent-brand-600 h-1.5 bg-surface-secondary rounded-lg appearance-none cursor-pointer"
+                    />
+                    <div className="flex justify-between text-[10px] text-ink-muted">
+                      <span>256</span>
+                      <span>4096</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Column 3: Safeguards & Resilience */}
+                <div className="space-y-3 p-3.5 rounded-xl bg-surface/60 border border-border/50">
+                  <div className="text-xs font-bold text-ink mb-1">Governance & Fallbacks</div>
+                  <label className="flex items-start gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={enableFallback}
+                      onChange={(e) => setEnableFallback(e.target.checked)}
+                      className="mt-0.5 rounded border-border text-brand-600 focus:ring-brand-500 size-4"
+                    />
+                    <div>
+                      <span className="text-xs font-semibold text-ink block">Enable Multi-Provider Fallback</span>
+                      <span className="text-[10px] text-ink-muted block">Automatically failover to secondary frontier mesh on 429 rate limit or 5xx outage.</span>
+                    </div>
+                  </label>
+
+                  <div className="pt-2 border-t border-border/40 flex items-center justify-between text-xs">
+                    <span className="text-ink-muted">Active Primary:</span>
+                    <span className="font-bold text-ink uppercase text-[11px] bg-surface-secondary px-2 py-0.5 rounded border border-border/60">
+                      {primaryProvider}
+                    </span>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          <p className="text-xs text-ink-muted">Automatic modes use current catalog capabilities and recent service observations. Quality First prioritizes documented capability fit; no response-quality benchmark is available. Manual pins never silently fall back.</p>
+        </CardContent>
+      </Card>
       {/* ═════════════════════════════════════════════════════════════════════════════ */}
       {/* ─── MASTER TOP TAB BAR ─── */}
       {/* ═════════════════════════════════════════════════════════════════════════════ */}
@@ -1148,11 +1333,24 @@ export function AdminAiSettingsTab() {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2" aria-label="Engine tools">
-        <Button size="sm" onClick={handleOpenKeyPool}>Manage key pools</Button>
-        <Button size="sm" onClick={() => handleOpenCooldown('')}>Manage cooldowns</Button>
-        <Button size="sm" onClick={handleOpenDiscovery}>Discover models</Button>
-        <Button size="sm" onClick={handleOpenCodeSnippets}>Integration snippets</Button>
+      <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-xl bg-surface/70 border border-border/60 shadow-2xs" aria-label="Engine tools">
+        <span className="text-[11px] font-bold text-ink-muted px-2 uppercase tracking-wider hidden sm:inline">Tools:</span>
+        <Button size="sm" variant="outline" onClick={handleOpenKeyPool} className="h-8 text-xs font-semibold gap-1.5 border-border/70 hover:bg-surface-secondary shadow-xs">
+          <Key className="size-3.5 text-amber-500" />
+          Manage key pools
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => handleOpenCooldown('')} className="h-8 text-xs font-semibold gap-1.5 border-border/70 hover:bg-surface-secondary shadow-xs">
+          <Clock className="size-3.5 text-blue-500" />
+          Manage cooldowns
+        </Button>
+        <Button size="sm" variant="outline" onClick={handleOpenDiscovery} className="h-8 text-xs font-semibold gap-1.5 border-border/70 hover:bg-surface-secondary shadow-xs">
+          <Sparkles className="size-3.5 text-brand-600" />
+          Discover models
+        </Button>
+        <Button size="sm" variant="outline" onClick={handleOpenCodeSnippets} className="h-8 text-xs font-semibold gap-1.5 border-border/70 hover:bg-surface-secondary shadow-xs">
+          <Terminal className="size-3.5 text-emerald-500" />
+          Integration snippets
+        </Button>
       </div>
       {/* ═════════════════════════════════════════════════════════════════════════════ */}
       {/* ─── TAB 1: KEYS (Matching FreeLLMAPI Screen 1) ─── */}
@@ -1723,6 +1921,7 @@ export function AdminAiSettingsTab() {
           discoveryLoading={discoveryLoading}
           handleDiscoveryFetch={handleDiscoveryFetch}
           error={modalError}
+          onSelectProvider={(id) => setPrimaryProvider(id)}
         />
       )}
 
@@ -1983,7 +2182,7 @@ export function AdminAiSettingsTab() {
         <Button onClick={loadSettings}>Refresh cooldown state</Button>
       </EngineDialog>}
       {isDiscoveryOpen && <EngineDialog title="Model Discovery" rootRef={discoveryRef} onClose={() => setIsDiscoveryOpen(false)}>
-        <DiscoveryTab providers={providers} discoveryResults={discoveryResults} discoveryLoading={discoveryLoading} handleDiscoveryFetch={handleDiscoveryFetch} error={modalError} />
+        <DiscoveryTab providers={providers} discoveryResults={discoveryResults} discoveryLoading={discoveryLoading} handleDiscoveryFetch={handleDiscoveryFetch} error={modalError} onSelectProvider={(id) => setPrimaryProvider(id)} />
       </EngineDialog>}
       {isCodeSnippetsOpen && <EngineDialog title="Integration snippets" rootRef={codeSnippetsRef} onClose={() => setIsCodeSnippetsOpen(false)}>
         <p className="text-xs">Use your own authenticated token; credentials are never included in exports or examples.</p>
@@ -2644,12 +2843,13 @@ const UnifiedGatewayTab = ({ providers, primaryProvider, enableFallback, tempera
 // ═════════════════════════════════════════════════════════════════════════════
 // DISCOVERY SUBTAB (DIR-013 Section 4: ?subtab=discovery)
 // ═════════════════════════════════════════════════════════════════════════════
-const DiscoveryTab = ({ providers, discoveryResults, discoveryLoading, handleDiscoveryFetch, error }: {
+const DiscoveryTab = ({ providers, discoveryResults, discoveryLoading, handleDiscoveryFetch, error, onSelectProvider }: {
   providers: ProviderItem[];
   discoveryResults: Record<string, any>;
   discoveryLoading: boolean;
   handleDiscoveryFetch: (providerId: string) => Promise<void>;
   error: string | null;
+  onSelectProvider?: (id: string) => void;
 }) => {
   const [selectedId, setSelectedId] = React.useState<string>('');
   const results = discoveryResults[selectedId];
@@ -2668,7 +2868,12 @@ const DiscoveryTab = ({ providers, discoveryResults, discoveryLoading, handleDis
             <select
               aria-label="Discovery provider"
               value={selectedId}
-              onChange={(e) => setSelectedId(e.target.value)}
+              onChange={(e) => {
+                setSelectedId(e.target.value);
+                if (e.target.value && onSelectProvider) {
+                  onSelectProvider(e.target.value);
+                }
+              }}
               className="h-9 rounded-md border border-border bg-surface px-3 text-xs text-ink"
             >
               <option value="">Select a provider…</option>
