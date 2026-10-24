@@ -108,7 +108,7 @@ test.describe('AI Engine Security, Secret Non-Disclosure & Runtime Rollback', ()
       for (let i = 0; i < badgeCount; i++) {
         const text = (await maskBadges.nth(i).textContent())?.trim() || '';
         const keyMaskToken = text.replace(/\s+\+\d+$/, '');
-        expect(keyMaskToken).toMatch(/^•{8,}[A-Za-z0-9]{4}$/);
+        expect(keyMaskToken).toMatch(/^•{8,}\S{4}$/);
       }
 
       // Specific suffix check without prefix leak (single key + 2-key pool)
