@@ -108,8 +108,12 @@ test.describe('AI Engine Security, Secret Non-Disclosure & Runtime Rollback', ()
       for (let i = 0; i < badgeCount; i++) {
         const text = (await maskBadges.nth(i).textContent())?.trim() || '';
         const keyMaskToken = text.replace(/\s+\+\d+$/, '');
+        // \S{4} also matches all-bullets, which is unreachable: mask is
+        // generated server-side from the last 4 chars of a real provider key,
+        // which cannot be bullet characters.
         expect(keyMaskToken).toMatch(/^•{8,}\S{4}$/);
       }
+
 
       // Specific suffix check without prefix leak (single key + 2-key pool)
       const cerebrasMask = (await page.getByTestId('masked-key-cerebras').textContent())?.trim() || '';

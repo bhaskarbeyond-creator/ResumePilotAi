@@ -153,3 +153,16 @@ npx playwright test tests/engine-responsive.spec.ts --retries=0
 - Omission of `expectedRevision` without `force: true` returns `400 EXPECTED_REVISION_REQUIRED`.
 - Stale revision returns `409 REVISION_CONFLICT` with `remoteRevision` payload for CAS recovery affordance.
 
+---
+
+## §6 Deferred to Platform Infrastructure
+
+### MariaDB connection-pool circuit breaker
+- File: backend/database/mysql.js
+- Status: Deferred — Phase 4 Platform Infrastructure Roadmap
+- Rationale: Shared across 1,082 platform tests; no AI-settings-specific failure mode identified. Modifying pool reconnection logic inside a feature freeze adds more risk than it removes.
+- Owner: platform infrastructure team
+- Revisit trigger: any AI-settings incident where pool exhaustion is the proximate cause
+- Ticket: PLAT-001
+
+

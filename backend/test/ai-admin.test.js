@@ -409,7 +409,11 @@ test('A1 Assertion 2: candidate key passed to testAiProvider is never logged or 
 });
 
 test('GAP 7 audit: mask pattern ^•{8,}\\S{4}$ prevents plaintext prefix leaks while accepting valid non-alphanumeric suffix characters', () => {
+  // \S{4} also matches all-bullets, which is unreachable: mask is
+  // generated server-side from the last 4 chars of a real provider key,
+  // which cannot be bullet characters.
   const maskRegex = /^•{8,}\S{4}$/;
+
 
   // Valid masked keys with alphanumeric and special suffix chars
   assert.equal(maskRegex.test('••••••••1234'), true);
